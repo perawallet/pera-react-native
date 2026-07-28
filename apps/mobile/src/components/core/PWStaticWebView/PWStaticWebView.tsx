@@ -14,10 +14,10 @@ import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { WebView, type WebViewProps } from 'react-native-webview'
 import { useStyles } from './styles'
+import type { PWStaticWebViewSource } from './PWStaticWebView.types'
 
 export type PWStaticWebViewProps = {
-    /** Bundled HTML (with an optional base URL) or a remote URL. */
-    source: { html: string; baseUrl?: string } | { uri: string }
+    source: PWStaticWebViewSource
 } & Omit<WebViewProps, 'source'>
 
 /**

@@ -25,12 +25,21 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     config: { appEnvironment: 'production' },
 }))
 
+const { mockRouteCapabilities } = vi.hoisted(() => ({
+    mockRouteCapabilities: { quantum: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockRouteCapabilities,
+}))
+
 describe('useIsQuantumAccountsEnabled', () => {
     const mockGetBooleanValue = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
         config.appEnvironment = 'production'
+        mockRouteCapabilities.quantum = true
         ;(useRemoteConfig as Mock).mockReturnValue({
             getBooleanValue: mockGetBooleanValue,
         })
@@ -76,6 +85,15 @@ describe('useIsQuantumAccountsEnabled', () => {
             (_key: string, fallback?: boolean) => fallback ?? false,
         )
         config.appEnvironment = 'production'
+
+        const { result } = renderHook(() => useIsQuantumAccountsEnabled())
+
+        expect(result.current).toBe(false)
+    })
+
+    it('stays disabled when routeCapabilities.quantum is off, even if the remote flag is on', () => {
+        mockGetBooleanValue.mockReturnValue(true)
+        mockRouteCapabilities.quantum = false
 
         const { result } = renderHook(() => useIsQuantumAccountsEnabled())
 

@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { File } from 'expo-file-system'
 import {
     AsbErrorReason,
     AsbImportError,
@@ -23,6 +22,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useClipboard } from '@hooks/useClipboard'
 import { useAsbImportFlowStore } from '@modules/onboarding/hooks'
+import { usePickBackupFile } from './usePickBackupFile'
 
 type LoadedFile = {
     name: string
@@ -45,6 +45,7 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
     const { t } = useLanguage()
     const { errorToast } = useToast()
     const { readText } = useClipboard()
+    const { pickFile } = usePickBackupFile()
     const envelope = useAsbImportFlowStore(state => state.envelope)
     const setEnvelope = useAsbImportFlowStore(state => state.setEnvelope)
 
@@ -94,27 +95,20 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
 
     const handlePickFile = useCallback(async () => {
         try {
-            // `File.pickFileAsync` returns a single `File` when invoked
-            // without the multi-select option; the typed return is a union
-            // to accommodate the (unused here) multi-pick path.
-            const result = await File.pickFileAsync(undefined, 'text/plain')
-            const file = Array.isArray(result) ? result[0] : result
+            // Resolves `null` when the user dismisses the picker; the
+            // native/web implementations handle that cancellation
+            // difference internally (see `usePickBackupFile`'s twins).
+            const file = await pickFile()
             if (!file) return
-            const contents = await file.text()
-            tryLoad(contents, file.name)
+            tryLoad(file.contents, file.name)
         } catch (e) {
-            // The native picker rejects with `FilePickingCancelledException`
-            // when the user dismisses the sheet. Don't surface that as an
-            // error — silently bail so they can retry.
-            const message = String((e as { message?: unknown })?.message ?? '')
-            if (/cancel/i.test(message)) return
             logger.error('Failed to read ASB backup file', { error: e })
             errorToast(
                 t('onboarding.asb_import.backup.errors.title'),
                 t('onboarding.asb_import.backup.errors.read_failed'),
             )
         }
-    }, [tryLoad, errorToast, t])
+    }, [pickFile, tryLoad, errorToast, t])
 
     const handlePasteFromClipboard = useCallback(async () => {
         const text = await readText()

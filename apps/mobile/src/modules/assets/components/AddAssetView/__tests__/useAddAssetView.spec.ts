@@ -11,7 +11,7 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useAddAssetView } from '../useAddAssetView'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
@@ -80,8 +80,8 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-vi.mock('@perawallet/wallet-core-search', () => ({
-    useGlobalSearch: vi.fn(() => ({
+const { mockUseGlobalSearch, defaultGlobalSearchResult } = vi.hoisted(() => {
+    const defaultGlobalSearchResult = {
         value: '',
         setValue: vi.fn(),
         results: {
@@ -90,10 +90,38 @@ vi.mock('@perawallet/wallet-core-search', () => ({
             ],
         },
         isLoading: false,
+        isRemoteError: false,
+        isRemotePaused: false,
         hasNextRemotePage: false,
         isFetchingNextRemotePage: false,
         fetchNextRemotePage: vi.fn(),
-    })),
+    }
+    return {
+        defaultGlobalSearchResult,
+        mockUseGlobalSearch: vi.fn(() => defaultGlobalSearchResult),
+    }
+})
+
+const mockGlobalSearch = (
+    overrides: Partial<typeof defaultGlobalSearchResult>,
+): void => {
+    mockUseGlobalSearch.mockReturnValueOnce({
+        ...defaultGlobalSearchResult,
+        ...overrides,
+    })
+}
+
+vi.mock('@perawallet/wallet-core-search', () => ({
+    useGlobalSearch: () => mockUseGlobalSearch(),
+}))
+
+let hasInternetMock = true
+const setHasInternet = (hasInternet: boolean): void => {
+    hasInternetMock = hasInternet
+}
+
+vi.mock('@modules/network', () => ({
+    useNetworkStatus: () => ({ hasInternet: hasInternetMock }),
 }))
 
 vi.mock('@constants/ui', () => ({
@@ -116,6 +144,11 @@ describe('useAddAssetView', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockGetSelectedAccount.mockReturnValue(mockAccount)
+        setHasInternet(true)
+    })
+
+    afterEach(() => {
+        setHasInternet(true)
     })
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
@@ -161,5 +194,30 @@ describe('useAddAssetView', () => {
         })
 
         expect(mockOptIn).not.toHaveBeenCalled()
+    })
+
+    it('surfaces the remote search error instead of hardcoding isError false', () => {
+        mockGlobalSearch({ isRemoteError: true, isRemotePaused: false })
+
+        const { result } = renderHook(() => useAddAssetView())
+
+        expect(result.current.isError).toBe(true)
+    })
+
+    it('is offline when the search query is paused (true-offline regime)', () => {
+        mockGlobalSearch({ isRemoteError: false, isRemotePaused: true })
+
+        const { result } = renderHook(() => useAddAssetView())
+
+        expect(result.current.isOffline).toBe(true)
+    })
+
+    it('collapses search error to offline when device has no internet', () => {
+        setHasInternet(false)
+        mockGlobalSearch({ isRemoteError: true, isRemotePaused: false })
+
+        const { result } = renderHook(() => useAddAssetView())
+
+        expect(result.current.isOffline).toBe(true)
     })
 })

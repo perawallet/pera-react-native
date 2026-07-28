@@ -12,10 +12,8 @@
 
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
-import {
-    createNativeStackNavigator,
-    type NativeStackHeaderProps,
-} from '@react-navigation/native-stack'
+import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
+import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen'
 import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen'
 import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen'
@@ -39,7 +37,7 @@ const WatchInfoScreenWithErrorBoundary =
 const WatchAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(WatchAccountScreen)
 
-const AddAccountStack = createNativeStackNavigator<AddAccountStackParamList>()
+const AddAccountStack = createAppStackNavigator<AddAccountStackParamList>()
 
 export const AddAccountStackNavigator = () => {
     return (

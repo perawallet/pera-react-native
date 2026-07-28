@@ -36,6 +36,22 @@ vi.mock('@modules/webview', () => ({
     }),
 }))
 
+const mockOpenURL = vi.fn()
+vi.mock('react-native', () => ({
+    Linking: { openURL: (...args: unknown[]) => mockOpenURL(...args) },
+}))
+
+// Mutable capability map: mutate `mockCapabilities` per test to simulate the
+// native-shaped (inAppWebView: true) and web-shaped (false) route capability
+// maps without re-mocking.
+const { mockCapabilities } = vi.hoisted(() => ({
+    mockCapabilities: { inAppWebView: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockCapabilities,
+}))
+
 const mockResetOnboardingProgress = vi.fn()
 vi.mock('@perawallet/wallet-core-card', () => ({
     useCardStore: Object.assign(() => {}, {
@@ -74,6 +90,7 @@ vi.mock('react-i18next', async () => {
 describe('usePeraCardIntroScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        Object.assign(mockCapabilities, { inAppWebView: true })
     })
 
     it('handleCreateAccount resets stale onboarding progress then navigates', () => {
@@ -116,5 +133,20 @@ describe('usePeraCardIntroScreen', () => {
         expect(mockPushWebView).toHaveBeenCalledWith({
             url: 'https://example.com/pera-card',
         })
+        expect(mockOpenURL).not.toHaveBeenCalled()
+    })
+
+    it('handleLearnMore opens the url in a browser tab when inAppWebView is off (web)', () => {
+        Object.assign(mockCapabilities, { inAppWebView: false })
+        const { result } = renderHook(() => usePeraCardIntroScreen())
+
+        act(() => {
+            result.current.handleLearnMore()
+        })
+
+        expect(mockOpenURL).toHaveBeenCalledWith(
+            'https://example.com/pera-card',
+        )
+        expect(mockPushWebView).not.toHaveBeenCalled()
     })
 })

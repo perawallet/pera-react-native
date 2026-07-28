@@ -53,6 +53,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             isPending: false,
             isError: false,
             isSuccess: false,
+            isPaused: false,
             error: null,
             data: null,
             reset: vi.fn(),
@@ -63,6 +64,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             isPending: false,
             isError: false,
             isSuccess: false,
+            isPaused: false,
             error: null,
             data: null,
             reset: vi.fn(),
@@ -73,6 +75,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             isPending: false,
             isError: false,
             isSuccess: false,
+            isPaused: false,
             error: null,
             data: null,
             reset: vi.fn(),
@@ -132,6 +135,26 @@ vi.mock('@modules/webview', () => ({
     useWebView: () => ({ pushWebView: mockPushWebView }),
 }))
 
+const mockOpenURL = vi.fn()
+vi.mock('react-native', async importOriginal => {
+    const actual = await importOriginal<object>()
+    return {
+        ...actual,
+        Linking: { openURL: (...args: unknown[]) => mockOpenURL(...args) },
+    }
+})
+
+// Mutable capability map: mutate `mockCapabilities` per test to simulate the
+// native-shaped (inAppWebView: true) and web-shaped (false) route capability
+// maps without re-mocking.
+const { mockCapabilities } = vi.hoisted(() => ({
+    mockCapabilities: { inAppWebView: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockCapabilities,
+}))
+
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -178,6 +201,7 @@ const california: SupportedUsState = {
 describe('useCardOnboardingAddressScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        Object.assign(mockCapabilities, { inAppWebView: true })
         mockOnboardingId = 'mock-onboarding-id'
         mockOnboardingStep = OnboardingStep.EmailSend
         mockCountryIso = 'GB'
@@ -425,6 +449,19 @@ describe('useCardOnboardingAddressScreen', () => {
             url: config.termsOfServiceUrl,
             id: 'platform-terms',
         })
+        expect(mockOpenURL).not.toHaveBeenCalled()
+    })
+
+    it('opens the T&C links in a browser tab when inAppWebView is off (web)', () => {
+        Object.assign(mockCapabilities, { inAppWebView: false })
+        const { result } = renderHook(() => useCardOnboardingAddressScreen())
+
+        act(() => result.current.handleOpenCardTerms())
+        expect(mockOpenURL).toHaveBeenCalledWith('https://baanx/intl-terms.pdf')
+
+        act(() => result.current.handleOpenPlatformTerms())
+        expect(mockOpenURL).toHaveBeenCalledWith(config.termsOfServiceUrl)
+        expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
     it('opens the US Baanx card T&C once the resident is in the US', async () => {

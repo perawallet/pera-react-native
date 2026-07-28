@@ -27,6 +27,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useNetworkStatus } from '@modules/network'
 import {
     OnrampCountryInfoContent,
     OnrampIntroductionContent,
@@ -40,6 +41,7 @@ const DEFAULT_DESTINATION_TOKEN_ID = ALGO_ASSET_NAME
 
 type UseOnrampScreenResult = {
     isReady: boolean
+    pairsState: 'ready' | 'loading' | 'offline' | 'error'
     pairs: RampPair[]
     sourceToken: Nullable<RampToken>
     destinationToken: Nullable<RampToken>
@@ -49,6 +51,7 @@ type UseOnrampScreenResult = {
     activeTab: OnrampTab
     handleTabChange: (tab: OnrampTab) => void
     handleRegionInfoPress: () => void
+    handleRetryPairs: () => void
 }
 
 // Resolve the destination token id to seed when none is selected: a matching
@@ -75,7 +78,9 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     const params = route.params
 
     const { request: requestBottomSheet } = useBottomSheet()
-    const { data: pairs = [], isLoading: pairsLoading } = useRampPairsQuery()
+    const pairsQuery = useRampPairsQuery()
+    const { data: pairs = [], isLoading: pairsLoading } = pairsQuery
+    const { hasInternet } = useNetworkStatus()
     const { data: region } = useRampRegionQuery()
     const { selectedAccountAddress } = useSelectedAccountAddress()
     const {
@@ -197,8 +202,28 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
 
     const isReady = !pairsLoading && destinationToken !== null
 
+    // PERA-4581 paused-state contract (docs/OFFLINE_PAUSED_STATE.md): a paused
+    // query reports isPending forever, so offline must be resolved before the
+    // spinner, and cached/stale data (isReady) always wins over either.
+    const pairsState = useMemo(():
+        | 'ready'
+        | 'loading'
+        | 'offline'
+        | 'error' => {
+        if (isReady) return 'ready'
+        const isPaused = pairsQuery.fetchStatus === 'paused'
+        if (isPaused || (pairsQuery.isError && !hasInternet)) return 'offline'
+        if (pairsQuery.isError) return 'error'
+        return 'loading'
+    }, [isReady, pairsQuery, hasInternet])
+
+    const handleRetryPairs = useCallback(() => {
+        void pairsQuery.refetch()
+    }, [pairsQuery])
+
     return {
         isReady,
+        pairsState,
         pairs,
         sourceToken,
         destinationToken,
@@ -208,5 +233,6 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
         activeTab,
         handleTabChange,
         handleRegionInfoPress,
+        handleRetryPairs,
     }
 }

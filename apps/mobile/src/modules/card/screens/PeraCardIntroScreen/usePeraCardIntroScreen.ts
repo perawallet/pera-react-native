@@ -11,10 +11,12 @@
  */
 
 import { useCallback } from 'react'
+import { Linking } from 'react-native'
 import { config } from '@perawallet/wallet-core-config'
 import { useCardStore } from '@perawallet/wallet-core-card'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
+import { routeCapabilities } from '@routes/capabilities'
 
 type UsePeraCardIntroScreenResult = {
     handleCreateAccount: () => void
@@ -41,6 +43,10 @@ export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
     }, [navigation])
 
     const handleLearnMore = useCallback(() => {
+        if (!routeCapabilities.inAppWebView) {
+            void Linking.openURL(config.peraCardLearnMoreUrl)
+            return
+        }
         pushWebView({ url: config.peraCardLearnMoreUrl })
     }, [pushWebView])
 

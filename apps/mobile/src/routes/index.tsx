@@ -18,7 +18,7 @@ import {
 } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
 import { withAgeGate } from '@components/AgeGated'
-import { BannersCarouselModalScreen } from '@modules/banners'
+import { BannersCarouselModalScreen } from '@modules/banners/screens/BannersCarouselModalScreen'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import {
     OnboardingStackNavigator,

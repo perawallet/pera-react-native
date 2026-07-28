@@ -34,4 +34,10 @@ export type SyncServiceDeps = {
      * background package depending on signing.
      */
     registerCompletionHandler?: (handler: SyncCompletionHandler) => void
+    /**
+     * Base poll cadence in ms (default 3000). The offscreen document uses a
+     * slow cadence (warm polling) so it never competes with a focused UI
+     * context's 3s loop for API budget.
+     */
+    pollIntervalMs?: number
 }

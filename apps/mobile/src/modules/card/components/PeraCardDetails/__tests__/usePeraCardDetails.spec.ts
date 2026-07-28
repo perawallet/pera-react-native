@@ -19,6 +19,8 @@ const mocks = vi.hoisted(() => ({
     fundingAddress: null as string | null,
     selectedFundingType: null as string | null,
     status: 'ACTIVE' as string | null,
+    fetchStatus: 'idle' as string,
+    hasInternet: true,
     cardDetailsMutateAsync: vi.fn(),
     freezeMutateAsync: vi.fn(),
     freezePending: false,
@@ -29,6 +31,7 @@ const mocks = vi.hoisted(() => ({
     requirePinVerification: vi.fn(),
     connectAsync: vi.fn(),
     pushWebView: vi.fn(),
+    openURL: vi.fn(),
     infoToast: vi.fn(),
     errorToast: vi.fn(),
     request: vi.fn(),
@@ -49,6 +52,7 @@ const mutationResult = (
     isPending,
     isError: false,
     isSuccess: false,
+    isPaused: false,
     error: null,
     data: null,
     reset: vi.fn(),
@@ -74,6 +78,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             mutationResult(mocks.connectAsync),
         useCardStatusQuery: () => ({
             data: mocks.status == null ? null : { status: mocks.status },
+            fetchStatus: mocks.fetchStatus,
         }),
         useCardDetailsMutation: () =>
             mutationResult(mocks.cardDetailsMutateAsync),
@@ -118,9 +123,32 @@ vi.mock('@modules/security', () => ({
     }),
 }))
 
+vi.mock('@modules/network', () => ({
+    useNetworkStatus: () => ({ hasInternet: mocks.hasInternet }),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-accounts')),
     useAllAccounts: () => mocks.accounts,
+}))
+
+vi.mock('react-native', async importOriginal => {
+    const actual = await importOriginal<object>()
+    return {
+        ...actual,
+        Linking: { openURL: (...args: unknown[]) => mocks.openURL(...args) },
+    }
+})
+
+// Mutable capability map: mutate `mockCapabilities` per test to simulate the
+// native-shaped (inAppWebView: true) and web-shaped (false) route capability
+// maps without re-mocking.
+const { mockCapabilities } = vi.hoisted(() => ({
+    mockCapabilities: { inAppWebView: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockCapabilities,
 }))
 
 // Keep the real toast hooks (they use the mocked useToast); override only the
@@ -156,10 +184,13 @@ const SECURE_VIEW = { token: 'tok', imageUrl: 'https://secure/card.png' }
 describe('usePeraCardDetails', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        Object.assign(mockCapabilities, { inAppWebView: true })
         mocks.panLast4 = null
         mocks.fundingAddress = null
         mocks.selectedFundingType = null
         mocks.status = 'ACTIVE'
+        mocks.fetchStatus = 'idle'
+        mocks.hasInternet = true
         mocks.setPinPending = false
         mocks.requirePinVerification.mockResolvedValue(true)
         mocks.freezePending = false
@@ -526,6 +557,23 @@ describe('usePeraCardDetails', () => {
             url: 'https://hosted/pin',
             id: 'card-set-pin',
         })
+        expect(mocks.openURL).not.toHaveBeenCalled()
+    })
+
+    it('opens the hosted PIN page in a browser tab when inAppWebView is off (web)', async () => {
+        Object.assign(mockCapabilities, { inAppWebView: false })
+        mocks.setPinMutateAsync.mockResolvedValue({
+            token: 'tok',
+            hostedPageUrl: 'https://hosted/pin',
+        })
+
+        const { result } = renderHook(() => usePeraCardDetails())
+        await act(async () => {
+            await result.current.onSetPin()
+        })
+
+        expect(mocks.openURL).toHaveBeenCalledWith('https://hosted/pin')
+        expect(mocks.pushWebView).not.toHaveBeenCalled()
     })
 
     it('does not start the set-PIN request when the PIN gate is not passed', async () => {
@@ -699,6 +747,34 @@ describe('usePeraCardDetails', () => {
             })
 
             expect(mocks.connectAsync).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('offline gating', () => {
+        it('is offline when the device has no internet', () => {
+            mocks.hasInternet = false
+
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            expect(result.current.isOffline).toBe(true)
+        })
+
+        it('is offline while the status query is paused', () => {
+            mocks.hasInternet = true
+            mocks.fetchStatus = 'paused'
+
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            expect(result.current.isOffline).toBe(true)
+        })
+
+        it('is not offline when online with a resolved status', () => {
+            mocks.hasInternet = true
+            mocks.fetchStatus = 'idle'
+
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            expect(result.current.isOffline).toBe(false)
         })
     })
 })

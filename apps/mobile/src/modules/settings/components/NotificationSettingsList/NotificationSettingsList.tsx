@@ -42,10 +42,12 @@ const iconProps = {
 const AccountNotificationItem = ({
     account,
     isEnabled,
+    isPending,
     onToggle,
 }: {
     account: WalletAccount
     isEnabled: boolean
+    isPending: boolean
     onToggle: (enabled: boolean) => void
 }) => {
     const styles = useStyles()
@@ -73,6 +75,7 @@ const AccountNotificationItem = ({
                 <PWSwitch
                     value={isEnabled}
                     onValueChange={onToggle}
+                    disabled={isPending}
                 />
             </PWView>
         </PWView>
@@ -91,17 +94,26 @@ export const NotificationSettingsList = ({
     const {
         isSystemNotificationEnabled,
         isSystemNotificationLoading,
+        isPushSupported,
         accounts,
         disabledAccounts,
         handleSystemNotificationToggle,
         handleAccountNotificationToggle,
         isAccountNotificationEnabled,
+        isAccountNotificationPending,
     } = useSettingsNotificationsScreen()
+
+    // Rows must also re-render while a toggle is in flight, otherwise the
+    // switch would stay enabled until the request settles.
+    const extraData = useMemo(
+        () => [disabledAccounts, isAccountNotificationPending],
+        [disabledAccounts, isAccountNotificationPending],
+    )
 
     return (
         <PWFlatList
             data={accounts}
-            extraData={disabledAccounts}
+            extraData={extraData}
             keyExtractor={item => item.address}
             style={style}
             inBottomSheet={inBottomSheet}
@@ -118,6 +130,7 @@ export const NotificationSettingsList = ({
                 <AccountNotificationItem
                     account={item}
                     isEnabled={isAccountNotificationEnabled(item.address)}
+                    isPending={isAccountNotificationPending(item.address)}
                     onToggle={enabled =>
                         handleAccountNotificationToggle(item, enabled)
                     }
@@ -125,23 +138,29 @@ export const NotificationSettingsList = ({
             )}
             ListHeaderComponent={
                 <PWView style={styles.header}>
-                    <PWView style={styles.headerRow}>
-                        <PWView style={styles.headerLabelContainer}>
-                            <PWText
-                                variant='body'
-                                truncate
-                            >
-                                {t('settings.notifications.push_notifications')}
-                            </PWText>
+                    {isPushSupported && (
+                        <PWView style={styles.headerRow}>
+                            <PWView style={styles.headerLabelContainer}>
+                                <PWText
+                                    variant='body'
+                                    truncate
+                                >
+                                    {t(
+                                        'settings.notifications.push_notifications',
+                                    )}
+                                </PWText>
+                            </PWView>
+                            <PWView style={styles.switchContainer}>
+                                <PWSwitch
+                                    value={isSystemNotificationEnabled}
+                                    onValueChange={
+                                        handleSystemNotificationToggle
+                                    }
+                                    disabled={isSystemNotificationLoading}
+                                />
+                            </PWView>
                         </PWView>
-                        <PWView style={styles.switchContainer}>
-                            <PWSwitch
-                                value={isSystemNotificationEnabled}
-                                onValueChange={handleSystemNotificationToggle}
-                                disabled={isSystemNotificationLoading}
-                            />
-                        </PWView>
-                    </PWView>
+                    )}
                     <PWView style={styles.headerRow}>
                         <PWView style={styles.headerLabelContainer}>
                             <PWText

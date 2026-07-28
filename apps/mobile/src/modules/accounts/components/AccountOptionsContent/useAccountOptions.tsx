@@ -32,6 +32,7 @@ import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
 import { ExportShareAccountContent } from '@modules/multisig/components/ExportShareAccountContent'
@@ -54,6 +55,7 @@ export type AccountOption = {
     subtitle?: string
     onPress: () => void
     variant?: 'default' | 'destructive'
+    disabled?: boolean
 }
 
 export type UseAccountOptionsParams = {
@@ -75,6 +77,7 @@ export type UseAccountOptionsResult = {
     handleConfirmBackupWarning: () => void
     handleConfirmRemove: () => void
     handleCancelRemove: () => void
+    handleToggleNotifications: () => void
 }
 
 export const useAccountOptions = ({
@@ -85,7 +88,9 @@ export const useAccountOptions = ({
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { copyToClipboard } = useClipboard()
-    const { isAccountEnabled, setAccountEnabled } = useNotificationPreferences()
+    const { isAccountEnabled } = useNotificationPreferences()
+    const { toggleAccountNotification, isTogglePending } =
+        useAccountNotificationToggle()
     const accounts = useAllAccounts()
     const removeAccount = useRemoveAccountByAddress()
     const updateAccount = useUpdateAccount()
@@ -236,18 +241,25 @@ export const useAccountOptions = ({
 
     const handleToggleNotifications = useCallback(() => {
         const currentlyEnabled = isAccountEnabled(account.address)
-        setAccountEnabled(account.address, !currentlyEnabled)
-        showToast({
-            title: currentlyEnabled
-                ? t('account_options.notifications_muted')
-                : t('account_options.notifications_unmuted'),
-            body: '',
-            type: 'success',
-        })
+        // The sheet closes at once so the interaction feels immediate; the
+        // confirmation waits for the backend, because before PERA-4585 this
+        // toast fired for a request that was never sent.
         onClose()
+        void toggleAccountNotification(account.address, !currentlyEnabled).then(
+            succeeded => {
+                if (!succeeded) return
+                showToast({
+                    title: currentlyEnabled
+                        ? t('account_options.notifications_muted')
+                        : t('account_options.notifications_unmuted'),
+                    body: '',
+                    type: 'success',
+                })
+            },
+        )
     }, [
         isAccountEnabled,
-        setAccountEnabled,
+        toggleAccountNotification,
         account.address,
         showToast,
         t,
@@ -318,6 +330,12 @@ export const useAccountOptions = ({
     }, [])
 
     const notificationsEnabled = isAccountEnabled(account.address)
+    // Mirrors NotificationSettingsList: disable the row instead of letting a
+    // tap silently resolve `false` while a toggle for this address is
+    // already in flight (docs/OFFLINE_PAUSED_STATE.md). Note this only
+    // reflects toggles started by *this* hook instance — see the caveat on
+    // `isTogglePending` in useAccountNotificationToggle.ts.
+    const isNotificationTogglePending = isTogglePending(account.address)
 
     const options = useMemo(() => {
         const items: AccountOption[] = []
@@ -426,6 +444,7 @@ export const useAccountOptions = ({
                 ? t('account_options.mute_notifications')
                 : t('account_options.unmute_notifications'),
             onPress: handleToggleNotifications,
+            disabled: isNotificationTogglePending,
         })
 
         items.push({
@@ -445,6 +464,7 @@ export const useAccountOptions = ({
         canSign,
         isSharedAccount,
         notificationsEnabled,
+        isNotificationTogglePending,
         handleCopyAddress,
         handleShowAddress,
         handleViewPassphrase,
@@ -472,5 +492,6 @@ export const useAccountOptions = ({
         handleConfirmBackupWarning,
         handleConfirmRemove,
         handleCancelRemove,
+        handleToggleNotifications,
     }
 }

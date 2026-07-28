@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { SyncService } from '../service/sync-service'
+import type { SyncServiceDeps } from '../models'
 import { QueryClient, onlineManager } from '@tanstack/react-query'
 
 // Drain queued microtasks (the async tick body chains several awaits with no
@@ -485,6 +486,158 @@ describe('SyncService', () => {
         expect(fetchAndPersistAccount).toHaveBeenCalled()
     })
 
+    // 3 real-timer waits (50 + 3100 + 3100ms) exceed vitest's 5000ms default.
+    it('backs off should-refresh after a 401 and skips subsequent requests', async () => {
+        const authError = Object.assign(new Error('Unauthorized'), {
+            name: 'HTTPError',
+            response: { status: 401 },
+        })
+        mockSendShouldRefreshRequest.mockRejectedValue(authError)
+        const { logger } = await import('@perawallet/wallet-core-shared')
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50)) // 1st tick: force-sync
+        await new Promise(resolve => setTimeout(resolve, 3100)) // 2nd tick: should-refresh -> 401
+
+        expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
+        expect(logger.warn).toHaveBeenCalledWith(
+            expect.stringContaining('BACKEND_API_KEY'),
+            expect.objectContaining({ status: 401 }),
+        )
+
+        mockSendShouldRefreshRequest.mockClear()
+        await new Promise(resolve => setTimeout(resolve, 3100)) // 3rd tick: guarded, no request
+
+        service.stop()
+        vi.useFakeTimers()
+
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+    }, 8000)
+
+    it('treats 403 the same as 401 for the auth backoff', async () => {
+        const authError = Object.assign(new Error('Forbidden'), {
+            name: 'HTTPError',
+            response: { status: 403 },
+        })
+        mockSendShouldRefreshRequest.mockRejectedValue(authError)
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        await new Promise(resolve => setTimeout(resolve, 3100))
+
+        mockSendShouldRefreshRequest.mockClear()
+        await new Promise(resolve => setTimeout(resolve, 3100))
+
+        service.stop()
+        vi.useFakeTimers()
+
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+    }, 8000)
+
+    it('resets the auth-failure flag on restart so a reconfigured session recovers', async () => {
+        const authError = Object.assign(new Error('Unauthorized'), {
+            name: 'HTTPError',
+            response: { status: 401 },
+        })
+        mockSendShouldRefreshRequest.mockRejectedValue(authError)
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        await new Promise(resolve => setTimeout(resolve, 3100))
+
+        expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
+
+        mockSendShouldRefreshRequest.mockClear()
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: false,
+            round: null,
+        })
+        service.restart()
+
+        await new Promise(resolve => setTimeout(resolve, 50)) // restart force-syncs first
+        await new Promise(resolve => setTimeout(resolve, 3100)) // then should-refresh resumes
+
+        service.stop()
+        vi.useFakeTimers()
+
+        expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
+    }, 8000)
+
+    it('still force-syncs a never-synced network through the auth backoff, on that tick and subsequent ticks', async () => {
+        // lastRefreshedRound stays null throughout (default mock) so the
+        // network is never-synced on every tick — algod/indexer use
+        // separate credentials from the backend key, so a 401 there must
+        // not block the force-sync fallback.
+        const authError = Object.assign(new Error('Unauthorized'), {
+            name: 'HTTPError',
+            response: { status: 401 },
+        })
+        mockSendShouldRefreshRequest.mockRejectedValue(authError)
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50)) // 1st tick: force-sync (initial)
+
+        vi.mocked(fetchAndPersistAccount).mockClear()
+        await new Promise(resolve => setTimeout(resolve, 3100)) // 2nd tick: should-refresh -> 401, but never-synced still force-syncs
+
+        expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
+        expect(fetchAndPersistAccount).toHaveBeenCalled()
+
+        mockSendShouldRefreshRequest.mockClear()
+        vi.mocked(fetchAndPersistAccount).mockClear()
+        await new Promise(resolve => setTimeout(resolve, 3100)) // 3rd tick: guarded (no request), never-synced force-sync still fires
+
+        service.stop()
+        vi.useFakeTimers()
+
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        expect(fetchAndPersistAccount).toHaveBeenCalled()
+    }, 8000)
+
+    it('once synced, does not re-issue the should-refresh request or re-log the warning', async () => {
+        const authError = Object.assign(new Error('Unauthorized'), {
+            name: 'HTTPError',
+            response: { status: 401 },
+        })
+        mockSendShouldRefreshRequest.mockRejectedValue(authError)
+        const { logger } = await import('@perawallet/wallet-core-shared')
+        const { usePollingStore } =
+            await import('@perawallet/wallet-core-polling')
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50)) // 1st tick: force-sync
+        await new Promise(resolve => setTimeout(resolve, 3100)) // 2nd tick: should-refresh -> 401, flag set
+
+        expect(logger.warn).toHaveBeenCalledTimes(1)
+
+        // Simulate the network becoming synced (lastRefreshedRound no longer null).
+        usePollingStore.getState = vi.fn(() => ({
+            lastRefreshedRound: { mainnet: 100, testnet: null },
+            setLastRefreshedRound: mockSetLastRefreshedRound,
+        }))
+        vi.mocked(logger.warn).mockClear()
+        mockSendShouldRefreshRequest.mockClear()
+        vi.mocked(fetchAndPersistAccount).mockClear()
+
+        await new Promise(resolve => setTimeout(resolve, 3100)) // 3rd tick: now synced — guarded, no fallback
+
+        service.stop()
+        vi.useFakeTimers()
+
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        expect(logger.warn).not.toHaveBeenCalled()
+        expect(fetchAndPersistAccount).not.toHaveBeenCalled()
+    }, 8000)
+
     it('rate-limited failures trigger backoff on the next tick', async () => {
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
@@ -798,6 +951,26 @@ describe('SyncService', () => {
             queryClient,
             ['ADDR1'],
         )
+    })
+
+    describe('pollIntervalMs', () => {
+        it('uses the injected pollIntervalMs as the reschedule cadence', async () => {
+            const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')
+            const custom = new SyncService({
+                queryClient,
+                pollIntervalMs: 12345,
+            } as SyncServiceDeps)
+
+            custom.start()
+            await vi.advanceTimersByTimeAsync(0)
+            custom.stop()
+
+            expect(
+                setTimeoutSpy.mock.calls.some(call => call[1] === 12345),
+            ).toBe(true)
+
+            setTimeoutSpy.mockRestore()
+        })
     })
 
     it('does not invalidate transaction queries when every account transaction fetch fails', async () => {

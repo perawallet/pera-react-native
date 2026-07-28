@@ -37,6 +37,25 @@ pipelines:
       tag:
       - name:
           regex: "^v[0-9]+\\.[0-9]+\\.[0-9]+(-(alpha|rc)\\.[0-9]+)?$"
+  web-release-builds:
+    description: Build the browser extension (Web) zip for staging + production.
+      Manual-trigger only for now — no automatic tag/nightly trigger, and no
+      Chrome Web Store upload.
+    workflows:
+      test: {}
+      generate-changelog: {}
+      web-production:
+        depends_on:
+        - test
+      web-staging:
+        depends_on:
+        - test
+      notify-release-web:
+        depends_on:
+        - generate-changelog
+        - web-production
+        - web-staging
+        should_always_run: workflow
 workflows:
   test:
     description: Run tests before release
@@ -736,6 +755,148 @@ workflows:
             set -ex
             # BITRISE_PUBLIC_INSTALL_PAGE_URL is set by deploy-to-bitrise-io
             envman add --key INSTALL_PAGE_URL --value "${BITRISE_PUBLIC_INSTALL_PAGE_URL:-}"
+  web-staging:
+    description: Build the browser extension (Web) Staging zip
+    envs:
+    - ENVIRONMENT: staging
+    - APP_ENV: staging
+    - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+    - VALIDATE_PROFILE: web
+    - ROW_ID: WEB_STAGING
+    after_run:
+    - _web-build
+    - _publish-result
+    meta:
+      bitrise.io:
+        stack: ubuntu-noble-24.04-bitrise-2025-android
+  web-production:
+    description: Build the browser extension (Web) Production zip
+    envs:
+    - ENVIRONMENT: production
+    - APP_ENV: production
+    - VALIDATE_PROFILE: web
+    - ROW_ID: WEB_PRODUCTION
+    after_run:
+    - _web-build
+    - _publish-result
+    meta:
+      bitrise.io:
+        stack: ubuntu-noble-24.04-bitrise-2025-android
+  _web-build:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        title: Validate environment
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            ./tools/validate-env.sh
+    - restore-cache@3:
+        inputs:
+        - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+    - nvm@1:
+        inputs:
+        - node_version_file: ".tool-versions"
+    - script@1:
+        title: Install pnpm
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # Pin to the repo's packageManager version — an unpinned
+            # `npm i -g pnpm` floats to latest and a pnpm major release
+            # would change lockfile/hoisting behavior under the release
+            # builds without any repo change. split('+') strips a Corepack
+            # hash suffix (e.g. pnpm@10.28.1+sha512-…) that npm can't install.
+            PNPM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
+            npm install -g "pnpm@${PNPM_VERSION}"
+    - script@1:
+        title: Install dependencies
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            pnpm install --frozen-lockfile --prefer-offline
+    - save-cache@1:
+        inputs:
+        - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+        - paths: |-
+            node_modules
+            apps/mobile/node_modules
+            packages/*/node_modules
+    - script@1:
+        title: Setup Env Secrets
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            ./tools/setup-env-secrets.sh
+    - script@1:
+        title: Generate Config
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # APP_ENV must be set here so generate-config.sh bakes
+            # appEnvironment into the bundled config (defaults to development).
+            export APP_ENV="${ENVIRONMENT:-development}"
+            pnpm run generate:config
+    - script@1:
+        title: Build packages
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # Unlike the mobile build (which only needs `packages/*`), the
+            # extension also depends on workspace packages under
+            # `extensions/*` (platform-chrome, keystore-chrome, ledger-web-*).
+            # `--filter=...extension` walks the real dependency graph instead
+            # of a path glob, so it picks up both.
+            export APP_ENV="${ENVIRONMENT:-development}"
+            pnpm exec turbo run build --filter=...extension
+    - script@1:
+        title: Bundle extension (Web)
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            pnpm --filter extension bundle
+    - script@1:
+        title: Zip extension bundle
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            sudo apt-get update -y
+            sudo apt-get install -y zip
+            SHA="$(printf '%s' "${BITRISE_GIT_COMMIT:-$GIT_CLONE_COMMIT_HASH}" | cut -c1-7)"
+            NAME="pera-extension-web-${BITRISE_GIT_TAG:-b$BITRISE_BUILD_NUMBER}-${SHA:-b$BITRISE_BUILD_NUMBER}.zip"
+            DEST="${BITRISE_DEPLOY_DIR}/${NAME}"
+            (cd apps/extension/dist && zip -r "$DEST" .)
+            envman add --key BITRISE_EXTENSION_ZIP_PATH --value "$DEST"
+    - deploy-to-bitrise-io@2:
+        is_always_run: true
+        inputs:
+        - notify_user_groups: none
+        - is_enable_public_page: 'true'
+    - script@1:
+        is_always_run: true
+        title: Capture artifact URLs
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            # set -e without -x: keep temporary S3 download signatures out of the trace log.
+            set -e
+            INSTALL_URL="${BITRISE_PUBLIC_INSTALL_PAGE_URL:-}"
+            if [ -z "$INSTALL_URL" ] && [ -n "${BITRISE_PERMANENT_DOWNLOAD_URL_MAP:-}" ]; then
+              IFS='|' read -ra ADDR <<< "$BITRISE_PERMANENT_DOWNLOAD_URL_MAP"
+              for i in "${ADDR[@]}"; do
+                if [[ "$i" =~ pera-extension-web-.*\.zip=\>(.+) ]]; then
+                  INSTALL_URL="${BASH_REMATCH[1]}"
+                  break
+                fi
+              done
+            fi
+            envman add --key INSTALL_PAGE_URL --value "$INSTALL_URL"
   _publish-result:
     steps:
     - script@1:
@@ -756,6 +917,116 @@ workflows:
             ${ROW_ID}_STATUS
             ${ROW_ID}_URL
             ${ROW_ID}_INSTALL
+  notify-release-web:
+    description: Post one consolidated Web (browser extension) release card (all
+      build statuses + changelog) — mirrors notify-release's structure/format for
+      the RN builds, kept as a separate card since web-release-builds is a
+      separate, manually-triggered pipeline.
+    meta:
+      bitrise.io:
+        stack: ubuntu-noble-24.04-bitrise-2025-android
+        machine_type_id: g2.linux.medium
+    steps:
+    - script@1:
+        is_always_run: true
+        title: Send Web Release Slack Notification
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            # set -e without -x: keep the Slack webhook URL out of the trace log.
+            set -e
+
+            # Channel label and tag/branch from tag shape or fallback.
+            if [ -n "${BITRISE_GIT_TAG:-}" ]; then
+              TAG_OR_BRANCH="$BITRISE_GIT_TAG"
+              case "$BITRISE_GIT_TAG" in
+                *-alpha.*) CHANNEL="Nightly" ;;
+                *-rc.*)    CHANNEL="RC" ;;
+                v*)        CHANNEL="Release" ;;
+                *)         CHANNEL="Release" ;;
+              esac
+            else
+              TAG_OR_BRANCH="${BITRISE_GIT_BRANCH:-manual}"
+              CHANNEL="Manual"
+            fi
+
+            # One mrkdwn row per build. Platform/env/destination are static;
+            # status + links come from each build's shared pipeline variables
+            # (empty status = the build never ran). Literal \n separates rows.
+            row() { # $1 status  $2 build_url  $3 install_url  $4 artifact_label  $5 label  $6 dest
+              local e
+              case "$1" in
+                ok)   e="✅" ;;
+                fail) e="❌" ;;
+                *)    e="⏭️" ;;
+              esac
+              local r="${e}  *${5}*  →  ${6}"
+              if [ -n "$2" ]; then r="${r}  ·  <${2}|Build>"; fi
+              if [ -n "$3" ] && [ -n "$4" ]; then r="${r}  ·  <${3}|${4}>"; fi
+              printf '%s' "$r"
+            }
+
+            ROWS="$(row "${WEB_PRODUCTION_STATUS:-}" "${WEB_PRODUCTION_URL:-}" "${WEB_PRODUCTION_INSTALL:-}" "Zip" "Web production" "Bitrise artifact")"
+            ROWS="${ROWS}\n$(row "${WEB_STAGING_STATUS:-}" "${WEB_STAGING_URL:-}" "${WEB_STAGING_INSTALL:-}" "Zip" "Web staging" "Bitrise artifact")"
+
+            # Header icon per channel on success (any failed build flips it
+            # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
+            case "$CHANNEL" in
+              Release) OVERALL="🚀" ;;
+              RC)      OVERALL="⭐" ;;
+              Nightly) OVERALL="🌙" ;;
+              *)       OVERALL="📦" ;;
+            esac
+            COLOR="#36a64f"
+            for s in "${WEB_STAGING_STATUS:-}" "${WEB_PRODUCTION_STATUS:-}"; do
+              if [ "$s" = "fail" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
+            done
+
+            # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
+            # and the release card silently never arrives. --retry covers
+            # transient Slack hiccups (retries only transient failures).
+            curl -sS --fail-with-body --retry 2 --max-time 30 -X POST "$SLACK_WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -d @- << EOF
+            {
+              "username": "Bitrise",
+              "icon_emoji": ":bitrise:",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${OVERALL} Web ${CHANNEL} ${TAG_OR_BRANCH}",
+                    "emoji": true
+                  }
+                }
+              ],
+              "attachments": [
+                {
+                  "color": "${COLOR}",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "${ROWS}"
+                      }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Changes since last build:*\n${CHANGELOG}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+            EOF
   notify-release:
     description: Post one consolidated release card (all build statuses + changelog)
     meta:
@@ -767,204 +1038,104 @@ workflows:
         is_always_run: true
         title: Send Release Slack Notification
         inputs:
-        - content: "#!/usr/bin/env bash
-
-            # set -e without -x: keep the Slack webhook URL out of the trace
-            log.
-
+        - content: |
+            #!/usr/bin/env bash
+            # set -e without -x: keep the Slack webhook URL out of the trace log.
             set -e
 
-
-            # Non-tag / manual runs have no release to announce.
-
-            if [ -z \"${BITRISE_GIT_TAG:-}\" ]; then
-
-            \  echo \"No release tag; skipping release notification\"
-
-            \  exit 0
-
+            # Channel label and tag/branch from tag shape or fallback.
+            if [ -n "${BITRISE_GIT_TAG:-}" ]; then
+              TAG_OR_BRANCH="$BITRISE_GIT_TAG"
+              case "$BITRISE_GIT_TAG" in
+                *-alpha.*) CHANNEL="Nightly" ;;
+                *-rc.*)    CHANNEL="RC" ;;
+                v*)        CHANNEL="Release" ;;
+                *)         CHANNEL="Release" ;;
+              esac
+            else
+              TAG_OR_BRANCH="${BITRISE_GIT_BRANCH:-manual}"
+              CHANNEL="Manual"
             fi
-
-
-            # Channel label from the tag shape.
-
-            case \"$BITRISE_GIT_TAG\" in
-
-            \  *-alpha.*) CHANNEL=\"Nightly\" ;;
-
-            \  *-rc.*)    CHANNEL=\"RC\" ;;
-
-            \  v*)        CHANNEL=\"Release\" ;;
-
-            esac
-
 
             # One mrkdwn row per build. Platform/env/destination are static;
-
             # status + links come from each build's shared pipeline variables
-
-            # (empty status = the build never ran). Literal \\n separates rows.
-
-            row() { # $1 status  $2 build_url  $3 install_url  $4
-            artifact_label  $5 label  $6 dest
-
-            \  local e
-
-            \  case \"$1\" in
-
-            \    ok)   e=\"✅\" ;;
-
-            \    fail) e=\"❌\" ;;
-
-            \    *)    e=\"⏭️\" ;;
-
-            \  esac
-
-            \  local r=\"${e}  *${5}*  →  ${6}\"
-
-            \  if [ -n \"$2\" ]; then r=\"${r}  ·  <${2}|Build>\"; fi
-
-            \  if [ -n \"$3\" ] && [ -n \"$4\" ]; then
-            r=\"${r}  ·  <${3}|${4}>\"; fi
-
-            \  printf '%s' \"$r\"
-
+            # (empty status = the build never ran). Literal \n separates rows.
+            row() { # $1 status  $2 build_url  $3 install_url  $4 artifact_label  $5 label  $6 dest
+              local e
+              case "$1" in
+                ok)   e="✅" ;;
+                fail) e="❌" ;;
+                *)    e="⏭️" ;;
+              esac
+              local r="${e}  *${5}*  →  ${6}"
+              if [ -n "$2" ]; then r="${r}  ·  <${2}|Build>"; fi
+              if [ -n "$3" ] && [ -n "$4" ]; then r="${r}  ·  <${3}|${4}>"; fi
+              printf '%s' "$r"
             }
 
-
-            ROWS=\"$(row \"${ANDROID_PRODUCTION_STATUS:-}\"
-            \"${ANDROID_PRODUCTION_URL:-}\" \"${ANDROID_PRODUCTION_INSTALL:-}\"
-            \"APK\" \"Android production\" \"Play internal\")\"
-
-            ROWS=\"${ROWS}\\n$(row \"${ANDROID_STAGING_STATUS:-}\"
-            \"${ANDROID_STAGING_URL:-}\" \"${ANDROID_STAGING_INSTALL:-}\"
-            \"APK\" \"Android staging\" \"Firebase\")\"
-
-            ROWS=\"${ROWS}\\n$(row \"${IOS_PRODUCTION_STATUS:-}\"
-            \"${IOS_PRODUCTION_URL:-}\" \"\" \"\" \"iOS production\"
-            \"TestFlight\")\"
-
-            ROWS=\"${ROWS}\\n$(row \"${IOS_STAGING_STATUS:-}\"
-            \"${IOS_STAGING_URL:-}\" \"\" \"\" \"iOS staging\" \"TestFlight\")\"
-
+            ROWS="$(row "${ANDROID_PRODUCTION_STATUS:-}" "${ANDROID_PRODUCTION_URL:-}" "${ANDROID_PRODUCTION_INSTALL:-}" "APK" "Android production" "Play internal")"
+            ROWS="${ROWS}\n$(row "${ANDROID_STAGING_STATUS:-}" "${ANDROID_STAGING_URL:-}" "${ANDROID_STAGING_INSTALL:-}" "APK" "Android staging" "Firebase")"
+            ROWS="${ROWS}\n$(row "${IOS_PRODUCTION_STATUS:-}" "${IOS_PRODUCTION_URL:-}" "" "" "iOS production" "TestFlight")"
+            ROWS="${ROWS}\n$(row "${IOS_STAGING_STATUS:-}" "${IOS_STAGING_URL:-}" "" "" "iOS staging" "TestFlight")"
 
             # Header icon per channel on success (any failed build flips it
-
-            # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly.
-
-            case \"$CHANNEL\" in
-
-            \  Release) OVERALL=\"🚀\" ;;
-
-            \  RC)      OVERALL=\"⭐\" ;;
-
-            \  Nightly) OVERALL=\"🌙\" ;;
-
+            # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
+            case "$CHANNEL" in
+              Release) OVERALL="🚀" ;;
+              RC)      OVERALL="⭐" ;;
+              Nightly) OVERALL="🌙" ;;
+              *)       OVERALL="📦" ;;
             esac
-
-            COLOR=\"#36a64f\"
-
-            for s in \"${IOS_STAGING_STATUS:-}\" \"${IOS_PRODUCTION_STATUS:-}\"
-            \"${ANDROID_STAGING_STATUS:-}\" \"${ANDROID_PRODUCTION_STATUS:-}\";
-            do
-
-            \  if [ \"$s\" = \"fail\" ]; then OVERALL=\"❌\"; COLOR=\"#ec0000\";
-            fi
-
+            COLOR="#36a64f"
+            for s in "${IOS_STAGING_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}"; do
+              if [ "$s" = "fail" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
             done
 
-
             # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
-
             # and the release card silently never arrives. --retry covers
-
             # transient Slack hiccups (retries only transient failures).
-
-            curl -sS --fail-with-body --retry 2 --max-time 30 -X POST
-            \"$SLACK_WEBHOOK_URL\" \\
-
-            \  -H \"Content-Type: application/json\" \\
-
-            \  -d @- << EOF
-
+            curl -sS --fail-with-body --retry 2 --max-time 30 -X POST "$SLACK_WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -d @- << EOF
             {
-
-            \  \"username\": \"Bitrise\",
-
-            \  \"icon_emoji\": \":bitrise:\",
-
-            \  \"blocks\": [
-
-            \    {
-
-            \      \"type\": \"header\",
-
-            \      \"text\": {
-
-            \        \"type\": \"plain_text\",
-
-            \        \"text\": \"${OVERALL} RN ${CHANNEL} ${BITRISE_GIT_TAG}\",
-
-            \        \"emoji\": true
-
-            \      }
-
-            \    }
-
-            \  ],
-
-            \  \"attachments\": [
-
-            \    {
-
-            \      \"color\": \"${COLOR}\",
-
-            \      \"blocks\": [
-
-            \        {
-
-            \          \"type\": \"section\",
-
-            \          \"text\": {
-
-            \            \"type\": \"mrkdwn\",
-
-            \            \"text\": \"${ROWS}\"
-
-            \          }
-
-            \        },
-
-            \        {
-
-            \          \"type\": \"divider\"
-
-            \        },
-
-            \        {
-
-            \          \"type\": \"section\",
-
-            \          \"text\": {
-
-            \            \"type\": \"mrkdwn\",
-
-            \            \"text\": \"*Changes since last
-            build:*\\n${CHANGELOG}\"
-
-            \          }
-
-            \        }
-
-            \      ]
-
-            \    }
-
-            \  ]
-
+              "username": "Bitrise",
+              "icon_emoji": ":bitrise:",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${OVERALL} RN ${CHANNEL} ${TAG_OR_BRANCH}",
+                    "emoji": true
+                  }
+                }
+              ],
+              "attachments": [
+                {
+                  "color": "${COLOR}",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "${ROWS}"
+                      }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Changes since last build:*\n${CHANGELOG}"
+                      }
+                    }
+                  ]
+                }
+              ]
             }
-
-            EOF\n"
+            EOF
 meta:
   bitrise.io:
     stack: ubuntu-noble-24.04-bitrise-2025-android

@@ -14,6 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import {
     AppError,
+    NoConnectionError,
     PeraNetworkError,
     logger,
 } from '@perawallet/wallet-core-shared'
@@ -309,6 +310,23 @@ describe('useErrorToast', () => {
             {
                 title: 'Custom fallback title',
                 body: 'errors.general.body',
+                type: 'error',
+            },
+            undefined,
+        )
+    })
+
+    it('shows localized offline copy for NoConnectionError', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(new NoConnectionError())
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'errors.network.no_connection.title',
+                body: 'errors.network.no_connection.body',
                 type: 'error',
             },
             undefined,

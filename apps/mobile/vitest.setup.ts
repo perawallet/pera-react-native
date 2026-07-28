@@ -2297,8 +2297,28 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         }
     }
 
+    // Mirrors packages/shared/src/errors/network-validation.ts's
+    // NoConnectionError (via NetworkError → AppError). Declared here (rather
+    // than only in the returned object below) so getNetworkErrorMessageKeys
+    // can reference it.
+    class NoConnectionError extends AppError {
+        constructor() {
+            super('No network connection found')
+            this.name = 'NoConnectionError'
+        }
+    }
+
     const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
         error instanceof PeraNetworkError
+
+    // `ky` isn't a direct dependency of apps/mobile, so this mirrors ky's
+    // isNetworkError predicate structurally (same name check used by
+    // isTransientNetworkError above) instead of importing the real module.
+    const isConnectivityError = (error: unknown): boolean => {
+        if (isPeraNetworkError(error)) return error.kind === 'offline'
+        if (error instanceof NoConnectionError) return true
+        return (error as { name?: string } | null)?.name === 'NetworkError'
+    }
 
     const keysFor = (base: string): { titleKey: string; bodyKey: string } => ({
         titleKey: `${base}.title`,
@@ -2308,6 +2328,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const getNetworkErrorMessageKeys = (
         error: unknown,
     ): { titleKey: string; bodyKey: string } => {
+        if (error instanceof NoConnectionError) {
+            return keysFor('errors.network.no_connection')
+        }
+
         if (!isPeraNetworkError(error)) return keysFor('errors.general')
 
         switch (error.kind) {
@@ -2454,6 +2478,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         AppError,
         PeraNetworkError,
         isPeraNetworkError,
+        isConnectivityError,
         getNetworkErrorMessageKeys,
         ErrorSeverity: { LOW: 'low', MEDIUM: 'medium', HIGH: 'high' },
         ErrorCategory: {
@@ -2494,12 +2519,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         // Mirrors packages/shared/src/api/mutation-policy.ts.
         mutationDefaults: { throwOnError: false, networkMode: 'always' },
         assertOnline: vi.fn(),
-        NoConnectionError: class NoConnectionError extends Error {
-            constructor() {
-                super('No network connection found')
-                this.name = 'NoConnectionError'
-            }
-        },
+        NoConnectionError,
     }
 })
 

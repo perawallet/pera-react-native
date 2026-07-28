@@ -14,6 +14,7 @@ import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FundingType, OnboardingStep } from '@perawallet/wallet-core-card'
+import { config } from '@perawallet/wallet-core-config'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockSetOnboardingStep = vi.fn()
@@ -111,6 +112,26 @@ vi.mock('@modules/webview', () => ({
     useWebView: () => ({ pushWebView: mockPushWebView }),
 }))
 
+const mockOpenURL = vi.fn()
+vi.mock('react-native', async importOriginal => {
+    const actual = await importOriginal<object>()
+    return {
+        ...actual,
+        Linking: { openURL: (...args: unknown[]) => mockOpenURL(...args) },
+    }
+})
+
+// Mutable capability map: mutate `mockCapabilities` per test to simulate the
+// native-shaped (inAppWebView: true) and web-shaped (false) route capability
+// maps without re-mocking.
+const { mockCapabilities } = vi.hoisted(() => ({
+    mockCapabilities: { inAppWebView: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockCapabilities,
+}))
+
 const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -171,6 +192,7 @@ const account = (
 
 beforeEach(() => {
     vi.clearAllMocks()
+    Object.assign(mockCapabilities, { inAppWebView: true })
     mockVerificationState = null
     mockHasPollTimedOut = false
     mockIsStateUnknown = false
@@ -565,6 +587,19 @@ describe('useCardOnboardingStatusScreen', () => {
         expect(mockPushWebView).toHaveBeenCalledWith(
             expect.objectContaining({ id: 'card-support' }),
         )
+        expect(mockOpenURL).not.toHaveBeenCalled()
+    })
+
+    it('opens support in a browser tab when inAppWebView is off (web)', () => {
+        Object.assign(mockCapabilities, { inAppWebView: false })
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleOpenSupport()
+        })
+
+        expect(mockOpenURL).toHaveBeenCalledWith(config.supportBaseUrl)
+        expect(mockPushWebView).not.toHaveBeenCalled()
     })
 
     describe('auto-connect after add-account', () => {

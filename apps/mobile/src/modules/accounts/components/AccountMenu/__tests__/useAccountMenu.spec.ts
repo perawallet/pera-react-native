@@ -11,8 +11,9 @@
  */
 
 import { renderHook, act } from '@test-utils/render'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 
 // Mutable global-selection state + fixtures must be hoisted so the vi.mock
 // factory (hoisted above imports) can reference them safely.
@@ -236,5 +237,50 @@ describe('useAccountMenu pera card row', () => {
         expect(
             result.current.listItems.every(item => item.kind === 'account'),
         ).toBe(true)
+    })
+})
+
+const scrollEvent = (
+    offsetY: number,
+): NativeSyntheticEvent<NativeScrollEvent> =>
+    ({
+        nativeEvent: { contentOffset: { y: offsetY } },
+    }) as NativeSyntheticEvent<NativeScrollEvent>
+
+describe('useAccountMenu chart collapse settle window', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockState.globalSelected = 'ADDR_A'
+        vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
+    it('ignores a re-expand scroll immediately after a collapse flip (feedback-loop guard)', () => {
+        const { result } = renderHook(() => useAccountMenu(baseProps()))
+
+        act(() => result.current.handleListScroll(scrollEvent(49)))
+        expect(result.current.isChartCollapsed).toBe(true)
+
+        // Scroll anchoring driving the offset back to the top right after the
+        // flip must not immediately re-expand the chart.
+        act(() => result.current.handleListScroll(scrollEvent(0)))
+        expect(result.current.isChartCollapsed).toBe(true)
+    })
+
+    it('allows flipping again once the settle window elapses', () => {
+        const { result } = renderHook(() => useAccountMenu(baseProps()))
+
+        act(() => result.current.handleListScroll(scrollEvent(49)))
+        expect(result.current.isChartCollapsed).toBe(true)
+
+        act(() => {
+            vi.advanceTimersByTime(251)
+        })
+
+        act(() => result.current.handleListScroll(scrollEvent(0)))
+        expect(result.current.isChartCollapsed).toBe(false)
     })
 })

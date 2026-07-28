@@ -90,11 +90,22 @@ const setOwnedAssets = (assets: PeraAsset[]) => {
     mockUseOwnedAssets.mockReturnValue({ assets, isLoading: false })
 }
 
+const mockAssetSearchQuery = (overrides: {
+    results: unknown[]
+    isLoading: boolean
+    isError: boolean
+    isPaused: boolean
+    hasNextPage: boolean
+    isFetchingNextPage: boolean
+    fetchNextPage: () => void
+}) => mockUseAssetSearchQuery.mockReturnValue(overrides)
+
 beforeEach(() => {
     mockUseAssetSearchQuery.mockReturnValue({
         results: [],
         isLoading: false,
         isError: false,
+        isPaused: false,
         isFetchingNextPage: false,
         hasNextPage: false,
         fetchNextPage: vi.fn(),
@@ -102,6 +113,29 @@ beforeEach(() => {
 })
 
 describe('useGlobalSearch', () => {
+    test('passes through the remote asset query error/paused flags', () => {
+        mockAllAccounts.mockReturnValue([])
+        mockFindContacts.mockReturnValue([])
+        setOwnedAssets([])
+        mockAssetSearchQuery({
+            results: [],
+            isLoading: false,
+            isError: true,
+            isPaused: false,
+            hasNextPage: false,
+            isFetchingNextPage: false,
+            fetchNextPage: vi.fn(),
+        })
+
+        const { result } = renderHook(
+            () => useGlobalSearch({ debounceMs: 0, scopes: ['assets'] }),
+            { wrapper: makeWrapper() },
+        )
+
+        expect(result.current.isRemoteError).toBe(true)
+        expect(result.current.isRemotePaused).toBe(false)
+    })
+
     test('returns empty results with empty query', () => {
         mockAllAccounts.mockReturnValue([makeAccount('ALICE', 'Alice')])
         mockFindContacts.mockReturnValue([])

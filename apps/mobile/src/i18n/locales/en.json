@@ -1,4 +1,33 @@
 {
+    "dapp": {
+        "enable": {
+            "title": "Connect to this site",
+            "description": "Select the accounts you want to share with this site.",
+            "connect_button": "Connect",
+            "cancel_button": "Cancel"
+        },
+        "sign": {
+            "error": {
+                "title": "Can't process this request",
+                "body": "This site sent a request Pera couldn't read. The request has been declined.",
+                "dismiss": "Close"
+            },
+            "network_mismatch": "This transaction is for a different Algorand network than your wallet's active network. Switch networks in Settings, then try again.",
+            "unsupported_message": "This site sent a message-signing request Pera can't process. The request has been declined.",
+            "unauthorized_signer": "This site isn't authorized to request a signature for that account."
+        },
+        "passkey": {
+            "create": {
+                "title": "Create a passkey for this site"
+            },
+            "get": {
+                "title": "Sign in with a passkey"
+            },
+            "approve_button": "Continue",
+            "decline_button": "Cancel",
+            "error": "Pera couldn't complete this passkey request. The request has been declined."
+        }
+    },
     "account_menu": {
         "title": "Accounts",
         "sort": "Sort",
@@ -449,6 +478,14 @@
             "title": "Find a QR Code to Scan"
         }
     },
+    "qr_scanner": {
+        "title": "Scan a QR Code",
+        "camera_unavailable": "Camera unavailable. Paste the code below instead.",
+        "scan_with_camera": "Open camera scanner in a tab",
+        "paste_label": "Or paste a QR payload",
+        "paste_placeholder": "Paste an address or WalletConnect URI",
+        "paste_submit": "Submit"
+    },
     "chart": {
         "one_week": {
             "label": "1W"
@@ -464,6 +501,7 @@
         "offline_mode": "Offline Mode",
         "offline_refresh_body": "You're offline — this will refresh automatically once you're back online.",
         "back_online": "Back online",
+        "testnet_indicator": "TestNet",
         "yes": "Yes",
         "no": "No",
         "enter_stealth_mode": "Enter Stealth Mode",
@@ -1858,6 +1896,8 @@
         "wallet_connect": "Wallet Connect",
         "wallet_connect_details": "Connection Details",
         "passkeys": "Passkeys",
+        "connected_sites": "Connected Sites",
+        "connections": "Connections",
         "currency": "Currency",
         "theme": "Theme",
         "developer_settings": "Developer Settings",
@@ -2031,7 +2071,11 @@
         "currency": {
             "title": "Main Currency",
             "description": "Your main currency is <0>{{preferredCurrency}}</0>, and secondary currency is <0>{{fallbackCurrency}}</0>.",
-            "search_placeholder": "Search"
+            "search_placeholder": "Search",
+            "offline_rate": {
+                "title": "Rate unavailable offline",
+                "body": "{{currency}} amounts can't be shown until you're back online. Your selection has been saved."
+            }
         },
         "main": {
             "account_section": "Account",
@@ -2040,6 +2084,8 @@
             "scan_rekeyed_title": "Scan for Rekeyed Accounts",
             "wallet_connect_title": "WalletConnect Sessions",
             "passkeys_title": "Passkeys",
+            "connected_sites_title": "Connected Sites",
+            "connections_title": "Connections",
             "app_preferences_section": "App Preferences",
             "currency_title": "Currency",
             "theme_title": "Theme",
@@ -2172,7 +2218,26 @@
             "hd_wallet_warning_title": "Universal wallet required",
             "hd_wallet_warning_body": "Passkeys are derived from a Universal Wallet's recovery passphrase. Create or recover a Universal Wallet on this device to use passkeys.",
             "hd_wallet_required_body": "You can't use passkeys until you have a Universal Wallet on this device. Create or recover one, then scan again.",
-            "hd_wallet_required_dismiss": "Got it"
+            "hd_wallet_required_dismiss": "Got it",
+            "interception_toggle_title": "Passkey Autofill",
+            "interception_toggle_body_enabled": "Pera Wallet can save and offer passkeys for sites you sign in to.",
+            "interception_toggle_body_disabled": "Turn this on to let Pera Wallet save and offer passkeys for sites you sign in to."
+        },
+        "connected_sites": {
+            "empty_title": "No connected sites",
+            "empty_body": "Sites you connect your wallet to will appear here.",
+            "accounts_count": "{{count}} accounts",
+            "accounts_count_one": "{{count}} account",
+            "revoke_title": "Disconnect site",
+            "revoke_body": "{{origin}} will no longer have access to your connected accounts. You can reconnect any time from the site.",
+            "revoke_confirm": "Disconnect",
+            "revoke_cancel": "Cancel"
+        },
+        "connections": {
+            "empty_title": "No connections",
+            "empty_body": "Your WalletConnect sessions and connected sites will appear here.",
+            "badge_wallet_connect": "WalletConnect",
+            "badge_dapp": "Dapp"
         }
     },
     "signing": {
@@ -2793,10 +2858,17 @@
             "transport_usb": "USB",
             "retry": "Scan Again",
             "error": "Scan failed. Make sure Bluetooth is enabled and try again.",
+            "usb_error": "No Ledger device found over USB. Check that it's plugged in, unlocked, and try again.",
             "location_services_disabled": "Turn on Location in your device settings to search for nearby Ledger devices.",
             "open_location_settings": "Open Location Settings",
             "grant_permission": "Grant Permission",
             "open_settings": "Open Settings",
+            "web_start_title": "Ready to Search",
+            "web_start_body": "Your browser will ask you to select your Ledger device.",
+            "web_start_button": "Search for Ledger",
+            "popup_launch_title": "Ready to Pair",
+            "popup_launch_body": "This opens a new browser tab where you can search for and connect your Ledger device.",
+            "popup_launch_button": "Launch Pairing",
             "bluetooth": {
                 "off_title": "Bluetooth Error",
                 "off": "Bluetooth must be enabled on your device in order to search for nearby Ledger devices.",
@@ -3220,6 +3292,60 @@
         "ZM": "Zambia",
         "ZR": "Congo - Kinshasa",
         "ZW": "Zimbabwe"
+    },
+    "vault": {
+        "create_password": {
+            "title": "Create a Password",
+            "description": "Set a password to protect your Pera Wallet extension. You'll need it each time you open the extension.",
+            "password_placeholder": "Enter password",
+            "confirm_placeholder": "Confirm password",
+            "submit_button": "Create Password",
+            "error_too_short": "Password must be at least 8 characters",
+            "error_mismatch": "Passwords do not match",
+            "error": "Something went wrong creating your vault. Please try again."
+        },
+        "unlock": {
+            "title": "Unlock Pera Wallet",
+            "description": "Enter your password to unlock the extension.",
+            "password_placeholder": "Enter password",
+            "submit_button": "Unlock",
+            "use_passkey": "Use Passkey",
+            "error_invalid_password": "Incorrect password. Please try again.",
+            "corrupted_error": "Your vault data is corrupted and cannot be unlocked. You may need to reset the extension and restore from your backup.",
+            "passkey_error": "Passkey unlock failed. Use your password instead.",
+            "lockout_countdown": "Too many attempts. Try again in {{time}}"
+        },
+        "security": {
+            "autolock_title": "Auto-lock after",
+            "autolock_minutes": "{{minutes}} minutes",
+            "lock_now": "Lock wallet now",
+            "passkey_title": "Passkey unlock",
+            "passkey_enable": "Enable passkey unlock",
+            "passkey_disable": "Disable passkey unlock",
+            "passkey_password_placeholder": "Wallet password",
+            "passkey_error": "Could not enable passkey unlock. Check your password and try again.",
+            "passkey_enable_error": "Couldn't enable passkey unlock. Please try again.",
+            "change_password_title": "Change password",
+            "change_password_current_placeholder": "Current password",
+            "change_password_new_placeholder": "New password",
+            "change_password_confirm_placeholder": "Confirm new password",
+            "change_password_error_too_short": "Password must be at least 8 characters",
+            "change_password_error_mismatch": "Passwords do not match",
+            "change_password_error_invalid_current": "Current password is incorrect.",
+            "change_password_error_corrupted": "Vault data is corrupted or has an unsupported format. Please contact support.",
+            "change_password_error_unexpected": "Something went wrong changing your password. Please try again.",
+            "change_password_success": "Password changed successfully.",
+            "change_password_submit": "Change password"
+        },
+        "approval": {
+            "placeholder": "Approval surface — coming in M4."
+        },
+        "expanded": {
+            "onboarding_title": "Set up in a full tab",
+            "onboarding_body": "Wallet setup opens in a full browser tab so you can back up your recovery phrase safely.",
+            "onboarding_cta": "Continue in a new tab",
+            "redirecting": "Continuing in a new tab…"
+        }
     },
     "migration": {
         "splash": {

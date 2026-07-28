@@ -13,6 +13,10 @@
 import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import {
+    NoConnectionError,
+    PeraNetworkError,
+} from '@perawallet/wallet-core-shared'
 
 const mocks = vi.hoisted(() => ({ errorToast: vi.fn() }))
 
@@ -77,6 +81,57 @@ describe('useCardErrorToast', () => {
         expect(mocks.errorToast).toHaveBeenCalledWith(
             'peraCard.verification.error_title',
             'peraCard.verification.error_body',
+        )
+    })
+
+    it('shows localized offline copy for connectivity errors', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        await act(async () => {
+            await result.current(new NoConnectionError())
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'errors.network.no_connection.title',
+            'errors.network.no_connection.body',
+        )
+    })
+
+    it('shows localized offline copy for a proxy-route offline failure (PeraNetworkError)', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        await act(async () => {
+            await result.current(new PeraNetworkError('offline'))
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'errors.network.no_connection.title',
+            'errors.network.no_connection.body',
+        )
+    })
+
+    it('shows localized offline copy for a raw ky NetworkError (direct Baanx path)', async () => {
+        const { result } = renderHook(() => useCardErrorToast())
+
+        // ky wraps a fetch `TypeError('Network request failed')` into its own
+        // `NetworkError` (name: 'NetworkError') before it escapes the client —
+        // the shape direct (non-proxied) Baanx calls actually throw. `ky` isn't
+        // a direct dependency of apps/mobile, so this constructs that shape
+        // structurally instead of importing the real class (see
+        // vitest.setup.ts's isConnectivityError stand-in, which matches on
+        // `error.name === 'NetworkError'` for the same reason).
+        const networkError = new Error(
+            'Request failed due to a network error: GET /card',
+        )
+        networkError.name = 'NetworkError'
+
+        await act(async () => {
+            await result.current(networkError)
+        })
+
+        expect(mocks.errorToast).toHaveBeenCalledWith(
+            'errors.network.no_connection.title',
+            'errors.network.no_connection.body',
         )
     })
 

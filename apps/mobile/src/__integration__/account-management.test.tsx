@@ -11,11 +11,22 @@
  */
 
 import { useEffect } from 'react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest'
 import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import * as Clipboard from 'expo-clipboard'
 import { Notifier } from 'react-native-notifier'
 
+import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -24,6 +35,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCardSessionStore } from '@perawallet/wallet-core-card'
+import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
@@ -126,12 +138,25 @@ const resetNotificationPreferences = () => {
 }
 
 describe('Flow: Account management', () => {
+    // Only the notification-mute test below actually hits the network (the
+    // rest of this file's writes are local-only per the PERA-4585 audit) —
+    // but an unmatched request here would otherwise escape MSW and hit real
+    // staging, so give this file its own server lifecycle rather than
+    // relying on another integration file's beforeAll having started it.
+    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
+    afterAll(() => server.close())
+
     beforeEach(() => {
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([])
         resetNotificationPreferences()
         vi.mocked(Notifier.showNotification).mockClear()
         vi.mocked(Clipboard.setStringAsync).mockClear()
+        // Other tests in this file (rename, remove) also piggyback a
+        // best-effort device PUT once a device id is registered — leave the
+        // store at its ambient "no device" default here so they're unaffected.
+        // The notification-mute test below seeds its own device id locally.
+        useDeviceStore.getState().resetState()
     })
 
     afterEach(() => {
@@ -140,6 +165,8 @@ describe('Flow: Account management', () => {
         // Reset the card session so an activated state doesn't leak into other
         // tests (it flips the Pera Card row between its activate/connected forms).
         useCardSessionStore.getState().setAuthenticated(false)
+        useDeviceStore.getState().resetState()
+        server.resetHandlers()
     })
 
     it('Given two accounts with the first selected, when the user taps the second in the account menu, then the selected address switches', async () => {
@@ -354,6 +381,14 @@ describe('Flow: Account management', () => {
             useAccountsStore
                 .getState()
                 .setSelectedAccountAddress(ACCOUNT_A.address)
+            // useAccountNotificationEnabledMutation falls back to
+            // `deviceID ?? ''` when the device isn't registered, which would
+            // PATCH `/v1/devices//accounts/...` — a URL no handler matches.
+            // Seed a known device id (both networks, since the test env's
+            // default network isn't pinned here) so the request below is
+            // addressable; the shared afterEach resets it for other tests.
+            useDeviceStore.getState().setDeviceID('mainnet', 'test-device-id')
+            useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
             // Sanity: notifications are enabled by default — we want to
             // observe the toggle flipping a fresh account, not the
             // recovery from a prior disabled state.
@@ -361,6 +396,29 @@ describe('Flow: Account management', () => {
                 useNotificationPreferences(),
             )
             expect(notifBefore.current.disabledAccounts).toEqual([])
+
+            // The toggle now genuinely PATCHes the backend (that's the whole
+            // point of PERA-4585's fix) — mock it here rather than letting the
+            // request escape to the real network. Captures the payload too, so
+            // this pins the property Task 3 exists to guarantee: the right
+            // account and status are actually sent, not just the local store
+            // flip.
+            let patchBody: Record<string, unknown> | undefined
+            server.use(
+                http.patch(
+                    `*/v1/devices/test-device-id/accounts/${ACCOUNT_A.address}/`,
+                    async ({ request }) => {
+                        patchBody = (await request.json()) as Record<
+                            string,
+                            unknown
+                        >
+                        return HttpResponse.json(
+                            { has_new_notification: false },
+                            { status: 200 },
+                        )
+                    },
+                ),
+            )
 
             renderWithNavigation(
                 () => <AccountOptionsHost account={ACCOUNT_A} />,
@@ -399,6 +457,11 @@ describe('Flow: Account management', () => {
                     .mock.calls.map(call => call[0].title)
                 expect(titles).toContain('account_options.notifications_muted')
             })
+
+            // The success toast only fires after the PATCH resolves, so by
+            // this point the request has already landed — confirm it carried
+            // the correct (disabled) status for this account.
+            expect(patchBody).toEqual({ receive_notifications: false })
         },
         SLOW_TEST_TIMEOUT_MS,
     )

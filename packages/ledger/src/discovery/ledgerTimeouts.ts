@@ -14,14 +14,20 @@ import { withTimeout } from '@perawallet/wallet-core-shared'
 import {
     LEDGER_CONFIRMATION_TIMEOUT_MS,
     LEDGER_CONNECTION_TIMEOUT_MS,
-    LedgerConnectionError,
+    LedgerTimeoutError,
 } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 /**
  * Factory for the `rejectWith` callback of the shared `withTimeout` helper,
- * so Ledger call sites reject with a typed `LedgerConnectionError` (mapped
- * preset + Retry) rather than the generic `Error` the shared utility would
- * otherwise produce.
+ * so Ledger call sites reject with a typed `LedgerTimeoutError` (mapped to
+ * the dedicated "Request timed out" preset) rather than the generic `Error`
+ * the shared utility would otherwise produce.
+ *
+ * Previously this constructed `LedgerConnectionError` for every timeout —
+ * indistinguishable from a genuine connection failure, so a stuck on-device
+ * confirmation (nothing wrong with the connection, the user just hasn't
+ * confirmed/rejected yet) and an actual failed connect both surfaced the same
+ * generic "Connection failed" screen with no way to tell which had happened.
  *
  * `operation` is a developer-facing label for the error message (logs /
  * debugging only) — deliberately not localized. User-facing copy is resolved
@@ -30,7 +36,7 @@ import {
 export const ledgerTimeoutReason =
     (operation: string) =>
     (_op: string, ms: number): Error =>
-        new LedgerConnectionError(`${operation} timed out after ${ms}ms`)
+        new LedgerTimeoutError(`${operation} (${ms}ms ceiling)`)
 
 /**
  * Bounds a transport connect/derive call by the connection ceiling. Per the

@@ -133,6 +133,7 @@ export type SourceKind =
     | 'deeplink'
     | 'gift-card'
     | 'arc60'
+    | 'injected'
 
 export type TransportKind =
     | 'algod'

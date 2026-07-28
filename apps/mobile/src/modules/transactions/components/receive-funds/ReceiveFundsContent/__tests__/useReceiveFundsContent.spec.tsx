@@ -45,6 +45,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 describe('useReceiveFundsContent', () => {
     beforeEach(() => {
         useBottomSheetStore.getState().resetState()
+        useBottomSheetStore.getState().registerBottomSheetHost()
         vi.clearAllMocks()
         ;(useReceiveFunds as Mock).mockReturnValue({
             canSelectAccount: true,

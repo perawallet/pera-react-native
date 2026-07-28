@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Linking } from 'react-native'
 import {
     useNavigation,
     useRoute,
@@ -34,6 +35,7 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
+import { routeCapabilities } from '@routes/capabilities'
 import {
     canAutoFund,
     useCardFundingSourcePicker,
@@ -343,6 +345,10 @@ export const useCardOnboardingStatusScreen =
         ])
 
         const handleOpenSupport = useCallback(() => {
+            if (!routeCapabilities.inAppWebView) {
+                void Linking.openURL(config.supportBaseUrl)
+                return
+            }
             pushWebView({ url: config.supportBaseUrl, id: 'card-support' })
         }, [pushWebView])
 

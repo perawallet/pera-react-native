@@ -31,6 +31,7 @@ const wrapWithId = (id: string | null) =>
 describe('useBottomSheetSize', () => {
     beforeEach(() => {
         useBottomSheetStore.getState().resetState()
+        useBottomSheetStore.getState().registerBottomSheetHost()
     })
 
     it('returns the size the host sheet was opened with', () => {

@@ -22,6 +22,7 @@ import {
     PWText,
 } from '@components/core'
 import { ListItemDivider } from '@components/ListItemDivider'
+import { InfoCallout } from '@components/InfoCallout'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsCurrencyScreen } from './useSettingsCurrencyScreen'
@@ -37,6 +38,7 @@ export const SettingsCurrencyScreen = () => {
         search,
         setSearch,
         filteredData,
+        isRateUnavailableOffline,
     } = useSettingsCurrencyScreen()
 
     const keyExtractor = (item: Currency) => item.id
@@ -94,6 +96,15 @@ export const SettingsCurrencyScreen = () => {
                         ]}
                     />
                 </PWText>
+                {isRateUnavailableOffline ? (
+                    <InfoCallout
+                        title={t('settings.currency.offline_rate.title')}
+                        body={t('settings.currency.offline_rate.body', {
+                            currency: preferredCurrency,
+                        })}
+                        testID='settings_currency_offline_notice'
+                    />
+                ) : null}
                 <SearchInput
                     placeholder={t('settings.currency.search_placeholder')}
                     value={search}

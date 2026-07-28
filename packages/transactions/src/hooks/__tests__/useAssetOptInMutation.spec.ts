@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { onlineManager } from '@tanstack/react-query'
+import { NoConnectionError } from '@perawallet/wallet-core-shared'
 import {
     useAssetOptInMutation,
     AlreadyOptedInError,
@@ -183,5 +185,26 @@ describe('useAssetOptInMutation', () => {
         expect(mockInsertAssetHolding).not.toHaveBeenCalled()
         expect(mockFetchAndPersistAssets).not.toHaveBeenCalled()
         expect(mockInvalidate).not.toHaveBeenCalled()
+    })
+
+    describe('offline', () => {
+        afterEach(() => onlineManager.setOnline(true))
+
+        it('throws NoConnectionError before any algod call when offline', async () => {
+            onlineManager.setOnline(false)
+            const { result } = renderHook(() => useAssetOptInMutation())
+
+            await act(async () => {
+                await expect(
+                    result.current.optIn({
+                        sender: 'SENDER',
+                        assetId: 123n,
+                    }),
+                ).rejects.toBeInstanceOf(NoConnectionError)
+            })
+
+            expect(mockAccountInformation).not.toHaveBeenCalled()
+            expect(mockGetSuggestedParams).not.toHaveBeenCalled()
+        })
     })
 })

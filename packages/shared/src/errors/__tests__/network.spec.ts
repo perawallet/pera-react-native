@@ -13,9 +13,11 @@
 import { describe, expect, it } from 'vitest'
 import { HTTPError, NetworkError, TimeoutError } from 'ky'
 import { AppError, ErrorCategory } from '../base'
+import { NoConnectionError } from '../network-validation'
 import {
     PeraNetworkError,
     getNetworkErrorMessageKeys,
+    isConnectivityError,
     isNotFoundError,
     isPeraNetworkError,
 } from '../network'
@@ -205,6 +207,39 @@ describe('getNetworkErrorMessageKeys', () => {
         expect(getNetworkErrorMessageKeys(new Error('x'))).toEqual(
             keysFor('errors.general'),
         )
+    })
+
+    it('maps a NoConnectionError → errors.network.no_connection', () => {
+        expect(getNetworkErrorMessageKeys(new NoConnectionError())).toEqual(
+            keysFor('errors.network.no_connection'),
+        )
+    })
+})
+
+describe('isConnectivityError', () => {
+    it('is true for PeraNetworkError with kind offline', () => {
+        expect(isConnectivityError(new PeraNetworkError('offline'))).toBe(true)
+    })
+
+    it('is true for NoConnectionError', () => {
+        expect(isConnectivityError(new NoConnectionError())).toBe(true)
+    })
+
+    it('is true for a raw ky network error', () => {
+        expect(isConnectivityError(makeNetworkError())).toBe(true)
+    })
+
+    it('is false for PeraNetworkError with kind server', () => {
+        expect(
+            isConnectivityError(
+                new PeraNetworkError('server', { status: 500 }),
+            ),
+        ).toBe(false)
+    })
+
+    it('is false for a plain Error and non-errors', () => {
+        expect(isConnectivityError(new Error('boom'))).toBe(false)
+        expect(isConnectivityError(undefined)).toBe(false)
     })
 })
 

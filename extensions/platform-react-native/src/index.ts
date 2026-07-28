@@ -24,4 +24,4 @@ export {
     RNDeviceInfoStorageService,
 } from './services'
 
-export { getPlatformServices } from './resources'
+export { getPlatformServices, hydratePlatform } from './resources'

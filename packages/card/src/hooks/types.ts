@@ -23,6 +23,11 @@ export type CardMutationResult<TVars, TData = void> = {
     isPending: boolean
     isError: boolean
     isSuccess: boolean
+    /** True while the mutation is paused by the network mode. Under the app's
+     *  fail-fast policy (`networkMode: 'always'`) this stays false — offline
+     *  failures reject instead — but the flag is part of the surface contract
+     *  so gating never needs a type change. */
+    isPaused: boolean
     error: Nullable<Error>
     data: Nullable<TData>
     reset: () => void
@@ -37,6 +42,7 @@ export const toCardMutationResult = <TVars, TData>(
     isPending: mutation.isPending,
     isError: mutation.isError,
     isSuccess: mutation.isSuccess,
+    isPaused: mutation.isPaused,
     error: mutation.error,
     data: mutation.data ?? null,
     reset: mutation.reset,

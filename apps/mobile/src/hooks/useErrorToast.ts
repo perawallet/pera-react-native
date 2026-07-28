@@ -15,6 +15,7 @@ import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import {
     AppError,
+    NoConnectionError,
     getNetworkErrorMessageKeys,
     isPeraNetworkError,
     logger,
@@ -46,6 +47,9 @@ type UseErrorToastResult = {
  *                                checked before {@link AppError} since it's
  *                                a subclass)
  *   - {@link AlgodError}       → localized `errors.algod.<code>` title + body
+ *   - {@link NoConnectionError} → localized offline copy (must be checked
+ *                                 before {@link AppError} since it's a
+ *                                 subclass)
  *   - {@link AppError}         → fallback title + the error's user-facing message
  *   - any other Error          → run through the algod parser; if recognized,
  *                                use that translation; else generic fallback
@@ -96,6 +100,11 @@ const resolveMessage = (
 
     if (error instanceof AlgodError) {
         return getMessage(error)
+    }
+
+    if (error instanceof NoConnectionError) {
+        const { titleKey, bodyKey } = getNetworkErrorMessageKeys(error)
+        return { title: t(titleKey), body: t(bodyKey) }
     }
 
     if (error instanceof AppError) {

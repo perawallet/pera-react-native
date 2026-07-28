@@ -22,10 +22,12 @@ const {
     mockOpenLocationSettings,
     mockErrorToast,
     mockRequestEnable,
+    mockOpenLedgerExpandedTab,
     blePermissionsState,
     bluetoothState,
     connectionState,
     platformState,
+    expandedTabHandoffState,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockStartScan: vi.fn(),
@@ -35,6 +37,7 @@ const {
     mockOpenLocationSettings: vi.fn(),
     mockErrorToast: vi.fn(),
     mockRequestEnable: vi.fn(),
+    mockOpenLedgerExpandedTab: vi.fn(),
     blePermissionsState: {
         hasPermissions: true,
         isChecking: false,
@@ -54,7 +57,8 @@ const {
         supportedTransportTypes: ['ble'] as Array<'ble' | 'usb'>,
         capturedOptions: undefined as unknown,
     },
-    platformState: { os: 'android' as 'android' | 'ios' },
+    platformState: { os: 'android' as 'android' | 'ios' | 'web' },
+    expandedTabHandoffState: { isPopupSurface: false },
 }))
 
 vi.mock('react-native', () => ({
@@ -63,6 +67,13 @@ vi.mock('react-native', () => ({
             return platformState.os
         },
     },
+}))
+
+const routeParams = vi.hoisted(() => ({
+    current: {} as { transportType?: 'ble' | 'usb' },
+}))
+vi.mock('@react-navigation/native', () => ({
+    useRoute: () => ({ params: routeParams.current }),
 }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
@@ -108,6 +119,10 @@ vi.mock('../../../hooks', () => ({
         ].includes(bluetoothState.adapterState),
         requestEnable: mockRequestEnable,
     }),
+    useLedgerExpandedTabHandoff: () => ({
+        isPopupSurface: expandedTabHandoffState.isPopupSurface,
+        openLedgerExpandedTab: mockOpenLedgerExpandedTab,
+    }),
 }))
 
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
@@ -139,6 +154,9 @@ describe('useLedgerScanScreen', () => {
         connectionState.supportedTransportTypes = ['ble']
         connectionState.capturedOptions = undefined
         platformState.os = 'android'
+        routeParams.current = {}
+        expandedTabHandoffState.isPopupSurface = false
+        mockOpenLedgerExpandedTab.mockReset()
         mockRequestPermissions.mockResolvedValue(true)
         mockOpenSettings.mockResolvedValue(undefined)
         mockOpenLocationSettings.mockResolvedValue(undefined)
@@ -438,5 +456,143 @@ describe('useLedgerScanScreen', () => {
             result.current.handleRequestPermissions()
         })
         expect(mockOpenSettings).toHaveBeenCalledTimes(1)
+    })
+
+    describe('web: gated behind an explicit "Search for Ledger" tap', () => {
+        it('does not auto-start scanning on mount', () => {
+            platformState.os = 'web'
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(mockStartScan).not.toHaveBeenCalled()
+            expect(result.current.needsManualStart).toBe(true)
+        })
+
+        it('starts scanning directly (synchronously) when handleStartScan is invoked', () => {
+            platformState.os = 'web'
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            act(() => {
+                result.current.handleStartScan()
+            })
+
+            expect(mockStartScan).toHaveBeenCalledTimes(1)
+            expect(result.current.needsManualStart).toBe(false)
+        })
+
+        it('does not need a manual start on native (android/ios)', () => {
+            platformState.os = 'android'
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.needsManualStart).toBe(false)
+            expect(mockStartScan).toHaveBeenCalled()
+        })
+
+        it('handleRetry also re-arms scanning after handleStartScan was already used', () => {
+            platformState.os = 'web'
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            act(() => {
+                result.current.handleStartScan()
+            })
+            mockStartScan.mockClear()
+
+            act(() => {
+                result.current.handleRetry()
+            })
+
+            expect(mockStartScan).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    describe('popup surface: hands off to the expanded tab instead of scanning', () => {
+        it('handleStartScan opens the expanded tab for USB instead of scanning in-place', () => {
+            platformState.os = 'web'
+            expandedTabHandoffState.isPopupSurface = true
+            routeParams.current = { transportType: 'usb' }
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            act(() => {
+                result.current.handleStartScan()
+            })
+
+            expect(mockOpenLedgerExpandedTab).toHaveBeenCalledWith('usb')
+            expect(mockStartScan).not.toHaveBeenCalled()
+        })
+
+        it('handleStartScan opens the expanded tab for BLE instead of scanning in-place', () => {
+            platformState.os = 'web'
+            expandedTabHandoffState.isPopupSurface = true
+            routeParams.current = {}
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            act(() => {
+                result.current.handleStartScan()
+            })
+
+            expect(mockOpenLedgerExpandedTab).toHaveBeenCalledWith('ble')
+            expect(mockStartScan).not.toHaveBeenCalled()
+        })
+
+        it('handleRetry also hands off to the expanded tab in the popup', () => {
+            platformState.os = 'web'
+            expandedTabHandoffState.isPopupSurface = true
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            act(() => {
+                result.current.handleRetry()
+            })
+
+            expect(mockOpenLedgerExpandedTab).toHaveBeenCalledWith('ble')
+            expect(mockStartScan).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('explicit USB-only choice (route param transportType: "usb")', () => {
+        it('scans USB-only even though BLE permission is granted', () => {
+            routeParams.current = { transportType: 'usb' }
+            connectionState.supportedTransportTypes = ['ble', 'usb']
+
+            renderHook(() => useLedgerScanScreen())
+
+            expect(connectionState.capturedOptions).toEqual({
+                transportTypes: ['usb'],
+            })
+        })
+
+        it('never shows the Bluetooth-off warning, even with the adapter powered off', () => {
+            routeParams.current = { transportType: 'usb' }
+            bluetoothState.adapterState = 'poweredOff'
+
+            renderHook(() => useLedgerScanScreen())
+
+            expect(mockErrorToast).not.toHaveBeenCalled()
+            expect(mockRequestEnable).not.toHaveBeenCalled()
+        })
+
+        it('never requests BLE permission, even when missing', () => {
+            routeParams.current = { transportType: 'usb' }
+            blePermissionsState.hasPermissions = false
+
+            renderHook(() => useLedgerScanScreen())
+
+            expect(mockRequestPermissions).not.toHaveBeenCalled()
+        })
+
+        it('never surfaces the blocking permission-denied state', () => {
+            routeParams.current = { transportType: 'usb' }
+            blePermissionsState.hasPermissions = false
+            connectionState.supportedTransportTypes = ['usb']
+
+            const { result } = renderHook(() => useLedgerScanScreen())
+
+            expect(result.current.isPermissionDenied).toBe(false)
+        })
     })
 })

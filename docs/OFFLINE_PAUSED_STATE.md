@@ -134,6 +134,94 @@ that is `pending` because it is `paused` (offline, no cache) raises `isPaused`,
 **not** `isPending`, so consumers render the offline surface instead of an
 eternal skeleton.
 
+### Rendering the offline surface: `OfflineTolerantView`
+
+Screens do **not** hand-roll the offline fork. `apps/mobile/src/components/OfflineTolerantView`
+renders the shared offline surface — and, optionally, the shared error surface
+— in place of its children:
+
+```tsx
+<OfflineTolerantView
+    isOffline={isOffline}
+    isError={isError}
+    onRetry={handleRetry}
+>
+    {/* whatever the surface renders when it has something to show */}
+</OfflineTolerantView>
+```
+
+It owns the middle of the precedence (`offline → error`); callers keep owning
+`data`, `loading` and `empty`, which stay surface-specific. Notes:
+
+- **`isOffline` is computed by the caller's hook**, not by the component. The
+  honest signal is per-query (`isPaused || (isError && !hasInternet)`), not
+  per-device — a screen with cached data is not "offline" just because the
+  radio is off.
+- **Omit `isError`** on surfaces that render their own branded error UI
+  (`StakingScreen` does); they delegate the offline arm only.
+- **Omit `onRetry`** where retrying isn't meaningful and no button is rendered
+  (`AddAssetView`'s search re-runs on the next keystroke).
+- `retryLabel` and `errorBody` override the default `common.retry.label` /
+  `common.error.body` copy.
+
+`BalanceLineChart` predates the component and keeps its own five-arm
+`renderState` switch (it also drives a `loading`/`empty` fork and an
+offline-aware retry sheet); it renders the identical copy and icons.
+
+## Offline writes: fail fast, roll back, say why
+
+`OfflineTolerantView` covers offline _reads_. Offline _writes_ are a different
+problem: the request has already been attempted, and something local may have
+been changed optimistically.
+
+Every remotely-synced write must satisfy four properties:
+
+1. The optimistic local write is applied immediately, so the control responds.
+2. The network call is attempted immediately — never queued, never paused.
+   `mutationDefaults` (`networkMode: 'always'`) guarantees this.
+3. On rejection the local write is reverted, and `showError` from
+   `@hooks/useErrorToast` surfaces cause-appropriate copy — connectivity
+   failures get `errors.network.no_connection.*`, everything else the
+   PERA-4574 mapping.
+4. Once the interaction settles, persisted local state equals what the backend
+   was last told.
+
+Property 4 is the one that bites. Persisted Zustand stores survive a restart,
+so an optimistic value the backend never received becomes permanent
+divergence. Never leave one behind.
+
+`apps/mobile/src/hooks/useAccountNotificationToggle.ts` is the reference
+implementation. Note that it is a _single_ hook shared by both call sites —
+the bug it replaced was a duplicated toggle where one copy had silently
+dropped the network call.
+
+Toggles are also serialised per address, app-wide: the in-flight guard inside
+`useAccountNotificationToggle` is module scope, shared by every hook instance,
+not just the one that started the request — `isTogglePending(address)` reports
+an in-flight request, and a second call for the same address (from any
+instance) early-returns without touching the store. Two overlapping failures
+would otherwise roll each other back to the wrong value, violating property 4.
+Screens should use the pending flag to disable the control rather than let the
+tap be silently dropped — both `NotificationSettingsList` and the
+account-options sheet (`useAccountOptions` → `AccountOptionsContent`) do.
+
+The guard itself is shared app-wide; `isTogglePending`'s _reactivity_ is not.
+Each hook instance only re-renders for toggles it started itself, so a second
+mounted instance of the hook (e.g. a freshly-opened account-options sheet)
+renders its control as enabled until it makes its own call — at which point
+the shared guard still returns `false` immediately with no store write, just
+without the row having visually disabled itself first. See the JSDoc on
+`isTogglePending` in `useAccountNotificationToggle.ts` for the full reasoning;
+this is intentional scope, not a gap the PERA-4585 residual round left open —
+introducing cross-instance reactivity would need a store/subscription, which
+was judged disproportionate for this guard.
+
+There is deliberately no offline outbox or replay queue for user-initiated
+writes (PERA-4573 policy). The one adjacent-looking exception is
+`packages/messages/src/hooks/useReplayNotificationMutes.ts`, which re-applies
+persisted mutes _after device creation_ — a one-shot reconciliation against a
+new device ID, not a queue of failed offline writes.
+
 ### Why DB-first hooks still expose `isPaused`
 
 A DB-first query with `networkMode: 'always'` never actually pauses, so its
@@ -142,4 +230,6 @@ A DB-first query with `networkMode: 'always'` never actually pauses, so its
 `useAssetPricesQuery`, `useTransactionHistoryQuery`, …) so that screens can
 consume one uniform, paused-aware shape regardless of whether the underlying
 query is DB-first or pure-network. Surface tickets (PERA-4578..4581, PERA-4584)
-adopt this contract.
+adopt this contract. PERA-4585 is not among them: it covers settings writes and
+a currency-rate notice, and reads connectivity from
+`useNetworkStatus().hasInternet` rather than any query's `isPaused`.

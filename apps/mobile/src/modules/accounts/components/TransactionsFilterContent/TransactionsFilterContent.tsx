@@ -204,7 +204,7 @@ export const TransactionsFilterContent = ({
                     >
                         <PWIcon
                             name={item.icon}
-                            size='lg'
+                            size='md'
                             style={styles.listIcon}
                         />
                         <PWView style={styles.listContent}>
@@ -229,7 +229,7 @@ export const TransactionsFilterContent = ({
                             <PWView style={styles.checkIcon}>
                                 <PWIcon
                                     name='check'
-                                    size='lg'
+                                    size='md'
                                     variant='positive'
                                 />
                             </PWView>

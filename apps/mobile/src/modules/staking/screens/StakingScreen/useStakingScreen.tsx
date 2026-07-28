@@ -22,12 +22,14 @@ import {
     StakingHelpContent,
 } from '@modules/staking/components'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import type { StakingProject } from '@modules/staking/models'
 
 type UseStakingScreenResult = {
     projects: StakingProject[]
     isLoading: boolean
     isError: boolean
+    isOffline: boolean
     handleRetry: () => void
     handleProjectPress: (project: StakingProject) => Promise<void>
     handleHelpOpen: () => void
@@ -39,10 +41,18 @@ export const useStakingScreen = (): UseStakingScreenResult => {
         data: projects,
         isLoading,
         isError,
+        isPaused,
         refetch,
     } = useStakingProjectsQuery()
+    const { hasInternet } = useNetworkStatus()
     const { isDisclaimerAccepted, acceptDisclaimer } = useStakingDisclaimer()
     const { request: requestBottomSheet } = useBottomSheet()
+
+    // Offline wins over a stale error: a paused, uncached fetch means there is
+    // nothing to show yet, and an error surfacing while genuinely offline is
+    // the same "nothing to show" situation — not a dead Retry. Mirrors the
+    // PERA-4581 charts / TransactionDetails contract.
+    const isOffline = isPaused || (isError && !hasInternet)
 
     useEffect(() => {
         trackEvent(StakingEvent.Open)
@@ -105,6 +115,11 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     }, [requestBottomSheet])
 
     const handleRetry = useCallback(() => {
+        // Offline: skip the doomed request — the offline copy already
+        // promises a refresh on reconnect (mirrors TransactionDetails retry).
+        if (!useNetworkStatusStore.getState().hasInternet) {
+            return
+        }
         refetch()
     }, [refetch])
 
@@ -112,6 +127,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
         projects,
         isLoading,
         isError,
+        isOffline,
         handleRetry,
         handleProjectPress,
         handleHelpOpen,

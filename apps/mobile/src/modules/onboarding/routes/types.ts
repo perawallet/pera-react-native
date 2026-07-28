@@ -97,7 +97,7 @@ export type ImportFlowParamList = {
     SearchAccounts: SearchAccountsParams
     LedgerPair: undefined
     LedgerInstructions: Optional<{ transportType?: LedgerTransportType }>
-    LedgerScan: undefined
+    LedgerScan: Optional<{ transportType?: LedgerTransportType }>
     LedgerFetchAccounts: {
         deviceId: string
         deviceName: string

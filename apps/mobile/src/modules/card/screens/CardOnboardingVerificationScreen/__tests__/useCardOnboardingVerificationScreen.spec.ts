@@ -14,6 +14,18 @@ import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AppState, Linking } from 'react-native'
+import { config } from '@perawallet/wallet-core-config'
+
+// Mutable capability map: mutate `mockCapabilities` per test to simulate the
+// native-shaped (inAppWebView: true) and web-shaped (false) route capability
+// maps without re-mocking.
+const { mockCapabilities } = vi.hoisted(() => ({
+    mockCapabilities: { inAppWebView: true },
+}))
+
+vi.mock('@routes/capabilities', () => ({
+    routeCapabilities: mockCapabilities,
+}))
 
 const mockStartMutateAsync = vi.fn()
 const mockRefetch = vi.fn()
@@ -55,6 +67,7 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             isPending: false,
             isError: false,
             isSuccess: false,
+            isPaused: false,
             error: null,
             data: null,
             reset: vi.fn(),
@@ -110,6 +123,7 @@ let appStateListener: ((state: string) => void) | undefined
 
 beforeEach(() => {
     vi.clearAllMocks()
+    Object.assign(mockCapabilities, { inAppWebView: true })
     mockOnboardingId = 'mock-onboarding-id'
     mockVerificationState = null
     mockIsStateUnknown = false
@@ -408,5 +422,19 @@ describe('useCardOnboardingVerificationScreen', () => {
         expect(mockPushWebView).toHaveBeenCalledWith(
             expect.objectContaining({ id: 'card-support' }),
         )
+    })
+
+    it('opens support in a browser tab when inAppWebView is off (web)', () => {
+        Object.assign(mockCapabilities, { inAppWebView: false })
+        const { result } = renderHook(() =>
+            useCardOnboardingVerificationScreen(),
+        )
+
+        act(() => {
+            result.current.handleOpenSupport()
+        })
+
+        expect(Linking.openURL).toHaveBeenCalledWith(config.supportBaseUrl)
+        expect(mockPushWebView).not.toHaveBeenCalled()
     })
 })

@@ -13,6 +13,7 @@
 import React, { useCallback } from 'react'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
 import { AssetSelectionList } from '@modules/assets/components'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
@@ -35,6 +36,8 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
         handleSearchChange,
         results,
         isLoading,
+        isError,
+        isOffline,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
@@ -100,11 +103,18 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
                 ListHeaderComponent={collectibleNote}
                 ItemSeparatorComponent={NoSeparator}
                 ListEmptyComponent={
-                    <EmptyView
-                        title={t('add_asset.no_results')}
-                        body=''
-                        icon='magnifying-glass'
-                    />
+                    // No retry affordance: the search re-runs on the next
+                    // keystroke, and reconnecting refetches on its own.
+                    <OfflineTolerantView
+                        isOffline={isOffline}
+                        isError={isError}
+                    >
+                        <EmptyView
+                            title={t('add_asset.no_results')}
+                            body=''
+                            icon='magnifying-glass'
+                        />
+                    </OfflineTolerantView>
                 }
             />
         </PWView>

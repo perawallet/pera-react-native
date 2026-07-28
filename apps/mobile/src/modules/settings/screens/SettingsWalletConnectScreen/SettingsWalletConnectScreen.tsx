@@ -27,6 +27,7 @@ import {
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { QRScannerView } from '@components/QRScannerView'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
@@ -39,6 +40,7 @@ const renderItem = ({ item }: { item: WalletConnectConnection }) => {
 
 export const SettingsWalletConnectScreen = () => {
     const { t } = useLanguage()
+    const { showError } = useErrorToast()
     const { network } = useNetwork()
     const { connections, deleteAllSessions } = useWalletConnect(network)
     const scannerState = useModalState()
@@ -62,13 +64,21 @@ export const SettingsWalletConnectScreen = () => {
     const handleDeleteAll = useCallback(() => {
         setIsLoading(true)
         void deleteAllSessions()
-            .then(() => {
-                deleteState.close()
+            .catch((error: unknown) => {
+                // Partial failure is possible: sessions that were killed stay
+                // killed, but the store may be stale afterwards — an
+                // already-killed session can reappear in the list. Cause:
+                // `useWalletConnect.deleteAllSessions` runs `Promise.all` over
+                // `disconnect()` calls that each filter one shared stale
+                // closure, so the last resolver wins. Known follow-up work,
+                // out of scope here — report, don't roll back.
+                showError(error, t('common.error.title'))
             })
             .finally(() => {
                 setIsLoading(false)
+                deleteState.close()
             })
-    }, [deleteAllSessions, deleteState])
+    }, [deleteAllSessions, deleteState, showError, t])
 
     return (
         <PWScreen

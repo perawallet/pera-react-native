@@ -138,10 +138,12 @@ describe('useSettingsScreen', () => {
         expect(mockPush).not.toHaveBeenCalled()
     })
 
-    it('requests the rating bottom sheet when neither route nor url is provided', () => {
+    it('requests the rating bottom sheet when neither route nor url is provided', async () => {
         const { result } = renderHook(() => useSettingsScreen())
 
-        act(() => {
+        // openRatingModal dynamically imports RatingsContent (kept out of the
+        // web bundle) before requesting the sheet, so this crosses a microtask.
+        await act(async () => {
             result.current.handleTapEvent({
                 title: 'Rate App',
                 icon: 'star',

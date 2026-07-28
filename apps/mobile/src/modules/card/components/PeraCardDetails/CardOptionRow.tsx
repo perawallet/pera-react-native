@@ -30,6 +30,8 @@ type CardOptionRowProps = {
     variant?: 'default' | 'destructive'
     /** Shows a spinner in place of the icon and disables the row while pending. */
     isLoading?: boolean
+    /** Disables the row without a spinner (e.g. offline-unsafe actions). */
+    isDisabled?: boolean
     testID?: string
 }
 
@@ -40,6 +42,7 @@ export const CardOptionRow = ({
     onPress,
     variant = 'default',
     isLoading = false,
+    isDisabled = false,
     testID,
 }: CardOptionRowProps) => {
     const styles = useStyles()
@@ -47,9 +50,9 @@ export const CardOptionRow = ({
 
     return (
         <PWTouchableOpacity
-            style={styles.optionRow}
+            style={[styles.optionRow, isDisabled && styles.disabled]}
             onPress={onPress}
-            disabled={isLoading}
+            disabled={isLoading || isDisabled}
             testID={testID}
         >
             {isLoading ? (

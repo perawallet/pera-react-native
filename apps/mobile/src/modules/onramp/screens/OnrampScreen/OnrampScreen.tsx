@@ -25,6 +25,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-config'
 import { PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import {
     OnrampCountryChip,
@@ -56,6 +57,7 @@ export const OnrampScreen = () => {
     )
     const {
         isReady,
+        pairsState,
         sourceToken,
         destinationToken,
         selectedPair,
@@ -63,6 +65,7 @@ export const OnrampScreen = () => {
         activeTab,
         handleTabChange,
         handleRegionInfoPress,
+        handleRetryPairs,
     } = useOnrampScreen()
 
     const pagerRef = useRef<PagerView>(null)
@@ -166,12 +169,18 @@ export const OnrampScreen = () => {
                             onNavigateToHistory={handleNavigateToHistory}
                         />
                     ) : (
-                        <PWView style={styles.loadingWrapper}>
-                            <ActivityIndicator
-                                size='large'
-                                color={theme.colors.textMain}
-                            />
-                        </PWView>
+                        <OfflineTolerantView
+                            isOffline={pairsState === 'offline'}
+                            isError={pairsState === 'error'}
+                            onRetry={handleRetryPairs}
+                        >
+                            <PWView style={styles.loadingWrapper}>
+                                <ActivityIndicator
+                                    size='large'
+                                    color={theme.colors.textMain}
+                                />
+                            </PWView>
+                        </OfflineTolerantView>
                     )}
                 </PWView>
                 <PWView

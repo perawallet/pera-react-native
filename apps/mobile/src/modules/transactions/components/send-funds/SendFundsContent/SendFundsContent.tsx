@@ -18,6 +18,8 @@ import {
 import { EmptyView } from '@components/EmptyView'
 import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { getNavigationTheme } from '@theme/theme'
 import { SendFundsRoutes } from '../../../routes/send-funds'
 import { useSendFundsContent } from './useSendFundsContent'
 
@@ -27,6 +29,7 @@ export type SendFundsContentProps = {
 
 export const SendFundsContent = ({ assetId }: SendFundsContentProps) => {
     const { t } = useLanguage()
+    const isDarkMode = useIsDarkMode()
     const { selectedAccount, isReady } = useSendFundsContent(assetId)
 
     return (
@@ -38,7 +41,16 @@ export const SendFundsContent = ({ assetId }: SendFundsContentProps) => {
                 />
             ) : isReady ? (
                 <NavigationIndependentTree>
-                    <NavigationContainer>
+                    {/* Theme the independent tree explicitly: without it React
+                        Navigation falls back to DefaultTheme, whose grey
+                        `background` (rgb(242,242,242)) paints the full-sheet
+                        scene container and shows through the transparent
+                        header as a grey band. */}
+                    <NavigationContainer
+                        theme={getNavigationTheme(
+                            isDarkMode ? 'dark' : 'light',
+                        )}
+                    >
                         <SendFundsRoutes />
                     </NavigationContainer>
                 </NavigationIndependentTree>

@@ -24,6 +24,7 @@ export type PWDropdownItem = {
     icon?: IconName
     onPress: () => void
     variant?: 'default' | 'destructive'
+    isSelected?: boolean
 }
 
 export type PWDropdownProps = {
@@ -147,6 +148,13 @@ export const PWDropdown = ({
                                         {item.label}
                                     </PWText>
                                 </PWView>
+                                {item.isSelected && (
+                                    <PWIcon
+                                        name='check'
+                                        size='sm'
+                                        variant='primary'
+                                    />
+                                )}
                             </PWTouchableOpacity>
                         ))}
                     </Pressable>

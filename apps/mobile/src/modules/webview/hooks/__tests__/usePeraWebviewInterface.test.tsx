@@ -392,6 +392,60 @@ describe('usePeraWebviewInterface', () => {
         )
     })
 
+    it('rejects a non-http(s) scheme for openSystemBrowser without consulting Linking.canOpenURL', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: 'osb-js-scheme',
+                jsonrpc: '2.0',
+                method: 'openSystemBrowser',
+                params: { url: 'javascript:alert(1)' },
+            })
+        })
+
+        expect(Linking.canOpenURL).not.toHaveBeenCalled()
+        expect(Linking.openURL).not.toHaveBeenCalled()
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"osb-js-scheme"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining(
+                '"error":{"code":-32602,"message":"Unsupported URL: javascript:alert(1)"}',
+            ),
+        )
+    })
+
+    it('rejects a non-string url for openSystemBrowser without throwing', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            expect(() =>
+                result.current.handleMessage({
+                    id: 'osb-non-string',
+                    jsonrpc: '2.0',
+                    method: 'openSystemBrowser',
+                    params: { url: 123 },
+                }),
+            ).not.toThrow()
+        })
+
+        expect(Linking.canOpenURL).not.toHaveBeenCalled()
+        expect(Linking.openURL).not.toHaveBeenCalled()
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"osb-non-string"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining(
+                '"error":{"code":-32602,"message":"Unsupported URL: 123"}',
+            ),
+        )
+    })
+
     it('should handle canOpenURI action', async () => {
         const { result } = renderHook(() =>
             usePeraWebviewInterface(mockWebview, true, null),

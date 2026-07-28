@@ -15,6 +15,10 @@ import { describe, it, expect, vi } from 'vitest'
 import { BaseErrorBoundary } from '../BaseErrorBoundary'
 import { Text } from 'react-native'
 
+const Boom = (): never => {
+    throw new Error('boom')
+}
+
 describe('BaseErrorBoundary', () => {
     it('renders children when no error', () => {
         const t = vi.fn()
@@ -24,5 +28,32 @@ describe('BaseErrorBoundary', () => {
             </BaseErrorBoundary>,
         )
         expect(screen.getByText('Child Content')).toBeTruthy()
+    })
+
+    it('catches a child throw and renders the fallback instead of a blank tree', () => {
+        // A throw with no boundary unmounts React's whole root — the
+        // white-screen failure mode. The boundary must swap in a fallback so
+        // the surviving UI never goes blank.
+        const t = vi.fn()
+        // React logs the caught error to console.error; silence it so the
+        // test output stays clean without hiding real failures.
+        const consoleError = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => undefined)
+
+        render(
+            <BaseErrorBoundary
+                t={t}
+                fallback={() => <Text>Recovered</Text>}
+            >
+                <Boom />
+                <Text>Child Content</Text>
+            </BaseErrorBoundary>,
+        )
+
+        expect(screen.getByText('Recovered')).toBeTruthy()
+        expect(screen.queryByText('Child Content')).toBeNull()
+
+        consoleError.mockRestore()
     })
 })

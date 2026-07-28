@@ -80,10 +80,14 @@ export const AccountAssetItemView = ({
     }, [asset, accountBalance])
 
     if (item) {
+        // Forward the list's row style (shared horizontal padding) so a
+        // collectible row's thumbnail lines up with the fungible rows beside
+        // it — otherwise the NFT icon sits flush-left, unindented.
         return (
             <CollectibleListItem
                 item={item}
                 onPress={onPress}
+                style={rest.style}
             />
         )
     }

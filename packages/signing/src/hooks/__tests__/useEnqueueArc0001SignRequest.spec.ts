@@ -424,6 +424,24 @@ describe('useEnqueueArc0001SignRequest', () => {
         expect(mockRemoveSignRequest).not.toHaveBeenCalled()
     })
 
+    it('threads verifiedOrigin and sourceType for an injected dapp source', async () => {
+        const { result } = renderHook(() => useEnqueueArc0001SignRequest())
+        const transport = {
+            ...makeTransport(),
+            sourceType: 'injected' as const,
+            verifiedOrigin: 'https://dapp.example',
+        }
+
+        await result.current(makeResolved(1, 1), transport)
+
+        expect(mockAddSignRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sourceType: 'injected',
+                verifiedOrigin: 'https://dapp.example',
+            }),
+        )
+    })
+
     it('error callback forwards the error AND removes the queued request', async () => {
         const { result } = renderHook(() => useEnqueueArc0001SignRequest())
         const transport = makeTransport()

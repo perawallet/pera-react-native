@@ -13,15 +13,30 @@
 import { makeStyles } from '@rneui/themed'
 
 // Preserves the source aspect ratio of the Ledger searching animation
-// (~137×39) while rendering it at a legible size in the header.
-const ANIMATION_WIDTH = 160
-const ANIMATION_HEIGHT = 46
+// (~137×39) while rendering it at a legible size in the header — matches
+// the constrained content width (see CONTENT_MAX_WIDTH below).
+const ANIMATION_WIDTH = 300
+const ANIMATION_HEIGHT = Math.round((ANIMATION_WIDTH * 39) / 137)
+
+// Matches ScanQRScreen's content cap — the only other screen in this app
+// that renders in the wide "expanded" browser-tab surface. Unconstrained
+// flex:1 content there spreads fixed-width elements (the header animation)
+// to the literal edges of the viewport instead of reading like a normal,
+// centered desktop page. A no-op in the 360px popup.
+const CONTENT_MAX_WIDTH = 480
 
 export const useStyles = makeStyles(theme => ({
+    content: {
+        flex: 1,
+        width: '100%',
+        maxWidth: CONTENT_MAX_WIDTH,
+        alignSelf: 'center',
+    },
     headerAnimation: {
         width: ANIMATION_WIDTH,
         height: ANIMATION_HEIGHT,
         marginBottom: theme.spacing.md,
+        alignSelf: 'center',
     },
     listContent: {
         paddingTop: theme.spacing.md,

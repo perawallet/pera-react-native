@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     useRampPairsQuery,
@@ -28,6 +28,16 @@ vi.mock('@perawallet/wallet-core-onramp', () => ({
     useRampRegionQuery: vi.fn(),
     useOnramp: vi.fn(),
 }))
+
+let hasInternetMock = true
+
+vi.mock('@modules/network', () => ({
+    useNetworkStatus: () => ({ hasInternet: hasInternetMock }),
+}))
+
+const setHasInternet = (hasInternet: boolean): void => {
+    hasInternetMock = hasInternet
+}
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccountAddress: vi.fn(),
@@ -82,6 +92,33 @@ const PAIR_A = makePair('pair-a', 'USD', 'ALGO')
 const PAIR_B = makePair('pair-b', 'EUR', '31566704')
 const PAIRS = [PAIR_A, PAIR_B]
 
+type MockRampPairsQueryOverrides = {
+    data?: RampPair[]
+    isLoading?: boolean
+    isError?: boolean
+    fetchStatus?: 'fetching' | 'paused' | 'idle'
+    status?: 'pending' | 'error' | 'success'
+    refetch?: () => void
+}
+
+const mockRampPairsQuery = ({
+    data,
+    isLoading = false,
+    isError = false,
+    fetchStatus = 'idle',
+    status = 'success',
+    refetch = vi.fn(),
+}: MockRampPairsQueryOverrides): void => {
+    vi.mocked(useRampPairsQuery).mockReturnValue({
+        data,
+        isLoading,
+        isError,
+        fetchStatus,
+        status,
+        refetch,
+    } as never)
+}
+
 const mockSetSelectedSourceTokenId = vi.fn()
 const mockSetSelectedDestinationTokenId = vi.fn()
 
@@ -100,6 +137,7 @@ const setupOnramp = (overrides: Partial<ReturnType<typeof useOnramp>> = {}) => {
 describe('useOnrampScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        setHasInternet(true)
         vi.mocked(useRoute).mockReturnValue({ params: undefined } as never)
         vi.mocked(useRampRegionQuery).mockReturnValue({
             data: { countryCode: 'US', countryName: 'United States' },
@@ -186,5 +224,85 @@ describe('useOnrampScreen', () => {
         rerender()
 
         expect(result.current.isReady).toBe(true)
+    })
+
+    describe('pairsState', () => {
+        it('is offline when the pairs query is paused with no cached data (true-offline, uncached)', () => {
+            mockRampPairsQuery({
+                data: undefined,
+                isLoading: true,
+                isError: false,
+                fetchStatus: 'paused',
+                status: 'pending',
+            })
+            const { result } = renderHook(() => useOnrampScreen())
+            expect(result.current.pairsState).toBe('offline')
+        })
+
+        it('is ready with cached pairs even while paused (stale allowed)', () => {
+            setupOnramp({ selectedDestinationTokenId: 'ALGO' })
+            mockRampPairsQuery({
+                data: PAIRS,
+                isLoading: false,
+                isError: false,
+                fetchStatus: 'paused',
+                status: 'success',
+            })
+            const { result } = renderHook(() => useOnrampScreen())
+            expect(result.current.pairsState).toBe('ready')
+        })
+
+        it('is offline when the query errored and the device has no internet', () => {
+            setHasInternet(false)
+            mockRampPairsQuery({
+                data: undefined,
+                isLoading: false,
+                isError: true,
+                fetchStatus: 'idle',
+                status: 'error',
+            })
+            const { result } = renderHook(() => useOnrampScreen())
+            expect(result.current.pairsState).toBe('offline')
+        })
+
+        it('is error when the query errored while online (fake-online regime)', () => {
+            setHasInternet(true)
+            mockRampPairsQuery({
+                data: undefined,
+                isLoading: false,
+                isError: true,
+                fetchStatus: 'idle',
+                status: 'error',
+            })
+            const { result } = renderHook(() => useOnrampScreen())
+            expect(result.current.pairsState).toBe('error')
+        })
+
+        it('is loading while genuinely fetching', () => {
+            mockRampPairsQuery({
+                data: undefined,
+                isLoading: true,
+                isError: false,
+                fetchStatus: 'fetching',
+                status: 'pending',
+            })
+            const { result } = renderHook(() => useOnrampScreen())
+            expect(result.current.pairsState).toBe('loading')
+        })
+
+        it('handleRetryPairs refetches the pairs query', () => {
+            const refetch = vi.fn()
+            mockRampPairsQuery({
+                data: undefined,
+                isLoading: false,
+                isError: true,
+                fetchStatus: 'idle',
+                status: 'error',
+                refetch,
+            })
+            const { result } = renderHook(() => useOnrampScreen())
+            act(() => result.current.handleRetryPairs())
+            expect(refetch).toHaveBeenCalled()
+        })
     })
 })

@@ -23,6 +23,7 @@ vi.mock('react-native-notifier', () => ({
 
 vi.mock('@rneui/themed', () => ({
     makeStyles: () => () => ({
+        notifierContainer: { zIndex: 10_000 },
         baseStyle: { zIndex: 1000 },
         successStyle: { backgroundColor: 'green' },
         successStyleText: { color: 'white' },
@@ -208,6 +209,25 @@ describe('useToast', () => {
                     ]),
                     titleStyle: { color: 'white' },
                 }),
+            }),
+        )
+    })
+
+    it('passes top-level containerStyle with toast zIndex token', () => {
+        const { result } = renderHook(() => useToast())
+
+        act(() => {
+            result.current.showToast({
+                title: 'Test',
+                body: 'Test body',
+                type: 'info',
+            })
+            vi.runAllTimers()
+        })
+
+        expect(Notifier.showNotification).toHaveBeenCalledWith(
+            expect.objectContaining({
+                containerStyle: { zIndex: 10_000 },
             }),
         )
     })

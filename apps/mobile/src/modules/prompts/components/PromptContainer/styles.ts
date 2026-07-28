@@ -18,6 +18,11 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
+    // No-op on native; styles.web.ts overrides this to cap the modal to the
+    // app's expanded-tab card width (see that file's comment).
+    stage: {
+        flex: 1,
+    },
     root: {
         flex: 1,
     },

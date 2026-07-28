@@ -12,10 +12,8 @@
 
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
-import {
-    createNativeStackNavigator,
-    type NativeStackHeaderProps,
-} from '@react-navigation/native-stack'
+import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
+import { createAppStackNavigator } from '@routes/createAppStackNavigator'
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen'
 import { screenListeners } from '@routes/listeners'
 import { fullScreenLayout } from '@layouts/index'
@@ -33,7 +31,7 @@ export { AddAccountStackNavigator } from './add-account'
 const OnboardingScreenWithErrorBoundary =
     withAccountErrorBoundary(OnboardingScreen)
 
-const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>()
+const OnboardingStack = createAppStackNavigator<OnboardingStackParamList>()
 
 export const OnboardingStackNavigator = () => {
     return (

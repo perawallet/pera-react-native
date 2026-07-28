@@ -154,6 +154,26 @@ describe('useImportAccountOptionsScreen', () => {
         )
     })
 
+    it('returns 6 options on web (includes USB)', () => {
+        Platform.OS = 'web'
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        expect(result.current.options).toHaveLength(6)
+    })
+
+    it('USB option is shown on web', () => {
+        Platform.OS = 'web'
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const testIDs = result.current.options.map(o => o.testID)
+
+        expect(testIDs).toContain(
+            'import_account_options_pair_ledger_usb_button',
+        )
+    })
+
     it('recover wallet option requests import options bottom sheet', async () => {
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 
@@ -217,6 +237,24 @@ describe('useImportAccountOptionsScreen', () => {
 
     it('Ledger USB option navigates to LedgerInstructions with usb transportType on Android', () => {
         Platform.OS = 'android'
+
+        const { result } = renderHook(() => useImportAccountOptionsScreen())
+
+        const usbOption = result.current.options.find(
+            o => o.testID === 'import_account_options_pair_ledger_usb_button',
+        )!
+
+        act(() => {
+            usbOption.onPress()
+        })
+
+        expect(mockPush).toHaveBeenCalledWith('LedgerInstructions', {
+            transportType: 'usb',
+        })
+    })
+
+    it('Ledger USB option navigates to LedgerInstructions with usb transportType on web', () => {
+        Platform.OS = 'web'
 
         const { result } = renderHook(() => useImportAccountOptionsScreen())
 

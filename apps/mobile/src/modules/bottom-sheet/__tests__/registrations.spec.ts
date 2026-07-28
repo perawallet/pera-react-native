@@ -19,6 +19,7 @@ import '../registrations'
 describe('bottom-sheet registrations', () => {
     beforeEach(() => {
         useBottomSheetStore.getState().resetState()
+        useBottomSheetStore.getState().registerBottomSheetHost()
     })
 
     it("'asset-opt-in' resolves to OptInConfirmationContent with typed props", () => {

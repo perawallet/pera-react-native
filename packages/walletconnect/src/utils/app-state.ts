@@ -23,11 +23,14 @@ import type { Maybe } from '@perawallet/wallet-core-shared'
 const ACTIVE_STATE = 'active'
 const IOS_BACKGROUND_LIKE_STATES = new Set(['inactive', 'background'])
 
-export type AppStatePlatform = 'ios' | 'android'
+export type AppStatePlatform = 'ios' | 'android' | 'web'
 type AppStateValue = Maybe<string>
 
-export const getAppStatePlatform = (): AppStatePlatform =>
-    Platform.OS === 'ios' ? 'ios' : 'android'
+export const getAppStatePlatform = (): AppStatePlatform => {
+    if (Platform.OS === 'ios') return 'ios'
+    if (Platform.OS === 'web') return 'web'
+    return 'android'
+}
 
 const isActiveAppState = (state: AppStateValue): boolean =>
     state === ACTIVE_STATE
@@ -54,5 +57,9 @@ export const isForegroundTransition = (
             isActiveAppState(nextState)
         )
     }
+    // android and web share the strict two-state model: android because
+    // inactive→active transitions are noise there, web because
+    // react-native-web's AppState (document.visibilitychange) only ever
+    // emits 'active' and 'background'.
     return previousState === 'background' && nextState === 'active'
 }

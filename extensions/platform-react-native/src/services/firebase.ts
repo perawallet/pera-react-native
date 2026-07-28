@@ -98,6 +98,10 @@ export class RNFirebaseService
     private notificationOpenListener: NotificationOpenListener | null = null
     private pendingNotificationUrl: string | null = null
 
+    isSupported(): boolean {
+        return true
+    }
+
     private emitNotificationOpen(
         data: Record<string, unknown> | undefined,
     ): void {

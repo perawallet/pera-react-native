@@ -54,6 +54,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-extension-platform',
+                'buffer',
             ],
         },
     },

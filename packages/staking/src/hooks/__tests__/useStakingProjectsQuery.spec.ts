@@ -11,7 +11,11 @@
  */
 
 import React from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    QueryClient,
+    QueryClientProvider,
+    onlineManager,
+} from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
@@ -204,5 +208,59 @@ describe('useStakingProjectsQuery', () => {
                 'testnet',
             ),
         )
+    })
+
+    describe('offline', () => {
+        afterEach(() => {
+            onlineManager.setOnline(true)
+        })
+
+        it('reports isPaused (not isLoading) when offline with no cached TVL', async () => {
+            onlineManager.setOnline(false)
+            mocks.getStringValue.mockReturnValue(VALID_PROJECTS_CONFIG)
+
+            const { result } = renderHook(() => useStakingProjectsQuery(), {
+                wrapper,
+            })
+
+            await waitFor(() => expect(result.current.isPaused).toBe(true))
+            expect(result.current.isLoading).toBe(false)
+            expect(result.current.isError).toBe(false)
+            expect(mocks.fetchStakingProjectsInfo).not.toHaveBeenCalled()
+        })
+
+        it('serves cached TVL data (stale) when going offline after a successful fetch', async () => {
+            mocks.getStringValue.mockReturnValue(VALID_PROJECTS_CONFIG)
+            mocks.fetchStakingProjectsInfo.mockResolvedValue({
+                folks: {
+                    tvl_in_algo: '1000',
+                    tvl_in_usd: '1200',
+                },
+                pact: {
+                    tvl_in_algo: '2000',
+                    tvl_in_usd: '2500',
+                },
+                valar: {
+                    tvl_in_algo: '500',
+                    tvl_in_usd: '630',
+                },
+            })
+
+            const { result, rerender } = renderHook(
+                () => useStakingProjectsQuery(),
+                { wrapper },
+            )
+
+            await waitFor(() =>
+                expect(result.current.data.length).toBeGreaterThan(0),
+            )
+
+            onlineManager.setOnline(false)
+            rerender()
+
+            expect(result.current.isPaused).toBe(false)
+            expect(result.current.isLoading).toBe(false)
+            expect(result.current.data.length).toBeGreaterThan(0)
+        })
     })
 })

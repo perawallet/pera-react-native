@@ -29,6 +29,9 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
         minWidth: 0,
     },
+    optionRowDisabled: {
+        opacity: 0.5,
+    },
     optionTextContainer: {
         flex: 1,
         minWidth: 0,
