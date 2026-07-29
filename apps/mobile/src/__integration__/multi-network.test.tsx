@@ -37,7 +37,7 @@ import { Networks, decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import {
     getAlgorandClient,
     useNetworkStore,
-    useNodeOverrideStore,
+    useCustomNetworkStore,
     resolveExpectedGenesisHash,
 } from '@perawallet/wallet-core-blockchain'
 import { fetchTransactionHistory } from '@perawallet/wallet-core-transactions'
@@ -87,7 +87,7 @@ describe('multi-network routing', () => {
 
     beforeEach(() => {
         requested.length = 0
-        useNodeOverrideStore.getState().resetState()
+        useCustomNetworkStore.getState().resetState()
         useNetworkStore.getState().setNetwork(Networks.betanet)
     })
 
