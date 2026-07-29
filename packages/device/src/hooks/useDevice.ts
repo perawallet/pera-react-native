@@ -39,6 +39,8 @@ const shouldRecreateDevice = (error: unknown): boolean => isNotFoundError(error)
 const isPushTokenClaimedError = (error: unknown): boolean =>
     isPeraNetworkError(error) && error.status === 400
 
+type RegisterDeviceResult = { createdNew: boolean }
+
 // Module scope, deliberately NOT a `useRef`: every `useDevice()` call site —
 // the mount-time registration, a notification-preference toggle mounted from
 // a completely different screen, any future caller — must share ONE lock per
@@ -56,6 +58,59 @@ const pendingDeviceCreates = new Map<Network, Promise<string>>()
  */
 export const clearPendingDeviceCreatesForTests = (): void => {
     pendingDeviceCreates.clear()
+}
+
+// Module scope, serializing EVERY `registerDevice` call for a network — not
+// just id-less creates. `pendingDeviceCreates` above only ever protects the
+// *first* registration; once an id exists (the steady state for every real
+// toggle) `registerDevice` goes straight to `registerWithId`, which has no
+// serialization of its own. `registerDevice` has more than one caller per
+// mounted app — the account/network-driven registrar in
+// `useDeviceRegistration` and, since PERA-4705's notification-toggle
+// rewrite, `useAccountNotificationToggle` — and both can hold the id
+// already. Toggling a preference writes the local store optimistically,
+// which changes `useDeviceRegistration`'s `accountsKey` and refires its own
+// `registerDevice` call concurrently with the toggle's; if the toggle's own
+// call then fails, its rollback fires a third, corrective call. Without a
+// queue spanning the whole registration (not just the id-less path), that
+// corrective call can lose a race against the second (stale, pre-rollback)
+// one still in flight, leaving the server on a flag the persisted local
+// store no longer holds. Chaining every call through one promise per
+// network instead guarantees strict arrival order, so the corrective call
+// always resolves last.
+const registrationQueues = new Map<Network, Promise<void>>()
+
+/**
+ * Tests only — never call from production code. The map above is module
+ * state, so without this a leaked, never-settled entry from one test (e.g.
+ * one that fails before resolving its own mocked in-flight promise) silently
+ * wedges every later test in the same file that registers on the same
+ * network.
+ */
+export const clearRegistrationQueuesForTests = (): void => {
+    registrationQueues.clear()
+}
+
+const enqueueRegistration = (
+    targetNetwork: Network,
+    task: () => Promise<RegisterDeviceResult>,
+): Promise<RegisterDeviceResult> => {
+    const previous = registrationQueues.get(targetNetwork)
+    // Run synchronously (no queue in front of it) when nothing is pending —
+    // matches the pre-existing behaviour callers rely on, where the create
+    // POST fires within the same tick as the call rather than one microtask
+    // later. Only an actual pending predecessor defers this call.
+    const result = previous ? previous.then(task) : task()
+    // Always-resolving tail: one call's rejection must not wedge every
+    // later call for this network behind a promise that will never settle.
+    registrationQueues.set(
+        targetNetwork,
+        result.then(
+            () => undefined,
+            () => undefined,
+        ),
+    )
+    return result
 }
 
 export const useDevice = () => {
@@ -206,27 +261,37 @@ export const useDevice = () => {
      * shared query-client; layering another retry loop here would compound to
      * up to 6 requests per call. The single 400 retry below is different in
      * kind: it is a documented v3 write race, not a transport failure.
+     *
+     * The whole attempt — id read included — runs inside `enqueueRegistration`
+     * (module scope, above), so two calls for the same network never run
+     * concurrently: the second always sees whatever the first left behind,
+     * whether that's a freshly minted id or a corrective write superseding an
+     * earlier one still in flight.
      */
     const registerDevice = useCallback(
-        async (
+        (
             accounts: DeviceAccountRegistration[],
-        ): Promise<{ createdNew: boolean }> => {
+        ): Promise<RegisterDeviceResult> => {
             const targetNetwork = network
-            const currentDeviceId =
-                useDeviceStore.getState().deviceIDs.get(targetNetwork) ?? null
+            return enqueueRegistration(targetNetwork, async () => {
+                const currentDeviceId =
+                    useDeviceStore.getState().deviceIDs.get(targetNetwork) ??
+                    null
 
-            if (!currentDeviceId) {
-                const { id, joinedExisting } = await acquireCreatedDeviceId(
-                    targetNetwork,
-                    accounts,
-                )
-                if (!joinedExisting) return { createdNew: true }
-                // Another in-flight call already minted the device; register
-                // THIS call's accounts against it instead of dropping them.
-                return registerWithId(targetNetwork, id, accounts)
-            }
+                if (!currentDeviceId) {
+                    const { id, joinedExisting } = await acquireCreatedDeviceId(
+                        targetNetwork,
+                        accounts,
+                    )
+                    if (!joinedExisting) return { createdNew: true }
+                    // Another in-flight call already minted the device;
+                    // register THIS call's accounts against it instead of
+                    // dropping them.
+                    return registerWithId(targetNetwork, id, accounts)
+                }
 
-            return registerWithId(targetNetwork, currentDeviceId, accounts)
+                return registerWithId(targetNetwork, currentDeviceId, accounts)
+            })
         },
         [network, acquireCreatedDeviceId, registerWithId],
     )

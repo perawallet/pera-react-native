@@ -22,13 +22,14 @@ const mocks = vi.hoisted(() => ({
     registerDevice: vi.fn(),
     showToast: vi.fn(),
     accounts: [] as WalletAccount[],
+    disabledAccounts: [] as string[],
 }))
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useNotificationPreferences: () => ({
         setAccountEnabled: mocks.setAccountEnabled,
         isAccountEnabled: vi.fn(() => true),
-        disabledAccounts: [],
+        disabledAccounts: mocks.disabledAccounts,
     }),
 }))
 
@@ -89,6 +90,7 @@ describe('useAccountNotificationToggle', () => {
         vi.clearAllMocks()
         mocks.registerDevice.mockResolvedValue({ createdNew: false })
         mocks.accounts = []
+        mocks.disabledAccounts = []
         // The in-flight guard is module scope (R2: shared app-wide across
         // hook instances), so it survives across tests in this file unless
         // explicitly cleared — a leaked entry would wedge an unrelated test.
@@ -320,7 +322,7 @@ describe('useAccountNotificationToggle', () => {
                 )
         })
 
-        // The second instance's request never started: no second PATCH, no
+        // The second instance's request never started: no second registration, no
         // second optimistic write.
         expect(secondTap).toBe(false)
         expect(mocks.registerDevice).toHaveBeenCalledTimes(1)
@@ -457,5 +459,30 @@ describe('useAccountNotificationToggle', () => {
         expect(accepted).toBe(false)
         expect(mocks.setAccountEnabled).toHaveBeenLastCalledWith('ADDR_A', true)
         expect(mocks.showToast).toHaveBeenCalled()
+    })
+
+    // Review Finding 2: with `disabledAccounts` fixed at `[]` (as it was
+    // before this test), the `enabled === true` branch's filter is only ever
+    // evaluated against an empty array — un-muting was untestable. Seed a
+    // pre-muted account so the filter has something to actually remove.
+    it('removes the address from the disabled set when re-enabling a muted account', async () => {
+        seedAccounts([
+            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
+        ])
+        mocks.disabledAccounts = ['ADDR_A']
+
+        const { result } = renderHook(() => useAccountNotificationToggle())
+
+        await act(async () => {
+            await result.current.toggleAccountNotification('ADDR_A', true)
+        })
+
+        expect(mocks.registerDevice).toHaveBeenCalledWith([
+            {
+                address: 'ADDR_A',
+                accountType: 'algo25',
+                receiveNotifications: true,
+            },
+        ])
     })
 })

@@ -165,12 +165,16 @@ describe('services/device/hooks', () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
         await seedPushToken('test-fcm-token')
@@ -203,12 +207,16 @@ describe('services/device/hooks', () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
         await seedDeviceId('mainnet', 'DEV-1')
@@ -230,12 +238,16 @@ describe('services/device/hooks', () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
         await seedPushToken(null)
@@ -258,12 +270,16 @@ describe('services/device/hooks', () => {
         mockedRegisterDeviceMutation.mockResolvedValue({})
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
 
@@ -285,12 +301,16 @@ describe('services/device/hooks', () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
         await seedDeviceId('mainnet', 'STALE')
@@ -321,12 +341,16 @@ describe('services/device/hooks', () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
         await seedDeviceId('mainnet', 'DEV-1')
@@ -378,12 +402,16 @@ describe('services/device/hooks', () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
         await seedDeviceId('mainnet', 'DEV-1')
@@ -412,12 +440,16 @@ describe('services/device/hooks', () => {
         )
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
 
@@ -441,12 +473,16 @@ describe('services/device/hooks', () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
 
@@ -527,16 +563,125 @@ describe('services/device/hooks', () => {
         )
     })
 
+    // PERA-4705 (Task 12 review, Finding 1): the id-less create lock above
+    // only ever protects the *first* registration for a network. Once an id
+    // exists — the steady state for every real toggle — `registerDevice`
+    // goes straight to `registerWithId`, which had no serialization at all.
+    // Two independent callers both hold the id already (e.g. the
+    // account/network-driven registrar and a notification-preference
+    // toggle, each its own `useDevice()` instance): without a lock spanning
+    // the *whole* registration, not just the id-less path, their writes can
+    // land in either order, and a later corrective call (a toggle's
+    // rollback) can lose to an earlier, stale one still in flight.
+    test('serializes registrations for an already-registered device, not just id-less creates', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
+        clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('mainnet', 'DEV-1')
+
+        const accountsA: DeviceAccountRegistration[] = [
+            {
+                address: 'ADDR_A',
+                accountType: DeviceAccountTypes.algo25,
+                receiveNotifications: false,
+            },
+        ]
+        const accountsB: DeviceAccountRegistration[] = [
+            {
+                address: 'ADDR_A',
+                accountType: DeviceAccountTypes.algo25,
+                receiveNotifications: true,
+            },
+        ]
+
+        let resolveFirst: (value: { id: string }) => void = () => {}
+        const firstResponse = new Promise<{ id: string }>(resolve => {
+            resolveFirst = resolve
+        })
+
+        mockedRegisterDeviceMutation
+            .mockImplementationOnce(() => firstResponse) // instance A, hangs
+            .mockResolvedValueOnce({ id: 'DEV-1' }) // instance B's follow-up
+
+        // Two DISTINCT mounted instances, both already holding the id — the
+        // steady state the id-less lock never covers.
+        const { result: instanceA } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+        const { result: instanceB } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        let firstOutcome: { createdNew: boolean } | undefined
+        let firstAttempt: Promise<{ createdNew: boolean }> = Promise.resolve({
+            createdNew: false,
+        })
+        act(() => {
+            firstAttempt = instanceA.current.registerDevice(accountsA)
+        })
+
+        let secondOutcome: { createdNew: boolean } | undefined
+        let secondAttempt: Promise<{ createdNew: boolean }> = Promise.resolve({
+            createdNew: false,
+        })
+        act(() => {
+            secondAttempt = instanceB.current.registerDevice(accountsB)
+        })
+
+        // The second, contradictory write must not fire while the first is
+        // still in flight — without the fix this assertion fails (both
+        // fire immediately, 2 calls here).
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(1)
+
+        await act(async () => {
+            resolveFirst({ id: 'DEV-1' })
+            firstOutcome = await firstAttempt
+            secondOutcome = await secondAttempt
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(2)
+        // Strict arrival order: B's payload — the later, "corrective" one in
+        // the scenario this guards — is always the last write the server
+        // sees.
+        expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(1, {
+            data: expect.objectContaining({
+                accounts: accountsA,
+                id: 'DEV-1',
+            }),
+        })
+        expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(2, {
+            data: expect.objectContaining({
+                accounts: accountsB,
+                id: 'DEV-1',
+            }),
+        })
+        expect(firstOutcome).toEqual({ createdNew: false })
+        expect(secondOutcome).toEqual({ createdNew: false })
+    })
+
     test('a failed id-less create releases the shared lock for every hook instance', async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
 
@@ -578,12 +723,16 @@ describe('services/device/hooks', () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
         const { useNetwork } =
             await import('@perawallet/wallet-core-blockchain')
 
@@ -654,12 +803,16 @@ describe('services/device/hooks', () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
 
@@ -702,12 +855,16 @@ describe('services/device/hooks', () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
         await seedDeviceId('testnet', 'OLD-DEV')
@@ -738,12 +895,16 @@ describe('services/device/hooks', () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
 
@@ -765,12 +926,16 @@ describe('services/device/hooks', () => {
         )
 
         const { useDeviceStore } = await import('../../store')
-        const { useDevice, clearPendingDeviceCreatesForTests } =
-            await import('../useDevice')
+        const {
+            useDevice,
+            clearPendingDeviceCreatesForTests,
+            clearRegistrationQueuesForTests,
+        } = await import('../useDevice')
         // The dedup lock is module scope (shared across every `useDevice()`
         // consumer, not just this test's instance) — clear it so a leaked
         // in-flight entry from an earlier test can't wedge this one.
         clearPendingDeviceCreatesForTests()
+        clearRegistrationQueuesForTests()
 
         useDeviceStore.getState().resetState()
         await seedDeviceId('testnet', 'stale-id')
