@@ -20,6 +20,7 @@ import {
 } from '@components/core'
 import { isCollectible, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { CollectibleListItem } from '../CollectibleListItem'
@@ -98,11 +99,14 @@ export const AccountAssetItemView = ({
 
     const balance = (
         <PWView style={styles.amountContainer}>
+            {/* No unit next to the figure: the row already carries it under the
+                asset name, and a long one squeezed the amount out (PERA-4733).
+                ALGO keeps its glyph — that's the brand mark, not a unit name. */}
             <AssetAmount
                 asset={asset}
                 value={accountBalance.amount}
                 density='compact'
-                showSymbol
+                showSymbol={isAlgoAssetId(accountBalance.assetId)}
                 style={styles.primaryAmount}
                 numberOfLines={1}
             />
