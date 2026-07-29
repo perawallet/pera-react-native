@@ -13,8 +13,8 @@
 // storage/crypto.ts — Keychain replaced by the session vault, quick-crypto
 // replaced by @noble/ciphers (sync, format-identical to node aes-256-gcm).
 
-import { gcm } from '@noble/ciphers/aes'
-import { bytesToUtf8, utf8ToBytes } from '@noble/ciphers/utils'
+import { gcm } from '@noble/ciphers/aes.js'
+import { bytesToUtf8, utf8ToBytes } from '@noble/ciphers/utils.js'
 import { base64 } from '@scure/base'
 import { VaultLockedError } from '../errors'
 import { getSessionMasterKey } from '../vault/session'

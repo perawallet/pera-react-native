@@ -15,6 +15,12 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 vi.mock('ky', () => ({ isHTTPError: () => false }))
 vi.mock('../baanx-client', () => ({ baanxDirectRequest: vi.fn() }))
 vi.mock('@perawallet/wallet-core-shared', () => ({ queryClient: vi.fn() }))
+// default-transport pulls the integrity-token reader for proxy headers; stub
+// it so the app-integrity store (and its shared/registerStore import) stays
+// out of this registry-focused test.
+vi.mock('@perawallet/wallet-core-app-integrity', () => ({
+    getValidIntegrityToken: () => null,
+}))
 
 import {
     getCardTransport,

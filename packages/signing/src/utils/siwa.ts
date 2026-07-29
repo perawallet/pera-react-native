@@ -12,7 +12,8 @@
 
 import { canonify } from 'canonify'
 import { z } from 'zod'
-import { utf8ByteLength } from '@perawallet/wallet-core-shared'
+import { sha256 } from '@noble/hashes/sha2.js'
+import { utf8ByteLength, encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { Arc60BadJsonError } from './arc60-errors'
 
 const maxBytes = (max: number) => (value: string) =>
@@ -111,4 +112,69 @@ export const parseSiwa = (jsonString: string): Siwa => {
     }
 
     return result.data
+}
+
+export type BuildSiwaAuthRequestArgs = {
+    domain: string
+    /** The account proving ownership; becomes the SIWA `account_address`. */
+    accountAddress: string
+    uri: string
+    /** Single-use anti-replay nonce. */
+    nonce: string
+    statement?: string
+    /** TTL in ms for `expiration-time`. Defaults to 30 minutes. */
+    ttlMs?: number
+    /** Injected for deterministic tests; defaults to `new Date()`. */
+    now?: Date
+}
+
+export type SiwaAuthRequest = {
+    /** The canonical SIWA payload, exposed for callers that need to log it. */
+    payload: Siwa
+    /** base64(canonical JSON) — ready for `Arc60StdSigData.data`. */
+    data: string
+    /** sha256(domain) — ready for `Arc60StdSigData.authenticatorData`. */
+    authenticatorData: Uint8Array
+}
+
+const SIWA_AUTH_DEFAULT_TTL_MS = 30 * 60 * 1000
+
+/**
+ * Builds a canonical ARC-60 AUTH-scope SIWA request the wallet signs itself
+ * (as opposed to `parseSiwa`, which validates a request signed elsewhere).
+ * The returned `data` is already canonicalized per RFC 8785 — the exact
+ * bytes {@link parseSiwa} will re-derive and compare against.
+ */
+export const buildSiwaAuthRequest = ({
+    domain,
+    accountAddress,
+    uri,
+    nonce,
+    statement,
+    ttlMs = SIWA_AUTH_DEFAULT_TTL_MS,
+    now = new Date(),
+}: BuildSiwaAuthRequestArgs): SiwaAuthRequest => {
+    const payload: Siwa = {
+        domain,
+        account_address: accountAddress,
+        uri,
+        version: '1',
+        ...(statement !== undefined ? { statement } : {}),
+        nonce,
+        'issued-at': now.toISOString(),
+        'expiration-time': new Date(now.getTime() + ttlMs).toISOString(),
+        chain_id: '283',
+        type: 'ed25519',
+    }
+
+    const canonical = canonify(payload)
+    if (canonical === undefined) {
+        throw new Arc60BadJsonError('failed to canonicalize SIWA payload')
+    }
+
+    return {
+        payload,
+        data: encodeToBase64(new TextEncoder().encode(canonical)),
+        authenticatorData: sha256(new TextEncoder().encode(domain)),
+    }
 }

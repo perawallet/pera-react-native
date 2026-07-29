@@ -25,6 +25,8 @@ import { http, HttpResponse } from 'msw'
 import { View } from 'react-native'
 import { Notifier } from 'react-native-notifier'
 
+import { mockOauthChain } from '@perawallet/wallet-core-card/test-handlers'
+
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { CardSignInScreen } from '@modules/card/screens/CardSignInScreen'
@@ -53,6 +55,10 @@ const renderSignIn = () =>
         ],
     })
 
+// The post-login OAuth code+PKCE chain (initiate → authorize with echoed
+// CSRF state → token exchange) is stubbed by the package's mockOauthChain.
+const stubOauthChain = () => server.use(...mockOauthChain())
+
 // Enter a valid email + password and wait for the Sign In button to enable.
 const fillCredentials = async () => {
     fireEvent.change(screen.getByTestId('card-sign-in-email-input'), {
@@ -74,7 +80,7 @@ describe('Flow: Card sign in', () => {
     afterEach(() => server.resetHandlers())
     afterAll(() => server.close())
 
-    it('Given valid credentials and a ready account, when Sign In is pressed, then the session is created and the wallet home opens', async () => {
+    it('Given valid credentials and a ready account, when Sign In is pressed, then the OAuth exchange runs and the wallet home opens', async () => {
         const loginSpy = vi.fn(() =>
             HttpResponse.json(
                 {
@@ -88,6 +94,7 @@ describe('Flow: Card sign in', () => {
             ),
         )
         server.use(http.post('*/v1/auth/login', loginSpy))
+        stubOauthChain()
 
         renderSignIn()
         await fillCredentials()
@@ -98,6 +105,40 @@ describe('Flow: Card sign in', () => {
             expect(screen.getByTestId('home-tab-stub')).toBeTruthy(),
         )
         expect(Notifier.showNotification).toHaveBeenCalled()
+    })
+
+    it('Given the OAuth exchange fails after a valid login, when Sign In is pressed, then a fallback session is created and the wallet home still opens', async () => {
+        // Credentials were accepted, so an OAuth-proxy outage must degrade to
+        // the refresh-less 6h session (pre-OAuth behavior), not fail login.
+        server.use(
+            http.post('*/v1/auth/login', () =>
+                HttpResponse.json(
+                    {
+                        accessToken: 'access-token',
+                        userId: 'user-1',
+                        isOtpRequired: false,
+                        phase: null,
+                        isLinked: true,
+                    },
+                    { status: 200 },
+                ),
+            ),
+            // Initiate rejects — the chain never reaches the token exchange.
+            http.get('*/baanx/oauth/initiate', () =>
+                HttpResponse.json(
+                    { message: 'not configured' },
+                    { status: 500 },
+                ),
+            ),
+        )
+
+        renderSignIn()
+        await fillCredentials()
+        fireEvent.click(screen.getByTestId('card-sign-in-submit'))
+
+        await waitFor(() =>
+            expect(screen.getByTestId('home-tab-stub')).toBeTruthy(),
+        )
     })
 
     it('Given a mid-registration login for an unverified user, when Sign In is pressed, then the KYC entry screen opens', async () => {
@@ -207,15 +248,20 @@ describe('Flow: Card sign in', () => {
         )
     })
 
-    it('Given the account requires a 2FA code, when Sign In is pressed, then the code input appears and a valid code completes sign-in', async () => {
+    it('Given the account requires a 2FA code, when Sign In is pressed, then the code is sent, the input appears, and a valid code completes sign-in', async () => {
         let calls = 0
+        let otpRequestUserId: string | null = null
         server.use(
             http.post('*/v1/auth/login', () => {
                 calls += 1
                 // First attempt: credentials accepted but a code is required.
                 if (calls === 1) {
                     return HttpResponse.json(
-                        { accessToken: null, isOtpRequired: true },
+                        {
+                            accessToken: null,
+                            userId: 'user-2fa',
+                            isOtpRequired: true,
+                        },
                         { status: 200 },
                     )
                 }
@@ -225,7 +271,15 @@ describe('Flow: Card sign in', () => {
                     { status: 200 },
                 )
             }),
+            // Baanx does not send the code on its own — the app must request
+            // it through the OTP endpoint, keyed on the login userId.
+            http.post('*/v1/auth/login/otp', async ({ request }) => {
+                const body = (await request.json()) as { userId?: string }
+                otpRequestUserId = body.userId ?? null
+                return HttpResponse.json({ success: true }, { status: 200 })
+            }),
         )
+        stubOauthChain()
 
         renderSignIn()
         await fillCredentials()
@@ -233,6 +287,8 @@ describe('Flow: Card sign in', () => {
 
         // A full code auto-submits via the input's onComplete.
         const otp = await screen.findByTestId('card-sign-in-otp-input')
+        // The 2FA code was requested for the right user before entry.
+        await waitFor(() => expect(otpRequestUserId).toBe('user-2fa'))
         fireEvent.change(otp, { target: { value: '123456' } })
 
         await waitFor(() => expect(calls).toBe(2))
@@ -259,6 +315,7 @@ describe('Flow: Card sign in', () => {
                 ),
             ),
         )
+        stubOauthChain()
 
         renderSignIn()
         await fillCredentials()

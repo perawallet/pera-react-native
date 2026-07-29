@@ -56,7 +56,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystoreStore: () => keystoreStore,
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    // Keep the real utils (passkey.ts uses toUrlSafeBase64); stub only the
+    // logger so assertions stay silent.
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     logger: { warn: vi.fn(), error: vi.fn() },
 }))
 

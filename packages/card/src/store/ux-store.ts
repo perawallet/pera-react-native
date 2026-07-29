@@ -48,6 +48,8 @@ const initialState = {
     escrowCardAddress: null,
     escrowCardOwner: null,
     escrowCardNetwork: null,
+    escrowCardTxId: null,
+    escrowCardApproved: false,
     cardId: null,
     lastKnownStatus: null,
     lastKnownPanLast4: null,
@@ -81,7 +83,12 @@ export const useCardStore: UseBoundStore<
                     escrowCardAddress: card?.cardAddress ?? null,
                     escrowCardOwner: card?.ownerAddress ?? null,
                     escrowCardNetwork: card?.network ?? null,
+                    escrowCardTxId: card?.txId ?? null,
+                    // A newly-set (or cleared) card always starts unapproved —
+                    // approval is recorded separately once the AB call succeeds.
+                    escrowCardApproved: false,
                 }),
+            markEscrowCardApproved: () => set({ escrowCardApproved: true }),
             setCardSnapshot: ({ cardId, status, panLast4 }) =>
                 set({
                     cardId,
@@ -136,6 +143,8 @@ export const useCardStore: UseBoundStore<
                 escrowCardAddress: state.escrowCardAddress,
                 escrowCardOwner: state.escrowCardOwner,
                 escrowCardNetwork: state.escrowCardNetwork,
+                escrowCardTxId: state.escrowCardTxId,
+                escrowCardApproved: state.escrowCardApproved,
                 cardId: state.cardId,
                 lastKnownStatus: state.lastKnownStatus,
                 lastKnownPanLast4: state.lastKnownPanLast4,

@@ -89,8 +89,9 @@ describe('useRescanRekeyedAccounts — scanAll', () => {
                 keyPairId: 'k',
             } as WalletAccount,
         ])
-        mocks.fetchRekeyedAddresses.mockImplementation(async (source: string) =>
-            source === 'SOURCE_A' ? ['IN_WALLET', 'NEW_A'] : ['NEW_B'],
+        mocks.fetchRekeyedAddresses.mockImplementation(
+            async (source: string) =>
+                source === 'SOURCE_A' ? ['IN_WALLET', 'NEW_A'] : ['NEW_B'],
         )
 
         const { result } = renderHook(() => useRescanRekeyedAccounts())

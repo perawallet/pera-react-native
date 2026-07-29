@@ -19,21 +19,35 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { getNetworkConfig, type Network } from '@perawallet/wallet-core-config'
 import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
+import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
 import type { Arc56Contract } from '@algorandfoundation/algokit-utils/types/app-arc56'
 import killswitchArc56 from '../api/escrow/killswitch-arc56.json'
 
-// SWAP POINT: AppliedBlockchain Killswitch contract (`enable(card)` / `kill()`).
-// The AutoDraw delegated LSig only draws while the Killswitch holds an on-chain
-// "accounts" box for the funding account — created by `enable`, deleted by
-// `kill`. Vendored ARC-56 spec + app id (`cardKillswitchAppId`) come from AB;
+// SWAP POINT: AppliedBlockchain Killswitch contract (`enable(card,asset)` /
+// `kill(asset)` / `authorize(account,asset)`). The AutoDraw delegated LSig
+// only draws while the Killswitch holds an on-chain "accounts" box for the
+// (funding account, asset) pair — created by `enable`, deleted by `kill`.
+// Delegation is per-asset now (the LSig itself no longer pins a single asset),
+// so every call and the box key below are keyed by (account, asset), not just
+// account. Vendored ARC-56 spec + app id (`cardKillswitchAppId`) come from AB;
 // regenerate the spec if the contract changes.
 const KILLSWITCH_SPEC = killswitchArc56 as unknown as Arc56Contract
 
-// Accounts-box MBR the caller funds on enable: 2500 + 400 * (32-byte address
-// key + 8-byte uint64 value). Matches the demo's ACCOUNTS_BOX_MBR.
-const ACCOUNTS_BOX_MBR = 18_500n
-// Headroom over the exact MBR (matches the demo's funding buffer).
-const FUNDING_BUFFER = 100_000n
+/**
+ * Builds the Killswitch "accounts" box key for (account, asset): the raw
+ * 32-byte address followed by the asset id as an 8-byte big-endian `uint64` —
+ * matching how puya-ts ARC-4-encodes a `[Account, Asset]` box-map key (static
+ * types concatenate directly, no length prefix, no keyPrefix on this box map).
+ */
+const buildAccountAssetBoxName = (
+    address: string,
+    assetId: bigint,
+): Uint8Array => {
+    const key = new Uint8Array(40)
+    key.set(decodeAddress(address).publicKey, 0)
+    new DataView(key.buffer).setBigUint64(32, assetId)
+    return key
+}
 
 /** True once a real Killswitch app id is configured (not the dev placeholder). */
 export const isKillswitchConfigured = (network: Network): boolean => {
@@ -52,32 +66,45 @@ const isNotFoundError = (error: unknown): boolean => {
 
 export type UseKillswitchAutoDrawResult = {
     /**
-     * Builds the unsigned group to ENABLE auto-draw: fund the Killswitch app
-     * account for the accounts-box MBR, then `enable(card)` (one inner
-     * `getCardData` call to verify card ownership). Resources (box, Main-app,
+     * Builds the unsigned `enable(card, asset)` call (one inner `getCardData`
+     * call to verify card ownership), fee-delegation-ready: `staticFee` is
+     * zeroed rather than self-funded, since the caller submits this via the
+     * Pera backend's fee-delegation endpoint (`includeMbr: true`), which
+     * sponsors both the accounts-box MBR and the group's total fee — the
+     * enabling account needs no ALGO of its own. Resources (box, Main-app,
      * card-account refs) are populated via simulate.
      */
     buildEnable: (params: {
         sender: string
         cardAddress: string
+        asset: string
     }) => Promise<PeraTransaction[]>
     /**
-     * Builds the unsigned group to DISABLE auto-draw: `kill()`, which deletes
-     * the caller's accounts box (releasing its MBR). No funding, no inner txns.
+     * Builds the unsigned group to DISABLE auto-draw for (sender, asset):
+     * `kill(asset)`, which deletes the caller's accounts box for that asset
+     * (releasing its MBR). No funding, no inner txns.
      */
-    buildKill: (params: { sender: string }) => Promise<PeraTransaction[]>
+    buildKill: (params: {
+        sender: string
+        asset: string
+    }) => Promise<PeraTransaction[]>
     /**
-     * Reads the sender's on-chain auto-draw state. The Killswitch keeps one
-     * `accounts` box per enabled account, keyed by the raw 32-byte address
-     * (no prefix), so a present box == enabled. Callers MUST pre-check this
-     * instead of submitting and parsing reverts: `enable`/`kill` assert
-     * ALREADY_ENABLED/ALREADY_DISABLED, and on our raw-composer path those
-     * surface from the resource-population simulate as opaque plain-`Error`
-     * "assert failed pc=NNN" messages (the ARC-56 error mapping never runs).
-     * The AB demo uses the same avoidance strategy. Network errors (non-404)
-     * are rethrown — an unknown state must not be read as "disabled".
+     * Reads the sender's on-chain auto-draw state for a given asset. The
+     * Killswitch keeps one `accounts` box per enabled (account, asset) pair,
+     * keyed by the raw 32-byte address followed by the 8-byte big-endian
+     * asset id (no prefix), so a present box == enabled for that asset. Callers
+     * MUST pre-check this instead of submitting and parsing reverts:
+     * `enable`/`kill` assert ALREADY_ENABLED/ALREADY_DISABLED, and on our
+     * raw-composer path those surface from the resource-population simulate as
+     * opaque plain-`Error` "assert failed pc=NNN" messages (the ARC-56 error
+     * mapping never runs). The AB demo uses the same avoidance strategy.
+     * Network errors (non-404) are rethrown — an unknown state must not be
+     * read as "disabled".
      */
-    isAutoDrawEnabled: (params: { sender: string }) => Promise<boolean>
+    isAutoDrawEnabled: (params: {
+        sender: string
+        asset: string
+    }) => Promise<boolean>
 }
 
 export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
@@ -100,25 +127,23 @@ export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
         async ({
             sender,
             cardAddress,
+            asset,
         }: {
             sender: string
             cardAddress: string
+            asset: string
         }): Promise<PeraTransaction[]> => {
             const appClient = getAppClient(sender)
-            const minFee = BigInt((await algokit.getSuggestedParams()).minFee)
 
             const composer = algokit.newGroup()
-            composer.addPayment({
-                sender,
-                receiver: appClient.appAddress,
-                amount: (ACCOUNTS_BOX_MBR + FUNDING_BUFFER).microAlgo(),
-            })
             composer.addAppCallMethodCall(
                 await appClient.params.call({
                     method: 'enable',
-                    args: [cardAddress],
-                    // Cover the one inner `getCardData` call to the Main app.
-                    extraFee: minFee.microAlgo(),
+                    args: [cardAddress, BigInt(asset)],
+                    // Zero — the fee-delegation sponsor tops up the group's
+                    // fee pool to cover this call AND its one inner
+                    // `getCardData` call.
+                    staticFee: AlgoAmount.MicroAlgo(0),
                 }),
             )
 
@@ -133,12 +158,21 @@ export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
     )
 
     const buildKill = useCallback(
-        async ({ sender }: { sender: string }): Promise<PeraTransaction[]> => {
+        async ({
+            sender,
+            asset,
+        }: {
+            sender: string
+            asset: string
+        }): Promise<PeraTransaction[]> => {
             const appClient = getAppClient(sender)
 
             const composer = algokit.newGroup()
             composer.addAppCallMethodCall(
-                await appClient.params.call({ method: 'kill', args: [] }),
+                await appClient.params.call({
+                    method: 'kill',
+                    args: [BigInt(asset)],
+                }),
             )
 
             const { atc } = await composer.build()
@@ -152,13 +186,19 @@ export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
     )
 
     const isAutoDrawEnabled = useCallback(
-        async ({ sender }: { sender: string }): Promise<boolean> => {
+        async ({
+            sender,
+            asset,
+        }: {
+            sender: string
+            asset: string
+        }): Promise<boolean> => {
             const { cardKillswitchAppId } = getNetworkConfig(network)
             try {
                 await algokit.client.algod
                     .getApplicationBoxByName(
                         BigInt(cardKillswitchAppId),
-                        decodeAddress(sender).publicKey,
+                        buildAccountAssetBoxName(sender, BigInt(asset)),
                     )
                     .do()
                 return true

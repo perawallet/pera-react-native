@@ -47,8 +47,9 @@ describe('renderAutoDrawTeal', () => {
         })
 
         expect(teal).not.toContain('TMPL_')
-        // App/asset ids land in the intcblock line.
-        expect(teal).toContain('intcblock 1 4 6 0 10458941 222 111')
+        // App ids land in the intcblock line. The asset is no longer pinned
+        // into the template — delegation is per-asset via the Killswitch now.
+        expect(teal).toContain('intcblock 1 6 222 111')
         // Genesis hash becomes a 0x + 64-hex bytecblock literal.
         expect(teal).toMatch(/bytecblock 0x[0-9a-f]{64}\n/)
     })

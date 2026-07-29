@@ -14,10 +14,23 @@
 // them into the production entry (src/index.ts). Consumed only via the test
 // alias `@perawallet/wallet-core-card/test-handlers`.
 
-export { mockLogin, mockRefreshToken } from './api/auth/msw-handlers'
+export {
+    mockLogin,
+    mockOauthAuthorize,
+    mockOauthChain,
+    mockOauthInitiate,
+    mockOauthToken,
+    mockRefreshToken,
+    mockSendLoginOtp,
+} from './api/auth/msw-handlers'
 export type {
     MockLoginParams,
+    MockOauthAuthorizeParams,
+    MockOauthChainParams,
+    MockOauthInitiateParams,
+    MockOauthTokenParams,
     MockRefreshTokenParams,
+    MockSendLoginOtpParams,
 } from './api/auth/msw-handlers'
 
 export {
@@ -73,13 +86,16 @@ export type {
 } from './api/delegation/msw-handlers'
 
 export {
-    mockCreateEscrowCard,
+    mockApproveEscrowCard,
     mockPostDelegatorLsig,
 } from './api/escrow/msw-handlers'
 export type {
-    MockCreateEscrowCardParams,
+    MockApproveEscrowCardParams,
     MockPostDelegatorLsigParams,
 } from './api/escrow/msw-handlers'
+
+export { mockCreateCard } from './api/card-creation/msw-handlers'
+export type { MockCreateCardParams } from './api/card-creation/msw-handlers'
 
 export {
     mockSendEmailVerification,
