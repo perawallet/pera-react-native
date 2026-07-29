@@ -406,4 +406,22 @@ describe('useTransactionHistoryQuery', () => {
         const ids = result.current.transactions.map(tx => tx.id)
         expect(ids).toEqual([...fullPage.map(tx => tx.id), 'TX_OLDER'])
     })
+
+    test('keeps the transactions array identity stable across re-renders', async () => {
+        const { result, rerender } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+        const firstIdentity = result.current.transactions
+        rerender()
+
+        expect(result.current.transactions).toBe(firstIdentity)
+    })
 })
