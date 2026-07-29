@@ -16,13 +16,14 @@ const mocks = vi.hoisted(() => ({
     updateNodeEndpoints: vi.fn(),
 }))
 
-// Partial mock: algorandClient.ts's module-level subscription (Step 7) would
-// otherwise call the REAL updateNodeEndpoints on every setOverride/clearOverride
-// /resetState below, building real ky clients as a side effect of unrelated
-// tests. Only updateNodeEndpoints is swapped out — everything else
-// (registerStore, logger, etc., which ../store's node-override-store.ts needs
-// at import time) stays real via importOriginal, or the store import below
-// would crash with "registerStore is not a function".
+// Partial mock: algorandClient.ts's module-level subscription (Step 4) would
+// otherwise call the REAL updateNodeEndpoints on every setCustomNetwork/
+// clearCustomNetwork/resetState below, building real ky clients as a side
+// effect of unrelated tests. Only updateNodeEndpoints is swapped out —
+// everything else (registerStore, logger, etc., which ../store's
+// custom-network-store.ts needs at import time) stays real via
+// importOriginal, or the store import below would crash with "registerStore
+// is not a function".
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-shared')
@@ -31,69 +32,108 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 }))
 
 import { Networks, getNetworkConfig } from '@perawallet/wallet-core-config'
-import { useNodeOverrideStore } from '../../store'
+import { useCustomNetworkStore } from '../../store'
 import { resolveChainEndpoints } from '../algorandClient'
 
 describe('resolveChainEndpoints', () => {
     beforeEach(() => {
-        useNodeOverrideStore.getState().resetState()
+        useCustomNetworkStore.getState().resetState()
     })
 
-    test('uses the baked chain config when there is no override', () => {
-        expect(resolveChainEndpoints(Networks.fnet)).toEqual({
-            algodUrl: getNetworkConfig(Networks.fnet).algodUrl,
-            indexerUrl: getNetworkConfig(Networks.fnet).indexerUrl,
-            algodToken: getNetworkConfig(Networks.fnet).algodToken,
-            indexerToken: getNetworkConfig(Networks.fnet).indexerToken,
+    test('uses the baked chain config when custom is not configured', () => {
+        expect(resolveChainEndpoints(Networks.betanet)).toEqual({
+            algodUrl: getNetworkConfig(Networks.betanet).algodUrl,
+            indexerUrl: getNetworkConfig(Networks.betanet).indexerUrl,
+            algodToken: getNetworkConfig(Networks.betanet).algodToken,
+            indexerToken: getNetworkConfig(Networks.betanet).indexerToken,
         })
     })
 
-    test('an override replaces only the fields it sets', () => {
-        useNodeOverrideStore.getState().setOverride(Networks.localnet, {
+    test('the custom network resolves from the real custom-network store, end-to-end', () => {
+        useCustomNetworkStore.getState().setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
         })
 
-        const resolved = resolveChainEndpoints(Networks.localnet)
+        const resolved = resolveChainEndpoints(Networks.custom)
 
         expect(resolved.algodUrl).toBe('http://10.0.0.5:4001')
-        expect(resolved.indexerUrl).toBe(
-            getNetworkConfig(Networks.localnet).indexerUrl,
-        )
-        expect(resolved.algodToken).toBe(
-            getNetworkConfig(Networks.localnet).algodToken,
-        )
+        expect(resolved.indexerUrl).toBe('http://10.0.0.5:8980')
     })
 })
 
-describe('node-override store subscription (real store, end-to-end)', () => {
+describe('custom-network store subscription (real store, end-to-end)', () => {
     beforeEach(() => {
-        useNodeOverrideStore.getState().resetState()
+        useCustomNetworkStore.getState().resetState()
         mocks.updateNodeEndpoints.mockClear()
     })
 
-    test('clearing an override re-syncs that network back to baked endpoints, not the stale override', () => {
-        useNodeOverrideStore.getState().setOverride(Networks.localnet, {
+    test('saving a custom config re-syncs every network, not just custom', () => {
+        useCustomNetworkStore.getState().setCustomNetwork({
             algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
         })
-        // Isolate what clearOverride itself triggers from what setOverride
-        // above already did.
-        mocks.updateNodeEndpoints.mockClear()
-
-        useNodeOverrideStore.getState().clearOverride(Networks.localnet)
 
         expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(
-            Networks.localnet,
+            Networks.custom,
             {
-                algodUrl: getNetworkConfig(Networks.localnet).algodUrl,
-                indexerUrl: getNetworkConfig(Networks.localnet).indexerUrl,
-                algodToken: getNetworkConfig(Networks.localnet).algodToken,
-                indexerToken: getNetworkConfig(Networks.localnet).indexerToken,
+                algodUrl: 'http://10.0.0.5:4001',
+                indexerUrl: 'http://10.0.0.5:8980',
+                // No token set above, so it falls back to the (empty) baked
+                // placeholder — see the `custom` entry in network-config.ts.
+                algodToken: '',
+                indexerToken: '',
+            },
+        )
+        // Every other network still gets pushed, with its baked config — the
+        // subscription callback takes no argument and re-pushes ALL networks
+        // unconditionally rather than branching on which one changed (see
+        // the "clearing" test below for why a keys/diff-based push would be
+        // wrong here).
+        for (const network of [
+            Networks.mainnet,
+            Networks.testnet,
+            Networks.betanet,
+        ]) {
+            expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(network, {
+                algodUrl: getNetworkConfig(network).algodUrl,
+                indexerUrl: getNetworkConfig(network).indexerUrl,
+                algodToken: getNetworkConfig(network).algodToken,
+                indexerToken: getNetworkConfig(network).indexerToken,
+            })
+        }
+    })
+
+    test('clearing the custom config re-syncs it back to the empty baked placeholder, not the stale custom endpoints', () => {
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
+        })
+        // Isolate what clearCustomNetwork itself triggers from what
+        // setCustomNetwork above already did.
+        mocks.updateNodeEndpoints.mockClear()
+
+        useCustomNetworkStore.getState().clearCustomNetwork()
+
+        expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(
+            Networks.custom,
+            {
+                algodUrl: getNetworkConfig(Networks.custom).algodUrl,
+                indexerUrl: getNetworkConfig(Networks.custom).indexerUrl,
+                algodToken: getNetworkConfig(Networks.custom).algodToken,
+                indexerToken: getNetworkConfig(Networks.custom).indexerToken,
             },
         )
     })
 })
 
-describe('initial push of a persisted override on module load', () => {
+describe('initial push of a persisted custom config on module load', () => {
     // Placed last in this file deliberately: every test here calls
     // `vi.resetModules()` and re-imports `../algorandClient` dynamically, so
     // it must not run before the describe blocks above that rely on the
@@ -101,29 +141,31 @@ describe('initial push of a persisted override on module load', () => {
     // (`vi.resetModules()` only affects what a LATER `import()` resolves to —
     // it does not retroactively change already-bound references — but there
     // is no reason to tempt that).
-    test('a pre-seeded (persisted) override reaches updateNodeEndpoints on fresh module load, with no store write in this test', async () => {
+    test('a pre-seeded (persisted) custom config reaches updateNodeEndpoints on fresh module load, with no store write in this test', async () => {
         vi.resetModules()
         mocks.updateNodeEndpoints.mockClear()
 
         const { getProvider } =
             await import('@perawallet/wallet-extension-provider')
-        // Simulates a previous session's persisted override already on disk
-        // BEFORE the module ever loads — no `setOverride` / `clearOverride` /
-        // `resetState` call happens anywhere in this test, only a raw write
-        // to the underlying storage `node-override-store.ts` reads from.
-        // zustand's `persist` hydration is synchronous (MMKV's `getString` is
-        // sync in production; the in-memory Map this package's
-        // vitest.setup.ts backs it with is sync too), so the store created
-        // as part of the fresh import below has already hydrated this value
-        // by the time `algorandClient.ts` finishes evaluating.
+        // Simulates a previous session's persisted custom config already on
+        // disk BEFORE the module ever loads — no `setCustomNetwork` /
+        // `clearCustomNetwork` / `resetState` call happens anywhere in this
+        // test, only a raw write to the underlying storage
+        // `custom-network-store.ts` reads from. zustand's `persist` hydration
+        // is synchronous (MMKV's `getString` is sync in production; the
+        // in-memory Map this package's vitest.setup.ts backs it with is sync
+        // too), so the store created as part of the fresh import below has
+        // already hydrated this value by the time `algorandClient.ts`
+        // finishes evaluating.
         getProvider().keyValueStorage.setItem(
-            'node-override-store',
+            'custom-network-store',
             JSON.stringify({
                 state: {
-                    overrides: {
-                        [Networks.localnet]: {
-                            algodUrl: 'http://10.0.0.9:4001',
-                        },
+                    customNetwork: {
+                        algodUrl: 'http://10.0.0.9:4001',
+                        indexerUrl: 'http://10.0.0.9:8980',
+                        genesisHash: 'HASH',
+                        genesisId: 'dockernet-v1',
                     },
                 },
                 version: 1,
@@ -131,7 +173,7 @@ describe('initial push of a persisted override on module load', () => {
         )
 
         // Fresh import — pulls in a fresh `../store` (and therefore a fresh
-        // `node-override-store`) transitively, which hydrates from the
+        // `custom-network-store`) transitively, which hydrates from the
         // storage seeded above.
         await import('../algorandClient')
 
@@ -140,19 +182,18 @@ describe('initial push of a persisted override on module load', () => {
         // asserting immediately.
         await vi.waitFor(() => {
             expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(
-                Networks.localnet,
+                Networks.custom,
                 {
                     algodUrl: 'http://10.0.0.9:4001',
-                    indexerUrl: getNetworkConfig(Networks.localnet).indexerUrl,
-                    algodToken: getNetworkConfig(Networks.localnet).algodToken,
-                    indexerToken: getNetworkConfig(Networks.localnet)
-                        .indexerToken,
+                    indexerUrl: 'http://10.0.0.9:8980',
+                    algodToken: '',
+                    indexerToken: '',
                 },
             )
         })
 
-        // The other four networks (no override) get pushed too — the loop
-        // is unconditional over every network, not just the overridden one.
+        // The three real networks (no custom config involved) get pushed
+        // too — the loop is unconditional over every network, not just custom.
         expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(
             Networks.mainnet,
             {

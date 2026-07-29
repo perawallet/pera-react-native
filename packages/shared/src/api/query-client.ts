@@ -416,9 +416,9 @@ const ensureClientsBuilt = (): void => {
 
 /**
  * Rebuilds a single network's algod/indexer ky instances against new endpoints.
- * Called from a `blockchain` subscription to the node-override store, because
- * `shared` cannot import `blockchain`. The `pera` instance is left untouched —
- * overrides are chain endpoints only.
+ * Called from a `blockchain` subscription to the custom-network config store,
+ * because `shared` cannot import `blockchain`. The `pera` instance is left
+ * untouched — the custom-network config only carries chain endpoints.
  */
 export const updateNodeEndpoints = (
     network: Network,

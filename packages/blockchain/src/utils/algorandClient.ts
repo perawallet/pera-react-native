@@ -10,27 +10,45 @@
  limitations under the License
  */
 
-import { getNetworkConfig, type Network } from '@perawallet/wallet-core-config'
-import { useNetworkStore } from '../store'
+import {
+    getNetworkConfig,
+    Networks,
+    type Network,
+} from '@perawallet/wallet-core-config'
+import { updateNodeEndpoints } from '@perawallet/wallet-core-shared'
+import {
+    useNetworkStore,
+    useCustomNetworkStore,
+    getCustomNetworkConfig,
+} from '../store'
 import { createTimeoutBoundedAlgorandClient } from './createAlgorandClient'
 
 /**
- * The endpoints to actually talk to: the baked chain config for the network.
- *
- * NOTE: this used to layer a per-network developer endpoint override on top
- * (`node-override-store.ts`), which this rework retires. `custom` is now the
- * one runtime-configurable network, with its real config in
- * `custom-network-store.ts` (packages/blockchain/src/store) — wiring that
- * store's values in here (and re-adding the module-level subscription that
- * used to keep `shared`'s ky clients in sync) is a later task, so for now
- * this simply returns the baked config, which for `custom` is the
- * deliberately-empty placeholder in network-config.ts.
+ * The endpoints to actually talk to. For the three real networks this is the
+ * baked chain config. For `custom` it comes from the custom-network store,
+ * because `config` is the leaf package and cannot read a store — see the
+ * `custom` entry in `network-config.ts`.
  */
 export const resolveChainEndpoints = (network: Network) => {
-    const { algodUrl, indexerUrl, algodToken, indexerToken } =
-        getNetworkConfig(network)
+    const baked = getNetworkConfig(network)
 
-    return { algodUrl, indexerUrl, algodToken, indexerToken }
+    if (network !== Networks.custom) {
+        return {
+            algodUrl: baked.algodUrl,
+            indexerUrl: baked.indexerUrl,
+            algodToken: baked.algodToken,
+            indexerToken: baked.indexerToken,
+        }
+    }
+
+    const custom = getCustomNetworkConfig()
+
+    return {
+        algodUrl: custom?.algodUrl ?? baked.algodUrl,
+        indexerUrl: custom?.indexerUrl ?? baked.indexerUrl,
+        algodToken: custom?.algodToken ?? baked.algodToken,
+        indexerToken: custom?.indexerToken ?? baked.indexerToken,
+    }
 }
 
 /**
@@ -47,10 +65,23 @@ export const getAlgorandClient = (networkOverride?: Network) => {
     return createTimeoutBoundedAlgorandClient(resolveChainEndpoints(network))
 }
 
-// NOTE: this file used to also keep `shared`'s ky algod/indexer clients in
-// step with the (now-removed) per-network override store via a module-level
-// `useNodeOverrideStore.subscribe(...)` plus a deferred initial push — see
-// git history for the exact mechanism. That hydration-ordering problem is
-// real and still applies to the custom-network store, so a later task must
-// re-add an equivalent subscription retargeted at `useCustomNetworkStore`,
-// not skip it.
+const pushResolvedEndpointsForAllNetworks = (): void => {
+    for (const network of Object.values(Networks)) {
+        updateNodeEndpoints(network, resolveChainEndpoints(network))
+    }
+}
+
+// Deferred past module evaluation on purpose: updateNodeEndpoints calls
+// ensureClientsBuilt -> getNetworkConfig(), and doing that at import time breaks
+// every test that mocks getNetworkConfig as a bare vi.fn() (it took down a whole
+// package's suite once already). The try/catch keeps a hostile environment from
+// turning a best-effort sync into a crash.
+void Promise.resolve().then(() => {
+    try {
+        pushResolvedEndpointsForAllNetworks()
+    } catch {
+        // Clients will be built on first request regardless.
+    }
+})
+
+useCustomNetworkStore.subscribe(pushResolvedEndpointsForAllNetworks)
