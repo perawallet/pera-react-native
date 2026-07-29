@@ -2606,6 +2606,10 @@
         },
         "form": {
             "swap": "Swap",
+            "no_balance_title": "Nothing to swap",
+            "no_balance_body": "This account holds no {{unit}}.",
+            "percentage_error_title": "Couldn't calculate the amount",
+            "percentage_error_body": "Please try again in a moment.",
             "you_pay": "You pay",
             "you_receive": "You receive",
             "to": "To",
