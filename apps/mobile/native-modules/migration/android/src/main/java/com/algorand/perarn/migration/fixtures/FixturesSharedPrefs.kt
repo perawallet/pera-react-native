@@ -12,7 +12,9 @@
 package com.algorand.perarn.migration.fixtures
 
 import android.content.Context
+import android.util.Base64
 import com.algorand.perarn.migration.bridge.LegacyMigrationConstants
+import com.algorand.perarn.migration.encryption.TinkAeadProvider
 
 internal object FixturesSharedPrefs {
 
@@ -32,7 +34,8 @@ internal object FixturesSharedPrefs {
         editor.putString("testnet_device_id", FixtureIdentities.TESTNET_DEVICE_ID)
         editor.putString("notification_user_id", FixtureIdentities.NOTIFICATION_USER_ID)
         if (includeAuthState) {
-            editor.putString("lock_password", PIN_DIGITS)
+            editor.remove("lock_password")
+            editor.putString("encrypted_pin", encryptPin(context, PIN_DIGITS))
             editor.putBoolean("use_biometric", true)
             editor.putInt("lock_attempt_count", LOCK_ATTEMPT_COUNT)
             editor.putLong("lock_penalty_remaining", LOCK_PENALTY_REMAINING_MS)
@@ -44,5 +47,11 @@ internal object FixturesSharedPrefs {
             editor.remove("lock_penalty_remaining")
         }
         editor.apply()
+    }
+
+    private fun encryptPin(context: Context, pin: String): String {
+        val ciphertext = TinkAeadProvider.open(context)
+            .encrypt(pin.toByteArray(Charsets.UTF_8), null)
+        return Base64.encodeToString(ciphertext, Base64.DEFAULT)
     }
 }
