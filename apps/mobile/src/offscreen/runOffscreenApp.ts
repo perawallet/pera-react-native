@@ -31,7 +31,10 @@ import {
     initializeSyncService,
 } from '@perawallet/wallet-core-background'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import {
+    useCustomNetworkStore,
+    useNetworkStore,
+} from '@perawallet/wallet-core-blockchain'
 import { usePollingStore } from '@perawallet/wallet-core-polling'
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/QueryProvider'
@@ -42,11 +45,18 @@ const OFFSCREEN_POLL_INTERVAL_MS = 30_000
 // hydrates once at import, so cross-context writes (onboarding an account in
 // the expanded tab) must be re-read explicitly. Keys are `kv:` +
 // STORE_NAME from each package's store.ts.
+// The custom-network entry must be here alongside the network entry, and the
+// popup's save order (config first, then the switch — see useCustomNetworkSheet)
+// is what makes the pair land in the right order: network-store's rehydration
+// demotes a persisted `custom` back to config.defaultNetwork when the custom
+// slot has no config, so re-reading the network without re-reading its config
+// would drop a perfectly valid custom selection here.
 const REHYDRATE_BY_KEY: Record<
     string,
     { persist: { rehydrate: () => unknown } }
 > = {
     'kv:accounts-store': useAccountsStore,
+    'kv:custom-network-store': useCustomNetworkStore,
     'kv:network-store': useNetworkStore,
     'kv:polling-store': usePollingStore,
 }

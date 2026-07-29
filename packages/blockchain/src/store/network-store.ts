@@ -20,16 +20,31 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { config, Networks } from '@perawallet/wallet-core-config'
+import { isCustomNetworkConfigured } from './custom-network-store'
 
 const STORE_NAME = 'network-store'
 
 const SUPPORTED_NETWORKS = new Set<string>(Object.values(Networks))
 
 /**
- * Guards rehydration against a persisted value that is no longer a union member
- * — e.g. a device that selected 'fnet' or 'localnet' before those were replaced
- * by the custom slot. Without this, the unknown string flows into
- * getNetworkConfig, which returns undefined and crashes the chain-table lookup.
+ * Guards rehydration on two counts.
+ *
+ * 1. A persisted value that is no longer a union member — e.g. a device that
+ *    selected 'fnet' or 'localnet' before those were replaced by the custom
+ *    slot. The unknown string would flow into `getNetworkConfig`, whose
+ *    chain-table lookup misses and yields `{ algodUrl: undefined, … }`
+ *    (spreading `undefined` is a legal no-op, so nothing fails here); the throw
+ *    lands later, at client construction, far from the cause.
+ * 2. A persisted `'custom'` whose config is not there. The two stores can
+ *    diverge — a corrupt or absent `custom-network-store` entry, an interrupted
+ *    write — and `custom` is the one member with no baked fallback, so every
+ *    endpoint resolves to `''` and `TimeoutHttpClient`'s `new URL('/')` throws
+ *    inside `useAlgorandClient`'s `useMemo`: an uncaught throw during render.
+ *
+ * The `custom` check reads the sibling store, which the static import above
+ * guarantees is created — and therefore hydrated, since every
+ * `KeyValueStorageService` implementation is synchronous — before this module
+ * evaluates.
  */
 export const mergePersistedNetwork = (
     persisted: unknown,
@@ -37,11 +52,15 @@ export const mergePersistedNetwork = (
     const network = (persisted as { network?: unknown } | null | undefined)
         ?.network
 
+    const isUsable =
+        typeof network === 'string' &&
+        SUPPORTED_NETWORKS.has(network) &&
+        (network !== Networks.custom || isCustomNetworkConfigured())
+
     return {
-        network:
-            typeof network === 'string' && SUPPORTED_NETWORKS.has(network)
-                ? (network as Network)
-                : (config.defaultNetwork as Network),
+        network: isUsable
+            ? (network as Network)
+            : (config.defaultNetwork as Network),
     }
 }
 

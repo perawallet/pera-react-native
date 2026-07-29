@@ -118,6 +118,45 @@ describe('services/blockchain/network-store', () => {
             )
         })
 
+        describe('the custom slot', () => {
+            test('a persisted custom with a saved config is preserved', async () => {
+                const { useCustomNetworkStore } =
+                    await import('../custom-network-store')
+                const { mergePersistedNetwork } =
+                    await import('../network-store')
+
+                useCustomNetworkStore.getState().setCustomNetwork({
+                    algodUrl: 'http://10.0.0.5:4001',
+                    indexerUrl: 'http://10.0.0.5:8980',
+                    genesisHash: 'HASH=',
+                    genesisId: 'dockernet-v1',
+                })
+
+                expect(
+                    mergePersistedNetwork({ network: 'custom' }).network,
+                ).toBe('custom')
+            })
+
+            test('a persisted custom with NO saved config falls back to the default', async () => {
+                // The two stores can diverge (an interrupted write, a corrupt
+                // custom-network entry). `custom` carries no baked config, so
+                // rehydrating it unconfigured resolves every endpoint to '',
+                // and TimeoutHttpClient's `new URL('/')` throws inside
+                // useAlgorandClient's useMemo — an uncaught throw during
+                // render, not a graceful refusal.
+                const { useCustomNetworkStore } =
+                    await import('../custom-network-store')
+                const { mergePersistedNetwork } =
+                    await import('../network-store')
+
+                useCustomNetworkStore.getState().resetState()
+
+                expect(
+                    mergePersistedNetwork({ network: 'custom' }).network,
+                ).toBe('mainnet')
+            })
+        })
+
         test.each([
             ['null', null],
             ['undefined', undefined],

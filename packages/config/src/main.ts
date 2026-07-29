@@ -174,8 +174,16 @@ export const configSchema = z.object({
         }),
     }),
 
+    /**
+     * Build-time active network. Deliberately NOT the full `Network` union:
+     * `custom` has no baked chain config — every value comes from the
+     * custom-network store, which is empty until a developer fills the Node
+     * Settings sheet in — so no build-time value could make it valid. Making it
+     * the default would make `custom` ACTIVE and unconfigured on first launch,
+     * where every resolved endpoint is `''`.
+     */
     defaultNetwork: z
-        .enum(['mainnet', 'testnet', 'betanet', 'custom'])
+        .enum(['mainnet', 'testnet', 'betanet'])
         .default('mainnet'),
 
     /** Build channel. Sourced from APP_ENV; defaults to development when unset. */
