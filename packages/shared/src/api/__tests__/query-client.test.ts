@@ -443,19 +443,22 @@ describe('queryClient', () => {
     })
 
     it('should set Content-Type and API key headers via setStandardHeaders', async () => {
-        const { queryClient } = await import('../query-client')
-        mockJson.mockResolvedValue({ success: true })
+        // Same technique as "lets a per-request x-api-key override the
+        // configured default" above: grab the real setStandardHeaders off
+        // the mainnet pera client's create() call rather than relying on
+        // capturedHooks, which only reflects the last-created client.
+        vi.resetModules()
+        mockKy.create.mockClear()
+        await import('../query-client')
 
-        await queryClient({
-            backend: 'pera',
-            network: 'mainnet',
-            url: '/test',
-            method: 'GET',
-        })
+        const mainnetPeraClientConfig = mockKy.create.mock.calls[0][0]
+        const [setStandardHeaders] = mainnetPeraClientConfig.hooks.beforeRequest
 
-        // The mock request object should have headers set by setStandardHeaders
-        // This is verified by the fact that the request completes successfully
-        expect(mockKy).toHaveBeenCalled()
+        const request = { headers: new Headers() }
+        setStandardHeaders({ request } as never)
+
+        expect(request.headers.get('content-type')).toBe('application/json')
+        expect(request.headers.get('x-api-key')).toBe('test-api-key')
     })
 
     it('returns undefined data for 200 with an empty body (no SyntaxError)', async () => {
