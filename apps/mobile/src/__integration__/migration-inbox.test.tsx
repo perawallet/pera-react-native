@@ -58,9 +58,11 @@ import {
 import {
     useDeviceRegistration,
     useDeviceStore,
+    type DeviceRegistrationRequest,
 } from '@perawallet/wallet-core-device'
 import { MigrationSplashScreen } from '@modules/migration/screens/MigrationSplashScreen'
 import { InboxScreen } from '@modules/messages/screens/InboxScreen/InboxScreen'
+import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 
 import {
     ALGO25_TEST_ADDRESS,
@@ -163,12 +165,11 @@ const installStubMigrationService = (
 // inbox, exactly as RootComponent does behind `!migrationInProgress`.
 // ---------------------------------------------------------------------------
 
-const InboxWithDeviceRegistration = ({
-    addresses,
-}: {
-    addresses: string[]
-}) => {
-    useDeviceRegistration(addresses)
+// Mirrors production's `DeviceRegistrar` in RootComponent.tsx: v3 registers
+// account-type + notification-preference pairs, not bare addresses.
+const InboxWithDeviceRegistration = () => {
+    const registrations = useDeviceAccountRegistrations()
+    useDeviceRegistration(registrations)
     return <InboxScreen />
 }
 
@@ -184,7 +185,7 @@ const MigratedUserApp = () => {
     const migrationSettled = addresses.length >= 2 && !!legacyDeviceId
 
     return migrationSettled ? (
-        <InboxWithDeviceRegistration addresses={addresses} />
+        <InboxWithDeviceRegistration />
     ) : (
         <MigrationSplashScreen />
     )
@@ -205,12 +206,15 @@ describe('Flow: Pera 6 migration → asset inbox', () => {
         'migrated accounts (incl. rekeyed) appear in the inbox request and ASA rows render',
         async () => {
             const inboxBodies: Array<{ addresses: string[] }> = []
-            let putDeviceId: string | null = null
+            let deviceBody: DeviceRegistrationRequest | null = null
 
             server.use(
-                http.put('*/v1/devices/:deviceId/', ({ params }) => {
-                    putDeviceId = params.deviceId as string
-                    return HttpResponse.json({ id: params.deviceId })
+                http.post('*/api/v3/devices', async ({ request }) => {
+                    deviceBody =
+                        (await request.json()) as DeviceRegistrationRequest
+                    return HttpResponse.json({
+                        id: deviceBody.id ?? LEGACY_DEVICE_ID,
+                    })
                 }),
                 http.post('*/v1/inbox/:deviceId/', async ({ request }) => {
                     inboxBodies.push(
@@ -251,9 +255,12 @@ describe('Flow: Pera 6 migration → asset inbox', () => {
             // device registrar + inbox.
             renderWithNavigation(MigratedUserApp, 'MigratedUserApp')
 
-            // The device PUT carried the *legacy* id (the migrated device id
-            // was reused, not a freshly minted one).
-            await waitFor(() => expect(putDeviceId).toBe(LEGACY_DEVICE_ID), {
+            // The device registration carried the *legacy* id (the migrated
+            // device id was reused, not a freshly minted one) — the id
+            // already sat in `useDeviceStore` when `DeviceRegistrar` mounted,
+            // so `useDevice.registerDevice` went straight to the
+            // known-id branch rather than an id-less create.
+            await waitFor(() => expect(deviceBody?.id).toBe(LEGACY_DEVICE_ID), {
                 timeout: INTEGRATION_TIMEOUT,
             })
 
