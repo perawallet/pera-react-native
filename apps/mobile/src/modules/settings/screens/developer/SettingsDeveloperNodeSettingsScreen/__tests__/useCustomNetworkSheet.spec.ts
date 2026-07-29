@@ -16,6 +16,7 @@ import { Networks } from '@perawallet/wallet-core-shared'
 import {
     getCustomNetworkConfig,
     useCustomNetworkStore,
+    type CustomNetworkConfig,
 } from '@perawallet/wallet-core-blockchain'
 import { useCustomNetworkSheet } from '../useCustomNetworkSheet'
 
@@ -85,7 +86,9 @@ vi.mock('react-native', () => ({
 describe('useCustomNetworkSheet', () => {
     beforeEach(() => {
         useCustomNetworkStore.getState().resetState()
-        switchNetwork.mockClear()
+        // Reset, not just clear: the persist-before-switch test installs an
+        // implementation that snapshots store state, which must not leak.
+        switchNetwork.mockReset()
         fetchGenesisFromNode.mockClear()
         clearCustomNetworkCache.mockClear()
         mockBackHandlerAddEventListener.mockClear()
@@ -105,6 +108,16 @@ describe('useCustomNetworkSheet', () => {
     })
 
     test('save persists the config and then commits the switch', async () => {
+        // The ordering is the invariant, not just the end state: asserting
+        // only that both happened passes even if the switch runs FIRST, which
+        // would let the app observe `custom` as active while the store is
+        // still empty — the exact state this sheet exists to prevent. So
+        // snapshot what the store holds at the moment switchNetwork is called.
+        let configAtSwitchTime: CustomNetworkConfig | undefined
+        switchNetwork.mockImplementation(() => {
+            configAtSwitchTime = getCustomNetworkConfig()
+        })
+
         const { result } = renderHook(() => useCustomNetworkSheet())
 
         act(() => result.current.open())
@@ -126,6 +139,10 @@ describe('useCustomNetworkSheet', () => {
             genesisHash: 'HASH=',
         })
         expect(switchNetwork).toHaveBeenCalledWith(Networks.custom)
+        expect(configAtSwitchTime).toMatchObject({
+            algodUrl: 'http://10.0.0.5:4001',
+            genesisHash: 'HASH=',
+        })
         expect(result.current.isOpen).toBe(false)
     })
 
