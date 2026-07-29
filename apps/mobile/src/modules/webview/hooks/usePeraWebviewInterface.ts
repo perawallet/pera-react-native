@@ -576,6 +576,7 @@ export const usePeraWebviewInterface = (
             hadRequiredParams,
             resolveArc0001,
             enqueueSignRequest,
+            sourceUrl,
             showToast,
             t,
         ],
@@ -763,7 +764,15 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [webview, hadRequiredParams, addSignRequest, allAccounts, showToast, t],
+        [
+            webview,
+            hadRequiredParams,
+            addSignRequest,
+            allAccounts,
+            sourceUrl,
+            showToast,
+            t,
+        ],
     )
 
     const getDeviceId = useCallback(
