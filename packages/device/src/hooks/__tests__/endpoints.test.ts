@@ -94,37 +94,52 @@ describe('device endpoints', () => {
     })
 })
 
+type MockConfigValues = {
+    backendAPIKey: string
+    backendAPIKeyV3: string
+}
+
 /**
  * `config` (packages/config/src/main.ts) is `Object.freeze(getConfig())` — a
  * plain object with data properties, not accessor properties. `vi.spyOn(config,
  * 'backendAPIKeyV3', 'get')` throws because there is no getter to spy on, and
  * the freeze would reject redefining a data property anyway. A module mock is
  * the only way to control the value it resolves to, and since the two cases
- * need different `config` shapes, each test mocks the module itself, resets
- * the module registry, and re-imports both `queryClient` and `endpoints`
- * fresh so the mocked config is the one `endpoints.ts` actually sees.
+ * need different `config` shapes, this helper mocks the module itself, and
+ * re-imports both `queryClient` and `endpoints` fresh (module registry is
+ * cleared by the caller's `beforeEach`) so the mocked config is the one
+ * `endpoints.ts` actually sees. Returns the fresh `queryClient` mock so the
+ * caller can assert on it.
  */
+const registerWithMockedConfig = async (configValues: MockConfigValues) => {
+    vi.doMock('@perawallet/wallet-core-config', () => ({
+        config: configValues,
+    }))
+    const { queryClient: freshQueryClient } =
+        await import('@perawallet/wallet-core-shared')
+    const freshMockedQueryClient = vi.mocked(freshQueryClient)
+    freshMockedQueryClient.mockResolvedValue({
+        data: { id: 'new-id' },
+        status: 200,
+        statusText: 'OK',
+    })
+    const { registerDevice: freshRegisterDevice } = await import('../endpoints')
+
+    await freshRegisterDevice('mainnet', registration)
+
+    return freshMockedQueryClient
+}
+
 describe('device API key resolution', () => {
     beforeEach(() => {
         vi.resetModules()
     })
 
     it('sends the v3 api key when one is configured', async () => {
-        vi.doMock('@perawallet/wallet-core-config', () => ({
-            config: { backendAPIKey: 'v1-key', backendAPIKeyV3: 'v3-key' },
-        }))
-        const { queryClient: freshQueryClient } =
-            await import('@perawallet/wallet-core-shared')
-        const freshMockedQueryClient = vi.mocked(freshQueryClient)
-        freshMockedQueryClient.mockResolvedValue({
-            data: { id: 'new-id' },
-            status: 200,
-            statusText: 'OK',
+        const freshMockedQueryClient = await registerWithMockedConfig({
+            backendAPIKey: 'v1-key',
+            backendAPIKeyV3: 'v3-key',
         })
-        const { registerDevice: freshRegisterDevice } =
-            await import('../endpoints')
-
-        await freshRegisterDevice('mainnet', registration)
 
         expect(freshMockedQueryClient).toHaveBeenCalledWith(
             expect.objectContaining({ headers: { 'x-api-key': 'v3-key' } }),
@@ -132,21 +147,10 @@ describe('device API key resolution', () => {
     })
 
     it('falls back to the v1 key while the v3 key is unset', async () => {
-        vi.doMock('@perawallet/wallet-core-config', () => ({
-            config: { backendAPIKey: 'v1-key', backendAPIKeyV3: '' },
-        }))
-        const { queryClient: freshQueryClient } =
-            await import('@perawallet/wallet-core-shared')
-        const freshMockedQueryClient = vi.mocked(freshQueryClient)
-        freshMockedQueryClient.mockResolvedValue({
-            data: { id: 'new-id' },
-            status: 200,
-            statusText: 'OK',
+        const freshMockedQueryClient = await registerWithMockedConfig({
+            backendAPIKey: 'v1-key',
+            backendAPIKeyV3: '',
         })
-        const { registerDevice: freshRegisterDevice } =
-            await import('../endpoints')
-
-        await freshRegisterDevice('mainnet', registration)
 
         expect(freshMockedQueryClient).toHaveBeenCalledWith(
             expect.objectContaining({ headers: { 'x-api-key': 'v1-key' } }),
