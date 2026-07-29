@@ -42,6 +42,11 @@ const safeBaseUnitInteger = z
 // absolute ceiling far above any legitimate value hard-rejects a hostile
 // summary that would otherwise drain the account. MAX_SAFE_INTEGER (~9e9 ALGO)
 // is not a bound (PERA-4710).
+//
+// Deliberately a build-time constant and NOT remote-config: remote config is
+// served by the same backend as the summary this bound exists to distrust, so a
+// remotely tunable ceiling could be raised by whoever is sending the hostile
+// value. Raising it should require a release.
 export const MAX_ARC59_FUNDING_MICRO_ALGO = 10_000_000 // 10 ALGO
 export const arc59SendSummaryResponseSchema = z
     .object({
