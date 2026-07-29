@@ -15,7 +15,7 @@ import {
     type WalletAccount,
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { isCollectible, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { type Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import {
     SEARCH_SCOPES,
@@ -192,7 +192,9 @@ export const useSearchScreen = (): UseSearchScreenResult => {
             navigation.navigate('TabBar', {
                 screen: 'Home',
                 params: {
-                    screen: 'AssetDetails',
+                    screen: isCollectible(asset)
+                        ? 'CollectibleDetails'
+                        : 'AssetDetails',
                     params: { assetId: asset.assetId },
                 },
             })
