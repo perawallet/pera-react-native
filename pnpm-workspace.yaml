@@ -43,7 +43,7 @@ catalog:
   "@types/react": ~19.2.14
   "@types/w3c-web-hid": ^1.0.7
   "@types/web-bluetooth": ^0.0.21
-  "@vitejs/plugin-react": 6.0.3
+  "@vitejs/plugin-react": 6.0.4
   "@vitest/coverage-v8": ^4.1.9
   "@xstate/react": ^6.1.0
   algosdk: ^3.5.2
@@ -65,7 +65,7 @@ catalog:
   jsdom: ^27.4.0
   ky: ^2.0.2
   msw: ^2.14.6
-  oxfmt: ^0.59.0
+  oxfmt: ^0.60.0
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.0
