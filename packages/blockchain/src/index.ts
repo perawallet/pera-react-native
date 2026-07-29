@@ -24,7 +24,8 @@ export * from './pq'
 
 export { useNetworkStore } from './store/network-store'
 export {
-    useNodeOverrideStore,
-    getNodeEndpointOverride,
-    type NodeEndpointOverride,
-} from './store/node-override-store'
+    useCustomNetworkStore,
+    getCustomNetworkConfig,
+    isCustomNetworkConfigured,
+    type CustomNetworkConfig,
+} from './store/custom-network-store'

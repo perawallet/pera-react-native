@@ -11,14 +11,11 @@
  */
 
 import { describe, test, expect, beforeEach, vi, Mock } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { Networks } from '@perawallet/wallet-core-config'
+import { renderHook } from '@testing-library/react'
 
 import { useAlgorandClient } from '../../hooks'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { useNetwork } from '../useNetwork'
-import { useNodeOverrideStore } from '../../store'
-import { createTimeoutBoundedAlgorandClient } from '../../utils/createAlgorandClient'
 
 // Mock AlgorandClient factory methods so we can assert which one is chosen
 vi.mock('@algorandfoundation/algokit-utils', () => {
@@ -48,10 +45,9 @@ vi.mock('../../utils/transact', () => ({
 }))
 
 // Spy on createTimeoutBoundedAlgorandClient while still delegating to the
-// real implementation — every other test in this file relies on the REAL
-// chain running through to the (mocked) AlgorandClient.fromClients, so this
-// must not become a stub. Wrapping it is what lets the reactivity test below
-// inspect exactly which endpoints each render's client was built from.
+// real implementation — every test in this file relies on the REAL chain
+// running through to the (mocked) AlgorandClient.fromClients, so this must
+// not become a stub.
 vi.mock('../../utils/createAlgorandClient', async importOriginal => {
     const actual =
         await importOriginal<
@@ -68,7 +64,6 @@ vi.mock('../../utils/createAlgorandClient', async importOriginal => {
 describe('services/blockchain/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        useNodeOverrideStore.getState().resetState()
         ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
     })
 
@@ -124,27 +119,5 @@ describe('services/blockchain/hooks', () => {
 
         expect(mockSigner).toHaveBeenCalled()
         expect(resultTx).toEqual(['signed-tx'])
-    })
-
-    test('rebuilds the client against the new endpoint when the active network gets a node override', () => {
-        renderHook(() => useAlgorandClient())
-
-        const callsBeforeOverride = (createTimeoutBoundedAlgorandClient as Mock)
-            .mock.calls.length
-
-        act(() => {
-            useNodeOverrideStore.getState().setOverride(Networks.mainnet, {
-                algodUrl: 'http://10.0.0.5:4001',
-            })
-        })
-
-        const callsAfterOverride = (createTimeoutBoundedAlgorandClient as Mock)
-            .mock.calls
-        // A mounted screen must rebuild its client, not keep transacting
-        // against the stale endpoint until it unmounts.
-        expect(callsAfterOverride.length).toBeGreaterThan(callsBeforeOverride)
-        expect(callsAfterOverride.at(-1)?.[0]).toMatchObject({
-            algodUrl: 'http://10.0.0.5:4001',
-        })
     })
 })

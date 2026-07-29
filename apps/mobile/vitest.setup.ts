@@ -2985,17 +2985,19 @@ class MockAlgodError extends Error {
 }
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    // Real store (not hand-mocked): setOverride/clearOverride/resetState need
-    // genuine zustand reactivity so subscribed hooks re-render on change.
-    // Imported by its own module path (not the package barrel/`../store`
-    // index) to avoid evaluating utils/algorandClient's module-level
-    // `useNodeOverrideStore.subscribe(...)` side effect, which would run for
-    // every test in the suite and reach into the (also-mocked)
-    // wallet-core-shared updateNodeEndpoints.
-    const { useNodeOverrideStore, getNodeEndpointOverride } =
-        await vi.importActual<
-            typeof import('../../packages/blockchain/src/store/node-override-store')
-        >('../../packages/blockchain/src/store/node-override-store')
+    // Real store (not hand-mocked): setCustomNetwork/clearCustomNetwork/
+    // resetState need genuine zustand reactivity so subscribed hooks
+    // re-render on change. Imported by its own module path (not the package
+    // barrel/`../store` index) to avoid evaluating utils/algorandClient's
+    // module-level side effects, which would run for every test in the
+    // suite and reach into the (also-mocked) wallet-core-shared module.
+    const {
+        useCustomNetworkStore,
+        getCustomNetworkConfig,
+        isCustomNetworkConfigured,
+    } = await vi.importActual<
+        typeof import('../../packages/blockchain/src/store/custom-network-store')
+    >('../../packages/blockchain/src/store/custom-network-store')
 
     return {
         useAlgorandClient: vi.fn(),
@@ -3070,8 +3072,9 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
             if (firstDp.isZero()) return new Decimal(0)
             return lastDp.minus(firstDp).div(firstDp).mul(100)
         }),
-        useNodeOverrideStore,
-        getNodeEndpointOverride,
+        useCustomNetworkStore,
+        getCustomNetworkConfig,
+        isCustomNetworkConfigured,
     }
 })
 

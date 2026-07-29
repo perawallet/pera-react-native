@@ -20,7 +20,6 @@ import {
 import { encodeSignedTransactions } from '../utils/transact'
 import { createTimeoutBoundedAlgorandClient } from '../utils/createAlgorandClient'
 import { resolveChainEndpoints } from '../utils/algorandClient'
-import { useNodeOverrideStore } from '../store'
 import { logger } from '@perawallet/wallet-core-shared'
 
 const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
@@ -31,7 +30,6 @@ const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
 
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
     const { network } = useNetwork()
-    const overrides = useNodeOverrideStore(state => state.overrides[network])
 
     return useMemo(() => {
         const client = createTimeoutBoundedAlgorandClient(
@@ -61,5 +59,5 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
             client.setDefaultSigner(pipelineRoutedSigner)
         }
         return client
-    }, [network, overrides, signer])
+    }, [network, signer])
 }
