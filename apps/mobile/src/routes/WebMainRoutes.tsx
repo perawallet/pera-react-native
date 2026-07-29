@@ -29,12 +29,11 @@
 //
 // Two NavigationContainers never mount simultaneously (onboarding vs main are
 // exclusive shell states), so sharing `navigationRef` across both is safe.
-import React, { useMemo } from 'react'
+import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useDeviceRegistration } from '@perawallet/wallet-core-device'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
@@ -66,6 +65,7 @@ import { createAppStackNavigator } from './createAppStackNavigator'
 import { createExpandedRedirect } from './createExpandedRedirect'
 import { useExpandedFlowNavigation } from './useExpandedFlowNavigation'
 import { routeCapabilities } from '@routes/capabilities'
+import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import { type RootStackParamList } from './types'
 
 const RootStack = createAppStackNavigator<RootStackParamList>()
@@ -102,12 +102,7 @@ const handleOverlayError = (error: string | Error) => {
 export const WebMainRoutes = (): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()
     const isPeraCardEnabled = useIsPeraCardEnabled()
-    const accounts = useAllAccounts()
-    const addresses = useMemo(
-        () => accounts?.map(account => account.address) ?? [],
-        [accounts],
-    )
-    useDeviceRegistration(addresses)
+    useDeviceRegistration(useDeviceAccountRegistrations())
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
 
     const handleReady = useExpandedFlowNavigation((screen, params) => {
