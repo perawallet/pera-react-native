@@ -157,12 +157,12 @@ describe('useBidaliTransport', () => {
             expect(result.current.providerJS).toContain('"usdcalgorand"')
         })
 
-        // computeBidaliBalances's isMainnetCatalogue branch: fnet has no
+        // computeBidaliBalances's isMainnetCatalogue branch: custom has no
         // Bidali catalogue of its own, so it must select the same
         // testusdcalgorand balance key as testnet (matching
         // resolvePeraServiceLane), not usdcalgorand.
-        it('selects the testusdcalgorand balance key for a fallback network (fnet)', () => {
-            mockNetwork = 'fnet'
+        it('selects the testusdcalgorand balance key for a fallback network (custom)', () => {
+            mockNetwork = 'custom'
 
             const { result } = renderHook(() =>
                 useBidaliTransport(mockAccount, emptyBalances),

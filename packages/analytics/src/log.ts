@@ -20,7 +20,7 @@ const TESTNET_PREFIX = 't_'
 /**
  * Resolves the raw event/screen name to send, prefixing on every network that
  * is not MainNet. The `t_` prefix is shared across every Pera client app, so
- * betanet/fnet/localnet reuse it rather than introducing per-network prefixes
+ * betanet and custom reuse it rather than introducing per-network prefixes
  * that would fragment existing dashboards.
  */
 export const resolveEventName = (name: string): string => {

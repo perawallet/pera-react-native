@@ -531,7 +531,7 @@ describe('useTransactionHistoryQuery', () => {
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network: 'fnet',
+                    network: 'testnet',
                     assetId: '31566704',
                     afterTime: '2025-02-01',
                     beforeTime: '2025-02-13',
@@ -557,7 +557,7 @@ describe('useTransactionHistoryQuery', () => {
         expect(endpoints.fetchMoreTransactions).toHaveBeenCalledWith(
             expect.objectContaining({
                 url: 'CURSOR1',
-                network: 'fnet',
+                network: 'testnet',
                 accountAddress: mockAddress,
                 assetId: '31566704',
                 afterTime: '2025-02-01',

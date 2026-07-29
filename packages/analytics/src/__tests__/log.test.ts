@@ -49,7 +49,7 @@ describe('resolveEventName', () => {
     })
 
     it('prefixes every non-mainnet network', () => {
-        for (const network of ['testnet', 'betanet', 'fnet', 'localnet']) {
+        for (const network of ['testnet', 'betanet', 'custom']) {
             currentNetwork = network
 
             expect(resolveEventName('screen_view')).toBe('t_screen_view')

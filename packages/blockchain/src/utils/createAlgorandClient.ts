@@ -39,7 +39,7 @@ export const createTimeoutBoundedAlgorandClient = (
     const algod = new Algodv2(
         new TimeoutHttpClient(
             // Omit the header key entirely rather than sending it with an
-            // empty-string value: betanet/fnet deliberately carry an empty
+            // empty-string value: betanet/custom deliberately carry an empty
             // `algodToken`/`indexerToken` (see network-config.ts — their
             // algod/indexer are public third-party endpoints Pera does not
             // control), and `resolveGenesisHash.ts` / `query-client.ts`'s

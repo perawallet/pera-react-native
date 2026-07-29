@@ -6,7 +6,7 @@ const RULE_ID = 'restrict-pera-service-fallback-importers'
 
 // The only files allowed to consume the fallback. Keeping this list pinned is
 // what makes the fallback removable in one move when real Pera backends ship
-// for betanet/fnet/localnet.
+// for betanet/custom.
 const ALLOWED_IMPORTERS = [
     // The module itself and the barrel that re-exports it.
     '/packages/config/src/pera-service-fallback.ts',

@@ -212,7 +212,7 @@ describe('getAlgorandClient', () => {
     })
 
     it('omits the auth header entirely for a network with an empty token, rather than sending an empty value', () => {
-        // betanet/fnet deliberately carry an empty algodToken/indexerToken
+        // betanet/custom deliberately carry an empty algodToken/indexerToken
         // (see network-config.ts — their algod/indexer are public
         // third-party endpoints Pera does not control). TimeoutHttpClient
         // must never receive an empty-string credential header.

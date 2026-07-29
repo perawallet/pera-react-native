@@ -24,9 +24,8 @@ import { GenesisHashMismatchError } from '../pipeline/errors'
  * signature-bound chain identifier; `genesisId` is intentionally not checked.
  *
  * `expectedGenesisHash` is supplied by the caller rather than read from config
- * so that networks whose genesis is not build-time-pinned (betanet, fnet,
- * localnet) can pass their runtime-resolved identity in. See
- * `resolveExpectedGenesisHash`.
+ * so that a network whose genesis is not build-time-pinned (`custom`) can pass
+ * its runtime-resolved identity in. See `getExpectedGenesisHash`.
  *
  * Rejects an empty `expectedGenesisHash` outright, before comparing any
  * transaction. An empty hash is never a valid chain identity — without this

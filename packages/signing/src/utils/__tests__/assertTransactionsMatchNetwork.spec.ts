@@ -87,7 +87,7 @@ describe('assertTransactionsMatchNetwork', () => {
         expect(() =>
             assertTransactionsMatchNetwork(
                 transactions,
-                Networks.fnet,
+                Networks.custom,
                 runtimeHash,
             ),
         ).not.toThrow()
@@ -95,7 +95,7 @@ describe('assertTransactionsMatchNetwork', () => {
         expect(() =>
             assertTransactionsMatchNetwork(
                 transactions,
-                Networks.fnet,
+                Networks.custom,
                 'mFgazF+2uRS1tMiL9dsj01hJGySEmPN28B/TjjvpVW0=',
             ),
         ).toThrow(GenesisHashMismatchError)
