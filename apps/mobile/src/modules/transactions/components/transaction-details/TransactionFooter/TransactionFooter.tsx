@@ -40,7 +40,7 @@ export const TransactionFooter = ({
                     style={styles.actionButton}
                 />
             )}
-            {!!transaction.id && (
+            {!!transaction.id && !!showInExplorer && (
                 <PWButton
                     variant='secondary'
                     title={t('transactions.common.view_in_explorer')}

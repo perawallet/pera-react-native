@@ -41,10 +41,12 @@ export const TransactionSuccessScreen = () => {
             testID='send_success'
             title={t(titleKey[variant] ?? titleKey['payment'])}
             body={t(subtitleKey[variant] ?? subtitleKey['payment'])}
-            linkAction={{
-                label: t('send_funds.success.view_in_explorer'),
-                onPress: handleViewInExplorer,
-            }}
+            linkAction={
+                handleViewInExplorer && {
+                    label: t('send_funds.success.view_in_explorer'),
+                    onPress: handleViewInExplorer,
+                }
+            }
             primaryAction={{
                 label: t('send_funds.success.done'),
                 onPress: handleDone,

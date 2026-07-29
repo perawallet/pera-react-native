@@ -31,7 +31,11 @@ type UseTransactionHashRowResult = {
      * Undefined for non-Algorand funding legs (Baanx also settles from EVM
      * networks, e.g. "linea" with 0x hashes) — the Pera explorer can only
      * resolve Algorand transactions, so the action is hidden instead of
-     * opening a guaranteed not-found page.
+     * opening a guaranteed not-found page. Also undefined on a network with no
+     * explorer at all (`custom`'s `explorerUrl` is `''` by design), where the
+     * interpolation would yield the schemeless relative path `/tx/…` — the
+     * `!routeCapabilities.inAppWebView` branch below hands that to
+     * `Linking.openURL`, which rejects rather than no-opping.
      */
     onOpenExplorer: (() => void) | undefined
 }
@@ -51,6 +55,7 @@ export const useTransactionHashRow = (
     }, [copyToClipboard, txHash])
 
     const openExplorer = useCallback(() => {
+        if (!networkConfig.explorerUrl) return
         const url = `${networkConfig.explorerUrl}/tx/${txHash}`
         if (!routeCapabilities.inAppWebView) {
             void Linking.openURL(url)
@@ -62,6 +67,7 @@ export const useTransactionHashRow = (
     return {
         truncatedHash: truncateAlgorandAddress(txHash, HASH_DISPLAY_LENGTH),
         onCopy,
-        onOpenExplorer: isAlgorand ? openExplorer : undefined,
+        onOpenExplorer:
+            isAlgorand && networkConfig.explorerUrl ? openExplorer : undefined,
     }
 }

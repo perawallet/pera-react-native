@@ -16,15 +16,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockPushWebView = vi.fn()
 const mockCopyToClipboard = vi.fn()
 
+// Mutable, for the same reason as `mockCapabilities` below: `custom` has an
+// empty explorerUrl by design, and that case needs to be reachable per-test.
+const { mockNetworkConfig } = vi.hoisted(() => ({
+    mockNetworkConfig: { explorerUrl: 'https://explorer.test' },
+}))
+
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-blockchain',
     )
     return {
         ...actual,
-        useNetwork: () => ({
-            networkConfig: { explorerUrl: 'https://explorer.test' },
-        }),
+        useNetwork: () => ({ networkConfig: mockNetworkConfig }),
     }
 })
 
@@ -68,6 +72,9 @@ describe('useTransactionHashRow', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         Object.assign(mockCapabilities, { inAppWebView: true })
+        Object.assign(mockNetworkConfig, {
+            explorerUrl: 'https://explorer.test',
+        })
     })
 
     it('derives the display hash through the shared middle-truncation util', () => {
@@ -115,6 +122,19 @@ describe('useTransactionHashRow', () => {
     it('offers no explorer action for a non-Algorand funding leg', () => {
         const { result } = renderHook(() =>
             useTransactionHashRow('0xb92de09d893e', 'linea'),
+        )
+
+        expect(result.current.onOpenExplorer).toBeUndefined()
+    })
+
+    it('offers no explorer action on a network with no explorer', () => {
+        // On `custom` this is the worst of the explorer sites: with
+        // inAppWebView off it reaches Linking.openURL('/tx/…'), which rejects
+        // rather than no-opping.
+        Object.assign(mockNetworkConfig, { explorerUrl: '' })
+
+        const { result } = renderHook(() =>
+            useTransactionHashRow(TX_HASH, 'algorand'),
         )
 
         expect(result.current.onOpenExplorer).toBeUndefined()

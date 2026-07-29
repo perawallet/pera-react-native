@@ -25,12 +25,18 @@ export const useTransactionFooter = (
     const { networkConfig } = useNetwork()
     const { pushWebView } = useWebView()
 
-    const showInExplorer = () => {
-        pushWebView({
-            url: `${networkConfig.explorerUrl}/tx/${transaction.id}`,
-            id: generateUniqueId(),
-        })
-    }
+    // Undefined on a network with no explorer (`custom`'s `explorerUrl` is `''`
+    // by design), so the CTA is hidden rather than opening the schemeless
+    // relative path the interpolation would otherwise produce.
+    const showInExplorer = networkConfig.explorerUrl
+        ? () => {
+              if (!networkConfig.explorerUrl) return
+              pushWebView({
+                  url: `${networkConfig.explorerUrl}/tx/${transaction.id}`,
+                  id: generateUniqueId(),
+              })
+          }
+        : undefined
 
     const { data: asset } = useSingleAssetDetailsQuery(
         transaction.assetTransferTransaction?.assetId?.toString() ?? '',
