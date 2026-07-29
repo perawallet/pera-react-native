@@ -14,7 +14,11 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 const fetchAssetsMock = vi.hoisted(() => vi.fn())
 const transformAssetResponseMock = vi.hoisted(() => vi.fn(a => a))
+const fetchIndexerAssetDetailsMock = vi.hoisted(() => vi.fn())
+const transformIndexerAssetResponseMock = vi.hoisted(() => vi.fn(a => a))
 const upsertAssetsMock = vi.hoisted(() => vi.fn())
+const upsertNodeAssetsMock = vi.hoisted(() => vi.fn())
+const upsertPeraAssetsMock = vi.hoisted(() => vi.fn())
 const getStaleOrMissingAssetIdsMock = vi.hoisted(() =>
     vi.fn(async ({ assetIds }: { assetIds: string[] }) => assetIds),
 )
@@ -22,10 +26,14 @@ const getStaleOrMissingAssetIdsMock = vi.hoisted(() =>
 vi.mock('../../api', () => ({
     fetchAssets: fetchAssetsMock,
     transformAssetResponse: transformAssetResponseMock,
+    fetchIndexerAssetDetails: fetchIndexerAssetDetailsMock,
+    transformIndexerAssetResponse: transformIndexerAssetResponseMock,
 }))
 
 vi.mock('../../db', () => ({
     upsertAssets: upsertAssetsMock,
+    upsertNodeAssets: upsertNodeAssetsMock,
+    upsertPeraAssets: upsertPeraAssetsMock,
     getStaleOrMissingAssetIds: getStaleOrMissingAssetIdsMock,
 }))
 
@@ -43,7 +51,11 @@ describe('fetchAndPersistAssets', () => {
     beforeEach(() => {
         fetchAssetsMock.mockReset()
         upsertAssetsMock.mockReset()
+        upsertNodeAssetsMock.mockReset()
+        upsertPeraAssetsMock.mockReset()
         transformAssetResponseMock.mockClear()
+        fetchIndexerAssetDetailsMock.mockReset()
+        transformIndexerAssetResponseMock.mockClear()
         getStaleOrMissingAssetIdsMock.mockReset()
         getStaleOrMissingAssetIdsMock.mockImplementation(
             async ({ assetIds }: { assetIds: string[] }) => assetIds,
@@ -124,4 +136,109 @@ describe('fetchAndPersistAssets', () => {
         expect(fetchAssetsMock).toHaveBeenCalledTimes(1)
         expect(fetchAssetsMock).toHaveBeenCalledWith(['2'], 'mainnet', null)
     })
+
+    // A network with real Pera services: the Pera backend describes THIS chain,
+    // so it stays the single authoritative source for both tables. These two
+    // assertions pin that the fallback handling below is a strict no-op here.
+    describe.each(['mainnet', 'testnet'] as const)(
+        '%s (own Pera deployment)',
+        network => {
+            test('writes both tables from the single Pera response and never touches the indexer', async () => {
+                fetchAssetsMock.mockResolvedValue({
+                    results: [{ assetId: '1002', decimals: 6 }],
+                })
+
+                await fetchAndPersistAssets(['1002'], network)
+
+                expect(upsertAssetsMock).toHaveBeenCalledWith({
+                    items: [{ assetId: '1002', decimals: 6 }],
+                    network,
+                })
+                expect(fetchIndexerAssetDetailsMock).not.toHaveBeenCalled()
+                expect(upsertNodeAssetsMock).not.toHaveBeenCalled()
+                expect(upsertPeraAssetsMock).not.toHaveBeenCalled()
+            })
+        },
+    )
+
+    // The Critical case. On betanet/custom the Pera backend served is TestNet's,
+    // so asset id N there is a DIFFERENT asset than id N on the active chain.
+    // `assets_node` holds the chain intrinsics the send flow reads back for
+    // displayUnitsToBaseUnits, so it must never carry the borrowed values.
+    describe.each(['betanet', 'custom'] as const)(
+        '%s (borrowed Pera services)',
+        network => {
+            test('sources assets_node from the active chain indexer, never from the borrowed Pera backend', async () => {
+                fetchAssetsMock.mockResolvedValue({
+                    results: [
+                        { assetId: '1002', decimals: 6, name: 'TestNet' },
+                    ],
+                })
+                fetchIndexerAssetDetailsMock.mockResolvedValue({
+                    assetId: '1002',
+                    decimals: 0,
+                    name: 'MYTOKEN',
+                })
+
+                await fetchAndPersistAssets(['1002'], network)
+
+                expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
+                    items: [{ assetId: '1002', decimals: 0, name: 'MYTOKEN' }],
+                    network,
+                })
+                // The whole-row writer must not run at all here — it would put
+                // the borrowed decimals straight into assets_node.
+                expect(upsertAssetsMock).not.toHaveBeenCalled()
+            })
+
+            test('still writes Pera opinion fields to assets_pera', async () => {
+                fetchAssetsMock.mockResolvedValue({
+                    results: [{ assetId: '1002', decimals: 6 }],
+                })
+                fetchIndexerAssetDetailsMock.mockResolvedValue({
+                    assetId: '1002',
+                    decimals: 0,
+                })
+
+                await fetchAndPersistAssets(['1002'], network)
+
+                expect(upsertPeraAssetsMock).toHaveBeenCalledWith({
+                    items: [{ assetId: '1002', decimals: 6 }],
+                    network,
+                })
+            })
+
+            test('writes no assets_node row at all when the chain lookup fails, rather than falling back to the borrowed value', async () => {
+                fetchAssetsMock.mockResolvedValue({
+                    results: [{ assetId: '1002', decimals: 6 }],
+                })
+                fetchIndexerAssetDetailsMock.mockRejectedValue(
+                    new Error('no such asset on this chain'),
+                )
+
+                await fetchAndPersistAssets(['1002'], network)
+
+                expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
+                    items: [],
+                    network,
+                })
+                expect(upsertAssetsMock).not.toHaveBeenCalled()
+            })
+
+            test('a failing Pera fetch does not stop the chain intrinsics from being persisted', async () => {
+                fetchAssetsMock.mockRejectedValue(new Error('pera down'))
+                fetchIndexerAssetDetailsMock.mockResolvedValue({
+                    assetId: '1002',
+                    decimals: 0,
+                })
+
+                await fetchAndPersistAssets(['1002'], network)
+
+                expect(upsertNodeAssetsMock).toHaveBeenCalledWith({
+                    items: [{ assetId: '1002', decimals: 0 }],
+                    network,
+                })
+            })
+        },
+    )
 })

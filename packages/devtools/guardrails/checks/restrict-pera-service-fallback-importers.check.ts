@@ -16,6 +16,11 @@ const ALLOWED_IMPORTERS = [
     '/packages/shared/src/api/query-client.ts',
     '/packages/assets/src/models/assets.ts',
     '/packages/assets/src/hooks/useSingleAssetDetailsQuery.ts',
+    // Keeps the borrowed Pera response out of assets_node's chain-intrinsic
+    // columns (decimals above all) on the sync path that populates the DB the
+    // send flow reads back. Twin of useSingleAssetDetailsQuery's
+    // withChainIntrinsics, which only covers the DB-miss API path.
+    '/packages/assets/src/sync/asset-syncer.ts',
     '/packages/transactions/src/api/history/endpoints.ts',
 ]
 

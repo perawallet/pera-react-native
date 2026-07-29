@@ -29,7 +29,8 @@ import { type Network, Networks } from './models/network'
  * is empty, delete this module and fix the call sites in the guardrail's
  * allowlist: `network-config.ts`, `packages/shared/src/api/query-client.ts`,
  * `packages/assets/src/models/assets.ts`,
- * `packages/assets/src/hooks/useSingleAssetDetailsQuery.ts`, and
+ * `packages/assets/src/hooks/useSingleAssetDetailsQuery.ts`,
+ * `packages/assets/src/sync/asset-syncer.ts`, and
  * `packages/transactions/src/api/history/endpoints.ts`. The
  * `restrict-pera-service-fallback-importers` guardrail pins that list.
  */
