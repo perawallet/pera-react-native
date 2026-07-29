@@ -48,3 +48,8 @@ export {
     consumePendingImportMnemonic,
     usePendingImportMnemonicStore,
 } from './store'
+
+export {
+    buildDeviceAccountRegistrations,
+    toDeviceAccountType,
+} from './device-accounts'
