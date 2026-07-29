@@ -47,6 +47,9 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             getDeviceModel: () => 'iPhone',
             getDeviceId: () => 'test-device-id',
             getVersion: () => '1.0.0',
+            // `getAppVersion` is the name on DeviceInfoService; `getVersion`
+            // above is not on the interface at all.
+            getAppVersion: () => '1.0.0',
             getBuildNumber: () => '1',
             getDeviceLocale: () => 'en-US',
             getDeviceLanguage: () => 'en',
@@ -135,6 +138,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             getDeviceModel: () => 'iPhone',
             getDeviceId: () => 'test-device-id',
             getVersion: () => '1.0.0',
+            getAppVersion: () => '1.0.0',
             getBuildNumber: () => '1',
             getDeviceLocale: () => 'en-US',
             getDeviceLanguage: () => 'en',
