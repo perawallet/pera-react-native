@@ -174,8 +174,9 @@ describe('services/device/hooks', () => {
             wrapper: createWrapper(),
         })
 
+        let outcome: { createdNew: boolean } | undefined
         await act(async () => {
-            await result.current.registerDevice(accounts)
+            outcome = await result.current.registerDevice(accounts)
         })
 
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledWith({
@@ -187,6 +188,10 @@ describe('services/device/hooks', () => {
                 appVersion: '7.0.1',
             },
         })
+        // This is the no-id create path's own `createdNew: true` return —
+        // distinct from the 404-recreate path's, which has its own coverage
+        // below. Tasks 8/12 branch on this flag.
+        expect(outcome).toEqual({ createdNew: true })
     })
 
     test('sends the stored id on every subsequent registration', async () => {
@@ -392,7 +397,7 @@ describe('services/device/hooks', () => {
         expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(1)
     })
 
-    test('does not persist a stale device id when a newer registration attempt supersedes it', async () => {
+    test('serializes concurrent id-less registrations into one create plus a follow-up carrying the second call’s accounts', async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
@@ -400,20 +405,29 @@ describe('services/device/hooks', () => {
 
         useDeviceStore.getState().resetState()
 
-        let resolveFirst: (value: { id: string }) => void = () => {}
-        const firstCall = new Promise<{ id: string }>(resolve => {
-            resolveFirst = resolve
+        const accountsB: DeviceAccountRegistration[] = [
+            {
+                address: 'ADDR_B',
+                accountType: DeviceAccountTypes.watch,
+                receiveNotifications: false,
+            },
+        ]
+
+        let resolveCreate: (value: { id: string }) => void = () => {}
+        const createResponse = new Promise<{ id: string }>(resolve => {
+            resolveCreate = resolve
         })
 
         mockedRegisterDeviceMutation
-            .mockImplementationOnce(() => firstCall)
-            .mockImplementationOnce(() => Promise.resolve({ id: 'SECOND' }))
+            .mockImplementationOnce(() => createResponse) // the shared create
+            .mockResolvedValueOnce({ id: 'SHARED-ID' }) // call 2's follow-up update
 
         const { result } = renderHook(() => useDevice(), {
             wrapper: createWrapper(),
         })
 
-        // Fire the first (slow) attempt but don't await it yet.
+        // Call 1 fires the create and is left hanging.
+        let firstOutcome: { createdNew: boolean } | undefined
         let firstAttempt: Promise<{ createdNew: boolean }> = Promise.resolve({
             createdNew: false,
         })
@@ -421,26 +435,143 @@ describe('services/device/hooks', () => {
             firstAttempt = result.current.registerDevice(accounts)
         })
 
-        // A second attempt starts and resolves before the first one does,
-        // bumping the in-flight attempt id.
+        // Call 2 arrives before call 1's create resolves.
+        let secondOutcome: { createdNew: boolean } | undefined
+        let secondAttempt: Promise<{ createdNew: boolean }> = Promise.resolve({
+            createdNew: false,
+        })
+        act(() => {
+            secondAttempt = result.current.registerDevice(accountsB)
+        })
+
+        // Only one POST has gone out so far — call 2 is awaiting call 1's
+        // in-flight create rather than issuing its own.
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(1)
+
+        await act(async () => {
+            resolveCreate({ id: 'SHARED-ID' })
+            firstOutcome = await firstAttempt
+            secondOutcome = await secondAttempt
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(2)
+        // Exactly one id-less create...
+        expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(1, {
+            data: expect.not.objectContaining({ id: expect.anything() }),
+        })
+        // ...and call 2's own accounts still reach the backend, via a
+        // follow-up carrying the id call 1's create minted.
+        expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(2, {
+            data: expect.objectContaining({
+                id: 'SHARED-ID',
+                accounts: accountsB,
+            }),
+        })
+        expect(firstOutcome).toEqual({ createdNew: true })
+        expect(secondOutcome).toEqual({ createdNew: false })
+        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
+            'SHARED-ID',
+        )
+    })
+
+    test('a failed id-less create releases the lock for a subsequent registration', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+
+        mockedRegisterDeviceMutation
+            .mockRejectedValueOnce(new Error('boom'))
+            .mockResolvedValueOnce({ id: 'RECOVERED' })
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await expect(
+            act(async () => {
+                await result.current.registerDevice(accounts)
+            }),
+        ).rejects.toThrow('boom')
+
+        // If the lock weren't released on failure, this second call would
+        // hang forever awaiting a create that already rejected.
+        let outcome: { createdNew: boolean } | undefined
+        await act(async () => {
+            outcome = await result.current.registerDevice(accounts)
+        })
+
+        expect(outcome).toEqual({ createdNew: true })
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(2)
+        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
+            'RECOVERED',
+        )
+    })
+
+    test('does not persist a stale device id when a newer registration attempt supersedes it', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+        const { useNetwork } =
+            await import('@perawallet/wallet-core-blockchain')
+
+        useDeviceStore.getState().resetState()
+        vi.mocked(useNetwork).mockReturnValue({
+            network: 'mainnet',
+            setNetwork: vi.fn(),
+        } as never)
+
+        let resolveFirst: (value: { id: string }) => void = () => {}
+        const firstCall = new Promise<{ id: string }>(resolve => {
+            resolveFirst = resolve
+        })
+
+        mockedRegisterDeviceMutation
+            .mockImplementationOnce(() => firstCall) // mainnet's create
+            .mockImplementationOnce(() => Promise.resolve({ id: 'TESTNET-ID' })) // testnet's create
+
+        const { result, rerender } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        // Fire a slow mainnet create but don't await it yet.
+        let firstAttempt: Promise<{ createdNew: boolean }> = Promise.resolve({
+            createdNew: false,
+        })
+        act(() => {
+            firstAttempt = result.current.registerDevice(accounts)
+        })
+
+        // The network switches to testnet — a different pending-create key,
+        // so this fires its own independent (fast) create rather than
+        // joining mainnet's.
+        vi.mocked(useNetwork).mockReturnValue({
+            network: 'testnet',
+            setNetwork: vi.fn(),
+        } as never)
+        rerender()
+
         await act(async () => {
             await result.current.registerDevice(accounts)
         })
 
-        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
-            'SECOND',
+        expect(useDeviceStore.getState().deviceIDs.get('testnet')).toBe(
+            'TESTNET-ID',
         )
 
-        // Now let the stale first attempt resolve. Its captured attemptId no
-        // longer matches the ref, so it must not clobber the newer id.
+        // Now let the stale mainnet attempt resolve. A newer create (testnet)
+        // has since bumped the in-flight ref, so this must not write back.
         await act(async () => {
-            resolveFirst({ id: 'FIRST' })
+            resolveFirst({ id: 'STALE-MAINNET-ID' })
             await firstAttempt
         })
 
-        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
-            'SECOND',
-        )
+        expect(
+            useDeviceStore.getState().deviceIDs.get('mainnet') ?? null,
+        ).toBeNull()
     })
 
     test('clears the previous network push token via a register carrying that id', async () => {

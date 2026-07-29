@@ -50,11 +50,18 @@ export const useDevice = () => {
 
     const { mutateAsync: register } = useRegisterDeviceMutation()
 
-    // Tracks the in-flight register attempt id. New calls bump it; callbacks
-    // check their captured id before applying side-effects, so a stale
-    // registration (e.g. fired right before a network switch) can't write
-    // back the wrong network's deviceID.
+    // Tracks the most recent CREATE attempt id (bumped only when a create is
+    // actually fired — see `createDeviceForNetwork`). A create that resolves
+    // after a newer create has already started (e.g. the network switched
+    // mid-flight) must not write its now-stale id back over a fresher one.
     const inFlightIdRef = useRef(0)
+
+    // Dedupes concurrent id-less creates per network. v3 mints a brand-new
+    // device row for every id-less POST, so two `registerDevice` calls that
+    // both find no stored id must not both create — the second joins the
+    // first's in-flight create and registers its own accounts afterwards via
+    // an update (see `acquireCreatedDeviceId`).
+    const pendingCreateRef = useRef<Map<Network, Promise<string>>>(new Map())
 
     // v3 requires push_token, locale and app_version on every call; there is
     // no "omit to keep the stored value" path. A null token becomes '' — see
@@ -70,12 +77,16 @@ export const useDevice = () => {
         [deviceInfoService, pushToken],
     )
 
+    // The one place that ever issues an id-less POST. Bumps `inFlightIdRef`
+    // itself, right before firing — only calls that actually create bump it,
+    // so a call that merely *joins* someone else's pending create (see
+    // below) can never invalidate that create's own write.
     const createDeviceForNetwork = useCallback(
         async (
             targetNetwork: Network,
             accounts: DeviceAccountRegistration[],
-            attemptId: number,
-        ) => {
+        ): Promise<string> => {
+            const attemptId = ++inFlightIdRef.current
             const result = await register({ data: buildPayload(accounts) })
             if (!result.id) {
                 // Storing null would report this registration as healed while
@@ -86,39 +97,65 @@ export const useDevice = () => {
             if (inFlightIdRef.current === attemptId) {
                 setDeviceID(targetNetwork, result.id)
             }
+            return result.id
         },
         [buildPayload, register, setDeviceID],
     )
 
     /**
-     * Single-attempt registration. `createdNew` tells callers whether this
-     * attempt created a fresh device record (no prior id, or a 404 recreate)
-     * versus updating an existing one.
+     * Serializes id-less creates for a given network. If one is already in
+     * flight, this call joins it instead of firing a second POST — so
+     * concurrent callers (e.g. the mount-time registration and a
+     * notification-preference toggle both racing before the FCM token
+     * arrives) mint exactly one device row between them.
      *
-     * **Once an id exists we always send it.** v3 mints a brand-new device for
-     * every id-less call carrying an empty push token, so the only id-less
-     * call is the first registration on a device whose FCM token hasn't
-     * arrived (or was denied) — and the returned id is persisted immediately,
-     * which bounds that to one.
-     *
-     * Transient retries (5xx, network errors) are handled by ky inside the
-     * shared query-client; layering another retry loop here would compound to
-     * up to 6 requests per call. The single 400 retry below is different in
-     * kind: it is a documented v3 write race, not a transport failure.
+     * The lock is released in `finally` regardless of outcome: a failed
+     * create must not strand every later registration behind a promise that
+     * will never resolve.
      */
-    const registerDevice = useCallback(
+    const acquireCreatedDeviceId = useCallback(
         async (
+            targetNetwork: Network,
             accounts: DeviceAccountRegistration[],
-        ): Promise<{ createdNew: boolean }> => {
-            const attemptId = ++inFlightIdRef.current
-            const targetNetwork = network
-
-            if (!deviceId) {
-                await createDeviceForNetwork(targetNetwork, accounts, attemptId)
-                return { createdNew: true }
+        ): Promise<{ id: string; joinedExisting: boolean }> => {
+            const pending = pendingCreateRef.current.get(targetNetwork)
+            if (pending) {
+                return { id: await pending, joinedExisting: true }
             }
 
-            const payload = { ...buildPayload(accounts), id: deviceId }
+            const createPromise = createDeviceForNetwork(
+                targetNetwork,
+                accounts,
+            )
+            pendingCreateRef.current.set(targetNetwork, createPromise)
+            try {
+                const id = await createPromise
+                return { id, joinedExisting: false }
+            } finally {
+                if (
+                    pendingCreateRef.current.get(targetNetwork) ===
+                    createPromise
+                ) {
+                    pendingCreateRef.current.delete(targetNetwork)
+                }
+            }
+        },
+        [createDeviceForNetwork],
+    )
+
+    /**
+     * Registers `accounts` against a known device id. Used both for the
+     * common case (id already in the store) and for a call that just joined
+     * someone else's in-flight create — either way, this call didn't create
+     * the device, so it must not drop its own accounts on the floor.
+     */
+    const registerWithId = useCallback(
+        async (
+            targetNetwork: Network,
+            id: string,
+            accounts: DeviceAccountRegistration[],
+        ): Promise<{ createdNew: boolean }> => {
+            const payload = { ...buildPayload(accounts), id }
 
             try {
                 await register({ data: payload })
@@ -133,11 +170,54 @@ export const useDevice = () => {
                 // malformed payload cannot fix it, and re-creating would hide
                 // the bug behind a duplicate device.
                 if (!shouldRecreateDevice(error)) throw error
-                await createDeviceForNetwork(targetNetwork, accounts, attemptId)
-                return { createdNew: true }
+                const recreated = await acquireCreatedDeviceId(
+                    targetNetwork,
+                    accounts,
+                )
+                if (!recreated.joinedExisting) return { createdNew: true }
+                return registerWithId(targetNetwork, recreated.id, accounts)
             }
         },
-        [deviceId, network, buildPayload, register, createDeviceForNetwork],
+        [buildPayload, register, acquireCreatedDeviceId],
+    )
+
+    /**
+     * Single-attempt registration. `createdNew` tells callers whether this
+     * attempt created a fresh device record (no prior id, or a 404 recreate)
+     * versus updating an existing one.
+     *
+     * **Once an id exists we always send it.** v3 mints a brand-new device for
+     * every id-less call carrying an empty push token, so the only id-less
+     * call is the first registration on a device whose FCM token hasn't
+     * arrived (or was denied) — and the returned id is persisted immediately,
+     * which bounds that to one *per network*, even under concurrent callers
+     * (see `acquireCreatedDeviceId`).
+     *
+     * Transient retries (5xx, network errors) are handled by ky inside the
+     * shared query-client; layering another retry loop here would compound to
+     * up to 6 requests per call. The single 400 retry below is different in
+     * kind: it is a documented v3 write race, not a transport failure.
+     */
+    const registerDevice = useCallback(
+        async (
+            accounts: DeviceAccountRegistration[],
+        ): Promise<{ createdNew: boolean }> => {
+            const targetNetwork = network
+
+            if (!deviceId) {
+                const { id, joinedExisting } = await acquireCreatedDeviceId(
+                    targetNetwork,
+                    accounts,
+                )
+                if (!joinedExisting) return { createdNew: true }
+                // Another in-flight call already minted the device; register
+                // THIS call's accounts against it instead of dropping them.
+                return registerWithId(targetNetwork, id, accounts)
+            }
+
+            return registerWithId(targetNetwork, deviceId, accounts)
+        },
+        [deviceId, network, acquireCreatedDeviceId, registerWithId],
     )
 
     /**
