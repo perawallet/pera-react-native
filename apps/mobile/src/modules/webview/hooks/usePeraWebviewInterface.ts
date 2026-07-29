@@ -50,6 +50,7 @@ import {
 import {
     BROWSER_FAVORITE_ACTION,
     GET_DEVICE_ID_ACTION,
+    isSafeBrowserUrl,
     JsonRpcErrorCode,
     requireSecure,
     sendActionToWebview,
@@ -192,6 +193,15 @@ export const usePeraWebviewInterface = (
                         return
                     }
                     const url = message.params!.url as string
+                    if (!isSafeBrowserUrl(url)) {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InvalidParams,
+                            t('errors.webview.unsupported_url', { url }),
+                            webview,
+                        )
+                        return
+                    }
                     const title = message.params?.title as string | undefined
                     const isFavorite = message.params?.isFavorite
 
@@ -234,6 +244,7 @@ export const usePeraWebviewInterface = (
             onCloseRequested,
             onBackRequested,
             hadRequiredParams,
+            t,
             webview,
         ],
     )
@@ -252,15 +263,12 @@ export const usePeraWebviewInterface = (
                     if (!hadRequiredParams(['url'], message)) {
                         return
                     }
-                    const url = message.params!.url
-                    // canOpenURL is a no-op on web (react-native-web always
-                    // resolves true), so this scheme check — not that call —
-                    // is the only gate on the web platform.
-                    if (
-                        typeof url !== 'string' ||
-                        (!url.startsWith('http://') &&
-                            !url.startsWith('https://'))
-                    ) {
+                    const url = message.params!.url as string
+                    // https-only until product confirms a broader allow-list
+                    // (mailto:/tel:). canOpenURL stays as the secondary check,
+                    // and is a no-op on web (react-native-web always resolves
+                    // true), so this gate is the only one on that platform.
+                    if (!isSafeBrowserUrl(url)) {
                         sendErrorToWebview(
                             message.id,
                             JsonRpcErrorCode.InvalidParams,
