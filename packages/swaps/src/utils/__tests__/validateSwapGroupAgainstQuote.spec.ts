@@ -97,14 +97,16 @@ describe('validateSwapGroupAgainstQuote', () => {
         ).not.toThrow()
     })
 
-    it('ignores transactions not sent by the swapper', () => {
-        // A pool/clawback transfer of another asset, not signed by the swapper.
+    it('rejects a signable transaction from a non-swapper sender (Variant B)', () => {
+        // Every entry is a slot the wallet will sign; one whose sender is not
+        // the swapper is a second account the user never reviewed, so the
+        // wallet must fail closed rather than sign it. (PERA-4709)
         expect(() =>
             validateSwapGroupAgainstQuote(
-                [axfer(), axfer({ sender: POOL, assetId: 7n })],
+                [axfer(), axfer({ sender: 'ACCOUNT_B', assetId: 7n })],
                 baseQuote,
             ),
-        ).not.toThrow()
+        ).toThrow(SwapQuoteMismatchError)
     })
 
     it('rejects an outflow of an unexpected asset', () => {
@@ -152,13 +154,21 @@ describe('validateSwapGroupAgainstQuote', () => {
         ).toThrow(SwapQuoteMismatchError)
     })
 
-    it('ignores a rekey on a transaction not sent by the swapper', () => {
+    it('rejects a drain when the quote swapper does not match the group (Variant A no-op guard)', () => {
+        // A wrong swapper used to disable the validator entirely: `outflow` is
+        // only populated for matching senders, so a mismatch left it empty and
+        // the spend-ceiling loop ran zero times — a full drain passed. With
+        // fail-closed the mismatched sender throws first. (PERA-4709)
+        const wrongSwapperQuote = {
+            ...baseQuote,
+            swapperAddress: 'WRONG_SWAPPER_ADDRESS',
+        } as unknown as SwapQuote
         expect(() =>
             validateSwapGroupAgainstQuote(
-                [axfer(), axfer({ sender: POOL, rekeyTo: POOL })],
-                baseQuote,
+                [axfer({ amount: 999_999_999n })],
+                wrongSwapperQuote,
             ),
-        ).not.toThrow()
+        ).toThrow(SwapQuoteMismatchError)
     })
 
     it('rejects a large ALGO payment beyond the network-fee allowance', () => {
