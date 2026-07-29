@@ -47,6 +47,11 @@ export type EnableBiometricsResult =
 type UseBiometricsResult = {
     isEnabled: boolean
     isAvailable: boolean
+    /**
+     * Reconciles, so NOT a pure read: when the blob exists but the OS reports no
+     * enrolled biometric, it deletes the blob and returns false. Callers get the
+     * post-reconciliation answer, and a subsequent call is consistent with it.
+     */
     checkBiometricsEnabled: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
     refreshBiometricsBinding: () => Promise<void>
