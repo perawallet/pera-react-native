@@ -14,20 +14,29 @@ import { useCallback } from 'react'
 import { Linking } from 'react-native'
 
 import { logger } from '@perawallet/wallet-core-shared'
-
 import { PERAWALLET_UNIVERSAL_LINK_HOST } from '@hooks/deeplink/constants'
+import { isOriginGatedDeeplinkType } from '@hooks/deeplink/page-initiated-policy'
 import { parseDeeplink } from '@hooks/deeplink/parser'
 import { useDeepLink } from '@hooks/useDeepLink'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
+import { getDisplayHost } from './getDisplayHost'
 
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes'
+
+type UseWebViewNavigationGuardOptions = {
+    isTrustedOrigin: boolean
+    /** Live page URL — logged (host only) when a dispatch is refused. */
+    pageUrl: string
+}
 
 type UseWebViewNavigationGuardResult = {
     onShouldStartLoadWithRequest: (request: ShouldStartLoadRequest) => boolean
 }
 
-// Everyday schemes a page may legitimately link to and that only the OS can
-// service. WalletConnect wake links are deliberately absent — we ARE the
-// wallet, so they're swallowed rather than bounced through the app chooser.
+// Everyday schemes only the OS can service. WalletConnect wake links are
+// deliberately absent — we ARE the wallet, so they're swallowed rather than
+// bounced through the app chooser.
 const OS_HANDLED_SCHEMES = ['mailto:', 'tel:', 'sms:'] as const
 
 const isOsHandledScheme = (url: string): boolean =>
@@ -55,58 +64,76 @@ const isPeraUniversalLink = (url: string): boolean =>
  *   ordinary dApp routes like `https://dapp.com/app/swap`.
  * - Other standard web navigations load in the WebView untouched.
  * - Any custom-scheme URL Pera recognises as a deeplink is routed in-app.
+ * - Value-bearing deeplinks (transfers, keyreg, account import, WC pairing —
+ *   whether custom-scheme or perawallet.app universal links) only route when
+ *   the firing page is the trusted Discover origin; from any other origin
+ *   they are blocked outright. OS/QR-sourced deeplinks enter through a
+ *   different path and are unaffected.
  * - WalletConnect wake/focus links carry no actionable URI (no bridge param) so
  *   they don't parse as a deeplink — they're swallowed to keep them off the OS
  *   chooser.
  * - Everything else non-http(s) is refused rather than handed to the WebView,
- *   which can't load a foreign scheme (Android raises
- *   `ERR_UNKNOWN_URL_SCHEME` and swaps the page for the error view). The
- *   handful of user-facing OS schemes below are explicitly opened instead:
- *   PWWebView sets `originWhitelist={['*']}` so this hook is the only decision
- *   point, and react-native-webview's own `Linking.openURL` fallback — which
- *   used to handle them — no longer runs (PERA-4717).
- *
- * Deeplink dispatch is gated on {@link isTrustedOrigin}: only the pinned
- * Discover origin may hand a navigation to the app's deeplink dispatcher.
- * Arbitrary web content in the in-app browser must NOT be able to enqueue a
- * (keyreg, contact, account-switch, …) deeplink with no origin attribution —
- * every other dApp-initiated sign request carries a source badge (PERA-4717).
+ *   which can't load a foreign scheme. `mailto:`/`tel:`/`sms:` are opened via
+ *   `Linking` first, because PWWebView sets `originWhitelist={['*']}` so
+ *   react-native-webview's own openURL fallback no longer runs.
  */
-export const useWebViewNavigationGuard = (
-    isTrustedOrigin: boolean,
-): UseWebViewNavigationGuardResult => {
+export const useWebViewNavigationGuard = ({
+    isTrustedOrigin,
+    pageUrl,
+}: UseWebViewNavigationGuardOptions): UseWebViewNavigationGuardResult => {
     const { handleDeepLink } = useDeepLink()
+    const { t } = useLanguage()
+    const { errorToast } = useToast()
 
     const onShouldStartLoadWithRequest = useCallback(
         (request: ShouldStartLoadRequest): boolean => {
             const { url } = request
+            const isWebUrl = /^https?:/i.test(url)
 
-            // iOS reports subframe navigations here and sets isTopFrame; Android
-            // hardcodes it true (or omits it), so this predicate can only ever
-            // tighten the gate, never loosen it.
-            const mayDispatch = isTrustedOrigin && request.isTopFrame !== false
-
-            if (isPeraUniversalLink(url) && parseDeeplink(url)) {
-                // A dApp navigating to perawallet.app/qr/… is never legitimate:
-                // drop it rather than loading the page or dispatching it.
-                if (mayDispatch) {
-                    void handleDeepLink(url, false, 'deeplink')
-                }
-                return false
-            }
-
-            if (/^https?:/i.test(url)) {
+            if (isWebUrl && !isPeraUniversalLink(url)) {
                 return true
             }
 
-            if (mayDispatch && parseDeeplink(url)) {
+            // iOS reports subframe navigations here; Android hardcodes
+            // isTopFrame true (it discards the WebResourceRequest), so this can
+            // only ever tighten the gate. `isTrustedOrigin` is derived from the
+            // TOP frame, so without this a cross-origin iframe on Discover
+            // inherits Discover's trust — the same forgery the bridge already
+            // defends against with its per-mount token.
+            const isTopFrameNavigation = request.isTopFrame !== false
+            const isTrusted = isTrustedOrigin && isTopFrameNavigation
+
+            const parsed = parseDeeplink(url)
+            if (parsed) {
+                if (!isTrusted && isOriginGatedDeeplinkType(parsed.type)) {
+                    // Don't log the url: a RECOVER_ADDRESS link carries a
+                    // mnemonic.
+                    logger.warn(
+                        'Blocked page-initiated deeplink from untrusted origin',
+                        { type: parsed.type, host: getDisplayHost(pageUrl) },
+                    )
+                    // Silence would read as a broken app on a tap the user
+                    // actually made, so say the page was refused.
+                    errorToast(
+                        t('errors.deeplink.blocked_origin_title'),
+                        t('errors.deeplink.blocked_origin_body'),
+                    )
+                    return false
+                }
                 void handleDeepLink(url, false, 'deeplink')
                 return false
             }
 
-            // Hand the everyday OS schemes to the system, then refuse the
-            // navigation either way — the WebView cannot load a non-http(s)
-            // scheme itself.
+            if (isWebUrl) {
+                return true
+            }
+
+            // `originWhitelist={['*']}` means react-native-webview no longer
+            // Linking.openURL's these itself, and the WebView cannot load a
+            // foreign scheme (Android raises ERR_UNKNOWN_URL_SCHEME and swaps
+            // the page for the error view). Hand the everyday OS schemes over
+            // explicitly, then refuse the navigation either way. WC wake links
+            // are deliberately absent — we ARE the wallet.
             if (isOsHandledScheme(url)) {
                 void Linking.openURL(url).catch(() => {
                     logger.warn('No OS handler for webview navigation', { url })
@@ -115,7 +142,7 @@ export const useWebViewNavigationGuard = (
 
             return false
         },
-        [handleDeepLink, isTrustedOrigin],
+        [handleDeepLink, isTrustedOrigin, pageUrl, errorToast, t],
     )
 
     return { onShouldStartLoadWithRequest }

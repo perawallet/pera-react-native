@@ -1520,6 +1520,80 @@ describe('usePeraWebviewInterface', () => {
                 useNetworkStatusStore.setState({ hasInternet: true })
             }
         })
+
+        it('throttles a second connect inside the dedup window', () => {
+            vi.useFakeTimers()
+            try {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(
+                        mockWebview,
+                        false,
+                        'https://evil.com/',
+                    ),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'wc-first',
+                        jsonrpc: '2.0',
+                        method: 'walletConnect',
+                        params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                    })
+                })
+                expect(mockConnect).toHaveBeenCalledTimes(1)
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'wc-spam',
+                        jsonrpc: '2.0',
+                        method: 'walletConnect',
+                        params: { uri: 'wc:other@2?relay-protocol=irn' },
+                    })
+                })
+                expect(mockConnect).toHaveBeenCalledTimes(1)
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining('"id":"wc-spam"'),
+                )
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining('throttled'),
+                )
+            } finally {
+                vi.useRealTimers()
+            }
+        })
+
+        it('accepts a connect again once the dedup window has elapsed', () => {
+            vi.useFakeTimers()
+            try {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(mockWebview, true, null),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'wc-first',
+                        jsonrpc: '2.0',
+                        method: 'walletConnect',
+                        params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                    })
+                })
+                expect(mockConnect).toHaveBeenCalledTimes(1)
+
+                vi.advanceTimersByTime(2000)
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'wc-retry',
+                        jsonrpc: '2.0',
+                        method: 'walletConnect',
+                        params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                    })
+                })
+                expect(mockConnect).toHaveBeenCalledTimes(2)
+            } finally {
+                vi.useRealTimers()
+            }
+        })
     })
 
     describe('URL scheme validation', () => {
