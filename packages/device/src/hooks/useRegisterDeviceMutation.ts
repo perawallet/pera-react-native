@@ -11,15 +11,20 @@
  */
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
-import type { DeviceRequest, DeviceResponse } from '../models'
-import { createDevice } from './endpoints'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { DeviceRegistration, DeviceResponse } from '../models'
+import { registerDevice } from './endpoints'
 
-export const useCreateDeviceMutation = (
+/**
+ * v3 has one write verb: a payload carrying `id` updates that device, one
+ * without creates a new one. `useDevice.registerDevice` owns that decision;
+ * this hook is the transport.
+ */
+export const useRegisterDeviceMutation = (
     options?: UseMutationOptions<
         DeviceResponse,
         Error,
-        { data: DeviceRequest }
+        { data: DeviceRegistration }
     >,
 ) => {
     const { network } = useNetwork()
@@ -29,8 +34,8 @@ export const useCreateDeviceMutation = (
         // `throwOnError: true` so a failed registration doesn't re-throw on
         // the next render and crash the app.
         throwOnError: false,
-        mutationFn: ({ data }: { data: DeviceRequest }) =>
-            createDevice(network, data),
+        mutationFn: ({ data }: { data: DeviceRegistration }) =>
+            registerDevice(network, data),
         ...options,
     })
 }
