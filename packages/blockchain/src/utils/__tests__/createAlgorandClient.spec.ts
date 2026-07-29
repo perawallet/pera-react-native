@@ -92,3 +92,75 @@ describe('node-override store subscription (real store, end-to-end)', () => {
         )
     })
 })
+
+describe('initial push of a persisted override on module load', () => {
+    // Placed last in this file deliberately: every test here calls
+    // `vi.resetModules()` and re-imports `../algorandClient` dynamically, so
+    // it must not run before the describe blocks above that rely on the
+    // module instance captured by this file's own static top-level imports
+    // (`vi.resetModules()` only affects what a LATER `import()` resolves to —
+    // it does not retroactively change already-bound references — but there
+    // is no reason to tempt that).
+    test('a pre-seeded (persisted) override reaches updateNodeEndpoints on fresh module load, with no store write in this test', async () => {
+        vi.resetModules()
+        mocks.updateNodeEndpoints.mockClear()
+
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        // Simulates a previous session's persisted override already on disk
+        // BEFORE the module ever loads — no `setOverride` / `clearOverride` /
+        // `resetState` call happens anywhere in this test, only a raw write
+        // to the underlying storage `node-override-store.ts` reads from.
+        // zustand's `persist` hydration is synchronous (MMKV's `getString` is
+        // sync in production; the in-memory Map this package's
+        // vitest.setup.ts backs it with is sync too), so the store created
+        // as part of the fresh import below has already hydrated this value
+        // by the time `algorandClient.ts` finishes evaluating.
+        getProvider().keyValueStorage.setItem(
+            'node-override-store',
+            JSON.stringify({
+                state: {
+                    overrides: {
+                        [Networks.localnet]: {
+                            algodUrl: 'http://10.0.0.9:4001',
+                        },
+                    },
+                },
+                version: 1,
+            }),
+        )
+
+        // Fresh import — pulls in a fresh `../store` (and therefore a fresh
+        // `node-override-store`) transitively, which hydrates from the
+        // storage seeded above.
+        await import('../algorandClient')
+
+        // The push is deferred past module evaluation (see the comment in
+        // algorandClient.ts), so give it a moment to fire rather than
+        // asserting immediately.
+        await vi.waitFor(() => {
+            expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(
+                Networks.localnet,
+                {
+                    algodUrl: 'http://10.0.0.9:4001',
+                    indexerUrl: getNetworkConfig(Networks.localnet).indexerUrl,
+                    algodToken: getNetworkConfig(Networks.localnet).algodToken,
+                    indexerToken: getNetworkConfig(Networks.localnet)
+                        .indexerToken,
+                },
+            )
+        })
+
+        // The other four networks (no override) get pushed too — the loop
+        // is unconditional over every network, not just the overridden one.
+        expect(mocks.updateNodeEndpoints).toHaveBeenCalledWith(
+            Networks.mainnet,
+            {
+                algodUrl: getNetworkConfig(Networks.mainnet).algodUrl,
+                indexerUrl: getNetworkConfig(Networks.mainnet).indexerUrl,
+                algodToken: getNetworkConfig(Networks.mainnet).algodToken,
+                indexerToken: getNetworkConfig(Networks.mainnet).indexerToken,
+            },
+        )
+    })
+})

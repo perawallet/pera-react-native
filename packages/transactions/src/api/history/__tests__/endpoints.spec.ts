@@ -451,4 +451,38 @@ describe('routing by network', () => {
 
         expect(mockQueryClient).not.toHaveBeenCalled()
     })
+
+    it('fetchMoreTransactions carries the same asset-id / time filters as the first page on a fallback network', async () => {
+        // The indexer's next-token does not encode filters the way the Pera
+        // path's absolute next-URL does, so a caller paginating an
+        // asset-filtered or date-filtered list must have those filters
+        // re-sent on every page or the list silently widens back to
+        // everything from page 2 onward.
+        mockQueryClient.mockResolvedValue(indexerPage)
+
+        await fetchMoreTransactions({
+            url: 'CURSOR1',
+            network: Networks.fnet,
+            accountAddress: 'ABC123',
+            assetId: '31566704',
+            afterTime: '2025-02-01',
+            beforeTime: '2025-02-13',
+            limit: 50,
+        })
+
+        expect(mockQueryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backend: 'indexer',
+                network: Networks.fnet,
+                url: '/v2/accounts/ABC123/transactions',
+                params: {
+                    limit: 50,
+                    next: 'CURSOR1',
+                    'asset-id': '31566704',
+                    'after-time': '2025-02-01',
+                    'before-time': '2025-02-13',
+                },
+            }),
+        )
+    })
 })

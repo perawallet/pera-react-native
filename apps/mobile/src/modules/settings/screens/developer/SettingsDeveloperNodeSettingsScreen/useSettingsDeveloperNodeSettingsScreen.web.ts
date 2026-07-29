@@ -20,8 +20,9 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
+import { isValidEndpoint } from './isValidEndpoint'
 
-export type NetworkRow = {
+type NetworkRow = {
     network: Network
     labelKey: string
     isSelected: boolean
@@ -34,22 +35,15 @@ export type NetworkRow = {
 // `./useSettingsDeveloperNodeSettingsScreen` import to THIS `.web` file
 // regardless of which module does the importing, so the native and web
 // hooks can't safely share this via a direct cross-import between the two
-// platform variants.
+// platform variants. `isValidEndpoint` no longer has this problem — it
+// moved to the platform-neutral `./isValidEndpoint`, which has no `.web`
+// twin — but `LABEL_KEYS` and `NetworkRow` still do.
 const LABEL_KEYS: Record<Network, string> = {
     [Networks.mainnet]: 'settings.developer.node_settings.mainnet_label',
     [Networks.testnet]: 'settings.developer.node_settings.testnet_label',
     [Networks.betanet]: 'settings.developer.node_settings.betanet_label',
     [Networks.fnet]: 'settings.developer.node_settings.fnet_label',
     [Networks.localnet]: 'settings.developer.node_settings.localnet_label',
-}
-
-const isValidEndpoint = (value: string): boolean => {
-    try {
-        const { protocol } = new URL(value)
-        return protocol === 'http:' || protocol === 'https:'
-    } catch {
-        return false
-    }
 }
 
 type UseSettingsDeveloperNodeSettingsScreenResult = {

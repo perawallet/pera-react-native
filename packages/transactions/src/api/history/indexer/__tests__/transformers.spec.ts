@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi, afterEach } from 'vitest'
+import { logger } from '@perawallet/wallet-core-shared'
 import { transformIndexerTransactions, collectAssetIds } from '../transformers'
 
 const ME = 'AAAA'
@@ -248,6 +249,102 @@ describe('transformIndexerTransactions', () => {
 
         expect(result.results).toHaveLength(1)
         expect(result.results[0]?.id).toBe('TX1')
+    })
+
+    describe('inner transactions with no id (real indexer wire shape)', () => {
+        afterEach(() => {
+            vi.restoreAllMocks()
+        })
+
+        // Regression fixture for a real bug: the Algorand indexer does NOT
+        // emit an `id` field on inner transactions at all — verified live
+        // against a real app-calling mainnet account, where every inner
+        // transaction's keys were `application-transaction, close-rewards,
+        // closing-amount, confirmed-round, fee, first-valid,
+        // intra-round-offset, last-valid, logs, receiver-rewards, round-time,
+        // sender, sender-rewards, tx-type` — no `id` among them. Every other
+        // inner-txns fixture in this file gives inner rows an `id` (INNER1,
+        // INNER2, ...), which is NOT what the real wire sends and would not
+        // have caught this. Requiring `id` on the inner node previously
+        // failed the inner node's parse, which failed the PARENT row via
+        // `indexerTransactionSchema.safeParse` — silently dropping every
+        // parent transaction that happened to contain an inner transaction.
+        const appCallWithInnerPayment = {
+            'current-round': 1,
+            transactions: [
+                {
+                    id: 'OUTER_APPL',
+                    'tx-type': 'appl',
+                    sender: ME,
+                    fee: 1000,
+                    'confirmed-round': 500,
+                    'round-time': 1700000500,
+                    'application-transaction': { 'application-id': 999 },
+                    'inner-txns': [
+                        {
+                            // No `id` field at all.
+                            'tx-type': 'pay',
+                            sender: ME,
+                            fee: 0,
+                            'payment-transaction': {
+                                amount: 5000,
+                                receiver: 'BBBB',
+                            },
+                        },
+                    ],
+                },
+            ],
+        }
+
+        test('keeps the parent row and nets the inner transaction into balance_impacts', () => {
+            const result = transformIndexerTransactions(
+                appCallWithInnerPayment,
+                ME,
+                new Map(),
+            )
+
+            expect(result.results).toHaveLength(1)
+            expect(result.results[0]?.id).toBe('OUTER_APPL')
+            // Nets the outer fee (-1000) AND the inner payment (-5000) —
+            // proof the inner transaction was actually parsed and walked by
+            // computeBalanceImpacts, not merely tolerated as absent.
+            expect(result.results[0]?.balance_impacts).toEqual([
+                {
+                    asset_id: '0',
+                    unit_name: 'ALGO',
+                    fraction_decimals: 6,
+                    amount: '-6000',
+                },
+            ])
+        })
+
+        test('logs a warning with the row id and issue paths when a row is actually dropped', () => {
+            const warnSpy = vi
+                .spyOn(logger, 'warn')
+                .mockImplementation(() => {})
+            const badRow = {
+                id: 'BAD_ROW',
+                'tx-type': 'pay',
+                // Missing required `sender`.
+                fee: 1000,
+            }
+
+            transformIndexerTransactions(
+                { 'current-round': 1, transactions: [badRow] },
+                ME,
+                new Map(),
+            )
+
+            expect(warnSpy).toHaveBeenCalledWith(
+                'Dropping unparseable indexer transaction row',
+                expect.objectContaining({
+                    id: 'BAD_ROW',
+                    issues: expect.arrayContaining([
+                        expect.stringContaining('sender'),
+                    ]),
+                }),
+            )
+        })
     })
 
     test('surfaces a row with an unrecognized tx-type instead of dropping it', () => {

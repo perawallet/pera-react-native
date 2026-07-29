@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import { Networks } from '../models/network'
 import { config } from '../main'
 import {
@@ -122,6 +122,51 @@ describe('network-config', () => {
         expect(getNetworkConfig(Networks.mainnet).algodToken).toBe(
             config.algodApiKey,
         )
+    })
+
+    test('betanet and fnet carry no algod/indexer token, even with a real key configured', async () => {
+        // Their algod/indexer are public third-party endpoints (algonode.cloud,
+        // nodely.dev) Pera does not control and that need no token — sending
+        // Pera's real algodApiKey/indexerApiKey (as mainnet/testnet correctly
+        // do) would leak that credential to hosts outside Pera's control.
+        // Localnet is unaffected — it correctly keeps its own dev token,
+        // asserted separately above.
+        //
+        // `config.algodApiKey`/`indexerApiKey` are blank in this test
+        // environment (no key configured), so asserting against a bare
+        // `getNetworkConfig(betanet).algodToken === ''` would pass whether
+        // betanet's token is hardcoded empty (the fix) OR still wired to
+        // `config.algodApiKey` (the bug) — both would coincidentally read as
+        // `''` here. Mocking a non-empty key makes the two cases actually
+        // observably different, so this only passes for the real fix.
+        vi.resetModules()
+        vi.doMock('../main', async importOriginal => {
+            const actual = await importOriginal<typeof import('../main')>()
+            return {
+                ...actual,
+                config: {
+                    ...actual.config,
+                    algodApiKey: 'REAL_PERA_ALGOD_SECRET',
+                    indexerApiKey: 'REAL_PERA_INDEXER_SECRET',
+                },
+            }
+        })
+
+        const { getNetworkConfig: freshGetNetworkConfig } =
+            await import('../network-config')
+
+        // The mock took effect — mainnet correctly uses the real key.
+        expect(freshGetNetworkConfig(Networks.mainnet).algodToken).toBe(
+            'REAL_PERA_ALGOD_SECRET',
+        )
+        // betanet/fnet must not, even though the same real secret is
+        // configured for the process.
+        for (const network of [Networks.betanet, Networks.fnet]) {
+            expect(freshGetNetworkConfig(network).algodToken).toBe('')
+            expect(freshGetNetworkConfig(network).indexerToken).toBe('')
+        }
+
+        vi.doUnmock('../main')
     })
 
     test('getArc59Config falls back to testnet app ids', () => {

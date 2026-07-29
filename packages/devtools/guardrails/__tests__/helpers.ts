@@ -7,7 +7,7 @@ function scriptKindFor(filePath: string): ts.ScriptKind {
 }
 
 /** Builds a single-file SourceMap from an in-memory string, for specs that don't need a fixture file on disk. */
-export function buildSourceMap(filePath: string, source: string): SourceMap {
+function buildSourceMap(filePath: string, source: string): SourceMap {
     const sf = ts.createSourceFile(
         filePath,
         source,

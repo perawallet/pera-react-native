@@ -63,6 +63,20 @@ export type FetchMoreTransactionsParams = {
      * a Pera pagination URL does.
      */
     accountAddress?: string
+    /**
+     * Indexer-backed networks only: the indexer's `next-token` does not
+     * encode the filters applied to the first page (unlike the Pera path's
+     * absolute `url`, which already carries them), so these must be re-sent
+     * on every page. Harmless to pass on Pera-backed networks — ignored,
+     * since that path replays `url` as-is.
+     */
+    assetId?: string
+    /** Indexer-backed networks only: see `assetId`. */
+    afterTime?: string
+    /** Indexer-backed networks only: see `assetId`. */
+    beforeTime?: string
+    /** Indexer-backed networks only: see `assetId`. */
+    limit?: number
     /** Optional: AbortSignal for cancellation */
     signal?: AbortSignal
 }
@@ -193,6 +207,10 @@ export const fetchMoreTransactions = async (
         accountAddress: params.accountAddress,
         nextToken: params.url,
         network: params.network,
+        assetId: params.assetId,
+        afterTime: params.afterTime,
+        beforeTime: params.beforeTime,
+        limit: params.limit,
         signal: params.signal,
     })
 }

@@ -483,4 +483,87 @@ describe('useTransactionHistoryQuery', () => {
             }),
         )
     })
+
+    test('threads assetId/afterTime/beforeTime/limit through to fetchMoreTransactions on a subsequent api page', async () => {
+        // Regression coverage: on indexer-backed (fallback) networks the
+        // next-token does not encode filters the way the Pera path's
+        // absolute next-URL does, so this hook must re-send them on every
+        // page rather than only on the first — otherwise a filtered list
+        // (one asset, or a date range) silently widens back to everything
+        // from page 2 onward.
+        //
+        // Length must match the custom `limit: 50` below — the DB-page
+        // pagination gate is `dbTransactions.length >= (limit ?? 25)`, so a
+        // 25-length page would short-circuit as "no next page" before ever
+        // reaching the api-page fetch this test exercises.
+        const fullPage = Array.from({ length: 50 }, (_, i) => ({
+            ...mockTransaction,
+            id: `TX${i}`,
+            confirmedRound: 12345 - i,
+            roundTime: 1704067200 - i,
+        }))
+        mockGetTransactionHistory.mockResolvedValue(fullPage)
+
+        ;(endpoints.fetchTransactionHistory as Mock).mockResolvedValue({
+            transactions: [],
+            pagination: {
+                hasNextPage: true,
+                hasPreviousPage: true,
+                nextUrl: 'CURSOR1',
+                previousUrl: null,
+                totalFetched: 0,
+            },
+            currentRound: 12350,
+        })
+        ;(endpoints.fetchMoreTransactions as Mock).mockResolvedValue({
+            transactions: [],
+            pagination: {
+                hasNextPage: false,
+                hasPreviousPage: true,
+                nextUrl: null,
+                previousUrl: null,
+                totalFetched: 0,
+            },
+            currentRound: 12350,
+        })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'fnet',
+                    assetId: '31566704',
+                    afterTime: '2025-02-01',
+                    beforeTime: '2025-02-13',
+                    limit: 50,
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+        // DB page -> first api page (the `__load_more_from_api__` sentinel)
+        result.current.fetchNextPage()
+        await waitFor(() =>
+            expect(result.current.isFetchingNextPage).toBe(false),
+        )
+
+        // First api page -> second api page (a real cursor from `nextUrl`)
+        result.current.fetchNextPage()
+        await waitFor(() =>
+            expect(result.current.isFetchingNextPage).toBe(false),
+        )
+
+        expect(endpoints.fetchMoreTransactions).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: 'CURSOR1',
+                network: 'fnet',
+                accountAddress: mockAddress,
+                assetId: '31566704',
+                afterTime: '2025-02-01',
+                beforeTime: '2025-02-13',
+                limit: 50,
+            }),
+        )
+    })
 })

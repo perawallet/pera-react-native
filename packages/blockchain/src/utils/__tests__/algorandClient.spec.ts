@@ -210,6 +210,36 @@ describe('getAlgorandClient', () => {
         expect(mocks.toAlgodError).toHaveBeenCalledWith(error)
         expect(result).toBe(error)
     })
+
+    it('omits the auth header entirely for a network with an empty token, rather than sending an empty value', () => {
+        // betanet/fnet deliberately carry an empty algodToken/indexerToken
+        // (see network-config.ts — their algod/indexer are public
+        // third-party endpoints Pera does not control). TimeoutHttpClient
+        // must never receive an empty-string credential header.
+        mocks.getNetworkConfig.mockImplementation((network: string) => ({
+            algodUrl: `https://algod.${network}`,
+            indexerUrl: `https://indexer.${network}`,
+            algodToken: '',
+            indexerToken: '',
+        }))
+
+        getAlgorandClient('betanet')
+
+        expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
+            {},
+            'https://algod.betanet',
+            undefined,
+            10_000,
+            30_000,
+        )
+        expect(mocks.TimeoutHttpClient).toHaveBeenCalledWith(
+            {},
+            'https://indexer.betanet',
+            undefined,
+            10_000,
+            30_000,
+        )
+    })
 })
 
 describe('node-override store subscription', () => {

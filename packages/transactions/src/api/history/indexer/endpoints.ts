@@ -115,22 +115,48 @@ export const fetchIndexerTransactionHistory = async (params: {
  * Next page. The cursor is the indexer's opaque `next-token`, carried in the
  * `next` field of the previous page, plus the address it belongs to — the
  * indexer has no absolute next-page URL to replay.
+ *
+ * The indexer's `next-token` does NOT encode the filters a caller applied to
+ * the first page (verified live: the same token with and without `asset-id`
+ * returns different rows) — unlike the Pera path, whose `next` is a full
+ * absolute URL that already carries them. So `assetId`/`afterTime`/
+ * `beforeTime` must be threaded through and re-sent on every page, or a
+ * fallback-network filtered list (e.g. one asset's transactions, or a date
+ * range) silently widens back to the unfiltered set from page 2 onward.
  */
 export const fetchMoreIndexerTransactions = async (params: {
     accountAddress: string
     nextToken: string
     network: Network
+    assetId?: string
+    afterTime?: string
+    beforeTime?: string
     limit?: number
     signal?: AbortSignal
 }): Promise<TransactionHistoryResult> => {
-    const { accountAddress, nextToken, network, limit, signal } = params
+    const {
+        accountAddress,
+        nextToken,
+        network,
+        assetId,
+        afterTime,
+        beforeTime,
+        limit,
+        signal,
+    } = params
 
     const response = await queryClient<unknown>({
         backend: 'indexer',
         network,
         method: 'GET',
         url: `/v2/accounts/${encodeURIComponent(accountAddress)}/transactions`,
-        params: { limit: limit ?? DEFAULT_ITEMS_PER_PAGE, next: nextToken },
+        params: {
+            limit: limit ?? DEFAULT_ITEMS_PER_PAGE,
+            next: nextToken,
+            ...(assetId !== undefined ? { 'asset-id': assetId } : {}),
+            ...(afterTime !== undefined ? { 'after-time': afterTime } : {}),
+            ...(beforeTime !== undefined ? { 'before-time': beforeTime } : {}),
+        },
         signal,
     })
 

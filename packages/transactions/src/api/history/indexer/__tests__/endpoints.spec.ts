@@ -187,4 +187,38 @@ describe('fetchMoreIndexerTransactions', () => {
             }),
         )
     })
+
+    it('carries the same asset-id / time filters as the first page — the next-token does not encode them', async () => {
+        // Regression coverage: the indexer's opaque next-token does not
+        // encode filters the way the Pera path's absolute next-URL does
+        // (verified live — the same token with and without `asset-id`
+        // returns different rows), so omitting these here would silently
+        // widen a filtered list back to everything from page 2 onward.
+        mockQueryClient.mockResolvedValue(emptyPage)
+
+        await fetchMoreIndexerTransactions({
+            accountAddress: 'ABC123',
+            nextToken: 'CURSOR1',
+            network: Networks.fnet,
+            assetId: '31566704',
+            afterTime: '2025-02-01',
+            beforeTime: '2025-02-13',
+            limit: 50,
+        })
+
+        expect(mockQueryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backend: 'indexer',
+                network: Networks.fnet,
+                url: '/v2/accounts/ABC123/transactions',
+                params: {
+                    limit: 50,
+                    next: 'CURSOR1',
+                    'asset-id': '31566704',
+                    'after-time': '2025-02-01',
+                    'before-time': '2025-02-13',
+                },
+            }),
+        )
+    })
 })

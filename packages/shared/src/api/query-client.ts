@@ -162,8 +162,13 @@ const logRetry = ({ request, error, retryCount }: BeforeRetryState) => {
 }
 
 // Deduped so the 75+ `backend: 'pera'` call sites under polling do not flood
-// the console. Keyed per network+method+path so each borrowed endpoint is
-// reported exactly once. Delete alongside pera-service-fallback.ts.
+// the console. Keyed per network+method+url, and `url` is the concrete
+// request path — including any address/asset id it interpolated, not just
+// the route template — so this bounds repeat polling of the SAME request
+// to one warning, not the whole fallback to one warning overall. The set
+// still grows with every distinct URL queried (one entry per account
+// address, asset id, etc.), just not per poll of the same one. Delete
+// alongside pera-service-fallback.ts.
 const warnedPeraFallbacks = new Set<string>()
 
 const warnPeraServiceFallbackOnce = (

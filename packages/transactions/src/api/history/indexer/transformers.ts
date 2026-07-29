@@ -10,11 +10,13 @@
  limitations under the License
  */
 
+import { logger } from '@perawallet/wallet-core-shared'
 import { computeBalanceImpacts } from './balance-impacts'
 import {
     indexerTransactionSchema,
     indexerTransactionsResponseSchema,
     type IndexerTransaction,
+    type IndexerTransactionNode,
 } from './schema'
 import type {
     TransactionHistoryApiResponse,
@@ -61,6 +63,15 @@ const closeToOf = (tx: IndexerTransaction): string | undefined =>
 const applicationIdOf = (tx: IndexerTransaction): string | null => {
     const id = tx['application-transaction']?.['application-id']
     return id === undefined ? null : BigInt(id).toString()
+}
+
+/** Best-effort `id` extraction from an as-yet-unvalidated row, for logging. */
+const extractRowId = (row: unknown): string | undefined => {
+    if (typeof row !== 'object' || row === null || !('id' in row)) {
+        return undefined
+    }
+    const { id } = row as { id: unknown }
+    return typeof id === 'string' ? id : undefined
 }
 
 const transformRow = (
@@ -143,7 +154,21 @@ export const transformIndexerTransactions = (
     const results: TransactionHistoryItemApiResponse[] = []
     for (const row of envelope.transactions) {
         const parsed = indexerTransactionSchema.safeParse(row)
-        if (!parsed.success) continue
+        if (!parsed.success) {
+            // A module whose whole purpose is "don't lose rows" must never
+            // drop one without a trace — log the row's id (when present) and
+            // the zod issue paths so a real-world schema gap like this one
+            // (inner transactions with no `id`) shows up in logs instead of
+            // just an emptier history list.
+            logger.warn('Dropping unparseable indexer transaction row', {
+                id: extractRowId(row),
+                issues: parsed.error.issues.map(
+                    issue =>
+                        `${issue.path.join('.') || '(root)'}: ${issue.message}`,
+                ),
+            })
+            continue
+        }
         results.push(transformRow(parsed.data, address, assets))
     }
 
@@ -159,7 +184,11 @@ export const transformIndexerTransactions = (
 export const collectAssetIds = (response: unknown): string[] => {
     const ids = new Set<string>()
 
-    const walk = (tx: IndexerTransaction): void => {
+    // IndexerTransactionNode, not IndexerTransaction: this recurses into
+    // inner-txns, whose `id` is optional (see schema.ts) — the walker never
+    // reads `id` anyway, but typing it against the row-level (id-required)
+    // type would make passing an inner node a type error.
+    const walk = (tx: IndexerTransactionNode): void => {
         const assetId = tx['asset-transfer-transaction']?.['asset-id']
         if (assetId !== undefined) ids.add(BigInt(assetId).toString())
         for (const inner of tx['inner-txns'] ?? []) walk(inner)

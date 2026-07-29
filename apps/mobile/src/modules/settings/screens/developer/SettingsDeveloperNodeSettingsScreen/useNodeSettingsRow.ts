@@ -13,21 +13,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { type NodeEndpointOverride } from '@perawallet/wallet-core-blockchain'
 import type { NetworkRow } from './useSettingsDeveloperNodeSettingsScreen'
-
-// Duplicated from useSettingsDeveloperNodeSettingsScreen(.web) on purpose:
-// this file is imported by the shared NodeSettingsRow, which is itself
-// imported by both the native screen and `.web.tsx` screen. A bare import of
-// `./useSettingsDeveloperNodeSettingsScreen` resolves to the `.web` sibling
-// on web bundles regardless of which file does the importing, so pulling the
-// validator in from there would silently break on one platform.
-const isValidEndpoint = (value: string): boolean => {
-    try {
-        const { protocol } = new URL(value)
-        return protocol === 'http:' || protocol === 'https:'
-    } catch {
-        return false
-    }
-}
+import { isValidEndpoint } from './isValidEndpoint'
 
 type UseNodeSettingsRowParams = {
     row: NetworkRow
@@ -52,7 +38,7 @@ type UseNodeSettingsRowResult = {
  * character doesn't flash a validation error on every keystroke, then shows
  * an inline error for whichever *changed* field the parent's `saveEndpoints`
  * would silently drop (it never persists a malformed URL — see
- * `isValidEndpoint` there). Save forwards only the field(s) actually edited
+ * `./isValidEndpoint`, shared by both). Save forwards only the field(s) actually edited
  * this time — an untouched field is never re-validated, never flagged, and
  * never re-sent, so editing one endpoint can't silently pin the other to
  * whatever it happened to read at that moment.

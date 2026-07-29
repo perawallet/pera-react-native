@@ -91,9 +91,16 @@ vi.mock('@perawallet/walletconnect', () => {
 })
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    // Real 5-network shape: getExpectedChainId's Record<Network, ...> table
+    // is total over Object.values(Networks)-adjacent code, and the betanet /
+    // fnet chain-id tests below need those keys present, not just
+    // mainnet/testnet.
     Networks: {
         mainnet: 'mainnet',
         testnet: 'testnet',
+        betanet: 'betanet',
+        fnet: 'fnet',
+        localnet: 'localnet',
     },
     Network: String,
     logger: {
@@ -358,6 +365,137 @@ describe('useWalletConnect', () => {
                 chainId: AlgorandChainId.mainnet,
                 permissions: ['perm1'],
                 clientId: 'client-match-net',
+            })
+            expect(mockConnectorInstance.rejectSession).not.toHaveBeenCalled()
+            expect(mockSetConnectionError).not.toHaveBeenCalled()
+        })
+
+        it("accepts a betanet dApp presenting betanet's own registered chain id (416003)", async () => {
+            // Regression case: before widening expectedChainId per-network,
+            // every network past testnet fell through to MainNet's id, so a
+            // correctly-configured betanet dApp presenting its real,
+            // registered 416_003 was wrongly rejected.
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.betanet),
+            )
+            const connection = { clientId: 'client-betanet' } as any
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            const payload = {
+                params: [
+                    {
+                        peerMeta: { name: 'Betanet App' },
+                        chainId: AlgorandChainId.betanet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockAddSessionRequest).toHaveBeenCalledWith({
+                peerMeta: { name: 'Betanet App' },
+                chainId: AlgorandChainId.betanet,
+                permissions: ['perm1'],
+                clientId: 'client-betanet',
+            })
+            expect(mockConnectorInstance.rejectSession).not.toHaveBeenCalled()
+            expect(mockSetConnectionError).not.toHaveBeenCalled()
+        })
+
+        it("rejects a betanet session request presenting MainNet's chain id (416001)", async () => {
+            // The other half of the same regression: a dApp presenting
+            // MainNet's 416_001 must not be waved through just because it
+            // used to be the ternary's default branch.
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.betanet),
+            )
+            const connection = { clientId: 'client-betanet-wrong' } as any
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            const payload = {
+                params: [
+                    {
+                        peerMeta: { name: 'Mainnet App' },
+                        chainId: AlgorandChainId.mainnet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockConnectorInstance.rejectSession).toHaveBeenCalledTimes(1)
+            expect(mockSetConnectionError).toHaveBeenCalledTimes(1)
+            expect(mockSetConnectionError.mock.calls[0][0]).toBeInstanceOf(
+                WalletConnectInvalidNetworkError,
+            )
+            expect(mockAddSessionRequest).not.toHaveBeenCalled()
+        })
+
+        it("accepts an fnet dApp presenting TestNet's chain id (416002) — fnet has no registered id of its own", async () => {
+            // fnet borrows TestNet's chain id (matching how its Pera
+            // services already borrow TestNet's, see
+            // PERA_SERVICE_FALLBACK). Before this fix fnet resolved to
+            // MainNet's id instead, so a dApp presenting 416_002 (the
+            // network's actual, spec-intended id) was wrongly rejected.
+            const { result } = renderHook(() => useWalletConnect(Networks.fnet))
+            const connection = { clientId: 'client-fnet' } as any
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            const payload = {
+                params: [
+                    {
+                        peerMeta: { name: 'Fnet App' },
+                        chainId: AlgorandChainId.testnet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockAddSessionRequest).toHaveBeenCalledWith({
+                peerMeta: { name: 'Fnet App' },
+                chainId: AlgorandChainId.testnet,
+                permissions: ['perm1'],
+                clientId: 'client-fnet',
             })
             expect(mockConnectorInstance.rejectSession).not.toHaveBeenCalled()
             expect(mockSetConnectionError).not.toHaveBeenCalled()

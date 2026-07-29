@@ -82,8 +82,15 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
         genesisHash: config.betanetGenesisHash,
         genesisId: 'betanet-v1.0',
         explorerUrl: config.betanetExplorerUrl,
-        algodToken: config.algodApiKey,
-        indexerToken: config.indexerApiKey,
+        // Deliberately empty, NOT config.algodApiKey/indexerApiKey: those are
+        // Pera's own injected secrets, and betanet's algod/indexer are public
+        // third-party endpoints (algonode.cloud) Pera does not control and
+        // that need no token. Sending Pera's real credential to a host Pera
+        // doesn't operate is a needless credential leak. The client factories
+        // (createTokenHeaderClient in query-client.ts, TimeoutHttpClient) skip
+        // the auth header entirely when the token is empty, so this is safe.
+        algodToken: '',
+        indexerToken: '',
         dispenserUrl: 'https://lora.algokit.io/betanet/fund/',
     },
     [Networks.fnet]: {
@@ -92,8 +99,11 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
         genesisHash: config.fnetGenesisHash,
         genesisId: 'fnet-v1',
         explorerUrl: config.fnetExplorerUrl,
-        algodToken: config.algodApiKey,
-        indexerToken: config.indexerApiKey,
+        // See the betanet entry above — same reasoning: fnet's algod/indexer
+        // (nodely.dev) are public third-party endpoints, not Pera's, and need
+        // no token.
+        algodToken: '',
+        indexerToken: '',
         dispenserUrl: 'https://lora.algokit.io/fnet/fund/',
     },
     [Networks.localnet]: {

@@ -41,9 +41,9 @@ import { useWalletConnectHandlers } from './useWalletConnectHandlers'
 import {
     logger,
     type Network,
-    Networks,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { getExpectedChainId } from '../utils/expectedChainId'
 
 /**
  * Surface a WalletConnect error to the UI. We go through the store rather
@@ -344,10 +344,7 @@ export const useWalletConnect = (network: Network) => {
             logger.debug('WC session_request received', { payload })
 
             const currentNetwork = networkRef.current
-            const expectedChainId =
-                currentNetwork === Networks.testnet
-                    ? AlgorandChainId.testnet
-                    : AlgorandChainId.mainnet
+            const expectedChainId = getExpectedChainId(currentNetwork)
 
             if (
                 chainId !== AlgorandChainId.all &&
