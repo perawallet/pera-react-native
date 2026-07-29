@@ -144,5 +144,29 @@ describe('services/blockchain/network-store', () => {
             expect(typeof merged?.setNetwork).toBe('function')
             expect(typeof merged?.resetState).toBe('function')
         })
+
+        test.each([
+            ['undefined', undefined],
+            ['null', null],
+        ])(
+            'rehydrating from empty storage (%s) leaves the current state alone',
+            async (_label, persisted) => {
+                // zustand calls `merge` even when storage held nothing, and
+                // applies the result with replace:true. With nothing persisted
+                // there is no value to guard, so the current state must survive
+                // untouched rather than being forced to config.defaultNetwork.
+                const { useNetworkStore } = await import('../network-store')
+
+                act(() => {
+                    useNetworkStore.getState().setNetwork('betanet')
+                })
+
+                const merged = useNetworkStore.persist
+                    .getOptions()
+                    .merge?.(persisted, useNetworkStore.getState())
+
+                expect(merged?.network).toBe('betanet')
+            },
+        )
     })
 })

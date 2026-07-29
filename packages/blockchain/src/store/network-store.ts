@@ -68,13 +68,21 @@ export const useNetworkStore: UseBoundStore<
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
             partialize: state => ({ network: state.network }),
-            // Spread over `current` deliberately: mergePersistedNetwork returns
-            // only { network }, so returning it directly would drop setNetwork
-            // and resetState from the rehydrated store.
-            merge: (persisted, current) => ({
-                ...current,
-                ...mergePersistedNetwork(persisted),
-            }),
+            merge: (persisted, current) => {
+                // zustand calls `merge` unconditionally — including on a first
+                // launch where storage held nothing — and applies the result
+                // with replace:true. There is no persisted value to guard in
+                // that case, and forcing config.defaultNetwork here would
+                // overwrite whatever the current state holds.
+                if (persisted === undefined || persisted === null) {
+                    return current
+                }
+
+                // Spread over `current` deliberately: mergePersistedNetwork
+                // returns only { network }, so returning it directly would drop
+                // setNetwork and resetState from the rehydrated store.
+                return { ...current, ...mergePersistedNetwork(persisted) }
+            },
         },
     ),
 )
