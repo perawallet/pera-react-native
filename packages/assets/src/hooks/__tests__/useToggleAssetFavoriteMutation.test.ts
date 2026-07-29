@@ -372,4 +372,67 @@ describe('useToggleAssetFavoriteMutation', () => {
 
         expect(queryClient.getQueryState(listKey)?.isInvalidated).toBe(true)
     })
+
+    it('notifies onLocalWrite after the optimistic DB write, before the mutation resolves', async () => {
+        const onLocalWrite = vi.fn()
+        let resolvePromise: (value: typeof mockToggleResponse) => void
+        const promise = new Promise<typeof mockToggleResponse>(resolve => {
+            resolvePromise = resolve
+        })
+        vi.mocked(toggleAssetFavorite).mockReturnValue(promise)
+
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ onLocalWrite }),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        result.current.toggleAssetFavorite({
+            assetID: '123',
+            deviceId: 'device-123',
+            enabled: true,
+            network: 'mainnet' as const,
+        })
+
+        await waitFor(() => {
+            expect(onLocalWrite).toHaveBeenCalledTimes(1)
+        })
+
+        expect(updateAssetPeraMetadata).toHaveBeenCalledBefore(onLocalWrite)
+        expect(result.current.isSuccess).toBe(false)
+
+        resolvePromise!(mockToggleResponse)
+
+        await waitFor(() => {
+            expect(result.current.isSuccess).toBe(true)
+        })
+    })
+
+    it('notifies onLocalWrite again after the rollback write when the mutation fails', async () => {
+        const onLocalWrite = vi.fn()
+        queryClient.setQueryData<PeraAsset>(
+            getAssetDetailsQueryKey('123', true, 'mainnet'),
+            buildAsset(false),
+        )
+        vi.mocked(toggleAssetFavorite).mockRejectedValue(
+            new Error('Network error'),
+        )
+
+        const { result } = renderHook(
+            () => useToggleAssetFavoriteMutation({ onLocalWrite }),
+            { wrapper: createWrapper(queryClient) },
+        )
+
+        result.current.toggleAssetFavorite({
+            assetID: '123',
+            deviceId: 'device-123',
+            enabled: true,
+            network: 'mainnet' as const,
+        })
+
+        await waitFor(() => {
+            expect(result.current.isError).toBe(true)
+        })
+
+        expect(onLocalWrite).toHaveBeenCalledTimes(2)
+    })
 })

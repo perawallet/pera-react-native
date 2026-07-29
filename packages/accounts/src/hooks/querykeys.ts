@@ -106,6 +106,16 @@ export const getInvalidateAccountBalancesPredicate = (query: Query) =>
     query.queryKey.at(0) === MODULE_PREFIX &&
     query.queryKey.at(1) === 'balance'
 
+/**
+ * The holdings page is read from SQLite with `staleTime: Infinity`, so a write
+ * that changes what the read returns — including one made by another module,
+ * e.g. the favorite flag the sort keys off — has to invalidate it explicitly.
+ */
+export const getInvalidateAccountHoldingsPredicate = (query: Query) =>
+    query.queryKey.length >= 2 &&
+    query.queryKey.at(0) === MODULE_PREFIX &&
+    query.queryKey.at(1) === 'holdings-page'
+
 // Object-payload fields naming a single account. Scalar only: the plural
 // `addresses` aggregate (balance-history) is deliberately excluded so
 // multi-account keys keep being invalidated, not evicted.

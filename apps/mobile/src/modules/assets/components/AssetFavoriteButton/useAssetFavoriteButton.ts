@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { useAccountHoldingsInvalidator } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useToggleAssetFavoriteMutation } from '@perawallet/wallet-core-assets'
@@ -22,7 +23,10 @@ export const useAssetFavoriteButton = (
 ) => {
     const { network } = useNetwork()
     const deviceId = useDeviceID(network)
-    const { toggleAssetFavorite, isLoading } = useToggleAssetFavoriteMutation()
+    const { invalidate: invalidateHoldings } = useAccountHoldingsInvalidator()
+    const { toggleAssetFavorite, isLoading } = useToggleAssetFavoriteMutation({
+        onLocalWrite: invalidateHoldings,
+    })
 
     const handleToggleFavorite = useCallback(() => {
         if (deviceId && isFavorite !== undefined) {
