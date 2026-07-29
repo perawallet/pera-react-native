@@ -12,8 +12,11 @@
 
 import { type Arc0001ErrorCode } from './types'
 
-// Carries ARC-0001's numeric code + { index, field } so transports can
-// relay { code, message, data } to dApps verbatim.
+// Carries ARC-0001's numeric code + { index, field }. Transports relay the
+// message and data to the dApp; note the WalletConnect v1 bridge collapses any
+// code-bearing error to JSON-RPC -32000, so the numeric code is NOT relayed
+// there. Never place wallet-private data (e.g. held addresses) in either field
+// — it reaches the remote peer verbatim (PERA-4716).
 export class Arc0001Error extends Error {
     public readonly code: Arc0001ErrorCode
     public readonly data?: { index?: number; field?: string }
