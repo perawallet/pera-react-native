@@ -12,9 +12,11 @@
 
 import { useCallback, useRef, useState } from 'react'
 import {
-    useNotificationPreferences,
-    useAccountNotificationEnabledMutation,
-} from '@perawallet/wallet-core-messages'
+    buildDeviceAccountRegistrations,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
+import { useDevice } from '@perawallet/wallet-core-device'
 import { useErrorToast } from './useErrorToast'
 import { useLanguage } from './useLanguage'
 
@@ -23,7 +25,8 @@ export type UseAccountNotificationToggleResult = {
      * Flips an account's notification preference.
      *
      * Writes the persisted store optimistically so the switch moves at once,
-     * then PATCHes the backend. On rejection the local write is reverted and a
+     * then re-registers the device with the flag applied inline (v3 has no
+     * per-account route). On rejection the local write is reverted and a
      * cause-appropriate localized error is shown — offline failures get the
      * `errors.network.no_connection.*` copy via {@link useErrorToast}.
      *
@@ -88,8 +91,10 @@ export const clearAccountNotificationToggleGuardForTests = (): void => {
 
 export const useAccountNotificationToggle =
     (): UseAccountNotificationToggleResult => {
-        const { setAccountEnabled } = useNotificationPreferences()
-        const { mutateAsync } = useAccountNotificationEnabledMutation()
+        const { disabledAccounts, setAccountEnabled } =
+            useNotificationPreferences()
+        const accounts = useAllAccounts()
+        const { registerDevice } = useDevice()
         const { showError } = useErrorToast()
         const { t } = useLanguage()
 
@@ -123,7 +128,19 @@ export const useAccountNotificationToggle =
                 setAccountEnabled(address, enabled)
 
                 try {
-                    await mutateAsync({ accountID: address, status: enabled })
+                    // v3 has no per-account route: notification flags ride
+                    // inline on the full accounts array. Compute the post-
+                    // toggle disabled set explicitly rather than re-reading
+                    // the store, which has not re-rendered this closure yet.
+                    const nextDisabled = enabled
+                        ? disabledAccounts.filter(
+                              disabled => disabled !== address,
+                          )
+                        : [...new Set([...disabledAccounts, address])]
+
+                    await registerDevice(
+                        buildDeviceAccountRegistrations(accounts, nextDisabled),
+                    )
                     return true
                 } catch (error) {
                     setAccountEnabled(address, !enabled)
@@ -135,7 +152,14 @@ export const useAccountNotificationToggle =
                     setPendingAddresses([...ownPendingAddressesRef.current])
                 }
             },
-            [setAccountEnabled, mutateAsync, showError, t],
+            [
+                setAccountEnabled,
+                disabledAccounts,
+                accounts,
+                registerDevice,
+                showError,
+                t,
+            ],
         )
 
         const isTogglePending = useCallback(

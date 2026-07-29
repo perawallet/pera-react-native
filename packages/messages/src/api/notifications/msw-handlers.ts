@@ -97,26 +97,3 @@ export const mockUpdateLastSeenNotification = ({
         `*/v1/devices/${deviceID}/update-last-seen-notification/`,
         () => new HttpResponse(null, { status }),
     )
-
-export type MockUpdateNotificationEnabledParams = {
-    deviceID: string
-    accountID: string
-    response: NotificationStatusResponse
-    status?: number
-}
-
-export const mockUpdateNotificationEnabled = ({
-    deviceID,
-    accountID,
-    response,
-    status = 200,
-}: MockUpdateNotificationEnabledParams): HttpHandler => {
-    validateMockResponse(
-        notificationStatusResponseSchema,
-        response,
-        'mockUpdateNotificationEnabled',
-    )
-    return http.patch(`*/v1/devices/${deviceID}/accounts/${accountID}/`, () =>
-        HttpResponse.json(response, { status }),
-    )
-}

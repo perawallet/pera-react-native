@@ -13,7 +13,6 @@
 export * from './useNotificationPreferences'
 export * from './useInboxStatus'
 export * from './useNotificationsListQuery'
-export * from './useAccountNotificationEnabledMutation'
 export * from './useMarkNotificationsAsReadMutation'
 export * from './useInboxQuery'
 export * from './useInboxInvalidator'
