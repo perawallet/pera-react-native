@@ -31,6 +31,7 @@ export const DiscoverScreen = () => {
                     url={url}
                     enablePeraConnect={true}
                     containerStyle={styles.webview}
+                    openExternalLinksInBrowser
                 />
             ) : (
                 <PWView style={styles.loadingContainer}>

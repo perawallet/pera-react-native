@@ -366,4 +366,68 @@ describe('useWebViewNavigationGuard', () => {
             expect(Linking.openURL).not.toHaveBeenCalled()
         })
     })
+
+    describe('external-navigation handoff (PERA-4742)', () => {
+        const HOST = 'https://discover.example/main'
+        const renderWithHandoff = (
+            onExternalNavigation: (url: string) => void,
+        ) =>
+            renderHook(() =>
+                useWebViewNavigationGuard({
+                    isTrustedOrigin: true,
+                    pageUrl: HOST,
+                    externalNavigation: { hostUrl: HOST, onExternalNavigation },
+                }),
+            )
+
+        it('hands a top-frame navigation off the host origin to the in-app browser', () => {
+            const onExternalNavigation = vi.fn()
+            const { result } = renderWithHandoff(onExternalNavigation)
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('https://akita.community/'),
+                ),
+            ).toBe(false)
+            expect(onExternalNavigation).toHaveBeenCalledWith(
+                'https://akita.community/',
+            )
+        })
+
+        it('keeps same-origin navigation loading in place', () => {
+            const onExternalNavigation = vi.fn()
+            const { result } = renderWithHandoff(onExternalNavigation)
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('https://discover.example/asset/523683256'),
+                ),
+            ).toBe(true)
+            expect(onExternalNavigation).not.toHaveBeenCalled()
+        })
+
+        it('ignores subframe navigations so an iframe cannot spawn a browser sheet', () => {
+            const onExternalNavigation = vi.fn()
+            const { result } = renderWithHandoff(onExternalNavigation)
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('https://ads.example/frame', false),
+                ),
+            ).toBe(true)
+            expect(onExternalNavigation).not.toHaveBeenCalled()
+        })
+
+        it('still routes a Pera universal link as a deeplink rather than handing it off', () => {
+            const onExternalNavigation = vi.fn()
+            const { result } = renderWithHandoff(onExternalNavigation)
+
+            const url = `https://perawallet.app/qr/perawallet/app/add-contact/?address=${RECEIVER}&label=HELLO`
+            expect(
+                result.current.onShouldStartLoadWithRequest(request(url)),
+            ).toBe(false)
+            expect(handleDeepLink).toHaveBeenCalledWith(url, false, 'deeplink')
+            expect(onExternalNavigation).not.toHaveBeenCalled()
+        })
+    })
 })
