@@ -857,7 +857,7 @@ describe('queryClient', () => {
             return request.headers.get(headerName)
         }
 
-        it('rebuilds algod/indexer for the given network against the new endpoints and the chain config token, even when called before any request', async () => {
+        it('rebuilds algod/indexer for the given network against the new endpoints and tokens, even when called before any request', async () => {
             vi.resetModules()
             mockKy.create.mockClear()
             const { updateNodeEndpoints } = await import('../query-client')
@@ -865,6 +865,8 @@ describe('queryClient', () => {
             updateNodeEndpoints(Networks.mainnet, {
                 algodUrl: 'https://overridden.algod.algo',
                 indexerUrl: 'https://overridden.indexer.algo',
+                algodToken: mockAlgodApiKey,
+                indexerToken: mockIndexerApiKey,
             })
 
             // 15 from ensureClientsBuilt (5 networks x algod+indexer+pera)
@@ -898,6 +900,49 @@ describe('queryClient', () => {
             ).toBe(mockIndexerApiKey)
         })
 
+        // The `custom` network is the case that matters: getNetworkConfig
+        // returns empty tokens for it by design (its chain values live in the
+        // custom-network store, which `config` cannot read), so re-deriving
+        // them here instead of taking them from the caller silently drops
+        // them. AlgoKit LocalNet's algod/indexer REQUIRE the 64-char 'a' token
+        // — dropping it 401s indexer history and asset lookups while
+        // AlgorandClient-backed balance reads, which do use the store's
+        // tokens, keep working. Asserted on mainnet only because the mocked
+        // config table here predates the custom slot; the discriminator is
+        // that the passed token differs from the baked one either way.
+        it('takes the tokens from the caller, not from the baked chain config', async () => {
+            vi.resetModules()
+            mockKy.create.mockClear()
+            const { updateNodeEndpoints } = await import('../query-client')
+
+            updateNodeEndpoints(Networks.mainnet, {
+                algodUrl: 'https://custom.algod.algo',
+                indexerUrl: 'https://custom.indexer.algo',
+                algodToken: 'a'.repeat(64),
+                indexerToken: 'store-indexer-token',
+            })
+
+            const algodConfig = findClientConfig('https://custom.algod.algo')
+            expect(algodConfig).toBeDefined()
+            expect(
+                readHeader(
+                    algodConfig as CapturedClientConfig,
+                    'X-Algo-API-Token',
+                ),
+            ).toBe('a'.repeat(64))
+
+            const indexerConfig = findClientConfig(
+                'https://custom.indexer.algo',
+            )
+            expect(indexerConfig).toBeDefined()
+            expect(
+                readHeader(
+                    indexerConfig as CapturedClientConfig,
+                    'X-Indexer-API-Token',
+                ),
+            ).toBe('store-indexer-token')
+        })
+
         it('does not rebuild other networks', async () => {
             vi.resetModules()
             mockKy.create.mockClear()
@@ -906,6 +951,8 @@ describe('queryClient', () => {
             updateNodeEndpoints(Networks.mainnet, {
                 algodUrl: 'https://overridden.algod.algo',
                 indexerUrl: 'https://overridden.indexer.algo',
+                algodToken: mockAlgodApiKey,
+                indexerToken: mockIndexerApiKey,
             })
 
             // TestNet's algod client was only ever built once, by
@@ -934,6 +981,8 @@ describe('queryClient', () => {
             updateNodeEndpoints(Networks.mainnet, {
                 algodUrl: 'https://overridden.algod.algo',
                 indexerUrl: 'https://overridden.indexer.algo',
+                algodToken: mockAlgodApiKey,
+                indexerToken: mockIndexerApiKey,
             })
 
             await expect(

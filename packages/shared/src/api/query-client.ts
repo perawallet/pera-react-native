@@ -400,8 +400,8 @@ let clientsInitialized = false
 // Shared by every call site that touches `clients` — the request path in
 // createFetchClient above and updateBackendHeaders below (and, from a later
 // change, updateNodeEndpoints) — so a lazily-populated map can never be
-// silently incomplete: whichever call site runs first builds ALL 5
-// networks, never just the one it needed. Do not replace this with a
+// silently incomplete: whichever call site runs first builds EVERY member of
+// the Networks union, never just the one it needed. Do not replace this with a
 // per-network build-on-miss — that would silently skip networks nothing
 // has requested yet when updateBackendHeaders (or updateNodeEndpoints) runs
 // before any request has.
@@ -419,10 +419,22 @@ const ensureClientsBuilt = (): void => {
  * Called from a `blockchain` subscription to the custom-network config store,
  * because `shared` cannot import `blockchain`. The `pera` instance is left
  * untouched — the custom-network config only carries chain endpoints.
+ *
+ * Tokens are part of the endpoint, so they arrive with it and are NEVER
+ * re-derived from `getNetworkConfig` here: `custom` has no baked chain config
+ * (its tokens are `''` by design), so re-deriving would silently drop the ones
+ * the developer entered — a token-protected node then 401s every ky-transport
+ * read (indexer history, indexer asset lookups) while the AlgorandClient
+ * transport, which does read the store, keeps working.
  */
 export const updateNodeEndpoints = (
     network: Network,
-    endpoints: { algodUrl: string; indexerUrl: string },
+    endpoints: {
+        algodUrl: string
+        indexerUrl: string
+        algodToken: string
+        indexerToken: string
+    },
 ): void => {
     // Must go through the gate, not `clients.get(network)` with an early
     // return: the map is lazily populated (Task 2), so a bail-on-miss would
@@ -431,19 +443,17 @@ export const updateNodeEndpoints = (
     const existing = clients.get(network)
     if (!existing) return
 
-    const { algodToken, indexerToken } = getNetworkConfig(network)
-
     clients.set(network, {
         ...existing,
         algod: createTokenHeaderClient(
             endpoints.algodUrl,
             'X-Algo-API-Token',
-            algodToken,
+            endpoints.algodToken,
         ),
         indexer: createTokenHeaderClient(
             endpoints.indexerUrl,
             'X-Indexer-API-Token',
-            indexerToken,
+            endpoints.indexerToken,
         ),
     })
 }

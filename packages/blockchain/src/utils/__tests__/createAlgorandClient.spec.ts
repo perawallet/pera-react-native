@@ -62,6 +62,27 @@ describe('resolveChainEndpoints', () => {
         expect(resolved.algodUrl).toBe('http://10.0.0.5:4001')
         expect(resolved.indexerUrl).toBe('http://10.0.0.5:8980')
     })
+
+    test('carries the custom slot tokens, which have no baked counterpart to fall back to', () => {
+        // AlgoKit LocalNet — the primary reason the custom slot exists —
+        // rejects every request without this exact 64-char token. `custom`'s
+        // baked entry is `''` by design, so the store is the ONLY source: if
+        // these are dropped anywhere between here and the ky client, indexer
+        // history and asset lookups 401 while balance reads keep working.
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://10.0.0.5:4001',
+            algodToken: 'a'.repeat(64),
+            indexerUrl: 'http://10.0.0.5:8980',
+            indexerToken: 'a'.repeat(64),
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
+        })
+
+        const resolved = resolveChainEndpoints(Networks.custom)
+
+        expect(resolved.algodToken).toBe('a'.repeat(64))
+        expect(resolved.indexerToken).toBe('a'.repeat(64))
+    })
 })
 
 describe('custom-network store subscription (real store, end-to-end)', () => {
