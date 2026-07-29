@@ -30,6 +30,7 @@ export const configSchema = z.object({
     mainnetIndexerUrl: z.url(),
     testnetIndexerUrl: z.url(),
     backendAPIKey: z.string(),
+    backendAPIKeyV3: z.string(),
     algodApiKey: z.string(),
     indexerApiKey: z.string(),
     mainnetGenesisHash: z.string(),
@@ -216,6 +217,11 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     // tools/generate-config.sh (bitrise secrets in CI, .env locally). Empty
     // here so no key literal ships in the open-source source tree.
     backendAPIKey: '',
+    // Injected at build time from the BACKEND_API_KEY_V3 env var via
+    // `tools/generate-config.sh`. The v3 devices API uses a different key from
+    // v1. Empty here so no key literal ships in the open-source source tree;
+    // `packages/device` falls back to `backendAPIKey` while it is unset.
+    backendAPIKeyV3: '',
     algodApiKey: '',
     indexerApiKey: '',
 
@@ -371,6 +377,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     testnetBackendUrl: 'TESTNET_BACKEND_URL',
 
     backendAPIKey: 'BACKEND_API_KEY',
+    backendAPIKeyV3: 'BACKEND_API_KEY_V3',
     algodApiKey: 'ALGOD_API_KEY',
     indexerApiKey: 'INDEXER_API_KEY',
 

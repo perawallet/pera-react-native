@@ -65,6 +65,12 @@ describe('env-loader', () => {
             expect(result.backendAPIKey).toBe('test-api-key-123')
         })
 
+        test('loads backendAPIKeyV3 from BACKEND_API_KEY_V3', () => {
+            process.env.BACKEND_API_KEY_V3 = 'v3-secret'
+            const result = loadEnvOverrides()
+            expect(result.backendAPIKeyV3).toBe('v3-secret')
+        })
+
         test('loads algodApiKey from ALGOD_API_KEY', () => {
             process.env.ALGOD_API_KEY = 'test-algod-key-456'
             const result = loadEnvOverrides()
@@ -246,6 +252,12 @@ describe('env-loader', () => {
             const result = loadEnvOverrides()
             expect(result.backendAPIKey).toBeUndefined()
         })
+
+        test('handles empty string values for backendAPIKeyV3', () => {
+            process.env.BACKEND_API_KEY_V3 = ''
+            const result = loadEnvOverrides()
+            expect(result.backendAPIKeyV3).toBeUndefined()
+        })
     })
 
     describe('getConfigWithEnvOverrides', () => {
@@ -259,6 +271,7 @@ describe('env-loader', () => {
             mainnetGenesisHash: 'wGHE2Pwdvd7S12BL5FaOP20EGYesN73ktiC1qzkkit8=',
             testnetGenesisHash: 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=',
             backendAPIKey: 'base-backend-key',
+            backendAPIKeyV3: '',
             algodApiKey: 'base-algod-key',
             indexerApiKey: 'base-indexer-key',
             appStoreAppID: 'base-app-store-id',
@@ -377,6 +390,19 @@ describe('env-loader', () => {
             expect(result.testnetBackendUrl).toBe(
                 mockBaseConfig.testnetBackendUrl,
             )
+        })
+
+        test('defaults backendAPIKeyV3 to an empty string when not overridden', () => {
+            const result = getConfigWithEnvOverrides(mockBaseConfig)
+            expect(result.backendAPIKeyV3).toBe('')
+        })
+
+        test('overrides backendAPIKeyV3 from BACKEND_API_KEY_V3', () => {
+            process.env.BACKEND_API_KEY_V3 = 'env-v3-secret'
+
+            const result = getConfigWithEnvOverrides(mockBaseConfig)
+
+            expect(result.backendAPIKeyV3).toBe('env-v3-secret')
         })
 
         test('overrides boolean flags correctly', () => {

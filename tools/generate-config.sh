@@ -75,6 +75,7 @@ append_config "TESTNET_GENESIS_HASH" "testnetGenesisHash" "string"
 append_config "MAINNET_BACKEND_URL" "mainnetBackendUrl" "string"
 append_config "TESTNET_BACKEND_URL" "testnetBackendUrl" "string"
 append_config "BACKEND_API_KEY" "backendAPIKey" "string"
+append_config "BACKEND_API_KEY_V3" "backendAPIKeyV3" "string"
 append_config "ALGOD_API_KEY" "algodApiKey" "string"
 append_config "INDEXER_API_KEY" "indexerApiKey" "string"
 
