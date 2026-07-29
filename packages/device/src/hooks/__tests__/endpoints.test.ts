@@ -10,84 +10,146 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { queryClient } from '@perawallet/wallet-core-shared'
+import { registerDevice, deleteDevice } from '../endpoints'
+import { DeviceAccountTypes, type DeviceRegistration } from '../../models'
 
-const queryClientMock = vi.hoisted(() => vi.fn())
-
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    queryClient: queryClientMock,
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<object>()),
+    queryClient: vi.fn(),
 }))
 
-import { createDevice, updateDevice, deleteDevice } from '../endpoints'
+const mockedQueryClient = vi.mocked(queryClient)
+
+const registration: DeviceRegistration = {
+    pushToken: 'fcm-token',
+    platform: 'ios',
+    locale: 'en-US',
+    appVersion: '7.0.1',
+    accounts: [
+        {
+            address: 'ADDR_A',
+            accountType: DeviceAccountTypes.quantum,
+            receiveNotifications: true,
+        },
+    ],
+}
 
 describe('device endpoints', () => {
     beforeEach(() => {
-        queryClientMock.mockReset()
+        vi.clearAllMocks()
+        mockedQueryClient.mockResolvedValue({
+            data: { id: 'new-id' },
+            status: 200,
+            statusText: 'OK',
+        })
     })
 
-    test('createDevice posts to /v1/devices/', async () => {
-        queryClientMock.mockResolvedValue({ data: { id: 'new-id' } })
-        const data = {
-            accounts: ['A'],
-            platform: 'ios',
-            model: 'iPhone',
-            application: 'pera',
-            locale: 'en-US',
-        }
+    it('registers via POST to api/v3/devices with the serialized body', async () => {
+        await registerDevice('mainnet', registration)
 
-        const result = await createDevice('mainnet', data)
+        expect(mockedQueryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backend: 'pera',
+                network: 'mainnet',
+                method: 'POST',
+                url: 'api/v3/devices',
+                data: {
+                    push_token: 'fcm-token',
+                    platform: 'ios',
+                    locale: 'en-US',
+                    app_version: '7.0.1',
+                    accounts: [
+                        {
+                            address: 'ADDR_A',
+                            account_type: 'quantum',
+                            receive_notifications: true,
+                        },
+                    ],
+                },
+            }),
+        )
+    })
 
-        expect(queryClientMock).toHaveBeenCalledWith({
-            backend: 'pera',
-            network: 'mainnet',
-            method: 'POST',
-            url: 'v1/devices/',
-            data,
-        })
+    it('returns the response payload', async () => {
+        const result = await registerDevice('mainnet', registration)
+
         expect(result).toEqual({ id: 'new-id' })
     })
 
-    test('updateDevice puts to /v1/devices/:id/', async () => {
-        queryClientMock.mockResolvedValue({ data: { id: 'abc' } })
-        const data = {
-            accounts: ['A'],
-            platform: 'ios',
-            model: 'iPhone',
-            application: 'pera',
-            locale: 'en-US',
-        }
+    it('deletes via DELETE to api/v3/devices with a text response', async () => {
+        await deleteDevice('mainnet', { id: 'DEV-1' })
 
-        const result = await updateDevice('testnet', 'abc', data)
+        expect(mockedQueryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                backend: 'pera',
+                network: 'mainnet',
+                method: 'DELETE',
+                url: 'api/v3/devices',
+                data: { id: 'DEV-1' },
+                responseType: 'text',
+            }),
+        )
+    })
+})
 
-        expect(queryClientMock).toHaveBeenCalledWith({
-            backend: 'pera',
-            network: 'testnet',
-            method: 'PUT',
-            url: 'v1/devices/abc/',
-            data,
-        })
-        expect(result).toEqual({ id: 'abc' })
+/**
+ * `config` (packages/config/src/main.ts) is `Object.freeze(getConfig())` — a
+ * plain object with data properties, not accessor properties. `vi.spyOn(config,
+ * 'backendAPIKeyV3', 'get')` throws because there is no getter to spy on, and
+ * the freeze would reject redefining a data property anyway. A module mock is
+ * the only way to control the value it resolves to, and since the two cases
+ * need different `config` shapes, each test mocks the module itself, resets
+ * the module registry, and re-imports both `queryClient` and `endpoints`
+ * fresh so the mocked config is the one `endpoints.ts` actually sees.
+ */
+describe('device API key resolution', () => {
+    beforeEach(() => {
+        vi.resetModules()
     })
 
-    test('deleteDevice sends DELETE with text response type', async () => {
-        queryClientMock.mockResolvedValue({ data: 'ok' })
-        const data = {
-            accounts: ['A'],
-            platform: 'ios',
-            model: 'iPhone',
-            application: 'pera',
-            locale: 'en-US',
-        }
-
-        await deleteDevice('mainnet', data)
-
-        expect(queryClientMock).toHaveBeenCalledWith({
-            backend: 'pera',
-            network: 'mainnet',
-            method: 'DELETE',
-            url: 'v1/devices/',
-            data,
-            responseType: 'text',
+    it('sends the v3 api key when one is configured', async () => {
+        vi.doMock('@perawallet/wallet-core-config', () => ({
+            config: { backendAPIKey: 'v1-key', backendAPIKeyV3: 'v3-key' },
+        }))
+        const { queryClient: freshQueryClient } =
+            await import('@perawallet/wallet-core-shared')
+        const freshMockedQueryClient = vi.mocked(freshQueryClient)
+        freshMockedQueryClient.mockResolvedValue({
+            data: { id: 'new-id' },
+            status: 200,
+            statusText: 'OK',
         })
+        const { registerDevice: freshRegisterDevice } =
+            await import('../endpoints')
+
+        await freshRegisterDevice('mainnet', registration)
+
+        expect(freshMockedQueryClient).toHaveBeenCalledWith(
+            expect.objectContaining({ headers: { 'x-api-key': 'v3-key' } }),
+        )
+    })
+
+    it('falls back to the v1 key while the v3 key is unset', async () => {
+        vi.doMock('@perawallet/wallet-core-config', () => ({
+            config: { backendAPIKey: 'v1-key', backendAPIKeyV3: '' },
+        }))
+        const { queryClient: freshQueryClient } =
+            await import('@perawallet/wallet-core-shared')
+        const freshMockedQueryClient = vi.mocked(freshQueryClient)
+        freshMockedQueryClient.mockResolvedValue({
+            data: { id: 'new-id' },
+            status: 200,
+            statusText: 'OK',
+        })
+        const { registerDevice: freshRegisterDevice } =
+            await import('../endpoints')
+
+        await freshRegisterDevice('mainnet', registration)
+
+        expect(freshMockedQueryClient).toHaveBeenCalledWith(
+            expect.objectContaining({ headers: { 'x-api-key': 'v1-key' } }),
+        )
     })
 })
