@@ -10,38 +10,39 @@
  limitations under the License
  */
 
-import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { PeraNetworkError } from '@perawallet/wallet-core-shared'
+import { createWrapper } from '@test-utils'
+import { PeraNetworkError, type Network } from '@perawallet/wallet-core-shared'
+import {
+    DeviceAccountTypes,
+    type DeviceAccountRegistration,
+} from '../../models'
 
-// Mock mutations
-const mockCreateDevice = vi.fn()
-const mockUpdateDevice = vi.fn()
-const mockUpdateDeviceEndpoint = vi.fn()
+// Mock the registration transport and the raw endpoint separately:
+// `registerDevice` (the hook return value) always goes through the mutation,
+// `clearDevicePushToken` deliberately bypasses it to target a network that
+// isn't the current one (see the JSDoc on that function in useDevice.ts).
+const mockedRegisterDeviceMutation = vi.fn()
+const mockedRegisterDeviceEndpoint = vi.fn()
 
-vi.mock('../useCreateDeviceMutation', () => ({
-    useCreateDeviceMutation: () => ({
-        mutateAsync: mockCreateDevice,
-    }),
-}))
-
-vi.mock('../useUpdateDeviceMutation', () => ({
-    useUpdateDeviceMutation: () => ({
-        mutateAsync: mockUpdateDevice,
+vi.mock('../useRegisterDeviceMutation', () => ({
+    useRegisterDeviceMutation: () => ({
+        mutateAsync: mockedRegisterDeviceMutation,
     }),
 }))
 
 vi.mock('../endpoints', () => ({
-    updateDevice: (...args: unknown[]) => mockUpdateDeviceEndpoint(...args),
+    registerDevice: (...args: unknown[]) =>
+        mockedRegisterDeviceEndpoint(...args),
 }))
 
-// Mock device info service via provider
+// Mock device info service via provider. v3 no longer sends `model`, but
+// requires `appVersion` on every payload.
 const mockDeviceInfoService = {
-    getDevicePlatform: vi.fn().mockResolvedValue('ios'),
-    getDeviceModel: vi.fn().mockReturnValue('iPhone 14'),
+    getDevicePlatform: vi.fn().mockReturnValue('ios'),
     getDeviceLocale: vi.fn().mockReturnValue('en-US'),
+    getAppVersion: vi.fn().mockReturnValue('7.0.1'),
 }
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -85,13 +86,30 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+const accounts: DeviceAccountRegistration[] = [
+    {
+        address: 'ADDR_A',
+        accountType: DeviceAccountTypes.quantum,
+        receiveNotifications: true,
+    },
+]
+
+/** Seed helpers written against the real store surface (`useDeviceStore.getState()`). */
+const seedDeviceId = async (network: Network, id: string): Promise<void> => {
+    const { useDeviceStore } = await import('../../store')
+    useDeviceStore.getState().setDeviceID(network, id)
+}
+
+const seedPushToken = async (token: string | null): Promise<void> => {
+    const { useDeviceStore } = await import('../../store')
+    useDeviceStore.getState().setPushToken(token)
+}
+
 describe('services/device/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        // Reset mocks default return values
-        mockCreateDevice.mockResolvedValue({ id: 'new-device-id' })
-        mockUpdateDevice.mockResolvedValue({})
-        mockUpdateDeviceEndpoint.mockResolvedValue({ id: 'cleared' })
+        mockedRegisterDeviceMutation.mockResolvedValue({ id: 'new-device-id' })
+        mockedRegisterDeviceEndpoint.mockResolvedValue({ id: 'cleared' })
     })
 
     test('useFcmToken exposes fcmToken and setter', async () => {
@@ -127,7 +145,6 @@ describe('services/device/hooks', () => {
 
         const { result: store } = renderHook(() => useDeviceStore())
 
-        // Set initial state
         act(() => {
             store.current.setDeviceID('mainnet', 'test-id-mainnet')
             store.current.setDeviceID('testnet', 'test-id-testnet')
@@ -144,236 +161,213 @@ describe('services/device/hooks', () => {
         expect(resultTestnet.current).toBe('test-id-testnet')
     })
 
-    test('useDevice registers new device if no ID exists', async () => {
+    test('registers without an id when no device id is stored', async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../useDevice')
 
         useDeviceStore.getState().resetState()
-
-        const { result: store } = renderHook(() => useDeviceStore())
-
-        // Set device state
-        act(() => {
-            store.current.setDeviceID('mainnet', null)
-            store.current.setPushToken('test-fcm-token')
-        })
-
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
+        await seedPushToken('test-fcm-token')
 
         const { result } = renderHook(() => useDevice(), {
-            wrapper,
+            wrapper: createWrapper(),
         })
 
-        let registrationResult: { createdNew: boolean } | undefined
         await act(async () => {
-            registrationResult = await result.current.registerDevice([
-                'account-1',
-            ])
+            await result.current.registerDevice(accounts)
         })
 
-        expect(mockCreateDevice).toHaveBeenCalledWith({
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledWith({
             data: {
-                accounts: ['account-1'],
+                accounts,
                 platform: 'ios',
-                push_token: 'test-fcm-token',
-                model: 'iPhone 14',
-                application: 'pera',
+                pushToken: 'test-fcm-token',
                 locale: 'en-US',
+                appVersion: '7.0.1',
             },
         })
-
-        expect(store.current.deviceIDs.get('mainnet')).toBe('new-device-id')
-        expect(registrationResult).toEqual({ createdNew: true })
     })
 
-    test('useDevice rejects when the create response carries no id', async () => {
+    test('sends the stored id on every subsequent registration', async () => {
         vi.resetModules()
-        mockCreateDevice.mockResolvedValue({})
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('mainnet', 'DEV-1')
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(accounts)
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledWith({
+            data: expect.objectContaining({ id: 'DEV-1' }),
+        })
+    })
+
+    test('sends an empty push token rather than omitting the field', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+        await seedPushToken(null)
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(accounts)
+        })
+
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledWith({
+            data: expect.objectContaining({ pushToken: '' }),
+        })
+    })
+
+    test('rejects when the create response carries no id', async () => {
+        vi.resetModules()
+        mockedRegisterDeviceMutation.mockResolvedValue({})
 
         const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../useDevice')
 
         useDeviceStore.getState().resetState()
 
-        const { result: store } = renderHook(() => useDeviceStore())
-        act(() => {
-            store.current.setDeviceID('mainnet', null)
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
         })
-
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
-
-        const { result } = renderHook(() => useDevice(), { wrapper })
 
         // Rejecting (instead of storing a null id) keeps the registration on
         // the pending/retry path rather than reporting a healed device.
-        await expect(
-            result.current.registerDevice(['account-1']),
-        ).rejects.toThrow('Device create response carried no id')
-        expect(store.current.deviceIDs.get('mainnet') ?? null).toBeNull()
+        await expect(result.current.registerDevice(accounts)).rejects.toThrow(
+            'Device create response carried no id',
+        )
+        expect(
+            useDeviceStore.getState().deviceIDs.get('mainnet') ?? null,
+        ).toBeNull()
     })
 
-    test('useDevice updates existing device if ID exists', async () => {
+    test('re-registers without an id when the stored id 404s', async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../useDevice')
 
         useDeviceStore.getState().resetState()
+        await seedDeviceId('mainnet', 'STALE')
 
-        const { result: store } = renderHook(() => useDeviceStore())
-
-        // Set existing device ID
-        act(() => {
-            store.current.setDeviceID('mainnet', 'existing-id')
-            store.current.setPushToken('test-fcm-token')
-        })
-
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
+        mockedRegisterDeviceMutation
+            .mockRejectedValueOnce(
+                new PeraNetworkError('client', { status: 404 }),
             )
+            .mockResolvedValueOnce({ id: 'FRESH' })
 
         const { result } = renderHook(() => useDevice(), {
-            wrapper,
+            wrapper: createWrapper(),
         })
 
-        let registrationResult: { createdNew: boolean } | undefined
+        let outcome: { createdNew: boolean } | undefined
         await act(async () => {
-            registrationResult = await result.current.registerDevice([
-                'account-1',
-            ])
+            outcome = await result.current.registerDevice(accounts)
         })
 
-        expect(mockUpdateDevice).toHaveBeenCalledWith({
-            deviceId: 'existing-id',
+        expect(outcome).toEqual({ createdNew: true })
+        expect(mockedRegisterDeviceMutation).toHaveBeenLastCalledWith({
+            data: expect.not.objectContaining({ id: expect.anything() }),
+        })
+        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe('FRESH')
+    })
+
+    test('retries once with the same id when the push token was claimed in a race', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('mainnet', 'DEV-1')
+        await seedPushToken('test-fcm-token')
+
+        mockedRegisterDeviceMutation
+            .mockRejectedValueOnce(
+                new PeraNetworkError('client', { status: 400 }),
+            )
+            .mockResolvedValueOnce({ id: 'DEV-1' })
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        let outcome: { createdNew: boolean } | undefined
+        await act(async () => {
+            outcome = await result.current.registerDevice(accounts)
+        })
+
+        const expectedPayload = {
             data: {
-                id: 'existing-id',
-                accounts: ['account-1'],
+                accounts,
                 platform: 'ios',
-                push_token: 'test-fcm-token',
-                model: 'iPhone 14',
-                application: 'pera',
+                pushToken: 'test-fcm-token',
                 locale: 'en-US',
+                appVersion: '7.0.1',
+                id: 'DEV-1',
             },
-        })
+        }
 
-        expect(mockCreateDevice).not.toHaveBeenCalled()
-        expect(registrationResult).toEqual({ createdNew: false })
+        expect(outcome).toEqual({ createdNew: false })
+        // Exactly two calls — not a third, and not a re-create (which would
+        // have sent a payload without `id`). Both calls carry the identical
+        // payload, proving the retry replays the same write rather than
+        // building a fresh one.
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(2)
+        expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(
+            1,
+            expectedPayload,
+        )
+        expect(mockedRegisterDeviceMutation).toHaveBeenNthCalledWith(
+            2,
+            expectedPayload,
+        )
     })
 
-    test('useDevice falls back to createDevice when updateDevice 404s (stale id)', async () => {
+    test('surfaces a 422 without retrying and without re-creating', async () => {
         vi.resetModules()
-        mockUpdateDevice.mockRejectedValueOnce(
-            Object.assign(new Error('Not Found'), {
-                response: { status: 404 },
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('mainnet', 'DEV-1')
+
+        mockedRegisterDeviceMutation.mockRejectedValueOnce(
+            new PeraNetworkError('client', { status: 422 }),
+        )
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await expect(
+            act(async () => {
+                await result.current.registerDevice(accounts)
             }),
-        )
-        mockCreateDevice.mockResolvedValueOnce({ id: 'fresh-id' })
-
-        const { useDeviceStore } = await import('../../store')
-        const { useDevice } = await import('../useDevice')
-
-        useDeviceStore.getState().resetState()
-        const { result: store } = renderHook(() => useDeviceStore())
-        act(() => {
-            store.current.setDeviceID('mainnet', 'stale-id')
-            store.current.setPushToken('test-fcm-token')
-        })
-
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
-
-        const { result } = renderHook(() => useDevice(), { wrapper })
-
-        let registrationResult: { createdNew: boolean } | undefined
-        await act(async () => {
-            registrationResult = await result.current.registerDevice([
-                'account-1',
-            ])
-        })
-
-        expect(mockUpdateDevice).toHaveBeenCalledTimes(1)
-        expect(mockCreateDevice).toHaveBeenCalledTimes(1)
-        expect(store.current.deviceIDs.get('mainnet')).toBe('fresh-id')
-        expect(registrationResult).toEqual({ createdNew: true })
+        ).rejects.toThrow()
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(1)
     })
 
-    test('useDevice falls back to createDevice when updateDevice rejects with a PeraNetworkError 404 (stale id)', async () => {
-        vi.resetModules()
-        mockUpdateDevice.mockRejectedValueOnce(
-            new PeraNetworkError('client', { status: 404 }),
-        )
-        mockCreateDevice.mockResolvedValueOnce({ id: 'fresh-id-2' })
-
-        const { useDeviceStore } = await import('../../store')
-        const { useDevice } = await import('../useDevice')
-
-        useDeviceStore.getState().resetState()
-        const { result: store } = renderHook(() => useDeviceStore())
-        act(() => {
-            store.current.setDeviceID('mainnet', 'stale-id')
-            store.current.setPushToken('test-fcm-token')
-        })
-
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
-
-        const { result } = renderHook(() => useDevice(), { wrapper })
-
-        let registrationResult: { createdNew: boolean } | undefined
-        await act(async () => {
-            registrationResult = await result.current.registerDevice([
-                'account-1',
-            ])
-        })
-
-        expect(mockUpdateDevice).toHaveBeenCalledTimes(1)
-        expect(mockCreateDevice).toHaveBeenCalledTimes(1)
-        expect(store.current.deviceIDs.get('mainnet')).toBe('fresh-id-2')
-        expect(registrationResult).toEqual({ createdNew: true })
-    })
-
-    test('useDevice does not retry at the application layer (delegated to ky)', async () => {
+    test('does not retry at the application layer (delegated to ky)', async () => {
         vi.resetModules()
 
-        mockCreateDevice.mockRejectedValue(
+        mockedRegisterDeviceMutation.mockRejectedValue(
             Object.assign(new Error('timeout'), { name: 'TimeoutError' }),
         )
 
@@ -381,36 +375,24 @@ describe('services/device/hooks', () => {
         const { useDevice } = await import('../useDevice')
 
         useDeviceStore.getState().resetState()
-        const { result: store } = renderHook(() => useDeviceStore())
-        act(() => {
-            store.current.setDeviceID('mainnet', null)
-        })
 
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
         })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
-
-        const { result } = renderHook(() => useDevice(), { wrapper })
 
         await expect(
             act(async () => {
-                await result.current.registerDevice(['account-1'])
+                await result.current.registerDevice(accounts)
             }),
         ).rejects.toThrow('timeout')
 
-        // Single attempt at this layer — transient retries belong to ky in the
-        // shared query-client. Layering retries here would compound to 6
-        // requests (3 outer × 2 inner) per call.
-        expect(mockCreateDevice).toHaveBeenCalledTimes(1)
+        // Single attempt at this layer — transient retries belong to ky in
+        // the shared query-client. Layering retries here would compound to 6
+        // requests (3 outer x 2 inner) per call.
+        expect(mockedRegisterDeviceMutation).toHaveBeenCalledTimes(1)
     })
 
-    test('clearDevicePushToken targets the previous network directly with push_token: "" and empty accounts', async () => {
+    test('does not persist a stale device id when a newer registration attempt supersedes it', async () => {
         vi.resetModules()
 
         const { useDeviceStore } = await import('../../store')
@@ -418,25 +400,61 @@ describe('services/device/hooks', () => {
 
         useDeviceStore.getState().resetState()
 
-        const { result: store } = renderHook(() => useDeviceStore())
+        let resolveFirst: (value: { id: string }) => void = () => {}
+        const firstCall = new Promise<{ id: string }>(resolve => {
+            resolveFirst = resolve
+        })
 
+        mockedRegisterDeviceMutation
+            .mockImplementationOnce(() => firstCall)
+            .mockImplementationOnce(() => Promise.resolve({ id: 'SECOND' }))
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        // Fire the first (slow) attempt but don't await it yet.
+        let firstAttempt: Promise<{ createdNew: boolean }> = Promise.resolve({
+            createdNew: false,
+        })
         act(() => {
-            store.current.setDeviceID('testnet', 'testnet-device-id')
-            store.current.setDeviceID('mainnet', 'mainnet-device-id')
-            store.current.setPushToken('test-fcm-token')
+            firstAttempt = result.current.registerDevice(accounts)
         })
 
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
+        // A second attempt starts and resolves before the first one does,
+        // bumping the in-flight attempt id.
+        await act(async () => {
+            await result.current.registerDevice(accounts)
         })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
 
-        const { result } = renderHook(() => useDevice(), { wrapper })
+        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
+            'SECOND',
+        )
+
+        // Now let the stale first attempt resolve. Its captured attemptId no
+        // longer matches the ref, so it must not clobber the newer id.
+        await act(async () => {
+            resolveFirst({ id: 'FIRST' })
+            await firstAttempt
+        })
+
+        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
+            'SECOND',
+        )
+    })
+
+    test('clears the previous network push token via a register carrying that id', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('testnet', 'OLD-DEV')
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
 
         await act(async () => {
             await result.current.clearDevicePushToken('testnet')
@@ -446,19 +464,14 @@ describe('services/device/hooks', () => {
         // mutation hook (which captures the current network). `accounts` is
         // sent empty so the new network's address list can't accidentally
         // overwrite the old device record.
-        expect(mockUpdateDeviceEndpoint).toHaveBeenCalledWith(
-            'testnet',
-            'testnet-device-id',
-            {
-                accounts: [],
-                platform: 'ios',
-                push_token: '',
-                model: 'iPhone 14',
-                application: 'pera',
-                locale: 'en-US',
-            },
-        )
-        expect(mockUpdateDevice).not.toHaveBeenCalled()
+        expect(mockedRegisterDeviceEndpoint).toHaveBeenCalledWith('testnet', {
+            id: 'OLD-DEV',
+            pushToken: '',
+            platform: 'ios',
+            locale: 'en-US',
+            appVersion: '7.0.1',
+            accounts: [],
+        })
     })
 
     test('clearDevicePushToken is a no-op when target network has no device ID', async () => {
@@ -469,165 +482,32 @@ describe('services/device/hooks', () => {
 
         useDeviceStore.getState().resetState()
 
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
         })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
-
-        const { result } = renderHook(() => useDevice(), { wrapper })
 
         await act(async () => {
             await result.current.clearDevicePushToken('testnet')
         })
 
-        expect(mockUpdateDeviceEndpoint).not.toHaveBeenCalled()
-    })
-
-    test('sends the device id in the PUT body (Pera 6 contract)', async () => {
-        vi.resetModules()
-
-        const { useDeviceStore } = await import('../../store')
-        const { useDevice } = await import('../useDevice')
-
-        useDeviceStore.getState().resetState()
-        const { result: store } = renderHook(() => useDeviceStore())
-        act(() => {
-            store.current.setDeviceID('mainnet', 'DEV-1')
-        })
-
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
-
-        const { result } = renderHook(() => useDevice(), { wrapper })
-
-        await act(async () => {
-            await result.current.registerDevice(['ADDR'])
-        })
-
-        expect(mockUpdateDevice).toHaveBeenCalledWith({
-            deviceId: 'DEV-1',
-            data: expect.objectContaining({ id: 'DEV-1', accounts: ['ADDR'] }),
-        })
-    })
-
-    test('re-creates the device when the update fails with device_already_exists', async () => {
-        vi.resetModules()
-        mockUpdateDevice.mockRejectedValueOnce(
-            new PeraNetworkError('client', {
-                status: 400,
-                backendType: 'device_already_exists',
-            }),
-        )
-        mockCreateDevice.mockResolvedValueOnce({ id: 'DEV-2' })
-
-        const { useDeviceStore } = await import('../../store')
-        const { useDevice } = await import('../useDevice')
-
-        useDeviceStore.getState().resetState()
-        const { result: store } = renderHook(() => useDeviceStore())
-        act(() => {
-            store.current.setDeviceID('mainnet', 'DEV-1')
-        })
-
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
-
-        const { result } = renderHook(() => useDevice(), { wrapper })
-
-        let registrationResult: { createdNew: boolean } | undefined
-        await act(async () => {
-            registrationResult = await result.current.registerDevice(['ADDR'])
-        })
-
-        expect(mockCreateDevice).toHaveBeenCalledOnce()
-        expect(store.current.deviceIDs.get('mainnet')).toBe('DEV-2')
-        expect(registrationResult).toEqual({ createdNew: true })
-    })
-
-    test('still rethrows unrelated client errors without re-creating', async () => {
-        vi.resetModules()
-        mockUpdateDevice.mockRejectedValueOnce(
-            new PeraNetworkError('client', { status: 400 }),
-        )
-
-        const { useDeviceStore } = await import('../../store')
-        const { useDevice } = await import('../useDevice')
-
-        useDeviceStore.getState().resetState()
-        const { result: store } = renderHook(() => useDeviceStore())
-        act(() => {
-            store.current.setDeviceID('mainnet', 'DEV-1')
-        })
-
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
-
-        const { result } = renderHook(() => useDevice(), { wrapper })
-
-        await expect(
-            act(async () => {
-                await result.current.registerDevice(['ADDR'])
-            }),
-        ).rejects.toThrow()
-        expect(mockCreateDevice).not.toHaveBeenCalled()
+        expect(mockedRegisterDeviceEndpoint).not.toHaveBeenCalled()
     })
 
     test('clearDevicePushToken swallows endpoint failures (best-effort)', async () => {
         vi.resetModules()
-        mockUpdateDeviceEndpoint.mockRejectedValueOnce(
-            Object.assign(new Error('Not Found'), {
-                response: { status: 404 },
-            }),
+        mockedRegisterDeviceEndpoint.mockRejectedValueOnce(
+            new PeraNetworkError('client', { status: 404 }),
         )
 
         const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../useDevice')
 
         useDeviceStore.getState().resetState()
+        await seedDeviceId('testnet', 'stale-id')
 
-        const { result: store } = renderHook(() => useDeviceStore())
-
-        act(() => {
-            store.current.setDeviceID('testnet', 'stale-id')
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
         })
-
-        const queryClient = new QueryClient({
-            defaultOptions: { queries: { retry: false } },
-        })
-        const wrapper = ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
-
-        const { result } = renderHook(() => useDevice(), { wrapper })
 
         await expect(
             act(async () => {
