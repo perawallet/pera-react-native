@@ -101,8 +101,9 @@ describe('services/blockchain/network-store', () => {
         test('a persisted network outside the union falls back to the default', async () => {
             // 'fnet' was a valid value before the union narrowed. A device that
             // selected it must not rehydrate an unknown string into
-            // getNetworkConfig, which would return undefined and crash the
-            // chain table lookup.
+            // getNetworkConfig, whose chain-table lookup misses and yields
+            // `{ algodUrl: undefined, … }` — no failure at the lookup itself,
+            // just a throw later at client construction, far from the cause.
             const { mergePersistedNetwork } = await import('../network-store')
 
             const merged = mergePersistedNetwork({ network: 'fnet' })
