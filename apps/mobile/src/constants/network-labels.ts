@@ -20,6 +20,5 @@ export const NETWORK_LABEL_KEYS: Record<Network, string> = {
     [Networks.mainnet]: 'common.network_label.mainnet',
     [Networks.testnet]: 'common.network_label.testnet',
     [Networks.betanet]: 'common.network_label.betanet',
-    [Networks.fnet]: 'common.network_label.fnet',
-    [Networks.localnet]: 'common.network_label.localnet',
+    [Networks.custom]: 'common.network_label.custom',
 }

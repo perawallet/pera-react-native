@@ -35,8 +35,7 @@ import { type Network, Networks } from './models/network'
  */
 export const PERA_SERVICE_FALLBACK: Partial<Record<Network, Network>> = {
     [Networks.betanet]: Networks.testnet,
-    [Networks.fnet]: Networks.testnet,
-    [Networks.localnet]: Networks.testnet,
+    [Networks.custom]: Networks.testnet,
 }
 
 /** The two networks that have real Pera service deployments. */

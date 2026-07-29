@@ -71,20 +71,12 @@ append_config "TESTNET_INDEXER_URL" "testnetIndexerUrl" "string"
 append_config "MAINNET_GENESIS_HASH" "mainnetGenesisHash" "string"
 append_config "TESTNET_GENESIS_HASH" "testnetGenesisHash" "string"
 
-# Networks without a Pera backend (betanet/fnet/localnet). Chain endpoints only;
-# their Pera service traffic resolves to TestNet's via pera-service-fallback.ts.
+# Networks without a Pera backend (betanet). Chain endpoints only; their Pera
+# service traffic resolves to TestNet's via pera-service-fallback.ts.
 append_config "BETANET_ALGOD_URL" "betanetAlgodUrl" "string"
 append_config "BETANET_INDEXER_URL" "betanetIndexerUrl" "string"
 append_config "BETANET_GENESIS_HASH" "betanetGenesisHash" "string"
 append_config "BETANET_EXPLORER_URL" "betanetExplorerUrl" "string"
-append_config "FNET_ALGOD_URL" "fnetAlgodUrl" "string"
-append_config "FNET_INDEXER_URL" "fnetIndexerUrl" "string"
-append_config "FNET_GENESIS_HASH" "fnetGenesisHash" "string"
-append_config "FNET_EXPLORER_URL" "fnetExplorerUrl" "string"
-append_config "LOCALNET_ALGOD_URL" "localnetAlgodUrl" "string"
-append_config "LOCALNET_INDEXER_URL" "localnetIndexerUrl" "string"
-append_config "LOCALNET_EXPLORER_URL" "localnetExplorerUrl" "string"
-append_config "LOCALNET_ALGOD_TOKEN" "localnetAlgodToken" "string"
 append_config "MAINNET_DISPENSER_URL" "mainnetDispenserUrl" "string"
 
 # Backend URLs and API Keys

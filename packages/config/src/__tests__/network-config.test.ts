@@ -30,8 +30,7 @@ describe('network-config', () => {
         expect(isTestnet(Networks.testnet)).toBe(true)
         expect(isTestnet(Networks.mainnet)).toBe(false)
         expect(isTestnet(Networks.betanet)).toBe(false)
-        expect(isTestnet(Networks.fnet)).toBe(false)
-        expect(isTestnet(Networks.localnet)).toBe(false)
+        expect(isTestnet(Networks.custom)).toBe(false)
     })
 
     test('getNetworkConfig returns correct mainnet config', () => {
@@ -92,45 +91,48 @@ describe('network-config', () => {
         })
     })
 
-    test('chain identity comes from the real network, never the fallback', () => {
-        const fnet = getNetworkConfig(Networks.fnet)
-
-        expect(fnet.algodUrl).toBe(config.fnetAlgodUrl)
-        expect(fnet.indexerUrl).toBe(config.fnetIndexerUrl)
-        expect(fnet.genesisHash).toBe(config.fnetGenesisHash)
-        // The invariant that makes cross-network signing impossible.
-        expect(fnet.genesisHash).not.toBe(config.testnetGenesisHash)
-        // genesisId is chain identity too — it must never resolve through the
-        // Pera service fallback, or a dApp would pair fnet's real genesisHash
-        // with testnet's genesisId and mis-detect the chain.
-        expect(fnet.genesisId).toBe('fnet-v1')
-        expect(fnet.genesisId).not.toBe('testnet-v1.0')
+    test('union is exactly the four supported networks', () => {
+        expect(Object.values(Networks)).toEqual([
+            'testnet',
+            'mainnet',
+            'betanet',
+            'custom',
+        ])
     })
 
-    test('pera services on a fallback network come from the testnet lane', () => {
-        const fnet = getNetworkConfig(Networks.fnet)
+    test('custom carries no baked chain config', () => {
+        const custom = getNetworkConfig(Networks.custom)
 
-        expect(fnet.backendUrl).toBe(config.testnetBackendUrl)
-        expect(fnet.baanxBaseUrl).toBe(config.testnetBaanxBaseUrl)
-        expect(fnet.cardUsdcAssetId).toBe(config.testnetCardUsdcAssetId)
+        expect(custom.algodUrl).toBe('')
+        expect(custom.indexerUrl).toBe('')
+        expect(custom.genesisHash).toBe('')
+        expect(custom.genesisId).toBe('')
+        expect(custom.explorerUrl).toBe('')
+        expect(custom.dispenserUrl).toBe('')
     })
 
-    test('localnet carries its own algod token', () => {
-        expect(getNetworkConfig(Networks.localnet).algodToken).toBe(
-            config.localnetAlgodToken,
-        )
-        expect(getNetworkConfig(Networks.mainnet).algodToken).toBe(
-            config.algodApiKey,
-        )
+    test('custom still borrows the testnet lane for pera services', () => {
+        const custom = getNetworkConfig(Networks.custom)
+
+        expect(custom.backendUrl).toBe(config.testnetBackendUrl)
+        expect(custom.cardUsdcAssetId).toBe(config.testnetCardUsdcAssetId)
     })
 
-    test('betanet and fnet carry no algod/indexer token, even with a real key configured', async () => {
-        // Their algod/indexer are public third-party endpoints (algonode.cloud,
-        // nodely.dev) Pera does not control and that need no token — sending
-        // Pera's real algodApiKey/indexerApiKey (as mainnet/testnet correctly
-        // do) would leak that credential to hosts outside Pera's control.
-        // Localnet is unaffected — it correctly keeps its own dev token,
-        // asserted separately above.
+    test('betanet keeps its pinned chain identity', () => {
+        const betanet = getNetworkConfig(Networks.betanet)
+
+        expect(betanet.genesisHash).toBe(config.betanetGenesisHash)
+        expect(betanet.genesisId).toBe('betanet-v1.0')
+        expect(betanet.genesisHash).not.toBe(config.testnetGenesisHash)
+    })
+
+    test('betanet and custom carry no algod/indexer token, even with a real key configured', async () => {
+        // Their algod/indexer are public third-party endpoints (algonode.cloud)
+        // Pera does not control and that need no token — sending Pera's real
+        // algodApiKey/indexerApiKey (as mainnet/testnet correctly do) would
+        // leak that credential to hosts outside Pera's control. custom has no
+        // baked endpoint at all yet (its fields are hardcoded ''), so it must
+        // be immune to a real key exactly the same way.
         //
         // `config.algodApiKey`/`indexerApiKey` are blank in this test
         // environment (no key configured), so asserting against a bare
@@ -159,9 +161,9 @@ describe('network-config', () => {
         expect(freshGetNetworkConfig(Networks.mainnet).algodToken).toBe(
             'REAL_PERA_ALGOD_SECRET',
         )
-        // betanet/fnet must not, even though the same real secret is
+        // betanet/custom must not, even though the same real secret is
         // configured for the process.
-        for (const network of [Networks.betanet, Networks.fnet]) {
+        for (const network of [Networks.betanet, Networks.custom]) {
             expect(freshGetNetworkConfig(network).algodToken).toBe('')
             expect(freshGetNetworkConfig(network).indexerToken).toBe('')
         }
@@ -171,7 +173,7 @@ describe('network-config', () => {
 
     test('getArc59Config falls back to testnet app ids', () => {
         expect(getArc59Config(Networks.mainnet)).toEqual(config.arc59.mainnet)
-        expect(getArc59Config(Networks.fnet)).toEqual(config.arc59.testnet)
+        expect(getArc59Config(Networks.custom)).toEqual(config.arc59.testnet)
     })
 })
 
@@ -205,19 +207,6 @@ describe('getNetworkConfig genesisId', () => {
     test('returns the canonical betanet genesis id', () => {
         expect(getNetworkConfig(Networks.betanet).genesisId).toBe(
             'betanet-v1.0',
-        )
-    })
-
-    test('returns the canonical fnet genesis id, distinct from any testnet value', () => {
-        expect(getNetworkConfig(Networks.fnet).genesisId).toBe('fnet-v1')
-        expect(getNetworkConfig(Networks.fnet).genesisId).not.toBe(
-            'testnet-v1.0',
-        )
-    })
-
-    test('returns the canonical localnet genesis id', () => {
-        expect(getNetworkConfig(Networks.localnet).genesisId).toBe(
-            'dockernet-v1',
         )
     })
 })

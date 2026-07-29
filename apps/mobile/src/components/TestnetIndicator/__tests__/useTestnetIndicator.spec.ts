@@ -52,8 +52,7 @@ describe('useTestnetIndicator', () => {
         const expected: Record<string, string> = {
             [Networks.testnet]: 'common.network_label.testnet',
             [Networks.betanet]: 'common.network_label.betanet',
-            [Networks.fnet]: 'common.network_label.fnet',
-            [Networks.localnet]: 'common.network_label.localnet',
+            [Networks.custom]: 'common.network_label.custom',
         }
 
         for (const [network, label] of Object.entries(expected)) {

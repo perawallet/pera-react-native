@@ -91,16 +91,15 @@ vi.mock('@perawallet/walletconnect', () => {
 })
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
-    // Real 5-network shape: getExpectedChainId's Record<Network, ...> table
+    // Real 4-network shape: getExpectedChainId's Record<Network, ...> table
     // is total over Object.values(Networks)-adjacent code, and the betanet /
-    // fnet chain-id tests below need those keys present, not just
+    // custom chain-id tests below need those keys present, not just
     // mainnet/testnet.
     Networks: {
         mainnet: 'mainnet',
         testnet: 'testnet',
         betanet: 'betanet',
-        fnet: 'fnet',
-        localnet: 'localnet',
+        custom: 'custom',
     },
     Network: String,
     logger: {
@@ -457,14 +456,17 @@ describe('useWalletConnect', () => {
             expect(mockAddSessionRequest).not.toHaveBeenCalled()
         })
 
-        it("accepts an fnet dApp presenting TestNet's chain id (416002) — fnet has no registered id of its own", async () => {
-            // fnet borrows TestNet's chain id (matching how its Pera
-            // services already borrow TestNet's, see
-            // PERA_SERVICE_FALLBACK). Before this fix fnet resolved to
+        it("accepts a custom-network dApp presenting TestNet's chain id (416002) — an arbitrary node has no registered id of its own", async () => {
+            // custom (an arbitrary developer-pointed node) borrows TestNet's
+            // chain id (matching how its Pera services already borrow
+            // TestNet's, see PERA_SERVICE_FALLBACK). Before the equivalent
+            // fnet/localnet fix, an un-registered network resolved to
             // MainNet's id instead, so a dApp presenting 416_002 (the
             // network's actual, spec-intended id) was wrongly rejected.
-            const { result } = renderHook(() => useWalletConnect(Networks.fnet))
-            const connection = { clientId: 'client-fnet' } as any
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.custom),
+            )
+            const connection = { clientId: 'client-custom' } as any
 
             await act(async () => {
                 await result.current.connect({ connection })
@@ -480,7 +482,7 @@ describe('useWalletConnect', () => {
             const payload = {
                 params: [
                     {
-                        peerMeta: { name: 'Fnet App' },
+                        peerMeta: { name: 'Custom Network App' },
                         chainId: AlgorandChainId.testnet,
                         permissions: ['perm1'],
                     },
@@ -492,10 +494,10 @@ describe('useWalletConnect', () => {
             })
 
             expect(mockAddSessionRequest).toHaveBeenCalledWith({
-                peerMeta: { name: 'Fnet App' },
+                peerMeta: { name: 'Custom Network App' },
                 chainId: AlgorandChainId.testnet,
                 permissions: ['perm1'],
-                clientId: 'client-fnet',
+                clientId: 'client-custom',
             })
             expect(mockConnectorInstance.rejectSession).not.toHaveBeenCalled()
             expect(mockSetConnectionError).not.toHaveBeenCalled()

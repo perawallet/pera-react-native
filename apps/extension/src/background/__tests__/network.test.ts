@@ -37,13 +37,7 @@ describe('parseActiveNetwork', () => {
     })
 
     it('accepts every supported network', () => {
-        for (const network of [
-            'mainnet',
-            'testnet',
-            'betanet',
-            'fnet',
-            'localnet',
-        ]) {
+        for (const network of ['mainnet', 'testnet', 'betanet', 'custom']) {
             const raw = `{"state":{"network":"${network}"},"version":1}`
             expect(parseActiveNetwork(raw)).toBe(network)
         }
@@ -52,6 +46,17 @@ describe('parseActiveNetwork', () => {
     it('still falls back to mainnet for an unknown value', () => {
         expect(
             parseActiveNetwork('{"state":{"network":"nope"},"version":1}'),
+        ).toBe('mainnet')
+    })
+
+    it('falls back to mainnet for a value no longer in the union', () => {
+        // Regression coverage for the custom-network rework: a device that
+        // persisted 'fnet' (or 'localnet') under the old five-network union
+        // must not crash or silently accept a value SUPPORTED no longer
+        // contains — it degrades to the same safe mainnet default as any
+        // other unrecognized string.
+        expect(
+            parseActiveNetwork('{"state":{"network":"fnet"},"version":1}'),
         ).toBe('mainnet')
     })
 })

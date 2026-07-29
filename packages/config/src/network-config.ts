@@ -93,32 +93,25 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
         indexerToken: '',
         dispenserUrl: 'https://lora.algokit.io/betanet/fund/',
     },
-    [Networks.fnet]: {
-        algodUrl: config.fnetAlgodUrl,
-        indexerUrl: config.fnetIndexerUrl,
-        genesisHash: config.fnetGenesisHash,
-        genesisId: 'fnet-v1',
-        explorerUrl: config.fnetExplorerUrl,
-        // See the betanet entry above — same reasoning: fnet's algod/indexer
-        // (nodely.dev) are public third-party endpoints, not Pera's, and need
-        // no token.
+    [Networks.custom]: {
+        // Deliberately all empty. `custom` has no baked chain config — its real
+        // values live in the custom-network store (packages/blockchain), which
+        // `config` cannot read: config is the leaf package and must stay free of
+        // store dependencies. The blockchain-layer resolvers overlay the store on
+        // top of this placeholder:
+        //   - algodUrl/indexerUrl/tokens -> resolveChainEndpoints()
+        //   - genesisHash/genesisId      -> getExpectedGenesisHash()
+        // explorerUrl and dispenserUrl stay empty: an arbitrary node has no known
+        // explorer or faucet, and the existing non-mainnet-AND-non-empty gate
+        // already hides the dispenser row on an empty value.
+        algodUrl: '',
+        indexerUrl: '',
+        genesisHash: '',
+        genesisId: '',
+        explorerUrl: '',
         algodToken: '',
         indexerToken: '',
-        dispenserUrl: 'https://lora.algokit.io/fnet/fund/',
-    },
-    [Networks.localnet]: {
-        algodUrl: config.localnetAlgodUrl,
-        indexerUrl: config.localnetIndexerUrl,
-        // Regenerated on every container reset — resolved at runtime.
-        genesisHash: '',
-        // Container-dependent, like genesisHash above: 'dockernet-v1' is
-        // AlgoKit LocalNet's conventional default, but a later task introduces
-        // runtime resolution — this literal is not authoritative.
-        genesisId: 'dockernet-v1',
-        explorerUrl: config.localnetExplorerUrl,
-        algodToken: config.localnetAlgodToken,
-        indexerToken: config.localnetAlgodToken,
-        dispenserUrl: 'https://lora.algokit.io/localnet/fund/',
+        dispenserUrl: '',
     },
 }
 

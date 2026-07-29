@@ -25,10 +25,14 @@ import { AlgorandChainId } from '../models'
  * instead).
  *
  * - betanet has a real registered CAIP id (`416_003`) — use it.
- * - fnet and localnet have NO registered CAIP id. They map to TestNet's
- *   (`416_002`), matching how their Pera services already borrow TestNet's
- *   (see `PERA_SERVICE_FALLBACK` in `@perawallet/wallet-core-config`) — a
- *   dApp connects to either as though the wallet were on TestNet.
+ * - custom (an arbitrary developer-pointed node — LocalNet, an fnet instance,
+ *   a private node) has NO registered CAIP id of its own; there is no
+ *   registry entry for "whatever node you happen to be pointed at". It maps
+ *   to TestNet's (`416_002`), matching how its Pera services already borrow
+ *   TestNet's (see `PERA_SERVICE_FALLBACK` in `@perawallet/wallet-core-config`)
+ *   — a dApp connects as though the wallet were on TestNet. A dApp needs
+ *   *some* id to establish the session at all; the real safety net is the
+ *   genesis-hash assertion below, not this id.
  *
  * Signing stays safe regardless: a dApp that paired under a borrowed chain
  * id builds transactions with THAT chain's genesis hash, and
@@ -44,8 +48,7 @@ export const EXPECTED_CHAIN_ID_BY_NETWORK: Record<Network, AlgorandChainId> = {
     [Networks.mainnet]: AlgorandChainId.mainnet,
     [Networks.testnet]: AlgorandChainId.testnet,
     [Networks.betanet]: AlgorandChainId.betanet,
-    [Networks.fnet]: AlgorandChainId.testnet,
-    [Networks.localnet]: AlgorandChainId.testnet,
+    [Networks.custom]: AlgorandChainId.testnet,
 }
 
 /** The chain id a WalletConnect session/request must present for `network`. */

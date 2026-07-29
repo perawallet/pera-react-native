@@ -20,11 +20,10 @@ import {
 } from '../pera-service-fallback'
 
 describe('pera-service-fallback', () => {
-    test('maps every network without a Pera backend to testnet', () => {
+    test('maps exactly betanet and custom to testnet', () => {
         expect(PERA_SERVICE_FALLBACK).toEqual({
             betanet: Networks.testnet,
-            fnet: Networks.testnet,
-            localnet: Networks.testnet,
+            custom: Networks.testnet,
         })
     })
 
@@ -39,12 +38,8 @@ describe('pera-service-fallback', () => {
         expect(hasPeraServiceFallback(Networks.testnet)).toBe(false)
     })
 
-    test('resolves the three new networks to testnet', () => {
-        for (const network of [
-            Networks.betanet,
-            Networks.fnet,
-            Networks.localnet,
-        ] as const) {
+    test('resolves the two fallback networks to testnet', () => {
+        for (const network of [Networks.betanet, Networks.custom] as const) {
             expect(resolvePeraServiceNetwork(network)).toBe(Networks.testnet)
             expect(resolvePeraServiceLane(network)).toBe(Networks.testnet)
             expect(hasPeraServiceFallback(network)).toBe(true)

@@ -36,8 +36,7 @@ const LABEL_KEYS: Record<Network, string> = {
     [Networks.mainnet]: 'settings.developer.node_settings.mainnet_label',
     [Networks.testnet]: 'settings.developer.node_settings.testnet_label',
     [Networks.betanet]: 'settings.developer.node_settings.betanet_label',
-    [Networks.fnet]: 'settings.developer.node_settings.fnet_label',
-    [Networks.localnet]: 'settings.developer.node_settings.localnet_label',
+    [Networks.custom]: 'settings.developer.node_settings.custom_label',
 }
 
 type UseSettingsDeveloperNodeSettingsScreenResult = {

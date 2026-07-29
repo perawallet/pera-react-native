@@ -505,8 +505,7 @@
             "mainnet": "MainNet",
             "testnet": "TestNet",
             "betanet": "BetaNet",
-            "fnet": "FNet",
-            "localnet": "LocalNet"
+            "custom": "Custom"
         },
         "yes": "Yes",
         "no": "No",
@@ -2113,8 +2112,7 @@
                 "mainnet_label": "Algorand MainNet",
                 "testnet_label": "Algorand TestNet",
                 "betanet_label": "Algorand BetaNet",
-                "fnet_label": "Algorand FNet",
-                "localnet_label": "Algorand LocalNet",
+                "custom_label": "Custom network",
                 "enable_mainnet": "Enable MainNet",
                 "enable_testnet": "Enable TestNet",
                 "algod_url_label": "Algod URL",

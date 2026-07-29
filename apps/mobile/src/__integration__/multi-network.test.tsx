@@ -49,11 +49,17 @@ import {
 
 import { server } from '@test-utils/msw-server'
 
-const FNET_ALGOD = 'https://fnet-api.4160.nodely.dev'
-const FNET_INDEXER = 'https://fnet-idx.4160.nodely.dev'
+// betanet stands in for "some active network that is neither mainnet nor
+// testnet" — it keeps its own baked, resolvable chain endpoints/genesis (see
+// packages/config/src/network-config.ts), unlike `custom`, which is
+// deliberately empty in `config` until the custom-network store (a later
+// task) overlays real values. betanet is enough to prove the routing
+// contract this file exists for; it does not depend on that store.
+const BETANET_ALGOD = 'https://betanet-api.algonode.cloud'
+const BETANET_INDEXER = 'https://betanet-idx.algonode.cloud'
 const TESTNET_PERA = 'https://testnet.staging.api.perawallet.app'
 
-const FNET_GENESIS = 'kUt08LxeVAAGHnh4JoAoAMM9ql/hBwSoiFtlnKNeOxA='
+const BETANET_GENESIS = 'mFgazF+2uRS1tMiL9dsj01hJGySEmPN28B/TjjvpVW0='
 const TESTNET_GENESIS = 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='
 
 // A syntactically valid, checksum-correct Algorand address (same value as
@@ -82,7 +88,7 @@ describe('multi-network routing', () => {
     beforeEach(() => {
         requested.length = 0
         useNodeOverrideStore.getState().resetState()
-        useNetworkStore.getState().setNetwork(Networks.fnet)
+        useNetworkStore.getState().setNetwork(Networks.betanet)
     })
 
     afterEach(() => {
@@ -92,7 +98,7 @@ describe('multi-network routing', () => {
 
     it('sends chain reads to the active network, not the fallback', async () => {
         server.use(
-            http.get(`${FNET_ALGOD}/v2/accounts/:address`, () =>
+            http.get(`${BETANET_ALGOD}/v2/accounts/:address`, () =>
                 HttpResponse.json({
                     address: ADDRESS,
                     amount: 1_000_000,
@@ -108,7 +114,7 @@ describe('multi-network routing', () => {
 
         await getAlgorandClient().client.algod.accountInformation(ADDRESS).do()
 
-        expect(requested.some(url => url.startsWith(FNET_ALGOD))).toBe(true)
+        expect(requested.some(url => url.startsWith(BETANET_ALGOD))).toBe(true)
         expect(requested.some(url => url.includes('testnet-api'))).toBe(false)
     })
 
@@ -119,31 +125,33 @@ describe('multi-network routing', () => {
             ),
         )
 
-        await fetchAssets(['31566704'], Networks.fnet)
+        await fetchAssets(['31566704'], Networks.betanet)
 
         expect(requested.some(url => url.startsWith(TESTNET_PERA))).toBe(true)
     })
 
     it('reads history from the chain indexer, never the borrowed backend', async () => {
         server.use(
-            http.get(`${FNET_INDEXER}/v2/accounts/:address/transactions`, () =>
-                HttpResponse.json({
-                    'current-round': 42,
-                    transactions: [
-                        {
-                            id: 'FROM_INDEXER',
-                            'tx-type': 'pay',
-                            sender: ADDRESS,
-                            fee: 1000,
-                            'confirmed-round': 41,
-                            'round-time': 1_700_000_000,
-                            'payment-transaction': {
-                                amount: 5000,
-                                receiver: ADDRESS,
+            http.get(
+                `${BETANET_INDEXER}/v2/accounts/:address/transactions`,
+                () =>
+                    HttpResponse.json({
+                        'current-round': 42,
+                        transactions: [
+                            {
+                                id: 'FROM_INDEXER',
+                                'tx-type': 'pay',
+                                sender: ADDRESS,
+                                fee: 1000,
+                                'confirmed-round': 41,
+                                'round-time': 1_700_000_000,
+                                'payment-transaction': {
+                                    amount: 5000,
+                                    receiver: ADDRESS,
+                                },
                             },
-                        },
-                    ],
-                }),
+                        ],
+                    }),
             ),
             http.get(`${TESTNET_PERA}/v1/accounts/:address/transactions/`, () =>
                 HttpResponse.json({
@@ -166,7 +174,7 @@ describe('multi-network routing', () => {
 
         const result = await fetchTransactionHistory({
             accountAddress: ADDRESS,
-            network: Networks.fnet,
+            network: Networks.betanet,
         })
 
         const ids = result.transactions.map(transaction => transaction.id)
@@ -176,16 +184,17 @@ describe('multi-network routing', () => {
 
     it('rejects a transaction carrying another chain genesis hash', async () => {
         server.use(
-            http.get(`${FNET_ALGOD}/v2/transactions/params`, () =>
-                HttpResponse.json({ 'genesis-hash': FNET_GENESIS }),
+            http.get(`${BETANET_ALGOD}/v2/transactions/params`, () =>
+                HttpResponse.json({ 'genesis-hash': BETANET_GENESIS }),
             ),
         )
 
-        const expected = await resolveExpectedGenesisHash(Networks.fnet)
-        expect(expected).toBe(FNET_GENESIS)
+        const expected = await resolveExpectedGenesisHash(Networks.betanet)
+        expect(expected).toBe(BETANET_GENESIS)
 
-        // A dApp connected through testnet's chain id (fnet has no CAIP id)
-        // builds with testnet's genesis. This is the safety net.
+        // A dApp that (mistakenly, or via a stale session) builds with
+        // testnet's genesis while the wallet is active on betanet must be
+        // rejected regardless of chain-id pairing — this is the safety net.
         const transactions = [
             { genesisHash: decodeFromBase64(TESTNET_GENESIS) },
         ] as Parameters<typeof assertTransactionsMatchNetwork>[0]
@@ -193,7 +202,7 @@ describe('multi-network routing', () => {
         expect(() =>
             assertTransactionsMatchNetwork(
                 transactions,
-                Networks.fnet,
+                Networks.betanet,
                 expected,
             ),
         ).toThrow(GenesisHashMismatchError)

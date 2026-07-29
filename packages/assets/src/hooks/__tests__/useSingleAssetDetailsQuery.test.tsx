@@ -366,7 +366,7 @@ describe('fetchAssetFromApis merge precedence', () => {
     })
 
     it('indexer wins on chain-intrinsics for a fallback network', async () => {
-        const asset = await fetchAssetFromApis('10458941', Networks.fnet)
+        const asset = await fetchAssetFromApis('10458941', Networks.betanet)
 
         expect(asset.decimals).toBe(indexerDecimals)
         expect(asset.name).toBe('FnetThing')
@@ -381,7 +381,7 @@ describe('fetchAssetFromApis merge precedence', () => {
     })
 
     it('pera still supplies its own metadata on a fallback network', async () => {
-        const asset = await fetchAssetFromApis('10458941', Networks.fnet)
+        const asset = await fetchAssetFromApis('10458941', Networks.betanet)
 
         expect(asset.peraMetadata?.verificationTier).toBe(
             PeraAssetVerificationTier.verified,

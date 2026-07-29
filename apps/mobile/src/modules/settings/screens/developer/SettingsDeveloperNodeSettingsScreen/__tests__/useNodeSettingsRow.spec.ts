@@ -17,11 +17,11 @@ import { useNodeSettingsRow } from '../useNodeSettingsRow'
 import type { NetworkRow } from '../useSettingsDeveloperNodeSettingsScreen'
 
 const makeRow = (overrides: Partial<NetworkRow> = {}): NetworkRow => ({
-    network: Networks.fnet,
-    labelKey: 'settings.developer.node_settings.fnet_label',
+    network: Networks.custom,
+    labelKey: 'settings.developer.node_settings.custom_label',
     isSelected: false,
-    algodUrl: 'https://fnet-api.4160.nodely.dev',
-    indexerUrl: 'https://fnet-idx.4160.nodely.dev',
+    algodUrl: 'https://custom-api.example.com',
+    indexerUrl: 'https://custom-idx.example.com',
     isOverridden: false,
     ...overrides,
 })

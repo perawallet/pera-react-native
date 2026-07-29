@@ -397,13 +397,13 @@ describe('routing by network', () => {
 
         await fetchTransactionHistory({
             accountAddress: 'ABC123',
-            network: Networks.fnet,
+            network: Networks.betanet,
         })
 
         expect(mockQueryClient).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'indexer',
-                network: Networks.fnet,
+                network: Networks.betanet,
                 url: '/v2/accounts/ABC123/transactions',
             }),
         )
@@ -427,14 +427,14 @@ describe('routing by network', () => {
 
         await fetchMoreTransactions({
             url: 'CURSOR1',
-            network: Networks.fnet,
+            network: Networks.betanet,
             accountAddress: 'ABC123',
         })
 
         expect(mockQueryClient).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'indexer',
-                network: Networks.fnet,
+                network: Networks.betanet,
                 url: '/v2/accounts/ABC123/transactions',
                 params: expect.objectContaining({ next: 'CURSOR1' }),
             }),
@@ -445,7 +445,7 @@ describe('routing by network', () => {
         await expect(
             fetchMoreTransactions({
                 url: 'CURSOR1',
-                network: Networks.fnet,
+                network: Networks.betanet,
             }),
         ).rejects.toThrow(/accountAddress/)
 
@@ -462,7 +462,7 @@ describe('routing by network', () => {
 
         await fetchMoreTransactions({
             url: 'CURSOR1',
-            network: Networks.fnet,
+            network: Networks.betanet,
             accountAddress: 'ABC123',
             assetId: '31566704',
             afterTime: '2025-02-01',
@@ -473,7 +473,7 @@ describe('routing by network', () => {
         expect(mockQueryClient).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'indexer',
-                network: Networks.fnet,
+                network: Networks.betanet,
                 url: '/v2/accounts/ABC123/transactions',
                 params: {
                     limit: 50,

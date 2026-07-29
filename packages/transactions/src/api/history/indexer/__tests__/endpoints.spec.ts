@@ -104,13 +104,13 @@ describe('fetchIndexerTransactionHistory', () => {
 
         await fetchIndexerTransactionHistory({
             accountAddress: 'ABC123',
-            network: Networks.fnet,
+            network: Networks.betanet,
         })
 
         expect(mockQueryClient).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'indexer',
-                network: Networks.fnet,
+                network: Networks.betanet,
                 method: 'GET',
                 url: '/v2/accounts/ABC123/transactions',
                 params: expect.objectContaining({ limit: 25 }),
@@ -125,12 +125,12 @@ describe('fetchIndexerTransactionHistory', () => {
 
         const result = await fetchIndexerTransactionHistory({
             accountAddress: 'ABC123',
-            network: Networks.fnet,
+            network: Networks.betanet,
         })
 
         expect(mockFetchIndexerAssetDetails).toHaveBeenCalledWith(
             '888',
-            Networks.fnet,
+            Networks.betanet,
         )
         expect(mockTransformIndexerAssetResponse).toHaveBeenCalledWith(
             mockRawAssetResponse,
@@ -151,7 +151,7 @@ describe('fetchIndexerTransactionHistory', () => {
 
         const result = await fetchIndexerTransactionHistory({
             accountAddress: 'ABC123',
-            network: Networks.fnet,
+            network: Networks.betanet,
         })
 
         expect(result.transactions).toHaveLength(1)
@@ -175,13 +175,13 @@ describe('fetchMoreIndexerTransactions', () => {
         await fetchMoreIndexerTransactions({
             accountAddress: 'ABC123',
             nextToken: 'CURSOR1',
-            network: Networks.fnet,
+            network: Networks.betanet,
         })
 
         expect(mockQueryClient).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'indexer',
-                network: Networks.fnet,
+                network: Networks.betanet,
                 url: '/v2/accounts/ABC123/transactions',
                 params: expect.objectContaining({ next: 'CURSOR1' }),
             }),
@@ -199,7 +199,7 @@ describe('fetchMoreIndexerTransactions', () => {
         await fetchMoreIndexerTransactions({
             accountAddress: 'ABC123',
             nextToken: 'CURSOR1',
-            network: Networks.fnet,
+            network: Networks.betanet,
             assetId: '31566704',
             afterTime: '2025-02-01',
             beforeTime: '2025-02-13',
@@ -209,7 +209,7 @@ describe('fetchMoreIndexerTransactions', () => {
         expect(mockQueryClient).toHaveBeenCalledWith(
             expect.objectContaining({
                 backend: 'indexer',
-                network: Networks.fnet,
+                network: Networks.betanet,
                 url: '/v2/accounts/ABC123/transactions',
                 params: {
                     limit: 50,

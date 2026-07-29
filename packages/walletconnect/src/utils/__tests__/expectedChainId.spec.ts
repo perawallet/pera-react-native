@@ -13,7 +13,10 @@
 import { describe, it, expect } from 'vitest'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { AlgorandChainId } from '../../models'
-import { getExpectedChainId } from '../expectedChainId'
+import {
+    EXPECTED_CHAIN_ID_BY_NETWORK,
+    getExpectedChainId,
+} from '../expectedChainId'
 
 describe('getExpectedChainId', () => {
     it('resolves mainnet to its registered chain id', () => {
@@ -42,18 +45,24 @@ describe('getExpectedChainId', () => {
         )
     })
 
-    it('resolves fnet to TestNet id — fnet has no registered CAIP id of its own', () => {
-        // Matches how fnet's Pera services already borrow TestNet's (see
-        // PERA_SERVICE_FALLBACK) — a dApp connects as though the wallet
-        // were on TestNet. Before this fix, fnet resolved to MainNet's id
-        // instead (the ternary's default branch), so a dApp presenting
-        // MainNet's 416_001 was WRONGLY accepted while on fnet.
-        expect(getExpectedChainId(Networks.fnet)).toBe(AlgorandChainId.testnet)
-    })
-
-    it('resolves localnet to TestNet id — localnet has no registered CAIP id of its own', () => {
-        expect(getExpectedChainId(Networks.localnet)).toBe(
+    it('resolves custom to TestNet id — an arbitrary node has no registered CAIP id of its own', () => {
+        // Matches how custom's Pera services already borrow TestNet's (see
+        // PERA_SERVICE_FALLBACK) — a dApp connects as though the wallet were
+        // on TestNet. Before the equivalent fix for fnet/localnet, an
+        // un-registered network resolved to MainNet's id instead (the
+        // ternary's default branch), so a dApp presenting MainNet's 416_001
+        // was WRONGLY accepted while on a network with no id of its own.
+        expect(getExpectedChainId(Networks.custom)).toBe(
             AlgorandChainId.testnet,
         )
+    })
+
+    it('maps every network, with custom borrowing testnet id', () => {
+        expect(EXPECTED_CHAIN_ID_BY_NETWORK).toEqual({
+            mainnet: AlgorandChainId.mainnet,
+            testnet: AlgorandChainId.testnet,
+            betanet: AlgorandChainId.betanet,
+            custom: AlgorandChainId.testnet,
+        })
     })
 })

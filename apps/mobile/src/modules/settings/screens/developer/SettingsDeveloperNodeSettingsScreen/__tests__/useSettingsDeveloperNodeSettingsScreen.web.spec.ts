@@ -96,12 +96,14 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         const { result } = renderHook(() =>
             useSettingsDeveloperNodeSettingsScreen(),
         )
-        const fnet = result.current.networks.find(
-            row => row.network === Networks.fnet,
+        const custom = result.current.networks.find(
+            row => row.network === Networks.custom,
         )
 
-        expect(fnet?.algodUrl).toBe(getNetworkConfig(Networks.fnet).algodUrl)
-        expect(fnet?.isOverridden).toBe(false)
+        expect(custom?.algodUrl).toBe(
+            getNetworkConfig(Networks.custom).algodUrl,
+        )
+        expect(custom?.isOverridden).toBe(false)
     })
 
     it('saving an endpoint marks the row overridden', () => {
@@ -110,16 +112,16 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         )
 
         act(() => {
-            result.current.saveEndpoints(Networks.localnet, {
+            result.current.saveEndpoints(Networks.custom, {
                 algodUrl: 'http://10.0.0.5:4001',
             })
         })
 
-        const localnet = result.current.networks.find(
-            row => row.network === Networks.localnet,
+        const custom = result.current.networks.find(
+            row => row.network === Networks.custom,
         )
-        expect(localnet?.algodUrl).toBe('http://10.0.0.5:4001')
-        expect(localnet?.isOverridden).toBe(true)
+        expect(custom?.algodUrl).toBe('http://10.0.0.5:4001')
+        expect(custom?.isOverridden).toBe(true)
     })
 
     it('rejects a malformed URL rather than persisting it', () => {
@@ -128,13 +130,13 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         )
 
         act(() => {
-            result.current.saveEndpoints(Networks.fnet, {
+            result.current.saveEndpoints(Networks.custom, {
                 algodUrl: 'not-a-url',
             })
         })
 
         expect(
-            useNodeOverrideStore.getState().overrides[Networks.fnet],
+            useNodeOverrideStore.getState().overrides[Networks.custom],
         ).toBeUndefined()
     })
 
@@ -144,25 +146,25 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         )
 
         act(() => {
-            result.current.saveEndpoints(Networks.fnet, {
+            result.current.saveEndpoints(Networks.custom, {
                 algodUrl: 'http://10.0.0.5:4001',
             })
         })
         act(() => {
-            result.current.saveEndpoints(Networks.fnet, {
+            result.current.saveEndpoints(Networks.custom, {
                 indexerUrl: 'http://10.0.0.5:8980',
             })
         })
 
-        const fnet = result.current.networks.find(
-            row => row.network === Networks.fnet,
+        const custom = result.current.networks.find(
+            row => row.network === Networks.custom,
         )
         // A replace (instead of merge) would have wiped the first save's
         // algodUrl back to the baked default when the second save only
         // touched indexerUrl.
-        expect(fnet?.algodUrl).toBe('http://10.0.0.5:4001')
-        expect(fnet?.indexerUrl).toBe('http://10.0.0.5:8980')
-        expect(fnet?.isOverridden).toBe(true)
+        expect(custom?.algodUrl).toBe('http://10.0.0.5:4001')
+        expect(custom?.indexerUrl).toBe('http://10.0.0.5:8980')
+        expect(custom?.isOverridden).toBe(true)
     })
 
     it('resetEndpoints restores the baked values', () => {
@@ -171,19 +173,21 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         )
 
         act(() => {
-            result.current.saveEndpoints(Networks.fnet, {
+            result.current.saveEndpoints(Networks.custom, {
                 algodUrl: 'http://a.example',
             })
         })
         act(() => {
-            result.current.resetEndpoints(Networks.fnet)
+            result.current.resetEndpoints(Networks.custom)
         })
 
-        const fnet = result.current.networks.find(
-            row => row.network === Networks.fnet,
+        const custom = result.current.networks.find(
+            row => row.network === Networks.custom,
         )
-        expect(fnet?.isOverridden).toBe(false)
-        expect(fnet?.algodUrl).toBe(getNetworkConfig(Networks.fnet).algodUrl)
+        expect(custom?.isOverridden).toBe(false)
+        expect(custom?.algodUrl).toBe(
+            getNetworkConfig(Networks.custom).algodUrl,
+        )
     })
 
     it('selects a different network: persists it, flips isSwitching, and nudges the sync service', async () => {

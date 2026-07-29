@@ -44,21 +44,6 @@ export const configSchema = z.object({
     betanetIndexerUrl: z.url(),
     betanetGenesisHash: z.string(),
     betanetExplorerUrl: z.url(),
-    fnetAlgodUrl: z.url(),
-    fnetIndexerUrl: z.url(),
-    // fnet resets periodically, so this baked value is only a first-render
-    // default — the live hash is resolved at runtime (resolveGenesisHash.ts).
-    fnetGenesisHash: z.string(),
-    fnetExplorerUrl: z.url(),
-    localnetAlgodUrl: z.url(),
-    localnetIndexerUrl: z.url(),
-    localnetExplorerUrl: z.url(),
-    /**
-     * LocalNet's algod/indexer token. AlgoKit's fixed public dev token (64 'a'),
-     * not a secret. Separate from `algodApiKey` because LocalNet does not share
-     * the hosted providers' credentials.
-     */
-    localnetAlgodToken: z.string(),
     /** Per-network faucet. Empty for MainNet, which has none. */
     mainnetDispenserUrl: z.string(),
 
@@ -190,7 +175,7 @@ export const configSchema = z.object({
     }),
 
     defaultNetwork: z
-        .enum(['mainnet', 'testnet', 'betanet', 'fnet', 'localnet'])
+        .enum(['mainnet', 'testnet', 'betanet', 'custom'])
         .default('mainnet'),
 
     /** Build channel. Sourced from APP_ENV; defaults to development when unset. */
@@ -281,15 +266,6 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     betanetIndexerUrl: 'https://betanet-idx.algonode.cloud',
     betanetGenesisHash: 'mFgazF+2uRS1tMiL9dsj01hJGySEmPN28B/TjjvpVW0=',
     betanetExplorerUrl: 'https://lora.algokit.io/betanet',
-    fnetAlgodUrl: 'https://fnet-api.4160.nodely.dev',
-    fnetIndexerUrl: 'https://fnet-idx.4160.nodely.dev',
-    fnetGenesisHash: 'kUt08LxeVAAGHnh4JoAoAMM9ql/hBwSoiFtlnKNeOxA=',
-    fnetExplorerUrl: 'https://lora.algokit.io/fnet',
-    localnetAlgodUrl: 'http://localhost:4001',
-    localnetIndexerUrl: 'http://localhost:8980',
-    localnetExplorerUrl: 'https://lora.algokit.io/localnet',
-    localnetAlgodToken:
-        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     mainnetDispenserUrl: '',
     onrampSupportEmail: 'support@xoswap.com',
     cardSupportEmail: 'support@baanx.com',
@@ -439,14 +415,6 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     betanetIndexerUrl: 'BETANET_INDEXER_URL',
     betanetGenesisHash: 'BETANET_GENESIS_HASH',
     betanetExplorerUrl: 'BETANET_EXPLORER_URL',
-    fnetAlgodUrl: 'FNET_ALGOD_URL',
-    fnetIndexerUrl: 'FNET_INDEXER_URL',
-    fnetGenesisHash: 'FNET_GENESIS_HASH',
-    fnetExplorerUrl: 'FNET_EXPLORER_URL',
-    localnetAlgodUrl: 'LOCALNET_ALGOD_URL',
-    localnetIndexerUrl: 'LOCALNET_INDEXER_URL',
-    localnetExplorerUrl: 'LOCALNET_EXPLORER_URL',
-    localnetAlgodToken: 'LOCALNET_ALGOD_TOKEN',
     mainnetDispenserUrl: 'MAINNET_DISPENSER_URL',
     onrampSupportEmail: 'ONRAMP_SUPPORT_EMAIL',
     cardSupportEmail: 'CARD_SUPPORT_EMAIL',
