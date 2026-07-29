@@ -56,6 +56,7 @@ import {
     sendActionToWebview,
     sendErrorToWebview,
     sendMessageToWebview,
+    type WebviewMessageSecurity,
 } from './handlers'
 import {
     encodeToBase64,
@@ -179,13 +180,13 @@ export const usePeraWebviewInterface = (
     )
 
     const pushWebView = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'pushWebView',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -239,8 +240,6 @@ export const usePeraWebviewInterface = (
         },
         [
             pushWebViewContext,
-            securedConnection,
-            sourceUrl,
             onCloseRequested,
             onBackRequested,
             hadRequiredParams,
@@ -250,13 +249,13 @@ export const usePeraWebviewInterface = (
     )
 
     const openSystemBrowser = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'openSystemBrowser',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -292,17 +291,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, hadRequiredParams, t, webview],
+        [hadRequiredParams, t, webview],
     )
 
     const canOpenURI = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'canOpenURI',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -321,17 +320,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, hadRequiredParams, webview],
+        [hadRequiredParams, webview],
     )
 
     const openNativeURI = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'openNativeURI',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -373,24 +372,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [
-            securedConnection,
-            sourceUrl,
-            hadRequiredParams,
-            handleDeepLink,
-            t,
-            webview,
-        ],
+        [hadRequiredParams, handleDeepLink, t, webview],
     )
 
     const notifyUser = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'notifyUser',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -408,17 +400,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, webview, hadRequiredParams, showToast],
+        [webview, hadRequiredParams, showToast],
     )
 
     const getAddresses = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'getAddresses',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -441,17 +433,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, signingAccounts, allAccounts, webview],
+        [signingAccounts, allAccounts, webview],
     )
 
     const getSettings = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'getSettings',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -462,7 +454,7 @@ export const usePeraWebviewInterface = (
                         clientType: deviceInfo.getDevicePlatform(),
                         deviceId: deviceID,
                         deviceVersion: deviceInfo.getDeviceModel(),
-                        deviceOSVersion: deviceInfo.getDevicePlatform(),
+                        deviceOSVersion: deviceInfo.getDeviceOSVersion(),
                         deviceModel: deviceInfo.getDeviceModel(),
                         theme,
                         network,
@@ -475,26 +467,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [
-            deviceID,
-            deviceInfo,
-            preferredCurrency,
-            securedConnection,
-            sourceUrl,
-            theme,
-            network,
-            webview,
-        ],
+        [deviceID, deviceInfo, preferredCurrency, theme, network, webview],
     )
 
     const requestTransactionSigning = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'requestTransactionSigning',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -585,8 +568,6 @@ export const usePeraWebviewInterface = (
             )
         },
         [
-            securedConnection,
-            sourceUrl,
             webview,
             hadRequiredParams,
             resolveArc0001,
@@ -597,13 +578,13 @@ export const usePeraWebviewInterface = (
     )
 
     const requestDataSigning = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'requestDataSigning',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -638,10 +619,10 @@ export const usePeraWebviewInterface = (
                                 // The verified webview origin — NOT the
                                 // dApp-asserted metadata — is what the analyzer
                                 // checks the SIWA domain against.
-                                sourceMetadata: sourceUrl
-                                    ? { url: sourceUrl }
+                                sourceMetadata: security.sourceUrl
+                                    ? { url: security.sourceUrl }
                                     : undefined,
-                                verifiedOrigin: sourceUrl ?? undefined,
+                                verifiedOrigin: security.sourceUrl ?? undefined,
                                 stdSigData,
                                 metadata,
                                 approve: async (
@@ -775,26 +756,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [
-            securedConnection,
-            sourceUrl,
-            webview,
-            hadRequiredParams,
-            addSignRequest,
-            allAccounts,
-            showToast,
-            t,
-        ],
+        [webview, hadRequiredParams, addSignRequest, allAccounts, showToast, t],
     )
 
     const getDeviceId = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'getDeviceId',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -805,7 +777,7 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, deviceID, webview],
+        [deviceID, webview],
     )
 
     // PERA-4564: The Discover web app reads the device id once (via
@@ -826,6 +798,8 @@ export const usePeraWebviewInterface = (
         if (previous === deviceID) {
             return
         }
+        // App-initiated push, so there is no message frame to judge — the
+        // hook-level decision is the only trust signal available.
         if (!securedConnection || !deviceID || !webview) {
             return
         }
@@ -939,13 +913,13 @@ export const usePeraWebviewInterface = (
     }, [onBackRequested])
 
     const logAnalyticsEvent = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'logAnalyticsEvent',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -959,7 +933,7 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [analytics, securedConnection, sourceUrl, hadRequiredParams, webview],
+        [analytics, hadRequiredParams, webview],
     )
 
     const closeWebView = useCallback(() => {
@@ -967,43 +941,50 @@ export const usePeraWebviewInterface = (
     }, [onCloseRequested])
 
     const handleMessage = useCallback(
-        (message: WebviewMessage | WebviewMessage[]) => {
+        (
+            message: WebviewMessage | WebviewMessage[],
+            // Native derives this per message (a message can race a
+            // navigation); web's origin is mount-fixed. Omitting it falls back
+            // to the mount-level decision.
+            messageSecurity?: WebviewMessageSecurity,
+        ) => {
             if (!Array.isArray(message)) {
                 message = [message]
             }
+            const security = messageSecurity ?? { securedConnection, sourceUrl }
             logger.debug('Received webview interface call', { message })
             message.forEach(message => {
                 switch (message.method) {
                     case 'pushWebView': {
-                        pushWebView(message)
+                        pushWebView(message, security)
                         break
                     }
                     case 'openSystemBrowser': {
-                        openSystemBrowser(message)
+                        openSystemBrowser(message, security)
                         break
                     }
                     case 'canOpenURI': {
-                        canOpenURI(message)
+                        canOpenURI(message, security)
                         break
                     }
                     case 'openNativeURI': {
-                        openNativeURI(message)
+                        openNativeURI(message, security)
                         break
                     }
                     case 'notifyUser': {
-                        notifyUser(message)
+                        notifyUser(message, security)
                         break
                     }
                     case 'getAddresses': {
-                        getAddresses(message)
+                        getAddresses(message, security)
                         break
                     }
                     case 'getSettings': {
-                        getSettings(message)
+                        getSettings(message, security)
                         break
                     }
                     case 'getDeviceId': {
-                        getDeviceId(message)
+                        getDeviceId(message, security)
                         break
                     }
                     case 'getPublicSettings': {
@@ -1015,7 +996,7 @@ export const usePeraWebviewInterface = (
                         break
                     }
                     case 'logAnalyticsEvent': {
-                        logAnalyticsEvent(message)
+                        logAnalyticsEvent(message, security)
                         break
                     }
                     case 'closeWebView': {
@@ -1023,11 +1004,11 @@ export const usePeraWebviewInterface = (
                         break
                     }
                     case 'requestTransactionSigning': {
-                        requestTransactionSigning(message)
+                        requestTransactionSigning(message, security)
                         break
                     }
                     case 'requestDataSigning': {
-                        requestDataSigning(message)
+                        requestDataSigning(message, security)
                         break
                     }
                     case 'walletConnect': {
@@ -1064,6 +1045,8 @@ export const usePeraWebviewInterface = (
             requestTransactionSigning,
             requestDataSigning,
             openWalletConnect,
+            securedConnection,
+            sourceUrl,
             webview,
             t,
         ],
