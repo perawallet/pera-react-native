@@ -128,6 +128,7 @@ export const ConnectionView = ({
                 key={item.address}
                 style={styles.accountItem}
                 onPress={() => handleAccountPress(item)}
+                testID={`wc_account_row_${item.address}`}
             >
                 <AccountDisplay
                     account={item}
