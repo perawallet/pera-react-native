@@ -13,6 +13,10 @@
 import { defineConfig } from 'vitest/config'
 import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
 import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
@@ -22,6 +26,26 @@ export default defineConfig({
     },
     resolve: {
         conditions: ['default'],
+        // Without these, Vite's dependency pre-bundling resolves
+        // @perawallet/wallet-core-blockchain's real
+        // @perawallet/wallet-extension-provider import to its installed dist,
+        // whose graph reaches react-native-mmkv (a native module vitest can't
+        // load) at resolution time — before any vi.mock has a chance to
+        // intervene. Pointing at source instead (matching
+        // packages/accounts/vitest.config.ts and
+        // packages/assets/vitest.config.ts) avoids that path. Needed as of
+        // the querykeys.spec.ts drift-detection test, the first test in this
+        // package to import real (unmocked) blockchain code.
+        alias: {
+            '@perawallet/wallet-extension-provider': path.resolve(
+                __dirname,
+                '../../extensions/provider/src/index.ts',
+            ),
+            '@perawallet/wallet-extension-platform-driver': path.resolve(
+                __dirname,
+                '../../extensions/platform-driver/src/index.ts',
+            ),
+        },
     },
     ...poolConfig,
 })

@@ -52,10 +52,29 @@ const CUSTOM_NETWORK_PARTITIONED_TABLES = [
     'nfd_cache',
 ] as const
 
-// The first segment of every query key the same four domains produce (see
-// each package's src/hooks/querykeys.ts MODULE_PREFIX). Duplicated here for
-// the same cross-cycle reason as the table list above.
-const NETWORK_PARTITIONED_QUERY_MODULES = new Set<string>([
+/**
+ * The first segment of every query key the same four domains produce (see
+ * each package's src/hooks/querykeys.ts MODULE_PREFIX). Duplicated here for
+ * the same cross-cycle reason as the table list above — but unlike the table
+ * list, a stale entry here fails silently (a missed cache eviction, not a SQL
+ * error), so this one is exported specifically so the four domain packages
+ * can defend the correspondence themselves: each carries a test (e.g.
+ * `packages/accounts/src/hooks/__tests__/querykeys.test.ts`) asserting its
+ * own `MODULE_PREFIX` is a member of this set. Those packages already depend
+ * on `blockchain`, so importing this back into them is cycle-free — it's
+ * only the reverse direction (blockchain importing their `querykeys.ts`
+ * modules) that isn't. A rename in any of the four now fails a test in the
+ * package doing the renaming, where the person making the change will see it.
+ *
+ * Not exactly "packages with a DB table": `packages/currencies`'
+ * `algoUsdPrice` key deliberately nests itself under `'assets'` (not
+ * `'currencies'`) for cache locality
+ * (`packages/currencies/src/hooks/querykeys.ts`), so it is coincidentally
+ * swept too when scoped to `custom`. That's fine — it's still per-network
+ * price data — just noted so the reach isn't assumed to stop at these four
+ * packages' own tables.
+ */
+export const NETWORK_PARTITIONED_QUERY_MODULES: ReadonlySet<string> = new Set([
     'accounts',
     'assets',
     'transactions',

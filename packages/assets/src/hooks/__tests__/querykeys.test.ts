@@ -12,6 +12,25 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
+
+// This package's vitest.setup.ts mocks @perawallet/wallet-extension-platform-driver
+// but not @perawallet/wallet-extension-provider, so importing the real (unmocked)
+// blockchain module below — needed to test against the real
+// NETWORK_PARTITIONED_QUERY_MODULES rather than a fabricated one — would otherwise
+// reach getProvider()'s real implementation and fail resolving react-native-mmkv
+// (a native module vitest can't load). Scoped to this file rather than the shared
+// setup: nothing else in this package's suite imports raw blockchain code.
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        keyValueStorage: {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+        },
+    }),
+}))
+
+import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-blockchain'
 import {
     MODULE_PREFIX,
     isAssetQuery,
@@ -112,5 +131,17 @@ describe('isAssetPriceHistoryQuery', () => {
         expect(isAssetPriceHistoryQuery(['accounts', 'balance-history'])).toBe(
             false,
         )
+    })
+})
+
+describe('NETWORK_PARTITIONED_QUERY_MODULES (blockchain)', () => {
+    test('includes this package MODULE_PREFIX, so clearCustomNetworkCache sweeps its custom-network entries', () => {
+        // blockchain/clearCustomNetworkCache.ts duplicates this package's
+        // MODULE_PREFIX rather than importing it (importing back would cycle
+        // — assets depends on blockchain). This test is the drift guard: if
+        // MODULE_PREFIX is ever renamed here, this fails in this package,
+        // where the rename is happening, instead of silently going stale on
+        // the blockchain side.
+        expect(NETWORK_PARTITIONED_QUERY_MODULES.has(MODULE_PREFIX)).toBe(true)
     })
 })

@@ -21,7 +21,7 @@ import {
     type QueryKey,
 } from '@tanstack/react-query'
 
-const MODULE_PREFIX = 'accounts'
+export const MODULE_PREFIX = 'accounts'
 
 export const isAccountQuery = (queryKey: QueryKey): boolean =>
     queryKey[0] === MODULE_PREFIX
