@@ -12,32 +12,26 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import {
-    useNetwork,
-    useNetworkStore,
-    useNodeOverrideStore,
-    type NodeEndpointOverride,
-} from '@perawallet/wallet-core-blockchain'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { useNetwork, useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
-import { isValidEndpoint } from './isValidEndpoint'
-
-type NetworkRow = {
-    network: Network
-    labelKey: string
-    isSelected: boolean
-    algodUrl: string
-    indexerUrl: string
-    isOverridden: boolean
-}
+import {
+    useCustomNetworkSheet,
+    type UseCustomNetworkSheetResult,
+} from './useCustomNetworkSheet'
 
 // Duplicated from the native hook on purpose: Metro/webpack resolve a bare
 // `./useSettingsDeveloperNodeSettingsScreen` import to THIS `.web` file
 // regardless of which module does the importing, so the native and web
 // hooks can't safely share this via a direct cross-import between the two
-// platform variants. `isValidEndpoint` no longer has this problem — it
-// moved to the platform-neutral `./isValidEndpoint`, which has no `.web`
-// twin — but `LABEL_KEYS` and `NetworkRow` still do.
+// platform variants. `LABEL_KEYS` and `NetworkRow` still need duplicating;
+// `useCustomNetworkSheet` doesn't have this problem — it has no `.web` twin,
+// so both platform hooks import the same shared module.
+type NetworkRow = {
+    network: Network
+    labelKey: string
+    isSelected: boolean
+}
+
 const LABEL_KEYS: Record<Network, string> = {
     [Networks.mainnet]: 'settings.developer.node_settings.mainnet_label',
     [Networks.testnet]: 'settings.developer.node_settings.testnet_label',
@@ -49,43 +43,45 @@ type UseSettingsDeveloperNodeSettingsScreenResult = {
     networks: NetworkRow[]
     isSwitching: boolean
     selectNetwork: (network: Network) => Promise<void>
-    saveEndpoints: (network: Network, endpoints: NodeEndpointOverride) => void
-    resetEndpoints: (network: Network) => void
+    sheet: UseCustomNetworkSheetResult
 }
 
 // Web/extension variant: no backend device registration (that's native-only
 // push-notification plumbing, irrelevant and failure-prone here). Selecting
-// a network is just persisting the store and nudging the sync service, so
-// this hook tracks its own `isSwitching` flag directly rather than
-// delegating to useSwitchNetwork like the native hook does.
+// one of the three real networks is just persisting the store and nudging
+// the sync service, so this hook tracks its own `isSwitching` flag directly
+// rather than delegating to useSwitchNetwork like the native hook does.
+// Custom never goes through this local switch path at all — see
+// useCustomNetworkSheet's handleSave, the sheet's own commit point.
 export const useSettingsDeveloperNodeSettingsScreen =
     (): UseSettingsDeveloperNodeSettingsScreenResult => {
         const { network: activeNetwork } = useNetwork()
         const [isSwitching, setIsSwitching] = useState(false)
-        const overrides = useNodeOverrideStore(state => state.overrides)
-        const setOverride = useNodeOverrideStore(state => state.setOverride)
-        const clearOverride = useNodeOverrideStore(state => state.clearOverride)
+        const sheet = useCustomNetworkSheet()
 
         const networks = useMemo(
             () =>
-                Object.values(Networks).map<NetworkRow>(network => {
-                    const baked = getNetworkConfig(network)
-                    const override = overrides[network]
-
-                    return {
-                        network,
-                        labelKey: LABEL_KEYS[network],
-                        isSelected: network === activeNetwork,
-                        algodUrl: override?.algodUrl ?? baked.algodUrl,
-                        indexerUrl: override?.indexerUrl ?? baked.indexerUrl,
-                        isOverridden: override !== undefined,
-                    }
-                }),
-            [activeNetwork, overrides],
+                Object.values(Networks).map<NetworkRow>(network => ({
+                    network,
+                    labelKey: LABEL_KEYS[network],
+                    isSelected: network === activeNetwork,
+                })),
+            [activeNetwork],
         )
 
         const selectNetwork = useCallback(
             async (network: Network): Promise<void> => {
+                // Custom has no baked endpoints and is never switched to
+                // directly — tapping it opens the config sheet instead
+                // (checked before the same-network shortcut below, since
+                // that's also how an already-configured custom network gets
+                // reviewed/edited: there is no other entry point into the
+                // sheet).
+                if (network === Networks.custom) {
+                    sheet.open()
+                    return
+                }
+
                 if (network === activeNetwork) {
                     return
                 }
@@ -103,43 +99,13 @@ export const useSettingsDeveloperNodeSettingsScreen =
 
                 setIsSwitching(false)
             },
-            [activeNetwork],
-        )
-
-        const saveEndpoints = useCallback(
-            (network: Network, endpoints: NodeEndpointOverride) => {
-                const cleaned: NodeEndpointOverride = {}
-                if (
-                    endpoints.algodUrl !== undefined &&
-                    isValidEndpoint(endpoints.algodUrl)
-                ) {
-                    cleaned.algodUrl = endpoints.algodUrl
-                }
-                if (
-                    endpoints.indexerUrl !== undefined &&
-                    isValidEndpoint(endpoints.indexerUrl)
-                ) {
-                    cleaned.indexerUrl = endpoints.indexerUrl
-                }
-                // A malformed URL must not be persisted — it would leave the
-                // network unreachable with no way back except a reinstall.
-                if (Object.keys(cleaned).length === 0) return
-
-                setOverride(network, cleaned)
-            },
-            [setOverride],
-        )
-
-        const resetEndpoints = useCallback(
-            (network: Network) => clearOverride(network),
-            [clearOverride],
+            [activeNetwork, sheet],
         )
 
         return {
             networks,
             isSwitching,
             selectNetwork,
-            saveEndpoints,
-            resetEndpoints,
+            sheet,
         }
     }

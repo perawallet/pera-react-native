@@ -12,7 +12,6 @@
 
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
 
 const mocks = vi.hoisted(() => ({
@@ -24,40 +23,52 @@ const mocks = vi.hoisted(() => ({
         invalidateQueries: mocks.invalidateQueries,
         restart: mocks.restart,
     })),
+    sheetOpen: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => {
-    // Real store (not hand-mocked): setOverride/clearOverride/resetState need
-    // genuine zustand reactivity so this hook's `networks` memo re-renders on
-    // change. Imported by its own module path (not the package barrel) to
-    // avoid evaluating utils/algorandClient's module-level
-    // `useNodeOverrideStore.subscribe(...)` side effect.
-    const { useNodeOverrideStore, getNodeEndpointOverride } =
-        await vi.importActual<
-            typeof import('../../../../../../../../../packages/blockchain/src/store/node-override-store')
-        >(
-            '../../../../../../../../../packages/blockchain/src/store/node-override-store',
-        )
-
-    return {
-        useNetwork: () => ({
-            network: mocks.network,
-            isMainnet: mocks.network === Networks.mainnet,
-            isTestnet: mocks.network === Networks.testnet,
-        }),
-        useNetworkStore: {
-            getState: () => ({ setNetwork: mocks.setNetwork }),
-        },
-        useNodeOverrideStore,
-        getNodeEndpointOverride,
-    }
-})
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({
+        network: mocks.network,
+        isMainnet: mocks.network === Networks.mainnet,
+        isTestnet: mocks.network === Networks.testnet,
+    }),
+    useNetworkStore: {
+        getState: () => ({ setNetwork: mocks.setNetwork }),
+    },
+}))
 
 vi.mock('@perawallet/wallet-core-background', () => ({
     getSyncService: () => mocks.getSyncService(),
 }))
 
-import { useNodeOverrideStore } from '@perawallet/wallet-core-blockchain'
+// The sheet's own state machine (open/save/cancel/reset validation, cache
+// clearing, etc.) is fully covered by useCustomNetworkSheet.spec.ts. This
+// suite only needs to verify the web screen hook's OWN routing and
+// isSwitching behaviour, so the sheet hook is stubbed rather than exercised
+// for real — it would otherwise also need its own device/query-client mocks
+// duplicated here for no added coverage.
+vi.mock('../useCustomNetworkSheet', () => ({
+    useCustomNetworkSheet: () => ({
+        isOpen: false,
+        draft: {
+            algodUrl: '',
+            algodToken: '',
+            indexerUrl: '',
+            indexerToken: '',
+            genesisHash: '',
+            genesisId: '',
+        },
+        errors: {},
+        isFetching: false,
+        open: mocks.sheetOpen,
+        close: vi.fn(),
+        handleFieldChange: vi.fn(),
+        handleFetchGenesis: vi.fn(),
+        handleSave: vi.fn(),
+        handleReset: vi.fn(),
+    }),
+}))
+
 import { useSettingsDeveloperNodeSettingsScreen } from '../useSettingsDeveloperNodeSettingsScreen.web'
 
 describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
@@ -68,7 +79,6 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
             invalidateQueries: mocks.invalidateQueries,
             restart: mocks.restart,
         }))
-        useNodeOverrideStore.getState().resetState()
     })
 
     it('lists every network exactly once', () => {
@@ -90,104 +100,6 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
 
         const selected = result.current.networks.filter(row => row.isSelected)
         expect(selected.map(row => row.network)).toEqual([Networks.testnet])
-    })
-
-    it('shows baked endpoints and no override by default', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-        const custom = result.current.networks.find(
-            row => row.network === Networks.custom,
-        )
-
-        expect(custom?.algodUrl).toBe(
-            getNetworkConfig(Networks.custom).algodUrl,
-        )
-        expect(custom?.isOverridden).toBe(false)
-    })
-
-    it('saving an endpoint marks the row overridden', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        act(() => {
-            result.current.saveEndpoints(Networks.custom, {
-                algodUrl: 'http://10.0.0.5:4001',
-            })
-        })
-
-        const custom = result.current.networks.find(
-            row => row.network === Networks.custom,
-        )
-        expect(custom?.algodUrl).toBe('http://10.0.0.5:4001')
-        expect(custom?.isOverridden).toBe(true)
-    })
-
-    it('rejects a malformed URL rather than persisting it', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        act(() => {
-            result.current.saveEndpoints(Networks.custom, {
-                algodUrl: 'not-a-url',
-            })
-        })
-
-        expect(
-            useNodeOverrideStore.getState().overrides[Networks.custom],
-        ).toBeUndefined()
-    })
-
-    it('sequential saves on different fields merge rather than replace', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        act(() => {
-            result.current.saveEndpoints(Networks.custom, {
-                algodUrl: 'http://10.0.0.5:4001',
-            })
-        })
-        act(() => {
-            result.current.saveEndpoints(Networks.custom, {
-                indexerUrl: 'http://10.0.0.5:8980',
-            })
-        })
-
-        const custom = result.current.networks.find(
-            row => row.network === Networks.custom,
-        )
-        // A replace (instead of merge) would have wiped the first save's
-        // algodUrl back to the baked default when the second save only
-        // touched indexerUrl.
-        expect(custom?.algodUrl).toBe('http://10.0.0.5:4001')
-        expect(custom?.indexerUrl).toBe('http://10.0.0.5:8980')
-        expect(custom?.isOverridden).toBe(true)
-    })
-
-    it('resetEndpoints restores the baked values', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        act(() => {
-            result.current.saveEndpoints(Networks.custom, {
-                algodUrl: 'http://a.example',
-            })
-        })
-        act(() => {
-            result.current.resetEndpoints(Networks.custom)
-        })
-
-        const custom = result.current.networks.find(
-            row => row.network === Networks.custom,
-        )
-        expect(custom?.isOverridden).toBe(false)
-        expect(custom?.algodUrl).toBe(
-            getNetworkConfig(Networks.custom).algodUrl,
-        )
     })
 
     it('selects a different network: persists it, flips isSwitching, and nudges the sync service', async () => {
@@ -232,5 +144,18 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
 
         expect(mocks.setNetwork).toHaveBeenCalledWith(Networks.testnet)
         await waitFor(() => expect(result.current.isSwitching).toBe(false))
+    })
+
+    it('selecting custom opens the sheet instead of switching', async () => {
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        await act(async () => {
+            await result.current.selectNetwork(Networks.custom)
+        })
+
+        expect(mocks.sheetOpen).toHaveBeenCalledOnce()
+        expect(mocks.setNetwork).not.toHaveBeenCalled()
     })
 })

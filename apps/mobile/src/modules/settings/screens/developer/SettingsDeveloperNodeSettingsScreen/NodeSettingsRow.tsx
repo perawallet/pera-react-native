@@ -10,17 +10,7 @@
  limitations under the License
  */
 
-import { type NodeEndpointOverride } from '@perawallet/wallet-core-blockchain'
-
-import {
-    PWButton,
-    PWInput,
-    PWRadioButton,
-    PWText,
-    PWView,
-} from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
-import { useNodeSettingsRow } from './useNodeSettingsRow'
+import { PWRadioButton, PWView } from '@components/core'
 import { useStyles } from './styles'
 import type { NetworkRow } from './useSettingsDeveloperNodeSettingsScreen'
 
@@ -30,8 +20,6 @@ export type NodeSettingsRowProps = {
     /** Disables the radio while a network switch is already in flight (web). */
     isDisabled?: boolean
     onSelect: () => void
-    onSave: (endpoints: NodeEndpointOverride) => void
-    onReset: () => void
 }
 
 export const NodeSettingsRow = ({
@@ -39,21 +27,8 @@ export const NodeSettingsRow = ({
     label,
     isDisabled = false,
     onSelect,
-    onSave,
-    onReset,
 }: NodeSettingsRowProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
-    const {
-        algodUrlInput,
-        indexerUrlInput,
-        algodUrlError,
-        indexerUrlError,
-        handleAlgodUrlChange,
-        handleIndexerUrlChange,
-        handleSave,
-        handleReset,
-    } = useNodeSettingsRow({ row, onSave, onReset })
 
     return (
         <PWView
@@ -67,66 +42,6 @@ export const NodeSettingsRow = ({
                 isSelected={row.isSelected}
                 isDisabled={isDisabled}
             />
-            {row.isOverridden && (
-                <PWText
-                    variant='caption'
-                    style={styles.overriddenHint}
-                >
-                    {t('settings.developer.node_settings.overridden_hint')}
-                </PWText>
-            )}
-            <PWText
-                variant='caption'
-                style={styles.sectionTitle}
-            >
-                {t('settings.developer.node_settings.custom_endpoints_title')}
-            </PWText>
-            <PWInput
-                testID={`node_settings_${row.network}_algod_url_input`}
-                label={t('settings.developer.node_settings.algod_url_label')}
-                value={algodUrlInput}
-                onChangeText={handleAlgodUrlChange}
-                errorMessage={
-                    algodUrlError
-                        ? t('settings.developer.node_settings.invalid_url')
-                        : undefined
-                }
-                autoCapitalize='none'
-                autoCorrect={false}
-                keyboardType='url'
-            />
-            <PWInput
-                testID={`node_settings_${row.network}_indexer_url_input`}
-                label={t('settings.developer.node_settings.indexer_url_label')}
-                value={indexerUrlInput}
-                onChangeText={handleIndexerUrlChange}
-                errorMessage={
-                    indexerUrlError
-                        ? t('settings.developer.node_settings.invalid_url')
-                        : undefined
-                }
-                autoCapitalize='none'
-                autoCorrect={false}
-                keyboardType='url'
-            />
-            <PWView style={styles.actionsRow}>
-                <PWButton
-                    testID={`node_settings_${row.network}_save_button`}
-                    variant='secondary'
-                    title={t('settings.developer.node_settings.save_endpoints')}
-                    onPress={handleSave}
-                />
-                {row.isOverridden && (
-                    <PWButton
-                        testID={`node_settings_${row.network}_reset_button`}
-                        variant='linkNeutral'
-                        title={t(
-                            'settings.developer.node_settings.reset_endpoints',
-                        )}
-                        onPress={handleReset}
-                    />
-                )}
-            </PWView>
         </PWView>
     )
 }

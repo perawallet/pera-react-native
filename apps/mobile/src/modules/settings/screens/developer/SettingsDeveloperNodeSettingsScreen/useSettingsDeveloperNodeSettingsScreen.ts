@@ -12,23 +12,18 @@
 
 import { useCallback, useMemo } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
-import {
-    useNetwork,
-    useNodeOverrideStore,
-    type NodeEndpointOverride,
-} from '@perawallet/wallet-core-blockchain'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useSwitchNetwork } from '@perawallet/wallet-core-device'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
-import { isValidEndpoint } from './isValidEndpoint'
+import {
+    useCustomNetworkSheet,
+    type UseCustomNetworkSheetResult,
+} from './useCustomNetworkSheet'
 
 export type NetworkRow = {
     network: Network
     labelKey: string
     isSelected: boolean
-    algodUrl: string
-    indexerUrl: string
-    isOverridden: boolean
 }
 
 // Static keys: pnpm lint:i18n cannot verify an interpolated key.
@@ -42,38 +37,36 @@ const LABEL_KEYS: Record<Network, string> = {
 type UseSettingsDeveloperNodeSettingsScreenResult = {
     networks: NetworkRow[]
     selectNetwork: (network: Network) => Promise<void>
-    saveEndpoints: (network: Network, endpoints: NodeEndpointOverride) => void
-    resetEndpoints: (network: Network) => void
+    sheet: UseCustomNetworkSheetResult
 }
 
 export const useSettingsDeveloperNodeSettingsScreen =
     (): UseSettingsDeveloperNodeSettingsScreenResult => {
         const { network: activeNetwork } = useNetwork()
         const { switchNetwork } = useSwitchNetwork()
-        const overrides = useNodeOverrideStore(state => state.overrides)
-        const setOverride = useNodeOverrideStore(state => state.setOverride)
-        const clearOverride = useNodeOverrideStore(state => state.clearOverride)
+        const sheet = useCustomNetworkSheet()
 
         const networks = useMemo(
             () =>
-                Object.values(Networks).map<NetworkRow>(network => {
-                    const baked = getNetworkConfig(network)
-                    const override = overrides[network]
-
-                    return {
-                        network,
-                        labelKey: LABEL_KEYS[network],
-                        isSelected: network === activeNetwork,
-                        algodUrl: override?.algodUrl ?? baked.algodUrl,
-                        indexerUrl: override?.indexerUrl ?? baked.indexerUrl,
-                        isOverridden: override !== undefined,
-                    }
-                }),
-            [activeNetwork, overrides],
+                Object.values(Networks).map<NetworkRow>(network => ({
+                    network,
+                    labelKey: LABEL_KEYS[network],
+                    isSelected: network === activeNetwork,
+                })),
+            [activeNetwork],
         )
 
         const selectNetwork = useCallback(
             async (network: Network) => {
+                // Custom has no baked endpoints to switch to — tapping it
+                // opens the config sheet instead, which is the only path
+                // that can ever commit `custom` as the active network (see
+                // useCustomNetworkSheet's handleSave). This never switches.
+                if (network === Networks.custom) {
+                    sheet.open()
+                    return
+                }
+
                 // Offline-safe local write; device registration is deferred
                 // (see useSwitchNetwork). Nothing to toast about.
                 await switchNetwork(network)
@@ -85,37 +78,8 @@ export const useSettingsDeveloperNodeSettingsScreen =
                     // SyncService not yet initialized
                 }
             },
-            [switchNetwork],
+            [switchNetwork, sheet],
         )
 
-        const saveEndpoints = useCallback(
-            (network: Network, endpoints: NodeEndpointOverride) => {
-                const cleaned: NodeEndpointOverride = {}
-                if (
-                    endpoints.algodUrl !== undefined &&
-                    isValidEndpoint(endpoints.algodUrl)
-                ) {
-                    cleaned.algodUrl = endpoints.algodUrl
-                }
-                if (
-                    endpoints.indexerUrl !== undefined &&
-                    isValidEndpoint(endpoints.indexerUrl)
-                ) {
-                    cleaned.indexerUrl = endpoints.indexerUrl
-                }
-                // A malformed URL must not be persisted — it would leave the
-                // network unreachable with no way back except a reinstall.
-                if (Object.keys(cleaned).length === 0) return
-
-                setOverride(network, cleaned)
-            },
-            [setOverride],
-        )
-
-        const resetEndpoints = useCallback(
-            (network: Network) => clearOverride(network),
-            [clearOverride],
-        )
-
-        return { networks, selectNetwork, saveEndpoints, resetEndpoints }
+        return { networks, selectNetwork, sheet }
     }

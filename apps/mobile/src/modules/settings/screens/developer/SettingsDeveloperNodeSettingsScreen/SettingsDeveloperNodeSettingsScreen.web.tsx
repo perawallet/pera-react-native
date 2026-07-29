@@ -12,6 +12,7 @@
 
 import { PWScreen, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { CustomNetworkSheet } from './CustomNetworkSheet'
 import { NodeSettingsRow } from './NodeSettingsRow'
 import { useSettingsDeveloperNodeSettingsScreen } from './useSettingsDeveloperNodeSettingsScreen.web'
 import { useStyles } from './styles'
@@ -19,13 +20,8 @@ import { useStyles } from './styles'
 export const SettingsDeveloperNodeSettingsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const {
-        networks,
-        isSwitching,
-        selectNetwork,
-        saveEndpoints,
-        resetEndpoints,
-    } = useSettingsDeveloperNodeSettingsScreen()
+    const { networks, isSwitching, selectNetwork, sheet } =
+        useSettingsDeveloperNodeSettingsScreen()
 
     return (
         <PWScreen>
@@ -40,13 +36,10 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
                         label={t(row.labelKey)}
                         isDisabled={isSwitching}
                         onSelect={() => void selectNetwork(row.network)}
-                        onSave={endpoints =>
-                            saveEndpoints(row.network, endpoints)
-                        }
-                        onReset={() => resetEndpoints(row.network)}
                     />
                 ))}
             </PWView>
+            <CustomNetworkSheet sheet={sheet} />
         </PWScreen>
     )
 }

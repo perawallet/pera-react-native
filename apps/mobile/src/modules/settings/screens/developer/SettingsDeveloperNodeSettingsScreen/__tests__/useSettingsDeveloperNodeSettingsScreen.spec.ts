@@ -13,20 +13,45 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
-import { useNodeOverrideStore } from '@perawallet/wallet-core-blockchain'
 import { useSettingsDeveloperNodeSettingsScreen } from '../useSettingsDeveloperNodeSettingsScreen'
 
 const switchNetwork = vi.fn()
+const sheetOpen = vi.fn()
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useSwitchNetwork: () => ({ switchNetwork }),
 }))
 
+// The sheet's own state machine (open/save/cancel/reset validation, cache
+// clearing, etc.) is fully covered by useCustomNetworkSheet.spec.ts. This
+// suite only needs to verify the SCREEN hook routes correctly to it, so the
+// sheet hook is stubbed rather than exercised for real.
+vi.mock('../useCustomNetworkSheet', () => ({
+    useCustomNetworkSheet: () => ({
+        isOpen: false,
+        draft: {
+            algodUrl: '',
+            algodToken: '',
+            indexerUrl: '',
+            indexerToken: '',
+            genesisHash: '',
+            genesisId: '',
+        },
+        errors: {},
+        isFetching: false,
+        open: sheetOpen,
+        close: vi.fn(),
+        handleFieldChange: vi.fn(),
+        handleFetchGenesis: vi.fn(),
+        handleSave: vi.fn(),
+        handleReset: vi.fn(),
+    }),
+}))
+
 describe('useSettingsDeveloperNodeSettingsScreen', () => {
     beforeEach(() => {
-        useNodeOverrideStore.getState().resetState()
         switchNetwork.mockClear()
+        sheetOpen.mockClear()
     })
 
     test('lists every network exactly once', () => {
@@ -39,105 +64,17 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
         )
     })
 
-    test('shows baked endpoints and no override by default', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-        const custom = result.current.networks.find(
-            row => row.network === Networks.custom,
-        )
-
-        expect(custom?.algodUrl).toBe(
-            getNetworkConfig(Networks.custom).algodUrl,
-        )
-        expect(custom?.isOverridden).toBe(false)
-    })
-
-    test('saving an endpoint marks the row overridden', () => {
+    test('marks the active network as selected and the rest as not', () => {
         const { result } = renderHook(() =>
             useSettingsDeveloperNodeSettingsScreen(),
         )
 
-        act(() => {
-            result.current.saveEndpoints(Networks.custom, {
-                algodUrl: 'http://10.0.0.5:4001',
-            })
-        })
-
-        const custom = result.current.networks.find(
-            row => row.network === Networks.custom,
-        )
-        expect(custom?.algodUrl).toBe('http://10.0.0.5:4001')
-        expect(custom?.isOverridden).toBe(true)
+        // Global mock: useNetwork() -> { network: 'mainnet' }.
+        const selected = result.current.networks.filter(row => row.isSelected)
+        expect(selected.map(row => row.network)).toEqual([Networks.mainnet])
     })
 
-    test('rejects a malformed URL rather than persisting it', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        act(() => {
-            result.current.saveEndpoints(Networks.custom, {
-                algodUrl: 'not-a-url',
-            })
-        })
-
-        expect(
-            useNodeOverrideStore.getState().overrides[Networks.custom],
-        ).toBeUndefined()
-    })
-
-    test('sequential saves on different fields merge rather than replace', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        act(() => {
-            result.current.saveEndpoints(Networks.custom, {
-                algodUrl: 'http://10.0.0.5:4001',
-            })
-        })
-        act(() => {
-            result.current.saveEndpoints(Networks.custom, {
-                indexerUrl: 'http://10.0.0.5:8980',
-            })
-        })
-
-        const custom = result.current.networks.find(
-            row => row.network === Networks.custom,
-        )
-        // A replace (instead of merge) would have wiped the first save's
-        // algodUrl back to the baked default when the second save only
-        // touched indexerUrl.
-        expect(custom?.algodUrl).toBe('http://10.0.0.5:4001')
-        expect(custom?.indexerUrl).toBe('http://10.0.0.5:8980')
-        expect(custom?.isOverridden).toBe(true)
-    })
-
-    test('resetEndpoints restores the baked values', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        act(() => {
-            result.current.saveEndpoints(Networks.custom, {
-                algodUrl: 'http://a.example',
-            })
-        })
-        act(() => {
-            result.current.resetEndpoints(Networks.custom)
-        })
-
-        const custom = result.current.networks.find(
-            row => row.network === Networks.custom,
-        )
-        expect(custom?.isOverridden).toBe(false)
-        expect(custom?.algodUrl).toBe(
-            getNetworkConfig(Networks.custom).algodUrl,
-        )
-    })
-
-    test('selecting a network switches and kicks the sync', async () => {
+    test('selecting a real network switches and kicks the sync', async () => {
         const { result } = renderHook(() =>
             useSettingsDeveloperNodeSettingsScreen(),
         )
@@ -147,5 +84,26 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
         })
 
         expect(switchNetwork).toHaveBeenCalledWith(Networks.betanet)
+    })
+
+    test('selecting custom opens the sheet instead of switching', async () => {
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        await act(async () => {
+            await result.current.selectNetwork(Networks.custom)
+        })
+
+        expect(sheetOpen).toHaveBeenCalledOnce()
+        expect(switchNetwork).not.toHaveBeenCalled()
+    })
+
+    test('exposes the sheet controls for the screen to render', () => {
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        expect(result.current.sheet.isOpen).toBe(false)
     })
 })

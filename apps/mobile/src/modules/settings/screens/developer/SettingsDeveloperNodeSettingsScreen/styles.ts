@@ -25,11 +25,16 @@ export const useStyles = makeStyles(theme => {
             borderColor: theme.colors.layerGray,
             borderRadius: theme.borderRadius.lg,
         },
-        sectionTitle: {
-            color: theme.colors.textGrayLighter,
+        sheetContent: {
+            flexDirection: 'column',
+            gap: theme.spacing.md,
+            padding: theme.spacing.lg,
         },
-        overriddenHint: {
-            color: theme.colors.positive,
+        fetchButton: {
+            alignSelf: 'flex-start',
+        },
+        errorText: {
+            color: theme.colors.error,
         },
         actionsRow: {
             flexDirection: 'row',
