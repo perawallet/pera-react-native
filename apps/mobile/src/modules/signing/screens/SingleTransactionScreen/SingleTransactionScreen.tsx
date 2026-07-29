@@ -62,6 +62,7 @@ export const SingleTransactionScreen = () => {
                 <TransactionSummaryHeader
                     transaction={transaction}
                     metadata={request?.sourceMetadata}
+                    verifiedOrigin={request?.verifiedOrigin}
                 />
 
                 <SigningWarnings />

@@ -13,10 +13,16 @@
 import { useMemo } from 'react'
 
 import { stripUrlScheme } from '@perawallet/wallet-core-shared'
-import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
+import {
+    resolveDisplayableVerificationTier,
+    useProjectByUrlQuery,
+} from '@perawallet/wallet-core-projects'
 import { type SignRequestSource } from '@perawallet/wallet-core-signing'
 
-export const useSourceMetadataBadge = (metadata: SignRequestSource) => {
+export const useSourceMetadataBadge = (
+    metadata: SignRequestSource,
+    verifiedOrigin?: string,
+) => {
     const { data: project } = useProjectByUrlQuery({
         url: metadata.url,
         isEnabled: !!metadata.url,
@@ -33,12 +39,19 @@ export const useSourceMetadataBadge = (metadata: SignRequestSource) => {
     const displayIcon = preferredIcon ?? project?.logoPng
     const displayName = metadata.name ?? project?.name
 
+    // The lookup key (metadata.url) is peer-asserted, so a `verified` tier is
+    // trusted only against the platform-observed origin (PERA-4715).
+    const verificationTier = resolveDisplayableVerificationTier(
+        project,
+        verifiedOrigin,
+    )
+
     const url = useMemo(() => stripUrlScheme(metadata.url), [metadata.url])
 
     return {
         displayIcon,
         displayName,
         url,
-        project,
+        verificationTier,
     }
 }
