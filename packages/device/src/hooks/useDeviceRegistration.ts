@@ -20,6 +20,7 @@ import { logger, type Network } from '@perawallet/wallet-core-shared'
 
 import { useDevice } from './useDevice'
 import { useDeviceStore } from '../store'
+import type { DeviceAccountRegistration } from '../models'
 
 export type UseDeviceRegistrationOptions = {
     /**
@@ -37,7 +38,7 @@ export type UseDeviceRegistrationOptions = {
  * heals them.
  */
 export const useDeviceRegistration = (
-    addresses: string[],
+    accounts: DeviceAccountRegistration[],
     options?: UseDeviceRegistrationOptions,
 ): void => {
     const { network } = useNetwork()
@@ -55,12 +56,25 @@ export const useDeviceRegistration = (
     const optionsRef = useRef(options)
     optionsRef.current = options
 
-    // Callers typically derive `addresses` from the accounts store array,
-    // which gets a new reference on every store write (incl. background sync
-    // ticks). Key the effect on the sorted, joined address set so it only
-    // refires when membership actually changes — one store write or a
-    // reorder must not mean one device PUT.
-    const addressesKey = [...addresses].sort().join('\n')
+    // Callers derive `accounts` from the accounts store array, which gets a
+    // new reference on every store write (incl. background sync ticks). Key
+    // the effect on a stable serialization so it only refires when something
+    // the backend actually receives changed — one store write or a reorder
+    // must not mean one device registration. Account *names* are deliberately
+    // absent: v3 doesn't carry them, so renaming must not re-register.
+    const accountsKey = accounts
+        .map(
+            account =>
+                `${account.address}|${account.accountType}|${account.receiveNotifications ? '1' : '0'}`,
+        )
+        .sort()
+        .join('\n')
+
+    // The key is a digest, not a payload — keep the real array in a ref so
+    // the effect and the retry closure both send the current registrations
+    // without listing an unstable array in the dependency list.
+    const accountsRef = useRef(accounts)
+    accountsRef.current = accounts
 
     // Stop the server pushing to the network we just left.
     useOnNetworkSwitch(previousNetwork => {
@@ -85,9 +99,8 @@ export const useDeviceRegistration = (
     useEffect(() => {
         const attemptId = ++attemptIdRef.current
         const isCurrent = () => attemptIdRef.current === attemptId
-        const stableAddresses = addressesKey ? addressesKey.split('\n') : []
         inFlightRef.current = true
-        registerDevice(stableAddresses)
+        registerDevice(accountsRef.current)
             .then(result => {
                 if (!isCurrent()) return
                 setRegistrationPending(network, false)
@@ -105,17 +118,16 @@ export const useDeviceRegistration = (
             .finally(() => {
                 if (isCurrent()) inFlightRef.current = false
             })
-    }, [addressesKey, network, registerDevice, setRegistrationPending])
+    }, [accountsKey, network, registerDevice, setRegistrationPending])
 
     // A failed registration used to stay silently unregistered (no push
     // notifications) until the account set or network changed. While one is
     // pending, retry on the reconnect and foreground edges with the same
-    // sorted list the mount path registers. The app wires these managers in
+    // list the mount path registers. The app wires these managers in
     // QueryProvider (AppState -> focusManager) and the network module
     // (connectivity -> onlineManager).
-    const sortedAddresses = addressesKey ? addressesKey.split('\n') : []
-    const retryArgsRef = useRef({ addresses: sortedAddresses, registerDevice })
-    retryArgsRef.current = { addresses: sortedAddresses, registerDevice }
+    const retryArgsRef = useRef({ registerDevice })
+    retryArgsRef.current = { registerDevice }
 
     useEffect(() => {
         if (!isRegistrationPending) return
@@ -128,7 +140,7 @@ export const useDeviceRegistration = (
             inFlightRef.current = true
             const current = retryArgsRef.current
             current
-                .registerDevice(current.addresses)
+                .registerDevice(accountsRef.current)
                 .then(result => {
                     if (!isCurrent()) return
                     setRegistrationPending(network, false)
