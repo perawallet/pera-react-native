@@ -23,10 +23,6 @@ vi.mock('../endpoints', () => ({
     registerDevice: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
-}))
-
 const mockedRegisterDevice = vi.mocked(registerDevice)
 
 const registration: DeviceRegistration = {
@@ -46,7 +42,14 @@ const registration: DeviceRegistration = {
 const wrapper = createWrapper()
 
 describe('useRegisterDeviceMutation', () => {
-    it('passes the current network and the registration through to the endpoint', async () => {
+    // PERA-4705 (final review, Finding 1): this hook used to resolve the
+    // network from its own `useNetwork()` — re-read on every render, so the
+    // URL was chosen when the request fired, not when the caller decided to
+    // make it. `useDevice.registerDevice` queues registrations behind one
+    // another, so a call enqueued on mainnet can run after the user switched
+    // to testnet. The network is now a mutation variable the caller pins at
+    // enqueue time, and this hook must honour it and nothing else.
+    it('sends the registration to the network passed in the mutation variables', async () => {
         mockedRegisterDevice.mockResolvedValueOnce({ platform: 'ios' })
 
         const { result } = renderHook(() => useRegisterDeviceMutation(), {
@@ -54,11 +57,14 @@ describe('useRegisterDeviceMutation', () => {
         })
 
         await act(async () => {
-            await result.current.mutateAsync({ data: registration })
+            await result.current.mutateAsync({
+                network: 'testnet',
+                data: registration,
+            })
         })
 
         expect(mockedRegisterDevice).toHaveBeenCalledWith(
-            'mainnet',
+            'testnet',
             registration,
         )
     })
@@ -99,7 +105,10 @@ describe('useRegisterDeviceMutation', () => {
 
         await act(async () => {
             await expect(
-                result.current.mutateAsync({ data: registration }),
+                result.current.mutateAsync({
+                    network: 'mainnet',
+                    data: registration,
+                }),
             ).rejects.toThrow('boom')
         })
 

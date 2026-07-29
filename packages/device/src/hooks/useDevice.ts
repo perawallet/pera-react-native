@@ -22,7 +22,11 @@ import { useRegisterDeviceMutation } from './useRegisterDeviceMutation'
 import { usePushToken } from './usePushToken'
 import { useDeviceStore } from '../store'
 import { registerDevice as registerDeviceEndpoint } from './endpoints'
-import type { DeviceAccountRegistration, DeviceRegistration } from '../models'
+import type {
+    DeviceAccountRegistration,
+    DeviceRegistration,
+    DeviceResponse,
+} from '../models'
 
 /**
  * v3 returns 404 when the id we hold is unknown — it never auto-creates. A
@@ -43,31 +47,20 @@ type RegisterDeviceResult = { createdNew: boolean }
 
 // Module scope, deliberately NOT a `useRef`: every `useDevice()` call site —
 // the mount-time registration, a notification-preference toggle mounted from
-// a completely different screen, any future caller — must share ONE lock per
-// network. A per-hook-instance lock only serializes calls made through that
+// a completely different screen, any future caller — must share ONE queue per
+// network. A per-hook-instance queue only serializes calls made through that
 // same mounted instance; two different components calling `registerDevice`
 // concurrently would each get their own empty map and still fire two
-// independent id-less POSTs, minting two device rows. See
-// `acquireCreatedDeviceId`.
-const pendingDeviceCreates = new Map<Network, Promise<string>>()
-
-/**
- * Tests only — never call from production code. The map above is module
- * state, so without this a leaked in-flight entry from one test silently
- * wedges an unrelated test later in the same file.
- */
-export const clearPendingDeviceCreatesForTests = (): void => {
-    pendingDeviceCreates.clear()
-}
-
-// Module scope, serializing EVERY `registerDevice` call for a network — not
-// just id-less creates. `pendingDeviceCreates` above only ever protects the
-// *first* registration; once an id exists (the steady state for every real
-// toggle) `registerDevice` goes straight to `registerWithId`, which has no
-// serialization of its own. `registerDevice` has more than one caller per
-// mounted app — the account/network-driven registrar in
+// independent POSTs.
+//
+// This queue is the *only* thing that guarantees one id-less create per
+// network: an id-less call and any call that follows it are chained through
+// one promise, so the second always observes the id the first persisted and
+// takes the update branch instead of minting a second device row. Do not
+// weaken it into a per-call-path lock — `registerDevice` has more than one
+// caller per mounted app (the account/network-driven registrar in
 // `useDeviceRegistration` and, since PERA-4705's notification-toggle
-// rewrite, `useAccountNotificationToggle` — and both can hold the id
+// rewrite, `useAccountNotificationToggle`) and both usually hold the id
 // already. Toggling a preference writes the local store optimistically,
 // which changes `useDeviceRegistration`'s `accountsKey` and refires its own
 // `registerDevice` call concurrently with the toggle's; if the toggle's own
@@ -136,18 +129,53 @@ export const useDevice = () => {
         [deviceInfoService, pushToken],
     )
 
-    // The one place that ever issues an id-less POST. Persists the id it
-    // gets back immediately: `acquireCreatedDeviceId` guarantees only one of
-    // these can be in flight per network at a time, so there is never a
-    // second, independent create for the same network to race against — a
-    // late-arriving write here can only ever land in its own, still-current
-    // slot.
+    /**
+     * The single seam between this hook and the transport. Both write paths —
+     * the id-less create and the id-carrying update — go through here so the
+     * documented "400 → retry once" rule cannot drift between them: a 400 on
+     * the create path is exactly the v1→v3 id transition (stale id 404s, the
+     * id-less re-create then collides with the old row still holding this FCM
+     * token) and without the retry there is no self-heal, only the same 400
+     * on every reconnect and foreground for the life of the install.
+     *
+     * `targetNetwork` is passed explicitly rather than left to the mutation's
+     * own `useNetwork()`: this runs inside a queued task that may start long
+     * after the call was enqueued, by which point the user may have switched
+     * networks. See `registerDevice`.
+     *
+     * Exactly one replay, and only for 400. Anything else — 404, 422, 5xx, a
+     * dropped connection — propagates on the first failure.
+     */
+    const submitRegistration = useCallback(
+        async (
+            targetNetwork: Network,
+            payload: DeviceRegistration,
+        ): Promise<DeviceResponse> => {
+            try {
+                return await register({ network: targetNetwork, data: payload })
+            } catch (error) {
+                if (!isPushTokenClaimedError(error)) throw error
+                return register({ network: targetNetwork, data: payload })
+            }
+        },
+        [register],
+    )
+
+    // The one place that ever issues an id-less POST. Persists the id it gets
+    // back immediately. Only one of these can be in flight per network at a
+    // time — not because of any lock here, but because every caller reaches
+    // this through `enqueueRegistration` (see `registerDevice`), which chains
+    // one task at a time per network. A late-arriving write here can only
+    // ever land in its own, still-current slot.
     const createDeviceForNetwork = useCallback(
         async (
             targetNetwork: Network,
             accounts: DeviceAccountRegistration[],
         ): Promise<string> => {
-            const result = await register({ data: buildPayload(accounts) })
+            const result = await submitRegistration(
+                targetNetwork,
+                buildPayload(accounts),
+            )
             if (!result.id) {
                 // Storing null would report this registration as healed while
                 // useIsDeviceRegistrationPending stays true forever. Fail the
@@ -157,85 +185,33 @@ export const useDevice = () => {
             setDeviceID(targetNetwork, result.id)
             return result.id
         },
-        [buildPayload, register, setDeviceID],
+        [buildPayload, submitRegistration, setDeviceID],
     )
 
-    /**
-     * Serializes id-less creates for a given network *across every mounted
-     * `useDevice()` consumer* — the lock (`pendingDeviceCreates`, above) is
-     * module scope, not per-instance. If a create is already in flight for
-     * this network, this call joins it instead of firing a second POST — so
-     * concurrent callers from different components (e.g. the mount-time
-     * registration and a notification-preference toggle, each its own hook
-     * instance) mint exactly one device row between them.
-     *
-     * The lock is released in `finally` regardless of outcome: a failed
-     * create must not strand every later registration — from any instance —
-     * behind a promise that will never resolve.
-     */
-    const acquireCreatedDeviceId = useCallback(
-        async (
-            targetNetwork: Network,
-            accounts: DeviceAccountRegistration[],
-        ): Promise<{ id: string; joinedExisting: boolean }> => {
-            const pending = pendingDeviceCreates.get(targetNetwork)
-            if (pending) {
-                return { id: await pending, joinedExisting: true }
-            }
-
-            const createPromise = createDeviceForNetwork(
-                targetNetwork,
-                accounts,
-            )
-            pendingDeviceCreates.set(targetNetwork, createPromise)
-            try {
-                const id = await createPromise
-                return { id, joinedExisting: false }
-            } finally {
-                if (pendingDeviceCreates.get(targetNetwork) === createPromise) {
-                    pendingDeviceCreates.delete(targetNetwork)
-                }
-            }
-        },
-        [createDeviceForNetwork],
-    )
-
-    /**
-     * Registers `accounts` against a known device id. Used both for the
-     * common case (id already in the store) and for a call that just joined
-     * someone else's in-flight create — either way, this call didn't create
-     * the device, so it must not drop its own accounts on the floor.
-     */
+    /** Registers `accounts` against a known device id. */
     const registerWithId = useCallback(
         async (
             targetNetwork: Network,
             id: string,
             accounts: DeviceAccountRegistration[],
-        ): Promise<{ createdNew: boolean }> => {
-            const payload = { ...buildPayload(accounts), id }
-
+        ): Promise<RegisterDeviceResult> => {
             try {
-                await register({ data: payload })
+                await submitRegistration(targetNetwork, {
+                    ...buildPayload(accounts),
+                    id,
+                })
                 return { createdNew: false }
             } catch (error) {
-                if (isPushTokenClaimedError(error)) {
-                    await register({ data: payload })
-                    return { createdNew: false }
-                }
-                // Anything else that isn't a stale id — 422 validation, 401,
-                // an unexpected 4xx — propagates untouched. Retrying a
-                // malformed payload cannot fix it, and re-creating would hide
-                // the bug behind a duplicate device.
+                // Anything that isn't a stale id — 422 validation, 401, an
+                // unexpected 4xx — propagates untouched. Retrying a malformed
+                // payload cannot fix it, and re-creating would hide the bug
+                // behind a duplicate device.
                 if (!shouldRecreateDevice(error)) throw error
-                const recreated = await acquireCreatedDeviceId(
-                    targetNetwork,
-                    accounts,
-                )
-                if (!recreated.joinedExisting) return { createdNew: true }
-                return registerWithId(targetNetwork, recreated.id, accounts)
+                await createDeviceForNetwork(targetNetwork, accounts)
+                return { createdNew: true }
             }
         },
-        [buildPayload, register, acquireCreatedDeviceId],
+        [buildPayload, submitRegistration, createDeviceForNetwork],
     )
 
     /**
@@ -248,25 +224,39 @@ export const useDevice = () => {
      * call is the first registration on a device whose FCM token hasn't
      * arrived (or was denied) — and the returned id is persisted immediately,
      * which bounds that to one *per network*, even under concurrent callers
-     * from different components (see `acquireCreatedDeviceId`).
+     * from different components.
      *
      * Reads the device id from the store directly at call time rather than
-     * from a render-scoped selector: the lock above can release — and a
-     * fresh id can land in the store — between when this component last
-     * rendered and when this call actually runs. A stale render-scoped id
-     * would send a second call down the id-less branch and mint a second
-     * device row even though the store already holds one.
+     * from a render-scoped selector: a fresh id can land in the store between
+     * when this component last rendered and when this call actually runs. A
+     * stale render-scoped id would send a second call down the id-less branch
+     * and mint a second device row even though the store already holds one.
      *
-     * Transient retries (5xx, network errors) are handled by ky inside the
-     * shared query-client; layering another retry loop here would compound to
-     * up to 6 requests per call. The single 400 retry below is different in
-     * kind: it is a documented v3 write race, not a transport failure.
+     * No transport-level retry. ky's shared pera client leaves `retry.methods`
+     * at its default (`get`/`put`/`head`/`delete`/`options`/`trace`) and v3
+     * collapsed v1's `PUT` update into a `POST`, so a 5xx or a dropped
+     * connection here fails on its first attempt. That is deliberate:
+     * `peraRetryConfig` is shared by every pera-backend POST, swap submission
+     * included, so `'post'` must not be added to it. Registration is
+     * best-effort — `useDeviceRegistration` re-fires on reconnect and
+     * foreground, and `useIsDeviceRegistrationPending` keeps reporting until
+     * one attempt lands. The single 400 retry in `submitRegistration` is
+     * different in kind: it is a documented v3 write race, and ky would not
+     * retry a 400 for any method anyway.
      *
      * The whole attempt — id read included — runs inside `enqueueRegistration`
      * (module scope, above), so two calls for the same network never run
      * concurrently: the second always sees whatever the first left behind,
      * whether that's a freshly minted id or a corrective write superseding an
      * earlier one still in flight.
+     *
+     * `targetNetwork` is captured at *enqueue* time and threaded all the way
+     * to the transport. The queued task can start up to one request timeout
+     * after the call was made, and the user may have switched networks in
+     * between: re-reading the network inside the task would read this
+     * network's device id, POST it to the *other* network's backend (unknown
+     * id → 404 → re-create) and then write that foreign id back into this
+     * network's store slot, pointing both networks at one device row.
      */
     const registerDevice = useCallback(
         (
@@ -279,21 +269,14 @@ export const useDevice = () => {
                     null
 
                 if (!currentDeviceId) {
-                    const { id, joinedExisting } = await acquireCreatedDeviceId(
-                        targetNetwork,
-                        accounts,
-                    )
-                    if (!joinedExisting) return { createdNew: true }
-                    // Another in-flight call already minted the device;
-                    // register THIS call's accounts against it instead of
-                    // dropping them.
-                    return registerWithId(targetNetwork, id, accounts)
+                    await createDeviceForNetwork(targetNetwork, accounts)
+                    return { createdNew: true }
                 }
 
                 return registerWithId(targetNetwork, currentDeviceId, accounts)
             })
         },
-        [network, acquireCreatedDeviceId, registerWithId],
+        [network, createDeviceForNetwork, registerWithId],
     )
 
     /**

@@ -50,7 +50,6 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    clearPendingDeviceCreatesForTests,
     clearRegistrationQueuesForTests,
     useDeviceRegistration,
     useDeviceStore,
@@ -137,7 +136,6 @@ describe('Device registration v3 (PERA-4705)', () => {
     beforeEach(async () => {
         useAccountsStore.getState().setAccounts([])
         useDeviceStore.getState().resetState()
-        clearPendingDeviceCreatesForTests()
         clearRegistrationQueuesForTests()
         resetNotificationPreferences()
         await useRemoteConfigStore.persist.rehydrate()
@@ -149,7 +147,6 @@ describe('Device registration v3 (PERA-4705)', () => {
     afterEach(() => {
         useAccountsStore.getState().setAccounts([])
         useDeviceStore.getState().resetState()
-        clearPendingDeviceCreatesForTests()
         clearRegistrationQueuesForTests()
         resetNotificationPreferences()
         useRemoteConfigStore.getState().resetState()
