@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import { type InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
-import { RefreshControl } from 'react-native-gesture-handler'
+import { RefreshControl } from 'react-native'
 
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'

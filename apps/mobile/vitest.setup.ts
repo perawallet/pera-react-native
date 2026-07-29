@@ -1387,6 +1387,10 @@ vi.mock('react-native', () => {
                 'Loading...',
             ),
         ),
+        // RefreshControl renders no visible content in jsdom, and its props
+        // (refreshing/onRefresh/colors/progressBackgroundColor) aren't valid
+        // DOM attributes — render null to avoid React unknown-prop warnings.
+        RefreshControl: vi.fn().mockImplementation(() => null),
         Pressable: vi
             .fn()
             .mockImplementation(({ onPress, testID, ...props }) => {
