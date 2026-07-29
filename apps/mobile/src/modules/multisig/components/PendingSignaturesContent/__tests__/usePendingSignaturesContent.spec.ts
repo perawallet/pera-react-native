@@ -65,6 +65,14 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => 'device-id',
+    DeviceAccountTypes: {
+        algo25: 'algo25',
+        hdWallet: 'hdWallet',
+        hardware: 'hardware',
+        multisig: 'multisig',
+        watch: 'watch',
+        quantum: 'quantum',
+    },
 }))
 
 const pendingSignRequestsMock = vi.fn<() => unknown[]>(() => [])

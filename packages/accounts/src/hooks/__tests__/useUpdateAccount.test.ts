@@ -55,12 +55,12 @@ vi.mock('../../store', () => ({
 const mockNetwork = { network: 'mainnet' }
 const mockDeviceID = 'DEVICE_ID_123'
 const mockDevicePlatform = 'ios'
-const mockUpdateDeviceMutation = vi.fn().mockResolvedValue({})
+const mockRegisterDeviceMutation = vi.fn().mockResolvedValue({})
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: vi.fn(() => mockDeviceID),
-    useUpdateDeviceMutation: () => ({
-        mutateAsync: mockUpdateDeviceMutation,
+    useRegisterDeviceMutation: () => ({
+        mutateAsync: mockRegisterDeviceMutation,
     }),
 }))
 
@@ -179,7 +179,7 @@ describe('useUpdateAccount', () => {
 
         result.current(updatedAccount)
 
-        expect(mockUpdateDeviceMutation).not.toHaveBeenCalled()
+        expect(mockRegisterDeviceMutation).not.toHaveBeenCalled()
     })
 
     it('handles account not found gracefully', () => {

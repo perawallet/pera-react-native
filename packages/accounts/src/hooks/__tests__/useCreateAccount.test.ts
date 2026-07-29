@@ -67,11 +67,11 @@ vi.mock('@perawallet/wallet-core-kms', async () => {
     }
 })
 
-const mockUpdateDeviceMutation = vi.hoisted(() => vi.fn(async () => ({})))
+const mockRegisterDeviceMutation = vi.hoisted(() => vi.fn(async () => ({})))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useUpdateDeviceMutation: vi.fn(() => ({
-        mutateAsync: mockUpdateDeviceMutation,
+    useRegisterDeviceMutation: vi.fn(() => ({
+        mutateAsync: mockRegisterDeviceMutation,
     })),
     useDeviceID: vi.fn(() => 'device-id'),
 }))
@@ -154,7 +154,7 @@ describe('useCreateAccount', () => {
             })
         })
 
-        expect(mockUpdateDeviceMutation).not.toHaveBeenCalled()
+        expect(mockRegisterDeviceMutation).not.toHaveBeenCalled()
     })
 
     test('creates new HD wallet account when no existing key', async () => {
