@@ -485,4 +485,39 @@ describe('useAccountNotificationToggle', () => {
             },
         ])
     })
+
+    // PERA-4705 (final review, Finding 2): the mute branch spreads the
+    // pre-existing disabled set into the payload
+    // (`[...new Set([...disabledAccounts, address])]`), but every test seeded
+    // `disabledAccounts` as `[]`, so dropping that spread kept the whole suite
+    // green. The consequence is silent and persistent: muting one account
+    // would send `receive_notifications: true` for every other muted account
+    // while the local persisted store still shows them muted, so the user sees
+    // "muted", receives pushes anyway, and the divergence survives a restart.
+    it('preserves already-muted accounts when muting another one', async () => {
+        seedAccounts([
+            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
+            { id: '2', address: 'ADDR_B', type: 'algo25', keyPairId: 'kp2' },
+        ])
+        mocks.disabledAccounts = ['ADDR_B']
+
+        const { result } = renderHook(() => useAccountNotificationToggle())
+
+        await act(async () => {
+            await result.current.toggleAccountNotification('ADDR_A', false)
+        })
+
+        expect(mocks.registerDevice).toHaveBeenCalledWith([
+            {
+                address: 'ADDR_A',
+                accountType: 'algo25',
+                receiveNotifications: false,
+            },
+            {
+                address: 'ADDR_B',
+                accountType: 'algo25',
+                receiveNotifications: false,
+            },
+        ])
+    })
 })
