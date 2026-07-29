@@ -419,6 +419,29 @@ describe('queryClient', () => {
         expect(mockKy.extend).toHaveBeenCalled()
     })
 
+    it('lets a per-request x-api-key override the configured default', async () => {
+        // capturedHooks is a shared singleton overwritten by every `ky.create`
+        // call during module load (see "does not re-append the request
+        // logger" above), so it ends up holding the last-created client's
+        // hooks rather than the pera client's — grab `setStandardHeaders`
+        // directly off the mainnet pera client's create() call instead,
+        // mirroring the resetModules + mockClear pattern used by "creates
+        // every client with an explicit capped retry config".
+        vi.resetModules()
+        mockKy.create.mockClear()
+        await import('../query-client')
+
+        const mainnetPeraClientConfig = mockKy.create.mock.calls[0][0]
+        const [setStandardHeaders] = mainnetPeraClientConfig.hooks.beforeRequest
+
+        // A real Headers instance (not the shared mock's plain Map) so the
+        // case-insensitive lookup this fix relies on is genuinely exercised.
+        const request = { headers: new Headers({ 'x-api-key': 'v3-key' }) }
+        setStandardHeaders({ request } as never)
+
+        expect(request.headers.get('x-api-key')).toBe('v3-key')
+    })
+
     it('should set Content-Type and API key headers via setStandardHeaders', async () => {
         const { queryClient } = await import('../query-client')
         mockJson.mockResolvedValue({ success: true })
