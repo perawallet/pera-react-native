@@ -31,8 +31,6 @@
     "localnet:stop": "bash tools/localnet.sh stop",
     "localnet:reset": "bash tools/localnet.sh reset",
     "localnet:status": "bash tools/localnet.sh status",
-    "localnet:use": "bash tools/use-localnet.sh on",
-    "localnet:unset": "bash tools/use-localnet.sh off",
     "localnet:fund": "tsx tools/localnet-fund.ts",
     "bump-version": "bash tools/bump-version.sh",
     "audit": "pnpm audit --prod --audit-level=high",

@@ -87,7 +87,8 @@ tracked separately). Fill in **Status** per manual run.
    `wc-sign-quantum-fee.test.tsx`) and confirm fee-raise, regroup, and
    null-padded `pqsig` response shape before touching a real dApp.
 2. **LocalNet pass, where the dApp's contracts are deployable there**: use
-   `pnpm localnet` + `pnpm localnet:use` to point the app at LocalNet, then
+   `pnpm localnet`, then point the app at it via Settings > Developer > Node
+   Settings > Custom network, then
    drive the dApp's native flow (swap, pool op, vote, etc.) from a quantum
    account. Cross-check against
    `apps/mobile/src/__integration__/submit-quantum-broadcast.test.tsx` and

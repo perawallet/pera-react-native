@@ -19,9 +19,31 @@ import {
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { config } from '@perawallet/wallet-core-config'
+import { config, Networks } from '@perawallet/wallet-core-config'
 
 const STORE_NAME = 'network-store'
+
+const SUPPORTED_NETWORKS = new Set<string>(Object.values(Networks))
+
+/**
+ * Guards rehydration against a persisted value that is no longer a union member
+ * — e.g. a device that selected 'fnet' or 'localnet' before those were replaced
+ * by the custom slot. Without this, the unknown string flows into
+ * getNetworkConfig, which returns undefined and crashes the chain-table lookup.
+ */
+export const mergePersistedNetwork = (
+    persisted: unknown,
+): { network: Network } => {
+    const network = (persisted as { network?: unknown } | null | undefined)
+        ?.network
+
+    return {
+        network:
+            typeof network === 'string' && SUPPORTED_NETWORKS.has(network)
+                ? (network as Network)
+                : (config.defaultNetwork as Network),
+    }
+}
 
 type NetworkState = BaseStoreState & {
     network: Network
@@ -46,6 +68,13 @@ export const useNetworkStore: UseBoundStore<
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
             partialize: state => ({ network: state.network }),
+            // Spread over `current` deliberately: mergePersistedNetwork returns
+            // only { network }, so returning it directly would drop setNetwork
+            // and resetState from the rehydrated store.
+            merge: (persisted, current) => ({
+                ...current,
+                ...mergePersistedNetwork(persisted),
+            }),
         },
     ),
 )

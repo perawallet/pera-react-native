@@ -20,7 +20,7 @@ if [ -f "$ENV_FILE" ]; then
   export $(grep -v '^#' "$ENV_FILE" | xargs)
 fi
 
-# Load an optional overlay file (e.g. .env.localnet) AFTER .env so it wins.
+# Load an optional overlay file (e.g. a per-lane .env) AFTER .env so it wins.
 if [ -n "${PERA_ENV_OVERLAY:-}" ] && [ -f "$PERA_ENV_OVERLAY" ]; then
   echo "Loading overlay environment variables from $PERA_ENV_OVERLAY"
   export $(grep -v '^#' "$PERA_ENV_OVERLAY" | xargs)

@@ -96,4 +96,53 @@ describe('services/blockchain/network-store', () => {
         // persist storage is exercised by the resetState path above.
         expect(() => registration.clearStorage()).not.toThrow()
     })
+
+    describe('mergePersistedNetwork', () => {
+        test('a persisted network outside the union falls back to the default', async () => {
+            // 'fnet' was a valid value before the union narrowed. A device that
+            // selected it must not rehydrate an unknown string into
+            // getNetworkConfig, which would return undefined and crash the
+            // chain table lookup.
+            const { mergePersistedNetwork } = await import('../network-store')
+
+            const merged = mergePersistedNetwork({ network: 'fnet' })
+
+            expect(merged.network).toBe('mainnet')
+        })
+
+        test('a persisted network inside the union is preserved', async () => {
+            const { mergePersistedNetwork } = await import('../network-store')
+
+            expect(mergePersistedNetwork({ network: 'betanet' }).network).toBe(
+                'betanet',
+            )
+        })
+
+        test.each([
+            ['null', null],
+            ['undefined', undefined],
+            ['a non-string network', { network: 7 }],
+            ['an empty object', {}],
+        ])('%s falls back to the default', async (_label, persisted) => {
+            const { mergePersistedNetwork } = await import('../network-store')
+
+            expect(mergePersistedNetwork(persisted).network).toBe('mainnet')
+        })
+
+        test('rehydration keeps the store actions callable', async () => {
+            // mergePersistedNetwork returns only { network }, so the persist
+            // `merge` option must spread it over the current state. Returning it
+            // directly would drop setNetwork and resetState from the rehydrated
+            // store and every caller would crash.
+            const { useNetworkStore } = await import('../network-store')
+
+            const merged = useNetworkStore.persist
+                .getOptions()
+                .merge?.({ network: 'testnet' }, useNetworkStore.getState())
+
+            expect(merged?.network).toBe('testnet')
+            expect(typeof merged?.setNetwork).toBe('function')
+            expect(typeof merged?.resetState).toBe('function')
+        })
+    })
 })

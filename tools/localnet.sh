@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # tools/localnet.sh
 # Manage a local Algorand LocalNet via the official AlgoKit CLI.
-# Purely container lifecycle — no app-config side effects (see use-localnet.sh).
+# Purely container lifecycle — no app-config side effects. The app is pointed at
+# LocalNet at runtime via Settings > Developer > Node Settings > Custom network.
 set -euo pipefail
 
 TOKEN="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -51,7 +52,7 @@ case "$cmd" in
     echo "  indexer http://localhost:8980"
     echo "  kmd     http://localhost:4002   (token: ${TOKEN})"
     echo ""
-    echo "Next: pnpm localnet:use   (point the app's testnet slot at LocalNet)"
+    echo "Next: in the app, Settings > Developer > Node Settings > Custom network"
     ;;
   stop)
     require_algokit
@@ -60,7 +61,7 @@ case "$cmd" in
   reset)
     require_algokit
     algokit localnet reset
-    echo "Note: genesis hash changed — re-run 'pnpm localnet:use' before using the app." >&2
+    echo "Note: genesis hash changed — re-enter the custom network config in the app." >&2
     ;;
   status)
     require_algokit
