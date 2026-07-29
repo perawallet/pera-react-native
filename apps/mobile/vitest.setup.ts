@@ -138,6 +138,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             getBuildNumber: () => '1',
             getDeviceLocale: () => 'en-US',
             getDeviceLanguage: () => 'en',
+            getUserAgent: () => 'PeraWallet/test',
         },
         keyValueStorage: {
             getItem: (key: string) => store.get(key) ?? null,
