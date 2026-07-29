@@ -34,6 +34,7 @@ import {
 import { http, HttpResponse } from 'msw'
 
 import { Networks, decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     getAlgorandClient,
     useNetworkStore,
@@ -63,7 +64,10 @@ import { server } from '@test-utils/msw-server'
 // dropping the betanet row would stop proving the baked path still works.
 const BETANET_ALGOD = 'https://betanet-api.algonode.cloud'
 const BETANET_INDEXER = 'https://betanet-idx.algonode.cloud'
-const TESTNET_PERA = 'https://testnet.staging.api.perawallet.app'
+// Read, never hardcoded: `backendUrl` comes from TESTNET_BACKEND_URL, which
+// tools/setup-env-secrets.sh sets for every developer. Pinning its default here
+// made this suite go false-red on any machine that had run that script.
+const TESTNET_PERA = getNetworkConfig(Networks.testnet).backendUrl
 
 const BETANET_GENESIS = 'mFgazF+2uRS1tMiL9dsj01hJGySEmPN28B/TjjvpVW0='
 const TESTNET_GENESIS = 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='
