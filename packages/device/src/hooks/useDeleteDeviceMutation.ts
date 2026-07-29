@@ -13,34 +13,23 @@
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import { deleteDevice } from './endpoints'
 import { useDeviceID } from './useDeviceID'
-import { useDeviceStore } from '../store'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const useDeleteDeviceMutation = (
     options?: UseMutationOptions<void, Error, void>,
 ) => {
-    const pushToken = useDeviceStore(state => state.pushToken)
     const testNetDeviceID = useDeviceID(Networks.testnet)
     const mainNetDeviceID = useDeviceID(Networks.mainnet)
-    const deviceInfoService = getProvider().deviceInfo
     return useMutation({
         mutationFn: async () => {
-            if (testNetDeviceID && pushToken) {
-                await deleteDevice(Networks.testnet, {
-                    id: testNetDeviceID,
-                    push_token: pushToken,
-                    platform: deviceInfoService.getDevicePlatform(),
-                    accounts: [],
-                })
+            // v3 takes `id` alone and prefers it over a push token when both
+            // are sent, so a device whose push token was never granted can
+            // still be deleted — v1 could not.
+            if (testNetDeviceID) {
+                await deleteDevice(Networks.testnet, { id: testNetDeviceID })
             }
-            if (mainNetDeviceID && pushToken) {
-                await deleteDevice(Networks.mainnet, {
-                    id: mainNetDeviceID,
-                    push_token: pushToken,
-                    platform: deviceInfoService.getDevicePlatform(),
-                    accounts: [],
-                })
+            if (mainNetDeviceID) {
+                await deleteDevice(Networks.mainnet, { id: mainNetDeviceID })
             }
         },
         ...options,
