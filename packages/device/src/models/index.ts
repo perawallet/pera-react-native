@@ -14,25 +14,77 @@ import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 import type { DevicePlatform } from '@perawallet/wallet-extension-platform'
 
-export type DeviceApplication = 'pera' | 'pera-beta' | 'fifa'
+/**
+ * Account types as the v3 devices API spells them on the wire. Deliberately a
+ * separate declaration from `AccountType` in `@perawallet/wallet-core-accounts`
+ * even though the literals currently match: this is a backend contract, and an
+ * internal rename must break the build at the mapping in
+ * `packages/accounts/src/device-accounts.ts` rather than silently start
+ * sending an unrecognised `account_type`.
+ */
+export const DeviceAccountTypes = {
+    algo25: 'algo25',
+    hdWallet: 'hdWallet',
+    hardware: 'hardware',
+    multisig: 'multisig',
+    watch: 'watch',
+    quantum: 'quantum',
+} as const
 
-export interface DeviceRequest {
-    id?: string
-    push_token?: string
-    platform: DevicePlatform
-    application?: DeviceApplication
-    model?: string
-    locale?: string
-    accounts: string[]
+export type DeviceAccountType =
+    (typeof DeviceAccountTypes)[keyof typeof DeviceAccountTypes]
+
+/** One account as registration reports it. Domain shape, camelCase. */
+export type DeviceAccountRegistration = {
+    address: string
+    accountType: DeviceAccountType
+    receiveNotifications: boolean
 }
 
-export interface DeviceResponse {
+/**
+ * Version-neutral registration payload. Every consumer above the endpoint
+ * layer speaks this; only `serializers.ts` knows the wire shape.
+ *
+ * `pushToken` is a required string, not an optional one: v3 has no
+ * "omit to keep the stored value" path, and `''` clears the token.
+ */
+export type DeviceRegistration = {
+    /** Omit to create a device; supply to update THIS device. */
+    id?: string
+    pushToken: string
+    platform: DevicePlatform
+    locale: string
+    appVersion: string
+    accounts: DeviceAccountRegistration[]
+}
+
+export type DeviceAccountRequest = {
+    address: string
+    account_type: DeviceAccountType
+    receive_notifications: boolean
+}
+
+export type DeviceRegistrationRequest = {
+    id?: string
+    push_token: string
+    platform: DevicePlatform
+    locale: string
+    app_version: string
+    accounts: DeviceAccountRequest[]
+}
+
+/** `id` wins when both identifiers are present; a blank token is rejected. */
+export type DeviceDeleteRequest =
+    | { id: string }
+    | { push_token: string; platform: DevicePlatform }
+
+export type DeviceResponse = {
     id?: string
     push_token?: string
     platform: DevicePlatform
-    application?: DeviceApplication
-    model?: string
     locale?: string
+    app_version?: string
+    accounts?: DeviceAccountRequest[]
 }
 
 export type DeviceState = BaseStoreState & {
