@@ -1,0 +1,201 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+// Cross-package routing coverage for the widened Network union:
+//
+//   chain reads   ─►  must hit the ACTIVE network's algod/indexer
+//   pera reads    ─►  must hit the TESTNET backend (borrowed services)
+//   signing       ─►  must reject another chain's genesis hash
+//   history       ─►  must come from the chain's indexer, not the backend
+//
+// Unit tests mock the wire; these prove the assembled client stack points
+// where it should once every layer is wired together. MSW's request events
+// are observed directly (rather than rendering a screen) so the assertion is
+// "which host did this reach", which is exactly what these flows must prove.
+
+import {
+    afterAll,
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest'
+import { http, HttpResponse } from 'msw'
+
+import { Networks, decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    getAlgorandClient,
+    useNetworkStore,
+    useNodeOverrideStore,
+    resolveExpectedGenesisHash,
+} from '@perawallet/wallet-core-blockchain'
+import { fetchTransactionHistory } from '@perawallet/wallet-core-transactions'
+import { fetchAssets } from '@perawallet/wallet-core-assets'
+import {
+    assertTransactionsMatchNetwork,
+    GenesisHashMismatchError,
+} from '@perawallet/wallet-core-signing'
+
+import { server } from '@test-utils/msw-server'
+
+const FNET_ALGOD = 'https://fnet-api.4160.nodely.dev'
+const FNET_INDEXER = 'https://fnet-idx.4160.nodely.dev'
+const TESTNET_PERA = 'https://testnet.staging.api.perawallet.app'
+
+const FNET_GENESIS = 'kUt08LxeVAAGHnh4JoAoAMM9ql/hBwSoiFtlnKNeOxA='
+const TESTNET_GENESIS = 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='
+
+// A syntactically valid, checksum-correct Algorand address (same value as
+// HD_TEST_ADDRESS in ./__fixtures__/onboarding.ts). Nothing here signs with
+// it — it only has to be well-formed enough for algokit-utils/indexer
+// response decoding, which these flows exercise for real.
+const ADDRESS = 'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
+
+describe('multi-network routing', () => {
+    const requested: string[] = []
+
+    const record = ({ request }: { request: Request }) => {
+        requested.push(request.url)
+    }
+
+    beforeAll(() => {
+        server.listen({ onUnhandledRequest: 'bypass' })
+        server.events.on('request:start', record)
+    })
+
+    afterAll(() => {
+        server.events.removeListener('request:start', record)
+        server.close()
+    })
+
+    beforeEach(() => {
+        requested.length = 0
+        useNodeOverrideStore.getState().resetState()
+        useNetworkStore.getState().setNetwork(Networks.fnet)
+    })
+
+    afterEach(() => {
+        server.resetHandlers()
+        useNetworkStore.getState().setNetwork(Networks.mainnet)
+    })
+
+    it('sends chain reads to the active network, not the fallback', async () => {
+        server.use(
+            http.get(`${FNET_ALGOD}/v2/accounts/:address`, () =>
+                HttpResponse.json({
+                    address: ADDRESS,
+                    amount: 1_000_000,
+                    'min-balance': 100_000,
+                    round: 1,
+                    'total-apps-opted-in': 0,
+                    'total-assets-opted-in': 0,
+                    'total-created-apps': 0,
+                    'total-created-assets': 0,
+                }),
+            ),
+        )
+
+        await getAlgorandClient().client.algod.accountInformation(ADDRESS).do()
+
+        expect(requested.some(url => url.startsWith(FNET_ALGOD))).toBe(true)
+        expect(requested.some(url => url.includes('testnet-api'))).toBe(false)
+    })
+
+    it('sends pera-service reads to the testnet backend', async () => {
+        server.use(
+            http.get(`${TESTNET_PERA}/v1/assets/`, () =>
+                HttpResponse.json({ results: [], next: null, previous: null }),
+            ),
+        )
+
+        await fetchAssets(['31566704'], Networks.fnet)
+
+        expect(requested.some(url => url.startsWith(TESTNET_PERA))).toBe(true)
+    })
+
+    it('reads history from the chain indexer, never the borrowed backend', async () => {
+        server.use(
+            http.get(`${FNET_INDEXER}/v2/accounts/:address/transactions`, () =>
+                HttpResponse.json({
+                    'current-round': 42,
+                    transactions: [
+                        {
+                            id: 'FROM_INDEXER',
+                            'tx-type': 'pay',
+                            sender: ADDRESS,
+                            fee: 1000,
+                            'confirmed-round': 41,
+                            'round-time': 1_700_000_000,
+                            'payment-transaction': {
+                                amount: 5000,
+                                receiver: ADDRESS,
+                            },
+                        },
+                    ],
+                }),
+            ),
+            http.get(`${TESTNET_PERA}/v1/accounts/:address/transactions/`, () =>
+                HttpResponse.json({
+                    current_round: 1,
+                    next: null,
+                    previous: null,
+                    results: [
+                        {
+                            id: 'FROM_PERA_MUST_NOT_APPEAR',
+                            tx_type: 'pay',
+                            sender: ADDRESS,
+                            confirmed_round: 1,
+                            round_time: 1,
+                            fee: '1000',
+                        },
+                    ],
+                }),
+            ),
+        )
+
+        const result = await fetchTransactionHistory({
+            accountAddress: ADDRESS,
+            network: Networks.fnet,
+        })
+
+        const ids = result.transactions.map(transaction => transaction.id)
+        expect(ids).toContain('FROM_INDEXER')
+        expect(ids).not.toContain('FROM_PERA_MUST_NOT_APPEAR')
+    })
+
+    it('rejects a transaction carrying another chain genesis hash', async () => {
+        server.use(
+            http.get(`${FNET_ALGOD}/v2/transactions/params`, () =>
+                HttpResponse.json({ 'genesis-hash': FNET_GENESIS }),
+            ),
+        )
+
+        const expected = await resolveExpectedGenesisHash(Networks.fnet)
+        expect(expected).toBe(FNET_GENESIS)
+
+        // A dApp connected through testnet's chain id (fnet has no CAIP id)
+        // builds with testnet's genesis. This is the safety net.
+        const transactions = [
+            { genesisHash: decodeFromBase64(TESTNET_GENESIS) },
+        ] as Parameters<typeof assertTransactionsMatchNetwork>[0]
+
+        expect(() =>
+            assertTransactionsMatchNetwork(
+                transactions,
+                Networks.fnet,
+                expected,
+            ),
+        ).toThrow(GenesisHashMismatchError)
+    })
+})
