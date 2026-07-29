@@ -21,9 +21,8 @@ import {
     startStorageProxyHost,
     type DiscoverInfo,
 } from '@perawallet/wallet-extension-platform-chrome'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { ensureOffscreenDocument } from './offscreen'
-import { parseActiveNetwork } from './network'
+import { parseActiveNetwork, resolveAdvertisedGenesis } from './network'
 
 // Offscreen documents have no chrome.storage — the SW serves it over runtime
 // messaging (get/set/remove + onChanged relay). Top-level registration so a
@@ -70,7 +69,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 // entry is `kv:network-store` holding a string like
 // '{"state":{"network":"testnet"},"version":1}'. parseActiveNetwork does the
 // JSON.parse + validation (pure, unit-tested in ./network).
+//
+// The custom slot's chain identity is read the same way, from its own store:
+// `custom`'s baked chain-table row is empty by design, so getNetworkConfig
+// cannot supply it and resolveAdvertisedGenesis has to consult this key or the
+// wallet would advertise genesisHash: '' to every dApp.
 const NETWORK_STORE_KV_KEY = 'kv:network-store'
+const CUSTOM_NETWORK_STORE_KV_KEY = 'kv:custom-network-store'
 
 // The wire icon must be a data: URI, not a chrome-extension:// URL — a normal
 // https dapp page cannot load the latter (no web_accessible_resources entry,
@@ -106,15 +111,17 @@ const getPeraIconDataUrl = (): Promise<string> => {
 const resolveActiveNetwork = async (): Promise<
     DiscoverInfo['networks'][number]
 > => {
-    const raw = await chrome.storage.local.get(NETWORK_STORE_KV_KEY)
+    const raw = await chrome.storage.local.get([
+        NETWORK_STORE_KV_KEY,
+        CUSTOM_NETWORK_STORE_KV_KEY,
+    ])
     const network = parseActiveNetwork(
         raw[NETWORK_STORE_KV_KEY] as string | undefined,
     )
-    const cfg = getNetworkConfig(network)
-    return {
-        genesisHash: cfg.genesisHash,
-        genesisId: cfg.genesisId,
-    }
+    return resolveAdvertisedGenesis(
+        network,
+        raw[CUSTOM_NETWORK_STORE_KV_KEY] as string | undefined,
+    )
 }
 
 const discoverInfo = async (): Promise<DiscoverInfo> => ({
