@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { PWFlatList, PWView } from '@components/core'
+import { PWFlatList, PWScreen, PWView } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -65,17 +65,21 @@ export const GroupTransactionListScreen = () => {
         )
     }
 
+    // PWScreen scroll='never' gives the list a fixed full-height body so
+    // FlashList can measure and render — a plain PWView wrapper had no bounded
+    // height, collapsing FlashList to 0px (blank page). See sibling
+    // GroupDetailScreen, which hit the same failure mode.
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.contentContainer}>
-                <GroupDetailHeader transactionCount={transactions.length} />
-                <PWFlatList
-                    data={transactions}
-                    renderItem={renderItem}
-                    keyExtractor={keyExtractor}
-                    ItemSeparatorComponent={ItemSeparator}
-                />
-            </PWView>
-        </PWView>
+        <PWScreen scroll='never'>
+            <PWFlatList
+                data={transactions}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                ItemSeparatorComponent={ItemSeparator}
+                ListHeaderComponent={
+                    <GroupDetailHeader transactionCount={transactions.length} />
+                }
+            />
+        </PWScreen>
     )
 }
