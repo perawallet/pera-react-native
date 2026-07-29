@@ -18,6 +18,7 @@ import {
     type MultisigSignRequest,
 } from '@perawallet/wallet-core-multisig'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
+import { logger } from '@perawallet/wallet-core-shared'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 import { buildMultisigCosignRequest } from '../utils/buildMultisigCosignRequest'
 import { getLocalUnsignedSigners } from '../utils/getLocalUnsignedSigners'
@@ -51,13 +52,23 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                     getLocalUnsignedSigners(signRequest, accounts),
                 )
                 for (const signer of localKey) {
-                    addSignRequest(
-                        buildMultisigCosignRequest({
-                            signRequest,
-                            signerAddress: signer.address,
-                            decodeTransaction,
-                        }),
-                    )
+                    try {
+                        addSignRequest(
+                            buildMultisigCosignRequest({
+                                signRequest,
+                                signerAddress: signer.address,
+                                decodeTransaction,
+                            }),
+                        )
+                    } catch (error) {
+                        // A cosign request that fails validation (PERA-4711)
+                        // must never be signed; skip it without crashing the
+                        // tap handler.
+                        logger.error(
+                            'Skipping invalid multisig cosign request',
+                            { error },
+                        )
+                    }
                 }
                 // Only the local-key cosign sign sheet owns the visible UI
                 // when there's nothing else to do. If hardware participants
