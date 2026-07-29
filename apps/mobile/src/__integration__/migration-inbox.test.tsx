@@ -72,6 +72,11 @@ import {
 
 const INTEGRATION_TIMEOUT = 30_000
 const LEGACY_DEVICE_ID = 'LEGACY-DEVICE-1'
+// Distinct from `LEGACY_DEVICE_ID` on purpose — see the handler comment
+// below. Answering an id-less create with this instead of the legacy id
+// means the "the legacy id was reused" assertion can only pass if the app
+// actually sent `LEGACY_DEVICE_ID` on the wire, never by coincidental echo.
+const FRESHLY_MINTED_DEVICE_ID = 'FRESHLY-MINTED-DEVICE'
 
 // ---------------------------------------------------------------------------
 // Legacy payload builders. These wrap `createEmptyLegacyMigrationData()` so a
@@ -212,8 +217,19 @@ describe('Flow: Pera 6 migration → asset inbox', () => {
                 http.post('*/api/v3/devices', async ({ request }) => {
                     deviceBody =
                         (await request.json()) as DeviceRegistrationRequest
+                    // Deliberately NOT `deviceBody.id ?? LEGACY_DEVICE_ID`:
+                    // that would answer an id-less create with the same
+                    // value the assertion below checks for, so a regression
+                    // where the app forgets to send the already-known legacy
+                    // id would still get told "LEGACY_DEVICE_ID" back — and
+                    // if a second registration fired anywhere in this render
+                    // it would then correctly echo the (wrongly-reused)
+                    // legacy id, passing the assertion for the wrong reason.
+                    // A distinct sentinel means the legacy id can only ever
+                    // appear in a captured request body if the app actually
+                    // sent it.
                     return HttpResponse.json({
-                        id: deviceBody.id ?? LEGACY_DEVICE_ID,
+                        id: deviceBody.id ?? FRESHLY_MINTED_DEVICE_ID,
                     })
                 }),
                 http.post('*/v1/inbox/:deviceId/', async ({ request }) => {
