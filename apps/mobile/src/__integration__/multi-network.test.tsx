@@ -49,12 +49,18 @@ import {
 
 import { server } from '@test-utils/msw-server'
 
-// betanet stands in for "some active network that is neither mainnet nor
-// testnet" — it keeps its own baked, resolvable chain endpoints/genesis (see
-// packages/config/src/network-config.ts), unlike `custom`, which is
-// deliberately empty in `config` until the custom-network store (a later
-// task) overlays real values. betanet is enough to prove the routing
-// contract this file exists for; it does not depend on that store.
+// Both non-mainnet/testnet networks are covered, because chain truth reaches
+// the client stack by two different routes and only one of them is exercised
+// by baked config:
+//
+//   betanet ─► endpoints and genesis come from packages/config/network-config
+//   custom  ─► config is deliberately EMPTY; the custom-network store overlays
+//              every value at runtime via resolveChainEndpoints
+//
+// The four routing assertions are identical for both, so they are parameterized
+// rather than duplicated. Dropping the custom row would leave the store→client
+// overlay — the new machinery in this rework — with no integration coverage;
+// dropping the betanet row would stop proving the baked path still works.
 const BETANET_ALGOD = 'https://betanet-api.algonode.cloud'
 const BETANET_INDEXER = 'https://betanet-idx.algonode.cloud'
 const TESTNET_PERA = 'https://testnet.staging.api.perawallet.app'
@@ -62,147 +68,206 @@ const TESTNET_PERA = 'https://testnet.staging.api.perawallet.app'
 const BETANET_GENESIS = 'mFgazF+2uRS1tMiL9dsj01hJGySEmPN28B/TjjvpVW0='
 const TESTNET_GENESIS = 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='
 
+// Deliberately a LAN address on non-standard-for-the-suite ports: nothing about
+// the custom slot may fall back to a baked default, so these must not resemble
+// any value in network-config.ts.
+const CUSTOM_ALGOD = 'http://10.0.0.5:4001'
+const CUSTOM_INDEXER = 'http://10.0.0.5:8980'
+const CUSTOM_GENESIS = 'MvoAmMBVQX32w2gqkfMKShsYCbYio8wyepw6Zk5CgOw='
+
+type NetworkFixture = {
+    label: string
+    network: typeof Networks.betanet | typeof Networks.custom
+    algodUrl: string
+    indexerUrl: string
+    genesisHash: string
+    /** Puts the chain endpoints where the client stack will look for them. */
+    configure: () => void
+}
+
+const FIXTURES: NetworkFixture[] = [
+    {
+        label: 'betanet (baked config)',
+        network: Networks.betanet,
+        algodUrl: BETANET_ALGOD,
+        indexerUrl: BETANET_INDEXER,
+        genesisHash: BETANET_GENESIS,
+        configure: () => {
+            useCustomNetworkStore.getState().resetState()
+        },
+    },
+    {
+        label: 'custom (runtime store overlay)',
+        network: Networks.custom,
+        algodUrl: CUSTOM_ALGOD,
+        indexerUrl: CUSTOM_INDEXER,
+        genesisHash: CUSTOM_GENESIS,
+        configure: () => {
+            useCustomNetworkStore.getState().setCustomNetwork({
+                algodUrl: CUSTOM_ALGOD,
+                indexerUrl: CUSTOM_INDEXER,
+                genesisHash: CUSTOM_GENESIS,
+                genesisId: 'dockernet-v1',
+            })
+        },
+    },
+]
+
 // A syntactically valid, checksum-correct Algorand address (same value as
 // HD_TEST_ADDRESS in ./__fixtures__/onboarding.ts). Nothing here signs with
 // it — it only has to be well-formed enough for algokit-utils/indexer
 // response decoding, which these flows exercise for real.
 const ADDRESS = 'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
 
-describe('multi-network routing', () => {
-    const requested: string[] = []
+describe.each(FIXTURES)(
+    'multi-network routing — $label',
+    ({ network, algodUrl, indexerUrl, genesisHash, configure }) => {
+        const requested: string[] = []
 
-    const record = ({ request }: { request: Request }) => {
-        requested.push(request.url)
-    }
+        const record = ({ request }: { request: Request }) => {
+            requested.push(request.url)
+        }
 
-    beforeAll(() => {
-        server.listen({ onUnhandledRequest: 'bypass' })
-        server.events.on('request:start', record)
-    })
-
-    afterAll(() => {
-        server.events.removeListener('request:start', record)
-        server.close()
-    })
-
-    beforeEach(() => {
-        requested.length = 0
-        useCustomNetworkStore.getState().resetState()
-        useNetworkStore.getState().setNetwork(Networks.betanet)
-    })
-
-    afterEach(() => {
-        server.resetHandlers()
-        useNetworkStore.getState().setNetwork(Networks.mainnet)
-    })
-
-    it('sends chain reads to the active network, not the fallback', async () => {
-        server.use(
-            http.get(`${BETANET_ALGOD}/v2/accounts/:address`, () =>
-                HttpResponse.json({
-                    address: ADDRESS,
-                    amount: 1_000_000,
-                    'min-balance': 100_000,
-                    round: 1,
-                    'total-apps-opted-in': 0,
-                    'total-assets-opted-in': 0,
-                    'total-created-apps': 0,
-                    'total-created-assets': 0,
-                }),
-            ),
-        )
-
-        await getAlgorandClient().client.algod.accountInformation(ADDRESS).do()
-
-        expect(requested.some(url => url.startsWith(BETANET_ALGOD))).toBe(true)
-        expect(requested.some(url => url.includes('testnet-api'))).toBe(false)
-    })
-
-    it('sends pera-service reads to the testnet backend', async () => {
-        server.use(
-            http.get(`${TESTNET_PERA}/v1/assets/`, () =>
-                HttpResponse.json({ results: [], next: null, previous: null }),
-            ),
-        )
-
-        await fetchAssets(['31566704'], Networks.betanet)
-
-        expect(requested.some(url => url.startsWith(TESTNET_PERA))).toBe(true)
-    })
-
-    it('reads history from the chain indexer, never the borrowed backend', async () => {
-        server.use(
-            http.get(
-                `${BETANET_INDEXER}/v2/accounts/:address/transactions`,
-                () =>
-                    HttpResponse.json({
-                        'current-round': 42,
-                        transactions: [
-                            {
-                                id: 'FROM_INDEXER',
-                                'tx-type': 'pay',
-                                sender: ADDRESS,
-                                fee: 1000,
-                                'confirmed-round': 41,
-                                'round-time': 1_700_000_000,
-                                'payment-transaction': {
-                                    amount: 5000,
-                                    receiver: ADDRESS,
-                                },
-                            },
-                        ],
-                    }),
-            ),
-            http.get(`${TESTNET_PERA}/v1/accounts/:address/transactions/`, () =>
-                HttpResponse.json({
-                    current_round: 1,
-                    next: null,
-                    previous: null,
-                    results: [
-                        {
-                            id: 'FROM_PERA_MUST_NOT_APPEAR',
-                            tx_type: 'pay',
-                            sender: ADDRESS,
-                            confirmed_round: 1,
-                            round_time: 1,
-                            fee: '1000',
-                        },
-                    ],
-                }),
-            ),
-        )
-
-        const result = await fetchTransactionHistory({
-            accountAddress: ADDRESS,
-            network: Networks.betanet,
+        beforeAll(() => {
+            server.listen({ onUnhandledRequest: 'bypass' })
+            server.events.on('request:start', record)
         })
 
-        const ids = result.transactions.map(transaction => transaction.id)
-        expect(ids).toContain('FROM_INDEXER')
-        expect(ids).not.toContain('FROM_PERA_MUST_NOT_APPEAR')
-    })
+        afterAll(() => {
+            server.events.removeListener('request:start', record)
+            server.close()
+        })
 
-    it('rejects a transaction carrying another chain genesis hash', () => {
-        // No MSW handler here on purpose: getExpectedGenesisHash is
-        // synchronous and network-free (see resolveGenesisHash.ts), so
-        // betanet's expected hash comes straight from the build-time-pinned
-        // config, never from a node response.
-        const expected = getExpectedGenesisHash(Networks.betanet)
-        expect(expected).toBe(BETANET_GENESIS)
+        beforeEach(() => {
+            requested.length = 0
+            configure()
+            useNetworkStore.getState().setNetwork(network)
+        })
 
-        // A dApp that (mistakenly, or via a stale session) builds with
-        // testnet's genesis while the wallet is active on betanet must be
-        // rejected regardless of chain-id pairing — this is the safety net.
-        const transactions = [
-            { genesisHash: decodeFromBase64(TESTNET_GENESIS) },
-        ] as Parameters<typeof assertTransactionsMatchNetwork>[0]
+        afterEach(() => {
+            server.resetHandlers()
+            useNetworkStore.getState().setNetwork(Networks.mainnet)
+            useCustomNetworkStore.getState().resetState()
+        })
 
-        expect(() =>
-            assertTransactionsMatchNetwork(
-                transactions,
-                Networks.betanet,
-                expected,
-            ),
-        ).toThrow(GenesisHashMismatchError)
-    })
-})
+        it('sends chain reads to the active network, not the fallback', async () => {
+            server.use(
+                http.get(`${algodUrl}/v2/accounts/:address`, () =>
+                    HttpResponse.json({
+                        address: ADDRESS,
+                        amount: 1_000_000,
+                        'min-balance': 100_000,
+                        round: 1,
+                        'total-apps-opted-in': 0,
+                        'total-assets-opted-in': 0,
+                        'total-created-apps': 0,
+                        'total-created-assets': 0,
+                    }),
+                ),
+            )
+
+            await getAlgorandClient()
+                .client.algod.accountInformation(ADDRESS)
+                .do()
+
+            expect(requested.some(url => url.startsWith(algodUrl))).toBe(true)
+            expect(requested.some(url => url.includes('testnet-api'))).toBe(
+                false,
+            )
+        })
+
+        it('sends pera-service reads to the testnet backend', async () => {
+            server.use(
+                http.get(`${TESTNET_PERA}/v1/assets/`, () =>
+                    HttpResponse.json({
+                        results: [],
+                        next: null,
+                        previous: null,
+                    }),
+                ),
+            )
+
+            await fetchAssets(['31566704'], network)
+
+            expect(requested.some(url => url.startsWith(TESTNET_PERA))).toBe(
+                true,
+            )
+        })
+
+        it('reads history from the chain indexer, never the borrowed backend', async () => {
+            server.use(
+                http.get(
+                    `${indexerUrl}/v2/accounts/:address/transactions`,
+                    () =>
+                        HttpResponse.json({
+                            'current-round': 42,
+                            transactions: [
+                                {
+                                    id: 'FROM_INDEXER',
+                                    'tx-type': 'pay',
+                                    sender: ADDRESS,
+                                    fee: 1000,
+                                    'confirmed-round': 41,
+                                    'round-time': 1_700_000_000,
+                                    'payment-transaction': {
+                                        amount: 5000,
+                                        receiver: ADDRESS,
+                                    },
+                                },
+                            ],
+                        }),
+                ),
+                http.get(
+                    `${TESTNET_PERA}/v1/accounts/:address/transactions/`,
+                    () =>
+                        HttpResponse.json({
+                            current_round: 1,
+                            next: null,
+                            previous: null,
+                            results: [
+                                {
+                                    id: 'FROM_PERA_MUST_NOT_APPEAR',
+                                    tx_type: 'pay',
+                                    sender: ADDRESS,
+                                    confirmed_round: 1,
+                                    round_time: 1,
+                                    fee: '1000',
+                                },
+                            ],
+                        }),
+                ),
+            )
+
+            const result = await fetchTransactionHistory({
+                accountAddress: ADDRESS,
+                network,
+            })
+
+            const ids = result.transactions.map(transaction => transaction.id)
+            expect(ids).toContain('FROM_INDEXER')
+            expect(ids).not.toContain('FROM_PERA_MUST_NOT_APPEAR')
+        })
+
+        it('rejects a transaction carrying another chain genesis hash', () => {
+            // No MSW handler here on purpose: getExpectedGenesisHash is
+            // synchronous and network-free (see resolveGenesisHash.ts), so the
+            // expected hash comes straight from build-time config (betanet) or
+            // the custom store — never from a node response. Asserting the
+            // exact value is what stops the mismatch check below from passing
+            // vacuously on an empty hash.
+            const expected = getExpectedGenesisHash(network)
+            expect(expected).toBe(genesisHash)
+
+            // A dApp that (mistakenly, or via a stale session) builds with
+            // testnet's genesis while the wallet is active elsewhere must be
+            // rejected regardless of chain-id pairing — this is the safety net.
+            const transactions = [
+                { genesisHash: decodeFromBase64(TESTNET_GENESIS) },
+            ] as Parameters<typeof assertTransactionsMatchNetwork>[0]
+
+            expect(() =>
+                assertTransactionsMatchNetwork(transactions, network, expected),
+            ).toThrow(GenesisHashMismatchError)
+        })
+    },
+)
