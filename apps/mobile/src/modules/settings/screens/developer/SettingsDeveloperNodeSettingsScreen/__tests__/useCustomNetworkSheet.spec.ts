@@ -90,7 +90,9 @@ describe('useCustomNetworkSheet', () => {
         // implementation that snapshots store state, which must not leak.
         switchNetwork.mockReset()
         fetchGenesisFromNode.mockClear()
-        clearCustomNetworkCache.mockClear()
+        // Reset, not clear: the clear-before-repoint test installs an
+        // implementation that snapshots store state, which must not leak.
+        clearCustomNetworkCache.mockReset()
         mockBackHandlerAddEventListener.mockClear()
         mockBackHandlerRemove.mockClear()
         mockBackHandlerAddEventListener.mockReturnValue({
@@ -199,6 +201,31 @@ describe('useCustomNetworkSheet', () => {
         expect(switchNetwork).not.toHaveBeenCalled()
     })
 
+    test('a missing genesis id blocks save', async () => {
+        // fetchGenesisFromNode defaults genesisId to '' when a node omits
+        // `genesis-id`, so without this an otherwise "valid" saved config can
+        // carry an empty one — and the extension advertises genesisId to every
+        // dApp over ARC-0027 discover/enable.
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => result.current.open())
+        act(() => {
+            result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
+            result.current.handleFieldChange(
+                'indexerUrl',
+                'http://10.0.0.5:8980',
+            )
+            result.current.handleFieldChange('genesisHash', 'HASH=')
+        })
+        await act(async () => {
+            await result.current.handleSave()
+        })
+
+        expect(result.current.errors.genesisId).toBe(true)
+        expect(getCustomNetworkConfig()).toBeUndefined()
+        expect(switchNetwork).not.toHaveBeenCalled()
+    })
+
     test('fetch fills both genesis fields and leaves them editable', async () => {
         fetchGenesisFromNode.mockResolvedValue({
             genesisHash: 'FETCHED=',
@@ -278,6 +305,39 @@ describe('useCustomNetworkSheet', () => {
         })
 
         expect(clearCustomNetworkCache).toHaveBeenCalled()
+    })
+
+    test('clears the old chain cache BEFORE repointing the clients at the new one', async () => {
+        // setCustomNetwork fires the store subscription synchronously, which
+        // repoints every ky client at chain B. If the DELETE ran after that, a
+        // chain-A query still in flight could resolve against the already-
+        // repointed cache-miss path and re-insert its own rows under the single
+        // `custom` partition — surviving the sweep that exists to remove them.
+        // Ordering is the invariant, so snapshot what the store holds at the
+        // moment the clear is called.
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://old:4001',
+            indexerUrl: 'http://old:8980',
+            genesisHash: 'OLD=',
+            genesisId: 'g',
+        })
+        let configAtClearTime: CustomNetworkConfig | undefined
+        clearCustomNetworkCache.mockImplementation(() => {
+            configAtClearTime = getCustomNetworkConfig()
+        })
+
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => result.current.open())
+        act(() => {
+            result.current.handleFieldChange('genesisHash', 'NEW=')
+        })
+        await act(async () => {
+            await result.current.handleSave()
+        })
+
+        expect(configAtClearTime?.genesisHash).toBe('OLD=')
+        expect(getCustomNetworkConfig()?.genesisHash).toBe('NEW=')
     })
 
     test('changing only the host does NOT clear the custom cache', async () => {

@@ -34,6 +34,15 @@ export type CustomNetworkSheetErrors = {
     algodUrl?: boolean
     indexerUrl?: boolean
     genesisHash?: boolean
+    /**
+     * Required even though `genesisId` is deliberately excluded from the signing
+     * comparison (`genesisHash` is the signature-bound identifier): the
+     * extension advertises `genesisId` to every dApp over ARC-0027
+     * discover/enable, and `fetchGenesisFromNode` defaults it to `''` when a
+     * node omits `genesis-id`. Without this, a "valid" saved config can carry an
+     * empty chain name.
+     */
+    genesisId?: boolean
     /** The most recent "Fetch from node" attempt failed. Informational only
      * — it never blocks manual entry or Save. */
     fetch?: boolean
@@ -87,15 +96,17 @@ export type UseCustomNetworkSheetResult = {
  * doesn't go through a validated Save.
  *
  * `handleSave` is the ONLY place that writes anything: it validates both
- * URLs (shared `isValidEndpoint`) and requires a non-empty genesis hash —
- * failing either sets the matching error flag and returns before touching
- * the store, the cache, or the active network. On success it persists the
- * whole config as one unit (`setCustomNetwork` replaces, never merges — see
- * `CustomNetworkConfig`'s own docstring), clears the custom-network cache
- * when {@link shouldClearCustomCache} says the chain identity actually
- * changed, and only THEN commits the network switch and kicks the sync
- * service. Persist-before-switch is the entire point of this sheet: the app
- * must never observe `custom` as the ACTIVE network while it is unconfigured.
+ * URLs (shared `isValidEndpoint`) and requires a non-empty genesis hash and
+ * genesis id — failing any of them sets the matching error flag and returns
+ * before touching the store, the cache, or the active network. On success it
+ * clears the custom-network cache when {@link shouldClearCustomCache} says the
+ * chain identity actually changed, THEN persists the whole config as one unit
+ * (`setCustomNetwork` replaces, never merges — see `CustomNetworkConfig`'s own
+ * docstring), and only THEN commits the network switch and kicks the sync
+ * service. Both orderings are load-bearing: clear-before-persist keeps an
+ * in-flight chain-A query from re-inserting its rows after the sweep, and
+ * persist-before-switch means the app never observes `custom` as the ACTIVE
+ * network while it is unconfigured.
  */
 export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
     const [isOpen, setIsOpen] = useState(false)
@@ -156,7 +167,8 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
             if (
                 field === 'algodUrl' ||
                 field === 'indexerUrl' ||
-                field === 'genesisHash'
+                field === 'genesisHash' ||
+                field === 'genesisId'
             ) {
                 setErrors(prev => ({ ...prev, [field]: false }))
             }
@@ -182,7 +194,12 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
                 genesisHash: fetched.genesisHash,
                 genesisId: fetched.genesisId,
             }))
-            setErrors(prev => ({ ...prev, fetch: false, genesisHash: false }))
+            setErrors(prev => ({
+                ...prev,
+                fetch: false,
+                genesisHash: false,
+                genesisId: fetched.genesisId.length === 0,
+            }))
         } catch {
             setErrors(prev => ({ ...prev, fetch: true }))
         } finally {
@@ -195,12 +212,14 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
             algodUrl: !isValidEndpoint(draft.algodUrl),
             indexerUrl: !isValidEndpoint(draft.indexerUrl),
             genesisHash: draft.genesisHash.length === 0,
+            genesisId: draft.genesisId.length === 0,
         }
 
         if (
             validationErrors.algodUrl ||
             validationErrors.indexerUrl ||
-            validationErrors.genesisHash
+            validationErrors.genesisHash ||
+            validationErrors.genesisId
         ) {
             setErrors(prev => ({ ...prev, ...validationErrors }))
             return
@@ -217,11 +236,21 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
         const previous = getCustomNetworkConfig()
         const shouldClear = shouldClearCustomCache(previous, next)
 
-        useCustomNetworkStore.getState().setCustomNetwork(next)
-
+        // Clear BEFORE the store write, not after. setCustomNetwork fires the
+        // custom-network store subscription synchronously, which repoints every
+        // ky client at the new chain — so a chain-A query still in flight when
+        // Save is pressed (the sync service is actively polling, since the
+        // developer is already ON custom) could write its rows back after the
+        // DELETE and survive under the single `custom` partition, which is the
+        // precise outcome this sweep exists to prevent. removeQueries can evict
+        // the cache entry but cannot undo the DB write. `shouldClear` is
+        // computed from `previous`, so nothing here needs the store updated
+        // first.
         if (shouldClear) {
             await clearCustomNetworkCache(queryClient)
         }
+
+        useCustomNetworkStore.getState().setCustomNetwork(next)
 
         await switchNetwork(Networks.custom)
         try {

@@ -2126,6 +2126,7 @@
                 "fetch_failed": "Could not reach that node. Enter the values manually.",
                 "invalid_url": "Enter a valid http:// or https:// URL",
                 "genesis_required": "Fetch or enter the genesis hash",
+                "genesis_id_required": "Fetch or enter the genesis ID",
                 "save": "Save and switch",
                 "cancel": "Cancel",
                 "reset": "Reset to defaults"

@@ -159,6 +159,13 @@ export const CustomNetworkSheet = ({ sheet }: CustomNetworkSheetProps) => {
                     onChangeText={text =>
                         sheet.handleFieldChange('genesisId', text)
                     }
+                    errorMessage={
+                        sheet.errors.genesisId
+                            ? t(
+                                  'settings.developer.node_settings.genesis_id_required',
+                              )
+                            : undefined
+                    }
                     autoCapitalize='none'
                     autoCorrect={false}
                 />
