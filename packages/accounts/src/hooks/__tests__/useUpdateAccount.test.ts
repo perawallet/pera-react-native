@@ -166,7 +166,7 @@ describe('useUpdateAccount', () => {
         ])
     })
 
-    it('calls backend update when deviceID exists', () => {
+    it('does not touch the device API — registration is the single writer', () => {
         const { result } = renderHook(() => useUpdateAccount())
 
         const updatedAccount: WalletAccount = {
@@ -179,13 +179,7 @@ describe('useUpdateAccount', () => {
 
         result.current(updatedAccount)
 
-        expect(mockUpdateDeviceMutation).toHaveBeenCalledWith({
-            deviceId: 'DEVICE_ID_123',
-            data: {
-                platform: 'ios',
-                accounts: ['ADDR1', 'ADDR2'],
-            },
-        })
+        expect(mockUpdateDeviceMutation).not.toHaveBeenCalled()
     })
 
     it('handles account not found gracefully', () => {
