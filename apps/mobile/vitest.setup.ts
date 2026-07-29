@@ -2400,6 +2400,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             return value
         },
         truncateAlgorandAddress: vi.fn(a => a),
+        SHORT_ADDRESS_LENGTH: 11,
+        LONG_ADDRESS_LENGTH: 20,
+        dedupeSecondaryLabel: (primary: string, secondary?: string | null) =>
+            secondary && secondary !== primary ? secondary : undefined,
         stripUrlScheme: vi.fn(url => url),
         // Real implementations — serialized route params round-trip through
         // these, so a stub would silently corrupt every public key fixture.

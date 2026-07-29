@@ -58,6 +58,17 @@ export const utf8ByteLength = (value: string): number =>
     new TextEncoder().encode(value).length
 
 /**
+ * Drops a secondary/subtitle label when it duplicates the primary, so identity
+ * displays (account/contact/address name + subtitle) never show the same text
+ * twice. Returns `undefined` to signal "hide the secondary line".
+ */
+export const dedupeSecondaryLabel = (
+    primary: string,
+    secondary: string | null | undefined,
+): string | undefined =>
+    secondary && secondary !== primary ? secondary : undefined
+
+/**
  * Decode a value that may be a JS number, a string-encoded number, or null.
  *
  * Used at FFI / native-bridge boundaries where 64-bit integers are serialized
