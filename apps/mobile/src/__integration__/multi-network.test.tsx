@@ -38,7 +38,7 @@ import {
     getAlgorandClient,
     useNetworkStore,
     useCustomNetworkStore,
-    resolveExpectedGenesisHash,
+    getExpectedGenesisHash,
 } from '@perawallet/wallet-core-blockchain'
 import { fetchTransactionHistory } from '@perawallet/wallet-core-transactions'
 import { fetchAssets } from '@perawallet/wallet-core-assets'
@@ -182,14 +182,12 @@ describe('multi-network routing', () => {
         expect(ids).not.toContain('FROM_PERA_MUST_NOT_APPEAR')
     })
 
-    it('rejects a transaction carrying another chain genesis hash', async () => {
-        server.use(
-            http.get(`${BETANET_ALGOD}/v2/transactions/params`, () =>
-                HttpResponse.json({ 'genesis-hash': BETANET_GENESIS }),
-            ),
-        )
-
-        const expected = await resolveExpectedGenesisHash(Networks.betanet)
+    it('rejects a transaction carrying another chain genesis hash', () => {
+        // No MSW handler here on purpose: getExpectedGenesisHash is
+        // synchronous and network-free (see resolveGenesisHash.ts), so
+        // betanet's expected hash comes straight from the build-time-pinned
+        // config, never from a node response.
+        const expected = getExpectedGenesisHash(Networks.betanet)
         expect(expected).toBe(BETANET_GENESIS)
 
         // A dApp that (mistakenly, or via a stale session) builds with

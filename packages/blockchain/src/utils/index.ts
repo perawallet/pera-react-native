@@ -21,6 +21,7 @@ import {
 
 export * from './algorandClient'
 export * from './resolveGenesisHash'
+export * from './fetchGenesisFromNode'
 export * from './createAlgorandClient'
 export * from './TimeoutHttpClient'
 export * from './addresses'
