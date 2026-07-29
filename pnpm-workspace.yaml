@@ -12,7 +12,7 @@ catalog:
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.22
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
-  "@lottiefiles/dotlottie-react": 0.19.10
+  "@lottiefiles/dotlottie-react": 0.19.11
   "@babel/runtime": ^7.29.2
   "@expo/app-integrity": ~57.0.0
   "@joe-p/react-native-falcon": 0.1.0
@@ -151,7 +151,7 @@ patchedDependencies:
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
   # qualify to Swift.abs to disambiguate. Drop once Expo ships a toolchain-compatible release.
-  "expo-modules-jsi@57.0.3": patches/expo-modules-jsi@57.0.3.patch
+  "expo-modules-jsi@57.0.4": patches/expo-modules-jsi@57.0.4.patch
 
 overrides:
   # Force ONE algosdk across the whole tree, including inside
