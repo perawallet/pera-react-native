@@ -63,6 +63,7 @@ export const SigningActionButtons = () => {
                     variant='linkNeutral'
                     onPress={handleReject}
                     isDisabled={isLoading}
+                    testID='signing_reject_button'
                 />
             )}
         </PWView>

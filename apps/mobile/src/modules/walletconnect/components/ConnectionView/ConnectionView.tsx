@@ -145,12 +145,16 @@ export const ConnectionView = ({
                 showsVerticalScrollIndicator={false}
                 inBottomSheet
             />
-            <PWView style={styles.buttonContainer}>
+            <PWView
+                style={styles.buttonContainer}
+                testID='wc_connection_screen'
+            >
                 <PWButton
                     variant='secondary'
                     title={t('common.cancel.label')}
                     onPress={handleCancel}
                     style={styles.cancelButton}
+                    testID='wc_reject_button'
                 />
                 <PWButton
                     variant='primary'
@@ -159,6 +163,7 @@ export const ConnectionView = ({
                     style={styles.connectButton}
                     isDisabled={!selectedAccounts.length}
                     isLoading={isConnecting}
+                    testID='wc_connect_button'
                 />
             </PWView>
         </>
