@@ -284,6 +284,54 @@ describe('services/device/hooks', () => {
         expect(registrationResult).toEqual({ createdNew: false })
     })
 
+    // A rotated push token reaches the backend only because writing it changes
+    // registerDevice's identity, which useDeviceRegistration lists in the deps
+    // of its registering effect. Nothing calls registerDevice on the write, so
+    // memoising registerDevice to a stable reference would silently strand
+    // every token rotation on the device. Both halves are asserted here.
+    test('useDevice re-issues registerDevice when the push token changes, carrying the new token', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+
+        const { result: store } = renderHook(() => useDeviceStore())
+        act(() => {
+            store.current.setDeviceID('mainnet', 'existing-id')
+            store.current.setPushToken('OLD_TOKEN')
+        })
+
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
+
+        const { result } = renderHook(() => useDevice(), { wrapper })
+        const registerBefore = result.current.registerDevice
+
+        act(() => {
+            store.current.setPushToken('NEW_TOKEN')
+        })
+
+        expect(result.current.registerDevice).not.toBe(registerBefore)
+
+        await act(async () => {
+            await result.current.registerDevice(['account-1'])
+        })
+
+        expect(mockUpdateDevice).toHaveBeenCalledWith({
+            deviceId: 'existing-id',
+            data: expect.objectContaining({ push_token: 'NEW_TOKEN' }),
+        })
+    })
+
     test('useDevice falls back to createDevice when updateDevice 404s (stale id)', async () => {
         vi.resetModules()
         mockUpdateDevice.mockRejectedValueOnce(
