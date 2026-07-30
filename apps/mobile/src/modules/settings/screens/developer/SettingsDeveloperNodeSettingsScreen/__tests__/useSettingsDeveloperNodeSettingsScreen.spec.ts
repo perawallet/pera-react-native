@@ -48,14 +48,31 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
         mockRequestBottomSheet.mockClear()
     })
 
-    test('lists every network exactly once', () => {
+    test('lists every network exactly once, regardless of display order', () => {
         const { result } = renderHook(() =>
             useSettingsDeveloperNodeSettingsScreen(),
         )
 
-        expect(result.current.networks.map(row => row.network)).toEqual(
-            Object.values(Networks),
+        // Guards against a network being added to the union without a
+        // matching NETWORK_DISPLAY_ORDER entry — a plain Network[] type
+        // can't catch that at compile time.
+        expect(result.current.networks.map(row => row.network).sort()).toEqual(
+            Object.values(Networks).sort(),
         )
+    })
+
+    test('displays MainNet first, followed by TestNet, BetaNet, then Custom', () => {
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+
+        expect(result.current.networks.map(row => row.network)).toEqual([
+            Networks.mainnet,
+            Networks.testnet,
+            Networks.betanet,
+            Networks.custom,
+        ])
+        expect(result.current.networks[0].network).toBe(Networks.mainnet)
     })
 
     test('marks the active network as selected and the rest as not', () => {

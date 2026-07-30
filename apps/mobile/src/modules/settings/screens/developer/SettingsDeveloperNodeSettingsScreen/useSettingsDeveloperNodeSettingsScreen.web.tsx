@@ -35,6 +35,16 @@ const LABEL_KEYS: Record<Network, string> = {
     [Networks.custom]: 'settings.developer.node_settings.custom_label',
 }
 
+// Explicit display order: MainNet first. Object.values(Networks) follows the
+// declaration order in packages/config, which is testnet-first, and a screen's
+// row order should not be hostage to an unrelated object literal's ordering.
+const NETWORK_DISPLAY_ORDER: Network[] = [
+    Networks.mainnet,
+    Networks.testnet,
+    Networks.betanet,
+    Networks.custom,
+]
+
 type UseSettingsDeveloperNodeSettingsScreenResult = {
     networks: NetworkRow[]
     isSwitching: boolean
@@ -58,7 +68,7 @@ export const useSettingsDeveloperNodeSettingsScreen =
 
         const networks = useMemo(
             () =>
-                Object.values(Networks).map<NetworkRow>(network => ({
+                NETWORK_DISPLAY_ORDER.map<NetworkRow>(network => ({
                     network,
                     labelKey: LABEL_KEYS[network],
                     isSelected: network === activeNetwork,
