@@ -17,6 +17,7 @@ import {
     getArc59Config,
     getNetworkConfig,
     isMainnet,
+    isPeraBackedNetwork,
     isTestnet,
 } from '../network-config'
 
@@ -111,11 +112,36 @@ describe('network-config', () => {
         expect(custom.dispenserUrl).toBe('')
     })
 
-    test('custom still borrows the testnet lane for pera services', () => {
-        const custom = getNetworkConfig(Networks.custom)
+    test('isPeraBackedNetwork is true only where a Pera backend is deployed', () => {
+        expect(isPeraBackedNetwork(Networks.mainnet)).toBe(true)
+        expect(isPeraBackedNetwork(Networks.testnet)).toBe(true)
+        expect(isPeraBackedNetwork(Networks.betanet)).toBe(false)
+        expect(isPeraBackedNetwork(Networks.custom)).toBe(false)
+    })
 
-        expect(custom.backendUrl).toBe(config.testnetBackendUrl)
-        expect(custom.cardUsdcAssetId).toBe(config.testnetCardUsdcAssetId)
+    test('networks without a Pera deployment get empty services, never borrowed ones', () => {
+        // The whole point of the change: betanet's backendUrl used to BE
+        // testnet's. Asserting inequality with the real testnet value is what
+        // makes this test fail if the lane indirection ever comes back.
+        const testnetBackend = getNetworkConfig(Networks.testnet).backendUrl
+        expect(testnetBackend).not.toBe('')
+
+        for (const network of [Networks.betanet, Networks.custom]) {
+            const networkConfig = getNetworkConfig(network)
+
+            expect(networkConfig.backendUrl).toBe('')
+            expect(networkConfig.backendUrl).not.toBe(testnetBackend)
+            expect(networkConfig.bidaliBaseUrl).toBe('')
+            expect(networkConfig.baanxBaseUrl).toBe('')
+            expect(networkConfig.cardEscrowBaseUrl).toBe('')
+            expect(networkConfig.cardUsdcAssetId).toBe('')
+        }
+    })
+
+    test('chain truth is untouched by the Pera-services change', () => {
+        // Guards the one thing that must NOT go empty alongside the services.
+        expect(getNetworkConfig(Networks.betanet).algodUrl).not.toBe('')
+        expect(getNetworkConfig(Networks.betanet).genesisHash).not.toBe('')
     })
 
     test('betanet keeps its pinned chain identity', () => {

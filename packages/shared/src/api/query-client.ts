@@ -21,12 +21,7 @@ import ky, {
     isNetworkError,
     isTimeoutError,
 } from 'ky'
-import {
-    config,
-    getNetworkConfig,
-    hasPeraServiceFallback,
-    resolvePeraServiceNetwork,
-} from '@perawallet/wallet-core-config'
+import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     type RequestConfiguration,
     type ResponseConfiguration,
@@ -34,6 +29,7 @@ import {
 import { type Network, Networks } from '../models/base-types'
 import { logger, parsePrecisionSafeJson } from '../utils'
 import { PeraNetworkError, isPeraNetworkError } from '../errors/network'
+import { PeraServiceUnavailableError } from '../errors/pera-service'
 
 type BackendInstances = {
     algod: KyInstance
@@ -161,33 +157,6 @@ const logRetry = ({ request, error, retryCount }: BeforeRetryState) => {
     })
 }
 
-// Deduped so the 75+ `backend: 'pera'` call sites under polling do not flood
-// the console. Keyed per network+method+url, and `url` is the concrete
-// request path — including any address/asset id it interpolated, not just
-// the route template — so this bounds repeat polling of the SAME request
-// to one warning, not the whole fallback to one warning overall. The set
-// still grows with every distinct URL queried (one entry per account
-// address, asset id, etc.), just not per poll of the same one. Delete
-// alongside pera-service-fallback.ts.
-const warnedPeraFallbacks = new Set<string>()
-
-const warnPeraServiceFallbackOnce = (
-    network: Network,
-    method: string,
-    url: string,
-): void => {
-    if (!hasPeraServiceFallback(network)) return
-
-    const key = `${network}:${method}:${url}`
-    if (warnedPeraFallbacks.has(key)) return
-    warnedPeraFallbacks.add(key)
-
-    logger.warn(
-        `Pera services are not deployed for ${network}; borrowing ${resolvePeraServiceNetwork(network)}'s backend. Data returned is for the borrowed network, not ${network}.`,
-        { network, method, url },
-    )
-}
-
 const createFetchClient = (clients: Map<string, BackendInstances>) => {
     return async <TData, TVariables = unknown>(
         requestConfig: RequestConfiguration<TVariables>,
@@ -211,14 +180,6 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
         if (!client) {
             throw new Error(
                 'Could not get KY client for ' + requestConfig.backend,
-            )
-        }
-
-        if (requestConfig.backend === 'pera') {
-            warnPeraServiceFallbackOnce(
-                requestConfig.network,
-                requestConfig.method,
-                requestConfig.url,
             )
         }
 
@@ -294,6 +255,14 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             if (error instanceof Error && error.name === 'AbortError') {
                 throw error
             }
+            // Thrown by createPeraClient's beforeRequest hook before any
+            // socket opens. Must keep its identity too — wrapping it into a
+            // generic PeraNetworkError('unknown') here would defeat the
+            // entire point of a typed, non-retryable error that callers can
+            // branch on without their own guard.
+            if (error instanceof PeraServiceUnavailableError) {
+                throw error
+            }
             throw await PeraNetworkError.fromKyErrorWithBody(error)
         }
     }
@@ -329,16 +298,34 @@ const peraRetryConfig = {
     maxRetryAfter: 5000,
 }
 
-const createPeraClient = (network: Network): KyInstance =>
-    ky.create({
+const createPeraClient = (network: Network): KyInstance => {
+    const { backendUrl } = getNetworkConfig(network)
+
+    // No Pera deployment for this network (betanet, custom). Throw in
+    // beforeRequest rather than letting ky resolve a relative URL against an
+    // empty prefix: no socket opens, so this is cheap enough to leave on a
+    // sync tick, and the error is typed so callers can tell "not deployed
+    // here" from a real outage.
+    if (backendUrl === '')
+        return ky.create({
+            hooks: {
+                beforeRequest: [
+                    () => {
+                        throw new PeraServiceUnavailableError(network)
+                    },
+                ],
+            },
+        })
+
+    return ky.create({
         hooks: {
             ...standardHooks,
             beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
         },
-        // Already fallback-resolved by getNetworkConfig.
-        prefix: getNetworkConfig(network).backendUrl,
+        prefix: backendUrl,
         retry: peraRetryConfig,
     })
+}
 
 const createTokenHeaderClient = (
     prefix: string,

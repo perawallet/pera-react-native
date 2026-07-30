@@ -13,7 +13,7 @@
 // Cross-package routing coverage for the widened Network union:
 //
 //   chain reads   ─►  must hit the ACTIVE network's algod/indexer
-//   pera reads    ─►  must hit the TESTNET backend (borrowed services)
+//   pera reads    ─►  must NOT reach any Pera backend (none deployed)
 //   signing       ─►  must reject another chain's genesis hash
 //   history       ─►  must come from the chain's indexer, not the backend
 //
@@ -67,6 +67,10 @@ const BETANET_INDEXER = 'https://betanet-idx.algonode.cloud'
 // Read, never hardcoded: `backendUrl` comes from TESTNET_BACKEND_URL, which
 // tools/setup-env-secrets.sh sets for every developer. Pinning its default here
 // made this suite go false-red on any machine that had run that script.
+//
+// Still needed even though betanet/custom no longer borrow it: the history
+// test below registers this as a handler to prove Pera's transaction feed is
+// never consulted for TestNet-adjacent data on those networks.
 const TESTNET_PERA = getNetworkConfig(Networks.testnet).backendUrl
 
 const BETANET_GENESIS = 'mFgazF+2uRS1tMiL9dsj01hJGySEmPN28B/TjjvpVW0='
@@ -200,22 +204,21 @@ describe.each(FIXTURES)(
             ).toBe(false)
         })
 
-        it('sends pera-service reads to the testnet backend', async () => {
-            server.use(
-                http.get(`${TESTNET_PERA}/v1/assets/`, () =>
-                    HttpResponse.json({
-                        results: [],
-                        next: null,
-                        previous: null,
-                    }),
+        it("reaches no Pera backend at all, rather than borrowing TestNet's", async () => {
+            // Inverted from the fallback era, when this asserted the request
+            // DID reach TestNet's backend. No MSW handler is registered on
+            // purpose: if a request escaped to any host, `requested` would
+            // record it and the second assertion fails.
+            await expect(fetchAssets(['31566704'], network)).rejects.toThrow()
+
+            expect(
+                requested.some(url =>
+                    matchesBase(
+                        url,
+                        getNetworkConfig(Networks.testnet).backendUrl,
+                    ),
                 ),
-            )
-
-            await fetchAssets(['31566704'], network)
-
-            expect(requested.some(url => matchesBase(url, TESTNET_PERA))).toBe(
-                true,
-            )
+            ).toBe(false)
         })
 
         it('reads history from the chain indexer, never the borrowed backend', async () => {

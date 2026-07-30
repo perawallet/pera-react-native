@@ -12,10 +12,7 @@
 
 import { type Network, Networks } from './models/network'
 import { config } from './main'
-import {
-    type PeraServiceLane,
-    resolvePeraServiceLane,
-} from './pera-service-fallback'
+import { resolvePeraServiceLane } from './pera-service-fallback'
 
 /** Chain-intrinsic endpoints. Always the real active network — never falls back. */
 type ChainConfig = {
@@ -115,7 +112,47 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
     },
 }
 
-const peraServicesByLane: Record<PeraServiceLane, PeraServices> = {
+/**
+ * The networks that have a real Pera backend deployment.
+ *
+ * A type guard, not a boolean: `KNOWN_ASSET_IDS` and the `PeraServices` table
+ * are keyed by these two, so callers need the narrowing to index them.
+ */
+const PERA_BACKED_NETWORKS = [Networks.mainnet, Networks.testnet] as const
+
+export type PeraBackedNetwork = (typeof PERA_BACKED_NETWORKS)[number]
+
+export const isPeraBackedNetwork = (
+    network: Network,
+): network is PeraBackedNetwork =>
+    (PERA_BACKED_NETWORKS as readonly Network[]).includes(network)
+
+/**
+ * Every field empty. Named rather than inlined twice so the two rows below
+ * cannot drift, and so `satisfies` fails the build if a field is added to
+ * `PeraServices` without an empty counterpart here.
+ */
+const EMPTY_PERA_SERVICES = {
+    backendUrl: '',
+    bidaliBaseUrl: '',
+    bidaliApiKey: '',
+    baanxBaseUrl: '',
+    baanxClientKey: '',
+    baanxTenantId: '',
+    cardEscrowBaseUrl: '',
+    cardEscrowAuthToken: '',
+    cardW3CardAppId: '',
+    cardKillswitchAppId: '',
+    cardUsdcAssetId: '',
+} satisfies PeraServices
+
+/**
+ * `Record<Network, …>`, not `Partial<…>` plus a fallback: a fifth network added
+ * to the union fails TypeScript here until someone decides its Pera services,
+ * rather than silently resolving to TestNet's deployment. Same reasoning as
+ * `EXPECTED_CHAIN_ID_BY_NETWORK` in the walletconnect package.
+ */
+const peraServicesByNetwork: Record<Network, PeraServices> = {
     [Networks.mainnet]: {
         backendUrl: config.mainnetBackendUrl,
         bidaliBaseUrl: config.mainnetBidaliBaseUrl,
@@ -142,6 +179,10 @@ const peraServicesByLane: Record<PeraServiceLane, PeraServices> = {
         cardKillswitchAppId: config.testnetCardKillswitchAppId,
         cardUsdcAssetId: config.testnetCardUsdcAssetId,
     },
+    // No Pera deployment. Empty, never borrowed: createPeraClient turns an
+    // empty backendUrl into a thrown PeraServiceUnavailableError.
+    [Networks.betanet]: EMPTY_PERA_SERVICES,
+    [Networks.custom]: EMPTY_PERA_SERVICES,
 }
 
 export const getNetworkConfig = (network: Network): NetworkConfig => ({
@@ -149,7 +190,7 @@ export const getNetworkConfig = (network: Network): NetworkConfig => ({
     isMainnet: isMainnet(network),
     isTestnet: isTestnet(network),
     ...chainConfigByNetwork[network],
-    ...peraServicesByLane[resolvePeraServiceLane(network)],
+    ...peraServicesByNetwork[network],
 })
 
 /**
