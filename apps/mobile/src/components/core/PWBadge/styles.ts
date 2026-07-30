@@ -42,7 +42,12 @@ export const useStyles = makeStyles((theme, props: PWBadgeProps) => {
         container: {
             paddingHorizontal: isAlert ? 0 : theme.spacing.sm,
             minWidth: isAlert ? theme.spacing.xl : undefined,
-            height: theme.spacing.xl,
+            // minHeight, not height: the label scales with the OS font setting,
+            // so a fixed pill clipped it to the tops of the letters at large
+            // Dynamic Type. The badge sits at xl until the label outgrows it,
+            // leaving default-size rendering untouched.
+            minHeight: theme.spacing.xl,
+            paddingVertical: isAlert ? 0 : theme.spacing.xxs,
             backgroundColor,
             borderWidth: isAlert ? theme.borders.lg : theme.borders.none,
             borderColor: isAlert ? theme.colors.background : undefined,

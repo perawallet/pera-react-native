@@ -38,6 +38,10 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.md,
+            // The parent column aligns to flex-start, so without stretching
+            // this row it sizes to its content and the badge + label ran off
+            // the right edge once the label scaled up.
+            alignSelf: 'stretch',
         },
         icon: {
             width: theme.spacing['3xl'],
@@ -52,6 +56,9 @@ export const useStyles = makeStyles(theme => {
         },
         version: {
             color: theme.colors.textGray,
+            // Row children don't shrink by default in RN, so the label has to
+            // opt in before it will wrap next to the badge.
+            flexShrink: 1,
         },
         connectionContainer: {
             padding: theme.spacing.md,
