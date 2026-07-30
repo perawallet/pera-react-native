@@ -51,6 +51,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     ),
 }))
 
+// Mutable so a test can switch the active network to 'custom' without
+// re-mocking the whole module — reset in beforeEach to avoid cross-test leakage.
+let mockNetwork = 'mainnet'
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     getAlgorandClient: () => ({
         account: {
@@ -69,8 +73,12 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         },
     }),
     useNetworkStore: {
-        getState: () => ({ network: 'mainnet' }),
+        getState: () => ({ network: mockNetwork }),
     },
+}))
+
+vi.mock('@perawallet/wallet-core-config', () => ({
+    isPeraBackedNetwork: (n: string) => n === 'mainnet' || n === 'testnet',
 }))
 
 vi.mock('@perawallet/wallet-core-polling', () => ({
@@ -135,6 +143,15 @@ describe('SyncService', () => {
     beforeEach(async () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
+        mockNetwork = 'mainnet'
+        // A couple of tests reassign useNetworkStore.getState directly (to a
+        // closure that doesn't read mockNetwork) and restore it to a
+        // hardcoded 'mainnet' closure in their finally block — reset it back
+        // to the mockNetwork-driven implementation here so this test's
+        // behavior does not depend on suite execution order.
+        const { useNetworkStore } =
+            await import('@perawallet/wallet-core-blockchain')
+        useNetworkStore.getState = () => ({ network: mockNetwork })
         queryClient = new QueryClient()
         service = new SyncService({ queryClient })
 
@@ -646,13 +663,18 @@ describe('SyncService', () => {
         const { fetchAndPersistAccount } =
             await import('@perawallet/wallet-core-accounts')
 
-        // betanet has never been persisted: packages/polling's store only
-        // seeds mainnet/testnet keys (packages/polling/src/store/store.ts:27-30),
-        // so a user switching to betanet for the first time hits a genuinely
-        // absent key, not an explicit null.
-        useNetworkStore.getState = vi.fn(() => ({ network: 'betanet' }))
+        // Exercise the `?? null` semantics on a Pera-backed network (so this
+        // tick still reaches sendShouldRefreshRequest — see the
+        // "Pera-backed network gating" tests for the non-backed case, e.g.
+        // betanet/custom, which now short-circuit before this request
+        // entirely and so can no longer demonstrate the wire-payload
+        // assertion below). testnet's key is absent here to simulate a
+        // partially-seeded persisted map, mirroring how packages/polling's
+        // store can have a network key genuinely absent rather than an
+        // explicit null.
+        useNetworkStore.getState = vi.fn(() => ({ network: 'testnet' }))
         usePollingStore.getState = vi.fn(() => ({
-            lastRefreshedRound: { mainnet: 100, testnet: 50 },
+            lastRefreshedRound: { mainnet: 100 },
             setLastRefreshedRound: mockSetLastRefreshedRound,
         }))
         // Backend says "no work needed" — if the absent key were wrongly read
@@ -682,7 +704,7 @@ describe('SyncService', () => {
             // not undefined, in the /v1/accounts/should-refresh/ POST body —
             // a different request payload, not just a type-checker nuance.
             expect(mockSendShouldRefreshRequest).toHaveBeenCalledWith(
-                'betanet',
+                'testnet',
                 ['ADDR1', 'ADDR2'],
                 null,
             )
@@ -1108,6 +1130,95 @@ describe('SyncService', () => {
 
             service.stop()
         })
+    })
+
+    describe('Pera-backed network gating', () => {
+        // custom has no Pera backend deployment — sendShouldRefreshRequest
+        // would reject with PeraServiceUnavailableError on every tick, and
+        // (pre-fix) that rethrow engaged the tick's backoff until chain sync
+        // stopped entirely. checkShouldRefresh must short-circuit before
+        // issuing the request for these networks instead.
+        it('keeps syncing a Pera-less network (custom) on subsequent ticks without ever calling should-refresh', async () => {
+            const { fetchAndPersistAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            const { usePollingStore } =
+                await import('@perawallet/wallet-core-polling')
+
+            mockNetwork = 'custom'
+            // Already synced (a number, not null) so neverSynced is false —
+            // the pre-fix code path reaches sendShouldRefreshRequest here.
+            usePollingStore.getState = vi.fn(() => ({
+                lastRefreshedRound: {
+                    mainnet: null,
+                    testnet: null,
+                    custom: 100,
+                },
+                setLastRefreshedRound: mockSetLastRefreshedRound,
+            }))
+            mockSendShouldRefreshRequest.mockRejectedValue(
+                new Error('PeraServiceUnavailableError'),
+            )
+
+            try {
+                vi.useRealTimers()
+                service.start()
+
+                // First tick: unconditional force-sync (skips checkShouldRefresh).
+                await new Promise(resolve => setTimeout(resolve, 50))
+                vi.mocked(fetchAndPersistAccount).mockClear()
+
+                // Second tick: goes through checkShouldRefresh. The guard must
+                // return early so the chain sync still runs on this tick.
+                await new Promise(resolve => setTimeout(resolve, 3100))
+
+                service.stop()
+                vi.useFakeTimers()
+
+                expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+                expect(fetchAndPersistAccount).toHaveBeenCalled()
+            } finally {
+                usePollingStore.getState = () => ({
+                    lastRefreshedRound: { mainnet: null, testnet: null },
+                    setLastRefreshedRound: mockSetLastRefreshedRound,
+                })
+            }
+        }, 8000)
+
+        it('control: still calls should-refresh for a Pera-backed network (mainnet)', async () => {
+            const { usePollingStore } =
+                await import('@perawallet/wallet-core-polling')
+
+            usePollingStore.getState = vi.fn(() => ({
+                lastRefreshedRound: { mainnet: 100, testnet: null },
+                setLastRefreshedRound: mockSetLastRefreshedRound,
+            }))
+            mockSendShouldRefreshRequest.mockResolvedValue({
+                refresh: false,
+                round: null,
+            })
+
+            try {
+                vi.useRealTimers()
+                service.start()
+
+                await new Promise(resolve => setTimeout(resolve, 50))
+                await new Promise(resolve => setTimeout(resolve, 3100))
+
+                service.stop()
+                vi.useFakeTimers()
+
+                expect(mockSendShouldRefreshRequest).toHaveBeenCalledWith(
+                    'mainnet',
+                    ['ADDR1', 'ADDR2'],
+                    100,
+                )
+            } finally {
+                usePollingStore.getState = () => ({
+                    lastRefreshedRound: { mainnet: null, testnet: null },
+                    setLastRefreshedRound: mockSetLastRefreshedRound,
+                })
+            }
+        }, 8000)
     })
 
     describe('failure-aware backoff', () => {

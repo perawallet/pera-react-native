@@ -39,6 +39,7 @@ import {
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { onlineManager } from '@tanstack/react-query'
 import type { SyncServiceDeps } from '../models'
 
@@ -259,6 +260,16 @@ export class SyncService {
         // force-sync below, rather than an absent key silently reading as
         // "already synced" (undefined !== null).
         const neverSynced = (lastRefreshedRound[activeNetwork] ?? null) === null
+
+        // Networks with no Pera deployment (betanet, custom) have no should-refresh
+        // endpoint to consult — the request throws PeraServiceUnavailableError every
+        // tick. Returning the active network here keeps chain sync alive: algod and
+        // indexer need no Pera service and are the only sources these networks have.
+        // Checked BEFORE the request so the tick never pays for a throw that cannot
+        // succeed, and never reaches the rethrow below that engages backoff.
+        if (!isPeraBackedNetwork(activeNetwork)) {
+            return { networks: [activeNetwork], round: null }
+        }
 
         // A prior tick's should-refresh request got 401/403 (BACKEND_API_KEY
         // is wrong/missing) — skip re-issuing that request until
