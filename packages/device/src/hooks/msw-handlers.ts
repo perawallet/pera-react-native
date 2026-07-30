@@ -13,45 +13,16 @@
 import { http, HttpResponse, type HttpHandler } from 'msw'
 import type { DeviceResponse } from '../models'
 
-export type MockCreateDeviceParams = {
+export type MockRegisterDeviceParams = {
     response: DeviceResponse
     status?: number
 }
 
-export const mockCreateDevice = ({
+export const mockRegisterDevice = ({
     response,
     status = 200,
-}: MockCreateDeviceParams): HttpHandler =>
-    http.post('*/v1/devices/', () => HttpResponse.json(response, { status }))
-
-export type MockUpdateDeviceParams = {
-    deviceId: string
-    response: DeviceResponse
-    status?: number
-}
-
-export const mockUpdateDevice = ({
-    deviceId,
-    response,
-    status = 200,
-}: MockUpdateDeviceParams): HttpHandler =>
-    http.patch(`*/v1/devices/${deviceId}/`, () =>
-        HttpResponse.json(response, { status }),
-    )
-
-export type MockNullifyPushTokenParams = {
-    deviceId: string
-    status?: number
-}
-
-export const mockNullifyPushToken = ({
-    deviceId,
-    status = 204,
-}: MockNullifyPushTokenParams): HttpHandler =>
-    http.put(
-        `*/v1/devices/${deviceId}/`,
-        () => new HttpResponse(null, { status }),
-    )
+}: MockRegisterDeviceParams): HttpHandler =>
+    http.post('*/api/v3/devices', () => HttpResponse.json(response, { status }))
 
 export type MockDeleteDeviceParams = {
     status?: number
@@ -60,4 +31,4 @@ export type MockDeleteDeviceParams = {
 export const mockDeleteDevice = ({
     status = 204,
 }: MockDeleteDeviceParams = {}): HttpHandler =>
-    http.delete('*/v1/devices/', () => new HttpResponse(null, { status }))
+    http.delete('*/api/v3/devices', () => new HttpResponse(null, { status }))

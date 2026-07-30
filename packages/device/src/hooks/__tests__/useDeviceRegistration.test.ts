@@ -10,9 +10,13 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, test, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { onlineManager, focusManager } from '@tanstack/react-query'
+import {
+    DeviceAccountTypes,
+    type DeviceAccountRegistration,
+} from '../../models'
 
 const mockRegisterDevice = vi.fn()
 const mockClearDevicePushToken = vi.fn()
@@ -57,6 +61,19 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+// Builds a v3 registration entry. Defaults to the most common real-world
+// shape (algo25, notifications on) so each test only spells out the field
+// it cares about.
+const registration = (
+    address: string,
+    overrides: Partial<DeviceAccountRegistration> = {},
+): DeviceAccountRegistration => ({
+    address,
+    accountType: DeviceAccountTypes.algo25,
+    receiveNotifications: true,
+    ...overrides,
+})
+
 describe('useDeviceRegistration', () => {
     beforeEach(async () => {
         vi.clearAllMocks()
@@ -77,11 +94,11 @@ describe('useDeviceRegistration', () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
 
-        const addresses = ['acct-1']
-        renderHook(() => useDeviceRegistration(addresses))
+        const accounts = [registration('acct-1')]
+        renderHook(() => useDeviceRegistration(accounts))
 
         await waitFor(() => {
-            expect(mockRegisterDevice).toHaveBeenCalledWith(addresses)
+            expect(mockRegisterDevice).toHaveBeenCalledWith(accounts)
         })
         expect(mockClearDevicePushToken).not.toHaveBeenCalled()
     })
@@ -90,8 +107,8 @@ describe('useDeviceRegistration', () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
 
-        const addresses = ['acct-1']
-        const { rerender } = renderHook(() => useDeviceRegistration(addresses))
+        const accounts = [registration('acct-1')]
+        const { rerender } = renderHook(() => useDeviceRegistration(accounts))
 
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
@@ -106,67 +123,77 @@ describe('useDeviceRegistration', () => {
         })
     })
 
-    test('does not re-register when a new array carries the same addresses', async () => {
+    test('does not re-register when a new array carries the same accounts', async () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
 
         const { rerender } = renderHook(
-            ({ addresses }: { addresses: string[] }) =>
-                useDeviceRegistration(addresses),
-            { initialProps: { addresses: ['acct-1', 'acct-2'] } },
+            ({ accounts }: { accounts: DeviceAccountRegistration[] }) =>
+                useDeviceRegistration(accounts),
+            {
+                initialProps: {
+                    accounts: [registration('acct-1'), registration('acct-2')],
+                },
+            },
         )
 
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
         })
 
-        rerender({ addresses: ['acct-1', 'acct-2'] })
+        rerender({
+            accounts: [registration('acct-1'), registration('acct-2')],
+        })
 
         expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
     })
 
-    test('does not re-register when the same addresses arrive reordered', async () => {
+    test('does not re-register when the same accounts arrive reordered', async () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
 
         const { rerender } = renderHook(
-            ({ addresses }: { addresses: string[] }) =>
-                useDeviceRegistration(addresses),
-            { initialProps: { addresses: ['acct-1', 'acct-2'] } },
+            ({ accounts }: { accounts: DeviceAccountRegistration[] }) =>
+                useDeviceRegistration(accounts),
+            {
+                initialProps: {
+                    accounts: [registration('acct-1'), registration('acct-2')],
+                },
+            },
         )
 
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
         })
 
-        rerender({ addresses: ['acct-2', 'acct-1'] })
+        rerender({
+            accounts: [registration('acct-2'), registration('acct-1')],
+        })
 
         expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
     })
 
-    test('re-registers when the address set changes', async () => {
+    test('re-registers when the account set changes', async () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
 
         const { rerender } = renderHook(
-            ({ addresses }: { addresses: string[] }) =>
-                useDeviceRegistration(addresses),
-            { initialProps: { addresses: ['acct-1'] } },
+            ({ accounts }: { accounts: DeviceAccountRegistration[] }) =>
+                useDeviceRegistration(accounts),
+            { initialProps: { accounts: [registration('acct-1')] } },
         )
 
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
         })
 
-        rerender({ addresses: ['acct-1', 'acct-2'] })
+        const nextAccounts = [registration('acct-1'), registration('acct-2')]
+        rerender({ accounts: nextAccounts })
 
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
         })
-        expect(mockRegisterDevice).toHaveBeenLastCalledWith([
-            'acct-1',
-            'acct-2',
-        ])
+        expect(mockRegisterDevice).toHaveBeenLastCalledWith(nextAccounts)
     })
 
     test('registers with an empty list when no accounts exist', async () => {
@@ -186,7 +213,9 @@ describe('useDeviceRegistration', () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
 
-        const { rerender } = renderHook(() => useDeviceRegistration(['acct-1']))
+        const { rerender } = renderHook(() =>
+            useDeviceRegistration([registration('acct-1')]),
+        )
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
         })
@@ -205,8 +234,8 @@ describe('useDeviceRegistration', () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
         const { useDeviceStore } = await import('../../store')
-        const addresses = ['acct-1']
-        renderHook(() => useDeviceRegistration(addresses))
+        const accounts = [registration('acct-1')]
+        renderHook(() => useDeviceRegistration(accounts))
 
         await waitFor(() => {
             expect(
@@ -233,8 +262,8 @@ describe('useDeviceRegistration', () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
         const { useDeviceStore } = await import('../../store')
-        const addresses = ['acct-1']
-        renderHook(() => useDeviceRegistration(addresses))
+        const accounts = [registration('acct-1')]
+        renderHook(() => useDeviceRegistration(accounts))
 
         await waitFor(() => {
             expect(
@@ -257,8 +286,8 @@ describe('useDeviceRegistration', () => {
             await import('../useDeviceRegistration')
         const { useDeviceStore } = await import('../../store')
 
-        let addresses = ['acct-1']
-        const { rerender } = renderHook(() => useDeviceRegistration(addresses))
+        let accounts = [registration('acct-1')]
+        const { rerender } = renderHook(() => useDeviceRegistration(accounts))
 
         await waitFor(() => {
             expect(
@@ -274,7 +303,7 @@ describe('useDeviceRegistration', () => {
                     resolveHanging = () => resolve({ createdNew: false })
                 }),
         )
-        addresses = ['acct-1', 'acct-2']
+        accounts = [registration('acct-1'), registration('acct-2')]
         rerender()
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
@@ -296,8 +325,8 @@ describe('useDeviceRegistration', () => {
     test('does not re-register on reconnect once registration succeeded', async () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
-        const addresses = ['acct-1']
-        renderHook(() => useDeviceRegistration(addresses))
+        const accounts = [registration('acct-1')]
+        renderHook(() => useDeviceRegistration(accounts))
 
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
@@ -309,23 +338,28 @@ describe('useDeviceRegistration', () => {
         expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
     })
 
-    test('retries with the same sorted address list the mount path registers', async () => {
+    // Note: the effect's re-run key is a sorted digest used purely to decide
+    // *whether* to fire — the payload actually sent is always the caller's
+    // array in the order it was passed (see "passes the registrations
+    // through unflattened" below), because a three-field key can't be
+    // losslessly unsorted back into per-account type/notification flags.
+    // What this test verifies is that the mount attempt and the retry
+    // attempt send the exact same list, not that either is alphabetized.
+    test('retries with the same account list the mount path registers', async () => {
         mockRegisterDevice.mockRejectedValueOnce(new Error('offline'))
 
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
         const { useDeviceStore } = await import('../../store')
-        renderHook(() => useDeviceRegistration(['acct-2', 'acct-1']))
+        const accounts = [registration('acct-2'), registration('acct-1')]
+        renderHook(() => useDeviceRegistration(accounts))
 
         await waitFor(() => {
             expect(
                 useDeviceStore.getState().pendingRegistrationNetworks,
             ).toContain('mainnet')
         })
-        expect(mockRegisterDevice).toHaveBeenLastCalledWith([
-            'acct-1',
-            'acct-2',
-        ])
+        expect(mockRegisterDevice).toHaveBeenLastCalledWith(accounts)
 
         act(() => onlineManager.setOnline(false))
         act(() => onlineManager.setOnline(true))
@@ -333,10 +367,7 @@ describe('useDeviceRegistration', () => {
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
         })
-        expect(mockRegisterDevice).toHaveBeenLastCalledWith([
-            'acct-1',
-            'acct-2',
-        ])
+        expect(mockRegisterDevice).toHaveBeenLastCalledWith(accounts)
     })
 
     test('ignores a stale success settling after a newer attempt failed', async () => {
@@ -353,9 +384,9 @@ describe('useDeviceRegistration', () => {
         )
 
         const { rerender } = renderHook(
-            ({ addresses }: { addresses: string[] }) =>
-                useDeviceRegistration(addresses),
-            { initialProps: { addresses: ['acct-1'] } },
+            ({ accounts }: { accounts: DeviceAccountRegistration[] }) =>
+                useDeviceRegistration(accounts),
+            { initialProps: { accounts: [registration('acct-1')] } },
         )
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
@@ -363,7 +394,9 @@ describe('useDeviceRegistration', () => {
 
         // Account-set change: the newer attempt fails and marks pending.
         mockRegisterDevice.mockRejectedValueOnce(new Error('newer failed'))
-        rerender({ addresses: ['acct-1', 'acct-2'] })
+        rerender({
+            accounts: [registration('acct-1'), registration('acct-2')],
+        })
         await waitFor(() => {
             expect(
                 useDeviceStore.getState().pendingRegistrationNetworks,
@@ -394,9 +427,9 @@ describe('useDeviceRegistration', () => {
         const { useDeviceStore } = await import('../../store')
 
         const { rerender } = renderHook(
-            ({ addresses }: { addresses: string[] }) =>
-                useDeviceRegistration(addresses),
-            { initialProps: { addresses: ['acct-1'] } },
+            ({ accounts }: { accounts: DeviceAccountRegistration[] }) =>
+                useDeviceRegistration(accounts),
+            { initialProps: { accounts: [registration('acct-1')] } },
         )
         await waitFor(() => {
             expect(
@@ -405,11 +438,19 @@ describe('useDeviceRegistration', () => {
         })
 
         // Two further attempts: #2 hangs, then #3 starts and owns the lock.
-        rerender({ addresses: ['acct-1', 'acct-2'] })
+        rerender({
+            accounts: [registration('acct-1'), registration('acct-2')],
+        })
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
         })
-        rerender({ addresses: ['acct-1', 'acct-2', 'acct-3'] })
+        rerender({
+            accounts: [
+                registration('acct-1'),
+                registration('acct-2'),
+                registration('acct-3'),
+            ],
+        })
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalledTimes(3)
         })
@@ -428,8 +469,8 @@ describe('useDeviceRegistration', () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
 
-        const addresses = ['acct-1']
-        const result = renderHook(() => useDeviceRegistration(addresses))
+        const accounts = [registration('acct-1')]
+        const result = renderHook(() => useDeviceRegistration(accounts))
 
         await waitFor(() => {
             expect(mockRegisterDevice).toHaveBeenCalled()
@@ -447,7 +488,9 @@ describe('useDeviceRegistration', () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
 
-        renderHook(() => useDeviceRegistration(['ADDR'], { onDeviceCreated }))
+        renderHook(() =>
+            useDeviceRegistration([registration('ADDR')], { onDeviceCreated }),
+        )
         await waitFor(() =>
             expect(onDeviceCreated).toHaveBeenCalledWith('mainnet'),
         )
@@ -460,8 +503,88 @@ describe('useDeviceRegistration', () => {
         const { useDeviceRegistration } =
             await import('../useDeviceRegistration')
 
-        renderHook(() => useDeviceRegistration(['ADDR'], { onDeviceCreated }))
+        renderHook(() =>
+            useDeviceRegistration([registration('ADDR')], { onDeviceCreated }),
+        )
         await waitFor(() => expect(mockRegisterDevice).toHaveBeenCalled())
         expect(onDeviceCreated).not.toHaveBeenCalled()
+    })
+
+    it('does not re-register when only the array reference changed', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(
+            ({ accounts }: { accounts: DeviceAccountRegistration[] }) =>
+                useDeviceRegistration(accounts),
+            { initialProps: { accounts: [registration('ADDR_A')] } },
+        )
+
+        rerender({ accounts: [registration('ADDR_A')] })
+
+        expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+    })
+
+    it('re-registers when an account type changes', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(
+            ({ accounts }: { accounts: DeviceAccountRegistration[] }) =>
+                useDeviceRegistration(accounts),
+            { initialProps: { accounts: [registration('ADDR_A')] } },
+        )
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        rerender({
+            accounts: [
+                registration('ADDR_A', {
+                    accountType: DeviceAccountTypes.quantum,
+                }),
+            ],
+        })
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+    })
+
+    it('re-registers when an account is muted', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const { rerender } = renderHook(
+            ({ accounts }: { accounts: DeviceAccountRegistration[] }) =>
+                useDeviceRegistration(accounts),
+            { initialProps: { accounts: [registration('ADDR_A')] } },
+        )
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(1)
+        })
+
+        rerender({
+            accounts: [registration('ADDR_A', { receiveNotifications: false })],
+        })
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledTimes(2)
+        })
+    })
+
+    it('passes the registrations through unflattened', async () => {
+        const { useDeviceRegistration } =
+            await import('../useDeviceRegistration')
+
+        const accounts = [
+            registration('ADDR_A', { accountType: DeviceAccountTypes.quantum }),
+        ]
+
+        renderHook(() => useDeviceRegistration(accounts))
+
+        await waitFor(() => {
+            expect(mockRegisterDevice).toHaveBeenCalledWith(accounts)
+        })
     })
 })

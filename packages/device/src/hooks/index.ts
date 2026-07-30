@@ -11,8 +11,7 @@
  */
 
 export * from './endpoints'
-export * from './useCreateDeviceMutation'
-export * from './useUpdateDeviceMutation'
+export * from './useRegisterDeviceMutation'
 export * from './useDeviceID'
 export * from './useIsDeviceRegistrationPending'
 export * from './usePushToken'

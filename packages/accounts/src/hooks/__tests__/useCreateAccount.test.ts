@@ -67,9 +67,11 @@ vi.mock('@perawallet/wallet-core-kms', async () => {
     }
 })
 
+const mockRegisterDeviceMutation = vi.hoisted(() => vi.fn(async () => ({})))
+
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useUpdateDeviceMutation: vi.fn(() => ({
-        mutateAsync: vi.fn(async () => ({})),
+    useRegisterDeviceMutation: vi.fn(() => ({
+        mutateAsync: mockRegisterDeviceMutation,
     })),
     useDeviceID: vi.fn(() => 'device-id'),
 }))
@@ -136,6 +138,23 @@ describe('useCreateAccount', () => {
             signKeyId: 'QSEED1-quantum',
         })
         kmsMock.removeKeyAndChildren.mockResolvedValue(undefined)
+    })
+
+    test('does not touch the device API — registration is the single writer', async () => {
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
+
+        const { result } = renderHook(() => useCreateAccount())
+
+        await act(async () => {
+            await result.current.saveAccount({
+                id: 'ACC1',
+                address: 'ADDR1',
+                type: 'algo25',
+                keyPairId: 'WALLET1-ed25519',
+            })
+        })
+
+        expect(mockRegisterDeviceMutation).not.toHaveBeenCalled()
     })
 
     test('creates new HD wallet account when no existing key', async () => {

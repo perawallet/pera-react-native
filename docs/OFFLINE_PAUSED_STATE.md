@@ -217,10 +217,11 @@ introducing cross-instance reactivity would need a store/subscription, which
 was judged disproportionate for this guard.
 
 There is deliberately no offline outbox or replay queue for user-initiated
-writes (PERA-4573 policy). The one adjacent-looking exception is
-`packages/messages/src/hooks/useReplayNotificationMutes.ts`, which re-applies
-persisted mutes _after device creation_ — a one-shot reconciliation against a
-new device ID, not a queue of failed offline writes.
+writes (PERA-4573 policy). Notification mutes no longer need one: since the
+v3 devices API migration (PERA-4705), `apps/mobile/src/hooks/useDeviceAccountRegistrations.ts`
+joins the accounts store with persisted notification preferences into every
+device-registration payload, so mutes travel with each registration instead
+of needing a post-creation replay step.
 
 ### Why DB-first hooks still expose `isPaused`
 

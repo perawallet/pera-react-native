@@ -14,7 +14,6 @@ import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import {
     fetchNotificationStatus,
     fetchNotificationList,
-    updateNotificationEnabled,
     fetchMessageStatus,
 } from '../endpoints'
 import { queryClient } from '@perawallet/wallet-core-shared'
@@ -24,7 +23,6 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 
 const DEVICE_ID = 'test-device-id'
-const ACCOUNT_ID = 'test-account-id'
 
 describe('fetchNotificationStatus', () => {
     beforeEach(() => {
@@ -163,70 +161,6 @@ describe('fetchNotificationList', () => {
         const result = await fetchNotificationList('testnet', DEVICE_ID)
 
         expect(result.results).toEqual(validResponse.results)
-    })
-})
-
-describe('updateNotificationEnabled', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-    })
-
-    test('calls queryClient with correct params for enabling', async () => {
-        const validResponse = { has_new_notification: false }
-        ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
-
-        await updateNotificationEnabled('testnet', DEVICE_ID, ACCOUNT_ID, true)
-
-        expect(queryClient).toHaveBeenCalledWith({
-            backend: 'pera',
-            network: 'testnet',
-            method: 'PATCH',
-            url: `/v1/devices/${DEVICE_ID}/accounts/${ACCOUNT_ID}/`,
-            data: { receive_notifications: true },
-        })
-    })
-
-    test('calls queryClient with correct params for disabling', async () => {
-        const validResponse = { has_new_notification: false }
-        ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
-
-        await updateNotificationEnabled('mainnet', DEVICE_ID, ACCOUNT_ID, false)
-
-        expect(queryClient).toHaveBeenCalledWith(
-            expect.objectContaining({
-                data: { receive_notifications: false },
-            }),
-        )
-    })
-
-    test('returns parsed response on success', async () => {
-        const validResponse = { has_new_notification: true }
-        ;(queryClient as Mock).mockResolvedValue({ data: validResponse })
-
-        const result = await updateNotificationEnabled(
-            'testnet',
-            DEVICE_ID,
-            ACCOUNT_ID,
-            true,
-        )
-        expect(result).toEqual(validResponse)
-    })
-
-    test('throws when response data fails schema validation', async () => {
-        const invalidData = { has_new_notification: 'not-a-boolean' }
-        ;(queryClient as Mock).mockResolvedValue({ data: invalidData })
-
-        await expect(
-            updateNotificationEnabled('testnet', DEVICE_ID, ACCOUNT_ID, true),
-        ).rejects.toThrow()
-    })
-
-    test('propagates errors from queryClient', async () => {
-        ;(queryClient as Mock).mockRejectedValue(new Error('Request failed'))
-
-        await expect(
-            updateNotificationEnabled('testnet', DEVICE_ID, ACCOUNT_ID, true),
-        ).rejects.toThrow('Request failed')
     })
 })
 

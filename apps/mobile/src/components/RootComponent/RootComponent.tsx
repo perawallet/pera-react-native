@@ -30,11 +30,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
-import { useReplayNotificationMutes } from '@perawallet/wallet-core-messages'
 import { useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
+import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
@@ -104,11 +104,9 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     )
 }
 
-const DeviceRegistrar = ({ addresses }: { addresses: string[] }) => {
-    const replayNotificationMutes = useReplayNotificationMutes()
-    useDeviceRegistration(addresses, {
-        onDeviceCreated: replayNotificationMutes,
-    })
+const DeviceRegistrar = () => {
+    const registrations = useDeviceAccountRegistrations()
+    useDeviceRegistration(registrations)
     return null
 }
 
@@ -205,9 +203,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     return (
         <>
             <BottomSheetModalProvider>
-                {!migrationInProgress && (
-                    <DeviceRegistrar addresses={addresses} />
-                )}
+                {!migrationInProgress && <DeviceRegistrar />}
                 <AutoLockGuard>
                     <WalletConnectProvider>
                         <RootContentContainer fcmToken={fcmToken} />

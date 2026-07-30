@@ -420,19 +420,26 @@ describe('queryClient', () => {
     })
 
     it('should set Content-Type and API key headers via setStandardHeaders', async () => {
-        const { queryClient } = await import('../query-client')
-        mockJson.mockResolvedValue({ success: true })
+        // capturedHooks is a shared singleton overwritten by every `ky.create`
+        // call during module load (see "does not re-append the request
+        // logger" above), so it ends up holding the last-created client's
+        // hooks rather than the pera client's — grab the real
+        // `setStandardHeaders` directly off the mainnet pera client's
+        // create() call instead, mirroring the resetModules + mockClear
+        // pattern used by "creates every client with an explicit capped retry
+        // config".
+        vi.resetModules()
+        mockKy.create.mockClear()
+        await import('../query-client')
 
-        await queryClient({
-            backend: 'pera',
-            network: 'mainnet',
-            url: '/test',
-            method: 'GET',
-        })
+        const mainnetPeraClientConfig = mockKy.create.mock.calls[0][0]
+        const [setStandardHeaders] = mainnetPeraClientConfig.hooks.beforeRequest
 
-        // The mock request object should have headers set by setStandardHeaders
-        // This is verified by the fact that the request completes successfully
-        expect(mockKy).toHaveBeenCalled()
+        const request = { headers: new Headers() }
+        setStandardHeaders({ request } as never)
+
+        expect(request.headers.get('content-type')).toBe('application/json')
+        expect(request.headers.get('x-api-key')).toBe('test-api-key')
     })
 
     it('returns undefined data for 200 with an empty body (no SyntaxError)', async () => {

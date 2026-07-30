@@ -43,6 +43,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => 'device-123',
+    DeviceAccountTypes: {
+        algo25: 'algo25',
+        hdWallet: 'hdWallet',
+        hardware: 'hardware',
+        multisig: 'multisig',
+        watch: 'watch',
+        quantum: 'quantum',
+    },
 }))
 
 const declineMutateAsyncMock = vi.fn()

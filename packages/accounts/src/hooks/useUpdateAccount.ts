@@ -10,21 +10,11 @@
  limitations under the License
  */
 
-import {
-    useDeviceID,
-    useUpdateDeviceMutation,
-} from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '../store'
 import { type WalletAccount } from '../models'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const useUpdateAccount = () => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
-    const { network } = useNetwork()
-    const deviceID = useDeviceID(network)
-    const deviceInfo = getProvider().deviceInfo
-    const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
 
     return (account: WalletAccount) => {
         // Read fresh copy of accounts to avoid stale captures.
@@ -33,15 +23,5 @@ export const useUpdateAccount = () => {
             a.address === account.address ? account : a,
         )
         setAccounts(updated)
-
-        if (deviceID) {
-            void updateDeviceOnBackend({
-                deviceId: deviceID,
-                data: {
-                    platform: deviceInfo.getDevicePlatform(),
-                    accounts: updated.map(a => a.address),
-                },
-            })
-        }
     }
 }

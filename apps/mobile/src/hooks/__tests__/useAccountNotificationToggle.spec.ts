@@ -15,23 +15,48 @@ import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mocks = vi.hoisted(() => ({
     setAccountEnabled: vi.fn(),
-    mutateAsync: vi.fn(),
+    registerDevice: vi.fn(),
     showToast: vi.fn(),
+    accounts: [] as WalletAccount[],
+    disabledAccounts: [] as string[],
 }))
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useNotificationPreferences: () => ({
         setAccountEnabled: mocks.setAccountEnabled,
         isAccountEnabled: vi.fn(() => true),
-        disabledAccounts: [],
-    }),
-    useAccountNotificationEnabledMutation: () => ({
-        mutateAsync: mocks.mutateAsync,
+        disabledAccounts: mocks.disabledAccounts,
     }),
 }))
+
+// The mobile-wide vitest setup mocks `@perawallet/wallet-core-accounts` with a
+// fixed empty-store double. This hook reads the real account list to build
+// the registration payload, so restore the actual implementation and only
+// override `useAllAccounts` — the rest (types, `buildDeviceAccountRegistrations`)
+// runs for real.
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return { ...actual, useAllAccounts: () => mocks.accounts }
+})
+
+// Partial mock: `buildDeviceAccountRegistrations` (pulled in via the real
+// `@perawallet/wallet-core-accounts` above) needs the real `DeviceAccountTypes`
+// map, so only `useDevice` itself is overridden.
+vi.mock('@perawallet/wallet-core-device', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-device')>()
+    return {
+        ...actual,
+        useDevice: () => ({ registerDevice: mocks.registerDevice }),
+    }
+})
 
 // Only useToast is mocked: the real useErrorToast runs, so these tests prove
 // the offline copy end to end rather than trusting a mocked dispatcher.
@@ -53,10 +78,19 @@ import {
     clearAccountNotificationToggleGuardForTests,
 } from '../useAccountNotificationToggle'
 
+type SeedAccount = Pick<WalletAccount, 'id' | 'address' | 'type'> &
+    Partial<WalletAccount>
+
+const seedAccounts = (accounts: SeedAccount[]): void => {
+    mocks.accounts = accounts as WalletAccount[]
+}
+
 describe('useAccountNotificationToggle', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mocks.mutateAsync.mockResolvedValue({})
+        mocks.registerDevice.mockResolvedValue({ createdNew: false })
+        mocks.accounts = []
+        mocks.disabledAccounts = []
         // The in-flight guard is module scope (R2: shared app-wide across
         // hook instances), so it survives across tests in this file unless
         // explicitly cleared — a leaked entry would wedge an unrelated test.
@@ -65,7 +99,11 @@ describe('useAccountNotificationToggle', () => {
 
     afterEach(() => onlineManager.setOnline(true))
 
-    it('applies the optimistic write and PATCHes the backend on success', async () => {
+    it('applies the optimistic write and re-registers the device on success', async () => {
+        seedAccounts([
+            { id: '1', address: 'ADDR1', type: 'algo25', keyPairId: 'kp' },
+        ])
+
         const { result } = renderHook(() => useAccountNotificationToggle())
 
         let outcome: boolean | undefined
@@ -79,15 +117,18 @@ describe('useAccountNotificationToggle', () => {
         expect(outcome).toBe(true)
         expect(mocks.setAccountEnabled).toHaveBeenCalledTimes(1)
         expect(mocks.setAccountEnabled).toHaveBeenCalledWith('ADDR1', true)
-        expect(mocks.mutateAsync).toHaveBeenCalledWith({
-            accountID: 'ADDR1',
-            status: true,
-        })
+        expect(mocks.registerDevice).toHaveBeenCalledWith([
+            {
+                address: 'ADDR1',
+                accountType: 'algo25',
+                receiveNotifications: true,
+            },
+        ])
         expect(mocks.showToast).not.toHaveBeenCalled()
     })
 
     it('rolls back and resolves false when the backend rejects', async () => {
-        mocks.mutateAsync.mockRejectedValue(new Error('boom'))
+        mocks.registerDevice.mockRejectedValue(new Error('boom'))
 
         const { result } = renderHook(() => useAccountNotificationToggle())
 
@@ -126,7 +167,7 @@ describe('useAccountNotificationToggle', () => {
                 stored = enabled
             },
         )
-        mocks.mutateAsync.mockRejectedValue(new Error('boom'))
+        mocks.registerDevice.mockRejectedValue(new Error('boom'))
 
         const { result } = renderHook(() => useAccountNotificationToggle())
 
@@ -141,7 +182,7 @@ describe('useAccountNotificationToggle', () => {
     // and rejects offline instead of pausing.
     it('shows the localized offline copy when the failure is connectivity', async () => {
         onlineManager.setOnline(false)
-        mocks.mutateAsync.mockRejectedValue(new NoConnectionError())
+        mocks.registerDevice.mockRejectedValue(new NoConnectionError())
 
         const { result } = renderHook(() => useAccountNotificationToggle())
 
@@ -149,7 +190,7 @@ describe('useAccountNotificationToggle', () => {
             await result.current.toggleAccountNotification('ADDR1', true)
         })
 
-        expect(mocks.mutateAsync).toHaveBeenCalledTimes(1)
+        expect(mocks.registerDevice).toHaveBeenCalledTimes(1)
         expect(mocks.showToast).toHaveBeenCalledWith(
             {
                 title: 'errors.network.no_connection.title',
@@ -176,7 +217,7 @@ describe('useAccountNotificationToggle', () => {
         // then overwrites it with `false`, leaving the store disabled while
         // the backend still holds enabled.
         const rejecters: ((reason: Error) => void)[] = []
-        mocks.mutateAsync.mockImplementation(
+        mocks.registerDevice.mockImplementation(
             () =>
                 new Promise((_resolve, reject) => {
                     rejecters.push(reject)
@@ -200,7 +241,7 @@ describe('useAccountNotificationToggle', () => {
 
         expect(await taps[1]).toBe(false)
         expect(stored).toBe(true)
-        expect(mocks.mutateAsync).toHaveBeenCalledTimes(1)
+        expect(mocks.registerDevice).toHaveBeenCalledTimes(1)
         // R1: the guard is released in a `finally`, even on failure. Without
         // that release this assertion would fail and the address would stay
         // wedged pending forever — switch stuck disabled, no recovery short
@@ -210,7 +251,7 @@ describe('useAccountNotificationToggle', () => {
 
     it('early-returns a concurrent call for the same address without writing the store', async () => {
         let resolveFirst: ((value: unknown) => void) | undefined
-        mocks.mutateAsync.mockImplementationOnce(
+        mocks.registerDevice.mockImplementationOnce(
             () =>
                 new Promise(resolve => {
                     resolveFirst = resolve
@@ -252,7 +293,7 @@ describe('useAccountNotificationToggle', () => {
     // against can reappear via a second screen instead of a second tap.
     it('early-returns a concurrent call for the same address from a second hook instance', async () => {
         let resolveFirst: ((value: unknown) => void) | undefined
-        mocks.mutateAsync.mockImplementationOnce(
+        mocks.registerDevice.mockImplementationOnce(
             () =>
                 new Promise(resolve => {
                     resolveFirst = resolve
@@ -281,10 +322,10 @@ describe('useAccountNotificationToggle', () => {
                 )
         })
 
-        // The second instance's request never started: no second PATCH, no
+        // The second instance's request never started: no second registration, no
         // second optimistic write.
         expect(secondTap).toBe(false)
-        expect(mocks.mutateAsync).toHaveBeenCalledTimes(1)
+        expect(mocks.registerDevice).toHaveBeenCalledTimes(1)
         expect(mocks.setAccountEnabled).toHaveBeenCalledTimes(1)
 
         await act(async () => {
@@ -295,7 +336,7 @@ describe('useAccountNotificationToggle', () => {
 
     it('does not block a concurrent toggle for a different address', async () => {
         let resolveFirst: ((value: unknown) => void) | undefined
-        mocks.mutateAsync.mockImplementationOnce(
+        mocks.registerDevice.mockImplementationOnce(
             () =>
                 new Promise(resolve => {
                     resolveFirst = resolve
@@ -327,7 +368,7 @@ describe('useAccountNotificationToggle', () => {
 
     it('reports the toggle as pending only while the request is in flight', async () => {
         let resolveFirst: ((value: unknown) => void) | undefined
-        mocks.mutateAsync.mockImplementationOnce(
+        mocks.registerDevice.mockImplementationOnce(
             () =>
                 new Promise(resolve => {
                     resolveFirst = resolve
@@ -355,7 +396,7 @@ describe('useAccountNotificationToggle', () => {
     })
 
     it('shows generic copy when the failure is not connectivity', async () => {
-        mocks.mutateAsync.mockRejectedValue(new Error('boom'))
+        mocks.registerDevice.mockRejectedValue(new Error('boom'))
 
         const { result } = renderHook(() => useAccountNotificationToggle())
 
@@ -369,5 +410,114 @@ describe('useAccountNotificationToggle', () => {
             }),
             undefined,
         )
+    })
+
+    // v3 has no per-account route: the toggle re-registers the whole device
+    // with every account's flag inline, not just the one that changed.
+    it('re-registers the device with the toggled flag applied', async () => {
+        seedAccounts([
+            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
+            { id: '2', address: 'ADDR_B', type: 'quantum', keyPairId: 'kp' },
+        ])
+
+        const { result } = renderHook(() => useAccountNotificationToggle())
+
+        await act(async () => {
+            await result.current.toggleAccountNotification('ADDR_A', false)
+        })
+
+        expect(mocks.registerDevice).toHaveBeenCalledWith([
+            {
+                address: 'ADDR_A',
+                accountType: 'algo25',
+                receiveNotifications: false,
+            },
+            {
+                address: 'ADDR_B',
+                accountType: 'quantum',
+                receiveNotifications: true,
+            },
+        ])
+    })
+
+    it('rolls the local preference back and shows an error when re-registration fails', async () => {
+        seedAccounts([
+            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
+        ])
+        mocks.registerDevice.mockRejectedValueOnce(new Error('boom'))
+
+        const { result } = renderHook(() => useAccountNotificationToggle())
+
+        let accepted: boolean | undefined
+        await act(async () => {
+            accepted = await result.current.toggleAccountNotification(
+                'ADDR_A',
+                false,
+            )
+        })
+
+        expect(accepted).toBe(false)
+        expect(mocks.setAccountEnabled).toHaveBeenLastCalledWith('ADDR_A', true)
+        expect(mocks.showToast).toHaveBeenCalled()
+    })
+
+    // Review Finding 2: with `disabledAccounts` fixed at `[]` (as it was
+    // before this test), the `enabled === true` branch's filter is only ever
+    // evaluated against an empty array — un-muting was untestable. Seed a
+    // pre-muted account so the filter has something to actually remove.
+    it('removes the address from the disabled set when re-enabling a muted account', async () => {
+        seedAccounts([
+            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
+        ])
+        mocks.disabledAccounts = ['ADDR_A']
+
+        const { result } = renderHook(() => useAccountNotificationToggle())
+
+        await act(async () => {
+            await result.current.toggleAccountNotification('ADDR_A', true)
+        })
+
+        expect(mocks.registerDevice).toHaveBeenCalledWith([
+            {
+                address: 'ADDR_A',
+                accountType: 'algo25',
+                receiveNotifications: true,
+            },
+        ])
+    })
+
+    // PERA-4705 (final review, Finding 2): the mute branch spreads the
+    // pre-existing disabled set into the payload
+    // (`[...new Set([...disabledAccounts, address])]`), but every test seeded
+    // `disabledAccounts` as `[]`, so dropping that spread kept the whole suite
+    // green. The consequence is silent and persistent: muting one account
+    // would send `receive_notifications: true` for every other muted account
+    // while the local persisted store still shows them muted, so the user sees
+    // "muted", receives pushes anyway, and the divergence survives a restart.
+    it('preserves already-muted accounts when muting another one', async () => {
+        seedAccounts([
+            { id: '1', address: 'ADDR_A', type: 'algo25', keyPairId: 'kp' },
+            { id: '2', address: 'ADDR_B', type: 'algo25', keyPairId: 'kp2' },
+        ])
+        mocks.disabledAccounts = ['ADDR_B']
+
+        const { result } = renderHook(() => useAccountNotificationToggle())
+
+        await act(async () => {
+            await result.current.toggleAccountNotification('ADDR_A', false)
+        })
+
+        expect(mocks.registerDevice).toHaveBeenCalledWith([
+            {
+                address: 'ADDR_A',
+                accountType: 'algo25',
+                receiveNotifications: false,
+            },
+            {
+                address: 'ADDR_B',
+                accountType: 'algo25',
+                receiveNotifications: false,
+            },
+        ])
     })
 })

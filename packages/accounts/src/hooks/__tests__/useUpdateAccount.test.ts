@@ -55,12 +55,12 @@ vi.mock('../../store', () => ({
 const mockNetwork = { network: 'mainnet' }
 const mockDeviceID = 'DEVICE_ID_123'
 const mockDevicePlatform = 'ios'
-const mockUpdateDeviceMutation = vi.fn().mockResolvedValue({})
+const mockRegisterDeviceMutation = vi.fn().mockResolvedValue({})
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: vi.fn(() => mockDeviceID),
-    useUpdateDeviceMutation: () => ({
-        mutateAsync: mockUpdateDeviceMutation,
+    useRegisterDeviceMutation: () => ({
+        mutateAsync: mockRegisterDeviceMutation,
     }),
 }))
 
@@ -166,7 +166,7 @@ describe('useUpdateAccount', () => {
         ])
     })
 
-    it('calls backend update when deviceID exists', () => {
+    it('does not touch the device API — registration is the single writer', () => {
         const { result } = renderHook(() => useUpdateAccount())
 
         const updatedAccount: WalletAccount = {
@@ -179,13 +179,7 @@ describe('useUpdateAccount', () => {
 
         result.current(updatedAccount)
 
-        expect(mockUpdateDeviceMutation).toHaveBeenCalledWith({
-            deviceId: 'DEVICE_ID_123',
-            data: {
-                platform: 'ios',
-                accounts: ['ADDR1', 'ADDR2'],
-            },
-        })
+        expect(mockRegisterDeviceMutation).not.toHaveBeenCalled()
     })
 
     it('handles account not found gracefully', () => {

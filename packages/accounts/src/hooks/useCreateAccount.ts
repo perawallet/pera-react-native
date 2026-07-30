@@ -10,14 +10,8 @@
  limitations under the License
  */
 
-import {
-    useDeviceID,
-    useUpdateDeviceMutation,
-} from '@perawallet/wallet-core-device'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '../store'
 import { AccountTypes, type WalletAccount } from '../models'
-import { logger } from '@perawallet/wallet-core-shared'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
@@ -29,7 +23,6 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     setPendingAccountRollback,
     clearPendingAccountRollback,
@@ -50,11 +43,7 @@ export type QuantumSeedReference = {
 }
 
 export const useCreateAccount = () => {
-    const { network } = useNetwork()
-    const deviceID = useDeviceID(network)
     const setAccounts = useAccountsStore(state => state.setAccounts)
-    const deviceInfo = getProvider().deviceInfo
-    const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
     const {
         getKey,
         createHDWalletKey,
@@ -70,20 +59,6 @@ export const useCreateAccount = () => {
         const nextAccounts = [...currentAccounts, newAccount]
         setAccounts(nextAccounts)
         clearPendingAccountRollback()
-
-        if (deviceID) {
-            try {
-                await updateDeviceOnBackend({
-                    deviceId: deviceID,
-                    data: {
-                        platform: deviceInfo.getDevicePlatform(),
-                        accounts: nextAccounts.map(a => a.address),
-                    },
-                })
-            } catch (e) {
-                logger.warn('Failed to sync account with backend', { error: e })
-            }
-        }
     }
 
     // Pure derivation primitive: given a seed that's already in the keystore,

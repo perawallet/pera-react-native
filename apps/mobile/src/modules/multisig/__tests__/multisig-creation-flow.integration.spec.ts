@@ -116,6 +116,14 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => 'device-id',
+    DeviceAccountTypes: {
+        algo25: 'algo25',
+        hdWallet: 'hdWallet',
+        hardware: 'hardware',
+        multisig: 'multisig',
+        watch: 'watch',
+        quantum: 'quantum',
+    },
 }))
 
 vi.mock('@hooks/useToast', () => ({

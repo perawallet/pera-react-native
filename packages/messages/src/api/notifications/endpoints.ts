@@ -28,11 +28,6 @@ const getNotificationStatusEndpoint = (deviceID: string) =>
 const getNotificationListEndpoint = (deviceID: string) =>
     `/v2/devices/${deviceID}/notifications/`
 
-const getUpdateNotificationEnabledEndpoint = (
-    deviceID: string,
-    accountID: string,
-) => `/v1/devices/${deviceID}/accounts/${accountID}/`
-
 // Pagination envelope parsed separately from the rows so a single malformed
 // notification can be dropped instead of failing the whole page — parity with
 // the native apps, which treat every row field as optional.
@@ -98,23 +93,6 @@ export const updateLastSeenNotification = async (
         url: `/v1/devices/${deviceID}/update-last-seen-notification/`,
         data: { last_seen_notification_id: lastSeenNotificationId },
     })
-}
-
-export const updateNotificationEnabled = async (
-    network: Network,
-    deviceID: string,
-    accountID: string,
-    status: boolean,
-): Promise<NotificationStatusResponse> => {
-    const response = await queryClient<NotificationStatusResponse>({
-        backend: 'pera',
-        network,
-        method: 'PATCH',
-        url: getUpdateNotificationEnabledEndpoint(deviceID, accountID),
-        data: { receive_notifications: status },
-    })
-
-    return notificationStatusResponseSchema.parse(response.data)
 }
 
 export const fetchMessageStatus = async (
