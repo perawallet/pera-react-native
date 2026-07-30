@@ -27,13 +27,13 @@ import {
     chromium,
     type BrowserContext,
     type CDPSession,
-    type Locator,
     type Page,
 } from '@playwright/test'
 import http from 'node:http'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
 
 declare global {
     interface Window {
@@ -88,33 +88,6 @@ const trackPageErrors = (targetPage: Page): Error[] => {
     const errors: Error[] = []
     targetPage.on('pageerror', error => errors.push(error))
     return errors
-}
-
-// PromptContainer's one-time security nudge fires on a wall-clock delay from
-// account creation (see wallet-smoke.spec.ts) — dismiss it wherever it lands.
-const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
-    const notNow = targetPage.getByTestId('pin_security_prompt_not_now_button')
-    if (await notNow.isVisible().catch(() => false)) {
-        await notNow.click()
-    }
-}
-
-// Same click-through-the-pin-prompt-race guard as feature-tabs.spec.ts /
-// discover.spec.ts.
-const clickThroughPinPrompt = async (
-    targetPage: Page,
-    locator: Locator,
-): Promise<void> => {
-    for (let attempt = 0; attempt < 5; attempt++) {
-        await dismissPinPromptIfPresent(targetPage)
-        const clicked = await locator
-            .click({ timeout: 3000 })
-            .then(() => true)
-            .catch(() => false)
-        if (clicked) return
-        await dismissPinPromptIfPresent(targetPage)
-    }
-    await locator.click({ timeout: 10_000 })
 }
 
 // A platform ('internal') virtual authenticator with automatic presence

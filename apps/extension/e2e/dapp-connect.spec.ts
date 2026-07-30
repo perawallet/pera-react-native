@@ -32,6 +32,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
+import { clickThroughPinPrompt } from './pin-prompt'
 
 declare global {
     interface Window {
@@ -86,37 +87,6 @@ const trackPageErrors = (targetPage: Page): Error[] => {
     const errors: Error[] = []
     targetPage.on('pageerror', error => errors.push(error))
     return errors
-}
-
-// PromptContainer (modules/prompts) shows a one-time security nudge on a
-// wall-clock delay after the account exists (wallet-smoke.spec.ts carries the
-// same note) — dismiss it if it raced in and is covering a click target.
-const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
-    const notNow = targetPage.getByTestId('pin_security_prompt_not_now_button')
-    if (await notNow.isVisible().catch(() => false)) {
-        await notNow.click()
-    }
-}
-
-// Same click-through-the-pin-prompt-race guard as feature-tabs.spec.ts /
-// discover.spec.ts / passkey-provider.spec.ts. A single dismiss at test
-// start is not enough: the nudge fires on its own wall-clock delay and can
-// land BETWEEN clicks, where its overlay intercepts pointer events and a
-// bare click() retries against it until the test times out.
-const clickThroughPinPrompt = async (
-    targetPage: Page,
-    locator: Locator,
-): Promise<void> => {
-    for (let attempt = 0; attempt < 5; attempt++) {
-        await dismissPinPromptIfPresent(targetPage)
-        const clicked = await locator
-            .click({ timeout: 3000 })
-            .then(() => true)
-            .catch(() => false)
-        if (clicked) return
-        await dismissPinPromptIfPresent(targetPage)
-    }
-    await locator.click({ timeout: 10_000 })
 }
 
 // M4c: enable now opens the extension's TOOLBAR POPUP via
