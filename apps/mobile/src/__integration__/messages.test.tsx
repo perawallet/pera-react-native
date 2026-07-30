@@ -32,6 +32,7 @@ import {
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import {
     mockInbox,
+    mockMessageStatus,
     mockNotificationList,
 } from '@perawallet/wallet-core-messages/test-handlers'
 import { InboxScreen } from '@modules/messages/screens/InboxScreen/InboxScreen'
@@ -56,6 +57,30 @@ const EMPTY_INBOX = {
     joint_account_sign_requests: [],
     asa_inboxes: [],
 }
+
+// NotificationsScreen renders the unread badge through useInboxStatus, which
+// polls message-status and the inbox list whatever the scenario under test.
+// Unmocked they escape to the real backend, 403 through Cloudflare, and
+// error-log after this file has finished — racing vitest's worker teardown
+// ("Closing rpc while onUserConsoleLog was pending") and failing an otherwise
+// all-green run. A successful message-status also keeps useInboxStatus off its
+// legacy notification-status fallback, which escapes the same way.
+//
+// All flags false is the badge state these tests already saw (the failed query
+// fell back to false), so nothing new fires — notably not the mark-as-read
+// mutation NotificationsScreen sends on unmount when notifications are unread.
+const UNREAD_BADGE_HANDLERS = [
+    mockMessageStatus({
+        deviceID: DEVICE_ID,
+        response: {
+            hasUnreadItems: false,
+            hasUnreadNotifications: false,
+            hasUnreadInboxItems: false,
+            unreadInboxCount: 0,
+        },
+    }),
+    mockInbox({ deviceID: DEVICE_ID, response: EMPTY_INBOX }),
+]
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 
@@ -135,6 +160,7 @@ describe('Flow: Messages — inbox & notifications lists', () => {
         'Given the notifications endpoint returns two notifications, when NotificationsScreen mounts, then both messages render',
         async () => {
             server.use(
+                ...UNREAD_BADGE_HANDLERS,
                 mockNotificationList({
                     deviceID: DEVICE_ID,
                     response: {
@@ -181,6 +207,7 @@ describe('Flow: Messages — inbox & notifications lists', () => {
         'Given the notifications endpoint returns nothing, when NotificationsScreen mounts, then the empty state renders',
         async () => {
             server.use(
+                ...UNREAD_BADGE_HANDLERS,
                 mockNotificationList({
                     deviceID: DEVICE_ID,
                     response: { next: null, previous: null, results: [] },
