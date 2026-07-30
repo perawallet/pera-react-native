@@ -31,6 +31,15 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),
 }))
 
+const { mockIsLockOverlayVisible } = vi.hoisted(() => ({
+    mockIsLockOverlayVisible: vi.fn(() => false),
+}))
+
+vi.mock(
+    '@modules/security/components/AutoLockGuard/lockOverlayContext',
+    () => ({ useIsLockOverlayVisible: () => mockIsLockOverlayVisible() }),
+)
+
 vi.mock('../PinSecurityPrompt/PinSecurityPrompt', () => ({
     PinSecurityPrompt: () => null,
 }))
@@ -67,6 +76,7 @@ describe('usePromptContainer', () => {
         })
         // Default: terms already accepted, so the T&C prompt is out of the way.
         mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: false })
+        mockIsLockOverlayVisible.mockReturnValue(false)
     })
 
     afterEach(() => {
@@ -78,6 +88,81 @@ describe('usePromptContainer', () => {
         const { result } = renderHook(() => usePromptContainer())
 
         expect(result.current.nextPrompt).toBeUndefined()
+    })
+
+    describe('while the lock overlay is visible', () => {
+        it('does not raise the PIN-setup prompt', async () => {
+            mockIsLockOverlayVisible.mockReturnValue(true)
+            mockGetPreference.mockReturnValue(false)
+
+            const { result } = renderHook(() => usePromptContainer())
+
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+
+            expect(result.current.nextPrompt).toBeUndefined()
+        })
+
+        it('does not raise the terms prompt, which has no PIN guard of its own', async () => {
+            mockIsLockOverlayVisible.mockReturnValue(true)
+            mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+            mockGetPreference.mockReturnValue(true)
+
+            const { result } = renderHook(() => usePromptContainer())
+
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+
+            expect(result.current.nextPrompt).toBeUndefined()
+        })
+
+        it('tears down a prompt that was already open when the lock engaged', async () => {
+            mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+            mockGetPreference.mockReturnValue(true)
+
+            const { result, rerender } = renderHook(() => usePromptContainer())
+
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+            expect(result.current.nextPrompt).toBeDefined()
+
+            mockIsLockOverlayVisible.mockReturnValue(true)
+            rerender()
+
+            expect(result.current.nextPrompt).toBeUndefined()
+        })
+
+        it('raises the prompt once unlocked', async () => {
+            mockIsLockOverlayVisible.mockReturnValue(true)
+            mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+            mockGetPreference.mockReturnValue(true)
+
+            const { result, rerender } = renderHook(() => usePromptContainer())
+
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+            expect(result.current.nextPrompt).toBeUndefined()
+
+            mockIsLockOverlayVisible.mockReturnValue(false)
+            rerender()
+
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+
+            expect(result.current.nextPrompt?.id).toBe(
+                'terms_acceptance_prompt',
+            )
+        })
     })
 
     it('should return undefined nextPrompt when user has no accounts', () => {
