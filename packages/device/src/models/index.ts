@@ -34,6 +34,34 @@ export const DeviceAccountTypes = {
 export type DeviceAccountType =
     (typeof DeviceAccountTypes)[keyof typeof DeviceAccountTypes]
 
+/**
+ * Precedence for resolving two registrations of the same address: higher wins.
+ * If an address is ever held both as a watch account and as a signing account,
+ * the signing type is the one the backend must be told about — registering
+ * `watch` for what is really a quantum account makes it price that account's
+ * swap quotes at the Ed25519 minimum fee and the chain rejects the swap.
+ *
+ * `as const` is load-bearing: `satisfies Record<K, number>` alone widens every
+ * value to `number` and the cross-enum equality assertion that pins this table
+ * to its internal counterpart would pass vacuously.
+ *
+ * This is the wire-boundary copy of `ACCOUNT_TYPE_RANK` in
+ * `@perawallet/wallet-core-accounts`, which resolves the same collision over
+ * the internal `AccountType` enum before registration ever sees it. The two
+ * enums are deliberately separate declarations (see the comment on
+ * `DeviceAccountTypes` above), so the orders are held in sync by a type-level
+ * assertion in `packages/accounts/src/device-accounts.ts` — update both
+ * together.
+ */
+export const DEVICE_ACCOUNT_TYPE_RANK = {
+    quantum: 6,
+    hardware: 5,
+    hdWallet: 4,
+    algo25: 3,
+    multisig: 2,
+    watch: 1,
+} as const satisfies Record<DeviceAccountType, number>
+
 /** One account as registration reports it. Domain shape, camelCase. */
 export type DeviceAccountRegistration = {
     address: string

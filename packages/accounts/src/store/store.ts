@@ -14,10 +14,10 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import {
+    ACCOUNT_TYPE_RANK,
     AccountTypes,
     type AccountsState,
     type AccountSortMode,
-    type AccountType,
     type HardwareWalletDetails,
     type WalletAccount,
     type WatchAccount,
@@ -34,46 +34,25 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 const STORE_NAME = 'accounts-store'
 
 /**
- * Precedence used to resolve two accounts that share an address: higher wins.
- *
- * `quantum` ranks highest because misreporting it is the expensive failure —
- * the backend prices a quantum account's swap quotes at the Ed25519 minimum
- * fee and the chain rejects the swap, with no client-side symptom. `watch`
- * ranks lowest because it carries no signing capability, so dropping it in
- * favour of anything else can only ever gain the user capability.
- *
- * In practice only `watch` can genuinely collide with another type — an
- * Algorand address is derived from its key, so one address cannot be two
- * different signing schemes — but the order is total so the rule stays
- * deterministic rather than a special case.
- *
- * `satisfies` keeps this exhaustive: adding or renaming an `AccountType`
- * breaks the build here instead of silently ranking it `undefined`.
- *
- * Mirrored, over the wire enum, by `DEVICE_ACCOUNT_TYPE_RANK` in
- * `packages/device/src/hooks/serializers.ts` — update both together.
- */
-const ACCOUNT_TYPE_RANK = {
-    quantum: 6,
-    hardware: 5,
-    hdWallet: 4,
-    algo25: 3,
-    multisig: 2,
-    watch: 1,
-} satisfies Record<AccountType, number>
-
-/**
- * Collapse repeated addresses, the higher-precedence account type winning and
- * equal ranks keeping the first occurrence. The survivor sits at the index
- * where its address *first* appeared: `manualAccountOrder`,
- * `selectedAccountAddress` and the rendered list all read this array, so a
- * dedupe that reorders accounts would be a worse bug than the one it fixes.
+ * Collapse repeated addresses, the higher-precedence account type winning (see
+ * `ACCOUNT_TYPE_RANK`) and equal ranks keeping the first occurrence. The
+ * survivor sits at the index where its address *first* appeared:
+ * `manualAccountOrder`, `selectedAccountAddress` and the rendered list all read
+ * this array, so a dedupe that reorders accounts would be a worse bug than the
+ * one it fixes.
  *
  * The winner is kept wholesale — fields are deliberately NOT merged between
  * the two entries. Merging watch state into a signing account is a specific,
  * intentional operation (`upgradeWatchAccountToHardware` below); doing it
  * implicitly here would be far too subtle to reason about at a call site that
  * just wanted to write a list of accounts.
+ *
+ * What that surrenders: when a watch entry loses, its `rekeyAddress` and
+ * `rekeyAddressByNetwork` are discarded with it. That is safe — both are
+ * mirrors re-derived from the next sync tick and network switch — and the one
+ * flow that must preserve them (watch → hardware on Ledger verify) routes
+ * around this function through `upgradeWatchAccountToHardware`, which merges
+ * them onto the upgraded account explicitly.
  */
 const resolveDuplicateAccounts = (
     accounts: WalletAccount[],

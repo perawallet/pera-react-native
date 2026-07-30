@@ -12,10 +12,15 @@
 
 import {
     DeviceAccountTypes,
+    type DEVICE_ACCOUNT_TYPE_RANK,
     type DeviceAccountRegistration,
     type DeviceAccountType,
 } from '@perawallet/wallet-core-device'
-import { type AccountType, type WalletAccount } from './models'
+import {
+    type ACCOUNT_TYPE_RANK,
+    type AccountType,
+    type WalletAccount,
+} from './models'
 
 /**
  * The wallet's internal `AccountType` and the device API's `account_type`
@@ -37,6 +42,38 @@ const DEVICE_ACCOUNT_TYPE_BY_ACCOUNT_TYPE = {
 
 export const toDeviceAccountType = (type: AccountType): DeviceAccountType =>
     DEVICE_ACCOUNT_TYPE_BY_ACCOUNT_TYPE[type]
+
+/**
+ * Both sides of that mapping also carry a duplicate-resolution precedence:
+ * `ACCOUNT_TYPE_RANK` (internal, applied in the accounts store) and
+ * `DEVICE_ACCOUNT_TYPE_RANK` (wire, applied in the device serializer). They
+ * must agree, or the store could keep one type while registration reports the
+ * other — the exact mismatch this module exists to prevent.
+ *
+ * The layering rules out a single shared table, so they are pinned to each
+ * other here instead: this file already imports the device package
+ * legitimately, so no dependency is inverted.
+ *
+ * The check asserts assignability in BOTH directions — one direction alone
+ * would miss a table gaining an extra key. It is only meaningful because both
+ * tables are declared `as const`: under a bare `satisfies Record<K, number>`
+ * the values widen to `number` and this would pass vacuously, a guard
+ * advertising protection it does not provide. Verified to bite by changing one
+ * rank in one table and confirming the compile error.
+ *
+ * Written as two one-directional conditionals rather than the terser
+ * `type AssertEqual<A extends B, B extends A> = true`, which TypeScript
+ * rejects outright as a circular constraint (TS2313).
+ */
+type AssertTrue<T extends true> = T
+type Extends<A, B> = A extends B ? true : false
+
+export type RanksInSyncForward = AssertTrue<
+    Extends<typeof ACCOUNT_TYPE_RANK, typeof DEVICE_ACCOUNT_TYPE_RANK>
+>
+export type RanksInSyncBackward = AssertTrue<
+    Extends<typeof DEVICE_ACCOUNT_TYPE_RANK, typeof ACCOUNT_TYPE_RANK>
+>
 
 /**
  * Project the wallet's accounts onto the registration payload. Notification

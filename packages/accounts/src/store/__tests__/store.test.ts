@@ -107,7 +107,7 @@ describe('services/accounts/store', () => {
             name: 'Watched',
             type: 'watch',
             address: 'DUPE-ADDR',
-        } as WalletAccount
+        }
         const hardwareDupe: WalletAccount = {
             id: 'hardware',
             name: 'Ledger',
@@ -120,7 +120,7 @@ describe('services/accounts/store', () => {
                 accountIndex: 0,
                 transportType: 'ble',
             },
-        } as WalletAccount
+        }
 
         test('keeps the higher-precedence type when the watch entry comes first', () => {
             useAccountsStore.getState().setAccounts([watchDupe, hardwareDupe])
@@ -145,14 +145,14 @@ describe('services/accounts/store', () => {
                 type: 'algo25',
                 address: 'FIRST-ADDR',
                 keyPairId: 'kp1',
-            } as WalletAccount
+            }
             const last: WalletAccount = {
                 id: '3',
                 name: 'Last',
                 type: 'algo25',
                 address: 'LAST-ADDR',
                 keyPairId: 'kp3',
-            } as WalletAccount
+            }
 
             useAccountsStore
                 .getState()
@@ -173,14 +173,14 @@ describe('services/accounts/store', () => {
                 name: 'Alice',
                 type: 'algo25',
                 address: 'DUPE-ADDR',
-                canSign: true,
+                keyPairId: 'kp1',
             }
             const a2: WalletAccount = {
                 id: '2',
                 name: 'Alice copy',
                 type: 'algo25',
                 address: 'DUPE-ADDR',
-                canSign: true,
+                keyPairId: 'kp2',
             }
 
             useAccountsStore.getState().setAccounts([a1, a2])
@@ -197,21 +197,21 @@ describe('services/accounts/store', () => {
                     name: 'Alice',
                     type: 'watch',
                     address: 'A',
-                } as WalletAccount,
+                },
                 {
                     id: '2',
                     name: 'Bob',
                     type: 'algo25',
                     address: 'B',
                     keyPairId: 'kp2',
-                } as WalletAccount,
+                },
                 {
                     id: '3',
                     name: 'Carol',
                     type: 'quantum',
                     address: 'C',
                     keyPairId: 'kp3',
-                } as WalletAccount,
+                },
             ]
 
             useAccountsStore.getState().setAccounts(accountsIn)
