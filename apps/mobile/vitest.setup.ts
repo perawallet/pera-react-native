@@ -2316,6 +2316,24 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
         error instanceof PeraNetworkError
 
+    // Mirrors packages/shared/src/errors/pera-service.ts. Thrown by the
+    // request layer for a network with no Pera deployment (betanet, custom);
+    // the crash-reporting sites in QueryProvider branch on the guard below.
+    class PeraServiceUnavailableError extends AppError {
+        public readonly network: string
+
+        constructor(network: string) {
+            super(`Pera services are not deployed for ${network}`)
+            this.name = 'PeraServiceUnavailableError'
+            this.network = network
+        }
+    }
+
+    const isPeraServiceUnavailableError = (
+        error: unknown,
+    ): error is PeraServiceUnavailableError =>
+        error instanceof PeraServiceUnavailableError
+
     // `ky` isn't a direct dependency of apps/mobile, so this mirrors ky's
     // isNetworkError predicate structurally (same name check used by
     // isTransientNetworkError above) instead of importing the real module.
@@ -2492,6 +2510,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         AppError,
         PeraNetworkError,
         isPeraNetworkError,
+        PeraServiceUnavailableError,
+        isPeraServiceUnavailableError,
         isConnectivityError,
         getNetworkErrorMessageKeys,
         ErrorSeverity: { LOW: 'low', MEDIUM: 'medium', HIGH: 'high' },

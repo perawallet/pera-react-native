@@ -18,8 +18,12 @@ import {
     QueryClientProvider,
     focusManager,
     useMutation,
+    useQuery,
 } from '@tanstack/react-query'
-import { logger } from '@perawallet/wallet-core-shared'
+import {
+    PeraServiceUnavailableError,
+    logger,
+} from '@perawallet/wallet-core-shared'
 import type { Persister } from '@tanstack/react-query-persist-client'
 import { QueryProvider, queryClient } from '../QueryProvider'
 
@@ -108,6 +112,77 @@ describe('queryClient mutation error policy', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
         expect(errorSpy).not.toHaveBeenCalled()
+    })
+
+    it('skips central error logging when the Pera service is not deployed', async () => {
+        const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
+
+        const { result } = renderHook(
+            () =>
+                useMutation({
+                    mutationFn: () =>
+                        Promise.reject(
+                            new PeraServiceUnavailableError('betanet'),
+                        ),
+                }),
+            { wrapper },
+        )
+
+        act(() => {
+            result.current.mutate(undefined)
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(errorSpy).not.toHaveBeenCalled()
+    })
+})
+
+describe('queryClient query error policy', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks()
+        queryClient.getQueryCache().clear()
+    })
+
+    // Every ungated Pera query does this on betanet/custom —
+    // useCurrenciesQuery mounts on any screen showing a fiat value — so
+    // reporting it would mean a crash-report non-fatal (and a dev RedBox) per
+    // query, for an expected, permanent condition.
+    it('skips central error logging when the Pera service is not deployed', async () => {
+        const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
+
+        const { result } = renderHook(
+            () =>
+                useQuery({
+                    queryKey: ['pera-service-unavailable'],
+                    queryFn: () =>
+                        Promise.reject(
+                            new PeraServiceUnavailableError('betanet'),
+                        ),
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(errorSpy).not.toHaveBeenCalled()
+    })
+
+    it('still logs an unrelated query failure centrally', async () => {
+        const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {})
+
+        const { result } = renderHook(
+            () =>
+                useQuery({
+                    queryKey: ['unrelated-failure'],
+                    queryFn: () => Promise.reject(new Error('boom')),
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(errorSpy).toHaveBeenCalledWith(
+            'An error has occurred:',
+            expect.objectContaining({ error: expect.any(Error) }),
+        )
     })
 })
 

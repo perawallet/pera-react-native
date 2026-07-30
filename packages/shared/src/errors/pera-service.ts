@@ -40,3 +40,18 @@ export class PeraServiceUnavailableError extends AppError {
         this.network = network
     }
 }
+
+/**
+ * Type guard for {@link PeraServiceUnavailableError}.
+ *
+ * Deliberately NOT folded into `isTransientNetworkError`: a missing
+ * deployment is permanent, not transient, and widening that predicate would
+ * also tell React Query's retry logic the wrong thing. This is a separate,
+ * sibling test — used at the crash-reporting sites (see the query/mutation
+ * caches in `QueryProvider`) to skip reporting an expected condition as a
+ * non-fatal.
+ */
+export const isPeraServiceUnavailableError = (
+    error: unknown,
+): error is PeraServiceUnavailableError =>
+    error instanceof PeraServiceUnavailableError
