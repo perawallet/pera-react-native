@@ -232,7 +232,7 @@ describe('useOnrampConfirm', () => {
         })
 
         expect(mockEnsureOptIn).toHaveBeenCalledWith(
-            expect.objectContaining({ destinationAssetId: 31566704n }),
+            expect.objectContaining({ destinationAssetId: 31_566_704n }),
         )
         expect(mockCreateRampOrder).toHaveBeenCalled()
     })

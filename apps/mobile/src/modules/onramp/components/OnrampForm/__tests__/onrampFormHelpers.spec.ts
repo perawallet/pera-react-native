@@ -46,13 +46,13 @@ describe('resolveDestinationAssetId', () => {
                 pairWithDestination('USDC_ALGORAND', 'USDC'),
                 'mainnet',
             ),
-        ).toBe(31566704n)
+        ).toBe(31_566_704n)
         expect(
             resolveDestinationAssetId(
                 pairWithDestination('USDC_ALGORAND', 'USDC'),
                 'testnet',
             ),
-        ).toBe(10458941n)
+        ).toBe(10_458_941n)
     })
 
     it('returns null where the network has no known USDC id', () => {
