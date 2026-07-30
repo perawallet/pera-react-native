@@ -651,6 +651,50 @@ describe('useDeepLink', () => {
         )
     })
 
+    it('dismisses the QR scanner immediately for ASSET_OPT_IN, before the opt-in sheet resolves', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.ASSET_OPT_IN,
+            assetId: '123',
+        })
+        // Keep the opt-in sheet open forever: its promise never settles, so
+        // any assertion that onSuccess fired can only be true if the scanner
+        // is dismissed up front rather than after the user closes the sheet.
+        // (The native scanner Modal occludes the root-level sheet until it's
+        // dismissed — the freeze this guards against.)
+        mockRequestByType.mockReturnValue(new Promise<never>(() => {}))
+
+        const { result } = renderHook(() => useDeepLink())
+        const onError = vi.fn()
+        const onSuccess = vi.fn()
+        const onConnectionError = vi.fn()
+
+        await act(async () => {
+            // Intentionally NOT awaited — the opt-in sheet never resolves, so
+            // awaiting the whole dispatch would hang. Only the synchronous
+            // dispatch + scanner dismissal needs to run.
+            void result.current.handleDeepLink(
+                'perawallet://app/asset-opt-in?assetId=123',
+                false,
+                'qr',
+                onError,
+                onSuccess,
+                onConnectionError,
+            )
+            await Promise.resolve()
+        })
+
+        // The sheet is open...
+        expect(mockRequestByType).toHaveBeenCalledWith(
+            'asset-opt-in-account-selection',
+            {},
+            expect.anything(),
+        )
+        // ...and the scanner was already told to close, without waiting for it.
+        expect(onSuccess).toHaveBeenCalledTimes(1)
+        expect(onError).not.toHaveBeenCalled()
+        expect(onConnectionError).not.toHaveBeenCalled()
+    })
+
     it('should handle ASSET_DETAIL deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.ASSET_DETAIL,

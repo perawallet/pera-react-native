@@ -286,9 +286,31 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // address it's used directly. The handler also confirms,
                     // executes the opt-in, and surfaces already-opted-in /
                     // insufficient-balance as readable errors.
-                    await optInAsset({
+                    //
+                    // Fire-and-forget rather than `await`: the handler opens a
+                    // confirmation (and, for a bare link, account-selection)
+                    // bottom sheet at the app root and awaits the user's
+                    // response. The QR scanner is a native <Modal> — a separate
+                    // OS window above the root tree — so a sheet opened while
+                    // it's still visible renders behind the frozen camera until
+                    // the user taps X. Unlike WalletConnect there's no outcome
+                    // the scanner needs to observe, so we let the trailing
+                    // `onSuccess?.()` dismiss the scanner immediately (mirrors
+                    // SELL / ADDRESS_ACTIONS) and the sheet appears on top. The
+                    // handler owns its own success/error toasts; the `.catch`
+                    // routes a failure to even open the sheet to the deeplink
+                    // error sheet instead of leaking an unhandled rejection.
+                    void optInAsset({
                         assetId: parsedData.assetId,
                         address: parsedData.address,
+                    }).catch(error => {
+                        logger.error(error as Error, { type: parsedData.type })
+                        showError({
+                            variant: 'generic',
+                            sourceUrl: url,
+                            parsedType: String(parsedData.type),
+                            error,
+                        })
                     })
                     break
                 }
