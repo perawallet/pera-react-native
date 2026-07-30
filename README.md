@@ -112,13 +112,44 @@ pnpm localnet:quantum-check
 
 Runs an end-to-end check of a quantum-signed transaction against LocalNet:
 derives a Falcon-1024 address, funds it, builds a payment with a PQ-raised
-fee, and asserts the assembled signed-transaction bytes match algosdk's own
-PQ signer byte-for-byte, before attempting to broadcast it. As of this
-writing **no public algod accepts the `pqsig` field** — LocalNet's 4.7.4-stable
-included — so the script reports **PENDING** (exit 0) rather than PASS once
-broadcast is rejected for that reason specifically; any other failure reports
-FAIL (non-zero exit). It converts to a true PASS, unchanged, the day a
-pqsig-capable algod ships.
+fee, checks the assembled PQ envelope against algosdk's own PQ signer, then
+broadcasts and waits for confirmation.
+
+The **default** LocalNet (`algod` 4.7.4-stable) has no `pqsig` support, so the
+script reports **PENDING** (exit 0) once broadcast is rejected for that reason
+specifically; any other failure reports FAIL (non-zero exit).
+
+To get a real **PASS: confirmed in round N**, point LocalNet at a
+`pqsig`-capable node. Two things are needed together — the `master` image and a
+genesis whose consensus enables Falcon-1024 (v42, inherited by `future`). Edit
+`~/.config/algokit/sandbox/`:
+
+```sh
+# docker-compose.yml          -> image: algorand/algod:master
+# algod_network_template.json -> add  "ConsensusProtocol": "future",  under "Genesis"
+docker compose -f ~/.config/algokit/sandbox/docker-compose.yml down -v
+docker compose -f ~/.config/algokit/sandbox/docker-compose.yml up -d
+pnpm localnet:use             # genesis hash changed
+pnpm localnet:quantum-check   # -> PASS: confirmed in round N
+```
+
+Note `algokit localnet start/reset` **rewrites both files**, so re-apply the two
+edits after running either. `algorand/algod:nightly` is not a substitute — it
+still lacks `pqsig`. See `docs/QUANTUM_PQ_INTEGRATION.md` (PQ-023).
+
+> **This swap kills the indexer, but the app still works.** Consensus v42 also
+> enables `LoadTracking`, adding a `ld` field to the block header. The published
+> `conduit-localnet` and `indexer` images predate it and cannot decode it, so
+> conduit dies with `error decoding block for round 1: msgpack decode error ...
+key ld` and the indexer stays pinned at round 0
+> (`docker logs algokit_sandbox_conduit`; `curl -s localhost:8980/health`).
+> Balances, the asset list and sending are **unaffected** — `account-syncer.ts`
+> reads them from algod, and holdings only fall back to the indexer past algod's
+> resource cap (the large-account path). Expect indexer-backed surfaces
+> (transaction history, large accounts) to be empty. If a balance reads 0.00 on
+> LocalNet, it is far more likely a stale `account_balances` row than the
+> indexer: pull-to-refresh does NOT re-fetch when a row already exists, so
+> **relaunch the app** after funding.
 
 ## Workspace layout
 

@@ -42,6 +42,7 @@
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import {
     addressWithSignersFromRawPQSigner,
+    decodeSignedTransaction,
     encodeMsgpack,
     FALCON_1024_SCHEME,
     waitForConfirmation,
@@ -143,7 +144,13 @@ async function main(): Promise<void> {
         staticFee: staticFee.microAlgo(),
     })
 
-    // --- Sign and assemble, then prove it matches algosdk's own PQ signer ---
+    // --- Sign and assemble, then check the envelope against algosdk's own PQ
+    // signer. Only the ENVELOPE (scheme, salt, public key, sgnr, txn fields) is
+    // compared, not the signature bytes: the fork signs
+    // `sha512_256(bytesToSign())` while go-algorand verifies over
+    // `bytesToSign()` itself, so full byte-parity with the fork would assert
+    // the preimage the node rejects. On-chain confirmation below is the real
+    // proof of the preimage now that a pqsig-capable node exists. --------------
     const signature = signCompressed(privateKey, pqSigningDigest(txn))
     const ours = encodeMsgpack(
         assemblePQSignedTransaction({
@@ -159,12 +166,23 @@ async function main(): Promise<void> {
     })
     const [reference] = await txnSigner([txn], [0])
 
-    if (Buffer.compare(Buffer.from(ours), Buffer.from(reference)) !== 0) {
+    const envelope = (encoded: Uint8Array) => {
+        const decoded = decodeSignedTransaction(encoded)
+        return JSON.stringify({
+            sch: decoded.pqsig?.sch,
+            slt: decoded.pqsig?.slt,
+            pk: Buffer.from(decoded.pqsig?.pk ?? []).toString('base64'),
+            sgnr: decoded.sgnr?.toString(),
+            txid: decoded.txn.txID(),
+        })
+    }
+
+    if (envelope(ours) !== envelope(reference)) {
         fail(
-            "assembled bytes differ from algosdk's own PQ signer — the signing preimage is wrong",
+            "assembled PQ envelope differs from algosdk's own PQ signer — scheme/salt/key/sgnr is wrong",
         )
     }
-    console.log("assembled bytes match algosdk's PQ signer")
+    console.log("assembled PQ envelope matches algosdk's PQ signer")
 
     // --- Submit: this is the only step allowed to land in PENDING -----------
     let txid: string

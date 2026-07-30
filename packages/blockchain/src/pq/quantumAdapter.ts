@@ -11,21 +11,30 @@
  */
 
 import { addressFromPQKey, SignedTransaction, type Transaction } from 'algosdk'
-import { sha512_256 } from '@noble/hashes/sha2'
 import { DEFAULT_PQ_SCHEME_ID, PQ_SCHEMES, type PQSchemeId } from './schemes'
 import type { PQSignature } from '../models'
 
 /**
  * The exact bytes a post-quantum signer must sign for `txn`.
  *
- * This is SHA-512/256 over the "TX"-prefixed msgpack encoding — i.e. the
- * digest of `txn.bytesToSign()`, not the encoding itself. Signing the
- * un-digested encoding produces a signature the protocol will not verify.
- * Pinned by the differential test in `__tests__/quantumAdapter.spec.ts`,
- * which compares our assembled bytes against algosdk's own PQ signer.
+ * This is the "TX"-prefixed msgpack encoding itself — `txn.bytesToSign()` —
+ * NOT a digest of it. go-algorand verifies a PQ signature over
+ * `HashRep(message)` directly: `FalconVerifier.Verify` calls
+ * `VerifyBytes(HashRep(message), sig)` (`crypto/falconWrapper.go`), and
+ * `HashRep` is exactly the domain-prefixed encoding that `bytesToSign()`
+ * returns. Falcon does its own internal hashing, so hashing first is not
+ * merely redundant — it changes the message and the node rejects the
+ * signature with `falcon verify failed`.
+ *
+ * The node is the authority here, not the interim `algosdk` fork: the fork's
+ * `pq-signer.ts` hands a raw signer `sha512_256(bytesToSign())`, which no
+ * `pqsig`-capable algod accepts. Verified against algod 4.8.298720-master
+ * (consensus `future`, which enables `EnablePQSchemeFalcon1024` via v42):
+ * signing this preimage confirms on-chain, and signing its SHA-512/256 digest
+ * does not. Pinned by `__tests__/quantumAdapter.spec.ts`.
  */
 export const pqSigningDigest = (txn: Transaction): Uint8Array =>
-    sha512_256(txn.bytesToSign())
+    txn.bytesToSign()
 
 /** The address a post-quantum public key authorizes under `schemeId`. */
 export const deriveQuantumAddress = (
