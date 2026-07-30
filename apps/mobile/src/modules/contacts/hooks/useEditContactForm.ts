@@ -32,7 +32,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { ContactsStackParamsList } from '@modules/contacts/routes'
 
 export type UseEditContactFormResult = UseContactFormResult & {
-    selectedContact: Contact | null
+    /**
+     * The contact being edited: the deeplink target when the screen was reached
+     * via QR/deeplink, otherwise the in-app store selection. Deliberately not
+     * named `selectedContact` — it is no longer always the store's selection.
+     */
+    contact: Contact | null
     save: (data: Contact) => void
     removeContact: () => void
 }
@@ -107,8 +112,11 @@ export const useEditContactForm = (): UseEditContactFormResult => {
     )
 
     const removeContact = useCallback(() => {
-        if (targetContact) {
-            deleteContact(targetContact)
+        // `deleteContact` reports whether it matched. A deeplink can name an
+        // address that was never saved, in which case the target is synthesized
+        // from the link and there is nothing to remove — don't report a Delete
+        // that didn't happen or clear a selection we never owned.
+        if (targetContact && deleteContact(targetContact)) {
             trackEvent(ContactsEvent.Delete)
             setSelectedContact(null)
         }
@@ -118,9 +126,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
     return useMemo(
         () => ({
             ...form,
-            // The contact this screen is editing — the deeplink target when
-            // reached via QR/deeplink, otherwise the in-app store selection.
-            selectedContact: targetContact,
+            contact: targetContact,
             save,
             removeContact,
         }),

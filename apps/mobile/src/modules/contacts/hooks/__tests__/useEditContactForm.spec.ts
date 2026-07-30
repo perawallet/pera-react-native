@@ -19,7 +19,7 @@ import {
 import { useEditContactForm } from '../useEditContactForm'
 
 const editContactMock = vi.fn()
-const deleteContactMock = vi.fn()
+const deleteContactMock = vi.fn(() => true)
 const setSelectedContactMock = vi.fn()
 const goBackMock = vi.fn()
 const replaceMock = vi.fn()
@@ -112,11 +112,12 @@ describe('useEditContactForm', () => {
             contacts: [],
         })
         useRouteMock.mockReturnValue({ params: undefined })
+        deleteContactMock.mockReturnValue(true)
     })
 
     it('exposes the selected contact from the store', () => {
         const { result } = renderHook(() => useEditContactForm())
-        expect(result.current.selectedContact).toEqual(selectedContact)
+        expect(result.current.contact).toEqual(selectedContact)
         // In-app path: the form is seeded from the store selection.
         expect(useContactFormMock).toHaveBeenCalledWith(selectedContact)
     })
@@ -138,7 +139,7 @@ describe('useEditContactForm', () => {
             const { result } = renderHook(() => useEditContactForm())
 
             // Form is seeded from Bob (resolved from the store by address).
-            expect(result.current.selectedContact).toEqual(bob)
+            expect(result.current.contact).toEqual(bob)
             expect(useContactFormMock).toHaveBeenCalledWith(bob)
 
             // Delete targets Bob — NOT the stale Alice selection.
@@ -186,7 +187,7 @@ describe('useEditContactForm', () => {
             const { result } = renderHook(() => useEditContactForm())
 
             const expected: Contact = { address: 'CAROL789', name: 'Carol' }
-            expect(result.current.selectedContact).toEqual(expected)
+            expect(result.current.contact).toEqual(expected)
             expect(useContactFormMock).toHaveBeenCalledWith(expected)
         })
     })
@@ -255,5 +256,24 @@ describe('useEditContactForm', () => {
             )
             expect(goBackMock).not.toHaveBeenCalled()
         })
+    })
+
+    // The store reports a no-match; a deeplink can name an address that was
+    // never saved, so the target is synthesized and there is nothing to delete.
+    it('does not report a delete when the store had nothing to remove', () => {
+        deleteContactMock.mockReturnValue(false)
+        useRouteMock.mockReturnValue({
+            params: { address: 'NOTSAVED', label: 'Ghost' },
+        })
+
+        const { result } = renderHook(() => useEditContactForm())
+
+        act(() => {
+            result.current.removeContact()
+        })
+
+        expect(deleteContactMock).toHaveBeenCalled()
+        expect(setSelectedContactMock).not.toHaveBeenCalled()
+        expect(replaceMock).toHaveBeenCalledWith('Contacts')
     })
 })

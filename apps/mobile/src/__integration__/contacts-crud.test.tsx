@@ -73,7 +73,7 @@ const EditContactHost = () => {
         rawAddressInput,
         nfd,
         onAddressInputChange,
-        selectedContact,
+        contact,
         save,
     } = useEditContactForm()
 
@@ -81,7 +81,7 @@ const EditContactHost = () => {
         <>
             <ContactForm
                 control={control}
-                address={selectedContact?.address ?? ''}
+                address={contact?.address ?? ''}
                 nameLabel='name'
                 addressLabel='address'
                 nameError={errors.name?.message}

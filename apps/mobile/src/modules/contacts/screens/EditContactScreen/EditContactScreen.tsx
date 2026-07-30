@@ -24,7 +24,7 @@ import { useEditContactForm } from '@modules/contacts/hooks'
 export const EditContactScreen = () => {
     const { t } = useLanguage()
     const {
-        selectedContact,
+        contact,
         control,
         handleSubmit,
         errors,
@@ -90,7 +90,7 @@ export const EditContactScreen = () => {
                 address={
                     nfd.isNfdResolved
                         ? nfd.resolvedAddress
-                        : (selectedContact?.address ?? '')
+                        : (contact?.address ?? '')
                 }
                 nameLabel={t('contacts.edit_contact.name_label')}
                 addressLabel={t('contacts.edit_contact.address_label')}
