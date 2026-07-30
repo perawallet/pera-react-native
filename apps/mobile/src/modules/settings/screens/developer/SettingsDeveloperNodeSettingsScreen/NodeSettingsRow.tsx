@@ -11,7 +11,6 @@
  */
 
 import { PWRadioButton, PWView } from '@components/core'
-import { useStyles } from './styles'
 import type { NetworkRow } from './useSettingsDeveloperNodeSettingsScreen'
 
 export type NodeSettingsRowProps = {
@@ -28,13 +27,11 @@ export const NodeSettingsRow = ({
     isDisabled = false,
     onSelect,
 }: NodeSettingsRowProps) => {
-    const styles = useStyles()
-
+    // Unstyled wrapper: matches main's bare-radio-in-a-column look (no card
+    // border/padding) while still giving on-device automation a stable
+    // `_row` testID distinct from the radio's own `_radio` testID.
     return (
-        <PWView
-            style={styles.rowContainer}
-            testID={`node_settings_${row.network}_row`}
-        >
+        <PWView testID={`node_settings_${row.network}_row`}>
             <PWRadioButton
                 testID={`node_settings_${row.network}_radio`}
                 title={label}
