@@ -40,7 +40,7 @@ const {
     mockIndexerApiKey,
     mockCustomNodeToken,
     chainUrlsByNetwork,
-    backendUrlByLane,
+    backendUrlByNetwork,
 } = vi.hoisted(() => {
     const mockNetworks = {
         testnet: 'testnet',
@@ -115,7 +115,7 @@ const {
     // and `custom` are absent from this table entirely — mirrored below by
     // getNetworkConfig's `?? ''`, which is exactly what createPeraClient
     // branches on.
-    const backendUrlByLane: Record<string, string> = {
+    const backendUrlByNetwork: Record<string, string> = {
         mainnet: 'https://mainnet.pera.algo',
         testnet: 'https://testnet.pera.algo',
     }
@@ -126,7 +126,7 @@ const {
         mockIndexerApiKey,
         mockCustomNodeToken,
         chainUrlsByNetwork,
-        backendUrlByLane,
+        backendUrlByNetwork,
     }
 })
 
@@ -148,10 +148,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     // createPeraClient branches on.
     getNetworkConfig: (network: string) => ({
         ...chainUrlsByNetwork[network],
-        backendUrl: backendUrlByLane[network] ?? '',
+        backendUrl: backendUrlByNetwork[network] ?? '',
     }),
     isPeraBackedNetwork: (network: string) =>
-        backendUrlByLane[network] !== undefined,
+        backendUrlByNetwork[network] !== undefined,
 }))
 
 // Mock ky with hooks support

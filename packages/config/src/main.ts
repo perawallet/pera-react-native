@@ -56,7 +56,7 @@ export const configSchema = z
         testnetExplorerUrl: z.url(),
 
         // Networks without a Pera backend. Chain endpoints only — their Pera
-        // service traffic is resolved to TestNet's by pera-service-fallback.ts.
+        // service traffic has no Pera backend and fails typed (see createPeraClient).
         betanetAlgodUrl: z.url(),
         betanetIndexerUrl: z.url(),
         betanetGenesisHash: z.string(),

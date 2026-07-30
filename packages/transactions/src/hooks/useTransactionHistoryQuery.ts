@@ -180,7 +180,7 @@ export const useTransactionHistoryQuery = (
                     url: pageParam.url,
                     network,
                     // Only meaningful on indexer-backed networks (see
-                    // `hasPeraServiceFallback`), which have no replayable
+                    // `isPeraBackedNetwork`), which have no replayable
                     // pagination URL and need the address alongside the
                     // cursor. Harmless to pass on Pera-backed networks.
                     accountAddress,

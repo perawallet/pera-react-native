@@ -11,7 +11,7 @@
  */
 
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
-import { hasPeraServiceFallback } from '@perawallet/wallet-core-config'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     transactionHistoryResponseSchema,
     type TransactionHistoryApiResponse,
@@ -51,7 +51,7 @@ export type FetchMoreTransactionsParams = {
     /**
      * The full URL to fetch (from previous response's nextUrl or previousUrl)
      * on Pera-backed networks. On indexer-backed networks (see
-     * `hasPeraServiceFallback`) this instead carries the indexer's opaque
+     * `isPeraBackedNetwork`) this instead carries the indexer's opaque
      * `next-token`, since the indexer has no absolute next-page URL to replay.
      */
     url: string
@@ -165,19 +165,16 @@ const fetchMorePeraTransactions = async (
 }
 
 /**
- * Transaction history for an account. Networks whose Pera services are
- * borrowed (see `hasPeraServiceFallback`) read from their own chain's indexer
- * instead: borrowed history is another chain's data, so a transaction just
- * sent would never show up.
- *
- * This is the main entry point for fetching transactions.
+ * Transaction history for an account. Networks with no Pera backend read from
+ * their own chain's indexer: there is no Pera history to read, and another
+ * chain's history would never show a transaction just sent.
  */
 export const fetchTransactionHistory = async (
     params: FetchTransactionHistoryParams,
 ): Promise<TransactionHistoryResult> =>
-    hasPeraServiceFallback(params.network)
-        ? fetchIndexerTransactionHistory(params)
-        : fetchPeraTransactionHistory(params)
+    isPeraBackedNetwork(params.network)
+        ? fetchPeraTransactionHistory(params)
+        : fetchIndexerTransactionHistory(params)
 
 /**
  * Fetches more transactions using a pagination cursor from a previous
@@ -190,7 +187,7 @@ export const fetchTransactionHistory = async (
 export const fetchMoreTransactions = async (
     params: FetchMoreTransactionsParams,
 ): Promise<TransactionHistoryResult> => {
-    if (!hasPeraServiceFallback(params.network)) {
+    if (isPeraBackedNetwork(params.network)) {
         return fetchMorePeraTransactions(params)
     }
 

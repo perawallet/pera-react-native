@@ -25,7 +25,11 @@ type ChainConfig = {
     dispenserUrl: string
 }
 
-/** Pera-ecosystem services. Resolved via the lane, so may be borrowed. */
+/**
+ * Pera-ecosystem services. Populated only for `PeraBackedNetwork`s; empty
+ * (see `EMPTY_PERA_SERVICES`) everywhere else — never resolved from another
+ * network's deployment.
+ */
 type PeraServices = {
     backendUrl: string
     bidaliBaseUrl: string

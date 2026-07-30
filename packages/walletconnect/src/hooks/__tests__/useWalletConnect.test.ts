@@ -469,11 +469,10 @@ describe('useWalletConnect', () => {
         })
 
         it("accepts a custom-network dApp presenting TestNet's chain id (416002) — an arbitrary node has no registered id of its own", async () => {
-            // custom (an arbitrary developer-pointed node) borrows TestNet's
-            // chain id (matching how its Pera services already borrow
-            // TestNet's, see PERA_SERVICE_FALLBACK). Before the equivalent
-            // fnet/localnet fix, an un-registered network resolved to
-            // MainNet's id instead, so a dApp presenting 416_002 (the
+            // custom (an arbitrary developer-pointed node) has no registered
+            // chain id of its own, so it maps to TestNet's. Before the
+            // equivalent fnet/localnet fix, an un-registered network resolved
+            // to MainNet's id instead, so a dApp presenting 416_002 (the
             // network's actual, spec-intended id) was wrongly rejected.
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.custom),

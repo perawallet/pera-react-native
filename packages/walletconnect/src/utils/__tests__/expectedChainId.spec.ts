@@ -46,12 +46,12 @@ describe('getExpectedChainId', () => {
     })
 
     it('resolves custom to TestNet id — an arbitrary node has no registered CAIP id of its own', () => {
-        // Matches how custom's Pera services already borrow TestNet's (see
-        // PERA_SERVICE_FALLBACK) — a dApp connects as though the wallet were
-        // on TestNet. Before the equivalent fix for fnet/localnet, an
-        // un-registered network resolved to MainNet's id instead (the
-        // ternary's default branch), so a dApp presenting MainNet's 416_001
-        // was WRONGLY accepted while on a network with no id of its own.
+        // custom has no registered CAIP id of its own, so it maps to
+        // TestNet's — a dApp connects as though the wallet were on TestNet.
+        // Before the equivalent fix for fnet/localnet, an un-registered
+        // network resolved to MainNet's id instead (the ternary's default
+        // branch), so a dApp presenting MainNet's 416_001 was WRONGLY
+        // accepted while on a network with no id of its own.
         expect(getExpectedChainId(Networks.custom)).toBe(
             AlgorandChainId.testnet,
         )
