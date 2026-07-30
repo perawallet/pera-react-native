@@ -10,26 +10,18 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { usePortfolioTotals } from '../usePortfolioTotals'
 import type { AccountBalance, AccountBalances } from '../../models'
 
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: () => ({ usdToPreferred: (v: Decimal) => v }),
-}))
-
-// Each asset balance now carries its joined USD price, so usePortfolioTotals
-// no longer issues a separate price query.
-const buildBalance = (
-    assetBalances: { assetId: string; amount: Decimal; usdPrice?: Decimal }[],
-): AccountBalance => ({
-    assetBalances: assetBalances.map(b => ({
-        ...b,
-        algoValue: new Decimal(0),
-    })),
+// The per-holding arithmetic lives in `useAccountBalancesQuery`, which computes
+// `usdValue` in the same pass as `algoValue`; this hook only rolls it up.
+const buildBalance = (usdValue: Decimal): AccountBalance => ({
+    assetBalances: [],
     algoValue: new Decimal(0),
+    usdValue,
     isPending: false,
     isFetched: true,
     isRefetching: false,
@@ -45,33 +37,10 @@ describe('usePortfolioTotals', () => {
         expect(result.current.isPending).toBe(false)
     })
 
-    it('aggregates USD values across accounts using each holding price', () => {
+    it('aggregates each account USD value into the portfolio total', () => {
         const balances: AccountBalances = new Map()
-        balances.set(
-            'ADDR1',
-            buildBalance([
-                {
-                    assetId: '100',
-                    amount: new Decimal(3),
-                    usdPrice: new Decimal(2),
-                }, // 6
-                {
-                    assetId: '200',
-                    amount: new Decimal(10),
-                    usdPrice: new Decimal(0.5),
-                }, // 5
-            ]),
-        )
-        balances.set(
-            'ADDR2',
-            buildBalance([
-                {
-                    assetId: '100',
-                    amount: new Decimal(1),
-                    usdPrice: new Decimal(2),
-                }, // 2
-            ]),
-        )
+        balances.set('ADDR1', buildBalance(new Decimal(11)))
+        balances.set('ADDR2', buildBalance(new Decimal(2)))
 
         const { result } = renderHook(() => usePortfolioTotals(balances))
 
@@ -84,18 +53,17 @@ describe('usePortfolioTotals', () => {
         expect(result.current.portfolioUsdValue).toEqual(new Decimal(13))
     })
 
-    it('treats a missing holding price as zero', () => {
-        const balances: AccountBalances = new Map()
-        balances.set(
-            'ADDR1',
-            buildBalance([{ assetId: '999', amount: new Decimal(100) }]),
-        )
+    it('keeps the totals stable across re-renders', () => {
+        const balances: AccountBalances = new Map([
+            ['ADDR1', buildBalance(new Decimal(7))],
+        ])
 
-        const { result } = renderHook(() => usePortfolioTotals(balances))
-
-        expect(result.current.accountUsdValues.get('ADDR1')).toEqual(
-            new Decimal(0),
+        const { result, rerender } = renderHook(() =>
+            usePortfolioTotals(balances),
         )
-        expect(result.current.portfolioUsdValue).toEqual(new Decimal(0))
+        const first = result.current
+        rerender()
+
+        expect(result.current).toBe(first)
     })
 })

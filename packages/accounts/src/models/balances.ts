@@ -38,6 +38,8 @@ export type AccountBalancesWithTotals = {
 export type AccountBalance = {
     assetBalances: AssetWithAccountBalance[]
     algoValue: Decimal
+    /** Total value of the account's holdings in USD (display units). */
+    usdValue: Decimal
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
