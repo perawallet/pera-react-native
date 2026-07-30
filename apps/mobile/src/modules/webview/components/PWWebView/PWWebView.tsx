@@ -310,12 +310,34 @@ export const PWWebView = (props: PWWebViewProps) => {
         })
     }, [])
 
+    // Installed BEFORE the page runs any script: @perawallet/connect fires
+    // window.open('perawallet-wc://…') the moment the user connects —
+    // possibly before document-end injection has run. Without the hook in
+    // place, WKWebView silently drops the call (popups disabled) and Android
+    // detours it through the navigation guard. Interface before connect —
+    // peraConnectJS's initial processModals() needs window.peraRPC. The
+    // trailing 'true;' keeps iOS from choking on a non-serializable eval
+    // result.
+    const preLoadJS = useMemo(
+        () =>
+            enablePeraConnect
+                ? peraMobileInterfaceJS(bridgeToken) + peraConnectJS + 'true;'
+                : undefined,
+        [enablePeraConnect, bridgeToken],
+    )
+
+    // Document-end bundle. The connect/interface scripts are re-included as
+    // a belt-and-braces fallback (before-content-loaded has historically
+    // been unreliable on some Android versions); their idempotency guards
+    // make the second pass a no-op. baseJS (needs document.head),
+    // customJavaScript, and updateTheme are DOM-dependent and stay
+    // document-end only.
     const jsToLoad = useMemo(() => {
         let js = baseJS
 
         if (enablePeraConnect) {
-            js += peraConnectJS
             js += peraMobileInterfaceJS(bridgeToken)
+            js += peraConnectJS
         }
 
         if (customJavaScript) {
@@ -372,6 +394,11 @@ export const PWWebView = (props: PWWebViewProps) => {
                 webviewDebuggingEnabled={config.debugEnabled}
                 pullToRefreshEnabled={true}
                 injectedJavaScript={jsToLoad}
+                // Deliberately NOT setting
+                // injectedJavaScriptBeforeContentLoadedForMainFrameOnly: its
+                // `true` default is load-bearing for the bridge-token model
+                // (the token must stay unreadable from subframes).
+                injectedJavaScriptBeforeContentLoaded={preLoadJS}
                 setSupportMultipleWindows={false}
                 applicationNameForUserAgent={applicationNameForUserAgent}
                 forceDarkOn={isDarkMode}
@@ -400,6 +427,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         isDarkMode,
         applicationNameForUserAgent,
         jsToLoad,
+        preLoadJS,
         rest,
         styles.container,
         styles.webview,
