@@ -20,6 +20,7 @@ import {
     bytesEqual,
     concatBytes,
     decodeBoundedBase64,
+    deferToNextCycle,
 } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { addTxPrefix } from './rawTransactions'
@@ -34,6 +35,10 @@ const MAX_RAW_TXN_B64_BYTES = 64 * 1024
 // Ed25519 sizes — an address public key is 32 bytes, a signature 64.
 const PUBLIC_KEY_BYTE_LENGTH = 32
 const SIGNATURE_BYTE_LENGTH = 64
+
+// Transactions verified per event-loop turn. Matches the signer batch size so
+// bulk multisig groups yield on the same cadence as bulk signing.
+const VERIFY_BATCH_SIZE = 16
 
 /** `signatures[i]` matches `rawTransactions[i]`; null means "didn't sign". */
 export type ParticipantResponse = {
@@ -143,9 +148,9 @@ const resolvePublicKeys = (
  * would deliver a transaction nobody reviewed. A non-verifying signature is a
  * hard error.
  */
-export const assembleSignedMultisigTransactions = (
+export const assembleSignedMultisigTransactions = async (
     params: AssembleSignedMultisigParams,
-): AssembleSignedMultisigResult => {
+): Promise<AssembleSignedMultisigResult> => {
     const {
         rawTransactionsBase64,
         participantAddresses,
@@ -204,6 +209,14 @@ export const assembleSignedMultisigTransactions = (
 
     const signedList: Uint8Array[] = []
     for (let txIndex = 0; txIndex < rawTransactionsBase64.length; txIndex++) {
+        // Yield between chunks so a large group (transactions × participants)
+        // of pure-JS tweetnacl verifies can't block the JS thread for the whole
+        // run. Mirrors `SIGN_BATCH_SIZE` + `deferToNextCycle` in
+        // `useLocalKeyTransactionSigner` / `useQuantumTransactionSigner`.
+        if (txIndex > 0 && txIndex % VERIFY_BATCH_SIZE === 0) {
+            await deferToNextCycle()
+        }
+
         let rawTxBytes: Uint8Array
         try {
             rawTxBytes = decodeBoundedBase64(
