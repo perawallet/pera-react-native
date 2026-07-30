@@ -13,6 +13,9 @@
 import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
+import { useDeviceStore } from '../../store'
+import { useDeviceID } from '../useDeviceID'
+
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         defaultNetwork: 'mainnet',
@@ -37,27 +40,20 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 describe('device/hooks/useDeviceID', () => {
+    // resetState rather than vi.resetModules + per-test dynamic imports: the
+    // latter re-transformed the store's whole module graph every test and
+    // intermittently overran the 5s timeout under the full parallel run.
     beforeEach(() => {
-        vi.resetModules()
+        useDeviceStore.getState().resetState()
     })
 
-    test('should return null when no device ID is set', async () => {
-        const { useDeviceStore } = await import('../../store')
-        const { useDeviceID } = await import('../useDeviceID')
-
-        useDeviceStore.getState().resetState()
-
+    test('should return null when no device ID is set', () => {
         const { result } = renderHook(() => useDeviceID('mainnet'))
 
         expect(result.current).toBeNull()
     })
 
-    test('should return device ID for specific network', async () => {
-        const { useDeviceStore } = await import('../../store')
-        const { useDeviceID } = await import('../useDeviceID')
-
-        useDeviceStore.getState().resetState()
-
+    test('should return device ID for specific network', () => {
         // Set device ID using store
         const storeHook = renderHook(() => useDeviceStore())
         act(() => {
@@ -72,12 +68,7 @@ describe('device/hooks/useDeviceID', () => {
         expect(testnetResult.result.current).toBe('device-test-456')
     })
 
-    test('should return null for network without device ID', async () => {
-        const { useDeviceStore } = await import('../../store')
-        const { useDeviceID } = await import('../useDeviceID')
-
-        useDeviceStore.getState().resetState()
-
+    test('should return null for network without device ID', () => {
         // Set device ID only for mainnet
         const storeHook = renderHook(() => useDeviceStore())
         act(() => {
@@ -89,12 +80,7 @@ describe('device/hooks/useDeviceID', () => {
         expect(testnetResult.result.current).toBeNull()
     })
 
-    test('should update when device ID changes', async () => {
-        const { useDeviceStore } = await import('../../store')
-        const { useDeviceID } = await import('../useDeviceID')
-
-        useDeviceStore.getState().resetState()
-
+    test('should update when device ID changes', () => {
         const storeHook = renderHook(() => useDeviceStore())
         const deviceIDHook = renderHook(() => useDeviceID('mainnet'))
 

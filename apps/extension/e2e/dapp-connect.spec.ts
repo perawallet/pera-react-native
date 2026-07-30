@@ -32,6 +32,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
+import { clickThroughPinPrompt } from './pin-prompt'
 
 declare global {
     interface Window {
@@ -65,43 +66,27 @@ let dappOrigin: string
 let grantedAddress: string
 const PASSWORD = 'e2e-dapp-connect-password-1'
 
+// The approval handler calls window.close(), so the popup can vanish while
+// Playwright is still finishing the click — surfacing as "Target page, context
+// or browser has been closed". That rejection means the click landed, not that
+// it failed, so it's swallowed; every caller asserts the approval's effect on
+// the dapp page immediately after, which is what actually proves the click.
+const clickAcceptingPopupClose = async (locator: Locator): Promise<void> => {
+    try {
+        await locator.click()
+    } catch (error) {
+        if (!/has been closed/i.test(String(error))) {
+            throw error
+        }
+    }
+}
+
 // Module-eval crashes in the extension bundle otherwise surface as bare
 // selector timeouts with no indication of the real cause (see onboarding.spec.ts).
 const trackPageErrors = (targetPage: Page): Error[] => {
     const errors: Error[] = []
     targetPage.on('pageerror', error => errors.push(error))
     return errors
-}
-
-// PromptContainer (modules/prompts) shows a one-time security nudge on a
-// wall-clock delay after the account exists (wallet-smoke.spec.ts carries the
-// same note) — dismiss it if it raced in and is covering a click target.
-const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
-    const notNow = targetPage.getByTestId('pin_security_prompt_not_now_button')
-    if (await notNow.isVisible().catch(() => false)) {
-        await notNow.click()
-    }
-}
-
-// Same click-through-the-pin-prompt-race guard as feature-tabs.spec.ts /
-// discover.spec.ts / passkey-provider.spec.ts. A single dismiss at test
-// start is not enough: the nudge fires on its own wall-clock delay and can
-// land BETWEEN clicks, where its overlay intercepts pointer events and a
-// bare click() retries against it until the test times out.
-const clickThroughPinPrompt = async (
-    targetPage: Page,
-    locator: Locator,
-): Promise<void> => {
-    for (let attempt = 0; attempt < 5; attempt++) {
-        await dismissPinPromptIfPresent(targetPage)
-        const clicked = await locator
-            .click({ timeout: 3000 })
-            .then(() => true)
-            .catch(() => false)
-        if (clicked) return
-        await dismissPinPromptIfPresent(targetPage)
-    }
-    await locator.click({ timeout: 10_000 })
 }
 
 // M4c: enable now opens the extension's TOOLBAR POPUP via
@@ -314,7 +299,7 @@ test('enable opens the approval popup; approving one account returns it', async 
     }
     await expect(connectButton).not.toHaveAttribute('aria-disabled', 'true')
 
-    await connectButton.click()
+    await clickAcceptingPopupClose(connectButton)
 
     await expect
         .poll(() => dappPage.locator('#enable-accounts').textContent(), {
@@ -422,7 +407,7 @@ test('enable prompts again after the permission was revoked in Settings', async 
     if (!alreadySelected) {
         await approvalPage.getByRole('checkbox').first().click()
     }
-    await connectButton.click()
+    await clickAcceptingPopupClose(connectButton)
 
     await expect
         .poll(() => dappPage.locator('#enable-accounts').textContent(), {

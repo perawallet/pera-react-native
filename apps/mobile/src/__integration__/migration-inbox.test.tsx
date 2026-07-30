@@ -21,7 +21,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { cleanup, screen, waitFor } from '@testing-library/react'
 
 // The real platform package carries the migration types + `StubMigrationService`
 // factory the payload builders below rely on; the unit setup replaces it with a
@@ -192,7 +192,13 @@ const MigratedUserApp = () => {
 
 describe('Flow: Pera 6 migration → asset inbox', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
+    // Unmount first — see messages.test.tsx: resetting handlers while a
+    // polling screen is mounted turns the next poll into an MSW warning that
+    // races vitest's worker teardown.
+    afterEach(() => {
+        cleanup()
+        server.resetHandlers()
+    })
     afterAll(() => server.close())
 
     beforeEach(() => {

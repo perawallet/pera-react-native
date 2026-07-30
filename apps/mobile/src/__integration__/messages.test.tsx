@@ -19,7 +19,7 @@ import {
     expect,
     it,
 } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { cleanup, screen, waitFor } from '@testing-library/react'
 
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -86,7 +86,16 @@ const SLOW_TEST_TIMEOUT_MS = 30_000
 
 describe('Flow: Messages — inbox & notifications lists', () => {
     beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
-    afterEach(() => server.resetHandlers())
+    // Unmount before dropping the handlers: vitest runs describe-level
+    // afterEach hooks before the file-level RTL auto-cleanup, so resetting
+    // first leaves the inbox/notification polls running against an empty MSW
+    // registry. The resulting unhandled-request warning lands during worker
+    // teardown as `EnvironmentTeardownError: Closing rpc while
+    // "onUserConsoleLog" was pending`, failing the run with every test passing.
+    afterEach(() => {
+        cleanup()
+        server.resetHandlers()
+    })
     afterAll(() => server.close())
 
     beforeEach(() => {
