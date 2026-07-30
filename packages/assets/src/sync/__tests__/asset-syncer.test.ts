@@ -191,23 +191,6 @@ describe('fetchAndPersistAssets', () => {
                 expect(upsertAssetsMock).not.toHaveBeenCalled()
             })
 
-            test('still writes Pera opinion fields to assets_pera', async () => {
-                fetchAssetsMock.mockResolvedValue({
-                    results: [{ assetId: '1002', decimals: 6 }],
-                })
-                fetchIndexerAssetDetailsMock.mockResolvedValue({
-                    assetId: '1002',
-                    decimals: 0,
-                })
-
-                await fetchAndPersistAssets(['1002'], network)
-
-                expect(upsertPeraAssetsMock).toHaveBeenCalledWith({
-                    items: [{ assetId: '1002', decimals: 6 }],
-                    network,
-                })
-            })
-
             test('writes no assets_node row at all when the chain lookup fails, rather than falling back to the borrowed value', async () => {
                 fetchAssetsMock.mockResolvedValue({
                     results: [{ assetId: '1002', decimals: 6 }],
@@ -241,4 +224,21 @@ describe('fetchAndPersistAssets', () => {
             })
         },
     )
+
+    test('a non-Pera network writes only assets_node, and never calls the Pera bulk endpoint', async () => {
+        getStaleOrMissingAssetIdsMock.mockResolvedValue(['123'])
+        fetchIndexerAssetDetailsMock.mockResolvedValue({
+            index: '123',
+            params: { decimals: 3 },
+        })
+
+        await fetchAndPersistAssets(['123'], 'betanet')
+
+        expect(upsertNodeAssetsMock).toHaveBeenCalled()
+        // The borrowed-opinion half is gone entirely: not attempted, not
+        // swallowed by allSettled.
+        expect(fetchAssetsMock).not.toHaveBeenCalled()
+        expect(upsertPeraAssetsMock).not.toHaveBeenCalled()
+        expect(upsertAssetsMock).not.toHaveBeenCalled()
+    })
 })

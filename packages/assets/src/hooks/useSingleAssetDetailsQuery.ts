@@ -31,7 +31,7 @@ import {
     stripNulls,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import { hasPeraServiceFallback } from '@perawallet/wallet-core-config'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAssetById } from '../db'
 
@@ -44,8 +44,14 @@ import { getAssetById } from '../db'
  * `displayUnitsToBaseUnits` build a wrong-amount transaction that then SUCCEEDS
  * on chain — the one silent-wrong path the fallback would otherwise introduce.
  *
- * MainNet/TestNet merge order is untouched. Delete this helper and its call site
- * alongside pera-service-fallback.ts.
+ * MainNet/TestNet merge order is untouched.
+ *
+ * Deliberately retained as defence-in-depth: `fetchAssetFromApis` is exported,
+ * and its chain-truth guarantee must not depend on a chokepoint that lives in
+ * another package (the ky client in `packages/shared`). If that remote
+ * invariant ever breaks, the failure mode without this guard is a borrowed
+ * `decimals` building a wrong-amount transaction that succeeds on chain —
+ * lost funds, not an error.
  */
 const withChainIntrinsics = (
     merged: PeraAsset,
@@ -92,7 +98,7 @@ export const fetchAssetFromApis = async (
         },
     }
 
-    return indexerData && hasPeraServiceFallback(network)
+    return indexerData && !isPeraBackedNetwork(network)
         ? withChainIntrinsics(merged, indexerData)
         : merged
 }

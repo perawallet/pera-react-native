@@ -19,7 +19,6 @@ import {
 import {
     upsertAssets,
     upsertNodeAssets,
-    upsertPeraAssets,
     getStaleOrMissingAssetIds,
 } from '../db'
 
@@ -30,7 +29,7 @@ import {
     type Network,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { hasPeraServiceFallback } from '@perawallet/wallet-core-config'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
 import { type PeraAsset } from '../models'
 
@@ -54,20 +53,6 @@ const persistFromPeraBackend = async (
     const response = await fetchAssets(batch, network, deviceId)
     const assets = response.results.map(transformAssetResponse)
     await upsertAssets({ items: assets, network })
-}
-
-/**
- * `assets_pera` half of the fallback path: Pera's opinion fields
- * (verification tier, favorites, collectible metadata) only.
- */
-const persistPeraOpinionFields = async (
-    batch: string[],
-    network: Network,
-    deviceId: Nullable<string>,
-): Promise<void> => {
-    const response = await fetchAssets(batch, network, deviceId)
-    const assets = response.results.map(transformAssetResponse)
-    await upsertPeraAssets({ items: assets, network })
 }
 
 /**
@@ -103,35 +88,6 @@ const persistChainIntrinsics = async (
 }
 
 /**
- * Splits a batch across the two tables when this network's Pera services are
- * borrowed from another chain's deployment.
- *
- * `assets_node`'s columns ARE the chain intrinsics — `decimals` most of all,
- * which the send flow reads back out of the DB and feeds to
- * `displayUnitsToBaseUnits`. On a borrowed lane the Pera response describes the
- * same asset id on a DIFFERENT chain, so letting it populate that table would
- * build a wrong-amount transaction that then SUCCEEDS on chain. The
- * `assets_node` / `assets_pera` split already models exactly this distinction;
- * this just sources each table from the service that owns it.
- *
- * The two halves are independent on purpose: a borrowed backend being down must
- * not stop the real chain's intrinsics from landing, and vice versa.
- *
- * Same invariant as `withChainIntrinsics` in `useSingleAssetDetailsQuery` (which
- * protects the DB-miss API path); delete both alongside pera-service-fallback.ts.
- */
-const persistWithBorrowedPeraServices = async (
-    batch: string[],
-    network: Network,
-    deviceId: Nullable<string>,
-): Promise<void> => {
-    await Promise.allSettled([
-        persistPeraOpinionFields(batch, network, deviceId),
-        persistChainIntrinsics(batch, network),
-    ])
-}
-
-/**
  * Bulk-fetches asset metadata for the given IDs and persists them to the
  * `assets_node` / `assets_pera` tables. Skips IDs that are already cached
  * and still fresh, so calling this on every sync tick (or per-batch from
@@ -159,9 +115,13 @@ export async function fetchAndPersistAssets(
     // at once can flood the API when an account holds hundreds of assets on
     // first load (when nothing is cached yet and getStaleOrMissingAssetIds
     // doesn't short-circuit anything).
-    const persistBatch = hasPeraServiceFallback(network)
-        ? persistWithBorrowedPeraServices
-        : persistFromPeraBackend
+    //
+    // Networks with no Pera deployment get chain intrinsics only — there is no
+    // Pera opinion data (verification tier, favorites, collectibles) to fetch.
+    const persistBatch = isPeraBackedNetwork(network)
+        ? persistFromPeraBackend
+        : (batch: string[], network: Network): Promise<void> =>
+              persistChainIntrinsics(batch, network)
 
     for (let i = 0; i < batches.length; i += ASSET_FETCH_CONCURRENCY) {
         const slice = batches.slice(i, i + ASSET_FETCH_CONCURRENCY)
