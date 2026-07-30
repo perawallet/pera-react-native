@@ -143,7 +143,7 @@ const mockSummary = {
     // total_protocol_and_mbr_fee is a DIFFERENT field the signature never uses;
     // display/pre-check must ignore it (PERA-4710), so a fee of 0.3 (not 0.004)
     // proves the value comes from the signed fields.
-    total_protocol_and_mbr_fee: 4_000,
+    total_protocol_and_mbr_fee: 4000,
     inbox_address: 'INBOXADDR',
     algo_fund_amount: 200_000,
     warning_message: null,
