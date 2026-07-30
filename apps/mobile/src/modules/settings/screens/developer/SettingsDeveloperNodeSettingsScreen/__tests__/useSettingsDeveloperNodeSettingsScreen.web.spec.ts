@@ -158,4 +158,20 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         expect(mocks.sheetOpen).toHaveBeenCalledOnce()
         expect(mocks.setNetwork).not.toHaveBeenCalled()
     })
+
+    it('warns on every network except mainnet', () => {
+        for (const network of ['testnet', 'betanet', 'custom'] as const) {
+            mocks.network = network
+            const { result } = renderHook(() =>
+                useSettingsDeveloperNodeSettingsScreen(),
+            )
+            expect(result.current.isNonMainnetWarningVisible).toBe(true)
+        }
+
+        mocks.network = Networks.mainnet
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+        expect(result.current.isNonMainnetWarningVisible).toBe(false)
+    })
 })

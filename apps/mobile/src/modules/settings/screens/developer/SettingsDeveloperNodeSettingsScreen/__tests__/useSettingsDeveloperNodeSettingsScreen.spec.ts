@@ -12,6 +12,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { useSettingsDeveloperNodeSettingsScreen } from '../useSettingsDeveloperNodeSettingsScreen'
 
@@ -20,6 +21,12 @@ const sheetOpen = vi.fn()
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useSwitchNetwork: () => ({ switchNetwork }),
+}))
+
+// Overrides the global vitest.setup.ts mock (which hard-codes 'mainnet') so
+// this suite can flip the active network per-test.
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 // The sheet's own state machine (open/save/cancel/reset validation, cache
@@ -69,7 +76,7 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
             useSettingsDeveloperNodeSettingsScreen(),
         )
 
-        // Global mock: useNetwork() -> { network: 'mainnet' }.
+        // Default mock: useNetwork() -> { network: 'mainnet' }.
         const selected = result.current.networks.filter(row => row.isSelected)
         expect(selected.map(row => row.network)).toEqual([Networks.mainnet])
     })
@@ -105,5 +112,23 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
         )
 
         expect(result.current.sheet.isOpen).toBe(false)
+    })
+
+    test('warns on every network except mainnet', () => {
+        for (const network of ['testnet', 'betanet', 'custom'] as const) {
+            vi.mocked(useNetwork).mockReturnValue({ network } as never)
+            const { result } = renderHook(() =>
+                useSettingsDeveloperNodeSettingsScreen(),
+            )
+            expect(result.current.isNonMainnetWarningVisible).toBe(true)
+        }
+
+        vi.mocked(useNetwork).mockReturnValue({
+            network: Networks.mainnet,
+        } as never)
+        const { result } = renderHook(() =>
+            useSettingsDeveloperNodeSettingsScreen(),
+        )
+        expect(result.current.isNonMainnetWarningVisible).toBe(false)
     })
 })

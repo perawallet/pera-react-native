@@ -38,6 +38,8 @@ type UseSettingsDeveloperNodeSettingsScreenResult = {
     networks: NetworkRow[]
     selectNetwork: (network: Network) => Promise<void>
     sheet: UseCustomNetworkSheetResult
+    /** Non-MainNet networks are not fully supported — see the screen's callout. */
+    isNonMainnetWarningVisible: boolean
 }
 
 export const useSettingsDeveloperNodeSettingsScreen =
@@ -81,5 +83,10 @@ export const useSettingsDeveloperNodeSettingsScreen =
             [switchNetwork, sheet],
         )
 
-        return { networks, selectNetwork, sheet }
+        return {
+            networks,
+            selectNetwork,
+            sheet,
+            isNonMainnetWarningVisible: activeNetwork !== Networks.mainnet,
+        }
     }

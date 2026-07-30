@@ -44,6 +44,8 @@ type UseSettingsDeveloperNodeSettingsScreenResult = {
     isSwitching: boolean
     selectNetwork: (network: Network) => Promise<void>
     sheet: UseCustomNetworkSheetResult
+    /** Non-MainNet networks are not fully supported — see the screen's callout. */
+    isNonMainnetWarningVisible: boolean
 }
 
 // Web/extension variant: no backend device registration (that's native-only
@@ -107,5 +109,6 @@ export const useSettingsDeveloperNodeSettingsScreen =
             isSwitching,
             selectNetwork,
             sheet,
+            isNonMainnetWarningVisible: activeNetwork !== Networks.mainnet,
         }
     }

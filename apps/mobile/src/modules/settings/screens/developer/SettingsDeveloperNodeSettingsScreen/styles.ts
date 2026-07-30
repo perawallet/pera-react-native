@@ -41,5 +41,8 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             gap: theme.spacing.sm,
         },
+        notice: {
+            marginTop: theme.spacing.lg,
+        },
     }
 })
