@@ -20,9 +20,12 @@ import { AppError, ErrorCategory, ErrorSeverity } from './base'
  * Deliberately NOT retryable: unlike a `PeraNetworkError` outage, retrying can
  * never succeed, so React Query must fail fast rather than burn its budget.
  *
- * Raised in `createPeraClient`'s `beforeRequest` hook, which is the single
- * place Pera requests are constructed — so no socket is opened and no
- * consumer needs its own guard.
+ * Raised by `createFetchClient` before ky is invoked at all, which is the
+ * single place Pera requests are dispatched — so no socket is opened and no
+ * consumer needs its own guard. Deliberately NOT raised from a ky
+ * `beforeRequest` hook: ky builds the `Request` in its constructor, before
+ * hooks run, so a spec-compliant `Request` would reject the prefix-less
+ * relative URL with a bare `TypeError` first.
  */
 export class PeraServiceUnavailableError extends AppError {
     public readonly network: Network

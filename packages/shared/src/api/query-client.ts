@@ -183,6 +183,24 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             )
         }
 
+        // No Pera deployment for this network (betanet, custom). Refuse HERE,
+        // before ky is invoked at all, rather than inside a `beforeRequest`
+        // hook: ky builds the `Request` synchronously in its constructor,
+        // BEFORE running beforeRequest, so a hookless client with no `prefix`
+        // would first hit `new Request('v1/assets/')` and a spec-compliant
+        // implementation (undici, and the direction Expo's fetch is heading)
+        // throws a bare `TypeError: Failed to parse URL` from there. That
+        // TypeError lands in the catch below and gets normalized into a
+        // generic PeraNetworkError('unknown') — exactly the outcome the typed
+        // error exists to avoid. Throwing on this side of the call also means
+        // no socket opens and no consumer needs its own guard.
+        if (
+            requestConfig.backend === 'pera' &&
+            networksWithoutPeraBackend.has(requestConfig.network)
+        ) {
+            throw new PeraServiceUnavailableError(requestConfig.network)
+        }
+
         try {
             const path = requestConfig.url.startsWith('/')
                 ? requestConfig.url.slice(1)
@@ -255,14 +273,6 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             if (error instanceof Error && error.name === 'AbortError') {
                 throw error
             }
-            // Thrown by createPeraClient's beforeRequest hook before any
-            // socket opens. Must keep its identity too — wrapping it into a
-            // generic PeraNetworkError('unknown') here would defeat the
-            // entire point of a typed, non-retryable error that callers can
-            // branch on without their own guard.
-            if (error instanceof PeraServiceUnavailableError) {
-                throw error
-            }
             throw await PeraNetworkError.fromKyErrorWithBody(error)
         }
     }
@@ -298,34 +308,15 @@ const peraRetryConfig = {
     maxRetryAfter: 5000,
 }
 
-const createPeraClient = (network: Network): KyInstance => {
-    const { backendUrl } = getNetworkConfig(network)
-
-    // No Pera deployment for this network (betanet, custom). Throw in
-    // beforeRequest rather than letting ky resolve a relative URL against an
-    // empty prefix: no socket opens, so this is cheap enough to leave on a
-    // sync tick, and the error is typed so callers can tell "not deployed
-    // here" from a real outage.
-    if (backendUrl === '')
-        return ky.create({
-            hooks: {
-                beforeRequest: [
-                    () => {
-                        throw new PeraServiceUnavailableError(network)
-                    },
-                ],
-            },
-        })
-
-    return ky.create({
+const createPeraClient = (network: Network): KyInstance =>
+    ky.create({
         hooks: {
             ...standardHooks,
             beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
         },
-        prefix: backendUrl,
+        prefix: getNetworkConfig(network).backendUrl,
         retry: peraRetryConfig,
     })
-}
 
 const createTokenHeaderClient = (
     prefix: string,
@@ -369,10 +360,26 @@ const createChainClients = (
     }
 }
 
-const buildClientsFor = (network: Network): BackendInstances => ({
-    ...createChainClients(network),
-    pera: createPeraClient(network),
-})
+/**
+ * Networks whose Pera `backendUrl` is empty — i.e. no Pera deployment exists
+ * for them (betanet, custom). Recorded by the same pass that builds the
+ * clients, from the same `getNetworkConfig` read `createPeraClient` makes, so
+ * the request-path guard in `createFetchClient` can never disagree with what
+ * the client was actually built against. Populated before any request can be
+ * served, because both go through `ensureClientsBuilt`.
+ */
+const networksWithoutPeraBackend = new Set<Network>()
+
+const buildClientsFor = (network: Network): BackendInstances => {
+    if (getNetworkConfig(network).backendUrl === '') {
+        networksWithoutPeraBackend.add(network)
+    }
+
+    return {
+        ...createChainClients(network),
+        pera: createPeraClient(network),
+    }
+}
 
 let clientsInitialized = false
 

@@ -208,53 +208,11 @@ const { mockKy, mockJson, mockText, mockStatus, capturedHooks } = vi.hoisted(
         })
 
         mockKy.create = vi.fn((config: any) => {
-            // The "no Pera deployment" client (createPeraClient's empty-
-            // backendUrl branch) is the only one built with no `prefix`: its
-            // beforeRequest hook closes over ONE specific network and always
-            // throws. Folding it into the shared `capturedHooks` — like every
-            // other client below — would let whichever network is built LAST
-            // overwrite the hook every other network's `mockKy` call runs,
-            // making unrelated networks throw too. Return an isolated
-            // callable instead: it never touches `capturedHooks` and never
-            // invokes the shared `mockKy` spy, so "mockKy was never called"
-            // in a test still means a request was never even attempted.
-            if (config.prefix === undefined && config.hooks?.beforeRequest) {
-                const hooks = config.hooks.beforeRequest
-                const stub: any = vi.fn(async (path: string, options: any) => {
-                    const hookOptions = {
-                        ...options,
-                        context: options.context ?? {},
-                    }
-                    const mockRequest = {
-                        url: path,
-                        headers: new Map<string, string>(),
-                    }
-                    for (const hook of hooks) {
-                        await hook({
-                            request: mockRequest,
-                            options: hookOptions,
-                            retryCount: 0,
-                        })
-                    }
-                    return undefined
-                })
-                // updateBackendHeaders calls .extend() on every built client
-                // uniformly, regardless of whether it can ever send a real
-                // request. Route through the shared mockKy.extend spy so the
-                // "extended every client" call-count assertions still see
-                // this one too, but keep returning OUR isolated stub (not
-                // the shared mockKy) — extend's hook payload is generic
-                // (setStandardHeaders + a header-setter), never
-                // network-specific, so recording the call on the shared spy
-                // is harmless here, unlike the beforeRequest closure above.
-                stub.extend = vi.fn((extendConfig: any) => {
-                    mockKy.extend(extendConfig)
-                    return stub
-                })
-                return stub
-            }
-
-            // Capture hooks from config
+            // Every client is built the same way now — including the `pera`
+            // client of a network with no deployment, whose prefix is simply
+            // `''`. Nothing ever calls that one: createFetchClient throws a
+            // PeraServiceUnavailableError before it reaches ky, which is what
+            // "mockKy was never called" asserts below.
             if (config.hooks) {
                 Object.assign(capturedHooks, config.hooks)
             }
@@ -553,21 +511,13 @@ describe('queryClient', () => {
         // build-on-miss.
         expect(mockKy.create).toHaveBeenCalledTimes(12)
 
-        // Every REAL client (one with a `prefix` to actually send requests
-        // to) retries once. The two exceptions are betanet's and custom's
-        // `pera` clients: with no Pera deployment to send anything to,
-        // createPeraClient gives them no `prefix` and no `retry` at all —
-        // they always throw in beforeRequest, before retry logic could ever
-        // matter.
-        const configsWithPrefix = mockKy.create.mock.calls
-            .map(([clientConfig]: [{ prefix?: string }]) => clientConfig)
-            .filter(
-                (clientConfig: { prefix?: string }) =>
-                    clientConfig.prefix !== undefined,
-            )
-        expect(configsWithPrefix).toHaveLength(10)
-        for (const clientConfig of configsWithPrefix) {
+        // Every client is built uniformly — a `prefix` (empty for betanet's
+        // and custom's `pera` slot, which is never invoked) and the same
+        // retry policy. No client is special-cased at construction time; the
+        // "no Pera deployment" refusal lives on the request path instead.
+        for (const [clientConfig] of mockKy.create.mock.calls) {
             expect(clientConfig).toMatchObject({ retry: { limit: 1 } })
+            expect(clientConfig.prefix).toBeTypeOf('string')
         }
     })
 
@@ -709,9 +659,11 @@ describe('queryClient', () => {
     })
 
     test('a network with no Pera deployment throws instead of reaching a backend', async () => {
-        // The failure must happen in beforeRequest, i.e. BEFORE any request is
-        // issued: asserting mockKy was never called is what distinguishes
-        // "refused to send" from "sent somewhere and failed".
+        // The failure must happen BEFORE ky is invoked at all: asserting
+        // mockKy was never called is what distinguishes "refused to send"
+        // from "sent somewhere and failed" — and, since real ky would build
+        // the Request synchronously in its constructor, it is also what stops
+        // the typed error degrading into a URL-parse TypeError.
         mockKy.mockClear()
 
         const { queryClient } = await import('../query-client')

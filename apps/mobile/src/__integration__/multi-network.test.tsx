@@ -33,7 +33,11 @@ import {
 } from 'vitest'
 import { http, HttpResponse } from 'msw'
 
-import { Networks, decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    Networks,
+    PeraServiceUnavailableError,
+    decodeFromBase64,
+} from '@perawallet/wallet-core-shared'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     getAlgorandClient,
@@ -209,7 +213,16 @@ describe.each(FIXTURES)(
             // DID reach TestNet's backend. No MSW handler is registered on
             // purpose: if a request escaped to any host, `requested` would
             // record it and the second assertion fails.
-            await expect(fetchAssets(['31566704'], network)).rejects.toThrow()
+            //
+            // The exact class matters, and a bare `.rejects.toThrow()` would
+            // not pin it: this is the ONLY place real (unmocked) ky runs, so
+            // it is the only test that can tell the typed refusal apart from
+            // ky failing to parse a relative URL against an empty prefix —
+            // which surfaces as a plain TypeError, normalized into a generic
+            // PeraNetworkError('unknown').
+            await expect(
+                fetchAssets(['31566704'], network),
+            ).rejects.toBeInstanceOf(PeraServiceUnavailableError)
 
             expect(
                 requested.some(url =>
