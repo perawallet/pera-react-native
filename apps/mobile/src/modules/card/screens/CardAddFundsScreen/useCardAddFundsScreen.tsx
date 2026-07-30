@@ -77,19 +77,21 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
     )
     const [pickedAssetId, setPickedAssetId] = useState<Nullable<string>>(null)
     const sourceAssetId = pickedAssetId ?? usdcAssetId
-    const isUsdc = sourceAssetId === usdcAssetId
+    // Both sides could independently be null; only call it USDC when there is
+    // a known USDC id to compare against.
+    const isUsdc = usdcAssetId !== null && sourceAssetId === usdcAssetId
 
     const assetIds = useMemo(
-        () => [usdcAssetId, sourceAssetId],
+        () => [usdcAssetId, sourceAssetId].filter(id => id !== null),
         [usdcAssetId, sourceAssetId],
     )
     const { data: assets } = useAssetsQuery(assetIds)
     const usdcAsset = useMemo(
-        () => assets.get(usdcAssetId),
+        () => (usdcAssetId === null ? undefined : assets.get(usdcAssetId)),
         [assets, usdcAssetId],
     )
     const sourceAsset = useMemo(
-        () => assets.get(sourceAssetId),
+        () => (sourceAssetId === null ? undefined : assets.get(sourceAssetId)),
         [assets, sourceAssetId],
     )
     const sourceDecimals = sourceAsset?.decimals ?? 6
@@ -118,12 +120,13 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
 
     const swap = useCardAddFundsSwap({
         account: fundingAccount,
-        sourceAssetId,
+        sourceAssetId: sourceAssetId ?? '',
         sourceDecimals,
-        usdcAssetId,
+        usdcAssetId: usdcAssetId ?? '',
         usdcDecimals,
         amount: amountDecimal,
-        enabled: !isUsdc,
+        // No known USDC id on this network — nothing to swap into.
+        enabled: !isUsdc && usdcAssetId !== null,
     })
 
     const onSelectAsset = useCallback(async (): Promise<void> => {
@@ -163,6 +166,10 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
     const handleDeposit = useCallback(() => {
         // USDC → gated deposit-to-card (no Baanx backend yet → coming-soon).
         if (isUsdc) {
+            // isUsdc being true already implies a non-null usdcAssetId; this
+            // guard only narrows the type for the call below.
+            if (usdcAssetId === null) return
+
             void deposit
                 .mutateAsync({
                     sourceAsset: usdcAssetId,
@@ -180,6 +187,10 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
         }
 
         // Non-USDC → confirm the swap on a dedicated screen before signing.
+        // No known asset id to fund from (e.g. no USDC on this network and
+        // nothing else picked) — nothing to confirm.
+        if (sourceAssetId === null) return
+
         navigation.navigate('CardConfirmSwap', {
             sourceAssetId,
             amount: value ?? '0',

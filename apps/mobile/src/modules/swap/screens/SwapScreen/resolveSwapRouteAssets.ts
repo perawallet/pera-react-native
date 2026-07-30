@@ -38,5 +38,8 @@ export const resolveSwapRouteAssets = (
             ? params.assetOutId
             : getKnownAssetId('USDC', network)
 
+    // No known USDC to default the output side to — no route to resolve.
+    if (assetOutId === null) return null
+
     return { assetInId, assetOutId }
 }

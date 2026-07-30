@@ -49,12 +49,16 @@ export const isMeldPair = (pair: Nullable<RampPair>): boolean =>
 export const resolveDestinationAssetId = (
     pair: RampPair,
     network: Network,
-): bigint | typeof ALGO_ASSET_NAME => {
+): Nullable<bigint | typeof ALGO_ASSET_NAME> => {
     const { destinationToken } = pair
     const isAlgo =
         isAlgoAssetName(destinationToken.id) ||
         isAlgoAssetName(destinationToken.symbol)
-    return isAlgo ? ALGO_ASSET_NAME : BigInt(getKnownAssetId('USDC', network))
+    if (isAlgo) return ALGO_ASSET_NAME
+
+    // No known USDC id on this network — there is no ASA to opt into.
+    const usdcAssetId = getKnownAssetId('USDC', network)
+    return usdcAssetId === null ? null : BigInt(usdcAssetId)
 }
 
 /** An XO source amount that falls outside the quote's min/max window. */

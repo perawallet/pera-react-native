@@ -60,8 +60,11 @@ const getCurrencyInfo = (
         }
         case 'testusdcalgorand':
         case 'usdcalgorand': {
+            const assetId = getKnownAssetId('USDC', network)
+            if (assetId === null) return null
+
             return {
-                assetId: getKnownAssetId('USDC', network),
+                assetId,
                 decimals: ALGO_ASSET.decimals, //USDC has same number of decimals as algo
             }
         }
@@ -85,12 +88,15 @@ export const computeBidaliBalances = (
     const algoBalance = balance?.assetBalances.find(a =>
         isAlgoAssetId(a.assetId),
     )?.amount
+    // A null id (no known USDC on this network) simply never matches an
+    // asset id here — the existing "user holds no USDC" path. No branch
+    // needed.
     const usdcBalance = balance?.assetBalances.find(
         a => a.assetId === getKnownAssetId('USDC', network),
     )?.amount
 
-    // Bidali only has mainnet and testnet catalogues; fallback networks use the
-    // testnet one, matching resolvePeraServiceLane.
+    // Bidali only has mainnet and testnet catalogues; everything that is not
+    // mainnet uses the testnet one.
     const isMainnetCatalogue = isMainnet(network)
     return {
         algorand: algoBalance?.toString() ?? '0',
