@@ -52,19 +52,25 @@ firewall (see Enforcement below):
 
 Key contracts:
 
-- **The signer must sign the digest, not the raw encoding.** `pqSigningDigest(txn)`
-  = `sha512_256(txn.bytesToSign())` — SHA-512/256 over the "TX"-prefixed
-  msgpack encoding. This is exactly what algosdk's own
-  `addressWithSignersFromRawPQSigner` hands to a raw signer callback (see the
-  fork's `pq-signer.ts`), and a differential test in `quantumAdapter.spec.ts`
-  pins it by asserting our assembled bytes are byte-identical to the fork's
-  own signer output for the same key. **Whatever signs on the other side of
-  this seam (KMS, hardware, etc.) must sign `pqSigningDigest(txn)`, never
-  `txn.bytesToSign()` directly** — the deleted `assembleQuantumSignedTxn`
-  threaded a pre-computed signature through verbatim without pinning what it
-  was a signature over, which is exactly how a wrong preimage would have
-  shipped silently: no node verifies `pqsig` today, so nothing would have
-  caught it.
+- **The signer must sign the raw encoding, not a digest of it.**
+  `pqSigningDigest(txn)` = `txn.bytesToSign()` — the "TX"-prefixed msgpack
+  encoding itself. go-algorand verifies a PQ signature over
+  `HashRep(message)` directly: `FalconVerifier.Verify` calls
+  `VerifyBytes(HashRep(message), sig)` (`crypto/falconWrapper.go`), and
+  `HashRep` is exactly that domain-prefixed encoding. Falcon hashes
+  internally, so pre-hashing changes the message and the node rejects the
+  signature with `falcon verify failed`.
+  **The node is the authority here, not the interim `algosdk` fork.** The fork's
+  `addressWithSignersFromRawPQSigner` hands a raw signer
+  `sha512_256(txn.bytesToSign())`, which no `pqsig`-capable algod accepts —
+  so byte-parity with the fork is deliberately NOT asserted. This branch
+  previously signed the fork's preimage and a differential test pinned that
+  parity, which is exactly how a wrong preimage shipped silently: no node
+  verified `pqsig`, so nothing caught it. `quantumAdapter.spec.ts` now pins
+  the preimage against upstream and compares only the ENVELOPE
+  (scheme/salt/key/`sgnr`) against the fork. **Whatever signs on the other
+  side of this seam (KMS, hardware, etc.) must sign `pqSigningDigest(txn)`,
+  which is `txn.bytesToSign()` verbatim.**
 - Rekey (`sgnr`) is derived automatically by `assemblePQSignedTransaction`
   whenever the transaction's sender differs from the address the PQ key
   authorizes; no explicit sender override is threaded through today.
@@ -134,8 +140,10 @@ PQ-018 (the seam integration) established the seams. Submission is no longer
 gated (PQ-019/PQ-021 — see the "Submission is quantum-agnostic" bullet under
 PQ-006 above): a quantum-signed group broadcasts through the ordinary
 algod/callback transports unchanged. Whether it lands on-chain depends
-entirely on the node, not on any app-side check — and **no algod available
-today accepts `pqsig`**, LocalNet included (see PQ-023 below).
+entirely on the node, not on any app-side check — and as of 2026-07-30 a
+`pqsig`-capable node exists (`algorand/algod:master` under consensus `future`),
+so a quantum send now confirms on a correctly configured LocalNet. Public
+networks still reject it (see PQ-023 below).
 
 ## PQ-006 / PERA-4488 — local signing (landed)
 
@@ -178,7 +186,7 @@ Quantum accounts now sign locally end-to-end on real Falcon-1024:
   exists yet** — every node available today (LocalNet included) rejects it at
   submit.
 
-## PQ-020 — native on-device Falcon (landed; device verification pending)
+## PQ-020 — native on-device Falcon (landed; device-verified 2026-07-30)
 
 `getPQProvider()` returns the WASM provider in node/tests and
 `createRNFalconProvider()` (`@joe-p/react-native-falcon`, a synchronous Nitro
@@ -198,8 +206,28 @@ Seam A directory** like every other `@joe-p/*` import.
 4. Sign a payment; confirm the native module produces a Falcon signature
    (≤ 1232 B compressed) over `pqSigningDigest(txn)` and that
    `assemblePQSignedTransaction` yields a `pqsig` `SignedTransaction`.
-   **No on-chain confirmation is expected** — submission is not gated, but no
-   public algod accepts `pqsig` yet (see PQ-023 below).
+   Against a LocalNet running `algorand/algod:master` under consensus `future`,
+   **the send should confirm on-chain**; against any public network or a
+   default LocalNet it will not (see PQ-023 below).
+
+**Result (2026-07-30, iOS simulator, algod 4.8.298720-master / consensus
+`future`):** all four steps pass. A quantum account created in-app signs with the
+native nitro module and its payment **confirms on-chain** — the block carries
+`sch=f1`, `fee=3000` (the 3× PQ multiplier), `pk[0]=10` and a variable-length
+compressed signature (1234 B), and the app shows "Transaction Processed".
+
+> **Quantum accounts created by earlier builds may be permanently unusable —
+> recreate them.** This is a stored-**public-key** problem, independent of the
+> preimage fix above. Step 3 checked the native public key's _length_ (1793 B) but never
+> its _encoding_, which nothing could verify until a `pqsig` node existed. An older
+> test account on this device had a stored public key whose header byte was `164`
+> instead of the correct `0x0A`, and every send from it is rejected with
+> `error code -3` (`FALCON_ERR_FORMAT` — the key fails to **decode**), while a
+> freshly created account confirms. Note a bad stored key is invisible from the
+> address, since `PQAddress(scheme, salt, publicKey)` stays self-consistent with
+> whatever bytes were stored, so the authorizer check still passes. When
+> triaging, read the numeric Falcon code: **-3 `FORMAT`** means bad key/signature
+> _bytes_, **-4 `BADSIG`** means a wrong signing _preimage_.
 
 ## PQ-023 — unified signing path, generic `PQSignature` (landed)
 
@@ -240,31 +268,42 @@ signature }`. `schemeId` selects the wire scheme (`PQSchemeId`); the address
       (`packages/kms/src/models/keys.ts`) yields exactly one child id per seed
       (`${seedId}-quantum`), so one seed cannot host two schemes without an id
       collision. Per-seed multi-scheme support means keying that id by scheme.
-- **`pqSigningDigest(txn)` preimage contract** — `sha512_256(txn.bytesToSign())`.
-  This is the one fact in this document with the highest cost if it drifts:
-  an earlier revision of this seam threaded a pre-computed signature through
-  without pinning what it was a signature over, which is exactly how a wrong
-  preimage would have shipped silently, since no node verifies `pqsig` today.
-  Whatever signs on the other side of Seam B (KMS, hardware, etc.) must sign
-  `pqSigningDigest(txn)`, never `txn.bytesToSign()` directly.
+- **`pqSigningDigest(txn)` preimage contract** — `txn.bytesToSign()`, the
+  domain-prefixed msgpack encoding itself, NOT a digest of it. This is the one
+  fact in this document with the highest cost if it drifts, and it did drift:
+  until 2026-07-30 this seam signed `sha512_256(txn.bytesToSign())` (the
+  interim fork's convention) and a differential test pinned that parity, so
+  nothing caught it while no node verified `pqsig`. The first `pqsig`-capable
+  algod rejected every such signature with `falcon verify failed`. See Seam B's
+  "Key contracts" above for the upstream source that settles it. Whatever signs
+  on the other side of Seam B (KMS, hardware, etc.) must sign
+  `pqSigningDigest(txn)` exactly as returned.
 - **LocalNet verification** — `pnpm localnet:quantum-check` (shipped on this
   branch; documented in `README.md`) exercises derive → fund → sign →
-  assemble → submit against a real node. It asserts everything that can be
-  asserted today, including that our assembled bytes are byte-identical to
-  algosdk's own PQ signer output, and then attempts broadcast. Because no
-  available algod accepts `pqsig` (next bullet), the expected outcome today is
-  **PENDING at exit 0** — that is the designed result, not a failure, and the
-  narrow `PQSIG_UNSUPPORTED` match is what keeps it meaningful: any _other_
-  submission failure, and any accepted-but-unconfirmed transaction, is a
-  loud FAIL. **Do not "fix" the tier logic to make PENDING go away.** The
-  script converts to a true PASS, unchanged, the day a `pqsig`-capable algod
-  ships. Alongside it, manual verification comprises the on-device checklist
-  above plus the differential test in `quantumAdapter.spec.ts`.
-- **No available algod accepts `pqsig` yet** — verified as of 2026-07-28: both
-  `algod` 4.7.4-stable (the version this repo's `algokit localnet start`
-  runs) and `algorand/algod:nightly` build 2680 reject transactions carrying a
-  `pqsig` field, with `no matching struct field found ... key pqsig`. There is
-  no fork-built algod anywhere in this repo, LocalNet included. Consequently a
-  quantum-signed transaction **cannot be confirmed on any network today** —
-  not mainnet, not testnet, not LocalNet. Everything up to submission is
-  verified; broadcast is not.
+  assemble → submit → confirm against a real node. It checks the PQ **envelope**
+  (scheme/salt/key/`sgnr`) against algosdk's own PQ signer — not full byte
+  parity, since the fork signs a different preimage (see the preimage bullet
+  below) — and then broadcasts. Against `algorand/algod:master` under consensus
+  `future` it reports **PASS: confirmed in round N**; on a node without `pqsig`
+  it reports **PENDING at exit 0** via the narrow `PQSIG_UNSUPPORTED` match.
+  Any _other_ submission failure, and any accepted-but-unconfirmed
+  transaction, is a loud FAIL — **do not widen the tier logic to make a
+  failure look like PENDING.** Alongside it, manual verification comprises the
+  on-device checklist above plus `quantumAdapter.spec.ts`.
+- **A `pqsig`-capable algod now exists: `algorand/algod:master`** — verified
+  2026-07-30. `pqsig` landed in go-algorand master
+  (`data/transactions/pqsig.go`; `SignedTxn.PQsig` with `codec:"pqsig"`), and
+  consensus **v42** sets `EnablePQSchemeFalcon1024 = true` — a declared release
+  version, not `vFuture`. What runs where:
+    - `algod` 4.7.4-stable (what `algokit localnet start` runs by default) and
+      `algorand/algod:nightly` (still 4.7.2680 as of 2026-07-30) both **lack**
+      `pqsig` entirely and reject it with
+      `no matching struct field found ... key pqsig`.
+    - `algorand/algod:master` (4.8.298720, commit 88fe542f) **has** it.
+      Two things are needed together — the master image AND a genesis whose
+      consensus enables the scheme. AlgoKit's `algod_network_template.json` sets no
+      `ConsensusProtocol`, so it defaults to the current released protocol with
+      Falcon off; adding `"ConsensusProtocol": "future"` (which inherits v42) turns
+      it on. With both in place, `pnpm localnet:quantum-check` reports
+      **PASS: confirmed in round N** — a Falcon-signed transaction genuinely lands
+      in a block. Still nothing on mainnet or public testnet.
