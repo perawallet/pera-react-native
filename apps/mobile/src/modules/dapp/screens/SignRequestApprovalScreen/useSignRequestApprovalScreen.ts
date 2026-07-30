@@ -10,15 +10,22 @@
  limitations under the License
  */
 
-// Enqueues both `sign-transactions` and `sign-message` approvals into the
-// shared signing pipeline and lets SignRequestView pick the screen off the
-// request's `type` — no signing UI is authored here.
+// Enqueues `sign-transactions`, `sign-message`, and headless-WalletConnect
+// `wc-sign` approvals into the shared signing pipeline and lets
+// SignRequestView pick the screen off the request's `type` — no signing UI is
+// authored here.
 //
 // Legacy (non-ARC-60) arbitrary-data signing is out of scope: an invalid
 // ARC-60 wire payload is rejected rather than left hanging.
 //
-// Both branches set `transportId: requestId`, so the gate below surfaces only
-// the request this screen itself enqueued.
+// wc-sign exists because the offscreen document owns the WC v1 socket but has
+// no vault: a gate-surviving request is forwarded here to run through the same
+// pipeline, with only the respond callbacks differing (resolveWcSign /
+// rejectApproval rather than a locally-held connector).
+//
+// sign-transactions/sign-message set `transportId: requestId`; wc-sign sets
+// `transportId: approval.clientId`, since a WC session rather than this
+// approval window is the correlation unit. See `ownRequest` below.
 import { useEffect, useRef, useState } from 'react'
 import {
     useArc0001Resolver,
@@ -39,10 +46,16 @@ import {
 import {
     encodeToBase64,
     generateOrderedUniqueId,
+    logger,
 } from '@perawallet/wallet-core-shared'
+import {
+    useWalletConnectStore,
+    WalletConnectInvalidSessionError,
+} from '@perawallet/wallet-core-walletconnect'
 import {
     resolveSignTransactions,
     resolveSignMessage,
+    resolveWcSign,
     rejectApproval,
 } from '@perawallet/wallet-extension-platform-chrome'
 import { useLanguage } from '@hooks/useLanguage'
@@ -66,8 +79,34 @@ const describeSignError = (e: unknown, t: (key: string) => string): string => {
     if (e instanceof GenesisHashMismatchError) {
         return t('dapp.sign.network_mismatch')
     }
+    if (e instanceof WalletConnectInvalidSessionError) {
+        return t('dapp.sign.no_session')
+    }
     return t('dapp.sign.error.body')
 }
+
+// Every inbound WC v1 algo_signTxn request is `{ id, params: [[...]] }`; the
+// gate in packages/walletconnect/src/validation/inboundRequestGate.ts already
+// confirmed params[0] is a non-empty array of txn-string entries before this
+// request ever reached an approval surface.
+const readWalletTransactions = (
+    payload: unknown,
+): Arc0001WalletTransaction[] | undefined => {
+    const params = (payload as { params?: unknown[] } | null)?.params
+    const group = Array.isArray(params) ? params[0] : undefined
+    return Array.isArray(group)
+        ? (group as Arc0001WalletTransaction[])
+        : undefined
+}
+
+// algo_signData's WC envelope is `{ id, params: <arc60-wire-object> }` — a
+// single object, unlike algo_signTxn's array-of-arrays. Same wire shape
+// isArc60WirePayload/parseArc60WireRequest already validate for the
+// injected/webview sign-message transport (packages/walletconnect/src/
+// schema.ts's arc60PayloadSchema IS packages/signing's arc60WireSchema —
+// one shared wire format for every transport).
+const readArc60Params = (payload: unknown): unknown =>
+    (payload as { params?: unknown } | null)?.params
 
 export const useSignRequestApprovalScreen =
     (): UseSignRequestApprovalScreenResult => {
@@ -77,15 +116,50 @@ export const useSignRequestApprovalScreen =
         const enqueue = useEnqueueArc0001SignRequest()
         const { addSignRequest, currentRequest } = useSigningRequest()
         const accounts = useSigningAccounts()
+        const connections = useWalletConnectStore(
+            state => state.walletConnectConnections,
+        )
         const enqueuedRef = useRef(false)
         const [error, setError] = useState<string | null>(null)
+
+        // useWalletConnectStore is a SEPARATE zustand `persist` store from
+        // the accounts store below, rehydrating independently over the same
+        // async chrome.storage.local adapter. Only `wc-sign` approvals read
+        // it, but which store wins the hydration race is bundler-init
+        // dependent — gate explicitly rather than let an empty
+        // `walletConnectConnections: []` silently look like "no session".
+        const [isWcStoreHydrated, setIsWcStoreHydrated] = useState(() =>
+            useWalletConnectStore.persist.hasHydrated(),
+        )
+        useEffect(() => {
+            if (isWcStoreHydrated) return
+            // Re-check rather than trusting the `isWcStoreHydrated` this
+            // effect closed over: hydration (chrome.storage.local resolving)
+            // and this effect's subscription both land on separate
+            // macrotasks, so hydration can finish in the gap between the
+            // render that read `hasHydrated() === false` and this effect
+            // subscribing. zustand's persist fires onFinishHydration
+            // listeners exactly once with no replay for late subscribers —
+            // miss that window and the callback below never fires, and
+            // since `isWcStoreHydrated` is this effect's only dep, nothing
+            // ever re-runs it. Without this re-check the popup spins forever
+            // on exactly that race.
+            if (useWalletConnectStore.persist.hasHydrated()) {
+                setIsWcStoreHydrated(true)
+                return
+            }
+            return useWalletConnectStore.persist.onFinishHydration(() => {
+                setIsWcStoreHydrated(true)
+            })
+        }, [isWcStoreHydrated])
 
         useEffect(() => {
             if (enqueuedRef.current) return
             if (!requestId || !approval) return
             if (
                 approval.kind !== 'sign-transactions' &&
-                approval.kind !== 'sign-message'
+                approval.kind !== 'sign-message' &&
+                approval.kind !== 'wc-sign'
             ) {
                 return
             }
@@ -95,7 +169,156 @@ export const useSignRequestApprovalScreen =
             // appears. Can't hang: reaching this screen required an already
             // granted account, so accounts hydrate non-empty.
             if (accounts.length === 0) return
+            // wc-sign additionally needs the WC store hydrated before the
+            // session lookup below can tell "not hydrated yet" apart from
+            // "genuinely unknown clientId" — see the comment on
+            // isWcStoreHydrated above.
+            if (approval.kind === 'wc-sign' && !isWcStoreHydrated) return
             enqueuedRef.current = true
+
+            if (approval.kind === 'wc-sign') {
+                // Every WC request is scoped to the session that fired it —
+                // resolving/authorizing against ALL wallet accounts here
+                // would let a session approved for account A get a request
+                // naming account B signed. The offscreen gate deliberately
+                // defers this exact check to the pipeline (see
+                // packages/walletconnect/src/validation/inboundRequestGate.ts's
+                // `gateSignTxnRequest`/`gateSignDataRequest` doc comments).
+                const session = connections.find(
+                    connection => connection.clientId === approval.clientId,
+                )?.session
+
+                if (!session) {
+                    // Fails CLOSED explicitly: mirror mobile's
+                    // validateRequest (packages/walletconnect/src/hooks/
+                    // useWalletConnectHandlers.ts), which throws
+                    // WalletConnectInvalidSessionError for a missing session,
+                    // rather than letting an empty accounts Set fall through
+                    // to the resolver's generic "Unauthorized".
+                    logger.debug('[wc-sign] no session found', {
+                        clientId: approval.clientId,
+                    })
+                    setError(
+                        describeSignError(
+                            new WalletConnectInvalidSessionError(
+                                'No session found',
+                            ),
+                            t,
+                        ),
+                    )
+                    void rejectApproval(requestId)
+                    return
+                }
+
+                const sourceMetadata = session.peerMeta ?? undefined
+
+                if (approval.method === 'algo_signTxn') {
+                    const transactions = readWalletTransactions(
+                        approval.payload,
+                    )
+                    if (!transactions) {
+                        logger.error(
+                            '[wc-sign] malformed algo_signTxn payload',
+                            { requestId },
+                        )
+                        setError(t('dapp.sign.error.body'))
+                        void rejectApproval(requestId)
+                        return
+                    }
+                    try {
+                        const resolved = resolve(
+                            { transactions },
+                            {
+                                authorizedAddresses: new Set(session.accounts),
+                            },
+                        )
+                        void enqueue(resolved, {
+                            sourceType: 'walletconnect',
+                            transportId: approval.clientId,
+                            sourceMetadata,
+                            respondWithResult: async result => {
+                                await resolveWcSign(requestId, result)
+                                window.close()
+                            },
+                            respondWithReject: () => {
+                                void rejectApproval(requestId).finally(() =>
+                                    window.close(),
+                                )
+                            },
+                            respondWithError: (err: Error) => {
+                                setError(describeSignError(err, t))
+                                void rejectApproval(requestId)
+                            },
+                        })
+                    } catch (e) {
+                        setError(describeSignError(e, t))
+                        void rejectApproval(requestId)
+                    }
+                    return
+                }
+
+                // algo_signData: reuses the sign-message branch's ARC-60
+                // parse/signer-check shape below, but responds with an array
+                // of base64 signatures (mirrors mobile's
+                // handleArc60SignData, which mimics the legacy algo_signData
+                // response shape for WC) rather than the single base64
+                // string the injected/webview transport uses.
+                const arc60Params = readArc60Params(approval.payload)
+                if (!isArc60WirePayload(arc60Params)) {
+                    setError(t('dapp.sign.unsupported_message'))
+                    void rejectApproval(requestId)
+                    return
+                }
+                try {
+                    const { stdSigData, metadata } =
+                        parseArc60WireRequest(arc60Params)
+
+                    const signerAccount = accounts.find(
+                        account => account.address === stdSigData.signer,
+                    )
+                    if (
+                        !session.accounts.includes(stdSigData.signer) ||
+                        !signerAccount ||
+                        !canSignArc60(signerAccount)
+                    ) {
+                        setError(t('dapp.sign.unauthorized_signer'))
+                        void rejectApproval(requestId)
+                        return
+                    }
+
+                    addSignRequest({
+                        id: generateOrderedUniqueId(),
+                        type: 'arc60',
+                        transport: 'callback',
+                        sourceType: 'walletconnect',
+                        transportId: approval.clientId,
+                        sourceMetadata,
+                        stdSigData,
+                        metadata,
+                        approve: async (
+                            signed: PeraArbitraryDataSignResult[],
+                        ) => {
+                            const result = signed.map(item =>
+                                encodeToBase64(item.signature),
+                            )
+                            await resolveWcSign(requestId, result)
+                            window.close()
+                        },
+                        reject: async () => {
+                            await rejectApproval(requestId)
+                            window.close()
+                        },
+                        error: async () => {
+                            await rejectApproval(requestId)
+                            window.close()
+                        },
+                    } as Arc60SignRequest)
+                } catch (e) {
+                    setError(describeSignError(e, t))
+                    void rejectApproval(requestId)
+                }
+                return
+            }
 
             if (approval.kind === 'sign-transactions') {
                 try {
@@ -211,17 +434,34 @@ export const useSignRequestApprovalScreen =
                 setError(describeSignError(e, t))
                 void rejectApproval(requestId)
             }
-        }, [requestId, approval, resolve, enqueue, addSignRequest, accounts, t])
+        }, [
+            requestId,
+            approval,
+            resolve,
+            enqueue,
+            addSignRequest,
+            accounts,
+            connections,
+            isWcStoreHydrated,
+            t,
+        ])
 
         // The signing store's queue is persist-backed by chrome.storage.local
         // (shared across extension contexts) and rehydrates unresolved
         // interactive requests, so a stale/foreign request (e.g. a pending
         // multisig-cosign from another window) can be at the queue head when
-        // this approval window opens. Both enqueue paths above set
-        // transportId to requestId, so correlating on it surfaces only the
-        // request this screen itself enqueued, regardless of kind.
+        // this approval window opens. sign-transactions/sign-message set
+        // transportId to requestId; wc-sign sets it to approval.clientId (a
+        // WC session, not this approval window, is the correlation unit —
+        // mirrors mobile's `connector.clientId`). Correlating on whichever
+        // is right for this approval's kind surfaces only the request this
+        // screen itself enqueued.
+        const correlationId =
+            approval?.kind === 'wc-sign' ? approval.clientId : requestId
         const ownRequest =
-            currentRequest?.transportId === requestId ? currentRequest : null
+            currentRequest?.transportId === correlationId
+                ? currentRequest
+                : null
 
         // If a foreign request is at the head, ownRequest stays null and we
         // keep showing the loading state (never someone else's request).

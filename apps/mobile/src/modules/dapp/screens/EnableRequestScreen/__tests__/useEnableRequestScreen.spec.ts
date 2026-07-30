@@ -30,6 +30,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccountAddress: mocks.useSelectedAccountAddress,
 }))
 
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, options?: { origin?: string }) =>
+            key === 'dapp.enable.peer_origin_claim'
+                ? `Site says: ${options?.origin}`
+                : key,
+    }),
+}))
+
 import { useEnableRequestScreen } from '../useEnableRequestScreen'
 
 const ACCOUNT_A = { address: 'AAAA', name: 'Account A' }
@@ -112,5 +121,83 @@ describe('useEnableRequestScreen', () => {
         const { result } = renderHook(() => useEnableRequestScreen())
         act(() => result.current.handleCancel())
         expect(mocks.reject).toHaveBeenCalledTimes(1)
+    })
+
+    it('exposes the verified requester origin for a page-initiated wc-connect', () => {
+        mocks.useDappRequest.mockReturnValue({
+            approval: {
+                kind: 'wc-connect',
+                requestId: 'req-1',
+                origin: 'https://peer.example',
+                clientId: 'client-1',
+                chainId: 416_001,
+                requesterOrigin: 'https://dapp.example',
+            },
+            isLoading: false,
+            approve: mocks.approve,
+            reject: mocks.reject,
+        })
+
+        const { result } = renderHook(() => useEnableRequestScreen())
+
+        expect(result.current.requesterOrigin).toBe('https://dapp.example')
+        // The peer's self-asserted origin stays separate.
+        expect(result.current.origin).toBe('https://peer.example')
+    })
+
+    it('exposes no requester origin for an ARC-0027 enable approval', () => {
+        mocks.useDappRequest.mockReturnValue({
+            approval: {
+                kind: 'enable',
+                requestId: 'req-2',
+                origin: 'https://dapp.example',
+            },
+            isLoading: false,
+            approve: mocks.approve,
+            reject: mocks.reject,
+        })
+
+        const { result } = renderHook(() => useEnableRequestScreen())
+
+        expect(result.current.requesterOrigin).toBeUndefined()
+    })
+
+    it('qualifies originLabel as a site claim for a wc-connect approval, since peerMeta.url is attacker-forgeable', () => {
+        mocks.useDappRequest.mockReturnValue({
+            approval: {
+                kind: 'wc-connect',
+                requestId: 'req-1',
+                origin: 'https://peer.example',
+                clientId: 'client-1',
+                chainId: 416_001,
+                requesterOrigin: 'https://dapp.example',
+            },
+            isLoading: false,
+            approve: mocks.approve,
+            reject: mocks.reject,
+        })
+
+        const { result } = renderHook(() => useEnableRequestScreen())
+
+        expect(result.current.originLabel).toBe(
+            'Site says: https://peer.example',
+        )
+    })
+
+    it('does not qualify originLabel for an ARC-0027 enable approval, since that origin is browser-verified', () => {
+        mocks.useDappRequest.mockReturnValue({
+            approval: {
+                kind: 'enable',
+                requestId: 'req-2',
+                origin: 'https://dapp.example',
+            },
+            isLoading: false,
+            approve: mocks.approve,
+            reject: mocks.reject,
+        })
+
+        const { result } = renderHook(() => useEnableRequestScreen())
+
+        expect(result.current.originLabel).toBe('https://dapp.example')
     })
 })

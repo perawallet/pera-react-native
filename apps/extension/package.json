@@ -7,6 +7,7 @@
     "build": "tsc --noEmit",
     "bundle": "node scripts/build.mjs",
     "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --passWithNoTests",
     "test:e2e": "playwright test",
     "lint": "oxlint --config ../../.oxlintrc.json src scripts e2e web-shims"
   },
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@noble/hashes": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
+    "@perawallet/walletconnect": "1.0.0",
     "@playwright/test": "catalog:",
     "@testing-library/react": "catalog:",
     "@types/chrome": "catalog:",
@@ -34,6 +36,7 @@
     "react-dom": "catalog:",
     "react-native-web": "^0.21.2",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "ws": "^8.20.1"
   }
 }

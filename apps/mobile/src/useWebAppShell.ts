@@ -34,6 +34,7 @@ import {
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
+import { config } from '@perawallet/wallet-core-config'
 import { queryClient } from '@providers/QueryProvider'
 
 export type WebShellState =
@@ -54,6 +55,7 @@ export const useWebAppShell = (): UseWebAppShellResult => {
     const [isBootstrapped, setIsBootstrapped] = useState(false)
     const [hasBootstrapError, setHasBootstrapError] = useState(false)
     const bootstrapStarted = useRef(false)
+    const platformInitStarted = useRef(false)
     // The toolbar popup (surface 'popup') can't receive a ?requestId query
     // param — chrome.action.openPopup() has no way to pass one — so unlike
     // the approval surface below, discovering a pending approval here (enable
@@ -72,6 +74,36 @@ export const useWebAppShell = (): UseWebAppShellResult => {
         void getCurrentApproval().then(approval => {
             setHasPendingApproval(approval !== null)
         })
+    }, [])
+
+    // Native runs this via provider.initialize() in useAppBootstrap before
+    // anything else; the web shell mirrored the rest of that bootstrap but
+    // dropped this call, so Remote Config never initialized and every
+    // getStringValue served the bundled default — which is why the Staking
+    // screen rendered zero providers (staking_projects defaults to '').
+    // Deliberately NOT gated on isUnlocked: none of crash reporting, remote
+    // config, or analytics needs the master key, and remote config must be
+    // activated before the first screen reads a flag.
+    useEffect(() => {
+        if (platformInitStarted.current) return
+        platformInitStarted.current = true
+        // Counterpart to the same line in the service worker entry point —
+        // Metro resolves packages/*/src while esbuild resolves packages/*/dist,
+        // so compare the two before blaming the backend. Host and channel
+        // only; never the API key.
+        logger.info('Web shell config', {
+            appEnvironment: config.appEnvironment,
+            build: config.appBuildNumber || '(local)',
+            hasApiKey: config.backendAPIKey.length > 0,
+        })
+        // Chrome's initialize() already Promise.allSettled's the three
+        // services, so a single failing one cannot take the others down.
+        // The catch is for the push-notification stub at the end of it.
+        void getProvider()
+            .initialize()
+            .catch(error => {
+                logger.error('Web platform services init failed', { error })
+            })
     }, [])
 
     useEffect(() => {

@@ -17,12 +17,20 @@ import {
     DB_CONTROL_SCOPE,
     DappPermissionStore,
     PasskeyRouter,
+    WC_CONTROL_SCOPE,
     ensureDeviceID,
     startStorageProxyHost,
     type DiscoverInfo,
 } from '@perawallet/wallet-extension-platform-chrome'
+import { config } from '@perawallet/wallet-core-config'
+import { installConnectModalPairRoute } from './connect-modal-pair'
 import { ensureOffscreenDocument } from './offscreen'
 import { parseActiveNetwork, resolveAdvertisedGenesis } from './network'
+import {
+    WC_HEARTBEAT_ALARM,
+    installWcApprovalRouter,
+    installWcHeartbeat,
+} from './walletconnect'
 
 // Offscreen documents have no chrome.storage — the SW serves it over runtime
 // messaging (get/set/remove + onChanged relay). Top-level registration so a
@@ -34,7 +42,48 @@ chrome.runtime.onInstalled.addListener(details => {
     void ensureDeviceID()
 })
 
+// The service worker and the popup are bundled by different toolchains
+// (esbuild -> packages/*/dist vs Metro -> packages/*/src), so they can end up
+// carrying *different* baked config from the same zip. When that happens the
+// only visible symptom is requests going somewhere unexpected, which looks
+// like a backend problem rather than a build one. Print the resolved identity
+// on both sides so the two can be compared directly. Host and channel only —
+// never the API key.
+console.info('[pera] service worker config', {
+    appEnvironment: config.appEnvironment,
+    build: config.appBuildNumber || '(local)',
+    hasApiKey: config.backendAPIKey.length > 0,
+})
+
+// Fires on browser restart (unlike onInstalled, which only fires on
+// install/update) — guarantees the DB host and WC socket exist again without
+// waiting for some unrelated event to wake the service worker.
+chrome.runtime.onStartup.addListener(() => {
+    void ensureOffscreenDocument()
+})
+
 chrome.alarms.onAlarm.addListener(alarm => {
+    if (alarm.name === WC_HEARTBEAT_ALARM) {
+        void ensureOffscreenDocument()
+            .then(() =>
+                chrome.runtime.sendMessage({
+                    scope: WC_CONTROL_SCOPE,
+                    kind: 'reconnect-all',
+                }),
+            )
+            .catch((error: unknown) => {
+                // Not answering a dApp here — this is the heartbeat's own
+                // best-effort reconnect sweep, not a request awaiting a
+                // response. Left unhandled, a failed ensure/sendMessage
+                // would surface as an unhandled rejection on every tick
+                // instead of just skipping this sweep.
+                console.error(
+                    '[pera] wc heartbeat ensure-offscreen/reconnect failed:',
+                    error,
+                )
+            })
+        return
+    }
     void handleAutoLockAlarm(alarm)
 })
 
@@ -139,3 +188,6 @@ const passkeyRouter = new PasskeyRouter(approvals)
 approvals.listen()
 dappRouter.listen()
 passkeyRouter.listen()
+installWcApprovalRouter({ approvals })
+installWcHeartbeat({})
+installConnectModalPairRoute({})

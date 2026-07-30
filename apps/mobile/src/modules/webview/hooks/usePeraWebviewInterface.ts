@@ -65,15 +65,11 @@ import {
     logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import {
-    useWalletConnect,
-    waitForSessionOutcome,
-} from '@perawallet/wallet-core-walletconnect'
+import { useWalletConnectPairing } from '@modules/walletconnect/hooks/useWalletConnectPairing'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
 import { parseWalletConnectUri } from '@hooks/deeplink/walletconnect-parser'
-import { withTimeout } from '@hooks/deeplink/handlers/timeout'
 import { useNetworkStatus } from '@modules/network'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import { AnalyticsMetadataKey, WebviewEvent, trackEvent } from '@analytics'
@@ -165,7 +161,7 @@ export const usePeraWebviewInterface = (
     const { t } = useLanguage()
     const { pushWebView: pushWebViewContext } = useWebView()
     const { addSignRequest } = useSigningRequest()
-    const { connect } = useWalletConnect(network)
+    const { pair } = useWalletConnectPairing()
     const resolveArc0001 = useArc0001Resolver()
     const enqueueSignRequest = useEnqueueArc0001SignRequest()
     const { handleDeepLink } = useDeepLink()
@@ -892,20 +888,14 @@ export const usePeraWebviewInterface = (
 
             // Always surfaces the approval sheet, as if the user scanned the QR
             // — the bridge never auto-approves a session regardless of origin
-            // trust, since that would expose addresses with no UI. Bounded like
-            // the deeplink path so the page gets a readable error rather than
-            // silence.
+            // trust, since that would expose addresses with no UI. `pair` is
+            // bounded like the deeplink path so the page gets a readable error
+            // rather than silence.
             void (async () => {
-                let pairingClientId: string
-                try {
-                    pairingClientId = await withTimeout(
-                        'walletConnect.connect',
-                        10_000,
-                        connect({ connection: { uri: parsed.uri } }),
-                    )
-                } catch (error) {
+                const result = await pair(parsed.uri)
+                if (result.type === 'connect-failed') {
                     logger.error('[webview/wc] connect failed', {
-                        error,
+                        error: result.error,
                         uri: parsed.uri,
                     })
                     sendErrorToWebview(
@@ -916,23 +906,19 @@ export const usePeraWebviewInterface = (
                     )
                     return
                 }
-                const outcome = await waitForSessionOutcome(
-                    pairingClientId,
-                    8000,
-                )
-                if (outcome.type === 'error') {
+                if (result.type === 'error') {
                     // Relay the surfaced reason (e.g. wrong network) —
                     // passing the Error object would collapse it into the
                     // generic signing-error copy.
                     sendErrorToWebview(
                         message.id,
                         JsonRpcErrorCode.InternalError,
-                        outcome.error.message,
+                        result.error.message,
                         webview,
                     )
                     return
                 }
-                if (outcome.type === 'timeout') {
+                if (result.type === 'timeout') {
                     sendErrorToWebview(
                         message.id,
                         JsonRpcErrorCode.InternalError,
@@ -940,11 +926,21 @@ export const usePeraWebviewInterface = (
                         webview,
                     )
                 }
-                // 'session': the approval sheet pops via the provider; the
-                // page hears back through the session approve/reject path.
+                // 'session': on native, the approval sheet pops via the
+                // provider and the page hears back through the session
+                // approve/reject path. On web, `result.type === 'session'`
+                // here IS a genuine cross-realm signal, not just "dispatched"
+                // — it means offscreen's `wcHost.ts` resolved this pairing's
+                // `pair-outcome` because a real `session_request` landed on
+                // the connector it created (see `useWalletConnectPairing.
+                // web.ts`). The wc-connect approval window itself still opens
+                // separately, as its own window via the offscreen host's
+                // approval request — this callback has no handle on that
+                // window or its eventual decision, only on the fact that a
+                // handshake was reached.
             })()
         },
-        [connect, hadRequiredParams, webview, hasInternet, sourceUrl],
+        [pair, hadRequiredParams, webview, hasInternet, sourceUrl],
     )
 
     const onBackPressed = useCallback(() => {

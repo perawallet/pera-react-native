@@ -12,7 +12,12 @@
 
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { CHANNEL_HANDSHAKE_EVENT, CHANNEL_RELAY_READY_EVENT } from '../channel'
+import { WC_PAGE_PAIR_SCOPE } from '@perawallet/wallet-extension-platform-chrome'
+import {
+    CHANNEL_HANDSHAKE_EVENT,
+    CHANNEL_RELAY_READY_EVENT,
+    CONNECT_MODAL_PAIR_EVENT,
+} from '../channel'
 
 type SendMessageMock = (
     message: unknown,
@@ -136,6 +141,103 @@ describe('relay-isolated handshake hardening', () => {
 
         expect(sendMessage).toHaveBeenCalledTimes(1)
         expect(responsesSeen.length).toBe(0)
+
+        vi.unstubAllGlobals()
+    })
+
+    it('forwards a connect-modal pair event to the SW on the page-pair scope, using the callback form', async () => {
+        const sendMessage = vi.fn<SendMessageMock>()
+        vi.stubGlobal('chrome', {
+            runtime: {
+                sendMessage,
+                lastError: undefined as unknown,
+            },
+        } as unknown as typeof chrome)
+
+        await import('../relay-isolated')
+
+        window.dispatchEvent(
+            new CustomEvent(CONNECT_MODAL_PAIR_EVENT, {
+                detail: { uri: 'wc:topic@1?bridge=b&key=00' },
+            }),
+        )
+
+        // Callback form (not the promise form), so a no-receiver rejection
+        // becomes `lastError` instead of an unhandled promise rejection.
+        expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                scope: WC_PAGE_PAIR_SCOPE,
+                uri: 'wc:topic@1?bridge=b&key=00',
+            }),
+            expect.any(Function),
+        )
+
+        vi.unstubAllGlobals()
+    })
+
+    it('ignores a connect-modal pair event with no uri', async () => {
+        const sendMessage = vi.fn<SendMessageMock>()
+        vi.stubGlobal('chrome', {
+            runtime: {
+                sendMessage,
+                lastError: undefined as unknown,
+            },
+        } as unknown as typeof chrome)
+
+        await import('../relay-isolated')
+
+        window.dispatchEvent(
+            new CustomEvent(CONNECT_MODAL_PAIR_EVENT, { detail: {} }),
+        )
+        expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
+
+        vi.unstubAllGlobals()
+    })
+
+    it('does not throw when the SW never calls back and lastError is set (no receiver / dead SW)', async () => {
+        const sendMessage = vi.fn<SendMessageMock>((_message, callback) => {
+            callback(undefined)
+        })
+        vi.stubGlobal('chrome', {
+            runtime: {
+                sendMessage,
+                lastError: { message: 'Could not establish connection' },
+            },
+        } as unknown as typeof chrome)
+
+        await import('../relay-isolated')
+
+        expect(() => {
+            window.dispatchEvent(
+                new CustomEvent(CONNECT_MODAL_PAIR_EVENT, {
+                    detail: { uri: 'wc:topic@1?bridge=b&key=00' },
+                }),
+            )
+        }).not.toThrow()
+
+        vi.unstubAllGlobals()
+    })
+
+    it('does not throw when sendMessage itself throws synchronously (extension context invalidated)', async () => {
+        const sendMessage = vi.fn(() => {
+            throw new Error('Extension context invalidated.')
+        })
+        vi.stubGlobal('chrome', {
+            runtime: {
+                sendMessage,
+                lastError: undefined as unknown,
+            },
+        } as unknown as typeof chrome)
+
+        await import('../relay-isolated')
+
+        expect(() => {
+            window.dispatchEvent(
+                new CustomEvent(CONNECT_MODAL_PAIR_EVENT, {
+                    detail: { uri: 'wc:topic@1?bridge=b&key=00' },
+                }),
+            )
+        }).not.toThrow()
 
         vi.unstubAllGlobals()
     })

@@ -23,6 +23,8 @@ export const routeCapabilities: RouteCapabilities = {
     giftCards: true,
     inAppWebView: true,
     qrScanner: true,
+    // Native keeps the camera; paste has no reason to exist there.
+    deepLinkPaste: false,
     pushNotificationSettings: true,
     walletConnectSettings: true,
     passkeysAutofillSettings: true,

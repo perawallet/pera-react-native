@@ -42,6 +42,31 @@ export {
 export { isTrustedExtensionPageSender } from './trusted-sender'
 export { ensureDeviceID, DEVICE_ID_STORAGE_KEY } from './device-id'
 export {
+    WC_CONTROL_SCOPE,
+    isWcControlMessage,
+    type WcControlMessage,
+    type WcDeliveryOutcome,
+    WC_REQUEST_SCOPE,
+    isWcApprovalRequestMessage,
+    type WcApprovalRequestMessage,
+    WC_PAIR_OUTCOME_SCOPE,
+    isWcPairOutcomeMessage,
+    type WcPairOutcome,
+    type WcPairOutcomeMessage,
+} from './walletconnect/protocol'
+export {
+    WC_PAGE_PAIR_SCOPE,
+    isWcPagePairMessage,
+    type WcPagePairMessage,
+} from './walletconnect/page-pair'
+export {
+    sendWcApprovalRequest,
+    onWcControlMessage,
+    sendWcControlMessage,
+    sendPairOutcome,
+    onPairOutcome,
+} from './walletconnect/client'
+export {
     DB_SCOPE,
     DB_CONTROL_SCOPE,
     encodeWireValues,

@@ -117,14 +117,20 @@ export const WebMainRoutes = (): React.JSX.Element => {
                 request(). */}
             <BottomSheetManager />
             {/* Mirrors native RootComponent's AutoLockGuard > WalletConnectProvider
-                nesting: this tree only renders with the vault unlocked. WC
-                sockets are scoped to the unlocked main shell (mounted here, not
-                AppShell) — the accepted M7 posture: sockets live only while a
-                UI context is open. The provider wraps ONLY the nav tree, same
-                as native wraps only RootContentContainer — its
-                WalletConnectErrorBoundary's fallback REPLACES children on an
-                uncaught non-WalletConnectError, so anything that must survive
-                a nav-tree crash (the sheet host, SigningOverlays below) has to
+                nesting: this tree only renders with the vault unlocked.
+                Unlike native, no WC socket is scoped to this mount — the
+                offscreen document is the sole owner of WC v1 connectors on
+                web (see apps/mobile/src/offscreen/walletconnect/wcHost.ts),
+                long-lived independent of whether this popup/tab is open at
+                all. `useWalletConnectProvider.web.ts` is accordingly an
+                inert no-op; this stays mounted purely for
+                WalletConnectErrorBoundary, a real crash guard for the nav
+                tree that has nothing to do with WC. The provider wraps ONLY
+                the nav tree, same as native wraps only
+                RootContentContainer — its WalletConnectErrorBoundary's
+                fallback REPLACES children on an uncaught
+                non-WalletConnectError, so anything that must survive a
+                nav-tree crash (the sheet host, SigningOverlays below) has to
                 live outside it. */}
             <WalletConnectProvider>
                 <RootStack.Navigator

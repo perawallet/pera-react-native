@@ -65,6 +65,7 @@ import { TestnetIndicator } from '@components/TestnetIndicator'
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 import { useWebAppShell } from './useWebAppShell'
 import { updateQueryHeaders } from './bootstrap/query-headers'
+import { registerWcStoreRehydration } from './bootstrap/wcStoreRehydration'
 
 // Platform hydration is complete before AppShell mounts (App.web.tsx ensures
 // this), so getProvider() is safe to call at module scope here.
@@ -75,6 +76,12 @@ const persister = createAsyncStoragePersister({
 })
 
 updateQueryHeaders()
+
+// Boot-order-safe here for the same reason `persister` above is: App.web.tsx
+// only dynamically imports this module after `hydratePlatform()` resolves, so
+// `getProvider()` is ready. Registered once per UI realm (popup, expanded tab,
+// approval surface).
+registerWcStoreRehydration()
 
 // Authoritative theme-aware paint for the whole app area. Sits below
 // ThemeProvider so it sees in-app theme overrides, not just the OS theme, and

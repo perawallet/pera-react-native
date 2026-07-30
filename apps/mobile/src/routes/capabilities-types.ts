@@ -26,6 +26,11 @@ export type RouteCapabilities = {
     /** In-app webview screens (help center, terms links). Off ⇒ Linking.openURL. */
     inAppWebView: boolean
     qrScanner: boolean
+    /** Paste-a-deeplink entry point in the Menu icon bar (web only). Replaces
+     * qrScanner there: a camera is near-useless in a 360x600 toolbar popup and
+     * Pera Connect now covers the pairing path scanning existed to serve. The
+     * two flags are mutually exclusive per platform. */
+    deepLinkPaste: boolean
     pushNotificationSettings: boolean
     walletConnectSettings: boolean
     /** Native passkey-autofill credential-manager settings (not vault passkey unlock). */

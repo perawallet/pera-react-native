@@ -18,6 +18,9 @@
 import {
     createWorkerExecutor,
     onLocalStorageKeyChanged,
+    onWcControlMessage,
+    sendPairOutcome,
+    sendWcApprovalRequest,
     startDatabaseHost,
 } from '@perawallet/wallet-extension-platform-chrome'
 import { getPlatformServices } from '@perawallet/wallet-extension-platform-driver'
@@ -36,8 +39,13 @@ import {
     useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
 import { usePollingStore } from '@perawallet/wallet-core-polling'
+import {
+    createWalletConnectConnector,
+    useWalletConnectStore,
+} from '@perawallet/wallet-core-walletconnect'
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/QueryProvider'
+import { startWcHost } from './walletconnect/wcHost'
 
 const OFFSCREEN_POLL_INTERVAL_MS = 30_000
 
@@ -59,6 +67,7 @@ const REHYDRATE_BY_KEY: Record<
     'kv:custom-network-store': useCustomNetworkStore,
     'kv:network-store': useNetworkStore,
     'kv:polling-store': usePollingStore,
+    'kv:wallet-connect-store': useWalletConnectStore,
 }
 
 export const runOffscreenApp = async (): Promise<void> => {
@@ -109,4 +118,94 @@ export const runOffscreenApp = async (): Promise<void> => {
     })
     getSyncService().start()
     logger.info('[offscreen] database host ready, warm polling started')
+
+    // The offscreen document is the long-lived WC v1 socket owner (see
+    // module doc comment in wcHost.ts): a session paired or revived here
+    // keeps its bridge socket open after the popup that initiated it
+    // closes. Signing never happens in this context — the vault is
+    // deliberately absent — so gate survivors are forwarded to the service
+    // worker via `sendWcApprovalRequest`, which opens an approval surface.
+    const wcHost = startWcHost({
+        network: () => useNetworkStore.getState().network,
+        knownAddresses: () =>
+            useAccountsStore
+                .getState()
+                .accounts.map(account => account.address),
+        // `walletConnectConnections` is typed as a non-nullable array with
+        // an empty-array default (packages/walletconnect/src/store/store.ts)
+        // — never `??`'d here, and `persistConnection`/`removeConnection`
+        // below trust the same guarantee rather than defending against a
+        // shape the type already rules out.
+        storedConnections: () =>
+            useWalletConnectStore.getState().walletConnectConnections,
+        requestApproval: sendWcApprovalRequest,
+        sendPairOutcome,
+        createConnector: createWalletConnectConnector,
+        persistConnection: connection => {
+            const { walletConnectConnections, setWalletConnectConnections } =
+                useWalletConnectStore.getState()
+            setWalletConnectConnections([
+                ...walletConnectConnections.filter(
+                    conn => conn.clientId !== connection.clientId,
+                ),
+                connection,
+            ])
+        },
+        removeConnection: clientId => {
+            const { walletConnectConnections, setWalletConnectConnections } =
+                useWalletConnectStore.getState()
+            // A wrong-network auto-reject or a disconnect for a clientId
+            // that was never paired hits this on every occurrence — skip
+            // the store write (and the chrome.storage write + cross-context
+            // rehydrate it would otherwise trigger) when there is nothing
+            // to remove.
+            if (
+                !walletConnectConnections.some(
+                    conn => conn.clientId === clientId,
+                )
+            ) {
+                return
+            }
+            setWalletConnectConnections(
+                walletConnectConnections.filter(
+                    conn => conn.clientId !== clientId,
+                ),
+            )
+        },
+    })
+    onWcControlMessage(wcHost.handleControlMessage)
+
+    // `useWalletConnectStore`'s `persist` hydrates asynchronously over the
+    // SW-proxied chrome.storage adapter (see `REHYDRATE_BY_KEY`'s comment
+    // above) — a boot reaching this line (e.g. the heartbeat re-ensuring a
+    // freshly (re)created offscreen document) can beat that hydration.
+    // Reviving before it lands would read `storedConnections()` as `[]`
+    // and nothing here ever retries: the heartbeat's own `reconnect-all`
+    // control message only sweeps connectors already IN the registry
+    // (`reconnectAllConnectors`), and no UI realm owns connectors anymore
+    // to fall back on. Every persisted session would be silently dead for
+    // this offscreen document's whole lifetime.
+    //
+    // Same `hasHydrated()`/`onFinishHydration` gate as
+    // `useSignRequestApprovalScreen.ts`'s wc-sign branch (read its doc
+    // comment for the full rationale). That call site is a React effect
+    // and must re-check `hasHydrated()` immediately after subscribing to
+    // close a scheduling gap between render and effect execution; this is
+    // one synchronous function body with no such gap between the check and
+    // the subscribe below, so no re-check is needed here — but the
+    // subscription itself still unsubscribes after its first fire, since
+    // `onFinishHydration` re-fires on every later `rehydrate()` call (e.g.
+    // this same document's own `onLocalStorageKeyChanged` cross-context
+    // listener), and revival is a one-shot boot action.
+    if (useWalletConnectStore.persist.hasHydrated()) {
+        wcHost.reviveStoredSessions()
+    } else {
+        const unsubscribe = useWalletConnectStore.persist.onFinishHydration(
+            () => {
+                unsubscribe()
+                wcHost.reviveStoredSessions()
+            },
+        )
+    }
+    logger.info('[offscreen] WalletConnect host started')
 }

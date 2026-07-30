@@ -12,3 +12,4 @@
 
 export * from './connectorRegistry'
 export * from './sessionOutcome'
+export * from './createConnector'

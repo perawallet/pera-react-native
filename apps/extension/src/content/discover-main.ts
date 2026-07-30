@@ -16,6 +16,11 @@
 // page-visible globals. Inert without the extension-stamped URL token: this
 // script also matches regular *.perawallet.app tabs (all_frames, no iframe),
 // where no bridge host exists on the other side.
+import {
+    CONNECT_MODAL_WRAPPER_ID,
+    extractUriFromConnectModal,
+    isWcUri,
+} from './connect-modal-uri'
 import { connectWebviewMainChannel } from './webview-main-channel'
 
 const mainChannel = connectWebviewMainChannel('disc')
@@ -105,23 +110,10 @@ if (mainChannel) {
     // constants, isWcUri/sendUri semantics, and the modal-scraping fallback
     // chain are copied exactly so a dapp using @perawallet/connect pairs the
     // same way in the Discover iframe as it does in the native webview.
-    const WC_SCHEME = 'wc'
-    const PERAWALLET_WC_SCHEME = 'perawallet-wc'
-    // Cap forwarded URI length (real WC URIs are well under this; longer
-    // inputs are either malformed or a hostile page trying to overload the
-    // RPC bridge).
-    const MAX_URI_LENGTH = 4096
     // Drop the same URI if it's already been sent within this window.
     const DEDUP_WINDOW_MS = 2000
     let lastUri = ''
     let lastUriAt = 0
-
-    const isWcUri = (value: unknown): value is string =>
-        typeof value === 'string' &&
-        value.length > 0 &&
-        value.length <= MAX_URI_LENGTH &&
-        (value.startsWith(`${WC_SCHEME}:`) ||
-            value.startsWith(`${PERAWALLET_WC_SCHEME}:`))
 
     const sendUri = (uri: unknown): boolean => {
         if (!isWcUri(uri)) return false
@@ -138,40 +130,6 @@ if (mainChannel) {
         return true
     }
 
-    const extractUriFromConnectModal = (
-        wrapper: Element | null,
-    ): string | null => {
-        if (!wrapper) return null
-        // Current (@perawallet/connect >=1.3): the wc URI is set as the
-        // 'uri' attribute on the <pera-wallet-connect-modal> custom element
-        // itself (with '&algorand=true' appended).
-        const modal = wrapper.querySelector('pera-wallet-connect-modal')
-        if (modal) {
-            const attr = modal.getAttribute('uri')
-            if (isWcUri(attr)) return attr
-            // Legacy: a launch button nested inside touch-screen-mode shadow DOM.
-            try {
-                const touch = modal.shadowRoot?.querySelector(
-                    'pera-wallet-modal-touch-screen-mode',
-                )
-                const btn = touch?.shadowRoot?.querySelector(
-                    '#pera-wallet-connect-modal-touch-screen-mode-launch-pera-wallet-button',
-                )
-                const href = btn?.getAttribute('href')
-                if (isWcUri(href)) return href
-            } catch {
-                // DOM probing across shadow roots — tolerate absence/shape drift.
-            }
-        }
-        // Legacy: class-based fallback (pre-shadow-DOM versions).
-        const legacy = wrapper.getElementsByClassName(
-            'pera-wallet-connect-modal-touch-screen-mode__launch-pera-wallet-button',
-        )[0]
-        const legacyHref = legacy?.getAttribute('href')
-        if (isWcUri(legacyHref)) return legacyHref
-        return null
-    }
-
     const processModals = (): void => {
         // Redirect modal: its launch link has no wc URI (it just opens
         // 'perawallet-wc://?browser=...'), and the SDK fires that
@@ -182,9 +140,7 @@ if (mainChannel) {
         )
         if (redirect) redirect.remove()
 
-        const connect = document.getElementById(
-            'pera-wallet-connect-modal-wrapper',
-        )
+        const connect = document.getElementById(CONNECT_MODAL_WRAPPER_ID)
         if (connect) {
             const uri = extractUriFromConnectModal(connect)
             if (sendUri(uri)) {

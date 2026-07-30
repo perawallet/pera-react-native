@@ -12,11 +12,8 @@
 
 import { useCallback, useState } from 'react'
 import { Dialog, Text } from '@rneui/themed'
-import {
-    useWalletConnect,
-    type WalletConnectConnection,
-} from '@perawallet/wallet-core-walletconnect'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { type WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
+import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
 
 import {
     PWButton,
@@ -40,9 +37,10 @@ const renderItem = ({ item }: { item: WalletConnectConnection }) => {
 
 export const SettingsWalletConnectScreen = () => {
     const { t } = useLanguage()
+    // main's error surfacing, kept; this branch's connector-free hook, kept —
+    // no UI surface may own a WC connector on the extension.
     const { showError } = useErrorToast()
-    const { network } = useNetwork()
-    const { connections, deleteAllSessions } = useWalletConnect(network)
+    const { connections, deleteAllSessions } = useWalletConnectSessionsControl()
     const scannerState = useModalState()
     const deleteState = useModalState()
     const styles = useStyles()

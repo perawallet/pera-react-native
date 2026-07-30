@@ -85,6 +85,18 @@ export const resolveSignMessage = async (
     })
 }
 
+export const resolveWcSign = async (
+    requestId: string,
+    result: unknown,
+): Promise<void> => {
+    await chrome.runtime.sendMessage({
+        scope: DAPP_APPROVAL_SCOPE,
+        kind: 'resolve-wc-sign',
+        requestId,
+        result,
+    })
+}
+
 export const resolvePasskey = async (
     requestId: string,
     credential: SerializedCredential,

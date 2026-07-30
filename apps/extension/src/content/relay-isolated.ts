@@ -10,12 +10,17 @@
  limitations under the License
  */
 
-import { DAPP_RELAY_SCOPE } from '@perawallet/wallet-extension-platform-chrome'
+import {
+    DAPP_RELAY_SCOPE,
+    WC_PAGE_PAIR_SCOPE,
+} from '@perawallet/wallet-extension-platform-chrome'
 import {
     CHANNEL_HANDSHAKE_EVENT,
     CHANNEL_RELAY_READY_EVENT,
+    CONNECT_MODAL_PAIR_EVENT,
     type BridgeRequestEnvelope,
     type BridgeResponseEnvelope,
+    type ConnectModalPairDetail,
 } from './channel'
 
 // Isolated-world relay. Learns the MAIN script's per-load channel names from the
@@ -64,6 +69,29 @@ window.addEventListener(CHANNEL_HANDSHAKE_EVENT, (e: Event) => {
     requestEventName = detail.requestEventName
     responseEventName = detail.responseEventName
     window.addEventListener(requestEventName, onRequest)
+})
+
+// Connect-modal pair requests are one-way: forward to the SW and drop. The SW
+// validates `sender.origin`, so a pair failure is deliberately invisible to
+// the dapp.
+window.addEventListener(CONNECT_MODAL_PAIR_EVENT, (event: Event) => {
+    const detail = (event as CustomEvent<ConnectModalPairDetail>).detail
+    if (typeof detail?.uri !== 'string') return
+    try {
+        // Callback form, same reasoning as onRequest above: the promise form
+        // would leave a dead-SW rejection unhandled. lastError is read only to
+        // silence Chrome's unchecked-lastError warning.
+        chrome.runtime.sendMessage(
+            { scope: WC_PAGE_PAIR_SCOPE, uri: detail.uri },
+            () => {
+                void chrome.runtime.lastError
+            },
+        )
+    } catch {
+        // Extension context invalidated: sendMessage throws synchronously
+        // instead of rejecting, and an uncaught throw in a window listener
+        // would surface in the page's own console.
+    }
 })
 
 // After the listener is registered, so a handshake MAIN already dispatched (and

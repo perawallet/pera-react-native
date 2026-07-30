@@ -293,4 +293,41 @@ if (reservedNames.length > 0) {
     )
 }
 
+// Regression guard: the baked config must actually reach every surface, not
+// just the Metro UI bundle. Metro resolves @perawallet/wallet-core-* straight
+// from src/ (so it always sees a fresh generated-env.ts), while the esbuild
+// surfaces below resolve through node_modules -> dist/. When those two
+// disagree, the popup talks to the right backend and the service worker
+// silently talks to the committed staging default with no API key — which is
+// indistinguishable from "the feature is just broken". Compare them instead of
+// trusting the build order.
+const uiBundleDir = path.join(dist, 'expo-static', 'static', 'js', 'web')
+const readAll = dir =>
+    readdirSync(dir)
+        .filter(name => name.endsWith('.js'))
+        .map(name => readFileSync(path.join(dir, name), 'utf8'))
+        .join('\n')
+const uiCode = readAll(uiBundleDir)
+const workerCode = readFileSync(path.join(dist, 'background.js'), 'utf8')
+
+const bakedBackend = generatedEnv.match(/mainnetBackendUrl:\s*"([^"]+)"/)?.[1]
+if (bakedBackend && !workerCode.includes(bakedBackend)) {
+    throw new Error(
+        `background.js does not contain the configured backend (${bakedBackend}) — ` +
+            'the esbuild surfaces were bundled against a stale packages/*/dist. ' +
+            'Most likely a turbo cache hit restored dist/** over the freshly ' +
+            'built config (see globalEnv in turbo.json).',
+    )
+}
+if (bakedBackend && !uiCode.includes(bakedBackend)) {
+    throw new Error(
+        `the exported UI bundle does not contain the configured backend (${bakedBackend}).`,
+    )
+}
+// Deliberately NOT asserting "no staging host appears anywhere": the committed
+// staging defaults in packages/config/src/main.ts are schema defaults, so their
+// string literals are compiled into every bundle even when an override wins at
+// runtime. Presence proves nothing; the two checks above — that the *configured*
+// backend reached both bundles — are the ones with signal.
+
 console.info(`[extension] built ${dist}`)

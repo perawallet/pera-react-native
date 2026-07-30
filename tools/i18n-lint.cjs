@@ -60,6 +60,12 @@ const EXCLUDED_PREFIXES = [
     'countries.',
     // Key-reg type: t(`transactions.key_reg.${keyRegType}`)
     'transactions.key_reg.',
+    // WalletConnect network labels: built from the chain-id → name map, e.g.
+    // t(`walletconnect.request.networks_${AlgorandChain[chainId]}`) in
+    // ConnectionViewHeader and useWcErrorScreen. `networks_betanet` is only
+    // ever reached that way (betanet is never the wallet's own network), so a
+    // literal scan cannot see it.
+    'walletconnect.request.networks_',
     // Rekey screens build every key from i18nBaseKey/i18nPrefix props, e.g.
     // t(`${i18nBaseKey}.expect_${index + 1}`) in RekeyIntroScreen.
     'rekey.',

@@ -37,6 +37,9 @@ const mocks = vi.hoisted(() => ({
     getCurrentApproval: vi
         .fn<() => Promise<{ requestId: string; kind: string } | null>>()
         .mockResolvedValue(null),
+    platformInitialize: vi
+        .fn<() => Promise<{ token: string | undefined }>>()
+        .mockResolvedValue({ token: undefined }),
 }))
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
@@ -74,7 +77,10 @@ vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
     return {
         ...original,
         hydrateKeystore: () => mocks.hydrateKeystore(),
-        getProvider: () => ({ database: {} }),
+        getProvider: () => ({
+            database: {},
+            initialize: mocks.platformInitialize,
+        }),
     }
 })
 
@@ -159,6 +165,50 @@ describe('useWebAppShell', () => {
         mocks.hydrateKeystore.mockResolvedValue(undefined)
         mocks.armAutoLock.mockResolvedValue(undefined)
         mocks.getCurrentApproval.mockResolvedValue(null)
+        mocks.platformInitialize.mockResolvedValue({ token: undefined })
+    })
+
+    it('initializes platform services (crash reporting, remote config, analytics) while still locked', async () => {
+        mocks.surface = 'popup'
+        mocks.isInitialized = true
+        mocks.isUnlocked = false
+
+        renderHook(() => useWebAppShell())
+
+        // Remote Config gates feature flags read by the first screen, so this
+        // must not wait on the unlock-gated bootstrap below it.
+        await waitFor(() =>
+            expect(mocks.platformInitialize).toHaveBeenCalledOnce(),
+        )
+        expect(mocks.hydrateKeystore).not.toHaveBeenCalled()
+    })
+
+    it('initializes platform services only once across re-renders', async () => {
+        mocks.surface = 'popup'
+        mocks.isInitialized = true
+        mocks.isUnlocked = true
+
+        const { rerender } = renderHook(() => useWebAppShell())
+        await waitFor(() =>
+            expect(mocks.platformInitialize).toHaveBeenCalledOnce(),
+        )
+
+        rerender()
+        rerender()
+
+        expect(mocks.platformInitialize).toHaveBeenCalledOnce()
+    })
+
+    it('still reaches main when platform service init rejects (flags degrade, shell does not)', async () => {
+        mocks.surface = 'popup'
+        mocks.isInitialized = true
+        mocks.isUnlocked = true
+        mocks.showOnboarding = false
+        mocks.platformInitialize.mockRejectedValue(new Error('no firebase'))
+
+        const { result } = renderHook(() => useWebAppShell())
+
+        await waitFor(() => expect(result.current.shellState).toBe('main'))
     })
 
     it('returns approval-placeholder when surface is approval, regardless of vault state', () => {

@@ -24,6 +24,7 @@ import {
     PWButton,
     PWCheckbox,
     PWFlatList,
+    PWIcon,
     PWImage,
     PWScreen,
     PWText,
@@ -41,7 +42,8 @@ export const EnableRequestScreen = (): React.JSX.Element => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {
-        origin,
+        originLabel,
+        requesterOrigin,
         faviconUrl,
         accounts,
         selected,
@@ -93,8 +95,37 @@ export const EnableRequestScreen = (): React.JSX.Element => {
                         style={styles.origin}
                         testID='dapp-enable-origin'
                     >
-                        {origin}
+                        {originLabel}
                     </PWText>
+                    {!!requesterOrigin && (
+                        <PWView style={styles.requesterRow}>
+                            <PWText
+                                variant='caption'
+                                style={styles.requesterOrigin}
+                                testID='dapp-enable-requester-origin'
+                            >
+                                {t('dapp.enable.request_origin', {
+                                    origin: requesterOrigin,
+                                })}
+                            </PWText>
+                            <PWView style={styles.verifiedBadge}>
+                                <PWIcon
+                                    name='assets/verified'
+                                    size='sm'
+                                />
+                                <PWText
+                                    variant='caption'
+                                    style={styles.verifiedBadgeText}
+                                    accessibilityLabel={t(
+                                        'dapp.enable.requester_verified_a11y_label',
+                                    )}
+                                    testID='dapp-enable-requester-verified-badge'
+                                >
+                                    {t('dapp.enable.requester_verified_label')}
+                                </PWText>
+                            </PWView>
+                        </PWView>
+                    )}
                     <PWText
                         variant='h3'
                         style={styles.title}

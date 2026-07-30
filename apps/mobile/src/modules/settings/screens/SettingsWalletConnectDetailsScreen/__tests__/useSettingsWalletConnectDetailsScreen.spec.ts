@@ -21,12 +21,13 @@ const mocks = vi.hoisted(() => ({
     pushWebView: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: () => ({ disconnect: mocks.disconnect }),
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+// This branch's screen takes `disconnect` from the connector-free control
+// hook, not from useWalletConnect(network) — no UI surface may own a WC
+// connector on the extension (webConnectorOwnership.test.ts).
+vi.mock('@modules/walletconnect/hooks/useWalletConnectSessionsControl', () => ({
+    useWalletConnectSessionsControl: () => ({
+        disconnect: mocks.disconnect,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -71,7 +72,7 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
             result.current.handleDelete()
         })
 
-        expect(mocks.disconnect).toHaveBeenCalledWith('client-1', true)
+        expect(mocks.disconnect).toHaveBeenCalledWith('client-1')
         expect(mocks.goBack).toHaveBeenCalledTimes(1)
         expect(mocks.showError).not.toHaveBeenCalled()
     })
@@ -92,7 +93,9 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
 
         expect(mocks.showError).toHaveBeenCalledWith(
             error,
-            'common.error.title',
+            // This branch names the failure specifically rather than
+            // reusing the generic error title.
+            'walletconnect.settings.disconnect_failed_title',
         )
         expect(mocks.goBack).not.toHaveBeenCalled()
     })
@@ -109,5 +112,22 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
         })
 
         expect(result.current.isLoading).toBe(false)
+    })
+    it('closes the modal without disconnecting when the session has no clientId', () => {
+        // Nothing to revoke, so the socket is never touched — but the sheet
+        // must still close or the user is stuck behind it.
+        const { result } = renderHook(() =>
+            useSettingsWalletConnectDetailsScreen({
+                ...(session as object),
+                clientId: undefined,
+            } as never),
+        )
+
+        act(() => {
+            result.current.handleDelete()
+        })
+
+        expect(mocks.disconnect).not.toHaveBeenCalled()
+        expect(result.current.deleteModalState.isOpen).toBe(false)
     })
 })

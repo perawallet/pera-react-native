@@ -32,6 +32,14 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
     async initializeRemoteConfig(): Promise<void> {
         const app = getFirebaseApp()
         if (!app) {
+            // Not an error in a local/dev build, but in a staging or
+            // production zip it means the FIREBASE_* build secrets were
+            // missing and every remote flag will silently serve its bundled
+            // default (e.g. staking_projects: '' → an empty Staking screen).
+            console.warn(
+                '[pera] Remote Config disabled: no Firebase project configured; serving bundled defaults',
+                { appEnvironment: config.appEnvironment },
+            )
             return
         }
         this.remoteConfig = getRemoteConfig(app)
@@ -43,8 +51,14 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
 
         try {
             await fetchAndActivate(this.remoteConfig)
-        } catch {
-            // ignore fetch errors, rely on cached/default values
+        } catch (error) {
+            // Still non-fatal — cached/default values carry the app — but a
+            // blocked host permission or a bad API key looks identical to
+            // "flag is off" from the UI, so leave a trace.
+            console.warn(
+                '[pera] Remote Config fetch failed; using cached/defaults',
+                error,
+            )
         }
     }
 

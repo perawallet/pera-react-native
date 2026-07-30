@@ -245,6 +245,8 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: mockConnect }),
     waitForSessionOutcome: (...args: unknown[]) =>
         mockWaitForSessionOutcome(...(args as [])),
+    // Real value from packages/walletconnect/src/constants.ts.
+    WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
 }))
 
 vi.mock('uuid', () => ({

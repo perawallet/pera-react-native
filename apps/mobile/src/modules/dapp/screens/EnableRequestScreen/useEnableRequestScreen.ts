@@ -16,10 +16,13 @@ import {
     useSigningAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useLanguage } from '@hooks/useLanguage'
 import { useDappRequest } from '../../hooks/useDappRequest'
 
 type UseEnableRequestScreenResult = {
     origin: string
+    originLabel: string
+    requesterOrigin?: string
     faviconUrl?: string
     accounts: WalletAccount[]
     selected: Set<string>
@@ -45,6 +48,7 @@ const initialSelection = (
 }
 
 export const useEnableRequestScreen = (): UseEnableRequestScreenResult => {
+    const { t } = useLanguage()
     const { approval, isLoading, approve, reject } = useDappRequest()
     const accounts = useSigningAccounts()
     const { selectedAccountAddress } = useSelectedAccountAddress()
@@ -62,6 +66,13 @@ export const useEnableRequestScreen = (): UseEnableRequestScreenResult => {
         })
     }, [])
 
+    // Browser-verified origin of the tab that asked us to pair, present only
+    // for page-initiated wc-connect. Distinct from `origin`, which for a WC
+    // handshake is the peer's SELF-ASSERTED peerMeta url — the user needs to
+    // see which one is which.
+    const requesterOrigin =
+        approval?.kind === 'wc-connect' ? approval.requesterOrigin : undefined
+
     const canConnect = selected.size > 0
 
     const handleConnect = useCallback((): void => {
@@ -73,8 +84,23 @@ export const useEnableRequestScreen = (): UseEnableRequestScreenResult => {
         void reject()
     }, [reject])
 
+    const origin = approval?.origin ?? ''
+    // For `wc-connect` this is the dApp's self-asserted `peerMeta.url` — an
+    // attacker can set it to any domain, e.g. a bank's, while the same
+    // request is truthfully stamped with a completely different
+    // `requesterOrigin`. Qualified so it reads as a claim rather than a fact.
+    // For ARC-0027 `enable`, `origin` IS browser-verified (there is no
+    // separate `requesterOrigin` to distinguish it from), so it is rendered
+    // plain — qualifying it here would be misleading, not cautious.
+    const originLabel =
+        approval?.kind === 'wc-connect'
+            ? t('dapp.enable.peer_origin_claim', { origin })
+            : origin
+
     return {
-        origin: approval?.origin ?? '',
+        origin,
+        originLabel,
+        requesterOrigin,
         faviconUrl: approval?.faviconUrl,
         accounts,
         selected,

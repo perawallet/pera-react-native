@@ -43,3 +43,22 @@ export type BridgeResponseEnvelope<TResponse = unknown> = {
 export const WEBAUTHN_CHANNEL_HANDSHAKE_EVENT = '__pera_webauthn_handshake__'
 export const WEBAUTHN_CHANNEL_RELAY_READY_EVENT =
     '__pera_webauthn_relay_ready__'
+
+// One-way MAIN -> isolated signal for a connect-modal pair request. Separate
+// from the ARC-0027 and WebAuthn channels above so the three all-URLs script
+// pairs never cross-wire. No handshake and no per-load randomization: unlike
+// the ARC-0027 channel there is no response to forge, and the SW validates
+// `sender.origin` on arrival regardless of who dispatched the event.
+//
+// This event name is fixed and page-discoverable by design, so ANY page
+// script can dispatch it directly — reaching the pair path with no modal, no
+// injected row, and no click at all. That is not a new vulnerability class:
+// a page can already trigger ARC-0027 `enable`, which opens an approval
+// window with no user gesture whatsoever, and pairing itself is inert until
+// the user selects accounts and approves. The account-selection approval is
+// the actual enforced boundary here; the click on the injected row is a UX
+// affordance that makes provenance legible to the user, not a security
+// control this event's fixed name provides.
+export const CONNECT_MODAL_PAIR_EVENT = '__pera_connect_modal_pair__'
+
+export type ConnectModalPairDetail = { uri: string }

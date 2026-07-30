@@ -14,13 +14,10 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useWebView } from '@modules/webview'
+import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
-import {
-    useWalletConnect,
-    type WalletConnectConnection,
-} from '@perawallet/wallet-core-walletconnect'
+import { type WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import {
     trackEvent,
     WalletConnectEvent,
@@ -32,15 +29,14 @@ import { useMemo, useState } from 'react'
 export const useSettingsWalletConnectDetailsScreen = (
     session: WalletConnectConnection,
 ) => {
-    const { network } = useNetwork()
-    const { disconnect } = useWalletConnect(network)
+    const { disconnect } = useWalletConnectSessionsControl()
+    const { showError } = useErrorToast()
+    const { t } = useLanguage()
     const deleteModalState = useModalState()
     const [isLoading, setIsLoading] = useState(false)
     const { pushWebView } = useWebView()
     const navigation = useNavigation()
     const accounts = useAllAccounts()
-    const { showError } = useErrorToast()
-    const { t } = useLanguage()
 
     const connectedAccounts = useMemo(() => {
         return session?.session?.accounts?.map(address =>
@@ -69,14 +65,23 @@ export const useSettingsWalletConnectDetailsScreen = (
             [AnalyticsMetadataKey.DappUrl]:
                 session.session?.peerMeta?.url ?? '',
         })
-        void disconnect(session.clientId, true)
+        void disconnect(session.clientId)
             .then(() => {
                 // Only leave the screen once the session is genuinely gone —
                 // otherwise the user returns to a list that still shows it.
                 navigation.goBack()
             })
             .catch((error: unknown) => {
-                showError(error, t('common.error.title'))
+                // A rejected send (e.g. no offscreen document to receive the
+                // disconnect control message on web) would otherwise be an
+                // unhandled rejection with no user-visible signal. The user
+                // stays on this screen — `goBack` lives in the `.then` above
+                // precisely so a failure doesn't return them to a list that
+                // still shows the session.
+                showError(
+                    error,
+                    t('walletconnect.settings.disconnect_failed_title'),
+                )
             })
             .finally(() => {
                 setIsLoading(false)

@@ -1,0 +1,88 @@
+<!--
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+-->
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>connect-modal-hook test dapp</title>
+    </head>
+    <body>
+        <h1>connect-modal-hook test dapp</h1>
+        <!-- Reproduces the REAL @perawallet/connect desktop-mode DOM shape
+             (apps/extension/src/content/connect-modal-uri.ts /
+             connect-modal-row.ts), which nests two OPEN shadow roots deep
+             (a closed root would make `shadowRoot` null and silently defeat
+             the watcher):
+
+               #pera-wallet-connect-modal-wrapper          (light DOM)
+               └── <pera-wallet-connect-modal>             shadow root #1
+                   └── <pera-wallet-modal-desktop-mode>     shadow root #2
+                       └── .pera-wallet-connect-modal-desktop-mode__default-view
+
+             The accordion container the injected row targets lives in
+             shadow root #2, NOT directly in shadow root #1 — an earlier
+             version of this fixture put it directly in shadow root #1,
+             which is why the e2e stayed green through the production bug
+             (querySelector doesn't pierce shadow boundaries, so the real
+             code silently found nothing to inject into).
+
+             This page never defines `window.onExtensionConnect` and never
+             sets `is-extension-enabled="true"` on the modal element — either
+             would correctly suppress the injected row (shouldInjectRow). -->
+        <input
+            id="wc-uri-input"
+            data-testid="wc-uri-input"
+            type="text"
+        />
+        <button
+            id="show-modal-button"
+            data-testid="show-modal-button"
+            onclick="window.showConnectModal(document.getElementById('wc-uri-input').value)"
+        >
+            Show Connect Modal
+        </button>
+        <script>
+            // Builds (or rebuilds) the connect-modal DOM shape with `uri` set
+            // on the custom element's `uri` attribute — exactly what
+            // extractUriFromConnectModal reads for a current
+            // (@perawallet/connect >=1.3) modal. The test supplies `uri`
+            // rather than this page ever touching WalletConnect itself.
+            window.showConnectModal = function (uri) {
+                var existing = document.getElementById(
+                    'pera-wallet-connect-modal-wrapper',
+                )
+                if (existing) existing.remove()
+
+                var wrapper = document.createElement('div')
+                wrapper.id = 'pera-wallet-connect-modal-wrapper'
+
+                var modal = document.createElement('pera-wallet-connect-modal')
+                modal.setAttribute('uri', uri)
+
+                var root = modal.attachShadow({ mode: 'open' })
+
+                var desktopMode = document.createElement(
+                    'pera-wallet-modal-desktop-mode',
+                )
+                var desktopRoot = desktopMode.attachShadow({ mode: 'open' })
+                var container = document.createElement('div')
+                container.className =
+                    'pera-wallet-connect-modal-desktop-mode__default-view'
+                desktopRoot.appendChild(container)
+                root.appendChild(desktopMode)
+
+                wrapper.appendChild(modal)
+                document.body.appendChild(wrapper)
+            }
+        </script>
+    </body>
+</html>

@@ -15,14 +15,26 @@ import type { RouteCapabilities } from './capabilities-types'
 export type { RouteCapabilities } from './capabilities-types'
 
 export const routeCapabilities: RouteCapabilities = {
-    discoverTab: true, // iframe webview layer + discover bridge
+    // Off pending a Discover-side fix. Discover gates its UI tier on
+    // compareVersions(version, DISCOVER_V3[platform], '>=') with
+    // DISCOVER_V3 = { ios, android } — our honest clientType 'web' makes that
+    // lookup undefined, compare-versions throws mid-render, and React unmounts
+    // the whole Discover root (renders, then blanks). The iframe/bridge layer
+    // itself is verified working. See docs/DISCOVER_WEB_FEATURE_GATE.md.
+    discoverTab: false,
     swapTab: true, // native RN screen graph
     fundTab: true, // native RN screen graph (Meld checkout via window.open)
     staking: true, // native RN screen graph
     peraCard: true, // Baanx card, additionally gated by useIsPeraCardEnabled() remote flag
     giftCards: true,
     inAppWebView: false, // stays false — help/terms open browser tabs
-    qrScanner: true, // BarcodeDetector camera scan + paste fallback
+    // Off in the Menu and the home header: replaced by deepLinkPaste below.
+    // The QRScannerView camera+paste sheet itself stays reachable from the
+    // in-field scan buttons (AddressEntryField, ContactForm, Connections
+    // settings, Passkeys settings) and the ScanQR expanded tab — this flag
+    // only gates those two icon bars.
+    qrScanner: false,
+    deepLinkPaste: true, // paste a WC URI / perawallet:// link instead
     pushNotificationSettings: false, // permanently off: no push on web
     walletConnectSettings: true, // WC v1 pairing + sessions on web
     passkeysAutofillSettings: true, // WebAuthn-interception credential provider + settings toggle

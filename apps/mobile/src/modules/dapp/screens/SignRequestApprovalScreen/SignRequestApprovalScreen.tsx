@@ -10,14 +10,16 @@
  limitations under the License
  */
 
-// ARC-0027 sign approval popup (routed by DappRequestRoutes.web for BOTH
-// `approval.kind === 'sign-transactions'` and `'sign-message'`). Authors no
-// signing UI of its own: it decodes/parses the request and enqueues it
-// through the shared signing pipeline (useSignRequestApprovalScreen), then
-// mounts the existing SignRequestView — the same component the in-app
-// webview/WalletConnect transports render via SignRequestContent/
-// SigningOverlays, which auto-routes to the transaction or ARC-60 screen off
-// the enqueued request's `type`.
+// ARC-0027 sign approval popup (routed by DappRequestRoutes.web for
+// `approval.kind === 'sign-transactions'`, `'sign-message'`, AND `'wc-sign'`
+// — a headless WalletConnect request the offscreen document forwarded here
+// because it owns no vault). Authors no signing UI of its own: it
+// decodes/parses the request and enqueues it through the shared signing
+// pipeline (useSignRequestApprovalScreen), then mounts the existing
+// SignRequestView — the same component the in-app webview/WalletConnect
+// transports render via SignRequestContent/SigningOverlays, which
+// auto-routes to the transaction or ARC-60 screen off the enqueued request's
+// `type`.
 import React from 'react'
 import { SignRequestView } from '@modules/signing/components/SignRequestView'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'

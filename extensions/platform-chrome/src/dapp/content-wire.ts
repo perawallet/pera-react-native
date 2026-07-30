@@ -31,3 +31,15 @@ export {
     type WebauthnCeremonyRequest,
     type WebauthnCeremonyResponse,
 } from './webauthn-router-protocol'
+// Page-originated WalletConnect pair request (connect-modal-hook's
+// relay-isolated.ts forwards this from the MAIN-world watcher to the
+// service worker) — pure, no chrome.* usage, so it belongs in this narrow
+// content-script barrel alongside the ARC-0027/WebAuthn wire above.
+//
+// Only the scope constant is re-exported here — DO NOT remove it, content
+// scripts (relay-isolated.ts) import it via this exact alias and
+// `pnpm --filter extension bundle` fails outright without it. `isWcPagePairMessage`
+// / `WcPagePairMessage` are NOT re-exported: they're consumed only by
+// `connect-modal-pair.ts` (a service-worker file, not a content script),
+// which imports the full package barrel (`../index.ts`) instead of this one.
+export { WC_PAGE_PAIR_SCOPE } from '../walletconnect/page-pair'

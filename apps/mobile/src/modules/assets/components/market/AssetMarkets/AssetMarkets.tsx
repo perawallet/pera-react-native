@@ -50,6 +50,7 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { LoadingView } from '@components/LoadingView'
 import { ExpandablePanel } from '@components/ExpandablePanel'
+import { routeCapabilities } from '@routes/capabilities'
 
 export type AssetMarketsProps = {
     asset: PeraAsset
@@ -193,31 +194,33 @@ export const AssetMarkets = ({
                 </PWView>
             </ExpandablePanel>
 
-            <PWTouchableOpacity
-                style={styles.discoverButton}
-                onPress={openDiscover}
-            >
-                <PWText
-                    style={styles.discoverText}
-                    truncate
+            {routeCapabilities.discoverTab && (
+                <PWTouchableOpacity
+                    style={styles.discoverButton}
+                    onPress={openDiscover}
                 >
-                    {t('asset_details.markets.discover_more')}
-                </PWText>
-                <PWView style={styles.discoverLink}>
                     <PWText
-                        style={styles.discoverLinkText}
-                        variant='h4'
+                        style={styles.discoverText}
                         truncate
                     >
-                        {t('asset_details.markets.title')}
+                        {t('asset_details.markets.discover_more')}
                     </PWText>
-                    <PWIcon
-                        name='chevron-right'
-                        size='md'
-                        variant='secondary'
-                    />
-                </PWView>
-            </PWTouchableOpacity>
+                    <PWView style={styles.discoverLink}>
+                        <PWText
+                            style={styles.discoverLinkText}
+                            variant='h4'
+                            truncate
+                        >
+                            {t('asset_details.markets.title')}
+                        </PWText>
+                        <PWIcon
+                            name='chevron-right'
+                            size='md'
+                            variant='secondary'
+                        />
+                    </PWView>
+                </PWTouchableOpacity>
+            )}
 
             <AssetMarketStats assetDetails={assetDetails} />
 

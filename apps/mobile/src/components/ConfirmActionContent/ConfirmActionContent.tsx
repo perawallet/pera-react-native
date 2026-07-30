@@ -10,19 +10,13 @@
  limitations under the License
  */
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
 import {
-    PWButton,
-    PWIcon,
-    PWText,
-    PWView,
     type IconName,
     type PWButtonProps,
     type PWIconVariant,
 } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
-import { useStyles } from './styles'
+import { ConfirmActionLayout } from './ConfirmActionLayout'
 
 import type { ReactNode } from 'react'
 
@@ -61,67 +55,27 @@ export const ConfirmActionContent = <TResult = boolean,>({
     confirmTestID,
     cancelTestID,
 }: ConfirmActionContentProps<TResult>) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({
-        bottomInset: insets.bottom,
-        hasActions: !!confirmLabel,
-    })
     const { resolve, dismiss } = useBottomSheetResult<TResult>()
 
-    const handleConfirm = onConfirm ?? (() => resolve(confirmValue))
-    const handleCancel = onCancel ?? dismiss
-
+    // Presentation lives in ConfirmActionLayout so the same panel can render
+    // outside a sheet (see its module comment). This component's only job is
+    // binding the buttons to the sheet result when the caller hasn't.
     return (
-        <PWView
-            style={styles.container}
+        <ConfirmActionLayout
+            icon={icon}
+            iconVariant={iconVariant}
+            title={title}
+            message={message}
+            confirmLabel={confirmLabel}
+            cancelLabel={cancelLabel}
+            onConfirm={onConfirm ?? (() => resolve(confirmValue))}
+            onCancel={onCancel ?? dismiss}
+            confirmVariant={confirmVariant}
+            cancelVariant={cancelVariant}
+            buttonPaddingStyle={buttonPaddingStyle}
             testID={testID}
-        >
-            {!!icon && (
-                <PWIcon
-                    name={icon}
-                    variant={iconVariant}
-                    size='xxl'
-                    style={styles.icon}
-                />
-            )}
-            {!!title && (
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {title}
-                </PWText>
-            )}
-            {typeof message === 'string' ? (
-                <PWText
-                    variant='body'
-                    style={styles.message}
-                >
-                    {message}
-                </PWText>
-            ) : (
-                !!message && <PWView style={styles.message}>{message}</PWView>
-            )}
-            {!!confirmLabel && (
-                <PWView style={styles.actions}>
-                    <PWButton
-                        variant={confirmVariant}
-                        title={confirmLabel}
-                        onPress={handleConfirm}
-                        paddingStyle={buttonPaddingStyle}
-                        testID={confirmTestID}
-                    />
-                    {!!cancelLabel && (
-                        <PWButton
-                            variant={cancelVariant}
-                            title={cancelLabel}
-                            onPress={handleCancel}
-                            paddingStyle={buttonPaddingStyle}
-                            testID={cancelTestID}
-                        />
-                    )}
-                </PWView>
-            )}
-        </PWView>
+            confirmTestID={confirmTestID}
+            cancelTestID={cancelTestID}
+        />
     )
 }

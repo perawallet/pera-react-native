@@ -446,10 +446,11 @@ test('the notifications bell opens the inbox in-place', async () => {
     await popupPage.close()
 })
 
-// The popup can't host getUserMedia's focus-stealing permission dialog, so the
-// QR icon hands off to the expanded tab and offers a paste fallback. Must run
+// The home header carries a paste-a-deeplink entry instead of a QR camera:
+// routeCapabilities.qrScanner is off for web and deepLinkPaste is on
+// (capabilities.web.ts). The camera-in-tab hand-off is covered below. Must run
 // on popup.html, which is what sets __PERA_SURFACE__='popup'.
-test('the header QR icon opens the camera-in-tab hand-off, not a blank sheet', async () => {
+test('the home header offers paste-a-deeplink, not a QR camera', async () => {
     const popupPage = await context.newPage()
     const popupPageErrors = trackPageErrors(popupPage)
     await popupPage.setViewportSize({ width: 360, height: 600 })
@@ -459,7 +460,67 @@ test('the header QR icon opens the camera-in-tab hand-off, not a blank sheet', a
     })
     await dismissPinPromptIfPresent(popupPage)
 
-    await popupPage.getByTestId('account_screen_qr_scanner_button').click()
+    await expect(
+        popupPage.getByTestId('account_screen_paste_link_button'),
+    ).toBeVisible()
+    await expect(
+        popupPage.getByTestId('account_screen_qr_scanner_button'),
+    ).not.toBeAttached()
+
+    expect(popupPageErrors, 'page threw an uncaught error').toEqual([])
+    await popupPage.close()
+})
+
+// The camera-in-tab hand-off itself is still live on web — Connections
+// settings mounts QRScannerView without skipDeepLinkHandler, so on the popup
+// surface QRScannerView.web renders a "scan with camera" button (hands off to
+// the expanded tab via openExpandedTab) plus a working paste fallback, never a
+// blank sheet or an inline auto-starting camera. The 360x600 popup can't host
+// getUserMedia's focus-stealing permission dialog, which is why the hand-off
+// exists. Must be driven on a real popup-surface page (popup.html sets
+// __PERA_SURFACE__='popup'); the shared `page` is expanded.
+test('the connections scanner opens the camera-in-tab hand-off, not a blank sheet', async () => {
+    const popupPage = await context.newPage()
+    const popupPageErrors = trackPageErrors(popupPage)
+    await popupPage.setViewportSize({ width: 360, height: 600 })
+    await popupPage.goto(`chrome-extension://${extensionId}/popup.html`)
+    await expect(popupPage.getByTestId('account_screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    await dismissPinPromptIfPresent(popupPage)
+
+    await clickThroughPinPrompt(
+        popupPage,
+        popupPage.getByTestId('tab_menu_button'),
+    )
+    await expect(popupPage.getByTestId('menu_screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    await clickThroughPinPrompt(
+        popupPage,
+        popupPage.getByTestId('menu_settings_button'),
+    )
+    await expect(popupPage.getByTestId('settings_screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    await clickThroughPinPrompt(
+        popupPage,
+        popupPage.getByTestId('settings_item_connections'),
+    )
+    await expect(
+        popupPage.getByTestId('connections_settings_screen'),
+    ).toBeVisible({ timeout: 20_000 })
+
+    // Two entry points, never both at once: the header icon once the list is
+    // non-empty, the empty state's own button otherwise.
+    const headerScan = popupPage.getByTestId('connections_settings_scan_button')
+    const emptyScan = popupPage.getByTestId(
+        'connections_settings_connect_button',
+    )
+    await expect(headerScan.or(emptyScan).first()).toBeVisible({
+        timeout: 20_000,
+    })
+    await ((await headerScan.isVisible()) ? headerScan : emptyScan).click()
 
     await expect(popupPage.getByTestId('qr-scan-with-camera')).toBeVisible({
         timeout: 20_000,

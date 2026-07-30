@@ -19,9 +19,12 @@ import {
 import {
     CHANNEL_HANDSHAKE_EVENT,
     CHANNEL_RELAY_READY_EVENT,
+    CONNECT_MODAL_PAIR_EVENT,
     type BridgeRequestEnvelope,
     type BridgeResponseEnvelope,
+    type ConnectModalPairDetail,
 } from './channel'
+import { installConnectModalWatcher } from './connect-modal-watcher'
 
 // MAIN-world provider. No chrome.* here. Bridges dapp window.postMessage ARC-0027
 // requests to the isolated relay over per-load-randomized CustomEvents, and posts
@@ -125,6 +128,19 @@ const installProvider = (): void => {
                 } satisfies BridgeRequestEnvelope,
             }),
         )
+    })
+
+    // Connect-modal hook: offers the extension in a dApp's own QR modal when
+    // the dApp's SDK has no extension transport. MAIN world is required —
+    // window.onExtensionConnect is a page global an ISOLATED script cannot see.
+    installConnectModalWatcher({
+        requestPair: uri => {
+            window.dispatchEvent(
+                new CustomEvent(CONNECT_MODAL_PAIR_EVENT, {
+                    detail: { uri } satisfies ConnectModalPairDetail,
+                }),
+            )
+        },
     })
 }
 

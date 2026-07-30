@@ -23,28 +23,36 @@ describe('route capabilities', () => {
         // WalletConnect/Connected Sites menu entries instead of the unified
         // screen) — all are deliberately off for native, not a
         // current-behavior regression. rekeyFlows is native-only (the
-        // opposite polarity), asserted separately below.
+        // opposite polarity), asserted separately below. deepLinkPaste is
+        // web-only (native keeps the qrScanner camera instead — the two
+        // flags are mutually exclusive per platform).
         const {
             vaultSecuritySettings,
             dappConnections,
             connectionsSettings,
+            deepLinkPaste,
             ...rest
         } = routeCapabilities
         expect(vaultSecuritySettings).toBe(false)
         expect(dappConnections).toBe(false)
         expect(connectionsSettings).toBe(false)
+        expect(deepLinkPaste).toBe(false)
         expect(Object.values(rest).every(Boolean)).toBe(true)
     })
 
-    it('web map: M6 discover on, webview-dependent leftovers/card features still off (spec)', () => {
+    it('web map: M6 discover off (feature-gate crash), webview-dependent leftovers/card features still off (spec)', () => {
         expect(webCapabilities).toMatchObject({
             // M5 (2026-07-16 feature-completion spec): native RN screen graphs.
             swapTab: true,
             fundTab: true,
             staking: true,
             developerSettings: true,
-            // M6 (2026-07-16 feature-completion spec): iframe webview layer.
-            discoverTab: true,
+            // M6: iframe/bridge layer works, but Discover's own feature-gate
+            // map only has ios/android keys, so it throws mid-render on our
+            // honest clientType 'web' and React unmounts the whole root. Off
+            // until Discover fixes its gate. See
+            // docs/DISCOVER_WEB_FEATURE_GATE.md.
+            discoverTab: false,
             // M7 (2026-07-17 shipped): WalletConnect v1 pairing + sessions on web.
             walletConnectSettings: true,
             // M8: Bidali stack complete.
@@ -58,6 +66,10 @@ describe('route capabilities', () => {
             storeRating: false,
             vaultSecuritySettings: true,
             dappConnections: true,
+            // Task 6: Menu icon bar swaps the camera for paste-a-deeplink on
+            // web (Pera Connect covers the pairing path scanning existed for).
+            qrScanner: false,
+            deepLinkPaste: true,
             // RescanRekeyed/RekeyToStandard/RekeyToShared stacks aren't
             // registered in WebMainRoutes — native-only.
             rekeyFlows: false,

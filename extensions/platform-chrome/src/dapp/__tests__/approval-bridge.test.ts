@@ -17,23 +17,33 @@ import { ApprovalWindowBridge, DAPP_APPROVAL_SCOPE } from '../approval-bridge'
 // idOverrides lets a test force a specific sequence of window ids (e.g. to
 // simulate Chrome reusing an id after a window fully closes), instead of the
 // default ever-incrementing counter. `actionOpenPopup` opts the fake into
-// exposing chrome.action.openPopup, resolving or rejecting as requested;
-// omitted entirely simulates older Chrome where chrome.action.openPopup
-// doesn't exist.
+// exposing chrome.action.openPopup: 'resolve'/'reject' settle immediately;
+// 'manual' returns a promise the test settles itself via the returned
+// resolveOpenPopup/rejectOpenPopup, to observe the gap while the bridge is
+// still awaiting tryOpenActionPopup. Omitted entirely simulates older Chrome
+// where chrome.action.openPopup doesn't exist.
 const makeChrome = (
     idOverrides?: number[],
-    actionOpenPopup?: 'resolve' | 'reject',
+    actionOpenPopup?: 'resolve' | 'reject' | 'manual',
 ) => {
     let onMessage: Function = () => {}
     let onRemoved: Function = () => {}
     const created: any[] = []
     let nextWindowId = 100
     let idIndex = 0
-    const openPopup = vi.fn(() =>
-        actionOpenPopup === 'reject'
+    let resolveOpenPopup: (() => void) | undefined
+    let rejectOpenPopup: ((error: Error) => void) | undefined
+    const openPopup = vi.fn(() => {
+        if (actionOpenPopup === 'manual') {
+            return new Promise<void>((resolve, reject) => {
+                resolveOpenPopup = resolve
+                rejectOpenPopup = reject
+            })
+        }
+        return actionOpenPopup === 'reject'
             ? Promise.reject(new Error('openPopup unavailable'))
-            : Promise.resolve(undefined),
-    )
+            : Promise.resolve(undefined)
+    })
     return {
         chromeLike: {
             runtime: {
@@ -56,6 +66,8 @@ const makeChrome = (
         } as unknown as typeof chrome,
         created,
         openPopup,
+        resolveOpenPopup: () => resolveOpenPopup?.(),
+        rejectOpenPopup: (error: Error) => rejectOpenPopup?.(error),
         fireMessage: (msg: unknown, sender: unknown) =>
             new Promise(resolve => onMessage(msg, sender, resolve)),
         closeWindow: (id: number) => onRemoved(id),
@@ -569,6 +581,10 @@ describe('ApprovalWindowBridge', () => {
             requestId: 'p4',
             origin: 'https://current.com',
         })
+        // The popup only genuinely opens (and only then advertises
+        // surface: 'popup') after tryOpenActionPopup resolves — flush lets
+        // that happen before asserting get-current-approval sees it.
+        await flush()
 
         const current = await fireMessage(
             { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
@@ -598,6 +614,9 @@ describe('ApprovalWindowBridge', () => {
             txns: [{ txn: 'AAA' }],
             approvedAddresses: ['A'],
         })
+        // See the flush() comment in the previous test — surface only
+        // becomes 'popup' once tryOpenActionPopup genuinely resolves true.
+        await flush()
 
         const current = await fireMessage(
             { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
@@ -608,6 +627,85 @@ describe('ApprovalWindowBridge', () => {
             requestId: 's7',
             origin: 'https://sign.com',
         })
+    })
+
+    it('get-current-approval returns nothing while the popup attempt is still pending (no false advertisement before openPopup settles)', async () => {
+        const { chromeLike, fireMessage, resolveOpenPopup } = makeChrome(
+            undefined,
+            'manual',
+        )
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        void bridge.openEnable({
+            requestId: 'gap-1',
+            origin: 'https://gap.com',
+        })
+        // Let openViaPopupOrWindow run up to (and start) its await on
+        // tryOpenActionPopup, whose promise is still unsettled in 'manual'
+        // mode — this is the exact window Finding 1 was about.
+        await Promise.resolve()
+        await Promise.resolve()
+
+        const current = await fireMessage(
+            { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
+            trustedSender,
+        )
+        expect(current).toBeNull()
+
+        // Let the attempt resolve so it doesn't dangle past the test.
+        resolveOpenPopup()
+        await flush()
+    })
+
+    it('get-current-approval returns the approval once the popup genuinely opened', async () => {
+        const { chromeLike, fireMessage, resolveOpenPopup } = makeChrome(
+            undefined,
+            'manual',
+        )
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        void bridge.openEnable({
+            requestId: 'gap-2',
+            origin: 'https://gap.com',
+        })
+        await Promise.resolve()
+        await Promise.resolve()
+
+        resolveOpenPopup()
+        await flush()
+
+        const current = await fireMessage(
+            { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
+            trustedSender,
+        )
+        expect(current).toMatchObject({ kind: 'enable', requestId: 'gap-2' })
+    })
+
+    it('get-current-approval does not return the approval when the popup attempt failed and the window fallback was used', async () => {
+        const { chromeLike, fireMessage, rejectOpenPopup } = makeChrome(
+            undefined,
+            'manual',
+        )
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        void bridge.openEnable({
+            requestId: 'gap-3',
+            origin: 'https://gap.com',
+        })
+        await Promise.resolve()
+        await Promise.resolve()
+
+        rejectOpenPopup(new Error('no user gesture'))
+        await flush()
+
+        const current = await fireMessage(
+            { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
+            trustedSender,
+        )
+        expect(current).toBeNull()
     })
 
     it('openPasskeyCreate: falls back to the window and resolve-passkey returns the credential', async () => {
@@ -850,6 +948,155 @@ describe('ApprovalWindowBridge', () => {
         expect(await decisionC).toEqual({ approvedAddresses: ['C'] })
     })
 
+    it('finish() releases the popup-attempt reservation when the approval settles while the attempt is still unsettled (no permanent leak)', async () => {
+        // 'manual' mode leaves tryOpenActionPopup's promise unsettled — the
+        // exact gap Finding 1 is about: before the fix, the reservation was
+        // only cleared on the line AFTER that await, so resolving the
+        // approval out of `pending` via a completely different path (here,
+        // reject-approval) while the attempt is still in flight left it
+        // stuck forever, forcing every later approval to the window.
+        //
+        // `void`, not `const decision = ...`: openEnable's own returned
+        // promise doesn't settle until ITS tryOpenActionPopup await
+        // resolves, which this test deliberately never does (that promise
+        // has no observable effect on the reservation once finish() below
+        // has already run) — awaiting it here would hang the test.
+        const { chromeLike, openPopup, fireMessage } = makeChrome(
+            undefined,
+            'manual',
+        )
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        void bridge.openEnable({
+            requestId: 'leak-a',
+            origin: 'https://a.com',
+        })
+        await Promise.resolve()
+        await Promise.resolve()
+        expect(openPopup).toHaveBeenCalledTimes(1)
+
+        const ack = await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'reject-approval',
+                requestId: 'leak-a',
+            },
+            trustedSender,
+        )
+        expect(ack).toMatchObject({ ok: true })
+
+        // A fresh request, issued WHILE A's own tryOpenActionPopup promise
+        // is still unsettled, must be free to try the popup itself — if the
+        // reservation leaked, this would be forced straight to the window
+        // and openPopup would never be called for it.
+        void bridge.openSignTransactions({
+            requestId: 'leak-b',
+            origin: 'https://b.com',
+            txns: [],
+            approvedAddresses: [],
+        })
+        await flush()
+        expect(openPopup).toHaveBeenCalledTimes(2)
+    })
+
+    it('releases the popup-attempt reservation once tryOpenActionPopup genuinely settles, even when it falls back to the window', async () => {
+        const { chromeLike, created, openPopup } = makeChrome(
+            undefined,
+            'reject',
+        )
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        // A's attempt settles (openPopup rejects, falls back to the window)
+        // and the `finally` around tryOpenActionPopup's await clears the
+        // reservation as part of that.
+        void bridge.openEnable({
+            requestId: 'rel-a',
+            origin: 'https://a.com',
+        })
+        await flush()
+        expect(openPopup).toHaveBeenCalledTimes(1)
+        expect(created.length).toBe(1)
+
+        // B arrives only once A's attempt has fully settled (not
+        // concurrently) — it must still be free to try the popup itself.
+        void bridge.openSignTransactions({
+            requestId: 'rel-b',
+            origin: 'https://b.com',
+            txns: [],
+            approvedAddresses: [],
+        })
+        await flush()
+        expect(openPopup).toHaveBeenCalledTimes(2)
+        expect(created.length).toBe(2)
+    })
+
+    it('routes a second request to the window while the first popup attempt is still unsettled, without a second openPopup call', async () => {
+        // 'manual' mode leaves tryOpenActionPopup's promise unsettled until
+        // the test explicitly resolves it — this is the exact gap Finding 1
+        // (popupAttemptRequestId) exists to cover: at this point A has no
+        // `surface: 'popup'` yet (that only gets set AFTER tryOpenActionPopup
+        // resolves true), so the OLD `some(e => e.surface === 'popup')` check
+        // alone would see the popup slot as free.
+        const {
+            chromeLike,
+            created,
+            openPopup,
+            resolveOpenPopup,
+            fireMessage,
+        } = makeChrome(undefined, 'manual')
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        void bridge.openEnable({
+            requestId: 'mid-a',
+            origin: 'https://a.com',
+        })
+        // Let A's openViaPopupOrWindow run up to (and start) its await on
+        // tryOpenActionPopup.
+        await Promise.resolve()
+        await Promise.resolve()
+        expect(openPopup).toHaveBeenCalledTimes(1)
+
+        // B arrives while A's attempt is still pending — it must route
+        // straight to its own window instead of calling openPopup again.
+        const decisionB = bridge.openSignTransactions({
+            requestId: 'mid-b',
+            origin: 'https://b.com',
+            txns: [{}],
+            approvedAddresses: ['B'],
+        })
+        await flush()
+        expect(openPopup).toHaveBeenCalledTimes(1)
+        expect(created.length).toBe(1)
+        expect(created[0].url).toContain('approval.html?requestId=mid-b')
+
+        // Let A's attempt settle and resolve both requests so nothing is
+        // left dangling past the test.
+        resolveOpenPopup()
+        await flush()
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-sign-transactions',
+                requestId: 'mid-b',
+                stxns: ['SIGNED'],
+            },
+            trustedSender,
+        )
+        expect(await decisionB).toEqual({ stxns: ['SIGNED'] })
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-approval',
+                requestId: 'mid-a',
+                approvedAddresses: ['A'],
+            },
+            trustedSender,
+        )
+    })
+
     it('finish() does not call windows.remove for a popup-surface enable resolved via resolve-approval', async () => {
         const { chromeLike, fireMessage } = makeChrome(undefined, 'resolve')
         const bridge = new ApprovalWindowBridge(chromeLike)
@@ -870,5 +1117,97 @@ describe('ApprovalWindowBridge', () => {
         )
         expect(await decision).toEqual({ approvedAddresses: ['A'] })
         expect(chromeLike.windows.remove).not.toHaveBeenCalled()
+    })
+
+    it('opens a wc-connect approval and resolves with the approved addresses', async () => {
+        const { chromeLike, created, fireMessage } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        const decision = bridge.openWcConnect({
+            requestId: 'req-wc-1',
+            origin: 'https://dapp.example',
+            clientId: 'client-1',
+            chainId: 416001,
+        })
+        await flush()
+        expect(created[0].url).toContain('approval.html?requestId=req-wc-1')
+
+        const approval = await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'get-approval',
+                requestId: 'req-wc-1',
+            },
+            trustedSender,
+        )
+        expect(approval).toMatchObject({
+            kind: 'wc-connect',
+            clientId: 'client-1',
+            chainId: 416001,
+        })
+
+        // A wc-connect decision settles through the SAME generic
+        // resolve-approval message every other approval kind uses
+        // (EnableRequestScreen → useDappRequest.approve → resolveApproval)
+        // — there is no dedicated wc-connect resolver.
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-approval',
+                requestId: 'req-wc-1',
+                approvedAddresses: ['AAAA'],
+            },
+            trustedSender,
+        )
+
+        expect(await decision).toEqual({ approvedAddresses: ['AAAA'] })
+    })
+
+    it('opens a wc-sign approval and resolves with the signed result', async () => {
+        const { chromeLike, fireMessage } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        const decision = bridge.openWcSign({
+            requestId: 'req-wc-2',
+            origin: 'https://dapp.example',
+            clientId: 'client-1',
+            wcRequestId: 42,
+            method: 'algo_signTxn',
+            payload: { id: 42, params: [[{ txn: 'dHhu' }]] },
+        })
+        await flush()
+
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-wc-sign',
+                requestId: 'req-wc-2',
+                result: ['c3R4bg=='],
+            },
+            trustedSender,
+        )
+
+        expect(await decision).toEqual({ result: ['c3R4bg=='] })
+    })
+
+    it('rejects a wc-sign approval when its window is closed by the user', async () => {
+        const { chromeLike, closeWindow } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        const decision = bridge.openWcSign({
+            requestId: 'req-wc-3',
+            origin: 'https://dapp.example',
+            clientId: 'client-1',
+            wcRequestId: 43,
+            method: 'algo_signTxn',
+            payload: { id: 43, params: [[{ txn: 'dHhu' }]] },
+        })
+        await flush()
+        closeWindow(100)
+
+        expect(await decision).toBeNull()
     })
 })

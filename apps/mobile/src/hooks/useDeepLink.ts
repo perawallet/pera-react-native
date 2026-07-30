@@ -22,14 +22,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { usePendingSignaturesSheet } from '@modules/multisig/hooks/usePendingSignaturesSheet'
-import {
-    useWalletConnect,
-    waitForSessionOutcome,
-} from '@perawallet/wallet-core-walletconnect'
+import { useWalletConnectPairing } from '@modules/walletconnect/hooks/useWalletConnectPairing'
 import {
     isValidAlgorandAddress,
     microAlgosToAlgos,
-    useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import {
     getBiometricSecurityLevel,
@@ -54,7 +50,6 @@ import {
     useSendFundsDeeplink,
 } from './deeplink/handlers'
 import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
-import { withTimeout } from './deeplink/handlers/timeout'
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -76,9 +71,8 @@ type UseDeepLinkResult = {
 export const useDeepLink = (): UseDeepLinkResult => {
     const { errorToast, infoToast } = useToast()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
-    const { network } = useNetwork()
     const { t } = useLanguage()
-    const { connect } = useWalletConnect(network)
+    const { pair } = useWalletConnectPairing()
     const { requestByType } = useBottomSheetStore()
     const { showSignRequest } = usePendingSignaturesSheet()
     const isPeraCardEnabled = useIsPeraCardEnabled()
@@ -238,41 +232,29 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.WALLET_CONNECT: {
-                    // `connect` only constructs the client and registers
-                    // listeners; the bridge handshake happens after it returns.
+                    // `pair` constructs (native) or dispatches to offscreen
+                    // (web) the pairing and resolves once the outcome is known
+                    // — see `useWalletConnectPairing`.
                     //
                     // WC v1 bridges were sunset in mid-2024, so most public ones
                     // — including the legacy pera bridge older QR codes embed —
-                    // now 404 without surfacing a sync throw. Detect it by
-                    // waiting briefly on the returned clientId for a
-                    // session_request or error, and toasting if neither lands.
-                    let pairingClientId: string
-                    try {
-                        pairingClientId = await withTimeout(
-                            'walletConnect.connect',
-                            10_000,
-                            connect({
-                                connection: { uri: parsedData.uri },
-                            }),
-                        )
-                    } catch (error) {
+                    // now 404 without surfacing a sync throw. `pair` detects it
+                    // by waiting briefly for a session_request or error.
+                    const result = await pair(parsedData.uri)
+                    if (result.type === 'connect-failed') {
                         logger.error('[deeplink/wc] connect failed', {
-                            error,
+                            error: result.error,
                             uri: parsedData.uri,
                         })
                         showError({
                             variant: 'walletconnect',
                             parsedType: 'WALLET_CONNECT',
-                            error,
+                            error: result.error,
                         })
                         onError?.()
                         return
                     }
-                    const outcome = await waitForSessionOutcome(
-                        pairingClientId,
-                        8000,
-                    )
-                    if (outcome.type === 'error') {
+                    if (result.type === 'error') {
                         // Handshake rejected — usually the QR was scanned on the
                         // wrong network. The provider toasts it, routed to the
                         // scanner's own notifier when open so it shows above the
@@ -282,7 +264,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         onConnectionError?.()
                         return
                     }
-                    if (outcome.type === 'timeout') {
+                    if (result.type === 'timeout') {
                         showError({
                             variant: 'walletconnect',
                             parsedType: 'WALLET_CONNECT',

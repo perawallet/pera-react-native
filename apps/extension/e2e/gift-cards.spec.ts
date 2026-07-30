@@ -107,6 +107,13 @@ test('menu row opens the gift-card sheet on the intro screen', async () => {
         timeout: 20_000,
     })
 
+    // Web Menu entry point: the link icon opening the PasteLinkContent sheet
+    // replaces the camera icon's QR scanner, since the extension has no camera
+    // to scan with. routeCapabilities.deepLinkPaste is on and
+    // routeCapabilities.qrScanner is off on web (capabilities.web.ts).
+    await expect(page.getByTestId('menu_paste_link_button')).toBeVisible()
+    await expect(page.getByTestId('menu_button')).not.toBeAttached()
+
     await clickThroughPinPrompt(
         page,
         page.getByText('Buy Gift Card', { exact: true }),
