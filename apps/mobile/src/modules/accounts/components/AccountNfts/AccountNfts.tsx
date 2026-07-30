@@ -116,8 +116,6 @@ export const AccountNfts = () => {
         [isGrid, handlePress],
     )
 
-    const getItemType = useCallback(() => galleryLayout, [galleryLayout])
-
     if (!hasAccount) {
         return null
     }
@@ -213,17 +211,17 @@ export const AccountNfts = () => {
                     </PWView>
                     <PWFlatList
                         ref={flatListRef}
+                        // Keyed on the layout ONLY. Sorting and searching just
+                        // reorder/narrow `data`, which FlashList handles, so
+                        // keying on them threw the whole list and its recycle
+                        // pool away on every debounced keystroke — the cost
+                        // this fixes. The layout toggle is different: it flips
+                        // numColumns between 2 and 1, which FlashList cannot do
+                        // in place, and without the remount rows keep the other
+                        // layout's measured heights and render large gaps.
+                        key={galleryLayout}
                         data={collectibles}
                         renderItem={renderItem}
-                        // Sorting and searching only reorder/narrow `data`,
-                        // which FlashList handles — keying on them threw away
-                        // the whole list and its recycle pool on every toggle
-                        // and every debounced keystroke. `extraData` covers the
-                        // one render input outside `data` (the layout), and
-                        // `getItemType` keeps the grid and list recycle pools
-                        // apart so a grid cell is never reused as a list row.
-                        extraData={galleryLayout}
-                        getItemType={getItemType}
                         ItemSeparatorComponent={isGrid ? null : ListSeparator}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
                         keyExtractor={keyExtractor}
