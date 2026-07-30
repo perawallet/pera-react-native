@@ -10,11 +10,17 @@
  limitations under the License
  */
 
-const MAX_ADDRESS_DISPLAY = 11
+/**
+ * Total characters retained by {@link truncateAlgorandAddress}, split evenly
+ * between prefix and suffix: 11 renders as `5…5`, 20 renders as `10…10`.
+ * Canonical source of truth — import these instead of re-declaring the length.
+ */
+export const SHORT_ADDRESS_LENGTH = 11
+export const LONG_ADDRESS_LENGTH = 20
 
 export const truncateAlgorandAddress = (
     address: string,
-    maxLength: number = MAX_ADDRESS_DISPLAY,
+    maxLength: number = SHORT_ADDRESS_LENGTH,
 ) => {
     const prefixLength =
         maxLength % 2 === 0 ? maxLength / 2 : (maxLength - 1) / 2

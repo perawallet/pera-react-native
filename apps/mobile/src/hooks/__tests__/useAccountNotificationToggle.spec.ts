@@ -73,6 +73,15 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
+// The real useErrorToast runs here (see above), and it appends a `Debug: …`
+// suffix to the body when config.debugEnabled is true. That flag comes from
+// the git-ignored generated-env, so it's true on any dev machine with
+// DEBUG_ENABLED=true. Pin it false so the exact-body assertions below are
+// deterministic regardless of local env.
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: { debugEnabled: false },
+}))
+
 import {
     useAccountNotificationToggle,
     clearAccountNotificationToggleGuardForTests,

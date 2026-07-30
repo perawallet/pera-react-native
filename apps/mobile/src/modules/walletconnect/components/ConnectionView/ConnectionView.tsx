@@ -28,7 +28,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import React from 'react'
 import {
+    useAccountBalancesQuery,
     useSigningAccounts,
+    useSortedAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
@@ -59,7 +61,13 @@ export const ConnectionView = ({
     const { network } = useNetwork()
     const { approveSession, rejectSession } = useWalletConnect(network)
     const { errorToast } = useToast()
-    const accounts = useSigningAccounts()
+    const signingAccounts = useSigningAccounts()
+    // Honor the user's account-overview sort order instead of raw store order.
+    const { accountBalances } = useAccountBalancesQuery(signingAccounts, true)
+    const { sortedAccounts } = useSortedAccounts(
+        signingAccounts,
+        accountBalances,
+    )
     const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([])
     const [isConnecting, setIsConnecting] = React.useState(false)
 
@@ -120,6 +128,7 @@ export const ConnectionView = ({
                 key={item.address}
                 style={styles.accountItem}
                 onPress={() => handleAccountPress(item)}
+                testID={`wc_account_row_${item.address}`}
             >
                 <AccountDisplay
                     account={item}
@@ -138,19 +147,23 @@ export const ConnectionView = ({
             <PWFlatList
                 style={styles.container}
                 contentContainerStyle={styles.contentContainer}
-                data={accounts}
+                data={sortedAccounts}
                 renderItem={renderAccountRow}
                 extraData={{ selectedAccounts }}
                 ListHeaderComponent={<ConnectionViewHeader request={request} />}
                 showsVerticalScrollIndicator={false}
                 inBottomSheet
             />
-            <PWView style={styles.buttonContainer}>
+            <PWView
+                style={styles.buttonContainer}
+                testID='wc_connection_screen'
+            >
                 <PWButton
                     variant='secondary'
                     title={t('common.cancel.label')}
                     onPress={handleCancel}
                     style={styles.cancelButton}
+                    testID='wc_reject_button'
                 />
                 <PWButton
                     variant='primary'
@@ -159,6 +172,7 @@ export const ConnectionView = ({
                     style={styles.connectButton}
                     isDisabled={!selectedAccounts.length}
                     isLoading={isConnecting}
+                    testID='wc_connect_button'
                 />
             </PWView>
         </>

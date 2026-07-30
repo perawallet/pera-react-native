@@ -11,6 +11,10 @@
  */
 
 import { setupServer } from 'msw/node'
+import {
+    mockAlgodPendingTransaction,
+    mockAlgodStatusAfterBlock,
+} from '@perawallet/wallet-core-blockchain/test-handlers'
 import { mockGetCurrency } from '@perawallet/wallet-core-currencies/test-handlers'
 import { mockNfdBulkRead } from '@perawallet/wallet-core-nfd/test-handlers'
 
@@ -43,6 +47,17 @@ export const server = setupServer(
             usd_value: '1',
         },
     }),
+    // Every submit flow leaves algosdk's waitForConfirmation polling these two
+    // in the background — submitAndAutoRefresh returns before it settles and
+    // swallows the outcome. Unhandled, that was 78 of the 102 requests the
+    // integration suite sent to the real node per run, each landing after its
+    // test had finished. 404 matches what the node already says about a
+    // fabricated test txid, so the wait fails and is swallowed exactly as
+    // before; a confirmed round would instead fire the post-confirmation
+    // balance refresh and invent traffic no test asked for. Tests that do
+    // exercise confirmation override both via server.use.
+    mockAlgodPendingTransaction(),
+    mockAlgodStatusAfterBlock(),
 )
 
 export { http, HttpResponse } from 'msw'

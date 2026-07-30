@@ -153,7 +153,10 @@ describe('PWWebView.web', () => {
             token: mountedToken(),
         }
         hostParams.current!.onMessage(message)
-        expect(handleMessage).toHaveBeenCalledWith(message)
+        expect(handleMessage).toHaveBeenCalledWith(message, {
+            securedConnection: true,
+            sourceUrl: DISCOVER,
+        })
     })
 
     it('drops messages with a wrong bridge token', () => {
@@ -192,7 +195,10 @@ describe('PWWebView.web', () => {
             token: mountedToken(),
         }
         hostParams.current!.onMessage(message)
-        expect(handleMessage).toHaveBeenCalledWith(message)
+        expect(handleMessage).toHaveBeenCalledWith(message, {
+            securedConnection: true,
+            sourceUrl: DISCOVER,
+        })
         expect(showToast).not.toHaveBeenCalled()
     })
 

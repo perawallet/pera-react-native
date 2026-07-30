@@ -161,6 +161,44 @@ describe('Flow: View transactions → tap into details', () => {
     })
 
     it(
+        'Given an account with an empty history, the History tab shows its title and empty view (PERA-4676)',
+        async () => {
+            // Clear the transactions seeded in beforeEach so the selected
+            // account has an empty history — the brand-new "deposit ALGO to
+            // get started" state that previously rendered a blank History tab.
+            await resetTestDatabase()
+            await seedAlgoAsset('mainnet')
+
+            renderWithNavigation(AccountHistory, 'AccountHistory')
+
+            // i18n isn't initialized under the integration setup, so `t()`
+            // falls through to the raw key (matching the convention below).
+            await waitFor(
+                () => {
+                    expect(
+                        screen.queryAllByText(
+                            (_, node) =>
+                                (node?.textContent ?? '') ===
+                                'asset_details.transaction_list.empty_body',
+                        ).length,
+                    ).toBeGreaterThan(0)
+                },
+                { timeout: 5000 },
+            )
+            // The title must be present alongside the empty view — the bug was
+            // that neither rendered.
+            expect(
+                screen.queryAllByText(
+                    (_, node) =>
+                        (node?.textContent ?? '') ===
+                        'asset_details.transaction_list.title',
+                ).length,
+            ).toBeGreaterThan(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
         'Given seeded transactions, when the user taps the payment row, then the details screen renders for that transaction',
         async () => {
             // Spy on the indexer lookup so we can confirm the details

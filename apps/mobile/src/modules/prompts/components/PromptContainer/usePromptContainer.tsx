@@ -12,6 +12,7 @@
 
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { usePinCode } from '@perawallet/wallet-core-security'
+import { useIsLockOverlayVisible } from '@modules/security'
 import { type ReactElement, useEffect, useMemo, useState } from 'react'
 import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
 import { type PromptViewProps } from '@modules/prompts/models'
@@ -45,11 +46,12 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     const { checkPinEnabled } = usePinCode()
     const hasAccounts = useHasAccounts()
     const { needsAcceptance: needsTermsAcceptance } = useTermsAcceptance()
+    const isLockOverlayVisible = useIsLockOverlayVisible()
     const [hiddenPrompts, setHiddenPrompts] = useState<Set<string>>(new Set())
     const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>(undefined)
 
     const prompt = useMemo(() => {
-        if (!hasAccounts) {
+        if (!hasAccounts || isLockOverlayVisible) {
             return undefined
         }
 
@@ -78,7 +80,13 @@ export const usePromptContainer = (): UsePromptContainerResult => {
             } as Prompt
         }
         return undefined
-    }, [getPreference, hiddenPrompts, hasAccounts, needsTermsAcceptance])
+    }, [
+        getPreference,
+        hiddenPrompts,
+        hasAccounts,
+        needsTermsAcceptance,
+        isLockOverlayVisible,
+    ])
 
     useEffect(() => {
         if (!prompt) {

@@ -19,11 +19,11 @@ import {
     test,
     chromium,
     type BrowserContext,
-    type Locator,
     type Page,
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -55,42 +55,6 @@ const dismissSheet = async (targetPage: Page): Promise<void> => {
     await targetPage
         .getByTestId('pw-bottom-sheet-backdrop')
         .click({ position: { x: 10, y: 10 } })
-}
-
-// PromptContainer (modules/prompts) shows a one-time security nudge
-// LONG_PROMPT_DISPLAY_DELAY (3s) after the account exists — unrelated to the
-// M3 rendering-cluster fixes below, but real enough that this suite's own
-// runtime can cross that delay. Dismiss it if it showed up so it doesn't
-// intercept the next click.
-const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
-    const notNow = targetPage.getByTestId('pin_security_prompt_not_now_button')
-    if (await notNow.isVisible().catch(() => false)) {
-        await notNow.click()
-    }
-}
-
-// Bounded retry-and-dismiss click (ported from feature-tabs.spec.ts, where
-// M5 generalized this file's narrower openMoreSheet pattern): the pin prompt
-// fires on a wall-clock delay, so it can appear BETWEEN a dismiss check and
-// the click it was guarding — the click then retries forever against the
-// prompt's overlay. Every click downstream of a wait should go through this.
-const clickThroughPinPrompt = async (
-    targetPage: Page,
-    locator: Locator,
-): Promise<void> => {
-    for (let attempt = 0; attempt < 5; attempt++) {
-        await dismissPinPromptIfPresent(targetPage)
-        const clicked = await locator
-            .click({ timeout: 3000 })
-            .then(() => true)
-            .catch(() => false)
-        if (clicked) return
-        await dismissPinPromptIfPresent(targetPage)
-    }
-    // Bounded, not left to Playwright's unlimited default action timeout: a
-    // locator that's genuinely stuck should fail with a clear timeout instead
-    // of exhausting the whole test's budget.
-    await locator.click({ timeout: 10_000 })
 }
 
 // The pin-security prompt above fires on a wall-clock delay from account

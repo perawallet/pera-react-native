@@ -138,6 +138,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             getBuildNumber: () => '1',
             getDeviceLocale: () => 'en-US',
             getDeviceLanguage: () => 'en',
+            getUserAgent: () => 'PeraWallet/test',
         },
         keyValueStorage: {
             getItem: (key: string) => store.get(key) ?? null,
@@ -1387,6 +1388,10 @@ vi.mock('react-native', () => {
                 'Loading...',
             ),
         ),
+        // RefreshControl renders no visible content in jsdom, and its props
+        // (refreshing/onRefresh/colors/progressBackgroundColor) aren't valid
+        // DOM attributes — render null to avoid React unknown-prop warnings.
+        RefreshControl: vi.fn().mockImplementation(() => null),
         Pressable: vi
             .fn()
             .mockImplementation(({ onPress, testID, ...props }) => {
@@ -2396,6 +2401,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             return value
         },
         truncateAlgorandAddress: vi.fn(a => a),
+        SHORT_ADDRESS_LENGTH: 11,
+        LONG_ADDRESS_LENGTH: 20,
+        dedupeSecondaryLabel: (primary: string, secondary?: string | null) =>
+            secondary && secondary !== primary ? secondary : undefined,
         stripUrlScheme: vi.fn(url => url),
         // Real implementations — serialized route params round-trip through
         // these, so a stub would silently corrupt every public key fixture.
@@ -2657,6 +2666,8 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         Number(value) / Math.pow(10, asset.decimals),
+    isCollectible: (asset: { peraMetadata?: { type?: string } }) =>
+        asset.peraMetadata?.type === 'collectible',
     KNOWN_ASSET_IDS: {
         USDC: { mainnet: '31566704', testnet: '10458941' },
     },

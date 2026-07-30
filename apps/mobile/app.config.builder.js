@@ -131,7 +131,9 @@ function buildAppConfig(env) {
         NSPhotoLibraryAddUsageDescription: '$(PRODUCT_NAME) will save QR codes to your photo library.',
         NSPhotoLibraryUsageDescription: '$(PRODUCT_NAME) needs access to your photo library so you can pick a contact photo.',
         NSLocationWhenInUseUsageDescription: '$(PRODUCT_NAME) needs access to your location for Bluetooth communication with Ledger devices.',
-        LSApplicationQueriesSchemes: ['itms-apps'],
+        // twitter/tg/discord: Linking.canOpenURL checks for the in-app
+        // browser's social-media handoff (PWWebView navigation guard).
+        LSApplicationQueriesSchemes: ['itms-apps', 'twitter', 'tg', 'com.hammerandchisel.discord'],
         UIRequiredDeviceCapabilities: ['arm64'],
         UIViewControllerBasedStatusBarAppearance: true,
         // Custom fonts
@@ -344,6 +346,16 @@ function buildAppConfig(env) {
               '-dontwarn org.bouncycastle.**',
             ].join('\n'),
             kotlinVersion: '2.1.20',
+            // Package-visibility (API 30+) declarations so Linking.canOpenURL
+            // can see the social apps the in-app browser hands off to
+            // (PWWebView navigation guard).
+            manifestQueries: {
+              intent: [
+                { action: 'VIEW', data: { scheme: 'twitter' } },
+                { action: 'VIEW', data: { scheme: 'tg' } },
+                { action: 'VIEW', data: { scheme: 'com.hammerandchisel.discord' } },
+              ],
+            },
           },
         },
       ],

@@ -42,6 +42,7 @@ import {
 } from '@modules/webview/hooks/handlers'
 import { useNotifyWebViewOnContextChange } from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
 import { useWebViewNavigationGuard } from './useWebViewNavigationGuard'
+import { useWebViewMessageSecurity } from './useWebViewMessageSecurity'
 import { usePWWebViewLoadState } from './usePWWebViewLoadState'
 import { EmptyView } from '@components/EmptyView'
 import { PWView, PWButton, PWScrollView } from '@components/core'
@@ -127,12 +128,25 @@ export const PWWebView = (props: PWWebViewProps) => {
     // Re-evaluated on every navigation event below — the bridge must downgrade
     // to untrusted as soon as the WebView leaves the trusted base origin
     // (redirect, link click, JS-driven navigation, opened iframe top-nav).
+    // Updated eagerly (at load START), which is the fail-safe direction for a
+    // trust decision: we distrust a target before we've committed to it.
     const [currentUrl, setCurrentUrl] = useState(url)
+
+    // What the title bar shows. Deliberately NOT the eager value: a navigation
+    // that never commits (204, Content-Disposition: attachment, blocked load)
+    // leaves the user on the previous page, and an eager label would name the
+    // target — the same frozen/wrong-host spoof this ticket fixes, inverted. So
+    // the label follows committed navigations only, like a browser URL bar
+    // (PERA-4665).
+    const [committedUrl, setCommittedUrl] = useState(url)
 
     const isSecure = useMemo(
         () => isTrustedWebviewOrigin(currentUrl, [config.discoverBaseUrl]),
         [currentUrl],
     )
+
+    const { trackNavigation, resolveMessageSecurity } =
+        useWebViewMessageSecurity(loadableUrl)
 
     const provider = usePeraProvider()
     const deviceInfo = provider.deviceInfo
@@ -162,7 +176,11 @@ export const PWWebView = (props: PWWebViewProps) => {
         onBack,
     )
 
-    const { onShouldStartLoadWithRequest } = useWebViewNavigationGuard()
+    const { onShouldStartLoadWithRequest } = useWebViewNavigationGuard({
+        isTrustedOrigin: isSecure,
+        pageUrl: currentUrl,
+        webviewRef: webview,
+    })
 
     const handleEvent = useCallback(
         (event: WebViewMessageEvent) => {
@@ -201,11 +219,21 @@ export const PWWebView = (props: PWWebViewProps) => {
             logger.debug('WebView: Received onMessage event', {
                 data,
             })
+            // Trust is decided against this message's own originating URL —
+            // never the React-state snapshot, which a message racing a
+            // navigation would beat to the update.
             mobileInterface.handleMessage(
                 data as Parameters<typeof mobileInterface.handleMessage>[0],
+                resolveMessageSecurity(event),
             )
         },
-        [onCustomMessage, enablePeraConnect, mobileInterface, bridgeToken],
+        [
+            onCustomMessage,
+            enablePeraConnect,
+            mobileInterface,
+            bridgeToken,
+            resolveMessageSecurity,
+        ],
     )
 
     const navigationStateChange = useCallback(
@@ -217,10 +245,16 @@ export const PWWebView = (props: PWWebViewProps) => {
             // off of that so a navigation away from a trusted origin
             // immediately downgrades the bridge to untrusted.
             if (navState.url) {
+                trackNavigation(navState.url)
                 setCurrentUrl(navState.url)
+                // `loading: false` marks a committed navigation — including
+                // same-document ones (hash/pushState), which never "load".
+                if (!navState.loading) {
+                    setCommittedUrl(navState.url)
+                }
             }
         },
-        [],
+        [trackNavigation],
     )
 
     const reload = useCallback(() => {
@@ -302,6 +336,11 @@ export const PWWebView = (props: PWWebViewProps) => {
                 source={{
                     uri: loadableUrl,
                 }}
+                // Route EVERY scheme through onShouldStartLoadWithRequest — the
+                // default http(s) whitelist hands custom-scheme URLs straight to
+                // the OS before the guard runs, bypassing the origin check. With
+                // '*' the guard is the sole decision point (PERA-4717).
+                originWhitelist={['*']}
                 style={styles.webview}
                 renderLoading={() => (
                     <PWView style={styles.absoluteFill}>
@@ -378,7 +417,7 @@ export const PWWebView = (props: PWWebViewProps) => {
                     onCloseRequested={onCloseRequested}
                     onReload={reload}
                     title={title}
-                    url={url}
+                    url={committedUrl}
                 />
             )}
 

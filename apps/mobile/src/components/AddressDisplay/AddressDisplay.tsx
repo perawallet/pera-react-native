@@ -19,6 +19,7 @@ import {
     type PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
+import { dedupeSecondaryLabel } from '@perawallet/wallet-core-shared'
 import { CopyableText } from '@components/CopyableText'
 import { ContactAvatar } from '@components/ContactAvatar'
 import type { ContactAvatarVariant } from '@components/ContactAvatar/styles'
@@ -140,7 +141,9 @@ export const AddressDisplay = ({
             />
         )
     } else if (contact) {
-        const showSecondary = contact.name !== truncatedAddress
+        const showSecondary = Boolean(
+            dedupeSecondaryLabel(contact.name, truncatedAddress),
+        )
         const primaryText = (
             <PWText
                 variant={textProps?.variant ?? 'bodyLarge'}

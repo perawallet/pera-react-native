@@ -24,6 +24,7 @@ export const TransactionListScreen = () => {
         listItems,
         transactionCount,
         sourceMetadata,
+        verifiedOrigin,
         handleTransactionPress,
         handleGroupPress,
         keyExtractor,
@@ -65,6 +66,7 @@ export const TransactionListScreen = () => {
                     <TransactionListHeader
                         itemCount={transactionCount}
                         sourceMetadata={sourceMetadata}
+                        verifiedOrigin={verifiedOrigin}
                     />
                 }
                 showsVerticalScrollIndicator={false}

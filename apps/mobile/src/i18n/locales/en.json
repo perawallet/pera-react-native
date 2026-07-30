@@ -567,7 +567,8 @@
             "reload": "Reload",
             "failed_body": "An error occurred loading this page. Please check your internet connection and try again.",
             "offline_title": "You're offline",
-            "offline_body": "This page can't load without an internet connection. It will reload automatically when you're back online."
+            "offline_body": "This page can't load without an internet connection. It will reload automatically when you're back online.",
+            "unknown_host": "Unknown site"
         },
         "done": "Done",
         "save": "Save",
@@ -671,7 +672,9 @@
         },
         "deeplink": {
             "invalid_url_title": "Invalid Link",
-            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again."
+            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again.",
+            "blocked_origin_title": "Action blocked",
+            "blocked_origin_body": "This website tried to start an action in your wallet. Pera only allows that from trusted sites."
         },
         "general": {
             "title": "An error occurred",
@@ -2603,6 +2606,10 @@
         },
         "form": {
             "swap": "Swap",
+            "no_balance_title": "Nothing to swap",
+            "no_balance_body": "This account holds no {{unit}}.",
+            "percentage_error_title": "Couldn't calculate the amount",
+            "percentage_error_body": "Please try again in a moment.",
             "you_pay": "You pay",
             "you_receive": "You receive",
             "to": "To",

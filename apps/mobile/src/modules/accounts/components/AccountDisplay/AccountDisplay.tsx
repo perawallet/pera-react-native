@@ -11,11 +11,7 @@
  */
 
 import { useTheme } from '@rneui/themed'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import {
-    getAccountDisplayName,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     PWIcon,
     type PWIconProps,
@@ -27,11 +23,9 @@ import {
 } from '@components/core'
 import peraCardImage from '@assets/images/pera-card.png'
 import { useStyles } from './styles'
+import { useAccountDisplay } from './useAccountDisplay'
 
 import { AccountIcon, type AccountIconProps } from '../AccountIcon'
-import { useMemo } from 'react'
-import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
-import { useAccountTypeLabel } from '@modules/accounts/hooks/useAccountTypeLabel'
 
 /** Pera Card identity rendered in place of an account (header trigger). */
 export type AccountDisplayCard = {
@@ -75,22 +69,8 @@ export const AccountDisplay = ({
 }: AccountDisplayProps) => {
     const { theme } = useTheme()
     const styles = useStyles({ noBorder })
-    const displayName = useMemo(
-        () => (account ? getAccountDisplayName(account) : 'No Account'),
-        [account],
-    )
-    const address = useMemo(
-        () => (account ? truncateAlgorandAddress(account?.address) : undefined),
-        [account],
-    )
-
-    const { data: nfdNames } = useNfdForAddressQuery(account?.address ?? '', {
-        enabled: !!account?.address,
-    })
-
-    const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
-
-    const { label: accountTypeLabel } = useAccountTypeLabel(account)
+    const { displayName, secondaryText, renderSecondary, showTypeAsSecondary } =
+        useAccountDisplay({ account, compact, showAccountType })
 
     if (card) {
         return (
@@ -131,14 +111,6 @@ export const AccountDisplay = ({
         )
     }
 
-    const hasName = Boolean(nfdName) || displayName !== address
-    const showTypeAsSecondary =
-        showAccountType && !hasName && Boolean(accountTypeLabel)
-    const renderSecondary = hasName || showTypeAsSecondary
-    const secondaryText = showTypeAsSecondary
-        ? accountTypeLabel
-        : (nfdName ?? address)
-
     return (
         <PWView
             {...rest}
@@ -164,7 +136,7 @@ export const AccountDisplay = ({
                         {displayName}
                     </PWText>
                 )}
-                {(compact || renderSecondary) && (
+                {renderSecondary && (
                     <PWText
                         style={styles.addressText}
                         variant='body'

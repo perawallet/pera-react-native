@@ -123,18 +123,21 @@ export const resolveArc0001SignTxnRequest = (
 
         const candidate = resolvedSigner.address
 
-        // Only reject when the wallet COULD sign but isn't allowed to in
-        // this context — third-party senders fall through to the filter.
+        // A candidate the wallet holds but that isn't authorized in this
+        // context is SKIPPED, not rejected by name. Throwing an error that
+        // named the address relayed that address verbatim to the dApp over the
+        // WalletConnect bridge — a zero-interaction, batchable oracle for
+        // enumerating the wallet's other signable accounts (PERA-4716).
+        // Skipping keeps session binding intact (the address never enters
+        // `toSign`, so it's never signed for) while making the outcome
+        // byte-identical to "the wallet holds none of these", via the single
+        // generic error below.
         if (
             context.authorizedAddresses !== undefined &&
             context.signableAddresses.has(candidate) &&
             !context.authorizedAddresses.has(candidate)
         ) {
-            throw new Arc0001Error(
-                Arc0001ErrorCode.Unauthorized,
-                `not authorized to sign with ${candidate} in this context`,
-                { index: i },
-            )
+            continue
         }
 
         if (!context.signableAddresses.has(candidate)) continue

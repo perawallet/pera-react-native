@@ -11,12 +11,13 @@
  */
 
 import { useCallback } from 'react'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { ActivityIndicator, SectionList } from 'react-native'
+import { AccountHistoryTitleBar } from './AccountHistoryTitleBar'
 import { useStyles } from './styles'
 import { useAccountHistory, type TransactionSection } from './useAccountHistory'
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
@@ -75,23 +76,49 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         return null
     }, [isFetchingNextPage, styles.loadingFooter])
 
-    const renderEmptyComponent = useCallback(() => {
-        if (isLoading) {
-            return (
-                <LoadingView
-                    variant='circle'
-                    size='lg'
-                    style={styles.loadingContainer}
-                />
-            )
-        }
+    const handleFilterPress = useCallback(() => {
+        void handleOpenFilter()
+    }, [handleOpenFilter])
+
+    const titleBar = (
+        <AccountHistoryTitleBar
+            isCsvExportVisible={isCsvExportVisible}
+            isExportingCsv={isExportingCsv}
+            onOpenFilter={handleFilterPress}
+            onExportCsv={handleExportCsv}
+        />
+    )
+
+    // Loading (nothing cached yet) and empty history render as plain views
+    // rather than the SectionList's ListEmptyComponent: an empty SectionList
+    // inside the account tab pager collapses to zero height on native, which
+    // blanked the whole History tab — title included (PERA-4676). The NFTs tab
+    // handles its empty state the same way.
+    const isInitialLoad = isLoading && !sections.length
+
+    if (isInitialLoad || isEmpty) {
         return (
-            <EmptyView
-                body={t('asset_details.transaction_list.empty_body')}
-                style={styles.emptyView}
-            />
+            <PWView style={styles.container}>
+                <PWView style={styles.stateContainer}>
+                    {titleBar}
+                    {isInitialLoad ? (
+                        <LoadingView
+                            variant='circle'
+                            size='lg'
+                            style={styles.loadingContainer}
+                        />
+                    ) : (
+                        <EmptyView
+                            body={t(
+                                'asset_details.transaction_list.empty_body',
+                            )}
+                            style={styles.emptyView}
+                        />
+                    )}
+                </PWView>
+            </PWView>
         )
-    }, [isLoading, styles.loadingContainer, styles.emptyView, t])
+    }
 
     return (
         <PWView style={styles.container}>
@@ -108,56 +135,9 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}
                 keyboardDismissMode='on-drag'
-                ListHeaderComponent={
-                    <PWView style={styles.headerContainer}>
-                        <PWView style={styles.titleBar}>
-                            <PWView style={styles.titleBarTitleContainer}>
-                                <PWText
-                                    variant='h4'
-                                    truncate
-                                >
-                                    {t('asset_details.transaction_list.title')}
-                                </PWText>
-                            </PWView>
-                            <PWView style={styles.titleBarButtonContainer}>
-                                <PWButton
-                                    icon='sliders'
-                                    title={t(
-                                        'asset_details.transaction_list.filter',
-                                    )}
-                                    variant='helper'
-                                    style={styles.transparentButton}
-                                    paddingStyle='dense'
-                                    onPress={() => void handleOpenFilter()}
-                                />
-                                {isCsvExportVisible && (
-                                    <PWButton
-                                        icon='document-download'
-                                        title={t(
-                                            'asset_details.transaction_list.csv',
-                                        )}
-                                        variant='helper'
-                                        paddingStyle='dense'
-                                        onPress={handleExportCsv}
-                                        isLoading={isExportingCsv}
-                                    />
-                                )}
-                            </PWView>
-                        </PWView>
-                    </PWView>
-                }
-                ListEmptyComponent={
-                    !isLoading && isEmpty ? renderEmptyComponent() : null
-                }
+                ListHeaderComponent={titleBar}
                 ListFooterComponent={renderFooter}
             />
-            {isLoading && !sections.length && (
-                <LoadingView
-                    variant='circle'
-                    size='lg'
-                    style={styles.loadingOverlay}
-                />
-            )}
         </PWView>
     )
 }

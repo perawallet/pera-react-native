@@ -119,10 +119,14 @@ export const useAccountIcon = (
 
         switch (state) {
             case 'rekeyedSignable': {
-                return (
-                    REKEYED_SIGNABLE_GLYPH[account.type] ??
-                    REKEYED_SIGNABLE_DEFAULT
-                )
+                // Key off the auth account's type (what it's rekeyed *to*),
+                // not the account's own type — a standard account rekeyed to
+                // a Ledger keeps type `algo25`, so indexing by `account.type`
+                // wrongly picks the standard glyph instead of the ledger one.
+                const authGlyph = rekeyAccount
+                    ? REKEYED_SIGNABLE_GLYPH[rekeyAccount.type]
+                    : undefined
+                return authGlyph ?? REKEYED_SIGNABLE_DEFAULT
             }
             case 'rekeyedUnsignable': {
                 return REKEYED_UNSIGNABLE_GLYPH

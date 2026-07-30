@@ -43,6 +43,9 @@ export const AccountTabNavigator = ({
         <Tab.Navigator
             screenOptions={{
                 swipeEnabled,
+                // Without this, opening an account mounts the asset list, the
+                // NFT pipeline and the transaction list in the same frame.
+                lazy: true,
             }}
         >
             <Tab.Screen

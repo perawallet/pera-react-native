@@ -21,7 +21,10 @@ export const RekeyToStandardSelectTargetScreen = () => {
     const { targets, handleSelect } = useRekeyToStandardSelectTargetScreen()
 
     return (
-        <PWScreen testID='rekey-to-standard-select-target-screen'>
+        <PWScreen
+            scroll='never'
+            testID='rekey-to-standard-select-target-screen'
+        >
             <ScreenHeader
                 title={t('rekey.to_standard.select.title')}
                 description={t('rekey.to_standard.select.subtitle')}

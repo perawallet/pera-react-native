@@ -50,6 +50,8 @@ const ListSeparator = () => {
     return <PWView style={styles.listSeparator} />
 }
 
+const keyExtractor = (item: CollectibleDisplayItem) => item.assetId
+
 type GridCellProps = {
     item: CollectibleDisplayItem
     index: number
@@ -87,14 +89,12 @@ export const AccountNfts = () => {
         canOptIn,
         galleryLayout,
         searchFilter,
-        debouncedSearchFilter,
         setSearchFilter,
         setGalleryLayout,
         handlePress,
         openManageSheet,
         openAddNftSheet,
         flatListRef,
-        sortMode,
     } = useAccountNfts()
 
     const isGrid = galleryLayout === 'grid'
@@ -211,12 +211,20 @@ export const AccountNfts = () => {
                     </PWView>
                     <PWFlatList
                         ref={flatListRef}
-                        key={`${galleryLayout}:${sortMode}:${debouncedSearchFilter}`}
+                        // Keyed on the layout ONLY. Sorting and searching just
+                        // reorder/narrow `data`, which FlashList handles, so
+                        // keying on them threw the whole list and its recycle
+                        // pool away on every debounced keystroke — the cost
+                        // this fixes. The layout toggle is different: it flips
+                        // numColumns between 2 and 1, which FlashList cannot do
+                        // in place, and without the remount rows keep the other
+                        // layout's measured heights and render large gaps.
+                        key={galleryLayout}
                         data={collectibles}
                         renderItem={renderItem}
                         ItemSeparatorComponent={isGrid ? null : ListSeparator}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
-                        keyExtractor={item => item.assetId}
+                        keyExtractor={keyExtractor}
                         automaticallyAdjustKeyboardInsets
                         contentContainerStyle={styles.contentContainer}
                         ListEmptyComponent={

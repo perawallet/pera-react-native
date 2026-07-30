@@ -50,11 +50,14 @@ import {
 import {
     BROWSER_FAVORITE_ACTION,
     GET_DEVICE_ID_ACTION,
+    isSafeBrowserUrl,
     JsonRpcErrorCode,
     requireSecure,
+    safeOrigin,
     sendActionToWebview,
     sendErrorToWebview,
     sendMessageToWebview,
+    type WebviewMessageSecurity,
 } from './handlers'
 import {
     encodeToBase64,
@@ -99,6 +102,16 @@ type WebviewAccountType =
     | 'Unsignable'
     | 'RekeyedSignable'
     | 'RekeyedUnsignable'
+
+// At most one page-initiated WC connect per origin per window, so a hostile
+// page can't storm the approval sheet with fresh pairing URIs (PERA-4666). The
+// sheet itself is always shown for accepted connects.
+//
+// Same duration as the peraConnectJS window (injected-scripts.ts) but not the
+// same mechanism: that one de-dups an identical URI, this one rate-limits the
+// origin regardless of URI — a WC pairing URI is single-use, so spam arrives as
+// a stream of *fresh* URIs that a pure de-dup would wave through.
+const WC_CONNECT_THROTTLE_WINDOW_MS = 2000
 
 const BASE_WEBVIEW_TYPE: Record<
     WalletAccount['type'],
@@ -184,13 +197,13 @@ export const usePeraWebviewInterface = (
     )
 
     const pushWebView = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'pushWebView',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -198,6 +211,15 @@ export const usePeraWebviewInterface = (
                         return
                     }
                     const url = message.params!.url as string
+                    if (!isSafeBrowserUrl(url)) {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InvalidParams,
+                            t('errors.webview.unsupported_url', { url }),
+                            webview,
+                        )
+                        return
+                    }
                     const title = message.params?.title as string | undefined
                     const isFavorite = message.params?.isFavorite
 
@@ -235,38 +257,34 @@ export const usePeraWebviewInterface = (
         },
         [
             pushWebViewContext,
-            securedConnection,
-            sourceUrl,
             onCloseRequested,
             onBackRequested,
             hadRequiredParams,
+            t,
             webview,
         ],
     )
 
     const openSystemBrowser = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'openSystemBrowser',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
                     if (!hadRequiredParams(['url'], message)) {
                         return
                     }
-                    const url = message.params!.url
-                    // canOpenURL is a no-op on web (react-native-web always
-                    // resolves true), so this scheme check — not that call —
-                    // is the only gate on the web platform.
-                    if (
-                        typeof url !== 'string' ||
-                        (!url.startsWith('http://') &&
-                            !url.startsWith('https://'))
-                    ) {
+                    const url = message.params!.url as string
+                    // https-only until product confirms a broader allow-list
+                    // (mailto:/tel:). canOpenURL stays as the secondary check,
+                    // and is a no-op on web (react-native-web always resolves
+                    // true), so this gate is the only one on that platform.
+                    if (!isSafeBrowserUrl(url)) {
                         sendErrorToWebview(
                             message.id,
                             JsonRpcErrorCode.InvalidParams,
@@ -290,17 +308,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, hadRequiredParams, t, webview],
+        [hadRequiredParams, t, webview],
     )
 
     const canOpenURI = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'canOpenURI',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -319,17 +337,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, hadRequiredParams, webview],
+        [hadRequiredParams, webview],
     )
 
     const openNativeURI = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'openNativeURI',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -371,24 +389,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [
-            securedConnection,
-            sourceUrl,
-            hadRequiredParams,
-            handleDeepLink,
-            t,
-            webview,
-        ],
+        [hadRequiredParams, handleDeepLink, t, webview],
     )
 
     const notifyUser = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'notifyUser',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -406,17 +417,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, webview, hadRequiredParams, showToast],
+        [webview, hadRequiredParams, showToast],
     )
 
     const getAddresses = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'getAddresses',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -439,17 +450,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, signingAccounts, allAccounts, webview],
+        [signingAccounts, allAccounts, webview],
     )
 
     const getSettings = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'getSettings',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -460,7 +471,7 @@ export const usePeraWebviewInterface = (
                         clientType: deviceInfo.getDevicePlatform(),
                         deviceId: deviceID,
                         deviceVersion: deviceInfo.getDeviceModel(),
-                        deviceOSVersion: deviceInfo.getDevicePlatform(),
+                        deviceOSVersion: deviceInfo.getDeviceOSVersion(),
                         deviceModel: deviceInfo.getDeviceModel(),
                         theme,
                         network,
@@ -473,26 +484,17 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [
-            deviceID,
-            deviceInfo,
-            preferredCurrency,
-            securedConnection,
-            sourceUrl,
-            theme,
-            network,
-            webview,
-        ],
+        [deviceID, deviceInfo, preferredCurrency, theme, network, webview],
     )
 
     const requestTransactionSigning = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'requestTransactionSigning',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -528,6 +530,10 @@ export const usePeraWebviewInterface = (
                             sourceType: 'webview',
                             transportId: message.id,
                             sourceMetadata: metadata,
+                            // Platform-observed origin — unlike sourceMetadata
+                            // the page can't assert it, so it's what gates the
+                            // verification badge (PERA-4715).
+                            verifiedOrigin: sourceUrl ?? undefined,
                             respondWithResult: result =>
                                 sendMessageToWebview(
                                     message.id,
@@ -583,25 +589,24 @@ export const usePeraWebviewInterface = (
             )
         },
         [
-            securedConnection,
-            sourceUrl,
             webview,
             hadRequiredParams,
             resolveArc0001,
             enqueueSignRequest,
+            sourceUrl,
             showToast,
             t,
         ],
     )
 
     const requestDataSigning = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'requestDataSigning',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -636,10 +641,10 @@ export const usePeraWebviewInterface = (
                                 // The verified webview origin — NOT the
                                 // dApp-asserted metadata — is what the analyzer
                                 // checks the SIWA domain against.
-                                sourceMetadata: sourceUrl
-                                    ? { url: sourceUrl }
+                                sourceMetadata: security.sourceUrl
+                                    ? { url: security.sourceUrl }
                                     : undefined,
-                                verifiedOrigin: sourceUrl ?? undefined,
+                                verifiedOrigin: security.sourceUrl ?? undefined,
                                 stdSigData,
                                 metadata,
                                 approve: async (
@@ -728,6 +733,9 @@ export const usePeraWebviewInterface = (
                             sourceType: 'webview',
                             transportId: message.id,
                             sourceMetadata: metadata,
+                            // Platform-observed origin, not page-asserted —
+                            // gates the verification badge (PERA-4715).
+                            verifiedOrigin: sourceUrl ?? undefined,
                             data: [data],
                             approve: async (
                                 signed: PeraArbitraryDataSignResult[],
@@ -774,25 +782,24 @@ export const usePeraWebviewInterface = (
             )
         },
         [
-            securedConnection,
-            sourceUrl,
             webview,
             hadRequiredParams,
             addSignRequest,
             allAccounts,
+            sourceUrl,
             showToast,
             t,
         ],
     )
 
     const getDeviceId = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'getDeviceId',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -803,7 +810,7 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [securedConnection, sourceUrl, deviceID, webview],
+        [deviceID, webview],
     )
 
     // PERA-4564: The Discover web app reads the device id once (via
@@ -824,6 +831,8 @@ export const usePeraWebviewInterface = (
         if (previous === deviceID) {
             return
         }
+        // App-initiated push, so there is no message frame to judge — the
+        // hook-level decision is the only trust signal available.
         if (!securedConnection || !deviceID || !webview) {
             return
         }
@@ -842,6 +851,10 @@ export const usePeraWebviewInterface = (
         },
         [preferredCurrency, theme, network, webview],
     )
+
+    // Keyed by origin: an in-place navigation must not let one site's connect
+    // throttle the next site's, and each origin gets its own budget.
+    const lastWcConnectByOriginRef = useRef(new Map<string, number>())
 
     const openWalletConnect = useCallback(
         (message: WebviewMessage) => {
@@ -872,6 +885,22 @@ export const usePeraWebviewInterface = (
                 )
                 return
             }
+
+            const now = Date.now()
+            const throttleKey = safeOrigin(sourceUrl ?? '') ?? sourceUrl ?? ''
+            const lastConnectAt =
+                lastWcConnectByOriginRef.current.get(throttleKey) ?? 0
+            if (now - lastConnectAt < WC_CONNECT_THROTTLE_WINDOW_MS) {
+                logger.warn('[webview/wc] connect throttled', { throttleKey })
+                sendErrorToWebview(
+                    message.id,
+                    JsonRpcErrorCode.InvalidRequest,
+                    'WalletConnect connection request throttled',
+                    webview,
+                )
+                return
+            }
+            lastWcConnectByOriginRef.current.set(throttleKey, now)
 
             // Always surface the connection approval sheet — as if the user
             // had scanned the QR themselves. The bridge never auto-approves a
@@ -929,7 +958,7 @@ export const usePeraWebviewInterface = (
                 // page hears back through the session approve/reject path.
             })()
         },
-        [connect, hadRequiredParams, webview, hasInternet],
+        [connect, hadRequiredParams, webview, hasInternet, sourceUrl],
     )
 
     const onBackPressed = useCallback(() => {
@@ -937,13 +966,13 @@ export const usePeraWebviewInterface = (
     }, [onBackRequested])
 
     const logAnalyticsEvent = useCallback(
-        (message: WebviewMessage) => {
+        (message: WebviewMessage, security: WebviewMessageSecurity) => {
             requireSecure(
-                securedConnection,
+                security.securedConnection,
                 {
                     operation: 'logAnalyticsEvent',
                     messageId: message.id,
-                    sourceUrl,
+                    sourceUrl: security.sourceUrl,
                     webview,
                 },
                 () => {
@@ -957,7 +986,7 @@ export const usePeraWebviewInterface = (
                 },
             )
         },
-        [analytics, securedConnection, sourceUrl, hadRequiredParams, webview],
+        [analytics, hadRequiredParams, webview],
     )
 
     const closeWebView = useCallback(() => {
@@ -965,43 +994,50 @@ export const usePeraWebviewInterface = (
     }, [onCloseRequested])
 
     const handleMessage = useCallback(
-        (message: WebviewMessage | WebviewMessage[]) => {
+        (
+            message: WebviewMessage | WebviewMessage[],
+            // Native derives this per message (a message can race a
+            // navigation); web's origin is mount-fixed. Omitting it falls back
+            // to the mount-level decision.
+            messageSecurity?: WebviewMessageSecurity,
+        ) => {
             if (!Array.isArray(message)) {
                 message = [message]
             }
+            const security = messageSecurity ?? { securedConnection, sourceUrl }
             logger.debug('Received webview interface call', { message })
             message.forEach(message => {
                 switch (message.method) {
                     case 'pushWebView': {
-                        pushWebView(message)
+                        pushWebView(message, security)
                         break
                     }
                     case 'openSystemBrowser': {
-                        openSystemBrowser(message)
+                        openSystemBrowser(message, security)
                         break
                     }
                     case 'canOpenURI': {
-                        canOpenURI(message)
+                        canOpenURI(message, security)
                         break
                     }
                     case 'openNativeURI': {
-                        openNativeURI(message)
+                        openNativeURI(message, security)
                         break
                     }
                     case 'notifyUser': {
-                        notifyUser(message)
+                        notifyUser(message, security)
                         break
                     }
                     case 'getAddresses': {
-                        getAddresses(message)
+                        getAddresses(message, security)
                         break
                     }
                     case 'getSettings': {
-                        getSettings(message)
+                        getSettings(message, security)
                         break
                     }
                     case 'getDeviceId': {
-                        getDeviceId(message)
+                        getDeviceId(message, security)
                         break
                     }
                     case 'getPublicSettings': {
@@ -1013,7 +1049,7 @@ export const usePeraWebviewInterface = (
                         break
                     }
                     case 'logAnalyticsEvent': {
-                        logAnalyticsEvent(message)
+                        logAnalyticsEvent(message, security)
                         break
                     }
                     case 'closeWebView': {
@@ -1021,11 +1057,11 @@ export const usePeraWebviewInterface = (
                         break
                     }
                     case 'requestTransactionSigning': {
-                        requestTransactionSigning(message)
+                        requestTransactionSigning(message, security)
                         break
                     }
                     case 'requestDataSigning': {
-                        requestDataSigning(message)
+                        requestDataSigning(message, security)
                         break
                     }
                     case 'walletConnect': {
@@ -1062,6 +1098,8 @@ export const usePeraWebviewInterface = (
             requestTransactionSigning,
             requestDataSigning,
             openWalletConnect,
+            securedConnection,
+            sourceUrl,
             webview,
             t,
         ],

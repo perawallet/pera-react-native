@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { ActivityIndicator, SectionList } from 'react-native'
 import { useStyles } from './styles'
 import { PWButton, PWText, PWView } from '@components/core'
@@ -28,6 +29,12 @@ export type AssetTransactionListProps = {
     asset: PeraAsset
     children?: React.ReactNode
 }
+
+const renderSectionHeader = ({ section }: { section: TransactionSection }) => (
+    <TransactionDateHeader title={section.title} />
+)
+
+const keyExtractor = (item: TransactionHistoryItem) => item.id
 
 export const AssetTransactionList = ({
     account,
@@ -48,20 +55,15 @@ export const AssetTransactionList = ({
         handleOpenFilter,
     } = useAssetTransactionList({ account, asset })
 
-    const renderItem = ({ item }: { item: TransactionHistoryItem }) => (
-        <TransactionListItem
-            transaction={item}
-            onPress={handleTransactionPress}
-        />
+    const renderItem = useCallback(
+        ({ item }: { item: TransactionHistoryItem }) => (
+            <TransactionListItem
+                transaction={item}
+                onPress={handleTransactionPress}
+            />
+        ),
+        [handleTransactionPress],
     )
-
-    const renderSectionHeader = ({
-        section,
-    }: {
-        section: TransactionSection
-    }) => <TransactionDateHeader title={section.title} />
-
-    const keyExtractor = (item: TransactionHistoryItem) => item.id
 
     return (
         <>

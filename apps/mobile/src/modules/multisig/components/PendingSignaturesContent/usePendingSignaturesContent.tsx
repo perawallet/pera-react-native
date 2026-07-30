@@ -28,7 +28,7 @@ import {
     type MultisigSignRequest,
     type SignRequestStatus,
 } from '@perawallet/wallet-core-multisig'
-import { formatTimeRemaining } from '@perawallet/wallet-core-shared'
+import { formatTimeRemaining, logger } from '@perawallet/wallet-core-shared'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { useBottomSheet, useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -255,12 +255,20 @@ export const usePendingSignaturesContent =
         const dispatchCosign = useCallback(
             (address: string) => {
                 if (!signRequest) return
-                const cosignRequest = buildMultisigCosignRequest({
-                    signRequest,
-                    signerAddress: address,
-                    decodeTransaction,
-                })
-                addSignRequest(cosignRequest)
+                try {
+                    const cosignRequest = buildMultisigCosignRequest({
+                        signRequest,
+                        signerAddress: address,
+                        decodeTransaction,
+                    })
+                    addSignRequest(cosignRequest)
+                } catch (error) {
+                    // A cosign request that fails validation (PERA-4711) must
+                    // never be signed; skip it without crashing the handler.
+                    logger.error('Skipping invalid multisig cosign request', {
+                        error,
+                    })
+                }
             },
             [signRequest, decodeTransaction, addSignRequest],
         )

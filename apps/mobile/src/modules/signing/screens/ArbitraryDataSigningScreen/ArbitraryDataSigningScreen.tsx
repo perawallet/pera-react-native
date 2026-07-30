@@ -52,7 +52,10 @@ export const ArbitraryDataSigningScreen = () => {
             }
         >
             {!!request.sourceMetadata && (
-                <SourceMetadataView metadata={request.sourceMetadata} />
+                <SourceMetadataView
+                    metadata={request.sourceMetadata}
+                    verifiedOrigin={request.verifiedOrigin}
+                />
             )}
             <PWView style={styles.bodyContainer}>
                 {isSingleSignRequest ? (

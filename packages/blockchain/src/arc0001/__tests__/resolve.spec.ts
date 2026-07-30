@@ -387,7 +387,10 @@ describe('resolveArc0001SignTxnRequest', () => {
     })
 
     describe('authorizedAddresses gate (e.g. WalletConnect session)', () => {
-        it('rejects with 4100 when a local sender is not in the authorized set', () => {
+        it('still rejects (generic 4100) when the only signer is held but not authorized — without naming it (PERA-4716)', () => {
+            // The held-but-unauthorized signer is skipped, so nothing is
+            // signable and the request terminates at the single generic error
+            // — no address and no data.index reach the wire.
             expect(() =>
                 resolveArc0001SignTxnRequest(
                     { transactions: [wrap(makePayment(addrA))] },
@@ -406,7 +409,7 @@ describe('resolveArc0001SignTxnRequest', () => {
             )
         })
 
-        it('rejects with 4100 when an explicit signer targets a non-authorized local account', () => {
+        it('still rejects (generic 4100) when an explicit signer targets a held-but-non-authorized account', () => {
             expect(() =>
                 resolveArc0001SignTxnRequest(
                     {
@@ -462,6 +465,82 @@ describe('resolveArc0001SignTxnRequest', () => {
             )
 
             expect(result.toSign).toHaveLength(0)
+        })
+
+        it('gives a held-but-unauthorized signer the SAME error as a wholly unheld one — no address leak (PERA-4716)', () => {
+            const context = {
+                signableAddresses: new Set([
+                    addrA.toString(),
+                    addrB.toString(),
+                ]),
+                authorizedAddresses: new Set([addrB.toString()]),
+            }
+
+            const capture = (sender: Address): Arc0001Error => {
+                try {
+                    resolveArc0001SignTxnRequest(
+                        { transactions: [wrap(makePayment(sender))] },
+                        context,
+                    )
+                } catch (error) {
+                    return error as Arc0001Error
+                }
+                throw new Error('expected a throw')
+            }
+
+            // addrA: held but not session-authorized. addrC: not held at all.
+            const heldButUnauthorized = capture(addrA)
+            const notHeldAtAll = capture(addrC)
+
+            // Byte-identical on the wire: same message, no address, no data.
+            expect(heldButUnauthorized.message).toBe(notHeldAtAll.message)
+            expect(heldButUnauthorized.message).not.toContain(addrA.toString())
+            expect(heldButUnauthorized.data).toBeUndefined()
+        })
+
+        it('resolves an authorized entry and skips a held-but-unauthorized one without throwing (PERA-4716)', () => {
+            const result = resolveArc0001SignTxnRequest(
+                {
+                    transactions: [
+                        wrap(makePayment(addrA)), // authorized
+                        wrap(makePayment(addrB)), // held but not authorized
+                    ],
+                },
+                {
+                    signableAddresses: new Set([
+                        addrA.toString(),
+                        addrB.toString(),
+                    ]),
+                    authorizedAddresses: new Set([addrA.toString()]),
+                },
+            )
+
+            expect(result.toSign).toHaveLength(1)
+            expect(result.toSign[0].index).toBe(0)
+            // The unauthorized address never enters toSign, so it's never
+            // signed for — session binding is preserved by the skip.
+            expect(result.toSign[0].signer).toEqual({
+                kind: 'single',
+                address: addrA.toString(),
+            })
+        })
+
+        it('leaves the webview transport (no authorizedAddresses) unaffected — a held signer still signs', () => {
+            const result = resolveArc0001SignTxnRequest(
+                { transactions: [wrap(makePayment(addrA))] },
+                {
+                    signableAddresses: new Set([
+                        addrA.toString(),
+                        addrB.toString(),
+                    ]),
+                },
+            )
+
+            expect(result.toSign).toHaveLength(1)
+            expect(result.toSign[0].signer).toEqual({
+                kind: 'single',
+                address: addrA.toString(),
+            })
         })
     })
 

@@ -197,6 +197,60 @@ export const mockAlgodAccountAssetInformation = ({
         HttpResponse.json(response, { status }),
     )
 
+/**
+ * The fields `waitForConfirmation` reads: a non-zero `confirmed-round` ends the
+ * wait, a non-empty `pool-error` fails it. `message` carries algod's 404 body.
+ */
+export type AlgodPendingTransactionResponse = {
+    'confirmed-round'?: number
+    'pool-error'?: string
+    message?: string
+}
+
+export type MockAlgodPendingTransactionParams = {
+    /** Matches any txid when omitted — the shape a baseline handler wants. */
+    txId?: string
+    response?: AlgodPendingTransactionResponse
+    status?: number
+}
+
+/**
+ * MSW factory for algod `GET /v2/transactions/pending/{txid}`, the endpoint
+ * algosdk's `waitForConfirmation` polls.
+ *
+ * Defaults to 404 rather than a confirmed round, because the default's job is
+ * to keep a fabricated test txid off the network, not to assert that it
+ * confirmed. A confirmed round would resolve the wait and fire the
+ * post-confirmation balance/transaction refresh, i.e. invent traffic the test
+ * never asked for. Tests exercising confirmation pass an explicit `response`.
+ */
+export const mockAlgodPendingTransaction = ({
+    txId,
+    response = { message: 'transaction not found' },
+    status = 404,
+}: MockAlgodPendingTransactionParams = {}): HttpHandler =>
+    http.get(`*/v2/transactions/pending/${txId ?? ':txId'}`, () =>
+        HttpResponse.json(response, { status }),
+    )
+
+export type MockAlgodStatusAfterBlockParams = {
+    /** Matches any round when omitted. */
+    round?: number
+    response?: { 'last-round': number }
+    status?: number
+}
+
+// algod `GET /v2/status/wait-for-block-after/{round}` — the other half of
+// waitForConfirmation's poll loop.
+export const mockAlgodStatusAfterBlock = ({
+    round,
+    response = { 'last-round': 1 },
+    status = 200,
+}: MockAlgodStatusAfterBlockParams = {}): HttpHandler =>
+    http.get(`*/v2/status/wait-for-block-after/${round ?? ':round'}`, () =>
+        HttpResponse.json(response, { status }),
+    )
+
 export type MockAlgodStatusParams = {
     response?: { 'last-round': number }
     status?: number

@@ -21,11 +21,11 @@ import {
     test,
     chromium,
     type BrowserContext,
-    type Locator,
     type Page,
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -46,43 +46,6 @@ const trackPageErrors = (targetPage: Page): Error[] => {
     const errors: Error[] = []
     targetPage.on('pageerror', error => errors.push(error))
     return errors
-}
-
-// PromptContainer's one-time security nudge fires on a wall-clock delay from
-// account creation (see wallet-smoke.spec.ts) — dismiss it wherever it lands.
-const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
-    const notNow = targetPage.getByTestId('pin_security_prompt_not_now_button')
-    if (await notNow.isVisible().catch(() => false)) {
-        await notNow.click()
-    }
-}
-
-// The pin-security-prompt sheet fires on a wall-clock delay from account
-// creation (see dismissPinPromptIfPresent above) and can land as a
-// full-screen backdrop between a visibility wait and the click that
-// follows, intercepting clicks anywhere on the page — wallet-smoke.spec.ts
-// guards the identical race in openMoreSheet by retrying the click with a
-// dismiss attempt interleaved. Reused here for every click downstream of a
-// waitFor, since which test happens to be running when the delay elapses is
-// non-deterministic.
-const clickThroughPinPrompt = async (
-    targetPage: Page,
-    locator: Locator,
-): Promise<void> => {
-    for (let attempt = 0; attempt < 5; attempt++) {
-        await dismissPinPromptIfPresent(targetPage)
-        const clicked = await locator
-            .click({ timeout: 3000 })
-            .then(() => true)
-            .catch(() => false)
-        if (clicked) return
-        await dismissPinPromptIfPresent(targetPage)
-    }
-    // Bounded, not left to Playwright's unlimited default action timeout: a
-    // locator that's genuinely stuck (e.g. an unrelated overlay left open by
-    // a prior test) should fail this click with a clear timeout instead of
-    // hanging until the whole test's timeout budget is exhausted.
-    await locator.click({ timeout: 10_000 })
 }
 
 // The web ChromeAgeGateService resolves {status:'unknown', capability:'manual'},

@@ -21,8 +21,12 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
-    truncateAlgorandAddress: (address: string, length?: number) => {
-        const half = Math.floor((length ?? 6) / 2)
+    // Defaults must mirror the real constants so the mock reproduces the
+    // production 5…5 / 10…10 forms.
+    SHORT_ADDRESS_LENGTH: 11,
+    LONG_ADDRESS_LENGTH: 20,
+    truncateAlgorandAddress: (address: string, maxLength = 11) => {
+        const half = Math.floor(maxLength / 2)
         return `${address.slice(0, half)}...${address.slice(-half)}`
     },
 }))

@@ -31,9 +31,15 @@ import { RekeyTargetNotFoundError } from './errors'
 
 export const getAccountDisplayName = (account: Nullable<WalletAccount>) => {
     if (!account) return 'No Account'
-    if (account.name) return account.name
-    if (!account.address) return 'No Address Found'
-    return truncateAlgorandAddress(account.address)
+    if (!account.address) return account.name || 'No Address Found'
+    const truncated = truncateAlgorandAddress(account.address)
+    // A name that is just the account's own address — full OR truncated — isn't
+    // a distinguishing label. Treat it as unnamed so callers render a single
+    // truncated address instead of the address twice.
+    const isAddressName =
+        account.name === account.address || account.name === truncated
+    if (account.name && !isAddressName) return account.name
+    return truncated
 }
 
 export const isHDWalletAccount = (

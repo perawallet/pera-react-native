@@ -51,6 +51,15 @@ export type RequireSecureContext = {
     webview: WebView | null
 }
 
+/**
+ * Trust decision for a single bridge message: whether the originating frame
+ * is the trusted webview origin, and the URL that decision was made against.
+ */
+export type WebviewMessageSecurity = {
+    securedConnection: boolean
+    sourceUrl: string | null
+}
+
 type SendError = (
     messageId: string,
     code: JsonRpcErrorCode,
@@ -163,7 +172,7 @@ export const isSafeRelativePath = (path: string): boolean => {
     }
 }
 
-const safeOrigin = (url: string): string | null => {
+export const safeOrigin = (url: string): string | null => {
     try {
         const origin = new URL(url).origin
         return origin === 'null' ? null : origin
