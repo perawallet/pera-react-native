@@ -18,6 +18,7 @@ export * from './useCardLogout'
 
 // Card lifecycle + status
 export * from './useCardStatusQuery'
+export * from './useCardIssuance'
 export * from './useOrderCardMutation'
 export * from './useFreezeCardMutation'
 export * from './useUnfreezeCardMutation'

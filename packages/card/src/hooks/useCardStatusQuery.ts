@@ -10,19 +10,40 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchCardStatus } from '../api/card'
+import type { Card } from '../models'
 import { cardQueryKeys } from './querykeys'
 
+type CardStatusRefetchInterval = UseQueryOptions<
+    Nullable<Card>,
+    Error,
+    Nullable<Card>,
+    ReturnType<typeof cardQueryKeys.status>
+>['refetchInterval']
+
+export type UseCardStatusQueryOptions = {
+    enabled?: boolean
+    /**
+     * Poll interval in ms, `false`, or a function of the live query (lets
+     * pollers stop from the freshest data): used to watch a just-ordered
+     * card until it turns ACTIVE.
+     */
+    refetchInterval?: CardStatusRefetchInterval
+}
+
 /** `data` is `null` when no card has been ordered. */
-export const useCardStatusQuery = () => {
+export const useCardStatusQuery = (options?: UseCardStatusQueryOptions) => {
     const { network } = useNetwork()
 
     return useQuery({
         queryKey: cardQueryKeys.status(network),
         queryFn: ({ signal }) => fetchCardStatus({ network, signal }),
         staleTime: config.reactQueryShortLivedStaleTime,
+        enabled: options?.enabled ?? true,
+        refetchInterval: options?.refetchInterval,
     })
 }

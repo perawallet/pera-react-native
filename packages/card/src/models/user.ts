@@ -30,6 +30,14 @@ export type VerificationState =
 export const isKycSubmitted = (state: Nullable<VerificationState>): boolean =>
     state === VerificationState.Pending || state === VerificationState.Verified
 
+/**
+ * True only once KYC review is complete (VERIFIED). Stricter than
+ * {@link isKycSubmitted}: Baanx gates card issuance (`POST /v1/card/order`)
+ * on this, while the onboarding checklist only needs "submitted".
+ */
+export const isKycVerified = (state: Nullable<VerificationState>): boolean =>
+    state === VerificationState.Verified
+
 /** User profile from GET /v1/user. KYC gate keys off `verificationState`. */
 export type CardUser = {
     id: string

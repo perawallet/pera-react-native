@@ -10,13 +10,17 @@
  limitations under the License
  */
 
-export {
-    fetchCardStatus,
-    orderCard,
-    freezeCard,
-    unfreezeCard,
-    type FetchCardStatusParams,
-    type OrderCardParams,
-    type CardLifecycleParams,
-} from './endpoints'
-export { CardOrderNotVerifiedError } from './errors'
+/**
+ * Thrown when `POST /v1/card/order` is refused because the user's KYC is not
+ * VERIFIED yet (Baanx `USER_NOT_VERIFIED`). Recoverable: issuance simply has
+ * to wait for the KYC decision, so callers treat it as "still pending", not
+ * as a failed order. Callers own the user-facing wording for their flow.
+ */
+export class CardOrderNotVerifiedError extends Error {
+    constructor(
+        message = 'Identity verification must be approved before a card can be issued.',
+    ) {
+        super(message)
+        this.name = 'CardOrderNotVerifiedError'
+    }
+}

@@ -31,6 +31,10 @@ type CardOptionsSectionProps = {
     /** Disables the set-PIN and freeze rows (offline-unsafe); report rows stay
      * active since they're pure navigation. */
     isOffline?: boolean
+    /** Hides every card-only row (wallet provisioning, PIN, freeze, reports)
+     * until the Baanx card exists; only Accounts Details (user-profile data)
+     * survives without one. */
+    showCardActions: boolean
     onAccountsDetails: () => void
     onAddToWallet: () => void
     onSetPin: () => void
@@ -47,6 +51,7 @@ export const CardOptionsSection = ({
     walletPlatform,
     isSettingPin,
     isOffline = false,
+    showCardActions,
     onAccountsDetails,
     onAddToWallet,
     onSetPin,
@@ -75,67 +80,73 @@ export const CardOptionsSection = ({
                     testID='pera_card_accounts_details_row'
                 />
 
-                <PWDivider />
+                {showCardActions ? (
+                    <>
+                        <PWDivider />
 
-                {walletPlatform === 'apple' ? (
-                    <CardOptionRow
-                        iconElement={
-                            <AppleWalletIcon
-                                width={theme.spacing.xl}
-                                height={theme.spacing.xl}
-                                color={theme.colors.textMain}
+                        {walletPlatform === 'apple' ? (
+                            <CardOptionRow
+                                iconElement={
+                                    <AppleWalletIcon
+                                        width={theme.spacing.xl}
+                                        height={theme.spacing.xl}
+                                        color={theme.colors.textMain}
+                                    />
+                                }
+                                label={t(
+                                    'peraCard.account.add_to_apple_wallet',
+                                )}
+                                onPress={onAddToWallet}
+                                testID='pera_card_apple_wallet_row'
                             />
-                        }
-                        label={t('peraCard.account.add_to_apple_wallet')}
-                        onPress={onAddToWallet}
-                        testID='pera_card_apple_wallet_row'
-                    />
-                ) : (
-                    <CardOptionRow
-                        iconElement={
-                            <GooglePayIcon
-                                width={theme.spacing.xl}
-                                height={theme.spacing.xl}
+                        ) : (
+                            <CardOptionRow
+                                iconElement={
+                                    <GooglePayIcon
+                                        width={theme.spacing.xl}
+                                        height={theme.spacing.xl}
+                                    />
+                                }
+                                label={t('peraCard.account.add_to_google_pay')}
+                                onPress={onAddToWallet}
+                                testID='pera_card_google_pay_row'
                             />
-                        }
-                        label={t('peraCard.account.add_to_google_pay')}
-                        onPress={onAddToWallet}
-                        testID='pera_card_google_pay_row'
-                    />
-                )}
+                        )}
 
-                <PWDivider />
+                        <PWDivider />
 
-                <CardOptionRow
-                    icon='locked'
-                    label={t('peraCard.account.set_pin')}
-                    onPress={onSetPin}
-                    isLoading={isSettingPin}
-                    isDisabled={isOffline}
-                    testID='pera_card_set_pin_row'
-                />
-                {canToggleFreeze ? (
-                    <CardOptionRow
-                        icon={isFrozen ? 'play' : 'pause'}
-                        label={freezeLabel}
-                        onPress={onToggleFreeze}
-                        isLoading={isFreezing}
-                        isDisabled={isOffline}
-                        testID='pera_card_freeze_row'
-                    />
+                        <CardOptionRow
+                            icon='locked'
+                            label={t('peraCard.account.set_pin')}
+                            onPress={onSetPin}
+                            isLoading={isSettingPin}
+                            isDisabled={isOffline}
+                            testID='pera_card_set_pin_row'
+                        />
+                        {canToggleFreeze ? (
+                            <CardOptionRow
+                                icon={isFrozen ? 'play' : 'pause'}
+                                label={freezeLabel}
+                                onPress={onToggleFreeze}
+                                isLoading={isFreezing}
+                                isDisabled={isOffline}
+                                testID='pera_card_freeze_row'
+                            />
+                        ) : null}
+                        <CardOptionRow
+                            icon='shield-warning'
+                            label={t('peraCard.account.report_lost_stolen')}
+                            onPress={onReportLostStolen}
+                            testID='pera_card_report_lost_row'
+                        />
+                        <CardOptionRow
+                            icon='flag'
+                            label={t('peraCard.account.report_suspicious')}
+                            onPress={onReportSuspicious}
+                            testID='pera_card_report_suspicious_row'
+                        />
+                    </>
                 ) : null}
-                <CardOptionRow
-                    icon='shield-warning'
-                    label={t('peraCard.account.report_lost_stolen')}
-                    onPress={onReportLostStolen}
-                    testID='pera_card_report_lost_row'
-                />
-                <CardOptionRow
-                    icon='flag'
-                    label={t('peraCard.account.report_suspicious')}
-                    onPress={onReportSuspicious}
-                    testID='pera_card_report_suspicious_row'
-                />
             </PWView>
         </PWView>
     )

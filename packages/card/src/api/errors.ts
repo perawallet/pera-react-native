@@ -212,3 +212,15 @@ export const isDuplicateError = (apiError: CardApiError): boolean =>
     /duplicate|already exists/i.test(
         `${apiError.code ?? ''} ${apiError.message ?? ''}`,
     )
+
+/**
+ * True when Baanx refused because the user's KYC isn't VERIFIED yet. The
+ * guides document `code: USER_NOT_VERIFIED` with status 400 or 403; the live
+ * sandbox has been seen returning only `message: "Account has not been
+ * verified"`. So, like {@link isDuplicateError}, match on text rather than
+ * HTTP status.
+ */
+export const isNotVerifiedError = (apiError: CardApiError): boolean =>
+    /USER_NOT_VERIFIED|not (been )?verified/i.test(
+        `${apiError.code ?? ''} ${apiError.message ?? ''}`,
+    )

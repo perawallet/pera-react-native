@@ -20,6 +20,8 @@ const mocks = vi.hoisted(() => ({
     selectedFundingType: null as string | null,
     status: 'ACTIVE' as string | null,
     fetchStatus: 'idle' as string,
+    issuanceState: 'READY' as string,
+    retryOrder: vi.fn(),
     hasInternet: true,
     cardDetailsMutateAsync: vi.fn(),
     freezeMutateAsync: vi.fn(),
@@ -79,6 +81,14 @@ vi.mock('@perawallet/wallet-core-card', async () => {
         useCardStatusQuery: () => ({
             data: mocks.status == null ? null : { status: mocks.status },
             fetchStatus: mocks.fetchStatus,
+        }),
+        // The hook now reads the card + paused state from here rather than
+        // mounting its own status-query observer.
+        useCardIssuance: () => ({
+            state: mocks.issuanceState,
+            retryOrder: mocks.retryOrder,
+            card: mocks.status == null ? null : { status: mocks.status },
+            isStatusPaused: mocks.fetchStatus === 'paused',
         }),
         useCardDetailsMutation: () =>
             mutationResult(mocks.cardDetailsMutateAsync),
@@ -190,6 +200,7 @@ describe('usePeraCardDetails', () => {
         mocks.selectedFundingType = null
         mocks.status = 'ACTIVE'
         mocks.fetchStatus = 'idle'
+        mocks.issuanceState = 'READY'
         mocks.hasInternet = true
         mocks.setPinPending = false
         mocks.requirePinVerification.mockResolvedValue(true)
@@ -747,6 +758,53 @@ describe('usePeraCardDetails', () => {
             })
 
             expect(mocks.connectAsync).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('card issuance', () => {
+        it('passes the issuance state through for the no-card UI', () => {
+            mocks.issuanceState = 'VERIFICATION_PENDING'
+
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            expect(result.current.issuanceState).toBe('VERIFICATION_PENDING')
+        })
+
+        it('wires onRetryOrder to the issuance retry', () => {
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            act(() => {
+                result.current.onRetryOrder()
+            })
+
+            expect(mocks.retryOrder).toHaveBeenCalledTimes(1)
+        })
+
+        it('opens support in the in-app WebView from the rejected notice', () => {
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            act(() => {
+                result.current.onContactSupport()
+            })
+
+            expect(mocks.pushWebView).toHaveBeenCalledWith({
+                url: expect.any(String),
+                id: 'card-support',
+            })
+            expect(mocks.openURL).not.toHaveBeenCalled()
+        })
+
+        it('opens support in a browser tab when inAppWebView is off (web)', () => {
+            Object.assign(mockCapabilities, { inAppWebView: false })
+
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            act(() => {
+                result.current.onContactSupport()
+            })
+
+            expect(mocks.openURL).toHaveBeenCalledTimes(1)
+            expect(mocks.pushWebView).not.toHaveBeenCalled()
         })
     })
 

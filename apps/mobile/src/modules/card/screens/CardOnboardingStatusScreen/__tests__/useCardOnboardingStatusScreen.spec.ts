@@ -93,7 +93,12 @@ let mockHasPollTimedOut = false
 let mockIsStateUnknown = false
 let mockIsLoading = false
 const mockRestartPolling = vi.fn()
-vi.mock('@modules/card/hooks', () => ({
+vi.mock('@modules/card/hooks', async () => ({
+    // Real support hook (over the mocked webview + capabilities) so the
+    // in-app-vs-browser assertions below keep testing real behavior.
+    ...(await vi.importActual<
+        typeof import('../../../hooks/useOpenCardSupport')
+    >('../../../hooks/useOpenCardSupport')),
     useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
     useCardFundingSourcePicker: () => ({
         pickFundingSource: mockPickFundingSource,

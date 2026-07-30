@@ -35,6 +35,12 @@ describe('transformCard', () => {
         expect(card.orderedAt).toBe('2026-01-01T00:00:00Z')
     })
 
+    it('maps the transient provisioning status to Pending, not the Blocked fallback', () => {
+        const card = transformCard({ ...base, status: 'PENDING' })
+
+        expect(card.status).toBe(CardStatus.Pending)
+    })
+
     it('falls back to Blocked for an unknown status', () => {
         const card = transformCard({ ...base, status: 'SOMETHING_NEW' })
 

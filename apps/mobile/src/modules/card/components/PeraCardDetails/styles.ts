@@ -127,4 +127,11 @@ export const useStyles = makeStyles(theme => ({
     disabled: {
         opacity: 0.5,
     },
+    // The no-card-yet notice under the (dimmed) card visual: callout plus an
+    // optional action, stretched to the card's width inside the centered
+    // cardBlock.
+    issuanceNotice: {
+        alignSelf: 'stretch',
+        gap: theme.spacing.md,
+    },
 }))

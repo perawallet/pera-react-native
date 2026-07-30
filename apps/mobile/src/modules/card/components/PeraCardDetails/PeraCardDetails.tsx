@@ -10,12 +10,14 @@
  limitations under the License
  */
 
+import { CardIssuanceState } from '@perawallet/wallet-core-card'
 import { PWScrollView, PWView } from '@components/core'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { CardFrozenBanner } from '../CardFrozenBanner'
 import { PeraCardVisual } from './PeraCardVisual'
 import { RevealCardDetailsButton } from './RevealCardDetailsButton'
 import { CardFundingAccountSection } from './CardFundingAccountSection'
+import { CardIssuanceNotice } from './CardIssuanceNotice'
 import { CardOptionsSection } from './CardOptionsSection'
 import { usePeraCardDetails } from './usePeraCardDetails'
 import { useStyles } from './styles'
@@ -36,6 +38,9 @@ export const PeraCardDetails = () => {
         fundingAddress,
         onChangeFunding,
         hasCard,
+        issuanceState,
+        onRetryOrder,
+        onContactSupport,
         fundingTypeLabel,
         onChangeFundingType,
         isOffline,
@@ -57,6 +62,12 @@ export const PeraCardDetails = () => {
     // visible, matching the other secure screens (passphrase, backup, import).
     usePreventScreenCapture(SCREEN_CAPTURE_TAG, isCardOpen || isRevealing)
 
+    // Card-only affordances (reveal, PIN, freeze, reports, wallet
+    // provisioning) exist only once the Baanx card does; before that the
+    // issuance notice explains what the dimmed card is waiting on. Loading
+    // stays undimmed and notice-free so card-holders get no flash on entry.
+    const isReady = issuanceState === CardIssuanceState.Ready
+
     return (
         <PWScrollView contentContainerStyle={styles.content}>
             <CardFrozenBanner />
@@ -66,17 +77,28 @@ export const PeraCardDetails = () => {
                     maskedPan={maskedPan}
                     secureImageUrl={secureImageUrl ?? undefined}
                     isOpen={isCardOpen}
+                    isDimmed={
+                        !isReady && issuanceState !== CardIssuanceState.Loading
+                    }
                     onSecureImageLoad={onSecureImageLoad}
                     onSecureImageError={onSecureImageError}
                 />
-                <RevealCardDetailsButton
-                    isLoading={isRevealing}
-                    // "Hide" only once the card is actually open; disabled while
-                    // the first reveal loads, so the label is never a mismatch.
-                    isRevealed={isCardOpen}
-                    isDisabled={isOffline}
-                    onPress={onToggleReveal}
-                />
+                {isReady ? (
+                    <RevealCardDetailsButton
+                        isLoading={isRevealing}
+                        // "Hide" only once the card is actually open; disabled while
+                        // the first reveal loads, so the label is never a mismatch.
+                        isRevealed={isCardOpen}
+                        isDisabled={isOffline}
+                        onPress={onToggleReveal}
+                    />
+                ) : (
+                    <CardIssuanceNotice
+                        state={issuanceState}
+                        onRetryOrder={onRetryOrder}
+                        onContactSupport={onContactSupport}
+                    />
+                )}
             </PWView>
 
             <CardFundingAccountSection
@@ -95,6 +117,7 @@ export const PeraCardDetails = () => {
                 walletPlatform={walletPlatform}
                 isSettingPin={isSettingPin}
                 isOffline={isOffline}
+                showCardActions={isReady}
                 onAccountsDetails={onAccountsDetails}
                 onAddToWallet={onAddToWallet}
                 onSetPin={onSetPin}

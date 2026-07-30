@@ -23,9 +23,23 @@ import {
 import { setupServer } from 'msw/node'
 import { http, HttpResponse } from 'msw'
 
-const { configFlags } = vi.hoisted(() => ({
+const { configFlags, mockLoggerError } = vi.hoisted(() => ({
     configFlags: { isDev: false, isStaging: false },
+    mockLoggerError: vi.fn(),
 }))
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual = await importOriginal<object>()
+    return {
+        ...actual,
+        logger: {
+            error: mockLoggerError,
+            warn: vi.fn(),
+            info: vi.fn(),
+            debug: vi.fn(),
+        },
+    }
+})
 
 vi.mock('@perawallet/wallet-core-config', async importOriginal => {
     const actual = await importOriginal<object>()
@@ -47,6 +61,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 beforeEach(() => {
     configFlags.isDev = false
     configFlags.isStaging = false
+    mockLoggerError.mockClear()
 })
 afterEach(() => server.resetHandlers())
 afterAll(() => server.close())
@@ -142,5 +157,35 @@ describe('fee-delegation/requestFeeDelegation', () => {
         await requestFeeDelegation(REQUEST, 'token-123', 'mainnet')
 
         expect(bypass).toBe('DEVELOPMENT_AND_STAGING_ONLY')
+    })
+
+    // A refusal's `code` is the only thing separating three same-status
+    // causes (unset deployment env vs an underfunded sponsor vs unreachable
+    // algod), so it has to survive into the logs.
+    test('logs the backend error code when sponsorship is refused', async () => {
+        server.use(
+            http.post('*/api/v3/fee-delegation', () =>
+                HttpResponse.json(
+                    {
+                        error: 'Fee delegator has insufficient funds',
+                        code: 'FEE_DELEGATOR_INSUFFICIENT_FUNDS',
+                    },
+                    { status: 503 },
+                ),
+            ),
+        )
+
+        await expect(
+            requestFeeDelegation(REQUEST, 'token-123', 'mainnet'),
+        ).rejects.toThrow()
+
+        expect(mockLoggerError).toHaveBeenCalledWith(
+            'Fee delegation refused by the backend',
+            expect.objectContaining({
+                body: expect.objectContaining({
+                    code: 'FEE_DELEGATOR_INSUFFICIENT_FUNDS',
+                }),
+            }),
+        )
     })
 })
