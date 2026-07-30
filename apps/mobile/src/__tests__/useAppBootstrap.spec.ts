@@ -135,6 +135,26 @@ describe('useAppBootstrap', () => {
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
     })
 
+    // rAF does not fire while the app produces no frames, so a cold start that
+    // begins in the background must still reach hideAsync via the backstop
+    // timer — otherwise the splash sits there until the user foregrounds the
+    // app (PERA-4727).
+    it('hides the splash via the backstop when no frames are produced', async () => {
+        const rafSpy = vi
+            .spyOn(globalThis, 'requestAnimationFrame')
+            .mockImplementation(() => 0 as unknown as number)
+        vi.useFakeTimers()
+
+        renderHook(() => useAppBootstrap())
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(rafSpy).toHaveBeenCalled()
+        expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
+        rafSpy.mockRestore()
+    })
+
     it('sets initError and hides splash when provider.initialize() rejects', async () => {
         mocks.provider.initialize.mockRejectedValue(new Error('boom'))
         vi.useFakeTimers()
