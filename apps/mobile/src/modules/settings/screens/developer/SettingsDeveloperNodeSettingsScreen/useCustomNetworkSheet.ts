@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
-import { BackHandler } from 'react-native'
+import { useCallback, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import {
     clearCustomNetworkCache,
@@ -72,15 +71,12 @@ const toDraft = (
           }
 
 export type UseCustomNetworkSheetResult = {
-    isOpen: boolean
     draft: CustomNetworkDraft
     errors: CustomNetworkSheetErrors
     isFetching: boolean
-    open: () => void
-    close: () => void
     handleFieldChange: (field: keyof CustomNetworkDraft, value: string) => void
     handleFetchGenesis: () => Promise<void>
-    handleSave: () => Promise<void>
+    handleSave: () => Promise<boolean>
     handleReset: () => void
 }
 
@@ -88,80 +84,56 @@ export type UseCustomNetworkSheetResult = {
  * Owns the custom-network config sheet end to end, as a small draft/errors
  * state machine gating a single commit point.
  *
- * `open` seeds the draft from whatever is already persisted (or blanks it
- * out for a first-time setup). Every keystroke stays in local draft state —
- * nothing reaches the store until Save. `close` (wired to the Cancel button,
- * `onDismiss`, `onBackdropPress`, and Android hardware back — see the
- * BackHandler effect below) always just discards the draft: the store and
- * the active network are untouched either way, so there is no path from
+ * This hook is only ever called from inside `CustomNetworkSheet`, which is
+ * itself only ever mounted by the app's bottom-sheet manager
+ * (`@modules/bottom-sheet`) in response to a `request({ contents:
+ * <CustomNetworkSheet /> })` call — so every open is a fresh mount, not a
+ * toggle of a persistent instance. The draft is seeded once, at mount, via a
+ * lazy `useState` initializer that reads whatever is already persisted (or
+ * blanks it out for a first-time setup). Every keystroke stays in local
+ * draft state — nothing reaches the store until Save. There is no `close`:
+ * the manager's `dismiss()` (Cancel button, backdrop, pan-down) just
+ * unmounts this component, which discards the draft for free — the store
+ * and the active network are untouched either way, so there is no path from
  * "opened the sheet" to "active-but-unconfigured custom network" that
  * doesn't go through a validated Save.
  *
+ * Android hardware back is different: this hook used to need a hand-rolled
+ * `BackHandler` effect so back behaved exactly like Cancel (closing the
+ * sheet) instead of popping the screen behind it. The manager does NOT
+ * reproduce that — `useBlockHardwareBackWhileSheetOpen` only swallows
+ * `hardwareBackPress` (blocks it from reaching the navigator) while any
+ * manager-hosted sheet is open; it never calls `dismiss`. So back now does
+ * nothing visible instead of closing the sheet. That is a real behaviour
+ * change from the old effect, but it's the same treatment every other
+ * manager-hosted sheet in the app already gets, and there is no
+ * state-safety difference either way — nothing commits outside `handleSave`
+ * regardless of how this component unmounts.
+ *
  * `handleSave` is the ONLY place that writes anything: it validates both
  * URLs (shared `isValidEndpoint`) and requires a non-empty genesis hash and
- * genesis id — failing any of them sets the matching error flag and returns
- * before touching the store, the cache, or the active network. On success it
- * clears the custom-network cache when {@link shouldClearCustomCache} says the
- * chain identity actually changed, THEN persists the whole config as one unit
- * (`setCustomNetwork` replaces, never merges — see `CustomNetworkConfig`'s own
- * docstring), and only THEN commits the network switch and kicks the sync
- * service. Both orderings are load-bearing: clear-before-persist keeps an
- * in-flight chain-A query from re-inserting its rows after the sweep, and
+ * genesis id — failing any of them sets the matching error flag and resolves
+ * `false` before touching the store, the cache, or the active network. On
+ * success it clears the custom-network cache when
+ * {@link shouldClearCustomCache} says the chain identity actually changed,
+ * THEN persists the whole config as one unit (`setCustomNetwork` replaces,
+ * never merges — see `CustomNetworkConfig`'s own docstring), and only THEN
+ * commits the network switch and kicks the sync service, resolving `true`.
+ * Both orderings are load-bearing: clear-before-persist keeps an in-flight
+ * chain-A query from re-inserting its rows after the sweep, and
  * persist-before-switch means the app never observes `custom` as the ACTIVE
- * network while it is unconfigured.
+ * network while it is unconfigured. The component uses the resolved boolean
+ * to decide whether to `resolve()` the sheet closed — a failed validation
+ * must leave the sheet open.
  */
 export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
-    const [isOpen, setIsOpen] = useState(false)
-    const [draft, setDraft] = useState<CustomNetworkDraft>({
-        ...BLANK_DRAFT,
-    })
+    const [draft, setDraft] = useState<CustomNetworkDraft>(() =>
+        toDraft(getCustomNetworkConfig()),
+    )
     const [errors, setErrors] = useState<CustomNetworkSheetErrors>({})
     const [isFetching, setIsFetching] = useState(false)
     const { switchNetwork } = useSwitchNetwork()
     const queryClient = useQueryClient()
-
-    const open = useCallback(() => {
-        setDraft(toDraft(getCustomNetworkConfig()))
-        setErrors({})
-        setIsOpen(true)
-    }, [])
-
-    const close = useCallback(() => {
-        setIsOpen(false)
-        setDraft({ ...BLANK_DRAFT })
-        setErrors({})
-    }, [])
-
-    // Android hardware back has no built-in route to `close` here. Neither
-    // PWBottomSheet.tsx nor the @gorhom/bottom-sheet / @gorhom/portal
-    // libraries it wraps touch BackHandler at all (confirmed empirically —
-    // zero references in any of the three). The app-wide back-blocking in
-    // useBlockHardwareBackWhileSheetOpen only covers sheets opened through
-    // the imperative useBottomSheet() request store; this sheet is mounted
-    // directly (`isVisible={sheet.isOpen}`), so it never joins that store.
-    // Without this effect, back falls through to the navigator's default
-    // handling, which (per useBlockHardwareBackWhileSheetOpen's own comment)
-    // pops the screen this sheet lives on instead of just the sheet — a
-    // jarring surprise, though not a state-safety issue by itself, since
-    // nothing persists outside `handleSave` regardless of how the component
-    // unmounts. Wiring back to `close` makes it behave exactly like Cancel:
-    // predictable, and consistent with how every other sheet in this app
-    // already treats hardware back.
-    useEffect(() => {
-        if (!isOpen) {
-            return undefined
-        }
-
-        const subscription = BackHandler.addEventListener(
-            'hardwareBackPress',
-            () => {
-                close()
-                return true
-            },
-        )
-
-        return () => subscription.remove()
-    }, [isOpen, close])
 
     const handleFieldChange = useCallback(
         (field: keyof CustomNetworkDraft, value: string) => {
@@ -209,7 +181,7 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
         }
     }, [draft.algodUrl, draft.algodToken])
 
-    const handleSave = useCallback(async () => {
+    const handleSave = useCallback(async (): Promise<boolean> => {
         const validationErrors: CustomNetworkSheetErrors = {
             algodUrl: !isValidEndpoint(draft.algodUrl),
             indexerUrl: !isValidEndpoint(draft.indexerUrl),
@@ -224,7 +196,7 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
             validationErrors.genesisId
         ) {
             setErrors(prev => ({ ...prev, ...validationErrors }))
-            return
+            return false
         }
 
         const next: CustomNetworkConfig = {
@@ -263,8 +235,8 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
             // SyncService not yet initialized
         }
 
-        close()
-    }, [draft, queryClient, switchNetwork, close])
+        return true
+    }, [draft, queryClient, switchNetwork])
 
     const handleReset = useCallback(() => {
         setDraft({ ...BLANK_DRAFT })
@@ -272,12 +244,9 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
     }, [])
 
     return {
-        isOpen,
         draft,
         errors,
         isFetching,
-        open,
-        close,
         handleFieldChange,
         handleFetchGenesis,
         handleSave,

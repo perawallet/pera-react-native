@@ -27,13 +27,6 @@ const { switchNetwork, fetchGenesisFromNode, clearCustomNetworkCache } =
         clearCustomNetworkCache: vi.fn(),
     }))
 
-const { mockBackHandlerAddEventListener, mockBackHandlerRemove } = vi.hoisted(
-    () => ({
-        mockBackHandlerAddEventListener: vi.fn(),
-        mockBackHandlerRemove: vi.fn(),
-    }),
-)
-
 vi.mock('@perawallet/wallet-core-device', () => ({
     useSwitchNetwork: () => ({ switchNetwork }),
 }))
@@ -71,18 +64,6 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     }
 })
 
-// Minimal, fully-replacing react-native mock — mirrors
-// useBlockHardwareBackWhileSheetOpen.spec.ts, the existing precedent for
-// testing BackHandler wiring in this repo. Safe here because this hook's
-// only `react-native` import is BackHandler, and none of its other
-// dependencies (the real store's `persist` + getProvider().keyValueStorage,
-// notably) touch react-native at module scope.
-vi.mock('react-native', () => ({
-    BackHandler: {
-        addEventListener: mockBackHandlerAddEventListener,
-    },
-}))
-
 describe('useCustomNetworkSheet', () => {
     beforeEach(() => {
         useCustomNetworkStore.getState().resetState()
@@ -93,19 +74,46 @@ describe('useCustomNetworkSheet', () => {
         // Reset, not clear: the clear-before-repoint test installs an
         // implementation that snapshots store state, which must not leak.
         clearCustomNetworkCache.mockReset()
-        mockBackHandlerAddEventListener.mockClear()
-        mockBackHandlerRemove.mockClear()
-        mockBackHandlerAddEventListener.mockReturnValue({
-            remove: mockBackHandlerRemove,
+    })
+
+    test('seeds the draft from the persisted config at hook init', () => {
+        // The regression the open() -> useState move could silently
+        // introduce: the component now mounts fresh on each request, so the
+        // draft must come from a lazy useState initializer reading whatever
+        // is already persisted, not from a since-deleted open() call.
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://old:4001',
+            indexerUrl: 'http://old:8980',
+            genesisHash: 'OLD=',
+            genesisId: 'g',
+        })
+
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        expect(result.current.draft).toMatchObject({
+            algodUrl: 'http://old:4001',
+            indexerUrl: 'http://old:8980',
+            genesisHash: 'OLD=',
+            genesisId: 'g',
         })
     })
 
-    test('opening does not switch the network', () => {
+    test('with no persisted config, the draft seeds blank', () => {
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
+        expect(result.current.draft).toEqual({
+            algodUrl: '',
+            algodToken: '',
+            indexerUrl: '',
+            indexerToken: '',
+            genesisHash: '',
+            genesisId: '',
+        })
+    })
 
-        expect(result.current.isOpen).toBe(true)
+    test('mounting the hook does not switch the network', () => {
+        renderHook(() => useCustomNetworkSheet())
+
         expect(switchNetwork).not.toHaveBeenCalled()
     })
 
@@ -122,7 +130,6 @@ describe('useCustomNetworkSheet', () => {
 
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
             result.current.handleFieldChange(
@@ -132,10 +139,12 @@ describe('useCustomNetworkSheet', () => {
             result.current.handleFieldChange('genesisHash', 'HASH=')
             result.current.handleFieldChange('genesisId', 'dockernet-v1')
         })
+        let saved: boolean | undefined
         await act(async () => {
-            await result.current.handleSave()
+            saved = await result.current.handleSave()
         })
 
+        expect(saved).toBe(true)
         expect(getCustomNetworkConfig()).toMatchObject({
             algodUrl: 'http://10.0.0.5:4001',
             genesisHash: 'HASH=',
@@ -145,17 +154,14 @@ describe('useCustomNetworkSheet', () => {
             algodUrl: 'http://10.0.0.5:4001',
             genesisHash: 'HASH=',
         })
-        expect(result.current.isOpen).toBe(false)
     })
 
-    test('cancel persists nothing and does not switch', () => {
+    test('not calling save persists nothing and does not switch', () => {
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
         })
-        act(() => result.current.close())
 
         expect(getCustomNetworkConfig()).toBeUndefined()
         expect(switchNetwork).not.toHaveBeenCalled()
@@ -164,7 +170,6 @@ describe('useCustomNetworkSheet', () => {
     test('an invalid URL blocks save entirely, including the switch', async () => {
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
         act(() => {
             result.current.handleFieldChange('algodUrl', 'not-a-url')
             result.current.handleFieldChange(
@@ -173,10 +178,12 @@ describe('useCustomNetworkSheet', () => {
             )
             result.current.handleFieldChange('genesisHash', 'HASH=')
         })
+        let saved: boolean | undefined
         await act(async () => {
-            await result.current.handleSave()
+            saved = await result.current.handleSave()
         })
 
+        expect(saved).toBe(false)
         expect(result.current.errors.algodUrl).toBe(true)
         expect(getCustomNetworkConfig()).toBeUndefined()
         expect(switchNetwork).not.toHaveBeenCalled()
@@ -185,7 +192,6 @@ describe('useCustomNetworkSheet', () => {
     test('a missing genesis hash blocks save', async () => {
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
             result.current.handleFieldChange(
@@ -208,7 +214,6 @@ describe('useCustomNetworkSheet', () => {
         // dApp over ARC-0027 discover/enable.
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
             result.current.handleFieldChange(
@@ -233,7 +238,6 @@ describe('useCustomNetworkSheet', () => {
         })
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
         })
@@ -254,7 +258,6 @@ describe('useCustomNetworkSheet', () => {
         fetchGenesisFromNode.mockRejectedValue(new Error('unreachable'))
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
         })
@@ -279,7 +282,6 @@ describe('useCustomNetworkSheet', () => {
         })
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
         act(() => result.current.handleReset())
 
         expect(result.current.draft.algodUrl).toBe('')
@@ -296,7 +298,6 @@ describe('useCustomNetworkSheet', () => {
         })
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
         act(() => {
             result.current.handleFieldChange('genesisHash', 'NEW=')
         })
@@ -328,7 +329,6 @@ describe('useCustomNetworkSheet', () => {
 
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
         act(() => {
             result.current.handleFieldChange('genesisHash', 'NEW=')
         })
@@ -349,7 +349,6 @@ describe('useCustomNetworkSheet', () => {
         })
         const { result } = renderHook(() => useCustomNetworkSheet())
 
-        act(() => result.current.open())
         act(() => {
             result.current.handleFieldChange('algodUrl', 'http://new:4001')
         })
@@ -358,51 +357,5 @@ describe('useCustomNetworkSheet', () => {
         })
 
         expect(clearCustomNetworkCache).not.toHaveBeenCalled()
-    })
-
-    describe('Android hardware back', () => {
-        test('is not intercepted while the sheet is closed', () => {
-            renderHook(() => useCustomNetworkSheet())
-
-            expect(mockBackHandlerAddEventListener).not.toHaveBeenCalled()
-        })
-
-        test('closes the sheet without persisting, like Cancel', () => {
-            const { result } = renderHook(() => useCustomNetworkSheet())
-
-            act(() => result.current.open())
-            act(() => {
-                result.current.handleFieldChange(
-                    'algodUrl',
-                    'http://10.0.0.5:4001',
-                )
-            })
-
-            expect(mockBackHandlerAddEventListener).toHaveBeenCalledWith(
-                'hardwareBackPress',
-                expect.any(Function),
-            )
-            const handler = mockBackHandlerAddEventListener.mock
-                .calls[0]?.[1] as () => boolean
-
-            let handled: boolean | undefined
-            act(() => {
-                handled = handler()
-            })
-
-            expect(handled).toBe(true)
-            expect(result.current.isOpen).toBe(false)
-            expect(getCustomNetworkConfig()).toBeUndefined()
-            expect(switchNetwork).not.toHaveBeenCalled()
-        })
-
-        test('unregisters the handler once the sheet closes', () => {
-            const { result } = renderHook(() => useCustomNetworkSheet())
-
-            act(() => result.current.open())
-            act(() => result.current.close())
-
-            expect(mockBackHandlerRemove).toHaveBeenCalled()
-        })
     })
 })

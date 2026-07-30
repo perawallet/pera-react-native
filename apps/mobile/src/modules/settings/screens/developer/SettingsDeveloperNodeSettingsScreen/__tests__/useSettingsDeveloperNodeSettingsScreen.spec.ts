@@ -17,7 +17,7 @@ import { Networks } from '@perawallet/wallet-core-shared'
 import { useSettingsDeveloperNodeSettingsScreen } from '../useSettingsDeveloperNodeSettingsScreen'
 
 const switchNetwork = vi.fn()
-const sheetOpen = vi.fn()
+const mockRequestBottomSheet = vi.fn()
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useSwitchNetwork: () => ({ switchNetwork }),
@@ -29,36 +29,23 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
-// The sheet's own state machine (open/save/cancel/reset validation, cache
-// clearing, etc.) is fully covered by useCustomNetworkSheet.spec.ts. This
-// suite only needs to verify the SCREEN hook routes correctly to it, so the
-// sheet hook is stubbed rather than exercised for real.
-vi.mock('../useCustomNetworkSheet', () => ({
-    useCustomNetworkSheet: () => ({
-        isOpen: false,
-        draft: {
-            algodUrl: '',
-            algodToken: '',
-            indexerUrl: '',
-            indexerToken: '',
-            genesisHash: '',
-            genesisId: '',
-        },
-        errors: {},
-        isFetching: false,
-        open: sheetOpen,
-        close: vi.fn(),
-        handleFieldChange: vi.fn(),
-        handleFetchGenesis: vi.fn(),
-        handleSave: vi.fn(),
-        handleReset: vi.fn(),
+// The screen hook no longer owns any sheet state itself — selecting `custom`
+// just routes to the shared bottom-sheet manager. The sheet's own state
+// machine (draft/save/reset validation, cache clearing, etc.) is fully
+// covered by useCustomNetworkSheet.spec.ts, so it isn't exercised here.
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mockRequestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
     }),
 }))
 
 describe('useSettingsDeveloperNodeSettingsScreen', () => {
     beforeEach(() => {
         switchNetwork.mockClear()
-        sheetOpen.mockClear()
+        mockRequestBottomSheet.mockClear()
     })
 
     test('lists every network exactly once', () => {
@@ -93,7 +80,7 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
         expect(switchNetwork).toHaveBeenCalledWith(Networks.betanet)
     })
 
-    test('selecting custom opens the sheet instead of switching', async () => {
+    test('selecting custom requests the sheet from the bottom-sheet manager instead of switching', async () => {
         const { result } = renderHook(() =>
             useSettingsDeveloperNodeSettingsScreen(),
         )
@@ -102,16 +89,8 @@ describe('useSettingsDeveloperNodeSettingsScreen', () => {
             await result.current.selectNetwork(Networks.custom)
         })
 
-        expect(sheetOpen).toHaveBeenCalledOnce()
+        expect(mockRequestBottomSheet).toHaveBeenCalledOnce()
         expect(switchNetwork).not.toHaveBeenCalled()
-    })
-
-    test('exposes the sheet controls for the screen to render', () => {
-        const { result } = renderHook(() =>
-            useSettingsDeveloperNodeSettingsScreen(),
-        )
-
-        expect(result.current.sheet.isOpen).toBe(false)
     })
 
     test('warns on every network except mainnet', () => {

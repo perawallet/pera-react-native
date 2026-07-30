@@ -15,10 +15,8 @@ import { getSyncService } from '@perawallet/wallet-core-background'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useSwitchNetwork } from '@perawallet/wallet-core-device'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
-import {
-    useCustomNetworkSheet,
-    type UseCustomNetworkSheetResult,
-} from './useCustomNetworkSheet'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { CustomNetworkSheet } from './CustomNetworkSheet'
 
 export type NetworkRow = {
     network: Network
@@ -37,7 +35,6 @@ const LABEL_KEYS: Record<Network, string> = {
 type UseSettingsDeveloperNodeSettingsScreenResult = {
     networks: NetworkRow[]
     selectNetwork: (network: Network) => Promise<void>
-    sheet: UseCustomNetworkSheetResult
     /** Non-MainNet networks are not fully supported — see the screen's callout. */
     isNonMainnetWarningVisible: boolean
 }
@@ -46,7 +43,7 @@ export const useSettingsDeveloperNodeSettingsScreen =
     (): UseSettingsDeveloperNodeSettingsScreenResult => {
         const { network: activeNetwork } = useNetwork()
         const { switchNetwork } = useSwitchNetwork()
-        const sheet = useCustomNetworkSheet()
+        const { request } = useBottomSheet()
 
         const networks = useMemo(
             () =>
@@ -64,8 +61,12 @@ export const useSettingsDeveloperNodeSettingsScreen =
                 // opens the config sheet instead, which is the only path
                 // that can ever commit `custom` as the active network (see
                 // useCustomNetworkSheet's handleSave). This never switches.
+                // The sheet owns its own commit, so the result is ignored.
                 if (network === Networks.custom) {
-                    sheet.open()
+                    await request({
+                        contents: <CustomNetworkSheet />,
+                        options: { size: 'modal', autoCreateContainer: false },
+                    })
                     return
                 }
 
@@ -80,13 +81,12 @@ export const useSettingsDeveloperNodeSettingsScreen =
                     // SyncService not yet initialized
                 }
             },
-            [switchNetwork, sheet],
+            [switchNetwork, request],
         )
 
         return {
             networks,
             selectNetwork,
-            sheet,
             isNonMainnetWarningVisible: activeNetwork !== Networks.mainnet,
         }
     }

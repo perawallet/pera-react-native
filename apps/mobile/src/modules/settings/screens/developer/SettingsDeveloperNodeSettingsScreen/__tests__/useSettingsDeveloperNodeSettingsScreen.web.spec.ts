@@ -23,7 +23,7 @@ const mocks = vi.hoisted(() => ({
         invalidateQueries: mocks.invalidateQueries,
         restart: mocks.restart,
     })),
-    sheetOpen: vi.fn(),
+    requestBottomSheet: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -41,31 +41,18 @@ vi.mock('@perawallet/wallet-core-background', () => ({
     getSyncService: () => mocks.getSyncService(),
 }))
 
-// The sheet's own state machine (open/save/cancel/reset validation, cache
-// clearing, etc.) is fully covered by useCustomNetworkSheet.spec.ts. This
+// The screen hook no longer owns any sheet state itself — selecting `custom`
+// just routes to the shared bottom-sheet manager. The sheet's own state
+// machine (draft/save/reset validation, cache clearing, etc.) is fully
+// covered by useCustomNetworkSheet.spec.ts, so it isn't exercised here; this
 // suite only needs to verify the web screen hook's OWN routing and
-// isSwitching behaviour, so the sheet hook is stubbed rather than exercised
-// for real — it would otherwise also need its own device/query-client mocks
-// duplicated here for no added coverage.
-vi.mock('../useCustomNetworkSheet', () => ({
-    useCustomNetworkSheet: () => ({
-        isOpen: false,
-        draft: {
-            algodUrl: '',
-            algodToken: '',
-            indexerUrl: '',
-            indexerToken: '',
-            genesisHash: '',
-            genesisId: '',
-        },
-        errors: {},
-        isFetching: false,
-        open: mocks.sheetOpen,
-        close: vi.fn(),
-        handleFieldChange: vi.fn(),
-        handleFetchGenesis: vi.fn(),
-        handleSave: vi.fn(),
-        handleReset: vi.fn(),
+// isSwitching behaviour.
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        request: mocks.requestBottomSheet,
+        requestByType: vi.fn(),
+        dismiss: vi.fn(),
+        dismissAll: vi.fn(),
     }),
 }))
 
@@ -146,7 +133,7 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         await waitFor(() => expect(result.current.isSwitching).toBe(false))
     })
 
-    it('selecting custom opens the sheet instead of switching', async () => {
+    it('selecting custom requests the sheet from the bottom-sheet manager instead of switching', async () => {
         const { result } = renderHook(() =>
             useSettingsDeveloperNodeSettingsScreen(),
         )
@@ -155,7 +142,7 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
             await result.current.selectNetwork(Networks.custom)
         })
 
-        expect(mocks.sheetOpen).toHaveBeenCalledOnce()
+        expect(mocks.requestBottomSheet).toHaveBeenCalledOnce()
         expect(mocks.setNetwork).not.toHaveBeenCalled()
     })
 

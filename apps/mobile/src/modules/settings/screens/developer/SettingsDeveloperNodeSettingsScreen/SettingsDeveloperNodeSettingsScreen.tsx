@@ -13,7 +13,6 @@
 import { PWScreen, PWView } from '@components/core'
 import { InfoCallout } from '@components/InfoCallout'
 import { useLanguage } from '@hooks/useLanguage'
-import { CustomNetworkSheet } from './CustomNetworkSheet'
 import { NodeSettingsRow } from './NodeSettingsRow'
 import { useSettingsDeveloperNodeSettingsScreen } from './useSettingsDeveloperNodeSettingsScreen'
 import { useStyles } from './styles'
@@ -21,7 +20,7 @@ import { useStyles } from './styles'
 export const SettingsDeveloperNodeSettingsScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { networks, selectNetwork, sheet, isNonMainnetWarningVisible } =
+    const { networks, selectNetwork, isNonMainnetWarningVisible } =
         useSettingsDeveloperNodeSettingsScreen()
 
     return (
@@ -51,7 +50,6 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
                     testID='node_settings_non_mainnet_notice'
                 />
             )}
-            <CustomNetworkSheet sheet={sheet} />
         </PWScreen>
     )
 }

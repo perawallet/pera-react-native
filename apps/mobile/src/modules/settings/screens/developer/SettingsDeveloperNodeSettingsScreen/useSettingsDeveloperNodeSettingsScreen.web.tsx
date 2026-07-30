@@ -14,18 +14,14 @@ import { useCallback, useMemo, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { useNetwork, useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
-import {
-    useCustomNetworkSheet,
-    type UseCustomNetworkSheetResult,
-} from './useCustomNetworkSheet'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { CustomNetworkSheet } from './CustomNetworkSheet'
 
 // Duplicated from the native hook on purpose: Metro/webpack resolve a bare
 // `./useSettingsDeveloperNodeSettingsScreen` import to THIS `.web` file
 // regardless of which module does the importing, so the native and web
 // hooks can't safely share this via a direct cross-import between the two
-// platform variants. `LABEL_KEYS` and `NetworkRow` still need duplicating;
-// `useCustomNetworkSheet` doesn't have this problem — it has no `.web` twin,
-// so both platform hooks import the same shared module.
+// platform variants. `LABEL_KEYS` and `NetworkRow` still need duplicating.
 type NetworkRow = {
     network: Network
     labelKey: string
@@ -43,7 +39,6 @@ type UseSettingsDeveloperNodeSettingsScreenResult = {
     networks: NetworkRow[]
     isSwitching: boolean
     selectNetwork: (network: Network) => Promise<void>
-    sheet: UseCustomNetworkSheetResult
     /** Non-MainNet networks are not fully supported — see the screen's callout. */
     isNonMainnetWarningVisible: boolean
 }
@@ -59,7 +54,7 @@ export const useSettingsDeveloperNodeSettingsScreen =
     (): UseSettingsDeveloperNodeSettingsScreenResult => {
         const { network: activeNetwork } = useNetwork()
         const [isSwitching, setIsSwitching] = useState(false)
-        const sheet = useCustomNetworkSheet()
+        const { request } = useBottomSheet()
 
         const networks = useMemo(
             () =>
@@ -78,9 +73,13 @@ export const useSettingsDeveloperNodeSettingsScreen =
                 // (checked before the same-network shortcut below, since
                 // that's also how an already-configured custom network gets
                 // reviewed/edited: there is no other entry point into the
-                // sheet).
+                // sheet). The sheet owns its own commit, so the result is
+                // ignored.
                 if (network === Networks.custom) {
-                    sheet.open()
+                    await request({
+                        contents: <CustomNetworkSheet />,
+                        options: { size: 'modal', autoCreateContainer: false },
+                    })
                     return
                 }
 
@@ -101,14 +100,13 @@ export const useSettingsDeveloperNodeSettingsScreen =
 
                 setIsSwitching(false)
             },
-            [activeNetwork, sheet],
+            [activeNetwork, request],
         )
 
         return {
             networks,
             isSwitching,
             selectNetwork,
-            sheet,
             isNonMainnetWarningVisible: activeNetwork !== Networks.mainnet,
         }
     }
