@@ -123,6 +123,21 @@ const FIXTURES: NetworkFixture[] = [
 // response decoding, which these flows exercise for real.
 const ADDRESS = 'RP35URKAEVP6PA3WIJGDGA3FZKNV76E7Y2QZPEJ4TDLV72T326B3IOFX7A'
 
+// Requests are matched on the PARSED origin (plus the base URL's path prefix,
+// for bases that carry one) rather than on a raw string prefix. `url.startsWith
+// (base)` also passes for a different host that merely begins with the expected
+// one — `https://betanet-api.algonode.cloud.example.test` — so it is both the
+// weaker assertion and what CodeQL flags as incomplete URL sanitization.
+const matchesBase = (url: string, base: string): boolean => {
+    const requestUrl = new URL(url)
+    const baseUrl = new URL(base)
+
+    return (
+        requestUrl.origin === baseUrl.origin &&
+        requestUrl.pathname.startsWith(baseUrl.pathname)
+    )
+}
+
 describe.each(FIXTURES)(
     'multi-network routing — $label',
     ({ network, algodUrl, indexerUrl, genesisHash, configure }) => {
@@ -174,10 +189,15 @@ describe.each(FIXTURES)(
                 .client.algod.accountInformation(ADDRESS)
                 .do()
 
-            expect(requested.some(url => url.startsWith(algodUrl))).toBe(true)
-            expect(requested.some(url => url.includes('testnet-api'))).toBe(
-                false,
-            )
+            expect(requested.some(url => matchesBase(url, algodUrl))).toBe(true)
+            expect(
+                requested.some(url =>
+                    matchesBase(
+                        url,
+                        getNetworkConfig(Networks.testnet).algodUrl,
+                    ),
+                ),
+            ).toBe(false)
         })
 
         it('sends pera-service reads to the testnet backend', async () => {
@@ -193,7 +213,7 @@ describe.each(FIXTURES)(
 
             await fetchAssets(['31566704'], network)
 
-            expect(requested.some(url => url.startsWith(TESTNET_PERA))).toBe(
+            expect(requested.some(url => matchesBase(url, TESTNET_PERA))).toBe(
                 true,
             )
         })
