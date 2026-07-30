@@ -12,6 +12,7 @@
 
 import React, { useEffect, useRef } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
+import { useSecurityStore } from '@perawallet/wallet-core-security'
 import { useBottomSheet, useBottomSheetStore } from '@modules/bottom-sheet'
 import {
     isInteractiveSource,
@@ -55,6 +56,11 @@ export const useSignRequestDriver = () => {
     // the host count so the pending request re-presents when a host mounts
     // instead of wedging in the queue with no sheet and no dApp response.
     const hostCount = useBottomSheetStore(s => s.hostCount)
+    // While AutoLockGuard's overlay covers the app, hold NEW presentations:
+    // a sheet opened under the lock overlay surfaces the instant the PIN is
+    // accepted, which read as "entered my PIN, then the TX appeared" in the
+    // field (PERA-4743). The flag flip on unlock re-runs the effect.
+    const isAppLockActive = useSecurityStore(s => s.isAppLockActive)
     const openIdRef = useRef<string | null>(null)
 
     const nextRequest = pendingSignRequests.find(r =>
@@ -100,6 +106,12 @@ export const useSignRequestDriver = () => {
         }
         if (openIdRef.current === sheetId) return
 
+        // App is locked (or the lock check is in flight): hold the request.
+        // A sheet already open for this request stayed mounted via the
+        // early-return above — dismissing it on relock would churn gorhom's
+        // modal stack for nothing.
+        if (isAppLockActive) return
+
         // A hardware sign is in flight for a different request — leave the
         // interactive request queued. The effect re-runs when the queue or
         // the pipeline's hardware child changes, so it opens after settle.
@@ -141,6 +153,7 @@ export const useSignRequestDriver = () => {
         nextRequest,
         isHardwareBusyForOtherRequest,
         hostCount,
+        isAppLockActive,
         requestBottomSheet,
         dismiss,
     ])

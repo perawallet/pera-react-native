@@ -12,6 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const registerStoreMock = vi.hoisted(() => vi.fn())
 
@@ -190,6 +191,55 @@ describe('services/security/store', () => {
         expect(result.current.failedAttempts).toBe(0)
         expect(result.current.lockoutEndTime).toBeNull()
         expect(result.current.autoLockStartedAt).toBeNull()
+    })
+
+    test('setAppLockActive toggles the transient overlay flag', async () => {
+        const { useSecurityStore } = await import('../store')
+
+        useSecurityStore.getState().resetState()
+
+        const { result } = renderHook(() => useSecurityStore())
+
+        expect(result.current.isAppLockActive).toBe(false)
+
+        act(() => {
+            result.current.setAppLockActive(true)
+        })
+        expect(result.current.isAppLockActive).toBe(true)
+
+        act(() => {
+            result.current.setAppLockActive(false)
+        })
+        expect(result.current.isAppLockActive).toBe(false)
+    })
+
+    test('isAppLockActive is never persisted', async () => {
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        const { useSecurityStore } = await import('../store')
+
+        act(() => {
+            useSecurityStore.getState().setAppLockActive(true)
+        })
+
+        const raw = getProvider().keyValueStorage.getItem(
+            'security-store',
+        ) as Nullable<string>
+        const persisted = raw ? JSON.parse(raw) : null
+        expect(persisted?.state).not.toHaveProperty('isAppLockActive')
+    })
+
+    test('resetState clears the transient overlay flag', async () => {
+        const { useSecurityStore } = await import('../store')
+
+        act(() => {
+            useSecurityStore.getState().setAppLockActive(true)
+        })
+        act(() => {
+            useSecurityStore.getState().resetState()
+        })
+
+        expect(useSecurityStore.getState().isAppLockActive).toBe(false)
     })
 
     test('registers resetState and clearStorage callbacks', async () => {

@@ -27,6 +27,15 @@ export type SecurityState = BaseStoreState & {
      * "lock now" menu item) can call the same action.
      */
     lockRequestVersion: number
+    /**
+     * Transient — deliberately excluded from persistence. True while
+     * AutoLockGuard's overlay (the lock screen or the startup/foreground
+     * check) covers the app. UI drivers hold NEW overlay presentation
+     * (e.g. the sign-request sheet) while it is set, so nothing presents
+     * into the covered layer and "pops in" when the PIN is accepted
+     * (PERA-4743). Mirrored by AutoLockGuard's useAutoLockListener.
+     */
+    isAppLockActive: boolean
 
     incrementFailedAttempts: () => void
     setFailedAttempts: (count: number) => void
@@ -34,6 +43,7 @@ export type SecurityState = BaseStoreState & {
     setLockoutEndTime: (time: Nullable<number>) => void
     setAutoLockStartedAt: (time: Nullable<number>) => void
     requestLock: () => void
+    setAppLockActive: (active: boolean) => void
 }
 
 export type PinEntryMode =
