@@ -66,3 +66,4 @@ export {
     CardUserUnavailableError,
 } from './api/card-creation'
 export { CardOrderNotVerifiedError } from './api/card'
+export { OnboardingNotVerifiedError } from './api/errors'

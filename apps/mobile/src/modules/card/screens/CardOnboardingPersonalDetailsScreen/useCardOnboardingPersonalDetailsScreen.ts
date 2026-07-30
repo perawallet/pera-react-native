@@ -18,9 +18,11 @@ import {
     getCardApiError,
     isDuplicateError,
     isoDateToDob,
+    OnboardingNotVerifiedError,
     personalDetailsSchema,
     useCardStore,
     useOnboardingDetailsQuery,
+    useOnboardingKycGate,
     useRegistrationSettingsQuery,
     useSubmitPersonalDetailsMutation,
     type PersonalDetailsFormValues,
@@ -46,6 +48,13 @@ export type UseCardOnboardingPersonalDetailsScreenResult = {
     isLastNameLocked: boolean
     isDateOfBirthLocked: boolean
     isNationalityLocked: boolean
+    /**
+     * The record's identity check isn't far enough along for Baanx to accept
+     * this step, so the form is replaced by the "finish verifying" view.
+     */
+    isKycRequired: boolean
+    /** Sends the user back to the identity-verification step. */
+    handleVerifyIdentity: () => void
     handleSelectNationality: () => void
     handleConfirm: () => void
 }
@@ -58,6 +67,14 @@ export const useCardOnboardingPersonalDetailsScreen =
         const showError = useCardErrorToast({
             titleKey: 'peraCard.personal_details.error_title',
             bodyKey: 'peraCard.personal_details.error_body',
+        })
+        // Baanx's own wording for this is "User is not verified", which reads
+        // as an account problem rather than an unfinished step, so this toast
+        // always uses our copy.
+        const showKycError = useCardErrorToast({
+            titleKey: 'peraCard.kyc_required.title',
+            bodyKey: 'peraCard.kyc_required.body',
+            shouldUseBackendMessage: false,
         })
         const { request } = useBottomSheet()
         const onboardingId = useCardStore(state => state.onboardingId)
@@ -73,6 +90,14 @@ export const useCardOnboardingPersonalDetailsScreen =
         const isFirstNameLocked = Boolean(onboardingDetails?.firstName)
         const isLastNameLocked = Boolean(onboardingDetails?.lastName)
         const isDateOfBirthLocked = Boolean(onboardingDetails?.dateOfBirth)
+
+        const { isKycRequired, markServerRefused } = useOnboardingKycGate({
+            onboardingId,
+        })
+
+        const handleVerifyIdentity = useCallback(() => {
+            navigation.navigate('CardOnboardingVerification')
+        }, [navigation])
 
         // The server's confirmed nationality, resolved against the supported
         // list so we can render its flag/name. Lock the field only when it
@@ -210,6 +235,14 @@ export const useCardOnboardingPersonalDetailsScreen =
                     })
                     navigation.navigate('CardOnboardingAddress')
                 } catch (error) {
+                    // Checked before getCardApiError: the typed error carries
+                    // no body, so it would otherwise fall through to the
+                    // generic toast and the signal would be lost.
+                    if (error instanceof OnboardingNotVerifiedError) {
+                        markServerRefused()
+                        await showKycError(error)
+                        return
+                    }
                     // A duplicate means Baanx already holds these details (a
                     // retried non-idempotent submit) — continue rather than
                     // strand the user. Otherwise prefer Baanx's own message so
@@ -238,6 +271,8 @@ export const useCardOnboardingPersonalDetailsScreen =
             isLastNameLocked,
             isDateOfBirthLocked,
             isNationalityLocked,
+            isKycRequired,
+            handleVerifyIdentity,
             handleSelectNationality,
             handleConfirm,
         }

@@ -67,7 +67,11 @@ export const CountrySelectorField = ({
                     labelStyle={styles.label}
                     value={value}
                     placeholder={placeholder}
+                    // Always non-typeable (the touchable above owns the tap);
+                    // `isDisabled` additionally dims it, so a server-confirmed
+                    // value reads locked like the text fields beside it.
                     editable={false}
+                    isDisabled={disabled}
                     renderErrorMessage={!!errorMessage}
                     errorMessage={errorMessage}
                     errorStyle={styles.errorMessage}

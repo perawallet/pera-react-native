@@ -10,15 +10,20 @@
  limitations under the License
  */
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
 import { acquireCardSessionTokens } from '../api/auth'
 import { submitAddress, type SubmitAddressResult } from '../api/onboarding'
-import { getCardApiError } from '../api/errors'
+import {
+    getCardApiError,
+    isNotVerifiedError,
+    OnboardingNotVerifiedError,
+} from '../api/errors'
 import { OnboardingStep, type AddressInput } from '../models'
 import { setCardSession } from '../session'
 import { useCardStore } from '../store'
+import { cardQueryKeys } from './querykeys'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type UseSubmitAddressMutationResult = CardMutationResult<
@@ -28,9 +33,21 @@ export type UseSubmitAddressMutationResult = CardMutationResult<
 
 export const useSubmitAddressMutation = (): UseSubmitAddressMutationResult => {
     const { network } = useNetwork()
+    const queryClient = useQueryClient()
 
     const mutation = useMutation<SubmitAddressResult, Error, AddressInput>({
-        mutationFn: address => submitAddress({ address, network }),
+        mutationFn: async address => {
+            try {
+                return await submitAddress({ address, network })
+            } catch (error) {
+                // Typed so the screen can show the "finish verifying" state
+                // instead of Baanx's raw refusal string.
+                if (isNotVerifiedError(await getCardApiError(error))) {
+                    throw new OnboardingNotVerifiedError()
+                }
+                throw error
+            }
+        },
         // The address step finalizes registration and issues the same class of
         // 6h user access token as login. Trade it for the durable OAuth pair
         // (6h access + 7-day refresh) so the brand-new session can be silently
@@ -56,7 +73,18 @@ export const useSubmitAddressMutation = (): UseSubmitAddressMutationResult => {
         // Surface Baanx's real (often nested-stringified) error for diagnosis —
         // the screen only shows a generic toast, so this is where the actual
         // status/message lands.
-        onError: async error => {
+        onError: async (error, variables) => {
+            // The refusal proves our cached KYC state is optimistic, so
+            // refetch the record the screen gates on.
+            if (error instanceof OnboardingNotVerifiedError) {
+                void queryClient.invalidateQueries({
+                    queryKey: cardQueryKeys.onboardingDetails(
+                        network,
+                        variables.onboardingId,
+                    ),
+                })
+                return
+            }
             const apiError = await getCardApiError(error)
             logger.warn('Card address submission failed', { error: apiError })
         },

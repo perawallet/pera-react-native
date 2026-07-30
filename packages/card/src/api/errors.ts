@@ -224,3 +224,24 @@ export const isNotVerifiedError = (apiError: CardApiError): boolean =>
     /USER_NOT_VERIFIED|not (been )?verified/i.test(
         `${apiError.code ?? ''} ${apiError.message ?? ''}`,
     )
+
+/**
+ * Thrown when a registration step is refused because the user's KYC isn't
+ * far enough along. This is the only trustworthy signal that verification is
+ * incomplete: Baanx reports `PENDING` from the moment a Veriff session is
+ * *created*, so an abandoned session looks submitted right up until a step
+ * like personal-details or address rejects it.
+ *
+ * Lives here (rather than an `api/onboarding/errors.ts`) because the
+ * onboarding barrel is wholesale-mocked in tests, which would leave the class
+ * undefined and break `instanceof`. Named for the flow, not one step, since
+ * both the details and address steps raise it.
+ */
+export class OnboardingNotVerifiedError extends Error {
+    constructor(
+        message = 'Identity verification must be submitted before registration can continue.',
+    ) {
+        super(message)
+        this.name = 'OnboardingNotVerifiedError'
+    }
+}

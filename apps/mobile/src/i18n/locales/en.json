@@ -1147,6 +1147,11 @@
             "error_body": "We couldn't start verification. Please try again.",
             "open_link_error_body": "We couldn't open the verification page. Please try again."
         },
+        "kyc_required": {
+            "title": "Finish verifying your identity",
+            "body": "Your identity check hasn't been completed yet. Verify your identity to continue your Pera Card application.",
+            "verify_button": "Verify your Account"
+        },
         "setup_status": {
             "title": "Finish setup and start spending on-chain",
             "documents_title": "Submit Your Documents",

@@ -269,11 +269,18 @@ export const useCardOnboardingStatusScreen =
         }, [documentsState, stackNavigation, navigation])
 
         const handleEnterDetails = useCallback(() => {
+            // Defence in depth: the CTA is already hidden unless KYC is
+            // submitted, but a future entry point (or a state flip between
+            // render and tap) must not persist a step Baanx will refuse.
+            if (!isKycSubmitted) {
+                handleVerifyIdentity()
+                return
+            }
             useCardStore
                 .getState()
                 .setOnboardingStep(OnboardingStep.PersonalDetails)
             navigation.navigate('CardOnboardingPersonalDetails')
-        }, [navigation])
+        }, [isKycSubmitted, handleVerifyIdentity, navigation])
 
         // Onboarding creation always needs a signature, so only offer accounts
         // that can sign (excludes Ledger, which is otherwise fundable).
