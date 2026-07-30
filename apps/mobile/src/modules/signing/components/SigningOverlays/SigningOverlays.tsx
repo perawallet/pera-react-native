@@ -18,6 +18,7 @@ import {
     isInteractiveSource,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
+import { useSecurityStore } from '@perawallet/wallet-core-security'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { LedgerConnectionIssueContent } from '../LedgerConnectionIssueContent'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
@@ -36,6 +37,9 @@ const useTransactionRequestFAQDriver = () => {
     const { pendingSignRequests } = useSigningRequest()
     const { getPreference, setPreference } = usePreferences()
     const { request: requestBottomSheet } = useBottomSheet()
+    // Same hold as useSignRequestDriver: never present the first-TX FAQ
+    // sheet into the layer covered by the auto-lock overlay (PERA-4743).
+    const isAppLockActive = useSecurityStore(s => s.isAppLockActive)
     const openIdRef = useRef<string | null>(null)
 
     useEffect(() => {
@@ -46,6 +50,7 @@ const useTransactionRequestFAQDriver = () => {
                 r.sourceType !== 'multisig-cosign',
         )
         if (!next) return
+        if (isAppLockActive) return
         if (openIdRef.current === next.id) return
         if (getPreference(FAQ_SEEN_KEY)) return
         openIdRef.current = next.id
@@ -62,7 +67,13 @@ const useTransactionRequestFAQDriver = () => {
         return () => {
             cancelled = true
         }
-    }, [pendingSignRequests, getPreference, setPreference, requestBottomSheet])
+    }, [
+        pendingSignRequests,
+        isAppLockActive,
+        getPreference,
+        setPreference,
+        requestBottomSheet,
+    ])
 }
 
 /**

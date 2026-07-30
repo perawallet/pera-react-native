@@ -17,14 +17,20 @@ var head = document.head || document.getElementsByTagName('head')[0];
 var style = document.createElement('style'); style.type = 'text/css';
 style.appendChild(document.createTextNode(css)); head.appendChild(style);`
 
-// Injected into the MAIN FRAME ONLY (react-native-webview's
-// injectedJavaScript default). The token closes over the per-load secret so
-// every outbound message is stamped with it; native drops any message that
-// arrives without the matching token (i.e. forged by a subframe that can't
-// read this closure). See generateBridgeToken / hasValidBridgeToken.
+// Injected into the MAIN FRAME ONLY (react-native-webview's default for both
+// injection points). The token closes over the per-load secret so every
+// outbound message is stamped with it; native drops any message that arrives
+// without the matching token (i.e. forged by a subframe that can't read this
+// closure). See generateBridgeToken / hasValidBridgeToken.
+//
+// Runs at injectedJavaScriptBeforeContentLoaded and again in the document-end
+// fallback bundle — the guard makes the second pass a no-op. A page
+// pre-defining peraRPC only sabotages its own bridge (and at
+// before-content-loaded time we run before any page script anyway).
 export const peraMobileInterfaceJS = (bridgeToken: string) => `
 console.log('peraMobileInterfaceJS setup');
 (function setupPeraMobileInterface(){
+if (window.peraRPC && window.peraMobileInterface) { return; }
 var __peraBridgeToken = ${JSON.stringify(bridgeToken)};
 function __stampToken(request) {
     var obj;
@@ -86,6 +92,14 @@ window.peraMobileInterface = {
 
 export const peraConnectJS = `
     (function setupPeraConnect(){
+        // Idempotency: this bundle runs at injectedJavaScriptBeforeContentLoaded
+        // AND again as the document-end fallback. Re-running would re-wrap
+        // window.open and attach a second modal observer with its own dedup
+        // closure (= double-send). A page pre-setting this flag only disables
+        // its own connect path — no security regression.
+        if (window.__peraConnectInstalled) { return; }
+        window.__peraConnectInstalled = true;
+
         // Cap forwarded URI length (real WC URIs are well under this; longer inputs are
         // either malformed or a hostile page trying to overload the RPC bridge).
         var MAX_URI_LENGTH = 4096;
@@ -104,9 +118,14 @@ export const peraConnectJS = `
             if (!isWcUri(uri)) return false;
             var now = Date.now();
             if (uri === lastUri && (now - lastUriAt) < DEDUP_WINDOW_MS) return true;
+            // The dedup window exists to stop RPC flooding, not to eat
+            // retries: stamp it only after the send actually went through.
+            // A failed send returns false, so processModals leaves the dApp's
+            // modal in place and an immediate same-URI retry isn't dropped.
+            if (!window.peraRPC || typeof window.peraRPC.sendRNMessage !== 'function') return false;
+            try { window.peraRPC.sendRNMessage('walletConnect', { uri: uri }); } catch (_) { return false; }
             lastUri = uri;
             lastUriAt = now;
-            try { window.peraRPC && window.peraRPC.sendRNMessage('walletConnect', { uri: uri }); } catch (_) {}
             return true;
         }
         function extractUriFromConnectModal(wrapper) {
@@ -170,11 +189,18 @@ export const peraConnectJS = `
             };
         } catch (_) {}
 
-        try {
-            var observer = new MutationObserver(processModals);
-            observer.observe(document.body, { childList: true, subtree: true });
-        } catch (_) {}
-        // Also run once in case the modal was inserted before the observer attached.
-        processModals();
+        function attachModalObserver() {
+            try {
+                var observer = new MutationObserver(processModals);
+                observer.observe(document.body, { childList: true, subtree: true });
+            } catch (_) {}
+            // Also run once in case the modal was inserted before the observer attached.
+            processModals();
+        }
+        // At before-content-loaded time there is no <body> yet — defer the
+        // observer to DOMContentLoaded. The window.open hook above is the
+        // piece that must exist pre-DOM.
+        if (document.body) { attachModalObserver(); }
+        else { document.addEventListener('DOMContentLoaded', attachModalObserver, { once: true }); }
     })();
 `
