@@ -67,9 +67,6 @@ case "$PROFILE" in
     )
     optional_prefixed+=(
       "TESTNET_BAANX_CLIENT_KEY"
-      # Optional until the backend issues it: packages/device falls back to
-      # BACKEND_API_KEY for api/v3/devices and logs a warning when unset.
-      "BACKEND_API_KEY_V3"
     )
     ;;
   android)
@@ -95,9 +92,6 @@ case "$PROFILE" in
     fi
     optional_prefixed+=(
       "TESTNET_BAANX_CLIENT_KEY"
-      # Optional until the backend issues it: packages/device falls back to
-      # BACKEND_API_KEY for api/v3/devices and logs a warning when unset.
-      "BACKEND_API_KEY_V3"
     )
     ;;
   web)
@@ -117,7 +111,6 @@ case "$PROFILE" in
     # Remote Config, analytics, and crash reporting to work in staging/prod.
     optional_prefixed+=(
       "DISCOVER_BASE_URL" "STAKING_BASE_URL" "ONRAMP_BASE_URL" "TESTNET_BAANX_CLIENT_KEY"
-      "BACKEND_API_KEY_V3"
       "FIREBASE_API_KEY" "FIREBASE_AUTH_DOMAIN" "FIREBASE_DATABASE_URL"
       "FIREBASE_PROJECT_ID" "FIREBASE_STORAGE_BUCKET" "FIREBASE_MESSAGING_SENDER_ID"
       "FIREBASE_APP_ID" "FIREBASE_MEASUREMENT_ID" "GA_MEASUREMENT_API_SECRET"

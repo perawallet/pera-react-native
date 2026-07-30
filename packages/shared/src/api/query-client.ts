@@ -262,11 +262,7 @@ const clients = new Map<Network, BackendInstances>()
 const setStandardHeaders = ({ request }: BeforeRequestState) => {
     request.headers.set('Content-Type', 'application/json')
 
-    // Only fill in the default key when the caller didn't set one. This hook
-    // runs after per-request headers are applied, so an unconditional `set`
-    // would silently overwrite a deliberate override — which is how the v3
-    // devices API gets its own key (see packages/device/src/hooks/endpoints.ts).
-    if (config.backendAPIKey?.length && !request.headers.has('X-API-Key')) {
+    if (config.backendAPIKey?.length) {
         request.headers.set('X-API-Key', config.backendAPIKey)
     }
 }
