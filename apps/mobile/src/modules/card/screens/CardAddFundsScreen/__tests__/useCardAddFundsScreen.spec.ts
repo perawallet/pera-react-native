@@ -31,8 +31,10 @@ const mockSwap = vi.hoisted(() => ({
     isSwapping: false,
 }))
 
+let mockNetwork = 'mainnet'
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useNetwork: () => ({ network: mockNetwork }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -54,7 +56,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    getKnownAssetId: () => 'usdc-id',
+    // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane. A
+    // constant id would route straight past this hook's `=== null` guards.
+    getKnownAssetId: (_key: string, network: string) =>
+        network === 'mainnet' || network === 'testnet' ? 'usdc-id' : null,
     useAssetsQuery: () => ({
         data: new Map([
             ['usdc-id', { assetId: 'usdc-id', decimals: 6, unitName: 'USDC' }],
@@ -136,6 +141,7 @@ const type = (
 describe('useCardAddFundsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockNetwork = 'mainnet'
         mockSwap.quote = null
         mockSwap.rate = null
         mockSwap.usdcOut = null
@@ -197,6 +203,21 @@ describe('useCardAddFundsScreen', () => {
             amount: '5',
         })
         expect(mockExecuteSwap).not.toHaveBeenCalled()
+    })
+
+    it('deposits nothing on a network with no known USDC id', () => {
+        // usdcAssetId is null there, so nothing is picked either: the screen
+        // must not claim USDC mode, must not fire the deposit mutation, and
+        // must not navigate to a confirm screen with a null source asset.
+        mockNetwork = 'betanet'
+        const { result } = renderHook(() => useCardAddFundsScreen())
+        type(result, ['5'])
+
+        act(() => result.current.handleDeposit())
+
+        expect(result.current.isUsdc).toBe(false)
+        expect(mockDepositMutateAsync).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('keeps Deposit disabled in swap mode until a quote resolves', async () => {

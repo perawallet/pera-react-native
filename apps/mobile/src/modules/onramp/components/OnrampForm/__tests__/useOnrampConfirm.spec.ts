@@ -28,6 +28,7 @@ const { mockRequestBottomSheet } = vi.hoisted(() => ({
 }))
 
 let mockSelectedAccountAddress: string | null = 'ACCOUNT_ADDRESS'
+let mockNetwork = 'mainnet'
 
 // --- mocks ----------------------------------------------------------------
 
@@ -57,7 +58,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useNetwork: () => ({ network: mockNetwork }),
 }))
 
 // The order-review sheet (imported transitively by the confirm hook) pulls in
@@ -69,7 +70,11 @@ vi.mock('@components/AddressDisplay', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    getKnownAssetId: () => '31566704',
+    // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane. A
+    // constant id here would route past resolveDestinationAssetId's null
+    // branch instead of exercising it.
+    getKnownAssetId: (_key: string, network: string) =>
+        ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
     ALGO_ASSET: { assetId: '0', unitName: 'ALGO', decimals: 6 },
     toWholeUnits: (value: number) => value,
     useAssetsQuery: () => ({ data: undefined }),
@@ -149,6 +154,22 @@ const meldPair: RampPair = {
     provider: { id: 'meld', paymentTypes: ['CARD'], limits: null },
 }
 
+// Same pair with a USDC destination: unlike ALGO, USDC needs an ASA id, so
+// this is the fixture that reaches getKnownAssetId at all.
+const usdcPair: RampPair = {
+    ...meldPair,
+    id: 'pair-meld-usdc',
+    destinationToken: {
+        id: 'USDC_ALGORAND',
+        symbol: 'USDC',
+        name: 'USD Coin',
+        fractionDecimals: 6,
+        logo: null,
+        network: { id: 'algorand', name: 'Algorand', logo: null },
+        priceInUsd: null,
+    },
+}
+
 const meldQuote: MeldQuote = {
     kind: 'meld',
     quoteId: 'm1',
@@ -179,6 +200,7 @@ describe('useOnrampConfirm', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSelectedAccountAddress = 'ACCOUNT_ADDRESS'
+        mockNetwork = 'mainnet'
         mockEnsureOptIn.mockResolvedValue(true)
         mockRequestBottomSheet.mockResolvedValue(undefined)
     })
@@ -195,6 +217,38 @@ describe('useOnrampConfirm', () => {
             'errors.network.no_connection.title',
             'errors.network.no_connection.body',
         )
+        expect(result.current.isConfirming).toBe(false)
+    })
+
+    // Companion to the null case below: without this, "did not opt in" would
+    // also pass for a fixture that never got that far.
+    it('opts in and creates the order when the destination asset resolves', async () => {
+        const { result } = renderHook(() =>
+            useOnrampConfirm({ ...defaultProps, selectedPair: usdcPair }),
+        )
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(mockEnsureOptIn).toHaveBeenCalledWith(
+            expect.objectContaining({ destinationAssetId: 31566704n }),
+        )
+        expect(mockCreateRampOrder).toHaveBeenCalled()
+    })
+
+    it('bails out before opt-in when the network has no known destination asset id', async () => {
+        mockNetwork = 'betanet'
+        const { result } = renderHook(() =>
+            useOnrampConfirm({ ...defaultProps, selectedPair: usdcPair }),
+        )
+
+        await act(async () => {
+            await result.current.handleConfirm()
+        })
+
+        expect(mockEnsureOptIn).not.toHaveBeenCalled()
+        expect(mockCreateRampOrder).not.toHaveBeenCalled()
         expect(result.current.isConfirming).toBe(false)
     })
 })

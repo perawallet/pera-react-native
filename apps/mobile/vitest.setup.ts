@@ -2696,11 +2696,15 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     KNOWN_ASSET_IDS: {
         USDC: { mainnet: '31566704', testnet: '10458941' },
     },
+    // `null`, not `''`, off the Pera-backed lane — mirroring the real
+    // getKnownAssetId. An empty string is falsy but not null, so it routes
+    // straight PAST every `=== null` guard the consumers now carry instead of
+    // exercising it.
     getKnownAssetId: vi.fn((key: string, network: string) => {
         const ids: Record<string, Record<string, string>> = {
             USDC: { mainnet: '31566704', testnet: '10458941' },
         }
-        return ids[key]?.[network] ?? ''
+        return ids[key]?.[network] ?? null
     }),
     ALGO_ASSET: {
         assetId: '0',

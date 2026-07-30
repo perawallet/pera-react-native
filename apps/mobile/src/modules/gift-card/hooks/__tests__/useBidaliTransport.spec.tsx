@@ -68,8 +68,12 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET: { decimals: 6 },
-    getKnownAssetId: (key: string, _network: string) =>
-        key === 'USDC' ? '31566704' : '0',
+    // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane, so
+    // getCurrencyInfo's `assetId === null` branch is reachable here.
+    getKnownAssetId: (key: string, network: string) => {
+        if (key !== 'USDC') return null
+        return { mainnet: '31566704', testnet: '10458941' }[network] ?? null
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -442,6 +446,33 @@ describe('useBidaliTransport', () => {
             expect(call.receiver).toBe(VALID_ADDRESS)
             expect(call.assetId.toString()).toBe('31566704')
             expect(mockAddSignRequest).toHaveBeenCalled()
+        })
+
+        it('refuses a USDC transfer on a network with no known USDC id', async () => {
+            // getCurrencyInfo returns null there, which the caller already
+            // treats as an unsupported protocol — no transfer is composed
+            // against another chain's asset id.
+            mockNetwork = 'betanet'
+            const { logger } = await import('@perawallet/wallet-core-shared')
+            const { result } = renderHook(() =>
+                useBidaliTransport(mockAccount, emptyBalances),
+            )
+            await act(async () =>
+                result.current.handleMessage(
+                    bidaliRPC('bidaliPaymentRequest', {
+                        address: VALID_ADDRESS,
+                        amount: '10',
+                        protocol: 'usdcalgorand',
+                    }),
+                ),
+            )
+
+            expect(mockAddAssetTransfer).not.toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(logger.warn).toHaveBeenCalledWith(
+                'Bidali: unsupported protocol',
+                expect.anything(),
+            )
         })
 
         it('passes extraId as note when provided', async () => {

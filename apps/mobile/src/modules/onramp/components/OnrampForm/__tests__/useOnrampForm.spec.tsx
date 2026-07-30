@@ -85,7 +85,10 @@ vi.mock('@components/AddressDisplay', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    getKnownAssetId: () => '31566704',
+    // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane, so
+    // this stub can never route a consumer past a `=== null` guard.
+    getKnownAssetId: (_key: string, network: string) =>
+        ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
     // Imported at module scope by OptInConfirmationContent (rendered via the
     // confirm-opt-in sheet the form hook now requests).
     ALGO_ASSET: { assetId: '0', unitName: 'ALGO', decimals: 6 },

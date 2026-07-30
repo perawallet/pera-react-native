@@ -19,9 +19,14 @@ const USDC_MAINNET = '31566704'
 const USDC_TESTNET = '10458941'
 const TOKEN = '887406851'
 
+// Mirrors the real getKnownAssetId: an id only on the Pera-backed networks,
+// `null` everywhere else. A catch-all that handed back MainNet's id for any
+// unrecognized network would route straight past the `=== null` guard under
+// test. Ids are inlined rather than read from the constants below because a
+// vi.mock factory is hoisted above them.
 vi.mock('@perawallet/wallet-core-assets', () => ({
     getKnownAssetId: (_key: string, network: string) =>
-        network === 'testnet' ? '10458941' : '31566704',
+        ({ mainnet: '31566704', testnet: '10458941' })[network] ?? null,
 }))
 
 describe('resolveSwapRouteAssets', () => {
@@ -60,6 +65,27 @@ describe('resolveSwapRouteAssets', () => {
             assetInId: '0',
             assetOutId: USDC_TESTNET,
         })
+    })
+
+    it('returns null on a network with no known USDC to default the output to', () => {
+        expect(resolveSwapRouteAssets({ assetInId: '0' }, 'betanet')).toBeNull()
+        expect(
+            resolveSwapRouteAssets(
+                { assetInId: '0', assetOutId: '0' },
+                'custom',
+            ),
+        ).toBeNull()
+    })
+
+    it('still resolves an explicit pair on a network with no known USDC', () => {
+        // Only the USDC *default* is unavailable there — a fully specified
+        // route needs no known id at all.
+        expect(
+            resolveSwapRouteAssets(
+                { assetInId: '0', assetOutId: TOKEN },
+                'betanet',
+            ),
+        ).toEqual({ assetInId: '0', assetOutId: TOKEN })
     })
 
     it('defaults the input to ALGO when only an output is provided', () => {
