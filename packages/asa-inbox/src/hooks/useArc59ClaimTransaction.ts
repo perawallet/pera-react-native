@@ -17,9 +17,9 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import { getArc59Config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { ARC59Client } from '../clients'
+import { requireArc59Config } from './requireArc59Config'
 import { buildGroup, buildPopulatedGroup } from '../utils'
 import {
     BASE_CLAIM_TX_COUNT,
@@ -81,7 +81,7 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
     const buildClaimAssetTxs = useCallback(
         async (params: ClaimParams): Promise<PeraTransaction[]> => {
             const { sender, assetId, shouldClaimAlgo, inboxAddress } = params
-            const arc59Config = getArc59Config(network)
+            const arc59Config = requireArc59Config(network)
 
             const suggestedParams = await algokit.getSuggestedParams()
 
@@ -165,7 +165,7 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 inboxAddress,
                 assetCreator,
             } = params
-            const arc59Config = getArc59Config(network)
+            const arc59Config = requireArc59Config(network)
 
             const suggestedParams = await algokit.getSuggestedParams()
 

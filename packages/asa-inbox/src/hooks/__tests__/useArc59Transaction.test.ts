@@ -18,6 +18,7 @@ import { useArc59SendTransaction } from '../useArc59SendTransaction'
 import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
+import { PeraServiceUnavailableError } from '@perawallet/wallet-core-shared'
 import { populateAppCallResources } from '@algorandfoundation/algokit-utils'
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -44,8 +45,11 @@ vi.mock('@perawallet/wallet-core-config', () => {
     }
     return {
         config,
-        getArc59Config: (network: string) =>
-            network === 'mainnet' ? config.arc59.mainnet : config.arc59.testnet,
+        getArc59Config: (network: string) => {
+            if (network === 'mainnet') return config.arc59.mainnet
+            if (network === 'betanet') return null
+            return config.arc59.testnet
+        },
     }
 })
 
@@ -508,5 +512,17 @@ describe('useArc59SendTransaction', () => {
             expect.objectContaining({ assetReferences: [params.assetId] }),
         )
         expect(populateAppCallResources).not.toHaveBeenCalled()
+    })
+
+    test('building an inbox send on a network without the inbox app fails typed', async () => {
+        ;(useNetwork as Mock).mockReturnValue({ network: 'betanet' })
+
+        const { result } = renderHook(() => useArc59SendTransaction())
+
+        // Was: TestNet's app id, sent to betanet's algod, failing opaquely at
+        // submit. Now it cannot get that far.
+        await expect(
+            result.current.buildSendViaInboxTxs(baseParams),
+        ).rejects.toBeInstanceOf(PeraServiceUnavailableError)
     })
 })

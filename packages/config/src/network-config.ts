@@ -12,7 +12,6 @@
 
 import { type Network, Networks } from './models/network'
 import { config } from './main'
-import { resolvePeraServiceLane } from './pera-service-fallback'
 
 /** Chain-intrinsic endpoints. Always the real active network — never falls back. */
 type ChainConfig = {
@@ -194,10 +193,20 @@ export const getNetworkConfig = (network: Network): NetworkConfig => ({
 })
 
 /**
- * ARC-59 inbox app id/address for the network's Pera service lane. The inbox
- * app is only deployed on the two Pera-backed networks.
+ * ARC-59 inbox app id/address for `network`, or `null` where the inbox app is
+ * not deployed.
+ *
+ * Returned `null` rather than TestNet's ids: those ids do not exist on another
+ * chain, so building against them aims a wrong app id at the real chain's
+ * algod. Group atomicity meant no funds moved, but it failed opaquely — the
+ * caller now fails with a typed error instead.
  */
-export const getArc59Config = (network: Network) =>
-    resolvePeraServiceLane(network) === Networks.mainnet
+export const getArc59Config = (
+    network: Network,
+): { appId: bigint; appAddress: string } | null => {
+    if (!isPeraBackedNetwork(network)) return null
+
+    return network === Networks.mainnet
         ? config.arc59.mainnet
         : config.arc59.testnet
+}

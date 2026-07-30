@@ -197,9 +197,12 @@ describe('network-config', () => {
         vi.doUnmock('../main')
     })
 
-    test('getArc59Config falls back to testnet app ids', () => {
+    test('getArc59Config returns null where the inbox app is not deployed', () => {
         expect(getArc59Config(Networks.mainnet)).toEqual(config.arc59.mainnet)
-        expect(getArc59Config(Networks.custom)).toEqual(config.arc59.testnet)
+        expect(getArc59Config(Networks.testnet)).toEqual(config.arc59.testnet)
+        // Was config.arc59.testnet — TestNet's app id aimed at another chain.
+        expect(getArc59Config(Networks.betanet)).toBeNull()
+        expect(getArc59Config(Networks.custom)).toBeNull()
     })
 })
 

@@ -17,9 +17,9 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import { getArc59Config } from '@perawallet/wallet-core-config'
 import type { Arc59SendSummaryResponse } from '../api'
 import { ARC59Client } from '../clients'
+import { requireArc59Config } from './requireArc59Config'
 import { buildGroup } from '../utils'
 
 type SendViaInboxParams = {
@@ -43,7 +43,7 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
     const buildSendViaInboxTxs = useCallback(
         async (params: SendViaInboxParams): Promise<PeraTransaction[]> => {
             const { sender, receiver, assetId, amount, summary } = params
-            const arc59Config = getArc59Config(network)
+            const arc59Config = requireArc59Config(network)
 
             const suggestedParams = await algokit.getSuggestedParams()
             const minFee = BigInt(suggestedParams.minFee)
