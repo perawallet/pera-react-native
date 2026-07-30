@@ -17,6 +17,7 @@ import {
     AccountTypes,
     type AccountsState,
     type AccountSortMode,
+    type AccountType,
     type HardwareWalletDetails,
     type WalletAccount,
     type WatchAccount,
@@ -31,6 +32,72 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'accounts-store'
+
+/**
+ * Precedence used to resolve two accounts that share an address: higher wins.
+ *
+ * `quantum` ranks highest because misreporting it is the expensive failure —
+ * the backend prices a quantum account's swap quotes at the Ed25519 minimum
+ * fee and the chain rejects the swap, with no client-side symptom. `watch`
+ * ranks lowest because it carries no signing capability, so dropping it in
+ * favour of anything else can only ever gain the user capability.
+ *
+ * In practice only `watch` can genuinely collide with another type — an
+ * Algorand address is derived from its key, so one address cannot be two
+ * different signing schemes — but the order is total so the rule stays
+ * deterministic rather than a special case.
+ *
+ * `satisfies` keeps this exhaustive: adding or renaming an `AccountType`
+ * breaks the build here instead of silently ranking it `undefined`.
+ *
+ * Mirrored, over the wire enum, by `DEVICE_ACCOUNT_TYPE_RANK` in
+ * `packages/device/src/hooks/serializers.ts` — update both together.
+ */
+const ACCOUNT_TYPE_RANK = {
+    quantum: 6,
+    hardware: 5,
+    hdWallet: 4,
+    algo25: 3,
+    multisig: 2,
+    watch: 1,
+} satisfies Record<AccountType, number>
+
+/**
+ * Collapse repeated addresses, the higher-precedence account type winning and
+ * equal ranks keeping the first occurrence. The survivor sits at the index
+ * where its address *first* appeared: `manualAccountOrder`,
+ * `selectedAccountAddress` and the rendered list all read this array, so a
+ * dedupe that reorders accounts would be a worse bug than the one it fixes.
+ *
+ * The winner is kept wholesale — fields are deliberately NOT merged between
+ * the two entries. Merging watch state into a signing account is a specific,
+ * intentional operation (`upgradeWatchAccountToHardware` below); doing it
+ * implicitly here would be far too subtle to reason about at a call site that
+ * just wanted to write a list of accounts.
+ */
+const resolveDuplicateAccounts = (
+    accounts: WalletAccount[],
+): WalletAccount[] => {
+    const positionByAddress = new Map<string, number>()
+    const resolved: WalletAccount[] = []
+
+    for (const account of accounts) {
+        const position = positionByAddress.get(account.address)
+        if (position === undefined) {
+            positionByAddress.set(account.address, resolved.length)
+            resolved.push(account)
+            continue
+        }
+        if (
+            ACCOUNT_TYPE_RANK[account.type] >
+            ACCOUNT_TYPE_RANK[resolved[position].type]
+        ) {
+            resolved[position] = account
+        }
+    }
+
+    return resolved
+}
 
 const initialState = {
     accounts: [] as WalletAccount[],
@@ -62,14 +129,13 @@ export const useAccountsStore: UseBoundStore<
             },
             setAccounts: (accounts: WalletAccount[]) => {
                 // Single chokepoint for every account write — dedupe by
-                // address (keep first) so no caller can ever persist the same
-                // account twice. Callers that need to surface duplicates to
-                // the user (batch import) still throw DuplicateAccountError
-                // before reaching here; this is the structural safety net.
-                const seen = new Set<string>()
-                accounts = accounts.filter(a =>
-                    seen.has(a.address) ? false : (seen.add(a.address), true),
-                )
+                // address so no caller can ever persist the same account
+                // twice, keeping the higher-precedence type (see
+                // ACCOUNT_TYPE_RANK) rather than whichever happened to come
+                // first. Callers that need to surface duplicates to the user
+                // (batch import) still throw DuplicateAccountError before
+                // reaching here; this is the structural safety net.
+                accounts = resolveDuplicateAccounts(accounts)
 
                 const currentSelected = get().selectedAccountAddress
                 const currentManualOrder = get().manualAccountOrder

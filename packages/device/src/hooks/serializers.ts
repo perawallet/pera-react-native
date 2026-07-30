@@ -12,21 +12,58 @@
 
 import type {
     DeviceAccountRegistration,
+    DeviceAccountType,
     DeviceRegistration,
     DeviceRegistrationRequest,
 } from '../models'
 
 /**
- * Collapse repeated addresses, last occurrence winning. v3 specifies the same
- * rule server-side, but sending a clean array keeps the request auditable and
- * removes the dependency on that behaviour.
+ * Precedence for resolving two registrations of the same address: higher wins.
+ * If an address is ever held both as a watch account and as a signing account,
+ * the signing type is the one the backend must be told about — registering
+ * `watch` for what is really a quantum account makes it price that account's
+ * swap quotes at the Ed25519 minimum fee and the chain rejects the swap.
+ *
+ * `satisfies` keeps this exhaustive: adding or renaming a `DeviceAccountType`
+ * breaks the build here instead of silently ranking it `undefined`.
+ *
+ * This is the wire-boundary copy of `ACCOUNT_TYPE_RANK` in
+ * `packages/accounts/src/store/store.ts`, which resolves the same collision
+ * over the internal `AccountType` enum before registration ever sees it. The
+ * two enums are deliberately separate declarations (see the comment on
+ * `DEVICE_ACCOUNT_TYPE_BY_ACCOUNT_TYPE` in
+ * `packages/accounts/src/device-accounts.ts`), so the orders must be kept in
+ * sync by hand — update both together.
+ */
+const DEVICE_ACCOUNT_TYPE_RANK = {
+    quantum: 6,
+    hardware: 5,
+    hdWallet: 4,
+    algo25: 3,
+    multisig: 2,
+    watch: 1,
+} satisfies Record<DeviceAccountType, number>
+
+/**
+ * Collapse repeated addresses, the higher-precedence account type winning and
+ * equal ranks keeping the last occurrence — v3 specifies last-wins
+ * server-side, so ties resolve the way the backend would. Sending a clean
+ * array keeps the request auditable and removes the dependency on that
+ * behaviour.
  */
 const dedupeByAddress = (
     accounts: DeviceAccountRegistration[],
 ): DeviceAccountRegistration[] => {
     const byAddress = new Map<string, DeviceAccountRegistration>()
     for (const account of accounts) {
-        byAddress.set(account.address, account)
+        const incumbent = byAddress.get(account.address)
+        if (
+            incumbent === undefined ||
+            DEVICE_ACCOUNT_TYPE_RANK[account.accountType] >=
+                DEVICE_ACCOUNT_TYPE_RANK[incumbent.accountType]
+        ) {
+            byAddress.set(account.address, account)
+        }
     }
     return [...byAddress.values()]
 }

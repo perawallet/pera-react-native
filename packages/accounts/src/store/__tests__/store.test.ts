@@ -101,27 +101,123 @@ describe('services/accounts/store', () => {
         expect(useAccountsStore.getState().accounts).toEqual([a1, a3])
     })
 
-    test('dedupes accounts by address, keeping the first occurrence', () => {
-        const a1: WalletAccount = {
-            id: '1',
-            name: 'Alice',
-            type: 'algo25',
+    describe('setAccounts duplicate resolution', () => {
+        const watchDupe: WalletAccount = {
+            id: 'watch',
+            name: 'Watched',
+            type: 'watch',
             address: 'DUPE-ADDR',
-            canSign: true,
-        }
-        const a2: WalletAccount = {
-            id: '2',
-            name: 'Alice copy',
-            type: 'algo25',
+        } as WalletAccount
+        const hardwareDupe: WalletAccount = {
+            id: 'hardware',
+            name: 'Ledger',
+            type: 'hardware',
             address: 'DUPE-ADDR',
-            canSign: true,
-        }
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'dev-1',
+                deviceName: 'Nano X',
+                accountIndex: 0,
+                transportType: 'ble',
+            },
+        } as WalletAccount
 
-        useAccountsStore.getState().setAccounts([a1, a2])
+        test('keeps the higher-precedence type when the watch entry comes first', () => {
+            useAccountsStore.getState().setAccounts([watchDupe, hardwareDupe])
 
-        const { accounts } = useAccountsStore.getState()
-        expect(accounts).toHaveLength(1)
-        expect(accounts[0].id).toBe('1')
+            const { accounts } = useAccountsStore.getState()
+            expect(accounts).toHaveLength(1)
+            expect(accounts[0]).toEqual(hardwareDupe)
+        })
+
+        test('keeps the higher-precedence type when the watch entry comes last', () => {
+            useAccountsStore.getState().setAccounts([hardwareDupe, watchDupe])
+
+            const { accounts } = useAccountsStore.getState()
+            expect(accounts).toHaveLength(1)
+            expect(accounts[0]).toEqual(hardwareDupe)
+        })
+
+        test('places the surviving entry at the first occurrence position', () => {
+            const first: WalletAccount = {
+                id: '1',
+                name: 'First',
+                type: 'algo25',
+                address: 'FIRST-ADDR',
+                keyPairId: 'kp1',
+            } as WalletAccount
+            const last: WalletAccount = {
+                id: '3',
+                name: 'Last',
+                type: 'algo25',
+                address: 'LAST-ADDR',
+                keyPairId: 'kp3',
+            } as WalletAccount
+
+            useAccountsStore
+                .getState()
+                .setAccounts([first, watchDupe, last, hardwareDupe])
+
+            const { accounts } = useAccountsStore.getState()
+            expect(accounts.map(a => a.address)).toEqual([
+                'FIRST-ADDR',
+                'DUPE-ADDR',
+                'LAST-ADDR',
+            ])
+            expect(accounts[1]).toEqual(hardwareDupe)
+        })
+
+        test('keeps the first occurrence when both entries rank equally', () => {
+            const a1: WalletAccount = {
+                id: '1',
+                name: 'Alice',
+                type: 'algo25',
+                address: 'DUPE-ADDR',
+                canSign: true,
+            }
+            const a2: WalletAccount = {
+                id: '2',
+                name: 'Alice copy',
+                type: 'algo25',
+                address: 'DUPE-ADDR',
+                canSign: true,
+            }
+
+            useAccountsStore.getState().setAccounts([a1, a2])
+
+            const { accounts } = useAccountsStore.getState()
+            expect(accounts).toHaveLength(1)
+            expect(accounts[0].id).toBe('1')
+        })
+
+        test('returns a duplicate-free list unchanged and in order', () => {
+            const accountsIn: WalletAccount[] = [
+                {
+                    id: '1',
+                    name: 'Alice',
+                    type: 'watch',
+                    address: 'A',
+                } as WalletAccount,
+                {
+                    id: '2',
+                    name: 'Bob',
+                    type: 'algo25',
+                    address: 'B',
+                    keyPairId: 'kp2',
+                } as WalletAccount,
+                {
+                    id: '3',
+                    name: 'Carol',
+                    type: 'quantum',
+                    address: 'C',
+                    keyPairId: 'kp3',
+                } as WalletAccount,
+            ]
+
+            useAccountsStore.getState().setAccounts(accountsIn)
+
+            expect(useAccountsStore.getState().accounts).toEqual(accountsIn)
+        })
     })
 
     test('getSelectedAccount returns the selected account', () => {
