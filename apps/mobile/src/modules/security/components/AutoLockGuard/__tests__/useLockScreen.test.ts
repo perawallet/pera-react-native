@@ -326,6 +326,100 @@ describe('useLockScreen', () => {
             expect(result.current.remainingSeconds).toBe(0)
         })
 
+        describe('biometric prompt on cold-start lock activation', () => {
+            it('does not prompt biometrics while unlocked', async () => {
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue(true)
+
+                renderHook(() =>
+                    useLockScreen({ onUnlock: mockOnUnlock, isLocked: false }),
+                )
+
+                await act(async () => {
+                    await Promise.resolve()
+                })
+
+                expect(mockCheckBiometricsEnabled).not.toHaveBeenCalled()
+                expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+                expect(mockOnUnlock).not.toHaveBeenCalled()
+            })
+
+            it('prompts exactly once when the app mounts unlocked and then locks', async () => {
+                // Cold start: AutoLockGuard mounts with isLocked=false, the
+                // async checkPinEnabled() then flips it true. The old code
+                // burned the attempt flag at mount and double-prompted on the
+                // flip, cancelling the first prompt mid-flight.
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue(true)
+
+                const { rerender } = renderHook(
+                    ({ isLocked }: { isLocked: boolean }) =>
+                        useLockScreen({ onUnlock: mockOnUnlock, isLocked }),
+                    { initialProps: { isLocked: false } },
+                )
+
+                await act(async () => {
+                    await Promise.resolve()
+                })
+
+                rerender({ isLocked: true })
+                await act(async () => {
+                    await Promise.resolve()
+                })
+
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockResetFailedAttempts).toHaveBeenCalledTimes(1)
+                expect(mockOnUnlock).toHaveBeenCalledTimes(1)
+            })
+
+            it('honours a successful prompt even when collaborator identities change mid-flight', async () => {
+                // A re-render that hands the hook fresh function identities
+                // (store update, i18n change) must not cancel an in-flight
+                // biometric prompt — same failure class as PERA-4466.
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                let resolveAuth: ((success: boolean) => void) | undefined
+                mockAuthenticateWithBiometrics.mockReturnValue(
+                    new Promise<boolean>(resolve => {
+                        resolveAuth = resolve
+                    }),
+                )
+                // Fresh wrapper identities on every render.
+                ;(useBiometrics as Mock).mockImplementation(() => ({
+                    checkBiometricsEnabled: (
+                        ...args: Parameters<typeof mockCheckBiometricsEnabled>
+                    ) => mockCheckBiometricsEnabled(...args),
+                    authenticateWithBiometrics: (
+                        ...args: Parameters<
+                            typeof mockAuthenticateWithBiometrics
+                        >
+                    ) => mockAuthenticateWithBiometrics(...args),
+                }))
+
+                const { rerender } = renderHook(
+                    ({ isLocked }: { isLocked: boolean }) =>
+                        useLockScreen({ onUnlock: mockOnUnlock, isLocked }),
+                    { initialProps: { isLocked: true } },
+                )
+
+                // Let checkBiometricsEnabled resolve so the prompt is in flight.
+                await act(async () => {
+                    await Promise.resolve()
+                })
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+
+                // Identity churn while the OS prompt is up.
+                rerender({ isLocked: true })
+
+                await act(async () => {
+                    resolveAuth?.(true)
+                    await Promise.resolve()
+                })
+
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockOnUnlock).toHaveBeenCalledTimes(1)
+            })
+        })
+
         describe('biometric prompt on repeated lock activations', () => {
             it('prompts biometrics again after unlock and re-lock', async () => {
                 mockCheckBiometricsEnabled.mockResolvedValue(true)

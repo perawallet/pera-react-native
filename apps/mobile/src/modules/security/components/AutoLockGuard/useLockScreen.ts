@@ -75,52 +75,68 @@ export const useLockScreen = ({
         return () => clearInterval(interval)
     }, [lockoutEndTime, isLockedOut, setLockoutEndTime])
 
-    // Biometric auth must NOT bypass the PIN lockout. If we're already locked
-    // out at mount, skip the prompt; if the user later enters the lockout via
-    // failed attempts, this effect won't run again because we set the ref.
-    // After a lockout expires, we still don't auto-prompt biometrics — let
-    // the user enter their PIN explicitly.
-    const hasAttemptedBiometricsRef = useRef(false)
-    // Reset the flag every time the screen becomes locked so that the
-    // biometric prompt is shown again on the next lock activation.
-    const prevIsLockedRef = useRef(false)
-
-    useEffect(() => {
-        if (isLocked && !prevIsLockedRef.current) {
-            hasAttemptedBiometricsRef.current = false
-        }
-        prevIsLockedRef.current = isLocked
-    }, [isLocked])
-
-    useEffect(() => {
-        if (isLockedOut || hasAttemptedBiometricsRef.current) return
-        hasAttemptedBiometricsRef.current = true
-
-        let cancelled = false
-        void (async () => {
-            const enabled = await checkBiometricsEnabled()
-            if (cancelled || !enabled) return
-            const success = await authenticateWithBiometrics({
-                title: t('security.biometric.unlock_prompt_title'),
-                cancelLabel: t('security.biometric.cancel_label'),
-            })
-            if (cancelled || !success) return
-            void resetFailedAttempts()
-            onUnlock()
-        })()
-
-        return () => {
-            cancelled = true
-        }
-    }, [
-        isLockedOut,
-        isLocked,
+    // Biometric auth must NOT bypass the PIN lockout: a lock activation that
+    // happens mid-lockout consumes its (skipped) prompt, and after the
+    // lockout expires we still don't auto-prompt — the user enters their PIN
+    // explicitly.
+    //
+    // Collaborators are read through a ref so the effect depends only on
+    // `isLocked`. Cold start mounts this hook with `isLocked=false` and the
+    // async checkPinEnabled() flips it true later — an effect keyed on
+    // collaborator identities fired once at mount (burning the attempt while
+    // unlocked) and again on the flip, cancelling the in-flight OS prompt
+    // and discarding its success, which stranded the user on the PIN pad
+    // with biometrics never offered. Same failure class as PERA-4466.
+    const hasPromptedForLockRef = useRef(false)
+    const promptRef = useRef({
         checkBiometricsEnabled,
         authenticateWithBiometrics,
         resetFailedAttempts,
         onUnlock,
         t,
-    ])
+        isLockedOut,
+    })
+    promptRef.current = {
+        checkBiometricsEnabled,
+        authenticateWithBiometrics,
+        resetFailedAttempts,
+        onUnlock,
+        t,
+        isLockedOut,
+    }
+
+    useEffect(() => {
+        if (!isLocked) {
+            // Re-arm for the next lock activation; never prompt while
+            // unlocked.
+            hasPromptedForLockRef.current = false
+            return
+        }
+        if (hasPromptedForLockRef.current) return
+        hasPromptedForLockRef.current = true
+        if (promptRef.current.isLockedOut) return
+
+        let cancelled = false
+        void (async () => {
+            const enabled = await promptRef.current.checkBiometricsEnabled()
+            if (cancelled || !enabled) return
+            const success = await promptRef.current.authenticateWithBiometrics({
+                title: promptRef.current.t(
+                    'security.biometric.unlock_prompt_title',
+                ),
+                cancelLabel: promptRef.current.t(
+                    'security.biometric.cancel_label',
+                ),
+            })
+            if (cancelled || !success) return
+            void promptRef.current.resetFailedAttempts()
+            promptRef.current.onUnlock()
+        })()
+
+        return () => {
+            cancelled = true
+        }
+    }, [isLocked])
 
     //register shake-to-lock listener; see useShakeToLockHandler for details
     useShakeToLockHandler()
