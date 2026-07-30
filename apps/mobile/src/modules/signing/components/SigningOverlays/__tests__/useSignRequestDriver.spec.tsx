@@ -19,10 +19,13 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useSignRequestDriver } from '../useSignRequestDriver'
 
-const { requestBottomSheetMock, dismissMock } = vi.hoisted(() => ({
-    requestBottomSheetMock: vi.fn(() => new Promise(() => {})),
-    dismissMock: vi.fn(),
-}))
+const { requestBottomSheetMock, dismissMock, hostCountState } = vi.hoisted(
+    () => ({
+        requestBottomSheetMock: vi.fn(() => new Promise(() => {})),
+        dismissMock: vi.fn(),
+        hostCountState: { current: 1 },
+    }),
+)
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({
@@ -31,6 +34,8 @@ vi.mock('@modules/bottom-sheet', () => ({
         requestByType: vi.fn(),
         dismissAll: vi.fn(),
     }),
+    useBottomSheetStore: (selector: (state: { hostCount: number }) => number) =>
+        selector({ hostCount: hostCountState.current }),
 }))
 
 vi.mock('../../SignRequestContent', () => ({
@@ -79,6 +84,7 @@ const mockQueue = (
 describe('useSignRequestDriver', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        hostCountState.current = 1
     })
 
     it('opens the sheet for the first interactive request', () => {
@@ -153,5 +159,45 @@ describe('useSignRequestDriver', () => {
         rerender()
 
         expect(dismissMock).toHaveBeenCalledWith('wc-request')
+    })
+
+    it('waits for a bottom-sheet host before opening', () => {
+        // BottomSheetManager can be unmounted during route-tree swaps
+        // (migration/onboarding gates). Requesting a sheet then rejects and
+        // previously wedged the queue — the driver must hold the request and
+        // open once a host registers.
+        hostCountState.current = 0
+        mockQueue([wcRequest])
+        const { rerender } = renderHook(() => useSignRequestDriver())
+
+        expect(requestBottomSheetMock).not.toHaveBeenCalled()
+
+        hostCountState.current = 1
+        rerender()
+
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+        expect(requestBottomSheetMock).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'wc-request' }),
+        )
+    })
+
+    it('re-opens the sheet after the host unmounts mid-display', () => {
+        mockQueue([wcRequest])
+        const { rerender } = renderHook(() => useSignRequestDriver())
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+
+        // Last host unmounted: the store force-settled the sheet promise;
+        // the request is still pending in the signing queue.
+        hostCountState.current = 0
+        rerender()
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+
+        hostCountState.current = 1
+        rerender()
+
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(2)
+        expect(requestBottomSheetMock).toHaveBeenLastCalledWith(
+            expect.objectContaining({ id: 'wc-request' }),
+        )
     })
 })
