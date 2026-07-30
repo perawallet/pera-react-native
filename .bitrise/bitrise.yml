@@ -63,7 +63,15 @@ workflows:
       bitrise.io:
         stack: ubuntu-noble-24.04-bitrise-2025-android
     envs:
-    - ENVIRONMENT: production
+    # Deliberately NOT production. This workflow runs `pnpm test` and nothing
+    # else — validate-env.sh's `test` profile requires no secrets, and the
+    # workflow never runs setup-env-secrets.sh, so the per-environment secrets
+    # are unset here. With ENVIRONMENT=production the Generate Config step
+    # exported APP_ENV=production, and generate-config.sh then (correctly)
+    # refused to bake a production config that would fall back to the staging
+    # backend URLs. Tests don't need production config — GitHub Actions runs the
+    # same suite with APP_ENV unset — and handing a test job the production
+    # secrets just to satisfy the guard would widen their exposure for nothing.
     - VALIDATE_PROFILE: test
     steps:
     - git-clone@8: {}
