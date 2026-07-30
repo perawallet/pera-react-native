@@ -1092,8 +1092,8 @@ workflows:
 
             ROWS="$(row "${ANDROID_PRODUCTION_STATUS:-}" "${ANDROID_PRODUCTION_URL:-}" "${ANDROID_PRODUCTION_INSTALL:-}" "APK" "Android production" "Play internal")"
             ROWS="${ROWS}\n$(row "${ANDROID_STAGING_STATUS:-}" "${ANDROID_STAGING_URL:-}" "${ANDROID_STAGING_INSTALL:-}" "APK" "Android staging" "Firebase")"
-            ROWS="${ROWS}\n$(row "${IOS_PRODUCTION_STATUS:-}" "${IOS_PRODUCTION_URL:-}" "" "" "iOS production" "TestFlight")"
-            ROWS="${ROWS}\n$(row "${IOS_STAGING_STATUS:-}" "${IOS_STAGING_URL:-}" "" "" "iOS staging" "TestFlight")"
+            ROWS="${ROWS}\n$(row "${IOS_PRODUCTION_STATUS:-}" "${IOS_PRODUCTION_URL:-}" "${IOS_PRODUCTION_INSTALL:-}" "IPA" "iOS production" "TestFlight")"
+            ROWS="${ROWS}\n$(row "${IOS_STAGING_STATUS:-}" "${IOS_STAGING_URL:-}" "${IOS_STAGING_INSTALL:-}" "IPA" "iOS staging" "TestFlight")"
 
             # Header icon per channel on success (any failed build flips it
             # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
