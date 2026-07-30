@@ -11,7 +11,6 @@
  */
 
 import { useCallback } from 'react'
-import { InteractionManager } from 'react-native'
 import { StackActions } from '@react-navigation/native'
 import {
     useCreateAccount,
@@ -24,11 +23,12 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import type { PostCreateReturnTarget } from '@modules/onboarding/routes/types'
 
-// Push (not navigate) a fresh AddAccount stack, after the sheet teardown
-// settles. navigate('AddAccount') would jump back to an existing AddAccount
-// below PeraCard and pop it off, breaking the returnTo to the checklist.
+// Push (not navigate) a fresh AddAccount stack, one frame out so the sheet
+// teardown commits first. navigate('AddAccount') would jump back to an
+// existing AddAccount below PeraCard and pop it off, breaking the returnTo to
+// the checklist.
 const navigateToAddAccount = (params: object) => {
-    void InteractionManager.runAfterInteractions(() => {
+    requestAnimationFrame(() => {
         navigationRef.dispatch(StackActions.push('AddAccount', params))
     })
 }

@@ -572,7 +572,8 @@
             "reload": "Reload",
             "failed_body": "An error occurred loading this page. Please check your internet connection and try again.",
             "offline_title": "You're offline",
-            "offline_body": "This page can't load without an internet connection. It will reload automatically when you're back online."
+            "offline_body": "This page can't load without an internet connection. It will reload automatically when you're back online.",
+            "unknown_host": "Unknown site"
         },
         "done": "Done",
         "save": "Save",
@@ -676,7 +677,9 @@
         },
         "deeplink": {
             "invalid_url_title": "Invalid Link",
-            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again."
+            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again.",
+            "blocked_origin_title": "Action blocked",
+            "blocked_origin_body": "This website tried to start an action in your wallet. Pera only allows that from trusted sites."
         },
         "general": {
             "title": "An error occurred",
@@ -1156,8 +1159,6 @@
             "connect_funds_title": "Connect Funds",
             "connect_funds_body": "Connect one of your Pera accounts as a funding source to start using your Pera Card.",
             "connect_funds_button": "Connect a Pera Account",
-            "connect_error_title": "Something went wrong",
-            "connect_error_body": "We couldn't connect your account. Please try again.",
             "funding_type_title": "Select Funding Type",
             "funding_type_info_title": "Funding types",
             "funding_type_auto_title": "Auto Funding",
@@ -1173,8 +1174,23 @@
             "create_card_success_body": "Your Pera Card is on its way.",
             "create_card_account_error_title": "This account can't sign",
             "create_card_account_error_body": "Card creation needs a signature this account type can't provide. Connect a standard Pera account as your funding source.",
+            "linked_elsewhere_error_title": "Account already linked",
+            "linked_elsewhere_error_body": "This account is already linked to another Pera Card profile. Connect a different account as your funding source.",
             "auto_funding_degraded_title": "Card created",
             "auto_funding_degraded_body": "Auto Funding couldn't be enabled right now, so your card starts on Manual Funding. You can switch later in card settings."
+        },
+        "signing": {
+            "title": "Let's Get Started",
+            "body": "To create your Pera Card, you need to sign three groups of transactions, please follow these steps:",
+            "step_sign_label": "Sign an authentication request to prove you own the linked account",
+            "step_create_label": "Create and finalize your new Pera Card Account",
+            "step_authorize_label": "Sign the auto funding program to allow Pera Card to spend from your linked account",
+            "proceed_button": "Proceed"
+        },
+        "auto_funding_signing": {
+            "title": "Auto-signing Approval Request",
+            "body": "This lets your card automatically draw funds when needed, so you won't have to approve every top-up yourself. You're signing a logic sig — a pre-authorized signature — that allows this automatic drawing from your connected account.",
+            "cancel_button": "Cancel"
         },
         "connect_account": {
             "title": "Choose Card account",
@@ -2332,7 +2348,7 @@
         },
         "arc60_view": {
             "title": "Authentication Request",
-            "description": "Sign in to {{domain}} using your wallet. The signature proves you control this account but does not authorise any on-chain action.",
+            "description": "The signature proves you control this account but does not authorise any on-chain action.",
             "domain": "Domain",
             "scope": "Scope",
             "scope_auth": "Authentication",
@@ -2347,11 +2363,11 @@
             "siwa_expiration": "Expires",
             "siwa_not_before": "Not Before",
             "siwa_resources": "Resources",
-            "siwa_invalid": "This sign-in request is malformed and cannot be signed.",
+            "siwa_invalid": "This authentication request is malformed and cannot be signed.",
             "origin_mismatch": "This site is asking you to sign in to a different domain ({{domain}}). Only continue if you trust it.",
             "show_details": "Show Details",
-            "details_title": "Sign-in Request Details",
-            "details_description": "Review the full metadata of this sign-in request before approving."
+            "details_title": "Athentication Request Details",
+            "details_description": "Review the full metadata of this authentication request before approving."
         }
     },
     "transactions": {
@@ -2612,6 +2628,10 @@
         },
         "form": {
             "swap": "Swap",
+            "no_balance_title": "Nothing to swap",
+            "no_balance_body": "This account holds no {{unit}}.",
+            "percentage_error_title": "Couldn't calculate the amount",
+            "percentage_error_body": "Please try again in a moment.",
             "you_pay": "You pay",
             "you_receive": "You receive",
             "to": "To",

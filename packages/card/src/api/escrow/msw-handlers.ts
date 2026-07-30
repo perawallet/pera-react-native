@@ -14,27 +14,27 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 import { validateMockResponse } from '@perawallet/wallet-core-shared/test-utils'
 import {
     delegatorLsigResponseSchema,
-    escrowCardCreationResponseSchema,
+    escrowCardApprovalResponseSchema,
 } from './schema'
 
-export type MockCreateEscrowCardParams = {
-    /** Escrow card address the mock server "creates". */
+export type MockApproveEscrowCardParams = {
+    /** Escrow card address the mock server echoes back. */
     cardAddress?: string
     status?: number
     /** Captures each request body for assertions. */
     onRequest?: (body: Record<string, unknown>) => void
 }
 
-export const mockCreateEscrowCard = ({
+export const mockApproveEscrowCard = ({
     cardAddress = 'MOCKESCROWCARDADDRESSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     status = 200,
     onRequest,
-}: MockCreateEscrowCardParams = {}): HttpHandler => {
+}: MockApproveEscrowCardParams = {}): HttpHandler => {
     const response = { cardAddress }
     validateMockResponse(
-        escrowCardCreationResponseSchema,
+        escrowCardApprovalResponseSchema,
         response,
-        'mockCreateEscrowCard',
+        'mockApproveEscrowCard',
     )
     return http.post('*/api/approvals', async ({ request }) => {
         onRequest?.((await request.json()) as Record<string, unknown>)

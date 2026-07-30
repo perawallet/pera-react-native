@@ -68,6 +68,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             getAppPackage: vi.fn(() => 'com.algorand.perarn'),
             getAppVersion: vi.fn(() => '1.0.0'),
             getDevicePlatform: vi.fn(() => 'ios'),
+            getDeviceOSVersion: vi.fn(() => '17.4'),
             getDeviceModel: vi.fn(() => 'iPhone'),
             getDeviceCountry: vi.fn(() => 'US'),
             getDeviceLocale: vi.fn(() => 'en-US'),
@@ -576,6 +577,14 @@ describe('usePeraWebviewInterface', () => {
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"appPackageName":"com.algorand.perarn"'),
+        )
+        // deviceOSVersion must be the OS version, not the platform — the SDK
+        // Settings contract keeps clientType and deviceOSVersion distinct.
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"deviceOSVersion":"17.4"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"clientType":"ios"'),
         )
     })
 
@@ -1155,6 +1164,95 @@ describe('usePeraWebviewInterface', () => {
         )
     })
 
+    describe('per-message origin trust', () => {
+        it('evaluates a message racing a navigation against the post-navigation origin, not the stale hook state', () => {
+            // Hook-level state still reflects the pre-navigation trusted
+            // origin A; the message event itself carries origin B.
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(
+                    mockWebview,
+                    true,
+                    'https://discover-mobile-staging.perawallet.app/',
+                ),
+            )
+
+            act(() => {
+                result.current.handleMessage(
+                    {
+                        id: 'race-1',
+                        jsonrpc: '2.0',
+                        method: 'getAddresses',
+                        params: {},
+                    },
+                    {
+                        securedConnection: false,
+                        sourceUrl: 'https://evil.com/',
+                    },
+                )
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"code":-32001'),
+            )
+            expect(mockWebview.injectJavaScript).not.toHaveBeenCalledWith(
+                expect.stringContaining('"address":"addr1"'),
+            )
+        })
+
+        it('trusts a message from the trusted origin even while hook state still says untrusted', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(
+                    mockWebview,
+                    false,
+                    'https://evil.com/',
+                ),
+            )
+
+            act(() => {
+                result.current.handleMessage(
+                    {
+                        id: 'race-2',
+                        jsonrpc: '2.0',
+                        method: 'getAddresses',
+                        params: {},
+                    },
+                    {
+                        securedConnection: true,
+                        sourceUrl:
+                            'https://discover-mobile-staging.perawallet.app/',
+                    },
+                )
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"address":"addr1"'),
+            )
+        })
+
+        it('falls back to the mount-level decision when no per-message security is given', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(
+                    mockWebview,
+                    false,
+                    'https://evil.com/',
+                ),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'no-security',
+                    jsonrpc: '2.0',
+                    method: 'getAddresses',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"code":-32001'),
+            )
+        })
+    })
+
     describe('insecure connection handling', () => {
         it('should send Unauthorized error for getAddresses when connection is insecure', () => {
             const { result } = renderHook(() =>
@@ -1422,6 +1520,143 @@ describe('usePeraWebviewInterface', () => {
                 useNetworkStatusStore.setState({ hasInternet: true })
             }
         })
+
+        it('throttles a second connect inside the dedup window', () => {
+            vi.useFakeTimers()
+            try {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(
+                        mockWebview,
+                        false,
+                        'https://evil.com/',
+                    ),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'wc-first',
+                        jsonrpc: '2.0',
+                        method: 'walletConnect',
+                        params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                    })
+                })
+                expect(mockConnect).toHaveBeenCalledTimes(1)
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'wc-spam',
+                        jsonrpc: '2.0',
+                        method: 'walletConnect',
+                        params: { uri: 'wc:other@2?relay-protocol=irn' },
+                    })
+                })
+                expect(mockConnect).toHaveBeenCalledTimes(1)
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining('"id":"wc-spam"'),
+                )
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining('throttled'),
+                )
+            } finally {
+                vi.useRealTimers()
+            }
+        })
+
+        it('accepts a connect again once the dedup window has elapsed', () => {
+            vi.useFakeTimers()
+            try {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(mockWebview, true, null),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'wc-first',
+                        jsonrpc: '2.0',
+                        method: 'walletConnect',
+                        params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                    })
+                })
+                expect(mockConnect).toHaveBeenCalledTimes(1)
+
+                vi.advanceTimersByTime(2000)
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'wc-retry',
+                        jsonrpc: '2.0',
+                        method: 'walletConnect',
+                        params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                    })
+                })
+                expect(mockConnect).toHaveBeenCalledTimes(2)
+            } finally {
+                vi.useRealTimers()
+            }
+        })
+    })
+
+    describe('URL scheme validation', () => {
+        const unsafeUrls: Array<[string, string]> = [
+            ['data:', 'data:text/html,<script>x</script>'],
+            ['file:', 'file:///etc/passwd'],
+            ['javascript:', 'javascript:alert(1)'],
+            ['blob:', 'blob:https://example.com/uuid'],
+            ['scheme-relative', '//evil.com/page'],
+        ]
+
+        it.each(unsafeUrls)(
+            'pushWebView rejects %s URLs with InvalidParams',
+            (_scheme, url) => {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(mockWebview, true, null),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'scheme-push',
+                        jsonrpc: '2.0',
+                        method: 'pushWebView',
+                        params: { url },
+                    })
+                })
+
+                expect(mockPushWebView).not.toHaveBeenCalled()
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining('"code":-32602'),
+                )
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining(`Unsupported URL: ${url}`),
+                )
+            },
+        )
+
+        it.each(unsafeUrls)(
+            'openSystemBrowser rejects %s URLs before Linking',
+            (_scheme, url) => {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(mockWebview, true, null),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'scheme-osb',
+                        jsonrpc: '2.0',
+                        method: 'openSystemBrowser',
+                        params: { url },
+                    })
+                })
+
+                expect(Linking.canOpenURL).not.toHaveBeenCalled()
+                expect(Linking.openURL).not.toHaveBeenCalled()
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining('"code":-32602'),
+                )
+                expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                    expect.stringContaining(`Unsupported URL: ${url}`),
+                )
+            },
+        )
     })
 
     describe('missing parameter validation', () => {

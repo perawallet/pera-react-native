@@ -23,6 +23,26 @@ const mockResetQuoteMutation = vi.fn()
 const mockCreateQuotes = vi.fn()
 const mockCalculateSwapAmount = vi.fn()
 const mockSetIsLocalCurrencyInput = vi.fn()
+const mockResetAssetPair = vi.fn()
+const mockInfoToast = vi.fn()
+const mockErrorToast = vi.fn()
+
+// Captured so a test can run the cleanup React Navigation would run on blur.
+let focusEffectCleanup: Nullable<() => void> = null
+vi.mock('@react-navigation/native', () => ({
+    useFocusEffect: (effect: () => () => void) => {
+        focusEffectCleanup = effect()
+    },
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({
+        successToast: vi.fn(),
+        errorToast: mockErrorToast,
+        infoToast: mockInfoToast,
+        showToast: vi.fn(),
+    }),
+}))
 
 const { mockRequestBottomSheet } = vi.hoisted(() => ({
     mockRequestBottomSheet: vi.fn(),
@@ -42,6 +62,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         setToAsset: mockSetToAsset,
         setSlippage: mockSetSlippage,
         setIsLocalCurrencyInput: mockSetIsLocalCurrencyInput,
+        resetAssetPair: mockResetAssetPair,
     }),
     useCreateQuotesMutation: () => ({
         mutateAsync: mockCreateQuotes,
@@ -57,11 +78,12 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         new Decimal(percent).div(100).toString(),
 }))
 
-const mockSelectedAccount = { address: 'TESTADDRESS123' }
+let mockSelectedAccount: { address: string } = { address: 'TESTADDRESS123' }
+let mockPayBalance: Nullable<Decimal> = new Decimal('5000000')
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => mockSelectedAccount,
     useAccountAssetBalanceQuery: () => ({
-        data: { amount: new Decimal('5000000') },
+        data: mockPayBalance ? { amount: mockPayBalance } : null,
     }),
     useAccountBalancesInvalidator: () => ({
         invalidate: vi.fn(),
@@ -176,6 +198,9 @@ describe('useSwapForm', () => {
         mockFromAsset = '0'
         mockToAsset = '31566704'
         mockSlippage = null
+        mockSelectedAccount = { address: 'TESTADDRESS123' }
+        mockPayBalance = new Decimal('5000000')
+        focusEffectCleanup = null
     })
 
     it('initializes with null amounts and canSwap false', () => {
@@ -332,6 +357,65 @@ describe('useSwapForm', () => {
                 address: 'TESTADDRESS123',
             }),
         )
+    })
+
+    it('clears the amounts and the asset pair when the selected account changes', async () => {
+        mockCalculateSwapAmount.mockResolvedValueOnce({
+            amount: new Decimal('5000000'),
+        })
+        const { result, rerender } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handleMaxPress()
+        })
+        expect(result.current.payAmount).not.toBeNull()
+
+        mockSelectedAccount = { address: 'OTHERADDRESS456' }
+        rerender()
+
+        expect(result.current.payAmount).toBeNull()
+        expect(result.current.receiveAmount).toBeNull()
+        expect(mockResetAssetPair).toHaveBeenCalledTimes(1)
+    })
+
+    it('clears the form when the screen loses focus', async () => {
+        const { result } = renderHook(() => useSwapForm())
+
+        act(() => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+        expect(result.current.payAmount).toEqual(new Decimal(5))
+
+        act(() => {
+            focusEffectCleanup?.()
+        })
+
+        expect(result.current.payAmount).toBeNull()
+        expect(mockResetAssetPair).toHaveBeenCalled()
+    })
+
+    it('tells the user why MAX produced nothing when the account holds no pay asset', async () => {
+        mockPayBalance = null
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handleMaxPress()
+        })
+
+        expect(mockCalculateSwapAmount).not.toHaveBeenCalled()
+        expect(mockInfoToast).toHaveBeenCalled()
+    })
+
+    it('surfaces an error toast when the percentage calculation fails', async () => {
+        mockCalculateSwapAmount.mockRejectedValueOnce(new Error('boom'))
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handleMaxPress()
+        })
+
+        expect(result.current.payAmount).toBeNull()
+        expect(mockErrorToast).toHaveBeenCalled()
     })
 
     it('handleOpenConfig applies slippage when the config sheet returns a result', async () => {

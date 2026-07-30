@@ -38,7 +38,21 @@ describe('getDisplayHost', () => {
         expect(getDisplayHost('not a url')).toBe('not a url')
     })
 
-    it('does not throw on an empty string', () => {
-        expect(getDisplayHost('')).toBe('')
+    it('reports an empty string as having no host', () => {
+        expect(getDisplayHost('')).toBeUndefined()
+    })
+
+    // Opaque origins parse without throwing but carry no host. Returning ''
+    // rendered a blank origin line under a page-chosen title; echoing the raw
+    // value would print an entire data: payload. Both are worse than "no host"
+    // (PERA-4665).
+    it.each([
+        'about:blank',
+        'data:text/html,<h1>hi</h1>',
+        'blob:https://evil.xyz/2f9a-uuid',
+        'javascript:void(0)',
+        'file:///etc/passwd',
+    ])('reports %s as having no host', url => {
+        expect(getDisplayHost(url)).toBeUndefined()
     })
 })

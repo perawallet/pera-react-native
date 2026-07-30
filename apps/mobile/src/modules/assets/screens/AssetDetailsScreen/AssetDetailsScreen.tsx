@@ -15,6 +15,7 @@ import {
     getAccountDisplayName,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
+import { dedupeSecondaryLabel } from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useEffect, useState } from 'react'
 import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
@@ -69,6 +70,15 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
         }
     }, [assetId, isCollectible])
 
+    // Dedupe compares rendered strings, so both sides must share the same
+    // ('short') truncation — a 'long'-format secondary would never match and
+    // the address would render twice again.
+    const headerPrimary = getAccountDisplayName(account)
+    const headerSecondary = dedupeSecondaryLabel(
+        headerPrimary,
+        accountDisplayName,
+    )
+
     useNavigationHeader({
         title: (
             <PWView style={styles.headerTitleContainer}>
@@ -76,16 +86,18 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                     variant='h4'
                     truncate
                 >
-                    {account?.name || getAccountDisplayName(account)}
+                    {headerPrimary}
                 </PWText>
-                <PWText
-                    variant='caption'
-                    style={styles.headerSubtitle}
-                    truncate
-                    ellipsizeMode='middle'
-                >
-                    {accountDisplayName}
-                </PWText>
+                {!!headerSecondary && (
+                    <PWText
+                        variant='caption'
+                        style={styles.headerSubtitle}
+                        truncate
+                        ellipsizeMode='middle'
+                    >
+                        {headerSecondary}
+                    </PWText>
+                )}
             </PWView>
         ),
         right: account ? (

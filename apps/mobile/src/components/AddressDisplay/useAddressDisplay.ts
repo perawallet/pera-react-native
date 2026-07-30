@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import {
+    LONG_ADDRESS_LENGTH,
     type Optional,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
@@ -27,8 +28,6 @@ import type { IconName } from '@components/core'
 
 export type AddressFormat = 'short' | 'long' | 'full'
 export type AddressDisplayType = 'full' | 'simple' | 'address-only'
-
-const LONG_ADDRESS_FORMAT = 20
 
 type UseAddressDisplayProps = {
     address: string
@@ -91,7 +90,7 @@ const formatAddress = (address: string, format: AddressFormat): string => {
             return address
         }
         case 'long': {
-            return truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
+            return truncateAlgorandAddress(address, LONG_ADDRESS_LENGTH)
         }
         case 'short':
         default: {

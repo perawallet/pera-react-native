@@ -18,6 +18,7 @@ import {
 import {
     WalletConnectError,
     WalletConnectInvalidNetworkError,
+    WalletConnectInvalidSessionError,
     WalletConnectSessionRequestExpiredError,
 } from '../errors'
 import {
@@ -230,12 +231,22 @@ export const useWalletConnect = (network: Network) => {
 
     const rejectSession = useCallback(
         async (clientId: string): Promise<void> => {
+            // A reject on a genuinely pending handshake must always clean local
+            // state, even when delivery fails on a dead socket. But if the
+            // connector is already CONNECTED, rejectSession throws — and that
+            // reject is a repeat-handshake attempt, not the pending one the
+            // user is declining. Dropping the stored entry there would
+            // force-delete a live session while the connector stays connected
+            // (store desync, PERA-4713). Only remove on genuine cleanup.
+            const wasConnected = getConnector(clientId)?.connected ?? false
+            let delivered = false
             try {
                 const connector = await ensureConnectorReady(
                     clientId,
                     WC_DELIVERY_TIMEOUT_MS,
                 )
                 connector.rejectSession()
+                delivered = true
             } catch (error) {
                 // The user explicitly declined — never trap them behind a
                 // dead socket. Drop the request locally and tell them the
@@ -253,9 +264,11 @@ export const useWalletConnect = (network: Network) => {
                 )
             }
 
-            setConnections(
-                connections.filter(conn => conn.clientId !== clientId),
-            )
+            if (delivered || !wasConnected) {
+                setConnections(
+                    connections.filter(conn => conn.clientId !== clientId),
+                )
+            }
         },
         [connections],
     )
@@ -339,6 +352,32 @@ export const useWalletConnect = (network: Network) => {
                 surfaceError(error, connector.clientId)
                 return
             }
+
+            // A settled WC v1 session must never renegotiate its identity.
+            // Once the connector is connected and we already hold a stored
+            // session for it, a fresh session_request is a peerMeta-overwrite
+            // attempt: the library rewrites peerMeta/peerId before this fires,
+            // so refuse the frame outright rather than re-opening an approval
+            // sheet or reacting to a poisoned handshake (PERA-4713).
+            const hasStoredSession = useWalletConnectStore
+                .getState()
+                .walletConnectConnections.some(
+                    conn => conn.clientId === connector.clientId,
+                )
+            if (connector.connected && hasStoredSession) {
+                logger.warn(
+                    'WC ignoring session_request on an already-connected session',
+                    { clientId: connector.clientId },
+                )
+                surfaceError(
+                    new WalletConnectInvalidSessionError(
+                        'Ignored a repeat connection request on an active session.',
+                    ),
+                    connector.clientId,
+                )
+                return
+            }
+
             const { peerMeta, chainId, permissions } = payload.params[0]
 
             logger.debug('WC session_request received', { payload })
@@ -356,7 +395,13 @@ export const useWalletConnect = (network: Network) => {
                     expectedChainId,
                     network: currentNetwork,
                 })
-                connector.rejectSession()
+                // `rejectSession()` throws on an already-connected connector;
+                // guarding it keeps the throw from escaping before the error is
+                // surfaced, which is what let the mismatch branch go silent and
+                // masked the peerMeta poisoning (PERA-4713).
+                if (!connector.connected) {
+                    connector.rejectSession()
+                }
                 surfaceError(
                     new WalletConnectInvalidNetworkError(),
                     connector.clientId,

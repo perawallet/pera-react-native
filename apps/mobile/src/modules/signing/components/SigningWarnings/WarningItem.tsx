@@ -19,9 +19,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import { PWDivider, PWRoundIcon, PWText, PWView } from '@components/core'
 import {
     formatNumber,
+    LONG_ADDRESS_LENGTH,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
-import { LONG_ADDRESS_FORMAT } from '@constants/ui'
 
 type WarningItemProps = {
     warning: TransactionWarning
@@ -129,7 +129,7 @@ export const WarningItem = ({
                             {t(messageKey, {
                                 address: truncateAlgorandAddress(
                                     warning.targetAddress,
-                                    LONG_ADDRESS_FORMAT,
+                                    LONG_ADDRESS_LENGTH,
                                 ),
                             })}
                         </PWText>
@@ -141,7 +141,7 @@ export const WarningItem = ({
                             {t('transactions.warning.from_account', {
                                 address: truncateAlgorandAddress(
                                     warning.senderAddress,
-                                    LONG_ADDRESS_FORMAT,
+                                    LONG_ADDRESS_LENGTH,
                                 ),
                             })}
                         </PWText>

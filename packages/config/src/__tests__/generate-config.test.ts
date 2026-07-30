@@ -16,7 +16,20 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
+import { getConfig, overrideEnvironmentMap, type Config } from '../main'
+
 const SCRIPT = join(__dirname, '../../../../tools/generate-config.sh')
+
+/**
+ * Env var names the script's production guard refuses to leave unset, read out
+ * of its own source. Parsed rather than duplicated so the drift test below
+ * can't pass by asserting against a stale copy of the list.
+ */
+const guardedEnvVars = (): string[] => {
+    const source = readFileSync(SCRIPT, 'utf8')
+    const loop = /for\s+var\s+in\s+([A-Z0-9_ ]+);\s*do/.exec(source)
+    return loop ? loop[1].trim().split(/\s+/) : []
+}
 
 describe('tools/generate-config.sh', () => {
     let dir: string
@@ -85,5 +98,77 @@ describe('tools/generate-config.sh', () => {
         expect(output).not.toContain('discoverBaseUrl')
         expect(output).not.toContain('stakingBaseUrl')
         expect(output).not.toContain('onrampBaseUrl')
+    })
+
+    // The guard is the only thing that catches a production build whose backend
+    // URLs still resolve to the committed staging defaults, and it catches it
+    // BEFORE the artifact is signed (main.ts's schema check only throws once the
+    // config module is imported). It went six months without one of these.
+    describe('production staging guard', () => {
+        const runExpectingFailure = (env: Record<string, string>): string => {
+            const emptyEnvFile = join(dir, '.env.base')
+            writeFileSync(emptyEnvFile, '')
+            try {
+                execFileSync('bash', [SCRIPT], {
+                    env: {
+                        ...process.env,
+                        OUTPUT_FILE: join(dir, 'generated-env.ts'),
+                        ENV_FILE: emptyEnvFile,
+                        MAINNET_BACKEND_URL: '',
+                        TESTNET_BACKEND_URL: '',
+                        ...env,
+                    },
+                    stdio: ['ignore', 'pipe', 'pipe'],
+                })
+            } catch (error) {
+                const failure = error as { status?: number; stderr?: Buffer }
+                expect(failure.status).not.toBe(0)
+                return failure.stderr?.toString() ?? ''
+            }
+            throw new Error('expected generate-config.sh to exit non-zero')
+        }
+
+        test('fails a production build when a backend URL is unset', () => {
+            expect(runExpectingFailure({ APP_ENV: 'production' })).toMatch(
+                /MAINNET_BACKEND_URL is unset in a production build/,
+            )
+        })
+
+        test('fails a production build when a backend URL points at staging', () => {
+            expect(
+                runExpectingFailure({
+                    APP_ENV: 'production',
+                    MAINNET_BACKEND_URL:
+                        'https://mainnet.staging.api.perawallet.app',
+                    TESTNET_BACKEND_URL: 'https://testnet.api.perawallet.app',
+                }),
+            ).toMatch(/MAINNET_BACKEND_URL points at staging/)
+        })
+
+        test('leaves non-production builds alone with no backend URLs set', () => {
+            expect(() => run({ APP_ENV: 'staging' })).not.toThrow()
+        })
+
+        // main.ts derives its guard from the config VALUES, so a new staging
+        // default is covered there automatically. This script hard-codes the
+        // names, so the two can drift — and only this one runs before signing.
+        test('guards every first-party staging default that has an env override', () => {
+            const guarded = guardedEnvVars()
+            expect(guarded.length).toBeGreaterThan(0)
+
+            const defaults = getConfig({})
+            const shouldBeGuarded = Object.entries(defaults)
+                .filter(
+                    ([, value]) =>
+                        typeof value === 'string' &&
+                        value.includes('staging') &&
+                        value.includes('perawallet.app'),
+                )
+                .map(([field]) => overrideEnvironmentMap[field as keyof Config])
+                .filter((name): name is string => Boolean(name))
+
+            expect(shouldBeGuarded.length).toBeGreaterThan(0)
+            expect(guarded).toEqual(expect.arrayContaining(shouldBeGuarded))
+        })
     })
 })

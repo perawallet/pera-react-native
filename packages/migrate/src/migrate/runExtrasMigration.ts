@@ -126,6 +126,9 @@ export const runExtrasMigration = async (
             result.auth = await migrateAuth(data.auth, data.preferences)
         })
 
+    // data.walletConnectV2 is deliberately not migrated — the legacy payload
+    // lacks the WC v2 keychain/session material and Pera RN has no WC v2
+    // client. See LegacyWalletConnectV2Session.
     if (enabled.has('walletConnect'))
         runStep(result, 'walletConnect', () => {
             result.walletConnect = migrateWalletConnect(data.walletConnectV1)

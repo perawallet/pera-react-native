@@ -25,11 +25,14 @@ import { useStyles } from './styles'
 type TransactionListHeaderProps = {
     itemCount: number
     sourceMetadata?: SignRequestSource
+    /** Origin the platform observed (never dApp-asserted); gates the verified badge. */
+    verifiedOrigin?: string
 }
 
 export const TransactionListHeader = ({
     itemCount,
     sourceMetadata,
+    verifiedOrigin,
 }: TransactionListHeaderProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
@@ -44,7 +47,10 @@ export const TransactionListHeader = ({
         <>
             <PWView style={styles.listHeader}>
                 {!!sourceMetadata && (
-                    <SourceMetadataBadge metadata={sourceMetadata} />
+                    <SourceMetadataBadge
+                        metadata={sourceMetadata}
+                        verifiedOrigin={verifiedOrigin}
+                    />
                 )}
 
                 <TransactionIcon

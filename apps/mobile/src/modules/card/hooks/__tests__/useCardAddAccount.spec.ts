@@ -111,10 +111,14 @@ describe('useCardAddAccount', () => {
         act(() => result.current.handleCreateAccount())
 
         await waitFor(() => expect(mockBuildNext).toHaveBeenCalled())
-        expect(mockPush).toHaveBeenCalledWith('AddAccount', {
-            screen: 'NameAccount',
-            params: { account: NEW_ACCOUNT, returnTo: RETURN_TO },
-        })
+        // The push is deferred a frame past the sheet teardown, so it lands
+        // after the build resolves rather than in the same tick.
+        await waitFor(() =>
+            expect(mockPush).toHaveBeenCalledWith('AddAccount', {
+                screen: 'NameAccount',
+                params: { account: NEW_ACCOUNT, returnTo: RETURN_TO },
+            }),
+        )
     })
 
     it('creates a universal wallet then names it when there is no HD wallet', async () => {
@@ -129,10 +133,12 @@ describe('useCardAddAccount', () => {
                 keyIndex: 0,
             }),
         )
-        expect(mockPush).toHaveBeenCalledWith('AddAccount', {
-            screen: 'NameAccount',
-            params: { account: NEW_ACCOUNT, returnTo: RETURN_TO },
-        })
+        await waitFor(() =>
+            expect(mockPush).toHaveBeenCalledWith('AddAccount', {
+                screen: 'NameAccount',
+                params: { account: NEW_ACCOUNT, returnTo: RETURN_TO },
+            }),
+        )
     })
 
     it('falls back to the wallet picker when the build returns null', async () => {

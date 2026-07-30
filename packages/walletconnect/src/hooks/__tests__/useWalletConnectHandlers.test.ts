@@ -1388,6 +1388,127 @@ describe('useWalletConnectHandlers', () => {
         })
     })
 
+    // A paired dApp can overwrite its live connector.session.peerMeta after
+    // the user approved the session (the library rewrites it on any second
+    // handshake frame). Identity on the sign sheet must come from the store
+    // snapshot captured at approval time, never the live connector, or a drain
+    // renders under a spoofed brand (PERA-4713).
+    describe('sourceMetadata identity stamping (PERA-4713)', () => {
+        const approvedPeerMeta = {
+            name: 'NFT Airdrop',
+            url: 'https://airdrop.example',
+            description: '',
+            icons: [],
+        }
+        const spoofedLivePeerMeta = {
+            name: 'Tinyman',
+            url: 'https://tinyman.org',
+            description: '',
+            icons: ['https://tinyman.org/logo.png'],
+        }
+
+        beforeEach(() => {
+            // Earlier hardware-signer tests override these predicates with bare
+            // mockReturnValue calls, which survive clearAllMocks — restore the
+            // factory implementations so a standard signer passes the gate.
+            ;(canSignArbitraryData as any).mockImplementation(
+                (account: any) => account?.type !== 'hardware',
+            )
+            ;(useAllAccounts as any).mockImplementation(
+                () => signingAccountsState.current,
+            )
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: [
+                            {
+                                clientId: 'test-client-id',
+                                session: {
+                                    clientId: 'test-client-id',
+                                    chainId: 4160,
+                                    accounts: ['addr1'],
+                                    peerMeta: approvedPeerMeta,
+                                },
+                            },
+                        ],
+                    }),
+            )
+        })
+
+        const spoofedConnector = () => ({
+            clientId: 'test-client-id',
+            session: { peerMeta: spoofedLivePeerMeta },
+            approveRequest: vi.fn(),
+            rejectRequest: vi.fn(),
+        })
+
+        it('stamps algo_signTxn from the approved snapshot, not the live connector', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+
+            result.current.handleSignTransaction(
+                spoofedConnector() as any,
+                Networks.mainnet,
+                null,
+                {
+                    params: [[{ txn: 'encodedTxn' }]],
+                    method: 'algo_signTxn',
+                    jsonrpc: '2.0',
+                    id: 1,
+                } as any,
+            )
+
+            const signRequest = mockAddSignRequest.mock.calls[0][0]
+            expect(signRequest.sourceMetadata).toEqual(approvedPeerMeta)
+        })
+
+        it('stamps arbitrary-data signing from the approved snapshot', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+
+            result.current.handleSignData(
+                spoofedConnector() as any,
+                Networks.mainnet,
+                null,
+                {
+                    params: [
+                        {
+                            message: 'Sign me',
+                            data: 'somedata',
+                            chainId: 4160,
+                            signer: 'addr1',
+                        },
+                    ],
+                    id: 1,
+                },
+            )
+
+            const signRequest = mockAddSignRequest.mock.calls[0][0]
+            expect(signRequest.sourceMetadata).toEqual(approvedPeerMeta)
+        })
+
+        it('stamps ARC-60 signing from the approved snapshot', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+
+            result.current.handleSignData(
+                spoofedConnector() as any,
+                Networks.mainnet,
+                null,
+                {
+                    id: 42,
+                    params: {
+                        data: 'aGVsbG8=',
+                        signer: 'addr1',
+                        domain: 'example.com',
+                        authenticatorData: 'YXV0aA==',
+                        metadata: { scope: 1, encoding: 'utf-8' },
+                    },
+                },
+            )
+
+            const signRequest = mockAddSignRequest.mock.calls[0][0]
+            expect(signRequest.sourceMetadata).toEqual(approvedPeerMeta)
+        })
+    })
+
     // User rejections and error responses must not call the (possibly
     // dead-socketed) connector directly — WC v1 silently queues into a dead
     // socket after backgrounding, leaving the dApp hanging. Every response

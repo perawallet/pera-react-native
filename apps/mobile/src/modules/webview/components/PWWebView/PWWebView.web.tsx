@@ -222,8 +222,11 @@ export const PWWebView = ({
                 )
                 continue
             }
+            // The iframe's origin is fixed for the mount, so there is no
+            // per-message race to resolve here.
             mobileInterface.handleMessage(
                 message as Parameters<typeof mobileInterface.handleMessage>[0],
+                { securedConnection: isSecure, sourceUrl: url },
             )
         }
     }

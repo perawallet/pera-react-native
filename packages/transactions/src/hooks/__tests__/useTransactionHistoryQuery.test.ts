@@ -566,4 +566,22 @@ describe('useTransactionHistoryQuery', () => {
             }),
         )
     })
+
+    test('keeps the transactions array identity stable across re-renders', async () => {
+        const { result, rerender } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+        const firstIdentity = result.current.transactions
+        rerender()
+
+        expect(result.current.transactions).toBe(firstIdentity)
+    })
 })

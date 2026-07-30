@@ -91,7 +91,13 @@ const CARD_ADDRESS = 'ESCROWCARDADDRESS1'
 
 const activeCardStatus = http.get('*/v1/card/status', () =>
     HttpResponse.json(
-        { id: 'card_1', panLast4: '4242', status: 'ACTIVE', type: 'VIRTUAL' },
+        {
+            id: 'card_1',
+            panLast4: '4242',
+            status: 'ACTIVE',
+            type: 'VIRTUAL',
+            orderedAt: '2026-06-23T09:39:30.771Z',
+        },
         { status: 200 },
     ),
 )
@@ -118,6 +124,7 @@ describe('Flow: Card funding type switch', () => {
             cardAddress: CARD_ADDRESS,
             ownerAddress: ACCOUNT.address,
             network: useNetworkStore.getState().network,
+            txId: 'CARD_TX_ID',
         })
         useCardSessionStore.getState().setAuthenticated(true)
         server.use(activeCardStatus)

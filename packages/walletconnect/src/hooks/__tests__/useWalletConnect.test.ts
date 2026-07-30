@@ -21,6 +21,7 @@ import WalletConnect from '@perawallet/walletconnect'
 import { PERA_CLIENT_META, SESSION_REQUEST_TTL_MS } from '../../constants'
 import {
     WalletConnectInvalidNetworkError,
+    WalletConnectInvalidSessionError,
     WalletConnectSessionRequestExpiredError,
 } from '../../errors'
 import { AlgorandChainId } from '../../models'
@@ -72,12 +73,21 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
 vi.mock('@perawallet/walletconnect', () => {
     return {
         default: vi.fn().mockImplementation(function (options) {
-            return {
+            const instance: Record<string, unknown> = {
                 on: vi.fn(),
                 off: vi.fn(),
                 killSession: vi.fn(),
                 approveSession: vi.fn(),
-                rejectSession: vi.fn(),
+                // The real WC v1 client throws when asked to reject an
+                // already-established session (dist/index.js:961). Encode that
+                // so the silent-overwrite path is actually exercised: without
+                // it the old test asserted intended behaviour against a fn that
+                // never threw (PERA-4713).
+                rejectSession: vi.fn(() => {
+                    if (instance.connected) {
+                        throw new Error('Session currently connected')
+                    }
+                }),
                 connected: false,
                 clientId: options?.clientId || 'mock-client-id',
                 session: {},
@@ -86,6 +96,7 @@ vi.mock('@perawallet/walletconnect', () => {
                 // flip it to false to simulate a dead socket.
                 _transport: { connected: true },
             }
+            return instance
         }),
     }
 })
@@ -142,6 +153,7 @@ describe('useWalletConnect', () => {
         )
         ;(useWalletConnectStore as any).getState = () => ({
             setConnectionError: mockSetConnectionError,
+            walletConnectConnections: mockConnections,
         })
         ;(useWalletConnectSessionRequests as any).mockReturnValue({
             addSessionRequest: mockAddSessionRequest,
@@ -553,6 +565,96 @@ describe('useWalletConnect', () => {
             expect(mockAddSessionRequest).not.toHaveBeenCalled()
         })
 
+        it('does not call rejectSession on a connected connector for a wrong-network request but still surfaces the error (PERA-4713)', async () => {
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            const connection = { clientId: 'client-connected-wrong-net' } as any
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            // A live session already exists on this connector, so the library's
+            // rejectSession would throw — which is exactly what used to silence
+            // the wrong-network branch and hide the peerMeta poisoning.
+            mockConnectorInstance.connected = true
+
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            const payload = {
+                params: [
+                    {
+                        peerMeta: { name: 'Spoofed dApp' },
+                        chainId: AlgorandChainId.testnet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockConnectorInstance.rejectSession).not.toHaveBeenCalled()
+            expect(mockSetConnectionError).toHaveBeenCalledTimes(1)
+            expect(mockSetConnectionError.mock.calls[0][0]).toBeInstanceOf(
+                WalletConnectInvalidNetworkError,
+            )
+        })
+
+        it('refuses a repeat session_request on an already-connected session without touching the store (PERA-4713)', async () => {
+            const connection = { clientId: 'client-established' } as any
+            mockConnections.push(connection)
+
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            mockConnectorInstance.connected = true
+
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            // A matching-chainId second handshake that swaps the displayed
+            // identity — refused before it can pop a fresh approval sheet or
+            // mutate the stored session.
+            const payload = {
+                params: [
+                    {
+                        peerMeta: { name: 'Spoofed dApp' },
+                        chainId: AlgorandChainId.mainnet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockAddSessionRequest).not.toHaveBeenCalled()
+            expect(mockConnectorInstance.rejectSession).not.toHaveBeenCalled()
+            expect(mockSetConnections).not.toHaveBeenCalled()
+            expect(mockSetConnectionError).toHaveBeenCalledTimes(1)
+            expect(mockSetConnectionError.mock.calls[0][0]).toBeInstanceOf(
+                WalletConnectInvalidSessionError,
+            )
+        })
+
         it('should trigger handleSignData on algo_signData event', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),
@@ -867,6 +969,39 @@ describe('useWalletConnect', () => {
                     mockSetConnections.mock.calls.length - 1
                 ][0]
             expect(updatedConnections).toHaveLength(0)
+        })
+
+        it('keeps a live session in the store when rejectSession throws because it is already connected (PERA-4713)', async () => {
+            const connection = { clientId: 'client-live' } as any
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
+
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            mockConnectorInstance.connected = true
+
+            await act(async () => {
+                await result.current.rejectSession('client-live')
+            })
+
+            // The throw is caught and surfaced, but the still-connected session
+            // must not be force-deleted from the store (that desyncs a live
+            // connector from an empty store entry).
+            expect(mockConnectorInstance.rejectSession).toHaveBeenCalled()
+            expect(mockSetConnectionError).toHaveBeenCalled()
+            expect(mockSetConnections).not.toHaveBeenCalled()
         })
 
         it('should correctly filter only the rejected session when multiple exist', async () => {

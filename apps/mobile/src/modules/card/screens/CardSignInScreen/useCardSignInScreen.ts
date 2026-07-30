@@ -19,6 +19,7 @@ import {
     signInSchema,
     useCardLoginMutation,
     useCardStore,
+    useSendLoginOtpMutation,
     type SignInFormValues,
 } from '@perawallet/wallet-core-card'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -60,6 +61,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
     const { errorToast, successToast, infoToast } = useToast()
     const navigation = useAppNavigation()
     const login = useCardLoginMutation()
+    const sendOtp = useSendLoginOtpMutation()
 
     const {
         control,
@@ -74,6 +76,9 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
     })
 
     const [isOtpRequired, setIsOtpRequired] = useState(false)
+    // `userId` from the login attempt that required 2FA — /v1/auth/login/otp
+    // is keyed on it for both the initial send and resends.
+    const [otpUserId, setOtpUserId] = useState<string | null>(null)
     const [otpCode, setOtpCode] = useState('')
     const [hasOtpError, setHasOtpError] = useState(false)
     const { secondsRemaining, isActive, restart } = useCountdown(
@@ -89,9 +94,31 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
         [hasOtpError],
     )
 
-    // The single login call handles both passes: the first (no `otp`) may come
-    // back `isOtpRequired`, which reveals the code input; the second carries the
-    // code. The session is persisted inside the mutation's `onSuccess`.
+    // Asks Baanx to send (or re-send) the 2FA code. Baanx does not send it on
+    // its own when login returns `isOtpRequired` — this call is what triggers
+    // the SMS. The resend cooldown arms only when the send succeeds; a failure
+    // surfaces as a toast and leaves the button usable for an immediate retry.
+    // Depends on the stable `mutateAsync` (not the per-render mutation object)
+    // so the callback chain below isn't recreated every keystroke.
+    const sendOtpAsync = sendOtp.mutateAsync
+    const requestOtpCode = useCallback(
+        (userId: string) => {
+            sendOtpAsync({ userId })
+                .then(() => restart())
+                .catch(() => {
+                    errorToast(
+                        t('peraCard.sign_in.error_title'),
+                        t('peraCard.sign_in.error_body'),
+                    )
+                })
+        },
+        [sendOtpAsync, restart, errorToast, t],
+    )
+
+    // The login call handles both passes: the first (no `otp`) may come back
+    // `isOtpRequired`, which triggers the OTP send and reveals the code input;
+    // the second carries the code and completes the OAuth exchange. The session
+    // is persisted inside the mutation's `onSuccess`.
     const performLogin = useCallback(
         async (email: string, password: string, otp?: string) => {
             try {
@@ -101,11 +128,22 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                     otpCode: otp,
                 })
 
-                // Credentials accepted but a 2FA code is required — reveal the
-                // code input and arm the resend cooldown.
+                // Credentials accepted but a 2FA code is required — ask Baanx
+                // to send the code and reveal the input (the send arms the
+                // resend cooldown when it succeeds). Without a userId the code
+                // can never be requested, so surface an error instead of an
+                // input no code will reach.
                 if (result.isOtpRequired && !result.accessToken) {
+                    if (!result.userId) {
+                        errorToast(
+                            t('peraCard.sign_in.error_title'),
+                            t('peraCard.sign_in.error_body'),
+                        )
+                        return
+                    }
                     setIsOtpRequired(true)
-                    restart()
+                    setOtpUserId(result.userId)
+                    requestOtpCode(result.userId)
                     return
                 }
 
@@ -185,7 +223,15 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                 )
             }
         },
-        [login, navigation, setError, errorToast, successToast, restart, t],
+        [
+            login,
+            navigation,
+            setError,
+            errorToast,
+            successToast,
+            requestOtpCode,
+            t,
+        ],
     )
 
     const handleSignIn = useCallback(
@@ -205,15 +251,17 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
     )
 
     const handleResendOtp = useCallback(() => {
-        // Re-issuing the code: Baanx re-sends when login runs again without an
-        // otpCode. TODO(card): confirm this is the intended resend behavior.
-        if (login.isPending) return
+        // Re-issue the code through the dedicated OTP endpoint — no need to
+        // re-run the whole login. The cooldown re-arms inside requestOtpCode
+        // only if the send succeeds. Blocked while a send OR the OTP-carrying
+        // login is in flight, so a fresh code can't race the verification of
+        // the one being checked.
+        if (!otpUserId || sendOtp.isPending || login.isPending) return
         // A fresh code is on its way — clear any "wrong code" error from the
         // prior attempt so the re-armed input starts clean.
         setHasOtpError(false)
-        const { email, password } = getValues()
-        void performLogin(email, password)
-    }, [login.isPending, getValues, performLogin])
+        requestOtpCode(otpUserId)
+    }, [otpUserId, sendOtp.isPending, login.isPending, requestOtpCode])
 
     const handleForgotPassword = useCallback(() => {
         // TODO(card): wire to the real forgot-password flow once designed.

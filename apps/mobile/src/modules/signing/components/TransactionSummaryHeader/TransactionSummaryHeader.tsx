@@ -27,18 +27,26 @@ import { SourceMetadataBadge } from '../SourceMetadataBadge'
 export type TransactionSummaryHeaderProps = {
     transaction: PeraDisplayableTransaction
     metadata?: SignRequestSource
+    /** Origin the platform observed (never dApp-asserted); gates the verified badge. */
+    verifiedOrigin?: string
 }
 
 export const TransactionSummaryHeader = ({
     transaction,
     metadata,
+    verifiedOrigin,
 }: TransactionSummaryHeaderProps) => {
     const styles = useStyles()
     const txType = getTransactionType(transaction)
 
     return (
         <PWView style={styles.container}>
-            {!!metadata && <SourceMetadataBadge metadata={metadata} />}
+            {!!metadata && (
+                <SourceMetadataBadge
+                    metadata={metadata}
+                    verifiedOrigin={verifiedOrigin}
+                />
+            )}
 
             <TransactionIcon
                 style={styles.transactionIcon}

@@ -231,6 +231,22 @@ describe('usePeraCardDetails', () => {
         expect(result.current.fundingAddress).toBe('QKZ6ABCDEFG2IHH')
     })
 
+    it('reports hasCard true once the status query returns a card', () => {
+        mocks.status = 'ACTIVE'
+
+        const { result } = renderHook(() => usePeraCardDetails())
+
+        expect(result.current.hasCard).toBe(true)
+    })
+
+    it('reports hasCard false when no card has been created yet', () => {
+        mocks.status = null
+
+        const { result } = renderHook(() => usePeraCardDetails())
+
+        expect(result.current.hasCard).toBe(false)
+    })
+
     it('reveals, hides, and re-reveals from cache without re-fetching', async () => {
         mocks.cardDetailsMutateAsync.mockResolvedValue(SECURE_VIEW)
 

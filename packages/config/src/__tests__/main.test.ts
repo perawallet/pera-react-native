@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import {
     config,
     configSchema,
@@ -33,6 +33,8 @@ describe('config/main', () => {
         expect(configSchema.safeParse(result).success).toBe(true)
     })
 
+    // Production needs backend overrides: the committed staging defaults
+    // would otherwise (correctly) trip the production staging-URL guard.
     test.each([
         ['production', 'https://discover-mobile.perawallet.app/'],
         ['staging', 'https://discover-mobile-staging.perawallet.app/'],
@@ -40,9 +42,17 @@ describe('config/main', () => {
     ] as const)(
         'uses the expected Discover URL for %s builds',
         (appEnvironment, expectedUrl) => {
-            expect(getConfig({ appEnvironment }).discoverBaseUrl).toBe(
-                expectedUrl,
-            )
+            const overrides =
+                appEnvironment === 'production'
+                    ? {
+                          appEnvironment,
+                          mainnetBackendUrl:
+                              'https://mainnet.api.perawallet.app',
+                          testnetBackendUrl:
+                              'https://testnet.api.perawallet.app',
+                      }
+                    : { appEnvironment }
+            expect(getConfig(overrides).discoverBaseUrl).toBe(expectedUrl)
         },
     )
 

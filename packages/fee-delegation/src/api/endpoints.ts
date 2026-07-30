@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    addDeviceIntegrityHeader,
+    queryClient,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 
 import {
     feeDelegationResponseSchema,
@@ -38,7 +42,9 @@ export const requestFeeDelegation = async (
         method: 'POST',
         url: '/api/v3/fee-delegation',
         data: request,
-        headers: { 'x-app-integrity-token': integrityToken },
+        headers: addDeviceIntegrityHeader({
+            'x-app-integrity-token': integrityToken,
+        }),
         signal,
     })
 

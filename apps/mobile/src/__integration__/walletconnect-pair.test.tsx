@@ -41,6 +41,7 @@ import { createTestQueryClient, render } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { walletConnectClientStub } from '@test-utils/walletconnect-client-stub'
 import {
+    AccountSortModes,
     AccountTypes,
     useAccountsStore,
     type WalletAccount,
@@ -156,6 +157,7 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
         useWalletConnectStore.getState().setWalletConnectConnections([])
         useWalletConnectStore.getState().setConnectionError(null)
         useAccountsStore.getState().setAccounts([])
+        useAccountsStore.getState().setSortMode(AccountSortModes.manual)
     })
 
     it(
@@ -300,6 +302,55 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
             expect(
                 connections.some(c => c.clientId === connector.clientId),
             ).toBe(true)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        "Given a non-default account sort order, when ConnectionView lists the signing accounts, then it honors the user's chosen order (not raw store order)",
+        async () => {
+            // Store order is [Trading, DeFi]; alphabetical-ascending must
+            // surface DeFi before Trading. The bug (raw signing-account list)
+            // kept store order, so row position proves the fix.
+            useAccountsStore
+                .getState()
+                .setSortMode(AccountSortModes.alphabeticalAsc)
+
+            render(
+                <>
+                    <WalletConnectProvider>
+                        <div data-testid='child' />
+                    </WalletConnectProvider>
+                    <BottomSheetManager />
+                </>,
+            )
+
+            await driveSessionRequest({
+                peerMeta: {
+                    name: 'Order dApp',
+                    description: '',
+                    url: 'https://order-dapp.example',
+                    icons: [],
+                },
+                permissions: ['algo_signTxn'],
+            })
+
+            await waitFor(() => {
+                expect(
+                    screen.getAllByText((_, node) =>
+                        (node?.textContent ?? '').includes(
+                            SIGNING_ACCOUNT_B.name as string,
+                        ),
+                    ).length,
+                ).toBeGreaterThan(0)
+            })
+
+            const body = document.body.textContent ?? ''
+            const defiAt = body.indexOf(SIGNING_ACCOUNT_B.name as string)
+            const tradingAt = body.indexOf(SIGNING_ACCOUNT_A.name as string)
+            expect(defiAt).toBeGreaterThan(-1)
+            expect(tradingAt).toBeGreaterThan(-1)
+            expect(defiAt).toBeLessThan(tradingAt)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

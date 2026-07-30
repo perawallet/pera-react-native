@@ -64,6 +64,7 @@ export const useTransactionListScreen = () => {
         listItems,
         transactionCount: allTransactions.length,
         sourceMetadata: request?.sourceMetadata,
+        verifiedOrigin: request?.verifiedOrigin,
         handleTransactionPress,
         handleGroupPress,
         keyExtractor,

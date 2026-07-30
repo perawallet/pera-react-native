@@ -16,7 +16,10 @@ import {
     getAccountDisplayName,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    dedupeSecondaryLabel,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { AccountIcon } from '../AccountIcon'
 import type { useStyles } from './styles'
@@ -41,8 +44,8 @@ export const RekeyedToRow = ({
     const { copyToClipboard } = useClipboard()
     const address = authAccount?.address ?? authAddress
     const truncated = truncateAlgorandAddress(address)
-    const hasCustomName = !!authAccount?.name
-    const title = hasCustomName ? getAccountDisplayName(authAccount) : truncated
+    const title = authAccount ? getAccountDisplayName(authAccount) : truncated
+    const secondary = dedupeSecondaryLabel(title, truncated)
 
     const handleCopyAddress = useCallback(() => {
         void copyToClipboard(address)
@@ -76,13 +79,13 @@ export const RekeyedToRow = ({
                         >
                             {title}
                         </PWText>
-                        {hasCustomName && (
+                        {!!secondary && (
                             <PWText
                                 variant='caption'
                                 style={styles.rekeyedSubtitle}
                                 numberOfLines={1}
                             >
-                                {truncated}
+                                {secondary}
                             </PWText>
                         )}
                     </PWView>

@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Key } from '@algorandfoundation/keystore'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
-import { credentialToPasskey, keyToPasskey, toUrlSafeBase64 } from '../passkey'
+import { credentialToPasskey, keyToPasskey } from '../passkey'
 
 const buildPasskeyKey = (metadata: Record<string, unknown>): Key =>
     ({
@@ -33,19 +33,8 @@ const buildNativeCredential = (
         ...overrides,
     }) as NativeStoredCredential
 
-describe('toUrlSafeBase64', () => {
-    it('replaces + and / with url-safe characters and strips trailing padding', () => {
-        expect(toUrlSafeBase64('ab+/cd==')).toBe('ab-_cd')
-    })
-
-    it('leaves a fully padding-free string unchanged aside from char swaps', () => {
-        expect(toUrlSafeBase64('abcd')).toBe('abcd')
-    })
-
-    it('only strips trailing padding, not interior = characters', () => {
-        expect(toUrlSafeBase64('a=b=')).toBe('a=b')
-    })
-})
+// toUrlSafeBase64 unit tests live in @perawallet/wallet-core-shared
+// (utils/__tests__/strings.test.ts) — the helper moved there.
 
 describe('keyToPasskey', () => {
     it('uses the native userHandle (WebAuthn user.name) as the display name when no explicit name is stored', () => {

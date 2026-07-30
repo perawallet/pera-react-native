@@ -36,6 +36,9 @@ vi.mock('../../api/onboarding', () => api)
 const session = vi.hoisted(() => ({ setCardSession: vi.fn() }))
 vi.mock('../../session', () => session)
 
+const auth = vi.hoisted(() => ({ acquireCardSessionTokens: vi.fn() }))
+vi.mock('../../api/auth', () => auth)
+
 import { useSendEmailVerificationMutation } from '../useSendEmailVerificationMutation'
 import { useVerifyEmailMutation } from '../useVerifyEmailMutation'
 import { useSendPhoneVerificationMutation } from '../useSendPhoneVerificationMutation'
@@ -72,6 +75,11 @@ describe('onboarding mutation hooks', () => {
         // Consent create returns the set id the hook stashes for the link step.
         api.submitOnboardingConsent.mockResolvedValue({ consentSetId: 'cs_1' })
         session.setCardSession.mockResolvedValue(undefined)
+        // The registration token is traded for the durable OAuth pair.
+        auth.acquireCardSessionTokens.mockResolvedValue({
+            accessToken: 'oauth-access',
+            refreshToken: 'oauth-refresh',
+        })
         useCardStore.getState().resetState()
     })
 
@@ -216,7 +224,7 @@ describe('onboarding mutation hooks', () => {
         isSameMailingAddress: true,
     }
 
-    it('useSubmitAddressMutation commits the session token and completes onboarding', async () => {
+    it('useSubmitAddressMutation exchanges the registration token for the OAuth pair and completes onboarding', async () => {
         api.submitAddress.mockResolvedValue({
             accessToken: 'tok',
             onboardingId: 'ob_1',
@@ -231,6 +239,39 @@ describe('onboarding mutation hooks', () => {
             address,
             network: 'mainnet',
         })
+        // The registration-issued token is only used to complete the OAuth
+        // flow; the persisted session is the durable access+refresh pair.
+        expect(auth.acquireCardSessionTokens).toHaveBeenCalledWith({
+            accessToken: 'tok',
+            network: 'mainnet',
+        })
+        expect(session.setCardSession).toHaveBeenCalledTimes(1)
+        expect(session.setCardSession).toHaveBeenCalledWith({
+            accessToken: 'oauth-access',
+            refreshToken: 'oauth-refresh',
+        })
+        expect(useCardStore.getState().onboardingStep).toBe(
+            OnboardingStep.Completed,
+        )
+    })
+
+    it('useSubmitAddressMutation persists the fallback pair when the OAuth exchange degrades', async () => {
+        // acquireCardSessionTokens absorbs exchange failures and returns the
+        // refresh-less pair — registration completion must not be stranded.
+        api.submitAddress.mockResolvedValue({
+            accessToken: 'tok',
+            onboardingId: 'ob_1',
+        })
+        auth.acquireCardSessionTokens.mockResolvedValue({
+            accessToken: 'tok',
+            refreshToken: '',
+        })
+        const { result } = renderHook(() => useSubmitAddressMutation(), {
+            wrapper,
+        })
+        result.current.mutate(address)
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
         expect(session.setCardSession).toHaveBeenCalledWith({
             accessToken: 'tok',
             refreshToken: '',
@@ -253,6 +294,7 @@ describe('onboarding mutation hooks', () => {
         result.current.mutate(address)
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(auth.acquireCardSessionTokens).not.toHaveBeenCalled()
         expect(session.setCardSession).not.toHaveBeenCalled()
         expect(useCardStore.getState().onboardingStep).toBe(
             OnboardingStep.Completed,

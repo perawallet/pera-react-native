@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { useInfiniteQuery, onlineManager } from '@tanstack/react-query'
 import type { Maybe, Network, Nullable } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory, fetchMoreTransactions } from '../api/history'
@@ -295,8 +296,14 @@ export const useTransactionHistoryQuery = (
         enabled: isEnabled && !!accountAddress,
     })
 
-    const transactions =
-        query.data?.pages.flatMap(page => page.transactions) ?? []
+    // A fresh array identity here would break every downstream `useMemo` keyed
+    // on `transactions` — notably the date grouping in `useAccountHistory` and
+    // `useAssetTransactionList`, which would then re-sort and re-format every
+    // loaded page on each render.
+    const transactions = useMemo(
+        () => query.data?.pages.flatMap(page => page.transactions) ?? [],
+        [query.data],
+    )
 
     return {
         transactions,

@@ -169,7 +169,7 @@ const validateDataSignRequest = (
     network: Network,
     data: PeraArbitraryDataMessage[],
     error: Nullable<Error>,
-) => {
+): WalletConnectConnection => {
     const foundSession = validateRequest(connector, connections, network, error)
 
     if (!data) {
@@ -211,6 +211,8 @@ const validateDataSignRequest = (
             throw new WalletConnectSignRequestError('Data is missing')
         }
     })
+
+    return foundSession
 }
 
 /**
@@ -233,7 +235,11 @@ const validateArc60Request = (
     network: Network,
     rawParams: unknown,
     error: Nullable<Error>,
-): { stdSigData: Arc60StdSigData; metadata: Arc60Metadata } => {
+): {
+    stdSigData: Arc60StdSigData
+    metadata: Arc60Metadata
+    foundSession: WalletConnectConnection
+} => {
     const foundSession = validateRequest(connector, connections, network, error)
     assertArc60RequestWithinLimits(rawParams)
 
@@ -295,7 +301,7 @@ const validateArc60Request = (
 
     validateArc60AuthRequest(result.stdSigData, result.metadata, accounts)
 
-    return result
+    return { ...result, foundSession }
 }
 
 export const useWalletConnectHandlers = () => {
@@ -315,7 +321,7 @@ export const useWalletConnectHandlers = () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             payload: any,
         ) => {
-            const { stdSigData, metadata } = validateArc60Request(
+            const { stdSigData, metadata, foundSession } = validateArc60Request(
                 connector,
                 accounts,
                 connections,
@@ -330,7 +336,11 @@ export const useWalletConnectHandlers = () => {
                 transport: 'callback',
                 sourceType: 'walletconnect',
                 transportId: connector.clientId,
-                sourceMetadata: connector.session?.peerMeta,
+                // Identity is stamped from the session snapshot the user
+                // approved, never the live connector — a paired dApp can
+                // overwrite `connector.session.peerMeta` after approval and
+                // sign under a spoofed brand otherwise (PERA-4713).
+                sourceMetadata: foundSession.session?.peerMeta,
                 stdSigData,
                 metadata,
                 approve: async (signed: PeraArbitraryDataSignResult[]) => {
@@ -411,7 +421,7 @@ export const useWalletConnectHandlers = () => {
                 return
             }
 
-            validateDataSignRequest(
+            const foundSession = validateDataSignRequest(
                 connector,
                 accounts,
                 connections,
@@ -426,7 +436,8 @@ export const useWalletConnectHandlers = () => {
                 transport: 'callback',
                 sourceType: 'walletconnect',
                 transportId: connector.clientId,
-                sourceMetadata: connector.session?.peerMeta,
+                // Approved-snapshot identity, not the live connector (PERA-4713).
+                sourceMetadata: foundSession.session?.peerMeta,
                 data: params,
                 approve: async (signedData: PeraArbitraryDataSignResult[]) => {
                     if (signedData) {
@@ -525,7 +536,8 @@ export const useWalletConnectHandlers = () => {
             void enqueueSignRequest(resolved, {
                 sourceType: 'walletconnect',
                 transportId: connector.clientId,
-                sourceMetadata: connector.session?.peerMeta ?? undefined,
+                // Approved-snapshot identity, not the live connector (PERA-4713).
+                sourceMetadata: foundSession.session?.peerMeta ?? undefined,
                 // deliverApprove guards the WC v1 dead-socket case: the
                 // bridge can silently drop our response once the app has
                 // been backgrounded. ensureConnectorReady revives it (or

@@ -21,9 +21,11 @@ import { SheetHeader } from '@modules/bottom-sheet'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    LONG_ADDRESS_LENGTH,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
 import { useTheme } from '@rneui/themed'
-import { LONG_ADDRESS_FORMAT } from '@constants/ui'
 import { useTransactionWarnings } from './useTransactionWarnings'
 
 export type TransactionWarningsContentProps = {
@@ -70,7 +72,7 @@ export const TransactionWarningsContent = ({
                             {t('transactions.warning.close_warning', {
                                 address: truncateAlgorandAddress(
                                     warning.targetAddress,
-                                    LONG_ADDRESS_FORMAT,
+                                    LONG_ADDRESS_LENGTH,
                                 ),
                             })}
                         </PWText>
@@ -106,7 +108,7 @@ export const TransactionWarningsContent = ({
                                 {t('transactions.warning.rekey_warning', {
                                     address: truncateAlgorandAddress(
                                         warning.targetAddress,
-                                        LONG_ADDRESS_FORMAT,
+                                        LONG_ADDRESS_LENGTH,
                                     ),
                                 })}
                             </PWText>

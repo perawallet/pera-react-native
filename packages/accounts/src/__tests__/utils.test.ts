@@ -146,6 +146,28 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
         expect(getAccountDisplayName(acc2)).toEqual('ABCDE...VWXYZ')
     })
 
+    test('falls back to the truncated address when the name is the full address', () => {
+        const acc = {
+            id: '7',
+            type: 'hdWallet',
+            address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            name: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            canSign: true,
+        } as any
+        expect(getAccountDisplayName(acc)).toEqual('ABCDE...VWXYZ')
+    })
+
+    test('falls back to the truncated address when the name is the truncated address', () => {
+        const acc = {
+            id: '8',
+            type: 'hdWallet',
+            address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            name: 'ABCDE...VWXYZ',
+            canSign: true,
+        } as any
+        expect(getAccountDisplayName(acc)).toEqual('ABCDE...VWXYZ')
+    })
+
     test('returns "No Account" when account is null', () => {
         expect(getAccountDisplayName(null)).toEqual('No Account')
     })

@@ -22,6 +22,8 @@ type UseSwapsResult = {
     setToAsset: (toAsset: string) => void
     setSlippage: (slippage: Nullable<string>) => void
     setIsLocalCurrencyInput: (value: boolean) => void
+    /** Restores the default pay/receive pair, keeping the user's settings. */
+    resetAssetPair: () => void
 }
 
 export const useSwaps = (): UseSwapsResult => {
@@ -37,6 +39,7 @@ export const useSwaps = (): UseSwapsResult => {
     const setIsLocalCurrencyInput = useSwapsStore(
         state => state.setIsLocalCurrencyInput,
     )
+    const resetAssetPair = useSwapsStore(state => state.resetState)
 
     return {
         fromAsset,
@@ -47,5 +50,6 @@ export const useSwaps = (): UseSwapsResult => {
         setToAsset,
         setSlippage,
         setIsLocalCurrencyInput,
+        resetAssetPair,
     }
 }

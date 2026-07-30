@@ -15,22 +15,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
 
-import { createEscrowCard, postDelegatorLsig } from '../endpoints'
+import { approveEscrowCard, postDelegatorLsig } from '../endpoints'
 
 const signData = { data: 'ZGF0YQ==', authenticatorData: 'YXV0aA==' }
 
-describe('createEscrowCard', () => {
+describe('approveEscrowCard', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    it('POSTs /api/approvals on the escrow route and returns the card address', async () => {
+    it('POSTs /api/approvals on the escrow route with the txId and returns the card address', async () => {
         request.mockResolvedValue({ data: { cardAddress: 'ESCROW_CARD' } })
 
-        const result = await createEscrowCard({
+        const result = await approveEscrowCard({
             network: 'testnet',
             address: 'FUNDING_ADDR',
             currency: 'usdc',
             signData,
             signature: 'c2ln',
+            txId: 'TX123',
         })
 
         expect(request).toHaveBeenCalledWith(
@@ -44,12 +45,11 @@ describe('createEscrowCard', () => {
                     amount: '0',
                     signData,
                     signature: 'c2ln',
+                    txId: 'TX123',
                     blockchain: 'algorand',
                 },
             }),
         )
-        // No client-side `transaction` — the server owns the on-chain create.
-        expect(request.mock.calls[0][0].data).not.toHaveProperty('transaction')
         expect(result).toEqual({ cardAddress: 'ESCROW_CARD' })
     })
 
@@ -57,12 +57,13 @@ describe('createEscrowCard', () => {
         request.mockResolvedValue({ data: {} })
 
         await expect(
-            createEscrowCard({
+            approveEscrowCard({
                 network: 'testnet',
                 address: 'FUNDING_ADDR',
                 currency: 'usdc',
                 signData,
                 signature: 'c2ln',
+                txId: 'TX123',
             }),
         ).rejects.toThrow()
     })

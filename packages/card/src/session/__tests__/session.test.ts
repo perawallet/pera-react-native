@@ -98,6 +98,18 @@ describe('card session', () => {
         )
     })
 
+    it('removes a stale refresh secret when the new session has none', async () => {
+        // A fallback (refresh-less) session must not leave an earlier
+        // session's refresh token behind — refreshSession would otherwise
+        // exchange a stale credential against the new access token.
+        await setCardSession({ accessToken: 'a1', refreshToken: 'r1' })
+
+        await setCardSession({ accessToken: 'a2', refreshToken: '' })
+
+        expect(removeSecret).toHaveBeenCalledWith('baanx-refresh-token')
+        expect(hasSecret('baanx-refresh-token')).toBe(false)
+    })
+
     it('never writes tokens to the persisted session store', async () => {
         await setCardSession({ accessToken: 'super-secret', refreshToken: 'r' })
 

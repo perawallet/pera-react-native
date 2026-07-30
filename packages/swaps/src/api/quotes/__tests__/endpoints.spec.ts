@@ -103,6 +103,45 @@ describe('createQuotes', () => {
         expect(result[0].provider).toBe('unknown-dex')
         expect(result[0].providerDisplayName).toBeUndefined()
     })
+
+    test('anchors swapperAddress to the request, not the response body', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: {
+                results: [
+                    {
+                        id: 4,
+                        provider: 'deflex',
+                        asset_in: baseAsset,
+                        asset_out: baseAsset,
+                    },
+                ],
+            },
+        })
+
+        const result = await createQuotes(request, 'mainnet', providers)
+
+        expect(result[0].swapperAddress).toBe(request.swapper_address)
+    })
+
+    test('rejects a quote whose swapper_address differs from the requested address (PERA-4709)', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: {
+                results: [
+                    {
+                        id: 5,
+                        provider: 'deflex',
+                        swapper_address: 'ATTACKER_ADDRESS',
+                        asset_in: baseAsset,
+                        asset_out: baseAsset,
+                    },
+                ],
+            },
+        })
+
+        await expect(
+            createQuotes(request, 'mainnet', providers),
+        ).rejects.toThrow('Quote swapper address does not match')
+    })
 })
 
 describe('calculatePeraFee', () => {

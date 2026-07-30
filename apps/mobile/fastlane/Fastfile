@@ -210,11 +210,35 @@ platform :ios do
       clean: clean
     )
 
-    upload_symbols_to_crashlytics(
+    # Upload every dSYM the archive produced — not only the app zip gym
+    # exports — so React Native / Hermes-VM crash frames symbolicate too, not
+    # just native ones. RN 0.86's prebuilt hermesvm.xcframework ships no dSYM
+    # in the pod, so Hermes coverage depends entirely on what Xcode emitted
+    # into the archive; the log line records exactly what was uploaded for
+    # this build. Falls back to the app zip if the archive path is
+    # unavailable, preserving the previous behavior.
+    archive = lane_context[SharedValues::XCODEBUILD_ARCHIVE]
+    archive_dsyms = archive ? Dir.glob(File.join(archive, "dSYMs", "*.dSYM")).sort : []
+
+    crashlytics_options = {
       gsp_path: "./config/GoogleService-Info.plist",
-      dsym_path: "./build/ios/#{scheme}.app.dSYM.zip",
       binary_path: "./ios/Pods/FirebaseCrashlytics/upload-symbols"
-    )
+    }
+    if archive_dsyms.any?
+      UI.message(
+        "Uploading dSYMs to Crashlytics: #{archive_dsyms.map { |path| File.basename(path) }.join(", ")}"
+      )
+      # `dsym_path` accepts one .dSYM bundle or one .zip — handing it the
+      # archive's `dSYMs` *directory* fails the action's own validation with
+      # "Symbolication file needs to be dSYM or zip", which failed every iOS
+      # release build. The bundles have to go in individually via `dsym_paths`.
+      crashlytics_options[:dsym_paths] = archive_dsyms
+    else
+      UI.important("Archive dSYMs dir not found — uploading the app dSYM zip only")
+      crashlytics_options[:dsym_path] = "./build/ios/#{scheme}.app.dSYM.zip"
+    end
+
+    upload_symbols_to_crashlytics(crashlytics_options)
 
     upload_to_testflight(
       skip_waiting_for_build_processing: true,

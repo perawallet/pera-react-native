@@ -43,6 +43,8 @@ export {
 export {
     compileAutoDrawProgram,
     postDelegatorLsig,
+    resolveEscrowChainConfig,
+    type EscrowChainConfig,
     type PostDelegatorLsigParams,
 } from './api/escrow'
 
@@ -54,3 +56,11 @@ export {
     isDuplicateError,
 } from './api/errors'
 export type { CardApiError } from './api/errors'
+
+// Card-creation failure types — screens branch on these to pick flow-specific
+// copy (the classes carry no user-facing wording of their own).
+export {
+    CardAccountLinkedElsewhereError,
+    CardIntegrityAttestationRequiredError,
+    CardUserUnavailableError,
+} from './api/card-creation'

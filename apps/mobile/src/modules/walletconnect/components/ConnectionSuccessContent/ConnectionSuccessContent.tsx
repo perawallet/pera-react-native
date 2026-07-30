@@ -26,6 +26,7 @@ export const ConnectionSuccessContent = ({
 
     return (
         <ConfirmActionContent
+            testID='wc_connection_success'
             icon='check'
             iconVariant='primary'
             title={t('walletconnect.request.success_sheet_title', {

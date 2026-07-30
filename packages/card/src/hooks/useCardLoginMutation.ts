@@ -12,12 +12,12 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { logger } from '@perawallet/wallet-core-shared'
-import { loginRequest } from '../api/auth'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { acquireCardSessionTokens, loginRequest } from '../api/auth'
 import { fetchOnboardingDetails } from '../api/onboarding'
 import { setCardSession } from '../session'
 import { useCardStore } from '../store'
-import type { LoginResult } from '../models'
+import type { CardSessionTokens, LoginResult } from '../models'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type CardLoginParams = {
@@ -26,17 +26,40 @@ export type CardLoginParams = {
     otpCode?: string
 }
 
+/**
+ * Login outcome plus the durable OAuth token pair. `tokens` is set only when
+ * credentials (and OTP, if required) were accepted AND the OAuth exchange
+ * completed; it is null while OTP or onboarding is still pending.
+ */
+export type CardLoginData = LoginResult & {
+    tokens: Nullable<CardSessionTokens>
+}
+
 export type UseCardLoginMutationResult = CardMutationResult<
     CardLoginParams,
-    LoginResult
+    CardLoginData
 >
 
 export const useCardLoginMutation = (): UseCardLoginMutationResult => {
     const { network } = useNetwork()
 
-    const mutation = useMutation<LoginResult, Error, CardLoginParams>({
+    const mutation = useMutation<CardLoginData, Error, CardLoginParams>({
         mutationFn: async params => {
             const result = await loginRequest({ ...params, network })
+            // Credentials accepted: the returned access token is the ephemeral
+            // 6h OAuth-completion token. Trade it for the durable pair (6h
+            // access + 7-day refresh) so the session can be silently refreshed
+            // instead of forcing a re-login every 6 hours. On an exchange
+            // failure this degrades to a refresh-less 6h session rather than
+            // failing a login whose credentials (and OTP) were already
+            // accepted — an OAuth-proxy outage must not become a login outage.
+            if (result.accessToken) {
+                const tokens = await acquireCardSessionTokens({
+                    accessToken: result.accessToken,
+                    network,
+                })
+                return { ...result, tokens }
+            }
             // A mid-onboarding login issues no access token and an unreliable
             // (often null) verificationState. Treat userId as the onboardingId
             // and read the real KYC state from the pre-auth onboarding endpoint
@@ -44,7 +67,6 @@ export const useCardLoginMutation = (): UseCardLoginMutationResult => {
             // failure (the caller treats a null state as unverified).
             // TODO(card): confirm Baanx accepts userId as the onboardingId here.
             if (
-                !result.accessToken &&
                 result.phase !== null &&
                 result.userId !== null &&
                 result.verificationState === null
@@ -54,29 +76,25 @@ export const useCardLoginMutation = (): UseCardLoginMutationResult => {
                         onboardingId: result.userId,
                         network,
                     })
-                    return { ...result, verificationState }
+                    return { ...result, verificationState, tokens: null }
                 } catch (error) {
                     // Best-effort: keep the login result so the caller can still
                     // resume onboarding (a null state is treated as unverified).
                     // Log it so a wrong userId->onboardingId assumption surfaces
                     // instead of silently mis-routing.
                     logger.warn('Card login KYC-state lookup failed', { error })
-                    return result
+                    return { ...result, tokens: null }
                 }
             }
-            return result
+            return { ...result, tokens: null }
         },
         throwOnError: false,
         onSuccess: async result => {
-            // A null access token means OTP is still required or registration
-            // is unfinished. Direct login has no refresh token (only the OAuth
-            // flow issues one), so a 401 later can't be refreshed and the user
-            // is routed back to login.
-            if (result.accessToken) {
-                await setCardSession({
-                    accessToken: result.accessToken,
-                    refreshToken: '',
-                })
+            // Persist only the durable OAuth pair — never the ephemeral login
+            // token. Null tokens mean OTP is still required or registration is
+            // unfinished.
+            if (result.tokens) {
+                await setCardSession(result.tokens)
                 return
             }
             // Mid-onboarding: bridge userId -> onboardingId so the resumed

@@ -276,6 +276,14 @@ describe('isSafeBrowserUrl', () => {
         expect(isSafeBrowserUrl('file:///etc/passwd')).toBe(false)
     })
 
+    it('rejects blob: URLs', () => {
+        expect(isSafeBrowserUrl('blob:https://example.com/uuid')).toBe(false)
+    })
+
+    it('rejects scheme-relative URLs', () => {
+        expect(isSafeBrowserUrl('//evil.com/page')).toBe(false)
+    })
+
     it('rejects malformed URLs without throwing', () => {
         expect(isSafeBrowserUrl('not a url')).toBe(false)
         expect(isSafeBrowserUrl('')).toBe(false)

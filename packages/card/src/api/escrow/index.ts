@@ -11,19 +11,11 @@
  */
 
 export {
-    createEscrowCard,
+    approveEscrowCard,
     postDelegatorLsig,
-    type CreateEscrowCardParams,
+    type ApproveEscrowCardParams,
     type PostDelegatorLsigParams,
 } from './endpoints'
-export {
-    buildEscrowSiwaPayload,
-    buildEscrowSiwaSignData,
-    buildEscrowSiwaMessage,
-    type EscrowSiwaPayload,
-    type EscrowSiwaSignData,
-    type BuildEscrowSiwaPayloadArgs,
-} from './siwa'
 export {
     compileAutoDrawProgram,
     renderAutoDrawTeal,
@@ -32,7 +24,7 @@ export {
     type RenderAutoDrawTealArgs,
 } from './lsig'
 export {
-    escrowCardCreationResponseSchema,
+    escrowCardApprovalResponseSchema,
     delegatorLsigResponseSchema,
 } from './schema'
 export {

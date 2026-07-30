@@ -28,7 +28,6 @@ type ConnectFundsRowProps = {
     isRegistrationComplete: boolean
     connectedAccount: Optional<WalletAccount>
     connectedAddress: Nullable<string>
-    isConnecting: boolean
     onConnectAccount: () => void
 }
 
@@ -38,7 +37,6 @@ export const ConnectFundsRow = ({
     isRegistrationComplete,
     connectedAccount,
     connectedAddress,
-    isConnecting,
     onConnectAccount,
 }: ConnectFundsRowProps) => {
     const { t } = useLanguage()
@@ -98,8 +96,6 @@ export const ConnectFundsRow = ({
                     variant='primary'
                     title={t('peraCard.setup_status.connect_funds_button')}
                     onPress={onConnectAccount}
-                    isLoading={isConnecting}
-                    isDisabled={isConnecting}
                     style={styles.detailsButton}
                     testID='card-onboarding-status-connect-cta'
                 />

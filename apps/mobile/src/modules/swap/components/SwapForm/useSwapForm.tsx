@@ -11,6 +11,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { useFocusEffect } from '@react-navigation/native'
 import { type Decimal } from 'decimal.js'
 import {
     useAccountAssetBalanceQuery,
@@ -81,6 +82,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         setToAsset,
         setSlippage,
         setIsLocalCurrencyInput,
+        resetAssetPair,
     } = useSwaps()
     const [payAmount, setPayAmount] = useState<Nullable<Decimal>>(null)
     const [receiveAmount, setReceiveAmount] = useState<Nullable<Decimal>>(null)
@@ -172,6 +174,38 @@ export const useSwapForm = (): UseSwapFormResult => {
         )
     }, [selectedQuote])
 
+    const resetAmounts = useCallback(() => {
+        setPayAmount(null)
+        setReceiveAmount(null)
+        setSelectedProviderName(null)
+        resetQuotes()
+    }, [resetQuotes])
+
+    // The pair lives in the store while the balance behind it is per-account, so
+    // carrying it across an account switch leaves the amounts describing the old
+    // account and MAX quoting an asset the new one may not hold. Reset to the
+    // default pair — the state a relaunch produced, which is what worked.
+    const previousAddressRef = useRef(selectedAccount?.address)
+    useEffect(() => {
+        const address = selectedAccount?.address
+        if (previousAddressRef.current === address) return
+        previousAddressRef.current = address
+        resetAmounts()
+        resetAssetPair()
+    }, [selectedAccount?.address, resetAmounts, resetAssetPair])
+
+    // Leaving the tab must clear the form: the screen stays mounted, so without
+    // this the next visit opens on the previous session's amounts.
+    useFocusEffect(
+        useCallback(
+            () => () => {
+                resetAmounts()
+                resetAssetPair()
+            },
+            [resetAmounts, resetAssetPair],
+        ),
+    )
+
     const canSwap = useMemo(
         () =>
             selectedQuote !== null &&
@@ -212,8 +246,16 @@ export const useSwapForm = (): UseSwapFormResult => {
     const applyPercentageAmount = useCallback(
         async (percentage: number) => {
             if (!selectedAccount) return
-            if (!payAssetBalance?.amount || payAssetBalance.amount.isZero())
+            // Every silent return here reads as a dead button, so say why.
+            if (!payAssetBalance?.amount || payAssetBalance.amount.isZero()) {
+                infoToast(
+                    t('swap.form.no_balance_title'),
+                    t('swap.form.no_balance_body', {
+                        unit: payAsset?.unitName ?? fromAsset,
+                    }),
+                )
                 return
+            }
             try {
                 const result = await calculateSwapAmountRef.current!({
                     address: selectedAccount.address,
@@ -229,10 +271,24 @@ export const useSwapForm = (): UseSwapFormResult => {
                     setPayAmount(displayAmount)
                 }
             } catch {
-                // API error is already logged by the query client
+                // Already logged by the query client; the user needs to know the
+                // tap did something.
+                errorToast(
+                    t('swap.form.percentage_error_title'),
+                    t('swap.form.percentage_error_body'),
+                )
             }
         },
-        [selectedAccount, fromAsset, toAsset, payAsset, payAssetBalance],
+        [
+            selectedAccount,
+            fromAsset,
+            toAsset,
+            payAsset,
+            payAssetBalance,
+            infoToast,
+            errorToast,
+            t,
+        ],
     )
 
     const handleMaxPress = useCallback(() => {
@@ -354,10 +410,7 @@ export const useSwapForm = (): UseSwapFormResult => {
                 t('swap.execution.pending_cosign_title'),
                 t('swap.execution.pending_cosign_body'),
             )
-            setPayAmount(null)
-            setReceiveAmount(null)
-            setSelectedProviderName(null)
-            resetQuotes()
+            resetAmounts()
             return
         }
 
@@ -373,10 +426,7 @@ export const useSwapForm = (): UseSwapFormResult => {
                 toAsset: toUnit,
             }),
         )
-        setPayAmount(null)
-        setReceiveAmount(null)
-        setSelectedProviderName(null)
-        resetQuotes()
+        resetAmounts()
     }, [
         selectedQuote,
         requestBottomSheet,
@@ -386,7 +436,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         infoToast,
         refreshQuotes,
         t,
-        resetQuotes,
+        resetAmounts,
     ])
 
     const handleOpenConfig = useCallback(async () => {

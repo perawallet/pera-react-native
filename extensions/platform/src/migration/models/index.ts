@@ -286,6 +286,17 @@ export interface LegacyWalletConnectV1Session {
     chainId: number | null
 }
 
+/**
+ * Decoded for diagnostics only (payload summary log + developer migration
+ * viewer counts) — deliberately consumed by no migrator. Pera 6 persists
+ * just this bookkeeping row; everything required to rehydrate a working
+ * WC v2 session (per-topic symmetric key from the SDK's crypto keychain,
+ * self/peer keys and metadata, approved namespaces, relay, expiry) lives in
+ * the WalletConnect SDK's own platform-encrypted storage and never reaches
+ * the export (iOS exports an empty array). Pera RN also has no WC v2 client
+ * to import into (packages/walletconnect is v1-only), so v2 sessions are
+ * throwaway: users re-pair after migration.
+ */
 export interface LegacyWalletConnectV2Session {
     topic: string
     dateTimestampMs: number

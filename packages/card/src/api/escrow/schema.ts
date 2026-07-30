@@ -12,15 +12,11 @@
 
 import { z } from 'zod'
 
-// ─── SWAP POINT: AppliedBlockchain (AB) escrow card service ─────────────────
-// AB's demo records the approval via POST /api/approvals and ignores the
-// response. In production the server performs the on-chain `cardCreate`, so we
-// ASSUME the response returns the created escrow card address — the delegated
-// LSig step needs it. Confirm the real shape with AB and update this block, the
-// matching endpoints, and the dev mock together.
-
-// POST /api/approvals → the created escrow card's account address.
-export const escrowCardCreationResponseSchema = z.object({
+// POST /api/approvals → the created escrow card's account address. AB
+// performs the on-chain `cardCreate` for THEIR OWN records; the wallet's own
+// source of truth for the address is the Pera backend's create-card response
+// (api/card-creation) — this is a confirmation echo, validated the same way.
+export const escrowCardApprovalResponseSchema = z.object({
     cardAddress: z.string(),
 })
 
@@ -29,4 +25,3 @@ export const escrowCardCreationResponseSchema = z.object({
 export const delegatorLsigResponseSchema = z.object({
     delegatorAddress: z.string(),
 })
-// ─── END SWAP POINT ──────────────────────────────────────────────────────────

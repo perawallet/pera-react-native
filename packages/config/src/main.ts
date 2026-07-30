@@ -22,192 +22,229 @@ import {
 
 import { generatedEnv } from './generated-env'
 
-export const configSchema = z.object({
-    mainnetBackendUrl: z.url(),
-    testnetBackendUrl: z.url(),
-    mainnetAlgodUrl: z.url(),
-    testnetAlgodUrl: z.url(),
-    mainnetIndexerUrl: z.url(),
-    testnetIndexerUrl: z.url(),
-    backendAPIKey: z.string(),
-    algodApiKey: z.string(),
-    indexerApiKey: z.string(),
-    mainnetGenesisHash: z.string(),
-    testnetGenesisHash: z.string(),
+/**
+ * First-party hosts only. Third-party sandboxes legitimately keep a staging
+ * host in a production build — `testnetBidaliBaseUrl` pairs testnet with the
+ * vendor's sandbox — so the production staging guard below ignores them.
+ */
+const isFirstPartyUrl = (url: string): boolean => url.includes('perawallet.app')
 
-    mainnetExplorerUrl: z.url(),
-    testnetExplorerUrl: z.url(),
+/**
+ * Only fields with an env override can be *missing* one, which is what the
+ * guard checks. It also keeps `discoverBaseUrl` out: getConfig derives that
+ * from appEnvironment structurally, so a production build always gets the
+ * production URL and there is nothing to override.
+ */
+const hasEnvOverride = (field: string): boolean =>
+    field in overrideEnvironmentMap
 
-    // Networks without a Pera backend. Chain endpoints only — their Pera
-    // service traffic is resolved to TestNet's by pera-service-fallback.ts.
-    betanetAlgodUrl: z.url(),
-    betanetIndexerUrl: z.url(),
-    betanetGenesisHash: z.string(),
-    betanetExplorerUrl: z.url(),
-    /** Per-network faucet. Empty for MainNet, which has none. */
-    mainnetDispenserUrl: z.string(),
+export const configSchema = z
+    .object({
+        mainnetBackendUrl: z.url(),
+        testnetBackendUrl: z.url(),
+        mainnetAlgodUrl: z.url(),
+        testnetAlgodUrl: z.url(),
+        mainnetIndexerUrl: z.url(),
+        testnetIndexerUrl: z.url(),
+        backendAPIKey: z.string(),
+        algodApiKey: z.string(),
+        indexerApiKey: z.string(),
+        mainnetGenesisHash: z.string(),
+        testnetGenesisHash: z.string(),
 
-    appStoreAppID: z.string(),
-    playIntegrityCloudProjectNumber: z.string(),
+        mainnetExplorerUrl: z.url(),
+        testnetExplorerUrl: z.url(),
 
-    // Firebase Web SDK config (browser extension Remote Config). Not secret —
-    // a Firebase web apiKey only identifies the project; access is governed
-    // by Firebase Security Rules, not this value. Still build-time-injected
-    // (not hardcoded) to keep infra config out of source-tree churn.
-    firebaseApiKey: z.string(),
-    firebaseAuthDomain: z.string(),
-    firebaseDatabaseUrl: z.string(),
-    firebaseProjectId: z.string(),
-    firebaseStorageBucket: z.string(),
-    firebaseMessagingSenderId: z.string(),
-    firebaseAppId: z.string(),
-    firebaseMeasurementId: z.string(),
+        // Networks without a Pera backend. Chain endpoints only — their Pera
+        // service traffic is resolved to TestNet's by pera-service-fallback.ts.
+        betanetAlgodUrl: z.url(),
+        betanetIndexerUrl: z.url(),
+        betanetGenesisHash: z.string(),
+        betanetExplorerUrl: z.url(),
+        /** Per-network faucet. Empty for MainNet, which has none. */
+        mainnetDispenserUrl: z.string(),
 
-    // GA4 Measurement Protocol API secret (GA4 Admin > Data Streams > your
-    // web stream > Measurement Protocol API secrets) — distinct from
-    // firebaseApiKey. Empty until generated; ChromeAnalyticsService no-ops
-    // until both this and firebaseMeasurementId are set.
-    gaMeasurementApiSecret: z.string(),
+        appStoreAppID: z.string(),
+        playIntegrityCloudProjectNumber: z.string(),
 
-    // Sentry DSN for the browser extension's crash/error reporting. Empty
-    // until a Sentry project exists; ChromeCrashReportingService no-ops
-    // until set.
-    sentryDsn: z.string(),
+        // Firebase Web SDK config (browser extension Remote Config). Not secret —
+        // a Firebase web apiKey only identifies the project; access is governed
+        // by Firebase Security Rules, not this value. Still build-time-injected
+        // (not hardcoded) to keep infra config out of source-tree churn.
+        firebaseApiKey: z.string(),
+        firebaseAuthDomain: z.string(),
+        firebaseDatabaseUrl: z.string(),
+        firebaseProjectId: z.string(),
+        firebaseStorageBucket: z.string(),
+        firebaseMessagingSenderId: z.string(),
+        firebaseAppId: z.string(),
+        firebaseMeasurementId: z.string(),
 
-    notificationRefreshTime: z.number().int(),
-    remoteConfigRefreshTime: z.number().int(),
+        // GA4 Measurement Protocol API secret (GA4 Admin > Data Streams > your
+        // web stream > Measurement Protocol API secrets) — distinct from
+        // firebaseApiKey. Empty until generated; ChromeAnalyticsService no-ops
+        // until both this and firebaseMeasurementId are set.
+        gaMeasurementApiSecret: z.string(),
 
-    /** Bounded ceiling (ms) for algod/indexer GET/DELETE requests (reads). */
-    algodReadTimeout: z.number().int(),
-    /** Bounded ceiling (ms) for algod/indexer POST requests (e.g. broadcast). */
-    algodSubmitTimeout: z.number().int(),
-    /** Bounded ceiling (ms) for the signing machine's `transporting` state. */
-    signingTransportTimeout: z.number().int(),
+        // Sentry DSN for the browser extension's crash/error reporting. Empty
+        // until a Sentry project exists; ChromeCrashReportingService no-ops
+        // until set.
+        sentryDsn: z.string(),
 
-    reactQueryDefaultGCTime: z.number().int(),
-    reactQueryDefaultStaleTime: z.number().int(),
-    reactQueryShortLivedGCTime: z.number().int(),
-    reactQueryShortLivedStaleTime: z.number().int(),
-    reactQueryLongLivedGCTime: z.number().int(),
-    reactQueryLongLivedStaleTime: z.number().int(),
-    reactQueryPersistenceAge: z.number().int(),
+        notificationRefreshTime: z.number().int(),
+        remoteConfigRefreshTime: z.number().int(),
 
-    discoverBaseUrl: z.url(),
-    /** XO Swap support inbox for onramp order help (bare address, no `mailto:`). */
-    onrampSupportEmail: z.email(),
-    /** Baanx support inbox for card transaction reports (bare address, no `mailto:`). */
-    cardSupportEmail: z.email(),
-    supportBaseUrl: z.url(),
-    termsOfServiceUrl: z.url(),
-    privacyPolicyUrl: z.url(),
-    peraDemoDappUrl: z.url(),
-    dispenserUrl: z.url(),
+        /** Bounded ceiling (ms) for algod/indexer GET/DELETE requests (reads). */
+        algodReadTimeout: z.number().int(),
+        /** Bounded ceiling (ms) for algod/indexer POST requests (e.g. broadcast). */
+        algodSubmitTimeout: z.number().int(),
+        /** Bounded ceiling (ms) for the signing machine's `transporting` state. */
+        signingTransportTimeout: z.number().int(),
 
-    sendFundsFaqUrl: z.url(),
-    assetInboxSupportUrl: z.url(),
-    swapSupportUrl: z.url(),
-    multisigSupportUrl: z.url(),
-    algorandDefiUrl: z.url(),
-    asaVerificationUrl: z.url(),
-    accountTypeSupportUrl: z.url(),
-    ledgerAccountSupportUrl: z.url(),
-    recoveryPassphraseSupportUrl: z.url(),
-    watchAccountSupportUrl: z.url(),
-    rekeyToStandardSupportUrl: z.url(),
-    rekeyToSharedSupportUrl: z.url(),
-    rekeyToLedgerSupportUrl: z.url(),
-    undoRekeySupportUrl: z.url(),
-    peraCardLearnMoreUrl: z.url(),
+        reactQueryDefaultGCTime: z.number().int(),
+        reactQueryDefaultStaleTime: z.number().int(),
+        reactQueryShortLivedGCTime: z.number().int(),
+        reactQueryShortLivedStaleTime: z.number().int(),
+        reactQueryLongLivedGCTime: z.number().int(),
+        reactQueryLongLivedStaleTime: z.number().int(),
+        reactQueryPersistenceAge: z.number().int(),
 
-    debugEnabled: z.boolean(),
-    profilingEnabled: z.boolean(),
-    pollingEnabled: z.boolean(),
+        discoverBaseUrl: z.url(),
+        /** XO Swap support inbox for onramp order help (bare address, no `mailto:`). */
+        onrampSupportEmail: z.email(),
+        /** Baanx support inbox for card transaction reports (bare address, no `mailto:`). */
+        cardSupportEmail: z.email(),
+        supportBaseUrl: z.url(),
+        termsOfServiceUrl: z.url(),
+        privacyPolicyUrl: z.url(),
+        peraDemoDappUrl: z.url(),
+        dispenserUrl: z.url(),
 
-    // Build-time escape hatch for e2e automation (Appium/BrowserStack), whose
-    // tooling can't drive a FLAG_SECURE surface. Sourced only from the
-    // DISABLE_SCREEN_CAPTURE_PREVENTION build env — never a remote/runtime
-    // signal. Defaults safe (false) so seed-screen capture protection can't be
-    // weakened post-release.
-    disableScreenCapturePrevention: z.boolean().default(false),
+        sendFundsFaqUrl: z.url(),
+        assetInboxSupportUrl: z.url(),
+        swapSupportUrl: z.url(),
+        multisigSupportUrl: z.url(),
+        algorandDefiUrl: z.url(),
+        asaVerificationUrl: z.url(),
+        accountTypeSupportUrl: z.url(),
+        ledgerAccountSupportUrl: z.url(),
+        recoveryPassphraseSupportUrl: z.url(),
+        watchAccountSupportUrl: z.url(),
+        rekeyToStandardSupportUrl: z.url(),
+        rekeyToSharedSupportUrl: z.url(),
+        rekeyToLedgerSupportUrl: z.url(),
+        undoRekeySupportUrl: z.url(),
+        peraCardLearnMoreUrl: z.url(),
 
-    mainnetBidaliApiKey: z.string(),
-    testnetBidaliApiKey: z.string(),
-    mainnetBidaliBaseUrl: z.url(),
-    testnetBidaliBaseUrl: z.url(),
+        debugEnabled: z.boolean(),
+        profilingEnabled: z.boolean(),
+        pollingEnabled: z.boolean(),
 
-    // Baanx card integration. Per-environment base URL + PUBLIC client key
-    // (x-client-key). The Baanx x-secret-key is server-only and MUST NEVER be
-    // added here — secret-key calls are proxied through Pera's backend.
-    mainnetBaanxBaseUrl: z.url(),
-    testnetBaanxBaseUrl: z.url(),
-    mainnetBaanxClientKey: z.string(),
-    testnetBaanxClientKey: z.string(),
-    // Baanx tenant id sent in the consent payload (POST /v2/consent/onboarding).
-    mainnetBaanxTenantId: z.string(),
-    testnetBaanxTenantId: z.string(),
+        // Build-time escape hatch for e2e automation (Appium/BrowserStack), whose
+        // tooling can't drive a FLAG_SECURE surface. Sourced only from the
+        // DISABLE_SCREEN_CAPTURE_PREVENTION build env — never a remote/runtime
+        // signal. Defaults safe (false) so seed-screen capture protection can't be
+        // weakened post-release.
+        disableScreenCapturePrevention: z.boolean().default(false),
 
-    // SWAP POINT: AppliedBlockchain (AB) escrow card service. Card creation and
-    // the delegated-LSig `/lsig` endpoint are hosted by AB on testnet until Baanx
-    // wraps them. The auth token is an AB-issued static secret sent as a RAW
-    // `Authorization` header (no Bearer). Base URL uses z.string() (not z.url())
-    // so an empty default validates before the values arrive. App ids and the
-    // USDC asset id feed the AutoDraw LogicSig TEAL template.
-    mainnetCardEscrowBaseUrl: z.string(),
-    testnetCardEscrowBaseUrl: z.string(),
-    mainnetCardEscrowAuthToken: z.string(),
-    testnetCardEscrowAuthToken: z.string(),
-    mainnetCardW3CardAppId: z.string(),
-    testnetCardW3CardAppId: z.string(),
-    mainnetCardKillswitchAppId: z.string(),
-    testnetCardKillswitchAppId: z.string(),
-    mainnetCardUsdcAssetId: z.string(),
-    testnetCardUsdcAssetId: z.string(),
+        mainnetBidaliApiKey: z.string(),
+        testnetBidaliApiKey: z.string(),
+        mainnetBidaliBaseUrl: z.url(),
+        testnetBidaliBaseUrl: z.url(),
 
-    arc59: z.object({
-        testnet: z.object({
-            appId: z.bigint(),
-            appAddress: z.string(),
+        // Baanx card integration. Per-environment base URL + PUBLIC client key
+        // (x-client-key). The Baanx x-secret-key is server-only and MUST NEVER be
+        // added here — secret-key calls are proxied through Pera's backend.
+        mainnetBaanxBaseUrl: z.url(),
+        testnetBaanxBaseUrl: z.url(),
+        mainnetBaanxClientKey: z.string(),
+        testnetBaanxClientKey: z.string(),
+        // Baanx tenant id sent in the consent payload (POST /v2/consent/onboarding).
+        mainnetBaanxTenantId: z.string(),
+        testnetBaanxTenantId: z.string(),
+
+        // SWAP POINT: AppliedBlockchain (AB) escrow card service. Card creation and
+        // the delegated-LSig `/lsig` endpoint are hosted by AB on testnet until Baanx
+        // wraps them. The auth token is an AB-issued static secret sent as a RAW
+        // `Authorization` header (no Bearer). Base URL uses z.string() (not z.url())
+        // so an empty default validates before the values arrive. App ids and the
+        // USDC asset id feed the AutoDraw LogicSig TEAL template.
+        mainnetCardEscrowBaseUrl: z.string(),
+        testnetCardEscrowBaseUrl: z.string(),
+        mainnetCardEscrowAuthToken: z.string(),
+        testnetCardEscrowAuthToken: z.string(),
+        mainnetCardW3CardAppId: z.string(),
+        testnetCardW3CardAppId: z.string(),
+        mainnetCardKillswitchAppId: z.string(),
+        testnetCardKillswitchAppId: z.string(),
+        mainnetCardUsdcAssetId: z.string(),
+        testnetCardUsdcAssetId: z.string(),
+
+        arc59: z.object({
+            testnet: z.object({
+                appId: z.bigint(),
+                appAddress: z.string(),
+            }),
+            mainnet: z.object({
+                appId: z.bigint(),
+                appAddress: z.string(),
+            }),
         }),
-        mainnet: z.object({
-            appId: z.bigint(),
-            appAddress: z.string(),
-        }),
-    }),
 
-    /**
-     * Build-time active network. Deliberately NOT the full `Network` union:
-     * `custom` has no baked chain config — every value comes from the
-     * custom-network store, which is empty until a developer fills the Node
-     * Settings sheet in — so no build-time value could make it valid. Making it
-     * the default would make `custom` ACTIVE and unconfigured on first launch,
-     * where every resolved endpoint is `''`.
-     */
-    defaultNetwork: z
-        .enum(['mainnet', 'testnet', 'betanet'])
-        .default('mainnet'),
+        /**
+         * Build-time active network. Deliberately NOT the full `Network` union:
+         * `custom` has no baked chain config — every value comes from the
+         * custom-network store, which is empty until a developer fills the Node
+         * Settings sheet in — so no build-time value could make it valid. Making
+         * it the default would make `custom` ACTIVE and unconfigured on first
+         * launch, where every resolved endpoint is `''`.
+         */
+        defaultNetwork: z
+            .enum(['mainnet', 'testnet', 'betanet'])
+            .default('mainnet'),
 
-    /** Build channel. Sourced from APP_ENV; defaults to development when unset. */
-    appEnvironment: z
-        .enum(['development', 'staging', 'production'])
-        .default('development'),
+        /** Build channel. Sourced from APP_ENV; defaults to development when unset. */
+        appEnvironment: z
+            .enum(['development', 'staging', 'production'])
+            .default('development'),
 
-    /**
-     * Full git release tag baked at build time (e.g. "v7.0.0-alpha.9"), shown
-     * in-app so QA can see the exact prerelease they're testing. Sourced from
-     * BITRISE_GIT_TAG; empty for local/non-tag builds (the version display then
-     * falls back to the native store version).
-     */
-    releaseTag: z.string().default(''),
+        /**
+         * Full git release tag baked at build time (e.g. "v7.0.0-alpha.9"), shown
+         * in-app so QA can see the exact prerelease they're testing. Sourced from
+         * BITRISE_GIT_TAG; empty for local/non-tag builds (the version display then
+         * falls back to the native store version).
+         */
+        releaseTag: z.string().default(''),
 
-    /**
-     * Incrementing CI build number baked at build time, mirroring mobile's
-     * `Application.nativeBuildVersion`. Sourced from BITRISE_BUILD_NUMBER;
-     * empty for local builds (getAppBuild then falls back to the manifest
-     * version). Feeds the user-agent so backend/Cloudflare rules can key off
-     * it the same way they do on mobile.
-     */
-    appBuildNumber: z.string().default(''),
-})
+        /**
+         * Incrementing CI build number baked at build time, mirroring mobile's
+         * `Application.nativeBuildVersion`. Sourced from BITRISE_BUILD_NUMBER;
+         * empty for local builds (getAppBuild then falls back to the manifest
+         * version). Feeds the user-agent so backend/Cloudflare rules can key off
+         * it the same way they do on mobile.
+         */
+        appBuildNumber: z.string().default(''),
+    })
+    .check(ctx => {
+        // The committed defaults deliberately point first-party URLs at staging
+        // (safe for open-source builds); production builds override them via env.
+        // tools/generate-config.sh fails the build when an override is missing —
+        // this is the last line of defence, and throws when the config module is
+        // first imported. Matched by value rather than a hand-kept field list so
+        // a future staging default can't slip in unguarded.
+        if (ctx.value.appEnvironment !== 'production') return
+        for (const [field, value] of Object.entries(ctx.value)) {
+            if (typeof value !== 'string') continue
+            if (!value.includes('staging') || !isFirstPartyUrl(value)) continue
+            if (!hasEnvOverride(field)) continue
+            ctx.issues.push({
+                code: 'custom',
+                message: `${field} points at staging in a production build — set ${overrideEnvironmentMap[field as keyof Config]}`,
+                path: [field],
+                input: value,
+            })
+        }
+    })
 
 export type Config = z.infer<typeof configSchema>
 
