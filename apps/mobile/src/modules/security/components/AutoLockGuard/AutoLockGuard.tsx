@@ -16,6 +16,7 @@ import { useStyles } from './AutoLockGuard.style'
 import { PWView, PWLoadingOverlay } from '@components/core'
 import { PinEntry } from '../PinEntry'
 import { useLanguage } from '@hooks/useLanguage'
+import { LockOverlayProvider } from './lockOverlayContext'
 import { LockoutView } from './LockoutView'
 import { useLockScreen } from './useLockScreen'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -48,7 +49,9 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
                     isGuardActive && styles.childrenHidden,
                 ]}
             >
-                {children}
+                <LockOverlayProvider value={isGuardActive}>
+                    {children}
+                </LockOverlayProvider>
             </PWView>
             {showLoadingOverlay && (
                 <PWView style={styles.loadingOverlay}>

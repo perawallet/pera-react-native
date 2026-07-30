@@ -10,18 +10,13 @@
  limitations under the License
  */
 
-export { PinEntry, type PinEntryProps } from './components/PinEntry'
-export {
-    PinEditView,
-    type PinEditViewProps,
-    type PinEntryMode,
-} from './components/PinEditView'
-export {
-    PinEditContent,
-    type PinEditContentProps,
-} from './components/PinEditContent'
-export {
-    useRequirePinVerification,
-    type UseRequirePinVerificationResult,
-} from './hooks/useRequirePinVerification'
-export { useIsLockOverlayVisible } from './components/AutoLockGuard/lockOverlayContext'
+import { createContext, useContext } from 'react'
+
+const IS_LOCK_OVERLAY_VISIBLE_OUTSIDE_GUARD = false
+
+const LockOverlayContext = createContext(IS_LOCK_OVERLAY_VISIBLE_OUTSIDE_GUARD)
+
+export const LockOverlayProvider = LockOverlayContext.Provider
+
+export const useIsLockOverlayVisible = (): boolean =>
+    useContext(LockOverlayContext)
