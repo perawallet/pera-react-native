@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { PERAWALLET_UNIVERSAL_LINK_HOST } from '@hooks/deeplink/constants'
 import { isOriginGatedDeeplinkType } from '@hooks/deeplink/page-initiated-policy'
 import { parseDeeplink } from '@hooks/deeplink/parser'
@@ -21,13 +21,24 @@ import { useDeepLink } from '@hooks/useDeepLink'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { getDisplayHost } from './getDisplayHost'
+import {
+    SOCIAL_MEDIA_APP_PROBES,
+    getSocialMediaDeeplink,
+    type SocialMediaService,
+} from './social-media-deeplinks'
 
+import type WebView from 'react-native-webview'
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes'
 
 type UseWebViewNavigationGuardOptions = {
     isTrustedOrigin: boolean
     /** Live page URL — logged (host only) when a dispatch is refused. */
     pageUrl: string
+    /**
+     * Drives the web load itself when a social-app handoff fails despite a
+     * positive install probe — otherwise the tap dead-ends.
+     */
+    webviewRef?: React.RefObject<Nullable<WebView>>
 }
 
 type UseWebViewNavigationGuardResult = {
@@ -62,6 +73,12 @@ const isPeraUniversalLink = (url: string): boolean =>
  *   the perawallet.app origin: the applink parser keys off a permissive `/app/`
  *   substring, so running every https navigation through it would hijack
  *   ordinary dApp routes like `https://dapp.com/app/swap`.
+ * - Social-media links (Twitter/X, Telegram, Discord invites) open in the
+ *   native app when it's installed — parity with pera-ios's
+ *   SocialMediaDeeplinkRouter. Without the app they fall through and load like
+ *   any other web navigation. Installed-app checks are pre-warmed on mount
+ *   because `Linking.canOpenURL` is async while this guard answers
+ *   synchronously.
  * - Other standard web navigations load in the WebView untouched.
  * - Any custom-scheme URL Pera recognises as a deeplink is routed in-app.
  * - Value-bearing deeplinks (transfers, keyreg, account import, WC pairing —
@@ -80,15 +97,61 @@ const isPeraUniversalLink = (url: string): boolean =>
 export const useWebViewNavigationGuard = ({
     isTrustedOrigin,
     pageUrl,
+    webviewRef,
 }: UseWebViewNavigationGuardOptions): UseWebViewNavigationGuardResult => {
     const { handleDeepLink } = useDeepLink()
     const { t } = useLanguage()
     const { errorToast } = useToast()
 
+    const installedSocialApps = useRef<Record<SocialMediaService, boolean>>({
+        twitter: false,
+        telegram: false,
+        discord: false,
+    })
+
+    useEffect(() => {
+        const probes = Object.entries(SOCIAL_MEDIA_APP_PROBES) as [
+            SocialMediaService,
+            string,
+        ][]
+        probes.forEach(([service, probeUrl]) => {
+            void Linking.canOpenURL(probeUrl)
+                .then(isInstalled => {
+                    installedSocialApps.current[service] = isInstalled
+                })
+                .catch(() => {
+                    installedSocialApps.current[service] = false
+                })
+        })
+    }, [])
+
     const onShouldStartLoadWithRequest = useCallback(
         (request: ShouldStartLoadRequest): boolean => {
             const { url } = request
             const isWebUrl = /^https?:/i.test(url)
+
+            // Ahead of the plain-web early return below: social links ARE
+            // ordinary https URLs, so checking them after it would never run.
+            // Handing one to X/Telegram/Discord is an outward OS handoff, not a
+            // wallet capability, so it stays ungated like the OS schemes.
+            const socialDeeplink = getSocialMediaDeeplink(url)
+            if (
+                socialDeeplink &&
+                installedSocialApps.current[socialDeeplink.service]
+            ) {
+                void Linking.openURL(socialDeeplink.url).catch(() => {
+                    // The pre-warmed check said installed but the OS refused.
+                    // This navigation was already blocked, so drive the web
+                    // load ourselves and stop trusting the probe.
+                    installedSocialApps.current[socialDeeplink.service] = false
+                    if (isWebUrl) {
+                        webviewRef?.current?.injectJavaScript(
+                            `window.location.assign(${JSON.stringify(url)});true;`,
+                        )
+                    }
+                })
+                return false
+            }
 
             if (isWebUrl && !isPeraUniversalLink(url)) {
                 return true
@@ -142,7 +205,7 @@ export const useWebViewNavigationGuard = ({
 
             return false
         },
-        [handleDeepLink, isTrustedOrigin, pageUrl, errorToast, t],
+        [handleDeepLink, isTrustedOrigin, pageUrl, webviewRef, errorToast, t],
     )
 
     return { onShouldStartLoadWithRequest }
