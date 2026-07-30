@@ -35,8 +35,8 @@ import { type PeraAsset } from '../models'
 
 const ASSET_FETCH_CONCURRENCY = 5
 
-// The indexer has no bulk asset endpoint, so the fallback path below fans out
-// one request per id. Kept small because the outer loop already runs
+// The indexer has no bulk asset endpoint, so persistChainIntrinsics below
+// fans out one request per id. Kept small because the outer loop already runs
 // ASSET_FETCH_CONCURRENCY batches at once: the product is the real ceiling on
 // concurrent requests against what is usually a single dev node.
 const INDEXER_ASSET_CONCURRENCY = 5
@@ -56,13 +56,13 @@ const persistFromPeraBackend = async (
 }
 
 /**
- * `assets_node` half of the fallback path: read straight from the ACTIVE
- * chain's indexer.
+ * Writes the `assets_node` table on a network with no Pera deployment: read
+ * straight from the ACTIVE chain's indexer. There is no `assets_pera` half —
+ * no Pera opinion data exists for these networks.
  *
- * Ids whose lookup fails are simply omitted — never backfilled from the Pera
- * response. A missing row costs a retry on the next tick (its absence is what
- * getStaleOrMissingAssetIds keys on); a borrowed row would be silently wrong
- * forever.
+ * Ids whose lookup fails are simply omitted. A missing row costs a retry on
+ * the next tick (its absence is what getStaleOrMissingAssetIds keys on);
+ * inventing one from another chain's data would be silently wrong forever.
  */
 const persistChainIntrinsics = async (
     batch: string[],
@@ -118,10 +118,11 @@ export async function fetchAndPersistAssets(
     //
     // Networks with no Pera deployment get chain intrinsics only — there is no
     // Pera opinion data (verification tier, favorites, collectibles) to fetch.
+    // persistChainIntrinsics simply ignores the deviceId argument — a Pera
+    // device id means nothing to a chain indexer.
     const persistBatch = isPeraBackedNetwork(network)
         ? persistFromPeraBackend
-        : (batch: string[], network: Network): Promise<void> =>
-              persistChainIntrinsics(batch, network)
+        : persistChainIntrinsics
 
     for (let i = 0; i < batches.length; i += ASSET_FETCH_CONCURRENCY) {
         const slice = batches.slice(i, i + ASSET_FETCH_CONCURRENCY)

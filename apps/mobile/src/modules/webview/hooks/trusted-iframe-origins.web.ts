@@ -64,8 +64,9 @@ const redirectTwinOrigin = (base: string): string | null => {
 // the two can't drift out of lockstep as future surfaces are added here.
 const knownSurfaceBases = (): string[] => [
     config.discoverBaseUrl,
-    // Every network's Bidali origin; fallback networks resolve to testnet's, so
-    // this de-dupes to the same two entries as before.
+    // Every network's Bidali origin. Networks with no Pera deployment
+    // contribute `''`, which is inert downstream — safeOrigin('') returns
+    // null — so the effective set is still MainNet's and TestNet's origins.
     ...Object.values(Networks).map(
         network => getNetworkConfig(network).bidaliBaseUrl,
     ),

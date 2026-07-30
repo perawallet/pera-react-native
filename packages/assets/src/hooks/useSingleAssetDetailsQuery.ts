@@ -39,19 +39,16 @@ import { getAssetById } from '../db'
  * Re-asserts the real chain's values for fields that are facts about the chain
  * rather than Pera's opinion about the asset.
  *
- * On a network whose Pera services are borrowed, `peraData` describes the SAME
- * asset id on a DIFFERENT chain. Letting it win on `decimals` would make
- * `displayUnitsToBaseUnits` build a wrong-amount transaction that then SUCCEEDS
- * on chain — the one silent-wrong path the fallback would otherwise introduce.
+ * Pera requests on a network with no Pera deployment now fail outright, so
+ * `peraData` should never describe the same asset id on a DIFFERENT chain.
+ * This is defence-in-depth against exactly that: `fetchAssetFromApis` is
+ * exported, and its chain-truth guarantee must not depend on a chokepoint
+ * that lives in another package (the ky client in `packages/shared`). If that
+ * remote invariant ever breaks, the failure mode without this guard is a
+ * foreign `decimals` making `displayUnitsToBaseUnits` build a wrong-amount
+ * transaction that then SUCCEEDS on chain — lost funds, not an error.
  *
  * MainNet/TestNet merge order is untouched.
- *
- * Deliberately retained as defence-in-depth: `fetchAssetFromApis` is exported,
- * and its chain-truth guarantee must not depend on a chokepoint that lives in
- * another package (the ky client in `packages/shared`). If that remote
- * invariant ever breaks, the failure mode without this guard is a borrowed
- * `decimals` building a wrong-amount transaction that succeeds on chain —
- * lost funds, not an error.
  */
 const withChainIntrinsics = (
     merged: PeraAsset,

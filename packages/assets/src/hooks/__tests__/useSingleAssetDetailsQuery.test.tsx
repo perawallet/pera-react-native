@@ -315,11 +315,12 @@ describe('useSingleAssetDetailsQuery', () => {
 })
 
 describe('fetchAssetFromApis merge precedence', () => {
-    // Same asset id, two different chains: the Pera lane (borrowed from
-    // TestNet on fallback networks) reports 6 decimals — real TestNet USDC —
-    // while the real chain's own indexer reports 0. If Pera's value won here,
-    // displayUnitsToBaseUnits would build a transaction for the wrong amount,
-    // and that transaction would succeed on chain.
+    // Same asset id, two different chains: the Pera lane reports 6 decimals —
+    // real TestNet USDC — while the real chain's own indexer reports 0. The
+    // request layer no longer lets a Pera response reach a network with no
+    // deployment at all, so this simulates that invariant breaking: if Pera's
+    // value won here, displayUnitsToBaseUnits would build a transaction for
+    // the wrong amount, and that transaction would succeed on chain.
     const peraDecimals = 6
     const indexerDecimals = 0
 
@@ -365,7 +366,7 @@ describe('fetchAssetFromApis merge precedence', () => {
         expect(asset.name).toBe('USDC')
     })
 
-    it('indexer wins on chain-intrinsics for a fallback network', async () => {
+    it('indexer wins on chain-intrinsics for a network with no Pera deployment', async () => {
         const asset = await fetchAssetFromApis('10458941', Networks.betanet)
 
         expect(asset.decimals).toBe(indexerDecimals)
@@ -380,7 +381,7 @@ describe('fetchAssetFromApis merge precedence', () => {
         expect(asset.totalSupply.toString()).toBe('5000000')
     })
 
-    it('pera still supplies its own metadata on a fallback network', async () => {
+    it('pera still supplies its own metadata on a network with no Pera deployment', async () => {
         const asset = await fetchAssetFromApis('10458941', Networks.betanet)
 
         expect(asset.peraMetadata?.verificationTier).toBe(
