@@ -19,6 +19,7 @@ import {
     useAllAccounts,
     useOnChainAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectDestinationScreen } from '../useSelectDestinationScreen'
 
 const mockNavigate = vi.fn()
@@ -64,6 +65,13 @@ describe('useSelectDestinationScreen', () => {
 
         mockUseAllAccounts.mockReturnValue([])
         mockCanSignWith.mockReturnValue(false)
+
+        // clearAllMocks wipes call history but keeps implementations, so a
+        // per-test mockReturnValue on useAssetsQuery would leak. Re-seed the
+        // default (ASA_ID resolvable) every run.
+        ;(useAssetsQuery as Mock).mockReturnValue({
+            data: new Map([[ASA_ID, { assetId: ASA_ID, name: 'TestToken' }]]),
+        })
 
         ;(useSendFunds as Mock).mockReturnValue({
             selectedAssetId: ASA_ID,
@@ -210,5 +218,81 @@ describe('useSelectDestinationScreen', () => {
 
         expect(mockSetSendMode).toHaveBeenCalledWith('sendArc59')
         expect(mockNavigate).toHaveBeenCalledWith('ARC59SendSummary')
+    })
+
+    // A value-bearing deeplink (algorand://<address>?amount=…) prefills the
+    // destination before this screen mounts. The receiver is already known, so
+    // the picker must be bypassed and the flow routed straight through.
+    describe('prefilled deeplink destination', () => {
+        it('auto-uses the prefilled destination and skips the picker (ALGO)', () => {
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map([['0', { assetId: '0', name: 'Algo' }]]),
+            })
+            ;(useSendFunds as Mock).mockReturnValue({
+                selectedAssetId: '0',
+                destination: EXTERNAL_ADDR,
+                setDestination: mockSetDestination,
+                setSendMode: mockSetSendMode,
+            })
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            expect(mockSetDestination).toHaveBeenCalledWith(EXTERNAL_ADDR)
+            expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
+            expect(result.current.isAutoAdvancing).toBe(false)
+        })
+
+        it('auto-uses the prefilled destination for an opted-in ASA receiver', () => {
+            ;(useAccountBalancesQuery as Mock).mockReturnValue({
+                accountBalances: new Map([
+                    [
+                        INTERNAL_OPTED_IN_ADDR,
+                        { assetBalances: [{ assetId: ASA_ID }] },
+                    ],
+                ]),
+            })
+            ;(useSendFunds as Mock).mockReturnValue({
+                selectedAssetId: ASA_ID,
+                destination: INTERNAL_OPTED_IN_ADDR,
+                setDestination: mockSetDestination,
+                setSendMode: mockSetSendMode,
+            })
+
+            renderHook(() => useSelectDestinationScreen())
+
+            expect(mockSetDestination).toHaveBeenCalledWith(
+                INTERNAL_OPTED_IN_ADDR,
+            )
+            expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
+        })
+
+        it('routes an unopted-in external prefilled receiver through ARC59', async () => {
+            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+                data: { assets: [] },
+                isFetching: false,
+                isSuccess: true,
+                isError: false,
+            })
+            ;(useSendFunds as Mock).mockReturnValue({
+                selectedAssetId: ASA_ID,
+                destination: EXTERNAL_ADDR,
+                setDestination: mockSetDestination,
+                setSendMode: mockSetSendMode,
+            })
+
+            await act(async () => {
+                renderHook(() => useSelectDestinationScreen())
+            })
+
+            expect(mockSetSendMode).toHaveBeenCalledWith('sendArc59')
+            expect(mockNavigate).toHaveBeenCalledWith('ARC59SendSummary')
+        })
+
+        it('shows the picker (no auto-advance) when no destination is prefilled', () => {
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(result.current.isAutoAdvancing).toBe(false)
+        })
     })
 })

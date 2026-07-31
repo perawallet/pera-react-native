@@ -26,13 +26,18 @@ import { type StackNavigationProp } from '@react-navigation/stack'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 export const useSelectDestinationScreen = () => {
-    const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
+    const { selectedAssetId, destination, setDestination, setSendMode } =
+        useSendFunds()
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
     const { accountBalances } = useAccountBalancesQuery(accounts)
     const [pendingExternalAddress, setPendingExternalAddress] = useState<
         string | null
     >(null)
+    // A value-bearing deeplink (algorand://<address>?amount=…) prefills the
+    // destination before this screen mounts. Seed the auto-advance flag from
+    // that initial value so the picker never flashes while we route through.
+    const [isAutoAdvancing, setIsAutoAdvancing] = useState(() => !!destination)
 
     const assetIDs = useMemo(
         () => (selectedAssetId ? [selectedAssetId] : []),
@@ -139,10 +144,28 @@ export const useSelectDestinationScreen = () => {
         ],
     )
 
+    // When the destination arrived via deeplink, use it directly instead of
+    // making the user re-pick a receiver. Reuses `handleSelected` so the
+    // opt-in / express / ARC-59 routing decision stays in one place. Waits for
+    // the asset to load (that decision needs it) and runs once — going back
+    // from a later screen leaves `isAutoAdvancing` false so the picker shows.
+    useEffect(() => {
+        if (!isAutoAdvancing) return
+        if (!destination) {
+            setIsAutoAdvancing(false)
+            return
+        }
+        if (!selectedAsset) return
+
+        setIsAutoAdvancing(false)
+        handleSelected(destination)
+    }, [isAutoAdvancing, destination, selectedAsset, handleSelected])
+
     return {
         selectedAsset,
         selectedAccount,
         handleSelected,
         isCheckingExternalOptIn,
+        isAutoAdvancing,
     }
 }
