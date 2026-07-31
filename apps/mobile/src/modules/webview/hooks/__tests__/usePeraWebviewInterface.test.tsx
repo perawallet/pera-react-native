@@ -25,6 +25,18 @@ import { useWebView } from '..'
 import { Linking } from 'react-native'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeviceID } from '@perawallet/wallet-core-device'
+import { trackEvent } from '@analytics'
+
+vi.mock('@analytics', () => ({
+    trackEvent: vi.fn(),
+    WebviewEvent: {
+        BridgeMethodNotFound: 'webview_bridge_method_not_found',
+    },
+    AnalyticsMetadataKey: {
+        WebviewBridgeMethod: 'webview_bridge_method',
+        Url: 'url',
+    },
+}))
 
 vi.mock('react-native', () => ({
     Platform: {
@@ -585,6 +597,11 @@ describe('usePeraWebviewInterface', () => {
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"clientType":"ios"'),
+        )
+        // protocolVersion is the bridge's negotiation signal — see
+        // docs/DISCOVER_BRIDGE_CONTRACT.md.
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"protocolVersion":"3"'),
         )
     })
 
@@ -1899,6 +1916,88 @@ describe('usePeraWebviewInterface', () => {
             expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
                 expect.stringContaining('"id":"26"'),
             )
+        })
+
+        it('tracks an analytics event for an unknown/legacy method and still answers MethodNotFound', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(
+                    mockWebview,
+                    true,
+                    'https://discover-mobile.perawallet.app/',
+                ),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '27',
+                    jsonrpc: '2.0',
+                    method: 'handleTokenDetailActionButtonClick',
+                    params: {},
+                })
+            })
+
+            expect(trackEvent).toHaveBeenCalledWith(
+                'webview_bridge_method_not_found',
+                {
+                    webview_bridge_method: 'handleTokenDetailActionButtonClick',
+                    url: 'https://discover-mobile.perawallet.app/',
+                },
+            )
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"code":-32601'),
+            )
+        })
+
+        it('warns loudly in dev builds for an unknown method', () => {
+            ;(globalThis as { __DEV__?: boolean }).__DEV__ = true
+            const warnSpy = vi
+                .spyOn(console, 'warn')
+                .mockImplementation(() => {})
+            try {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(mockWebview, true, null),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: '28',
+                        jsonrpc: '2.0',
+                        method: 'pushTokenDetailScreen',
+                        params: {},
+                    })
+                })
+
+                expect(warnSpy).toHaveBeenCalledWith(
+                    expect.stringContaining('pushTokenDetailScreen'),
+                )
+            } finally {
+                warnSpy.mockRestore()
+                ;(globalThis as { __DEV__?: boolean }).__DEV__ = false
+            }
+        })
+
+        it('does not warn on the console in non-dev builds', () => {
+            const warnSpy = vi
+                .spyOn(console, 'warn')
+                .mockImplementation(() => {})
+            try {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(mockWebview, true, null),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: '29',
+                        jsonrpc: '2.0',
+                        method: 'pushTokenDetailScreen',
+                        params: {},
+                    })
+                })
+
+                expect(warnSpy).not.toHaveBeenCalled()
+            } finally {
+                warnSpy.mockRestore()
+            }
         })
     })
 

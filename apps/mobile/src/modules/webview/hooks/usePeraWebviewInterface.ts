@@ -76,6 +76,11 @@ import { parseWalletConnectUri } from '@hooks/deeplink/walletconnect-parser'
 import { withTimeout } from '@hooks/deeplink/handlers/timeout'
 import { useNetworkStatus } from '@modules/network'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { AnalyticsMetadataKey, WebviewEvent, trackEvent } from '@analytics'
+import {
+    isSupportedBridgeMethod,
+    type PeraWebviewBridgeMethod,
+} from './bridge-methods'
 
 type WebviewMessage = {
     id: string
@@ -1000,80 +1005,55 @@ export const usePeraWebviewInterface = (
             }
             const security = messageSecurity ?? { securedConnection, sourceUrl }
             logger.debug('Received webview interface call', { message })
+            // Keyed by the exported v3 method set so the compiler rejects a
+            // dispatch entry that drifts from PERA_WEBVIEW_BRIDGE_METHODS.
+            const handlers: Record<
+                PeraWebviewBridgeMethod,
+                (
+                    message: WebviewMessage,
+                    security: WebviewMessageSecurity,
+                ) => void
+            > = {
+                pushWebView,
+                openSystemBrowser,
+                canOpenURI,
+                openNativeURI,
+                notifyUser,
+                getAddresses,
+                getSettings,
+                getDeviceId,
+                getPublicSettings,
+                onBackPressed,
+                logAnalyticsEvent,
+                closeWebView,
+                requestTransactionSigning,
+                requestDataSigning,
+                walletConnect: openWalletConnect,
+            }
             message.forEach(message => {
-                switch (message.method) {
-                    case 'pushWebView': {
-                        pushWebView(message, security)
-                        break
-                    }
-                    case 'openSystemBrowser': {
-                        openSystemBrowser(message, security)
-                        break
-                    }
-                    case 'canOpenURI': {
-                        canOpenURI(message, security)
-                        break
-                    }
-                    case 'openNativeURI': {
-                        openNativeURI(message, security)
-                        break
-                    }
-                    case 'notifyUser': {
-                        notifyUser(message, security)
-                        break
-                    }
-                    case 'getAddresses': {
-                        getAddresses(message, security)
-                        break
-                    }
-                    case 'getSettings': {
-                        getSettings(message, security)
-                        break
-                    }
-                    case 'getDeviceId': {
-                        getDeviceId(message, security)
-                        break
-                    }
-                    case 'getPublicSettings': {
-                        getPublicSettings(message)
-                        break
-                    }
-                    case 'onBackPressed': {
-                        onBackPressed()
-                        break
-                    }
-                    case 'logAnalyticsEvent': {
-                        logAnalyticsEvent(message, security)
-                        break
-                    }
-                    case 'closeWebView': {
-                        closeWebView()
-                        break
-                    }
-                    case 'requestTransactionSigning': {
-                        requestTransactionSigning(message, security)
-                        break
-                    }
-                    case 'requestDataSigning': {
-                        requestDataSigning(message, security)
-                        break
-                    }
-                    case 'walletConnect': {
-                        openWalletConnect(message)
-                        break
-                    }
-                    default: {
-                        sendErrorToWebview(
-                            message.id,
-                            JsonRpcErrorCode.MethodNotFound,
-                            t('errors.webview.invalid_method', {
-                                method: message.method,
-                            }),
-                            webview,
+                const { method } = message
+                if (!isSupportedBridgeMethod(method)) {
+                    trackEvent(WebviewEvent.BridgeMethodNotFound, {
+                        [AnalyticsMetadataKey.WebviewBridgeMethod]: method,
+                        ...(security.sourceUrl
+                            ? { [AnalyticsMetadataKey.Url]: security.sourceUrl }
+                            : {}),
+                    })
+                    if (__DEV__) {
+                        // eslint-disable-next-line no-console
+                        console.warn(
+                            `[webview-bridge] Unknown method "${method}" from ${security.sourceUrl ?? 'unknown origin'} — not part of the v3 contract (docs/DISCOVER_BRIDGE_CONTRACT.md)`,
                         )
-                        break
                     }
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.MethodNotFound,
+                        t('errors.webview.invalid_method', { method }),
+                        webview,
+                    )
+                    return
                 }
+                handlers[method](message, security)
             })
         },
         [
