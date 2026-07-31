@@ -546,6 +546,103 @@ describe('usePeraWebviewInterface', () => {
         })
     })
 
+    it('pushWebView normalizes a bare domain to https before the safety gate', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: 'pw-bare-domain',
+                jsonrpc: '2.0',
+                method: 'pushWebView',
+                params: { url: 'perawallet.app' },
+            })
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith(
+            expect.objectContaining({ url: 'https://perawallet.app' }),
+        )
+        expect(mockWebview.injectJavaScript).not.toHaveBeenCalledWith(
+            expect.stringContaining('"error"'),
+        )
+    })
+
+    it('pushWebView passes the normalized url to the favorite toggle payload', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: 'pw-bare-favorite',
+                jsonrpc: '2.0',
+                method: 'pushWebView',
+                params: {
+                    url: 'perawallet.app',
+                    title: 'Pera',
+                    isFavorite: false,
+                },
+            })
+        })
+
+        const pushed = mockPushWebView.mock.calls.at(-1)?.[0]
+        mockWebview.injectJavaScript.mockClear()
+        act(() => pushed.favorite.onToggle())
+
+        const injected = mockWebview.injectJavaScript.mock.calls[0][0] as string
+        const eventData = JSON.parse(
+            injected.replace(/^window\.postMessage\(/, '').replace(/\);$/, ''),
+        )
+        expect(JSON.parse(eventData)).toEqual({
+            action: 'handleBrowserFavoriteButtonClick',
+            payload: {
+                name: 'Pera',
+                url: 'https://perawallet.app',
+                logo: null,
+            },
+        })
+    })
+
+    it('pushWebView still rejects http URLs after normalization', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: 'pw-http',
+                jsonrpc: '2.0',
+                method: 'pushWebView',
+                params: { url: 'http://example.com' },
+            })
+        })
+
+        expect(mockPushWebView).not.toHaveBeenCalled()
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('Unsupported URL: http://example.com'),
+        )
+    })
+
+    it('openSystemBrowser normalizes a bare domain to https', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: 'osb-bare-domain',
+                jsonrpc: '2.0',
+                method: 'openSystemBrowser',
+                params: { url: 'perawallet.app' },
+            })
+        })
+
+        expect(Linking.canOpenURL).toHaveBeenCalledWith(
+            'https://perawallet.app',
+        )
+    })
+
     it('should handle openNativeURI action', async () => {
         const { result } = renderHook(() =>
             usePeraWebviewInterface(mockWebview, true, null),
