@@ -1,0 +1,117 @@
+name: Jira Release Sync
+
+# The release half of the ticket lifecycle, driven entirely from GitHub:
+#
+#   nightly (alpha) shipped  -> Ready for QA
+#   rc shipped               -> Ready for QA, fix version stamped
+#   store (vX.Y.Z) shipped   -> Done, only what QA parked for deployment
+#
+# Bitrise runs the builds, but nothing here lives in bitrise.yml and no Jira
+# credential is copied into Bitrise: Bitrise's GitHub integration already posts a
+# check run for every tag build, so "the release shipped" is a fact GitHub can
+# read for itself. `check_run: completed` from the bitrise app with a success
+# conclusion is the gate, which is the same red/green rule the release Slack card
+# applies.
+#
+# A commit is mandatory for every move — see tools/release-tickets.sh. Tickets
+# with no branch, PR or commit are never touched and are moved by hand.
+
+on:
+  check_run:
+    types: [completed]
+  # Re-run a release's ticket sync by tag, e.g. after fixing credentials.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to sync (e.g. v7.0.0-rc.16)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    name: Sync tickets for a shipped release
+    # check_run fires for every check on every commit, so this filters hard and
+    # early: only Bitrise, only success. Anything else never starts a runner.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.check_run.app.slug == 'bitrise' &&
+        github.event.check_run.conclusion == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history + tags: the delivered-ticket range is derived from the
+          # previous tag on the same channel.
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      # A check run is attached to a commit, not a ref, so the tag has to be
+      # recovered from the SHA. No release tag on that commit means the build was
+      # not a release build, which is the common case.
+      - name: Resolve the release tag
+        id: tag
+        env:
+          DISPATCH_TAG: ${{ inputs.tag }}
+          HEAD_SHA: ${{ github.event.check_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "$DISPATCH_TAG" ]; then
+            tag="$DISPATCH_TAG"
+          else
+            tag=$(git tag --points-at "$HEAD_SHA" --sort=-v:refname |
+              grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-(alpha|rc)\.[0-9]+)?$' | head -1 || true)
+          fi
+          if [ -z "$tag" ]; then
+            echo "No release tag on ${HEAD_SHA:-<dispatch>} — nothing to sync"
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Release tag: ${tag}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+      # Channel decides what a green build means. Prerelease patterns are matched
+      # first, so the bare vX.Y.Z arm only ever sees store tags.
+      - name: Sync Jira
+        if: steps.tag.outputs.tag != ''
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          # Same board as .github/workflows/jira-sync.yml.
+          JIRA_SCOPE_JQL: 'project = PERA AND component in ("React Native") AND type not in ("Epic")'
+          JIRA_PROJECT_ID: "10044"
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          case "$TAG" in
+            *-alpha.*)
+              target="Ready for QA"
+              ;;
+            *-rc.*)
+              target="Ready for QA"
+              # Fix versions follow rc builds only: every version the project
+              # already has is rc-shaped, and one per nightly would mean ~365 a
+              # year. Add the alpha arm here if nightlies should have their own.
+              export JIRA_FIX_VERSION="$TAG"
+              ;;
+            *)
+              target="Done"
+              # Forward-only is not enough here: Ready for QA is behind Done, and
+              # closing untested work would be wrong.
+              export JIRA_ONLY_FROM_STATUSES="Waiting for Deployment"
+              ;;
+          esac
+
+          mapfile -t tickets < <(./tools/release-tickets.sh "$TAG")
+          if [ "${#tickets[@]}" -eq 0 ]; then
+            echo "No ticketed commits in ${TAG} — nothing to sync"
+            exit 0
+          fi
+          echo "${#tickets[@]} ticket(s) delivered by ${TAG}"
+          ./tools/jira-sync.sh "$target" "${tickets[@]}"

@@ -150,7 +150,28 @@ workflows:
             set -e
 
             # Changelog is best-effort: never fail the release over it.
-            LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+            #
+            # Diff against the previous tag on the SAME channel — alpha and rc
+            # interleave on main, so the nearest tag of any shape gives a range
+            # that is too short (a Friday rc would diff against Thursday's
+            # nightly). Shared with the GitHub release notes via the script.
+            LAST_TAG=$(./tools/previous-release-tag.sh "${BITRISE_GIT_TAG:-}" || echo "")
+
+            IS_STABLE=""
+            case "${BITRISE_GIT_TAG:-}" in
+              *-alpha.* | *-rc.*) ;;
+              v[0-9]*) IS_STABLE=yes ;;
+            esac
+
+            # A prerelease with no predecessor on its channel falls back to the
+            # nearest tag of any shape. A store release does NOT: it delivers
+            # everything since the previous store release, so with no previous
+            # stable the range is the whole history — which is genuinely what the
+            # first one ships. Falling back to "since last night" there would make
+            # a store release look like a nightly.
+            if [ -z "$LAST_TAG" ] && [ -z "$IS_STABLE" ]; then
+              LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+            fi
             if [ -n "$LAST_TAG" ]; then
               echo "Generating changelog since tag: $LAST_TAG"
               CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
@@ -1108,6 +1129,15 @@ workflows:
               if [ "$s" = "fail" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
             done
 
+            # generate_changelog.sh caps each section at 7 entries, so a busy
+            # nightly hides most of its own fixes behind "…and N more". The tag's
+            # GitHub release carries the full list — link it rather than widening
+            # the card. Literal \n: the payload below is JSON, not shell.
+            NOTES_LINK=""
+            if [ -n "${BITRISE_GIT_TAG:-}" ]; then
+              NOTES_LINK="\n\n<https://github.com/perawallet/pera-react-native/releases/tag/${BITRISE_GIT_TAG}|Full release notes>"
+            fi
+
             # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
             # and the release card silently never arrives. --retry covers
             # transient Slack hiccups (retries only transient failures).
@@ -1145,7 +1175,7 @@ workflows:
                       "type": "section",
                       "text": {
                         "type": "mrkdwn",
-                        "text": "*Changes since last build:*\n${CHANGELOG}"
+                        "text": "*Changes since last build:*\n${CHANGELOG}${NOTES_LINK}"
                       }
                     }
                   ]

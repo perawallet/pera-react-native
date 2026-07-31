@@ -93,4 +93,13 @@ git config user.name "Pera CI"
 git config user.email "ci@perawallet.app"
 git tag -a "$TAG" -m "$TAG"
 git push origin "$TAG"
+
+# Hand the tag to the calling workflow so it can publish a GitHub Release for
+# it. A tag pushed with GITHUB_TOKEN does not trigger further workflows, so a
+# `push: tags` trigger would never see this one — the release has to be created
+# by the job that minted it. No output means no tag was cut.
+if [ -n "${GITHUB_OUTPUT:-}" ]; then
+  echo "tag=$TAG" >>"$GITHUB_OUTPUT"
+fi
+
 echo "✓ Created and pushed $TAG"

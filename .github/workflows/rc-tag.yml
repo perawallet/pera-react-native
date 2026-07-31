@@ -36,6 +36,16 @@ jobs:
           persist-credentials: true
 
       - name: Mint and push rc tag
+        id: mint
         env:
           CHANNEL: rc
         run: ./tools/create-nightly-tag.sh
+
+      # Same reason as nightly-tag.yml: a tag pushed with GITHUB_TOKEN does not
+      # trigger workflows, so the release is published by the minting job.
+      - name: Publish GitHub release
+        if: steps.mint.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.mint.outputs.tag }}
+        run: ./tools/publish-github-release.sh "$TAG"
