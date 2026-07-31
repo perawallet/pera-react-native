@@ -127,9 +127,7 @@ describe('ARC-90 Algorand Parser', () => {
         })
 
         it('parses an address-less opt-in (algorand://?amount=0&asset=…)', () => {
-            // Pera's opt-in QR generator emits this: an opt-in is a self
-            // opt-in, so there's no receiver to embed. The scanning user
-            // picks the account downstream. Reproduces the real reported QR.
+            // The real reported QR — no receiver, account picked downstream.
             const result = parseAlgorandUri(
                 'algorand://?amount=0&asset=1152109334',
             )
@@ -138,6 +136,19 @@ describe('ARC-90 Algorand Parser', () => {
                 expect(result.assetId).toBe('1152109334')
                 expect(result.address).toBeUndefined()
             }
+        })
+
+        it('rejects a present-but-malformed address (corruption ≠ address-less)', () => {
+            // A truncated/misread QR carries an invalid address — distinct from
+            // a legitimately address-less opt-in. Reject it (→ "unrecognized")
+            // rather than silently opting a different account in.
+            const truncated = TEST_ADDRESS.slice(0, -1)
+            expect(
+                parseAlgorandUri(`algorand://${truncated}?amount=0&asset=123`),
+            ).toBeNull()
+            expect(
+                parseAlgorandUri('algorand://NOTANADDRESS?amount=0&asset=123'),
+            ).toBeNull()
         })
 
         it('keeps the address on an opt-in that carries one', () => {
