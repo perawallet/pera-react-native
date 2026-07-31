@@ -42,6 +42,7 @@ export const TransactionFooter = ({
             )}
             {!!transaction.id && (
                 <PWButton
+                    testID='transaction_detail_explorer'
                     variant='secondary'
                     title={t('transactions.common.view_in_explorer')}
                     iconRight='arrow-up-right'
