@@ -48,6 +48,7 @@ export const InputScreen = () => {
         setMax,
         handleKey,
         handleNext,
+        isResolvingDestination,
         isCollectible,
     } = useInputScreen()
     const selectedAccount = useSelectedAccount()
@@ -152,6 +153,13 @@ export const InputScreen = () => {
     // them kept the whole Send entry point on a spinner while offline
     // (PERA-4579). The DB-backed gates below resolve offline.
     if (!asset || !accountAssetBalance || !accountInformation) {
+        return <LoadingView variant='circle' />
+    }
+
+    // A deeplink-prefilled external receiver's opt-in is being resolved
+    // on-chain after the amount was confirmed — hold on a spinner until the
+    // router navigates onward, rather than leaving the amount form tappable.
+    if (isResolvingDestination) {
         return <LoadingView variant='circle' />
     }
 

@@ -24,8 +24,12 @@ export const SelectDestinationScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const { selectedAsset, handleSelected, isCheckingExternalOptIn } =
-        useSelectDestinationScreen()
+    const {
+        selectedAsset,
+        handleSelected,
+        isCheckingExternalOptIn,
+        isAutoAdvancing,
+    } = useSelectDestinationScreen()
 
     useNavigationHeader({
         title: selectedAsset ? (
@@ -38,6 +42,12 @@ export const SelectDestinationScreen = () => {
             </PWView>
         ) : undefined,
     })
+
+    // A deeplink-prefilled destination routes through automatically — show a
+    // spinner (never the error EmptyView or the picker) until it resolves.
+    if (isAutoAdvancing) {
+        return <LoadingView variant='circle' />
+    }
 
     if (!selectedAsset) {
         return (

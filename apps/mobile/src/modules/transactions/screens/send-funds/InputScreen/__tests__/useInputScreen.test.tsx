@@ -71,6 +71,16 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         },
     })),
     isRekeyedAccount: vi.fn(() => false),
+    // Consumed by the shared useSendDestinationRouter that useInputScreen now
+    // calls for the deeplink-prefill direct-navigation path.
+    useAllAccounts: vi.fn(() => []),
+    useOnChainAccountInformationQuery: vi.fn(() => ({
+        data: undefined,
+        isFetching: false,
+        isSuccess: false,
+        isError: false,
+    })),
+    canSignWith: vi.fn(() => false),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -106,12 +116,13 @@ const mockSendFundsState = {
     canSelectAsset: true,
     amount: undefined,
     note: undefined,
-    destination: undefined,
+    destination: undefined as string | undefined,
     setSelectedAssetId: vi.fn(),
     setCanSelectAsset: vi.fn(),
     setAmount: mockSetAmount,
     setNote: mockSetNote,
     setDestination: vi.fn(),
+    setSendMode: vi.fn(),
     setIsCloseAccount: mockSetIsCloseAccount,
     reset: vi.fn(),
 }
@@ -128,6 +139,7 @@ describe('useInputScreen', () => {
         // Reset the mock state
         mockSendFundsState.selectedAssetId = '0'
         mockSendFundsState.note = undefined
+        mockSendFundsState.destination = undefined
         ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
         ;(useSelectedAccount as Mock).mockReturnValue({
             address: 'test-addr',
@@ -326,6 +338,26 @@ describe('useInputScreen', () => {
         expect(mockSetAmount).toHaveBeenCalled()
         expect(mockSetAmount.mock.calls[0][0].toString()).toBe('5')
         expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
+    })
+
+    it('skips the picker and routes straight through when a deeplink prefilled the destination', async () => {
+        // Value-bearing deeplink: ALGO receiver already known, so tapping Next
+        // must jump straight to Confirm instead of pushing SelectDestination.
+        mockSendFundsState.destination = 'RECEIVERADDR'
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: { amount: 100_000_000n, minBalance: 0n },
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('5')
+        })
+        await act(async () => {
+            await result.current.handleNext()
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
+        expect(mockNavigate).not.toHaveBeenCalledWith('SelectDestination')
     })
 
     it('setMax sets value to full account balance', () => {
