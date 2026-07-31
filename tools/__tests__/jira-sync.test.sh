@@ -64,6 +64,11 @@ export JIRA_BASE_URL=https://example.atlassian.net
 export JIRA_USER_EMAIL=ci@example.com
 export JIRA_API_TOKEN=token
 export STUB_TRANSITIONS="$TRANSITIONS"
+# Unscoped by default: an unset JIRA_SCOPE_JQL takes the real board filter from
+# tools/lib/jira-api.sh, and the stub answers every board lookup with an empty
+# list — which would drop every key before the cases below reach a transition.
+# Empty means "no scoping"; the board-scope cases set it explicitly.
+export JIRA_SCOPE_JQL=""
 
 failures=0
 # Asserts on the combined output, since every path is designed to exit 0.

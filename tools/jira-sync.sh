@@ -5,8 +5,9 @@ set -uo pipefail
 #
 # Moves Jira issues to a target status, optionally reassigning them and stamping
 # a fix version. Shared by .github/workflows/jira-sync.yml (branch pushed / PR
-# opened / merged to main) and .bitrise/bitrise.yml `notify-release` (nightly +
-# RC builds), so the rules for talking to Jira live in exactly one place.
+# opened / merged to main) and .github/workflows/jira-release-sync.yml (nightly,
+# rc and store builds), so the rules for talking to Jira live in exactly one
+# place. Nothing in .bitrise/ calls this — Bitrise holds no Jira credential.
 #
 # Arguments are scanned for PERA-<digits> tokens, so whole commit subjects,
 # branch names or PR titles can be passed verbatim; anything else is ignored.
@@ -18,10 +19,12 @@ set -uo pipefail
 #                                                   absent, then stamp issues
 #                                                   that have none yet
 #   JIRA_PROJECT_ID                                 required with the above
-#   JIRA_SCOPE_JQL                                  optional — confirm every
-#                                                   candidate against this board
-#                                                   filter first, skipping any
-#                                                   issue outside it
+#   JIRA_SCOPE_JQL                                  defaults to the board filter
+#                                                   in tools/lib/jira-api.sh —
+#                                                   every candidate is confirmed
+#                                                   against it first and issues
+#                                                   outside it are skipped. Set
+#                                                   to "" to disable scoping.
 #   JIRA_SKIP_STATUSES                              optional — comma-separated
 #                                                   statuses to leave untouched
 #   JIRA_ONLY_FROM_STATUSES                         optional — comma-separated
@@ -53,6 +56,8 @@ if ! jira_api_init; then
     echo "::warning::jira-sync: ${JIRA_MISSING_CREDENTIAL} is not set — skipping Jira sync"
     exit 0
 fi
+
+JIRA_SCOPE_JQL="${JIRA_SCOPE_JQL-$JIRA_DEFAULT_SCOPE_JQL}"
 
 if [ "$#" -eq 0 ]; then
     echo "jira-sync: no issues given — nothing to do"
@@ -98,9 +103,7 @@ write() { # $1 method  $2 path  $3 json body  $4 status to report when skipped
 # title, a commit subject. Deliberately no status-based lookup: a ticket with no
 # branch, PR or commit must be moved by a person, and selecting on status alone
 # would sweep exactly those up.
-input=$(printf '%s\n' "$@")
-
-KEYS=$(printf '%s\n' "$input" | grep -oE '[Pp][Ee][Rr][Aa]-[0-9]+' | tr '[:lower:]' '[:upper:]' | sort -u)
+KEYS=$(printf '%s\n' "$@" | grep -oE '[Pp][Ee][Rr][Aa]-[0-9]+' | tr '[:lower:]' '[:upper:]' | sort -u)
 if [ -z "$KEYS" ]; then
     echo "jira-sync: no PERA keys resolved — nothing to do"
     exit 0
@@ -161,7 +164,7 @@ find_version() { # $1 version name -> id on stdout, non-zero when the list is un
 }
 
 ensure_fix_version() { # $1 version name
-    local name="$1" code
+    local name="$1" code existing
     if ! existing=$(find_version "$name"); then
         echo "::warning::could not list versions of project ${JIRA_PROJECT_ID}"
         return 1

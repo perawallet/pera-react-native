@@ -8,6 +8,18 @@
 #
 # Nothing that sources this may use `set -x` — the trace would print the token.
 
+# The board this automation is allowed to touch — mirrors "Filter for Pera React
+# Native Board". Ticket keys are parsed out of branch names, PR titles and commit
+# subjects, which are just text, so every stage confirms a candidate against this
+# filter before writing: a PR citing a Backend ticket must not move it.
+#
+# Defined once here rather than repeated in each workflow's `env:`. It is not a
+# secret, and three copies of one JQL string drift silently — the board would be
+# narrowed in the sync and left wide in the drift report. Callers resolve it with
+# `${JIRA_SCOPE_JQL-$JIRA_DEFAULT_SCOPE_JQL}`: unset takes this default, while an
+# explicitly empty value still means "no scoping" for anyone who wants that.
+JIRA_DEFAULT_SCOPE_JQL='project = PERA AND component in ("React Native") AND type not in ("Epic")'
+
 # Returns non-zero when a credential is missing, so the caller decides whether
 # that is a warning or a failure.
 jira_api_init() {

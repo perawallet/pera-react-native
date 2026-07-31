@@ -5,8 +5,10 @@ name: Jira Sync
 #   branch pushed        -> In Progress
 #   PR ready for review  -> In Code Review
 #   merged to main       -> In Code Review, assigned to QA
-#   nightly/RC shipped   -> Ready for QA   (in .bitrise/bitrise.yml notify-release,
-#                                           since only Bitrise knows a build landed)
+#
+# The release half — nightly/rc/store shipped — lives in
+# .github/workflows/jira-release-sync.yml, driven by Bitrise's check run rather
+# than from bitrise.yml, so no Jira credential is copied into Bitrise.
 #
 # Ticket keys come from the branch name and the PR title, both of which carry
 # [PERA-####] by convention. Commits without a key (ci/docs/chore) simply no-op —
@@ -38,10 +40,8 @@ env:
   JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
   JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
   JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-  # Mirrors "Filter for Pera React Native Board". Ticket keys are parsed out of
-  # branch names and PR titles, which are just text — this bounds the automation
-  # to the board it belongs to, so a PR citing a Backend ticket cannot move it.
-  JIRA_SCOPE_JQL: 'project = PERA AND component in ("React Native") AND type not in ("Epic")'
+  # The board filter that bounds every stage lives in tools/lib/jira-api.sh, so
+  # the sync, the release sync and the drift report cannot disagree about it.
 
 jobs:
   in-progress:

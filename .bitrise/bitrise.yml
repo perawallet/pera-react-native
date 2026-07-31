@@ -151,27 +151,11 @@ workflows:
 
             # Changelog is best-effort: never fail the release over it.
             #
-            # Diff against the previous tag on the SAME channel — alpha and rc
-            # interleave on main, so the nearest tag of any shape gives a range
-            # that is too short (a Friday rc would diff against Thursday's
-            # nightly). Shared with the GitHub release notes via the script.
-            LAST_TAG=$(./tools/previous-release-tag.sh "${BITRISE_GIT_TAG:-}" || echo "")
-
-            IS_STABLE=""
-            case "${BITRISE_GIT_TAG:-}" in
-              *-alpha.* | *-rc.*) ;;
-              v[0-9]*) IS_STABLE=yes ;;
-            esac
-
-            # A prerelease with no predecessor on its channel falls back to the
-            # nearest tag of any shape. A store release does NOT: it delivers
-            # everything since the previous store release, so with no previous
-            # stable the range is the whole history — which is genuinely what the
-            # first one ships. Falling back to "since last night" there would make
-            # a store release look like a nightly.
-            if [ -z "$LAST_TAG" ] && [ -z "$IS_STABLE" ]; then
-              LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-            fi
+            # Which tag to diff against is one rule shared with the delivered-
+            # ticket list, so it lives in a script rather than being spelled out
+            # here — see tools/release-range-start.sh for why alpha and rc need
+            # per-channel ranges and why a store release must not fall back.
+            LAST_TAG=$(./tools/release-range-start.sh "${BITRISE_GIT_TAG:-}" || echo "")
             if [ -n "$LAST_TAG" ]; then
               echo "Generating changelog since tag: $LAST_TAG"
               CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")

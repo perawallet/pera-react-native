@@ -23,7 +23,8 @@ set -uo pipefail
 #
 # Env:
 #   JIRA_BASE_URL, JIRA_USER_EMAIL, JIRA_API_TOKEN  required
-#   JIRA_SCOPE_JQL                                  required — the board filter
+#   JIRA_SCOPE_JQL                                  defaults to the board filter
+#                                                   in tools/lib/jira-api.sh
 #   DRIFT_GRACE_HOURS                               default 48
 #   DRIFT_LOOKBACK_DAYS                             default 30
 
@@ -35,8 +36,9 @@ if ! jira_api_init; then
     echo "::warning::jira-drift: ${JIRA_MISSING_CREDENTIAL} is not set — cannot report drift"
     exit 0
 fi
-if [ -z "${JIRA_SCOPE_JQL:-}" ]; then
-    echo "::warning::jira-drift: JIRA_SCOPE_JQL is not set — refusing to report on the whole project"
+JIRA_SCOPE_JQL="${JIRA_SCOPE_JQL-$JIRA_DEFAULT_SCOPE_JQL}"
+if [ -z "$JIRA_SCOPE_JQL" ]; then
+    echo "::warning::jira-drift: JIRA_SCOPE_JQL is empty — refusing to report on the whole project"
     exit 0
 fi
 

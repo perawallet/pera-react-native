@@ -33,14 +33,9 @@ case "$TAG" in
     v[0-9]*) IS_STABLE=yes ;;
 esac
 
-RANGE_START=$("${ROOT_DIR}/tools/previous-release-tag.sh" "$TAG")
-
-# A prerelease with no predecessor on its channel falls back to the nearest tag
-# of any shape rather than to the whole history. A store release does not — see
-# above.
-if [ -z "$RANGE_START" ] && [ -z "$IS_STABLE" ]; then
-    RANGE_START=$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || echo "")
-fi
+# Shared with the Slack changelog in .bitrise/bitrise.yml, including the
+# prerelease-only fallback — see tools/release-range-start.sh.
+RANGE_START=$("${ROOT_DIR}/tools/release-range-start.sh" "$TAG")
 
 if [ -n "$RANGE_START" ]; then
     RANGE="${RANGE_START}..${TAG}"

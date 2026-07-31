@@ -44,8 +44,6 @@ jobs:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-          # Same board as the sync — see .github/workflows/jira-sync.yml.
-          JIRA_SCOPE_JQL: 'project = PERA AND component in ("React Native") AND type not in ("Epic")'
           DRIFT_GRACE_HOURS: ${{ inputs.grace_hours || '48' }}
         run: ./tools/jira-drift.sh
 
