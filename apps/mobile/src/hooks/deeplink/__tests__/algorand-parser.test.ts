@@ -125,6 +125,34 @@ describe('ARC-90 Algorand Parser', () => {
                 expect(result.address).toBe(TEST_ADDRESS)
             }
         })
+
+        it('parses an address-less opt-in (algorand://?amount=0&asset=…)', () => {
+            // Pera's opt-in QR generator emits this: an opt-in is a self
+            // opt-in, so there's no receiver to embed. The scanning user
+            // picks the account downstream. Reproduces the real reported QR.
+            const result = parseAlgorandUri(
+                'algorand://?amount=0&asset=1152109334',
+            )
+            expect(result?.type).toBe(DeeplinkType.ASSET_OPT_IN)
+            if (result?.type === DeeplinkType.ASSET_OPT_IN) {
+                expect(result.assetId).toBe('1152109334')
+                expect(result.address).toBeUndefined()
+            }
+        })
+
+        it('keeps the address on an opt-in that carries one', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?amount=0&asset=999`,
+            )
+            expect(result?.type).toBe(DeeplinkType.ASSET_OPT_IN)
+            if (result?.type === DeeplinkType.ASSET_OPT_IN) {
+                expect(result.address).toBe(TEST_ADDRESS)
+            }
+        })
+
+        it('still rejects an address-less transfer (no asset, non-zero amount)', () => {
+            expect(parseAlgorandUri('algorand://?amount=100')).toBeNull()
+        })
     })
 
     describe('Keyreg', () => {

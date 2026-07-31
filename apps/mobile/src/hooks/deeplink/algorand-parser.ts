@@ -42,24 +42,31 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
     if (parsed.type === 'payment' || parsed.type === 'noop') {
         const { address, params = {} } = parsed
 
-        if (!address || !isValidAlgorandAddress(address)) {
-            return null
-        }
-
         const amount = params.amount
         const assetId = params.asset
         const note = params.note
         const xnote = params.xnote
         const label = params.label
 
-        // Asset Opt-in: Amount is 0 and Asset ID is present
+        // Asset Opt-in: amount 0 + asset present. This form is address-less by
+        // design — an opt-in has no receiver; the scanning user opts their OWN
+        // account in, so the generator can't embed an address (Pera's opt-in
+        // QR emits `algorand://?amount=0&asset=<id>`). Resolve it BEFORE the
+        // address guard below, which correctly rejects address-less transfers.
+        // Mirrors the perawallet:// old-parser + native pera; the opt-in
+        // handler prompts for an account when the link carries none.
         if (amount === '0' && assetId) {
+            const hasValidAddress = !!address && isValidAlgorandAddress(address)
             return {
                 type: DeeplinkType.ASSET_OPT_IN,
                 sourceUrl: url,
                 assetId: assetId,
-                address,
+                address: hasValidAddress ? address : undefined,
             } as AssetOptInDeeplink
+        }
+
+        if (!address || !isValidAlgorandAddress(address)) {
+            return null
         }
 
         // Asset Transfer: Asset ID is present
