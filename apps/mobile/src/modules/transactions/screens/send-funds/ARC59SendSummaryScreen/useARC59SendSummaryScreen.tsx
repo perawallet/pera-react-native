@@ -14,6 +14,7 @@ import { type FC, useCallback, useEffect, useState } from 'react'
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
+    getArc59SignedFundingAmount,
     useArc59SendSummaryQuery,
     type Arc59SendSummaryResponse,
 } from '@perawallet/wallet-core-asa-inbox'
@@ -49,6 +50,7 @@ type UseARC59SendSummaryScreenResult = {
     summary?: Arc59SendSummaryResponse
     isLoading: boolean
     assetId: string
+    recipientAddress: string
     amount: Nullable<Decimal>
     fee: Nullable<Decimal>
     asset: Nullable<PeraAsset>
@@ -90,13 +92,12 @@ export const useARC59SendSummaryScreen =
             if (!summary || !accountInfo) return
 
             const availableAlgo = accountInfo.amount - accountInfo.minBalance
-            const requiredMicroAlgo = BigInt(summary.total_protocol_and_mbr_fee)
+            // Gate on the amount actually signed (PERA-4710), not the
+            // independent `total_protocol_and_mbr_fee` field.
+            const requiredMicroAlgo = getArc59SignedFundingAmount(summary)
 
             if (availableAlgo < requiredMicroAlgo) {
-                const requiredAlgo = toWholeUnits(
-                    summary.total_protocol_and_mbr_fee,
-                    ALGO_ASSET,
-                )
+                const requiredAlgo = toWholeUnits(requiredMicroAlgo, ALGO_ASSET)
                 navigation.replace('InsufficientBalance', {
                     requiredBalance: formatCurrency(
                         requiredAlgo,
@@ -114,7 +115,7 @@ export const useARC59SendSummaryScreen =
         }, [summary, setArc59Summary])
 
         const fee = summary
-            ? toWholeUnits(summary.total_protocol_and_mbr_fee, ALGO_ASSET)
+            ? toWholeUnits(getArc59SignedFundingAmount(summary), ALGO_ASSET)
             : null
 
         const [isProcessing, setIsProcessing] = useState(false)
@@ -162,6 +163,7 @@ export const useARC59SendSummaryScreen =
             summary,
             isLoading,
             assetId,
+            recipientAddress: receiverAddress,
             fee,
             amount: amount ?? null,
             HeaderImageComponent: headerImage,

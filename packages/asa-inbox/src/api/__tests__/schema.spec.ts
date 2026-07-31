@@ -16,8 +16,10 @@ import {
     arc59WarningMessageSchema,
     arc59AssetRequestsResponseSchema,
     mapArc59AssetRequest,
+    MAX_ARC59_FUNDING_MICRO_ALGO,
     type Arc59AssetRequestResponse,
 } from '../schema'
+import { getArc59SignedFundingAmount } from '../../getArc59SignedFundingAmount'
 
 describe('arc59WarningMessageSchema', () => {
     test('parses a valid warning message', () => {
@@ -95,6 +97,49 @@ describe('arc59SendSummaryResponseSchema', () => {
         expect(result.inbox_address).toBe('TESTINBOXADDRESS')
     })
 
+    // PERA-4710: the signed payment = algo_fund_amount + minimum_balance_requirement
+    // must be bounded well below MAX_SAFE_INTEGER so a hostile summary can't
+    // drain the account through the headless signature.
+    test('rejects an algo_fund_amount above the funding ceiling', () => {
+        expect(() =>
+            arc59SendSummaryResponseSchema.parse({
+                ...validSummary,
+                algo_fund_amount: MAX_ARC59_FUNDING_MICRO_ALGO + 1,
+            }),
+        ).toThrow()
+    })
+
+    test('rejects a minimum_balance_requirement above the funding ceiling', () => {
+        expect(() =>
+            arc59SendSummaryResponseSchema.parse({
+                ...validSummary,
+                minimum_balance_requirement: MAX_ARC59_FUNDING_MICRO_ALGO + 1,
+            }),
+        ).toThrow()
+    })
+
+    test('rejects two individually-legal amounts whose SUM exceeds the ceiling', () => {
+        // Regression: bounding each field separately admitted 2 × the limit,
+        // and the sum is what the wallet actually signs.
+        expect(() =>
+            arc59SendSummaryResponseSchema.parse({
+                ...validSummary,
+                algo_fund_amount: MAX_ARC59_FUNDING_MICRO_ALGO,
+                minimum_balance_requirement: 1,
+            }),
+        ).toThrow()
+    })
+
+    test('accepts a funding total exactly at the ceiling', () => {
+        expect(() =>
+            arc59SendSummaryResponseSchema.parse({
+                ...validSummary,
+                algo_fund_amount: MAX_ARC59_FUNDING_MICRO_ALGO - 1,
+                minimum_balance_requirement: 1,
+            }),
+        ).not.toThrow()
+    })
+
     test('rejects missing required fields', () => {
         expect(() =>
             arc59SendSummaryResponseSchema.parse({
@@ -163,6 +208,17 @@ describe('arc59SendSummaryResponseSchema', () => {
                 algo_fund_amount: Number.MAX_SAFE_INTEGER + 2,
             }),
         ).toThrow()
+    })
+})
+
+describe('getArc59SignedFundingAmount', () => {
+    test('sums algo_fund_amount and minimum_balance_requirement as µAlgo', () => {
+        expect(
+            getArc59SignedFundingAmount({
+                algo_fund_amount: 200_000,
+                minimum_balance_requirement: 100_000,
+            }),
+        ).toBe(300_000n)
     })
 })
 
