@@ -12,7 +12,8 @@
 
 import { useStyles } from './styles'
 import CameraOverlay from '@assets/images/camera-overlay.svg'
-import { Modal } from 'react-native'
+import { ActivityIndicator, Modal } from 'react-native'
+import { useTheme } from '@rneui/themed'
 import { Suspense, createRef, lazy, useCallback, useState } from 'react'
 import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useLanguage } from '@hooks/useLanguage'
@@ -100,6 +101,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { t } = useLanguage()
+    const { theme } = useTheme()
 
     const [QRCameraScanner, setQRCameraScanner] = useState(() =>
         createQRCameraScanner(),
@@ -116,6 +118,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
         scanningEnabled,
         permissionDenied,
         hasPermission,
+        isHandling,
         onBarcodeScanned,
         onError,
     } = useQRScannerView({
@@ -196,6 +199,30 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                             >
                                 {props.title ?? t('camera.find_qr.title')}
                             </PWText>
+                            {/* Hand-rolled rather than PWLoadingOverlay: that
+                                renders through PWOverlay → rneui Overlay, i.e.
+                                its own Modal, and nesting a Modal inside this
+                                one is the layering trap the comment above
+                                describes.
+
+                                Last in document order among the scanner's own
+                                layers, so it covers the stilled camera frame —
+                                but still before NotifierWrapper's toast, which
+                                must stay on top. */}
+                            {isHandling ? (
+                                <PWView style={styles.handlingOverlay}>
+                                    <ActivityIndicator
+                                        size='large'
+                                        color={theme.colors.textWhite}
+                                    />
+                                    <PWText
+                                        variant='body'
+                                        style={styles.handlingLabel}
+                                    >
+                                        {t('camera.handling_code')}
+                                    </PWText>
+                                </PWView>
+                            ) : null}
                         </BaseErrorBoundary>
                     )}
                 </NotifierWrapper>

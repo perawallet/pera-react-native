@@ -466,6 +466,7 @@
         }
     },
     "camera": {
+        "handling_code": "Just a moment...",
         "no_camera_device_found": {
             "title": "No camera device found or missing permissions.",
             "body": "Please double check in your system settings that you have enabled camera permissions for the app."
