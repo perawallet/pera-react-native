@@ -28,6 +28,7 @@ let mockIsLoading = false
 let mockDataUpdatedAt = 0
 let mockErrorUpdatedAt = 0
 let mockQueryOptions: MockQueryOptions | undefined
+let mockOnboardingStep = 'VERIFICATION'
 
 const queryData = () =>
     mockVerificationState === undefined
@@ -53,8 +54,15 @@ vi.mock('../useOnboardingDetailsQuery', () => ({
 
 vi.mock('../../store', () => ({
     useCardStore: (
-        selector: (state: { onboardingId: string | null }) => unknown,
-    ) => selector({ onboardingId: 'mock-onboarding-id' }),
+        selector: (state: {
+            onboardingId: string | null
+            onboardingStep: string
+        }) => unknown,
+    ) =>
+        selector({
+            onboardingId: 'mock-onboarding-id',
+            onboardingStep: mockOnboardingStep,
+        }),
 }))
 
 import { useOnboardingKycPoll } from '../useOnboardingKycPoll'
@@ -74,6 +82,7 @@ beforeEach(() => {
     mockDataUpdatedAt = 0
     mockErrorUpdatedAt = 0
     mockQueryOptions = undefined
+    mockOnboardingStep = 'VERIFICATION'
 })
 
 describe('useOnboardingKycPoll', () => {
@@ -96,6 +105,17 @@ describe('useOnboardingKycPoll', () => {
 
     it('passes the enabled gate through to the query', () => {
         renderHook(() => useOnboardingKycPoll({ enabled: false }))
+
+        expect(mockQueryOptions?.enabled).toBe(false)
+    })
+
+    // The final address step consumes the onboarding session server-side, so
+    // GET register only answers "Invalid onboarding ID" afterwards. Keeping
+    // the poll running would burn 3 failing calls and flip a PENDING row into
+    // a bogus timed-out error.
+    it('self-disables once registration completes, even when the caller enables it', () => {
+        mockOnboardingStep = 'COMPLETED'
+        renderHook(() => useOnboardingKycPoll({ enabled: true }))
 
         expect(mockQueryOptions?.enabled).toBe(false)
     })
