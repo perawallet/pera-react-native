@@ -12,7 +12,7 @@
 
 import type {
     PlatformExtension,
-    PushNotificationInitResult,
+    PlatformInitResult,
 } from '@perawallet/wallet-extension-platform'
 import { platformServices } from './resources'
 
@@ -21,13 +21,17 @@ export type ChromePlatformExtension = PlatformExtension
 export const WithChromePlatformExtension = (
     _provider: unknown,
 ): ChromePlatformExtension => {
-    const initialize = async (): Promise<PushNotificationInitResult> => {
+    const initialize = async (): Promise<PlatformInitResult> => {
         await Promise.allSettled([
             platformServices.crashReporting.initializeCrashReporting(),
             platformServices.remoteConfig.initializeRemoteConfig(),
             platformServices.analytics.initializeAnalytics(),
         ])
-        return platformServices.pushNotification.initializeNotifications()
+        // Not awaited, matching the RN extension — see PlatformInitResult.
+        return {
+            notifications:
+                platformServices.pushNotification.initializeNotifications(),
+        }
     }
 
     return {

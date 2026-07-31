@@ -85,8 +85,16 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
         const runBootstrap = async () => {
             try {
-                const { token } = await provider.initialize()
-                setFcmToken(token ?? null)
+                // Awaits crash reporting, remote config, analytics and SSL
+                // pinning — which the calls below genuinely depend on — but not
+                // push registration. That is bounded at several seconds and used
+                // to hold the splash for the whole round trip on a slow or
+                // offline start (PERA-4727); nothing in bootstrap needs the
+                // token, so it lands whenever it lands.
+                const { notifications } = await provider.initialize()
+                void notifications.then(({ token }) =>
+                    setFcmToken(token ?? null),
+                )
 
                 // do startup hydration and setup in parallel to speed up time
                 // to interactive. Keystore/database failures must fail the whole

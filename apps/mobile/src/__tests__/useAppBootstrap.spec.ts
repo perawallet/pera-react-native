@@ -114,7 +114,9 @@ describe('useAppBootstrap', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         vi.useRealTimers()
-        mocks.provider.initialize.mockResolvedValue({ token: 'fcm-token' })
+        mocks.provider.initialize.mockResolvedValue({
+            notifications: Promise.resolve({ token: 'fcm-token' }),
+        })
         mocks.hydrateKeystore.mockResolvedValue(undefined)
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedAlgoAsset.mockResolvedValue(undefined)
@@ -184,7 +186,9 @@ describe('useAppBootstrap', () => {
     })
 
     it('tolerates token undefined from initialize (fcmToken null, no error)', async () => {
-        mocks.provider.initialize.mockResolvedValue({ token: undefined })
+        mocks.provider.initialize.mockResolvedValue({
+            notifications: Promise.resolve({ token: undefined }),
+        })
         vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
@@ -200,7 +204,9 @@ describe('useAppBootstrap', () => {
     it('retryBootstrap clears initError and re-runs bootstrap to success', async () => {
         mocks.provider.initialize
             .mockRejectedValueOnce(new Error('first attempt fails'))
-            .mockResolvedValue({ token: 'fcm-token' })
+            .mockResolvedValue({
+                notifications: Promise.resolve({ token: 'fcm-token' }),
+            })
         vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
