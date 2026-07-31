@@ -116,7 +116,7 @@ const mockSendFundsState = {
     canSelectAsset: true,
     amount: undefined,
     note: undefined,
-    destination: undefined,
+    destination: undefined as string | undefined,
     setSelectedAssetId: vi.fn(),
     setCanSelectAsset: vi.fn(),
     setAmount: mockSetAmount,
