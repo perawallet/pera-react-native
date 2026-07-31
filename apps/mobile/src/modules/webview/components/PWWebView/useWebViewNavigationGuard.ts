@@ -20,6 +20,7 @@ import { parseDeeplink } from '@hooks/deeplink/parser'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { isTrustedWebviewOrigin } from '@modules/webview/hooks/handlers'
 import { getDisplayHost } from './getDisplayHost'
 import {
     SOCIAL_MEDIA_APP_PROBES,
@@ -30,6 +31,16 @@ import {
 import type WebView from 'react-native-webview'
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes'
 
+/**
+ * Opt-in handoff for a host WebView that renders no controls of its own (the
+ * Discover tab): a navigation off `hostUrl`'s origin is sent to
+ * `onExternalNavigation` instead of loading in place.
+ */
+type ExternalNavigationHandoff = {
+    hostUrl: string
+    onExternalNavigation: (url: string) => void
+}
+
 type UseWebViewNavigationGuardOptions = {
     isTrustedOrigin: boolean
     /** Live page URL — logged (host only) when a dispatch is refused. */
@@ -39,6 +50,7 @@ type UseWebViewNavigationGuardOptions = {
      * positive install probe — otherwise the tap dead-ends.
      */
     webviewRef?: React.RefObject<Nullable<WebView>>
+    externalNavigation?: ExternalNavigationHandoff
 }
 
 type UseWebViewNavigationGuardResult = {
@@ -98,6 +110,7 @@ export const useWebViewNavigationGuard = ({
     isTrustedOrigin,
     pageUrl,
     webviewRef,
+    externalNavigation,
 }: UseWebViewNavigationGuardOptions): UseWebViewNavigationGuardResult => {
     const { handleDeepLink } = useDeepLink()
     const { t } = useLanguage()
@@ -153,7 +166,23 @@ export const useWebViewNavigationGuard = ({
                 return false
             }
 
+            // A host WebView with no controls of its own (the Discover tab)
+            // must not navigate itself to a third-party site: it has no
+            // back/close affordance, so the user is stranded there until the
+            // app is force-killed (PERA-4742). Hand those off to the in-app
+            // browser, which brings its own chrome, and leave the host page in
+            // place to return to. Evaluated at each web-load point below, so
+            // deeplink routing still wins.
+            const isExternalToHost =
+                externalNavigation !== undefined &&
+                request.isTopFrame !== false &&
+                !isTrustedWebviewOrigin(url, [externalNavigation.hostUrl])
+
             if (isWebUrl && !isPeraUniversalLink(url)) {
+                if (isExternalToHost) {
+                    externalNavigation?.onExternalNavigation(url)
+                    return false
+                }
                 return true
             }
 
@@ -188,6 +217,10 @@ export const useWebViewNavigationGuard = ({
             }
 
             if (isWebUrl) {
+                if (isExternalToHost) {
+                    externalNavigation?.onExternalNavigation(url)
+                    return false
+                }
                 return true
             }
 
@@ -205,7 +238,15 @@ export const useWebViewNavigationGuard = ({
 
             return false
         },
-        [handleDeepLink, isTrustedOrigin, pageUrl, webviewRef, errorToast, t],
+        [
+            handleDeepLink,
+            isTrustedOrigin,
+            pageUrl,
+            webviewRef,
+            externalNavigation,
+            errorToast,
+            t,
+        ],
     )
 
     return { onShouldStartLoadWithRequest }
