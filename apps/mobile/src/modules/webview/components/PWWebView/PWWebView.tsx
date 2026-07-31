@@ -51,6 +51,8 @@ import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
 import { toLoadableUrl } from './toLoadableUrl'
+import { getWebViewUserAgent } from './getWebViewUserAgent'
+import { HARDENED_WEBVIEW_PROPS } from './hardenedWebViewProps'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebViewStore, type WebViewFavorite } from '../../hooks'
@@ -114,10 +116,6 @@ export const PWWebView = (props: PWWebViewProps) => {
     const isDarkMode = useIsDarkMode()
     const { t } = useLanguage()
     const contextFingerprints = useContextFingerprints()
-    useNotifyWebViewOnContextChange(
-        webview,
-        enablePeraConnect ? contextFingerprints : undefined,
-    )
 
     // Normalize before loading: a scheme-less url (e.g. a bare host typed into
     // the Discover URL bar) is otherwise resolved by WKWebView as a bundle-
@@ -148,16 +146,30 @@ export const PWWebView = (props: PWWebViewProps) => {
     const { trackNavigation, resolveMessageSecurity } =
         useWebViewMessageSecurity(loadableUrl)
 
+    useNotifyWebViewOnContextChange(
+        webview,
+        enablePeraConnect ? contextFingerprints : undefined,
+        isSecure,
+    )
+
     const provider = usePeraProvider()
     const deviceInfo = provider.deviceInfo
 
     // Append the Pera identifier to the WebView's default browser UA rather
     // than replacing it: a bare non-browser UA (no Mozilla token) makes some
     // dApp CDNs/bot filters serve 404 (PERA-4566). The API User-Agent header
-    // (useAppBootstrap) is separate and unaffected.
+    // (useAppBootstrap) is separate and unaffected. Trust is decided once from
+    // the initial load target, not per navigation: WKWebView reads
+    // applicationNameForUserAgent only at WebView creation, so it cannot
+    // follow an in-place navigation across the trust boundary (dapps opened
+    // from Discover get their own PWWebView, so they load with the coarse UA).
     const applicationNameForUserAgent = useMemo(
-        () => deviceInfo.getUserAgent(),
-        [deviceInfo],
+        () =>
+            getWebViewUserAgent(
+                deviceInfo,
+                isTrustedWebviewOrigin(loadableUrl, [config.discoverBaseUrl]),
+            ),
+        [deviceInfo, loadableUrl],
     )
 
     const onCloseRequested = useCallback(() => {
@@ -311,12 +323,34 @@ export const PWWebView = (props: PWWebViewProps) => {
         })
     }, [])
 
+    // Installed BEFORE the page runs any script: @perawallet/connect fires
+    // window.open('perawallet-wc://…') the moment the user connects —
+    // possibly before document-end injection has run. Without the hook in
+    // place, WKWebView silently drops the call (popups disabled) and Android
+    // detours it through the navigation guard. Interface before connect —
+    // peraConnectJS's initial processModals() needs window.peraRPC. The
+    // trailing 'true;' keeps iOS from choking on a non-serializable eval
+    // result.
+    const preLoadJS = useMemo(
+        () =>
+            enablePeraConnect
+                ? peraMobileInterfaceJS(bridgeToken) + peraConnectJS + 'true;'
+                : undefined,
+        [enablePeraConnect, bridgeToken],
+    )
+
+    // Document-end bundle. The connect/interface scripts are re-included as
+    // a belt-and-braces fallback (before-content-loaded has historically
+    // been unreliable on some Android versions); their idempotency guards
+    // make the second pass a no-op. baseJS (needs document.head),
+    // customJavaScript, and updateTheme are DOM-dependent and stay
+    // document-end only.
     const jsToLoad = useMemo(() => {
         let js = baseJS
 
         if (enablePeraConnect) {
-            js += peraConnectJS
             js += peraMobileInterfaceJS(bridgeToken)
+            js += peraConnectJS
         }
 
         if (customJavaScript) {
@@ -332,6 +366,11 @@ export const PWWebView = (props: PWWebViewProps) => {
         return (
             <WebView
                 ref={webview}
+                // Safe defaults a caller may still override: third-party
+                // payment pages (Bidali, onramp) can need cookies or a mixed
+                // content mode to complete a redirect/3DS handoff.
+                thirdPartyCookiesEnabled={false}
+                mixedContentMode='never'
                 {...rest}
                 source={{
                     uri: loadableUrl,
@@ -373,7 +412,13 @@ export const PWWebView = (props: PWWebViewProps) => {
                 webviewDebuggingEnabled={config.debugEnabled}
                 pullToRefreshEnabled={true}
                 injectedJavaScript={jsToLoad}
+                // Deliberately NOT setting
+                // injectedJavaScriptBeforeContentLoadedForMainFrameOnly: its
+                // `true` default is load-bearing for the bridge-token model
+                // (the token must stay unreadable from subframes).
+                injectedJavaScriptBeforeContentLoaded={preLoadJS}
                 setSupportMultipleWindows={false}
+                {...HARDENED_WEBVIEW_PROPS}
                 applicationNameForUserAgent={applicationNameForUserAgent}
                 forceDarkOn={isDarkMode}
                 onLoadStart={verifyLoad}
@@ -401,6 +446,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         isDarkMode,
         applicationNameForUserAgent,
         jsToLoad,
+        preLoadJS,
         rest,
         styles.container,
         styles.webview,

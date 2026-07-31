@@ -10,16 +10,18 @@
  limitations under the License
  */
 
-import { useNetwork } from './useNetwork'
 import { useMemo } from 'react'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     type PeraEncodedTransactionSigner,
     type PeraTransactionGroup,
     type PeraTransactionSigner,
 } from '../models'
+import { useCustomNetworkStore } from '../store'
 import { encodeSignedTransactions } from '../utils/transact'
 import { createTimeoutBoundedAlgorandClient } from '../utils/createAlgorandClient'
-import { logger } from '@perawallet/wallet-core-shared'
+import { resolveChainEndpoints } from '../utils/algorandClient'
+import { useNetwork } from './useNetwork'
 
 const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
     throw new Error(
@@ -28,10 +30,13 @@ const pipelineRoutedSigner: PeraEncodedTransactionSigner = async () => {
 }
 
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
-    const { networkConfig, network } = useNetwork()
+    const { network } = useNetwork()
+    const customNetwork = useCustomNetworkStore(state => state.customNetwork)
 
     return useMemo(() => {
-        const client = createTimeoutBoundedAlgorandClient(networkConfig)
+        const client = createTimeoutBoundedAlgorandClient(
+            resolveChainEndpoints(network),
+        )
         // algokit-utils defaults this to 10 rounds (~30s) on non-localnet,
         // which expires before a hardware-wallet user can confirm on-device.
         // 1000 rounds (~50min) matches the standard Algorand SDK default.
@@ -56,5 +61,10 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
             client.setDefaultSigner(pipelineRoutedSigner)
         }
         return client
-    }, [network, signer])
+        // customNetwork (the whole object, not a property of it — oxlint's
+        // exhaustive-deps wants the reference itself) is a real dependency:
+        // when `network` is 'custom', resolveChainEndpoints reads it, so a
+        // saved config change must re-memoize the client rather than leave a
+        // mounted screen pointed at the old host until it unmounts.
+    }, [network, customNetwork, signer])
 }

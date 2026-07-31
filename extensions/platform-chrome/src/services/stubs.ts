@@ -28,6 +28,7 @@ import {
     type NotificationOpenListener,
     type PushNotificationInitResult,
     type PushNotificationService,
+    type PushTokenRefreshListener,
 } from '@perawallet/wallet-extension-platform'
 
 const noop = (): void => undefined
@@ -40,6 +41,12 @@ export class ChromePushNotificationService implements PushNotificationService {
     }
     async initializeNotifications(): Promise<PushNotificationInitResult> {
         return { token: undefined, unsubscribe: noop }
+    }
+    async getPushToken(): Promise<string | undefined> {
+        return undefined
+    }
+    addTokenRefreshListener(_listener: PushTokenRefreshListener) {
+        return noop
     }
     addNotificationOpenListener(_listener: NotificationOpenListener) {
         return noop

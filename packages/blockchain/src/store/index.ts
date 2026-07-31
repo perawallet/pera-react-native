@@ -11,4 +11,5 @@
  */
 
 export * from './network-store'
+export * from './custom-network-store'
 export * from './store'

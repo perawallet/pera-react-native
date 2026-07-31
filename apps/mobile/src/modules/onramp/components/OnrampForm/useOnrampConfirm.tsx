@@ -126,6 +126,13 @@ export const useOnrampConfirm = ({
                 network,
             )
 
+            // No known USDC id on this network — the destination asset is
+            // unavailable here (a Pera-backed feature, already dead off that
+            // lane). Nothing to opt into or fund, so bail out quietly.
+            if (destinationAssetId === null) {
+                return
+            }
+
             // Opt-in MUST resolve before the order is created. The user
             // confirms it via the standard opt-in sheet — with a 0 fee when
             // the opt-in is sponsored (fee-delegated). Declining cancels the

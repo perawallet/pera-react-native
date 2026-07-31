@@ -13,4 +13,5 @@
 export const name = '@perawallet/wallet-core-asa-inbox'
 
 export * from './api'
+export * from './getArc59SignedFundingAmount'
 export * from './hooks'

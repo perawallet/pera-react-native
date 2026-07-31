@@ -100,13 +100,26 @@ describe('useTransactionSuccessScreen', () => {
         const { result } = renderHook(() => useTransactionSuccessScreen())
 
         act(() => {
-            result.current.handleViewInExplorer()
+            result.current.handleViewInExplorer?.()
         })
 
         expect(mockPushWebView).toHaveBeenCalledWith({
             url: 'https://explorer.perawallet.app/tx/TX_ID_123',
             id: 'mock-uuid',
         })
+    })
+
+    it('offers no explorer action on a network with no explorer', () => {
+        // `custom` has explorerUrl: '' by design. Interpolating it yields the
+        // schemeless relative path '/tx/TX_ID_123', which the webview would
+        // resolve against nothing — so the CTA has to be absent, not broken.
+        ;(useNetwork as Mock).mockReturnValue({
+            networkConfig: { explorerUrl: '' },
+        })
+
+        const { result } = renderHook(() => useTransactionSuccessScreen())
+
+        expect(result.current.handleViewInExplorer).toBeUndefined()
     })
 
     it('should return payment variant by default', () => {

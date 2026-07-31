@@ -16,7 +16,6 @@ import {
     generateOrderedUniqueId,
     logger,
     type Network,
-    Networks,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -47,6 +46,7 @@ import {
     type WalletConnectConnection,
     type WalletConnectTransactionPayload,
 } from '../models'
+import { getExpectedChainId } from '../utils/expectedChainId'
 import { MAX_DATA_SIGN_REQUESTS, WC_DELIVERY_TIMEOUT_MS } from '../constants'
 import { arc60PayloadSchema, assertArc60RequestWithinLimits } from '../schema'
 import {
@@ -122,7 +122,6 @@ const deliverRejectInBackground = (
 
 const validateRequest = (
     connector: WalletConnect,
-    connections: WalletConnectConnection[],
     network: Network,
     error: Nullable<Error>,
 ): WalletConnectConnection => {
@@ -134,6 +133,12 @@ const validateRequest = (
         )
     }
 
+    // Read connections from the store at request time, never from a render
+    // snapshot: the first request after a pairing is approved can arrive
+    // before any re-render refreshed the handlers' closures, and a stale
+    // snapshot rejected it with 'No session found'.
+    const connections =
+        useWalletConnectStore.getState().walletConnectConnections
     const foundConnection = connections.find(
         conn => conn.clientId === connector.clientId,
     )
@@ -147,10 +152,7 @@ const validateRequest = (
         throw new WalletConnectInvalidSessionError('No session found')
     }
 
-    const expectedChainId =
-        network === Networks.testnet
-            ? AlgorandChainId.testnet
-            : AlgorandChainId.mainnet
+    const expectedChainId = getExpectedChainId(network)
 
     const { chainId } = foundConnection.session
 
@@ -168,12 +170,11 @@ const validateRequest = (
 const validateDataSignRequest = (
     connector: WalletConnect,
     accounts: WalletAccount[],
-    connections: WalletConnectConnection[],
     network: Network,
     data: PeraArbitraryDataMessage[],
     error: Nullable<Error>,
 ): WalletConnectConnection => {
-    const foundSession = validateRequest(connector, connections, network, error)
+    const foundSession = validateRequest(connector, network, error)
 
     if (!data) {
         throw new WalletConnectSignRequestError('No data found')
@@ -187,10 +188,7 @@ const validateDataSignRequest = (
         throw new WalletConnectSignRequestError('Too many sign requests found')
     }
 
-    const expectedChainId =
-        network === Networks.testnet
-            ? AlgorandChainId.testnet
-            : AlgorandChainId.mainnet
+    const expectedChainId = getExpectedChainId(network)
 
     data.forEach(item => {
         if (
@@ -237,7 +235,6 @@ const validateDataSignRequest = (
 const validateArc60Request = (
     connector: WalletConnect,
     accounts: WalletAccount[],
-    connections: WalletConnectConnection[],
     network: Network,
     rawParams: unknown,
     error: Nullable<Error>,
@@ -246,7 +243,7 @@ const validateArc60Request = (
     metadata: Arc60Metadata
     foundSession: WalletConnectConnection
 } => {
-    const foundSession = validateRequest(connector, connections, network, error)
+    const foundSession = validateRequest(connector, network, error)
     assertArc60RequestWithinLimits(rawParams)
 
     const parsed = arc60PayloadSchema.safeParse(rawParams)
@@ -311,9 +308,6 @@ const validateArc60Request = (
 }
 
 export const useWalletConnectHandlers = () => {
-    const connections = useWalletConnectStore(
-        state => state.walletConnectConnections,
-    )
     const { addSignRequest, removeSignRequest } = useSigningRequest()
     const accounts = useAllAccounts()
     const resolveArc0001 = useArc0001Resolver()
@@ -330,7 +324,6 @@ export const useWalletConnectHandlers = () => {
             const { stdSigData, metadata, foundSession } = validateArc60Request(
                 connector,
                 accounts,
-                connections,
                 network,
                 payload?.params,
                 error,
@@ -397,7 +390,7 @@ export const useWalletConnectHandlers = () => {
             } as Arc60SignRequest
             addSignRequest(signRequest)
         },
-        [connections, accounts, addSignRequest, removeSignRequest],
+        [accounts, addSignRequest, removeSignRequest],
     )
 
     const handleSignData = useCallback(
@@ -430,7 +423,6 @@ export const useWalletConnectHandlers = () => {
             const foundSession = validateDataSignRequest(
                 connector,
                 accounts,
-                connections,
                 network,
                 params,
                 error,
@@ -492,13 +484,7 @@ export const useWalletConnectHandlers = () => {
             } as ArbitraryDataSignRequest
             addSignRequest(signRequest)
         },
-        [
-            connections,
-            accounts,
-            addSignRequest,
-            removeSignRequest,
-            handleArc60SignData,
-        ],
+        [accounts, addSignRequest, removeSignRequest, handleArc60SignData],
     )
 
     const handleSignTransaction = useCallback(
@@ -509,12 +495,7 @@ export const useWalletConnectHandlers = () => {
             payload: Nullable<WalletConnectTransactionPayload>,
         ) => {
             logger.debug('handleSignTransaction', { payload, network })
-            const foundSession = validateRequest(
-                connector,
-                connections,
-                network,
-                error,
-            )
+            const foundSession = validateRequest(connector, network, error)
             const paramOne = payload?.params?.at(0)
             if (!payload || !paramOne) {
                 throw new WalletConnectSignRequestError(
@@ -576,7 +557,7 @@ export const useWalletConnectHandlers = () => {
                 },
             })
         },
-        [connections, enqueueSignRequest, resolveArc0001],
+        [enqueueSignRequest, resolveArc0001],
     )
 
     return {

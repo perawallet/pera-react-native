@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo, useRef } from 'react'
 import { Linking } from 'react-native'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import { getNetworkConfig, isMainnet } from '@perawallet/wallet-core-config'
 import type {
     AccountBalances,
     WalletAccount,
@@ -35,6 +35,7 @@ import {
     logger,
     type Optional,
     type Nullable,
+    type Network,
 } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import type WebView from 'react-native-webview'
@@ -51,7 +52,7 @@ type CurrencyInfo = {
 
 const getCurrencyInfo = (
     protocol: string,
-    network: 'mainnet' | 'testnet',
+    network: Network,
 ): Nullable<CurrencyInfo> => {
     switch (protocol) {
         case 'algorand': {
@@ -59,8 +60,11 @@ const getCurrencyInfo = (
         }
         case 'testusdcalgorand':
         case 'usdcalgorand': {
+            const assetId = getKnownAssetId('USDC', network)
+            if (assetId === null) return null
+
             return {
-                assetId: getKnownAssetId('USDC', network),
+                assetId,
                 decimals: ALGO_ASSET.decimals, //USDC has same number of decimals as algo
             }
         }
@@ -77,21 +81,26 @@ const getCurrencyInfo = (
 export const computeBidaliBalances = (
     account: Optional<WalletAccount>,
     balances: AccountBalances,
-    network: 'mainnet' | 'testnet',
+    network: Network,
 ): Record<string, string> => {
     const balance = balances.get(account?.address ?? '')
 
     const algoBalance = balance?.assetBalances.find(a =>
         isAlgoAssetId(a.assetId),
     )?.amount
+    // A null id (no known USDC on this network) simply never matches an
+    // asset id here — the existing "user holds no USDC" path. No branch
+    // needed.
     const usdcBalance = balance?.assetBalances.find(
         a => a.assetId === getKnownAssetId('USDC', network),
     )?.amount
 
-    const isTestnet = network === 'testnet'
+    // Bidali only has mainnet and testnet catalogues; everything that is not
+    // mainnet uses the testnet one.
+    const isMainnetCatalogue = isMainnet(network)
     return {
         algorand: algoBalance?.toString() ?? '0',
-        [isTestnet ? 'testusdcalgorand' : 'usdcalgorand']:
+        [isMainnetCatalogue ? 'usdcalgorand' : 'testusdcalgorand']:
             usdcBalance?.toString() ?? '0',
     }
 }

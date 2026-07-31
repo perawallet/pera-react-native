@@ -1,0 +1,361 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+import { Networks } from '@perawallet/wallet-core-shared'
+import {
+    getCustomNetworkConfig,
+    useCustomNetworkStore,
+    type CustomNetworkConfig,
+} from '@perawallet/wallet-core-blockchain'
+import { useCustomNetworkSheet } from '../useCustomNetworkSheet'
+
+const { switchNetwork, fetchGenesisFromNode, clearCustomNetworkCache } =
+    vi.hoisted(() => ({
+        switchNetwork: vi.fn(),
+        fetchGenesisFromNode: vi.fn(),
+        clearCustomNetworkCache: vi.fn(),
+    }))
+
+vi.mock('@perawallet/wallet-core-device', () => ({
+    useSwitchNetwork: () => ({ switchNetwork }),
+}))
+
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: vi.fn(() => ({})),
+}))
+
+// Real store + shouldClearCustomCache (imported by concrete module path, not
+// the package barrel, for the same reason the global vitest.setup.ts mock
+// does: the barrel re-exports utils/algorandClient, whose module-level
+// `useCustomNetworkStore.subscribe(...)` side effect would otherwise run for
+// this suite and reach into other mocked modules). fetchGenesisFromNode and
+// clearCustomNetworkCache stay mocked — they hit the network and the
+// database/query-cache respectively.
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    const store = await vi.importActual<
+        typeof import('../../../../../../../../../packages/blockchain/src/store/custom-network-store')
+    >(
+        '../../../../../../../../../packages/blockchain/src/store/custom-network-store',
+    )
+    const { shouldClearCustomCache } = await vi.importActual<
+        typeof import('../../../../../../../../../packages/blockchain/src/utils/clearCustomNetworkCache')
+    >(
+        '../../../../../../../../../packages/blockchain/src/utils/clearCustomNetworkCache',
+    )
+
+    return {
+        useCustomNetworkStore: store.useCustomNetworkStore,
+        getCustomNetworkConfig: store.getCustomNetworkConfig,
+        isCustomNetworkConfigured: store.isCustomNetworkConfigured,
+        shouldClearCustomCache,
+        fetchGenesisFromNode,
+        clearCustomNetworkCache,
+    }
+})
+
+describe('useCustomNetworkSheet', () => {
+    beforeEach(() => {
+        useCustomNetworkStore.getState().resetState()
+        // Reset, not just clear: the persist-before-switch test installs an
+        // implementation that snapshots store state, which must not leak.
+        switchNetwork.mockReset()
+        fetchGenesisFromNode.mockClear()
+        // Reset, not clear: the clear-before-repoint test installs an
+        // implementation that snapshots store state, which must not leak.
+        clearCustomNetworkCache.mockReset()
+    })
+
+    test('seeds the draft from the persisted config at hook init', () => {
+        // The regression the open() -> useState move could silently
+        // introduce: the component now mounts fresh on each request, so the
+        // draft must come from a lazy useState initializer reading whatever
+        // is already persisted, not from a since-deleted open() call.
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://old:4001',
+            indexerUrl: 'http://old:8980',
+            genesisHash: 'OLD=',
+            genesisId: 'g',
+        })
+
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        expect(result.current.draft).toMatchObject({
+            algodUrl: 'http://old:4001',
+            indexerUrl: 'http://old:8980',
+            genesisHash: 'OLD=',
+            genesisId: 'g',
+        })
+    })
+
+    test('with no persisted config, the draft seeds blank', () => {
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        expect(result.current.draft).toEqual({
+            algodUrl: '',
+            algodToken: '',
+            indexerUrl: '',
+            indexerToken: '',
+            genesisHash: '',
+            genesisId: '',
+        })
+    })
+
+    test('mounting the hook does not switch the network', () => {
+        renderHook(() => useCustomNetworkSheet())
+
+        expect(switchNetwork).not.toHaveBeenCalled()
+    })
+
+    test('save persists the config and then commits the switch', async () => {
+        // The ordering is the invariant, not just the end state: asserting
+        // only that both happened passes even if the switch runs FIRST, which
+        // would let the app observe `custom` as active while the store is
+        // still empty — the exact state this sheet exists to prevent. So
+        // snapshot what the store holds at the moment switchNetwork is called.
+        let configAtSwitchTime: CustomNetworkConfig | undefined
+        switchNetwork.mockImplementation(() => {
+            configAtSwitchTime = getCustomNetworkConfig()
+        })
+
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => {
+            result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
+            result.current.handleFieldChange(
+                'indexerUrl',
+                'http://10.0.0.5:8980',
+            )
+            result.current.handleFieldChange('genesisHash', 'HASH=')
+            result.current.handleFieldChange('genesisId', 'dockernet-v1')
+        })
+        let saved: boolean | undefined
+        await act(async () => {
+            saved = await result.current.handleSave()
+        })
+
+        expect(saved).toBe(true)
+        expect(getCustomNetworkConfig()).toMatchObject({
+            algodUrl: 'http://10.0.0.5:4001',
+            genesisHash: 'HASH=',
+        })
+        expect(switchNetwork).toHaveBeenCalledWith(Networks.custom)
+        expect(configAtSwitchTime).toMatchObject({
+            algodUrl: 'http://10.0.0.5:4001',
+            genesisHash: 'HASH=',
+        })
+    })
+
+    test('not calling save persists nothing and does not switch', () => {
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => {
+            result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
+        })
+
+        expect(getCustomNetworkConfig()).toBeUndefined()
+        expect(switchNetwork).not.toHaveBeenCalled()
+    })
+
+    test('an invalid URL blocks save entirely, including the switch', async () => {
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => {
+            result.current.handleFieldChange('algodUrl', 'not-a-url')
+            result.current.handleFieldChange(
+                'indexerUrl',
+                'http://10.0.0.5:8980',
+            )
+            result.current.handleFieldChange('genesisHash', 'HASH=')
+        })
+        let saved: boolean | undefined
+        await act(async () => {
+            saved = await result.current.handleSave()
+        })
+
+        expect(saved).toBe(false)
+        expect(result.current.errors.algodUrl).toBe(true)
+        expect(getCustomNetworkConfig()).toBeUndefined()
+        expect(switchNetwork).not.toHaveBeenCalled()
+    })
+
+    test('a missing genesis hash blocks save', async () => {
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => {
+            result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
+            result.current.handleFieldChange(
+                'indexerUrl',
+                'http://10.0.0.5:8980',
+            )
+        })
+        await act(async () => {
+            await result.current.handleSave()
+        })
+
+        expect(result.current.errors.genesisHash).toBe(true)
+        expect(switchNetwork).not.toHaveBeenCalled()
+    })
+
+    test('a missing genesis id blocks save', async () => {
+        // fetchGenesisFromNode defaults genesisId to '' when a node omits
+        // `genesis-id`, so without this an otherwise "valid" saved config can
+        // carry an empty one — and the extension advertises genesisId to every
+        // dApp over ARC-0027 discover/enable.
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => {
+            result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
+            result.current.handleFieldChange(
+                'indexerUrl',
+                'http://10.0.0.5:8980',
+            )
+            result.current.handleFieldChange('genesisHash', 'HASH=')
+        })
+        await act(async () => {
+            await result.current.handleSave()
+        })
+
+        expect(result.current.errors.genesisId).toBe(true)
+        expect(getCustomNetworkConfig()).toBeUndefined()
+        expect(switchNetwork).not.toHaveBeenCalled()
+    })
+
+    test('fetch fills both genesis fields and leaves them editable', async () => {
+        fetchGenesisFromNode.mockResolvedValue({
+            genesisHash: 'FETCHED=',
+            genesisId: 'dockernet-v1',
+        })
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => {
+            result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
+        })
+        await act(async () => {
+            await result.current.handleFetchGenesis()
+        })
+
+        expect(result.current.draft.genesisHash).toBe('FETCHED=')
+        expect(result.current.draft.genesisId).toBe('dockernet-v1')
+
+        act(() => {
+            result.current.handleFieldChange('genesisHash', 'MANUAL=')
+        })
+        expect(result.current.draft.genesisHash).toBe('MANUAL=')
+    })
+
+    test('a failed fetch surfaces an error but does not block manual entry', async () => {
+        fetchGenesisFromNode.mockRejectedValue(new Error('unreachable'))
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => {
+            result.current.handleFieldChange('algodUrl', 'http://10.0.0.5:4001')
+        })
+        await act(async () => {
+            await result.current.handleFetchGenesis()
+        })
+
+        expect(result.current.errors.fetch).toBe(true)
+
+        act(() => {
+            result.current.handleFieldChange('genesisHash', 'MANUAL=')
+        })
+        expect(result.current.errors.genesisHash).toBeFalsy()
+    })
+
+    test('reset clears the draft without persisting', () => {
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://old:4001',
+            indexerUrl: 'http://old:8980',
+            genesisHash: 'OLD=',
+            genesisId: 'g',
+        })
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => result.current.handleReset())
+
+        expect(result.current.draft.algodUrl).toBe('')
+        // Still persisted — Reset is a draft operation, not a save.
+        expect(getCustomNetworkConfig()?.algodUrl).toBe('http://old:4001')
+    })
+
+    test('changing the genesis hash on save clears the custom cache', async () => {
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://old:4001',
+            indexerUrl: 'http://old:8980',
+            genesisHash: 'OLD=',
+            genesisId: 'g',
+        })
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => {
+            result.current.handleFieldChange('genesisHash', 'NEW=')
+        })
+        await act(async () => {
+            await result.current.handleSave()
+        })
+
+        expect(clearCustomNetworkCache).toHaveBeenCalled()
+    })
+
+    test('clears the old chain cache BEFORE repointing the clients at the new one', async () => {
+        // setCustomNetwork fires the store subscription synchronously, which
+        // repoints every ky client at chain B. If the DELETE ran after that, a
+        // chain-A query still in flight could resolve against the already-
+        // repointed cache-miss path and re-insert its own rows under the single
+        // `custom` partition — surviving the sweep that exists to remove them.
+        // Ordering is the invariant, so snapshot what the store holds at the
+        // moment the clear is called.
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://old:4001',
+            indexerUrl: 'http://old:8980',
+            genesisHash: 'OLD=',
+            genesisId: 'g',
+        })
+        let configAtClearTime: CustomNetworkConfig | undefined
+        clearCustomNetworkCache.mockImplementation(() => {
+            configAtClearTime = getCustomNetworkConfig()
+        })
+
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => {
+            result.current.handleFieldChange('genesisHash', 'NEW=')
+        })
+        await act(async () => {
+            await result.current.handleSave()
+        })
+
+        expect(configAtClearTime?.genesisHash).toBe('OLD=')
+        expect(getCustomNetworkConfig()?.genesisHash).toBe('NEW=')
+    })
+
+    test('changing only the host does NOT clear the custom cache', async () => {
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://old:4001',
+            indexerUrl: 'http://old:8980',
+            genesisHash: 'SAME=',
+            genesisId: 'g',
+        })
+        const { result } = renderHook(() => useCustomNetworkSheet())
+
+        act(() => {
+            result.current.handleFieldChange('algodUrl', 'http://new:4001')
+        })
+        await act(async () => {
+            await result.current.handleSave()
+        })
+
+        expect(clearCustomNetworkCache).not.toHaveBeenCalled()
+    })
+})

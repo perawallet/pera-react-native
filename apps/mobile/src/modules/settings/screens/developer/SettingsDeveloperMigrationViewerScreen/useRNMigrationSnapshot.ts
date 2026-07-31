@@ -29,7 +29,10 @@ import {
 } from '@perawallet/wallet-core-contacts'
 import { useCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { Networks } from '@perawallet/wallet-core-config'
-import { useDeviceStore } from '@perawallet/wallet-core-device'
+import {
+    useDeviceStore,
+    type DeviceIdOrigin,
+} from '@perawallet/wallet-core-device'
 import { useNotificationsStore } from '@perawallet/wallet-core-messages'
 import { withSecret } from '@perawallet/wallet-core-kms'
 import {
@@ -74,6 +77,10 @@ export type RNMigrationSnapshot = {
     contactsByAddress: Map<string, Contact>
     notificationDisabledAccounts: Set<string>
     deviceIDs: { mainnet: string | null; testnet: string | null }
+    deviceIdOrigins: {
+        mainnet: DeviceIdOrigin | null
+        testnet: DeviceIdOrigin | null
+    }
     legacyStash: Record<string, string | number | boolean>
 }
 
@@ -104,6 +111,7 @@ export const useRNMigrationSnapshot = (): RNMigrationSnapshot => {
         s => s.notificationDisabledAccounts,
     )
     const deviceIDs = useDeviceStore(s => s.deviceIDs)
+    const deviceIdOrigins = useDeviceStore(s => s.deviceIdOrigins)
     const slippage = useSwapsStore(s => s.slippage)
 
     const [auth, setAuth] = useState<RNAuthSnapshot>({
@@ -176,6 +184,10 @@ export const useRNMigrationSnapshot = (): RNMigrationSnapshot => {
         deviceIDs: {
             mainnet: deviceIDs.get(Networks.mainnet) ?? null,
             testnet: deviceIDs.get(Networks.testnet) ?? null,
+        },
+        deviceIdOrigins: {
+            mainnet: deviceIdOrigins[Networks.mainnet] ?? null,
+            testnet: deviceIdOrigins[Networks.testnet] ?? null,
         },
         legacyStash,
     }

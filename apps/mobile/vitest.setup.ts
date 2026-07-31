@@ -47,6 +47,9 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             getDeviceModel: () => 'iPhone',
             getDeviceId: () => 'test-device-id',
             getVersion: () => '1.0.0',
+            // `getAppVersion` is the name on DeviceInfoService; `getVersion`
+            // above is not on the interface at all.
+            getAppVersion: () => '1.0.0',
             getBuildNumber: () => '1',
             getDeviceLocale: () => 'en-US',
             getDeviceLanguage: () => 'en',
@@ -135,6 +138,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             getDeviceModel: () => 'iPhone',
             getDeviceId: () => 'test-device-id',
             getVersion: () => '1.0.0',
+            getAppVersion: () => '1.0.0',
             getBuildNumber: () => '1',
             getDeviceLocale: () => 'en-US',
             getDeviceLanguage: () => 'en',
@@ -2316,6 +2320,24 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
         error instanceof PeraNetworkError
 
+    // Mirrors packages/shared/src/errors/pera-service.ts. Thrown by the
+    // request layer for a network with no Pera deployment (betanet, custom);
+    // the crash-reporting sites in QueryProvider branch on the guard below.
+    class PeraServiceUnavailableError extends AppError {
+        public readonly network: string
+
+        constructor(network: string) {
+            super(`Pera services are not deployed for ${network}`)
+            this.name = 'PeraServiceUnavailableError'
+            this.network = network
+        }
+    }
+
+    const isPeraServiceUnavailableError = (
+        error: unknown,
+    ): error is PeraServiceUnavailableError =>
+        error instanceof PeraServiceUnavailableError
+
     // `ky` isn't a direct dependency of apps/mobile, so this mirrors ky's
     // isNetworkError predicate structurally (same name check used by
     // isTransientNetworkError above) instead of importing the real module.
@@ -2425,7 +2447,12 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         DEFAULT_PRECISION: 2,
         ZERO_DECIMAL: new (require('decimal.js').Decimal)(0),
         ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
-        Networks: { mainnet: 'mainnet', testnet: 'testnet' },
+        Networks: {
+            mainnet: 'mainnet',
+            testnet: 'testnet',
+            betanet: 'betanet',
+            custom: 'custom',
+        },
         formatDatetime: vi.fn(d => String(d)),
         formatRelativeTime: vi.fn(d => String(d)),
         formatTimeRemaining: vi.fn(() => '52m'),
@@ -2487,6 +2514,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         AppError,
         PeraNetworkError,
         isPeraNetworkError,
+        PeraServiceUnavailableError,
+        isPeraServiceUnavailableError,
         isConnectivityError,
         getNetworkErrorMessageKeys,
         ErrorSeverity: { LOW: 'low', MEDIUM: 'medium', HIGH: 'high' },
@@ -2671,11 +2700,15 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     KNOWN_ASSET_IDS: {
         USDC: { mainnet: '31566704', testnet: '10458941' },
     },
+    // `null`, not `''`, off the Pera-backed lane — mirroring the real
+    // getKnownAssetId. An empty string is falsy but not null, so it routes
+    // straight PAST every `=== null` guard the consumers now carry instead of
+    // exercising it.
     getKnownAssetId: vi.fn((key: string, network: string) => {
         const ids: Record<string, Record<string, string>> = {
             USDC: { mainnet: '31566704', testnet: '10458941' },
         }
-        return ids[key]?.[network] ?? ''
+        return ids[key]?.[network] ?? null
     }),
     ALGO_ASSET: {
         assetId: '0',
@@ -2990,78 +3023,99 @@ class MockAlgodError extends Error {
     }
 }
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: vi.fn(),
-    useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
-    useTransactionEncoder: vi.fn(() => ({ encodeSignedTransaction: vi.fn() })),
-    isValidAlgorandAddress: vi.fn(address => {
-        if (!address) return false
-        return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
-    }),
-    encodeAlgorandAddress: vi.fn(() => 'MOCKADDRESS'),
-    useNetwork: vi.fn(() => ({
-        network: 'mainnet',
-    })),
-    useNetworkStore: Object.assign(
-        vi.fn(() => 'mainnet'),
-        {
-            getState: vi.fn(() => ({
-                network: 'mainnet',
-                setNetwork: vi.fn(),
-                resetState: vi.fn(),
-            })),
-            // The accounts barrel subscribes at load to mirror per-network
-            // rekey state on switches.
-            subscribe: vi.fn(() => () => {}),
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    // Real store (not hand-mocked): setCustomNetwork/clearCustomNetwork/
+    // resetState need genuine zustand reactivity so subscribed hooks
+    // re-render on change. Imported by its own module path (not the package
+    // barrel/`../store` index) to avoid evaluating utils/algorandClient's
+    // module-level side effects, which would run for every test in the
+    // suite and reach into the (also-mocked) wallet-core-shared module.
+    const {
+        useCustomNetworkStore,
+        getCustomNetworkConfig,
+        isCustomNetworkConfigured,
+    } = await vi.importActual<
+        typeof import('../../packages/blockchain/src/store/custom-network-store')
+    >('../../packages/blockchain/src/store/custom-network-store')
+
+    return {
+        useAlgorandClient: vi.fn(),
+        useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
+        useTransactionEncoder: vi.fn(() => ({
+            encodeSignedTransaction: vi.fn(),
+        })),
+        isValidAlgorandAddress: vi.fn(address => {
+            if (!address) return false
+            return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
+        }),
+        encodeAlgorandAddress: vi.fn(() => 'MOCKADDRESS'),
+        useNetwork: vi.fn(() => ({
+            network: 'mainnet',
+        })),
+        useNetworkStore: Object.assign(
+            vi.fn(() => 'mainnet'),
+            {
+                getState: vi.fn(() => ({
+                    network: 'mainnet',
+                    setNetwork: vi.fn(),
+                    resetState: vi.fn(),
+                })),
+                // The accounts barrel subscribes at load to mirror per-network
+                // rekey state on switches.
+                subscribe: vi.fn(() => () => {}),
+            },
+        ),
+        // Error-translation exports. Tests that need the real parser should use
+        // `vi.importActual` in their own file (see useAlgodErrorMessage.test.ts).
+        AlgodError: MockAlgodError,
+        AlgodErrorCode: {
+            OVERSPEND: 'overspend',
+            BELOW_MIN_BALANCE: 'below_min_balance',
+            MISSING_OPT_IN: 'missing_opt_in',
+            DUPLICATE_TXN: 'duplicate_txn',
+            EXPIRED_TXN: 'expired_txn',
+            LOGIC_ERROR: 'logic_error',
+            NETWORK_UNAVAILABLE: 'network_unavailable',
+            UNKNOWN_NODE_ERROR: 'unknown_node_error',
         },
-    ),
-    // Error-translation exports. Tests that need the real parser should use
-    // `vi.importActual` in their own file (see useAlgodErrorMessage.test.ts).
-    AlgodError: MockAlgodError,
-    AlgodErrorCode: {
-        OVERSPEND: 'overspend',
-        BELOW_MIN_BALANCE: 'below_min_balance',
-        MISSING_OPT_IN: 'missing_opt_in',
-        DUPLICATE_TXN: 'duplicate_txn',
-        EXPIRED_TXN: 'expired_txn',
-        LOGIC_ERROR: 'logic_error',
-        NETWORK_UNAVAILABLE: 'network_unavailable',
-        UNKNOWN_NODE_ERROR: 'unknown_node_error',
-    },
-    toAlgodError: vi.fn(
-        (err: unknown) =>
-            new MockAlgodError(
-                'unknown_node_error',
-                { raw: err instanceof Error ? err.message : String(err) },
-                err instanceof Error ? err : undefined,
-            ),
-    ),
-    microAlgosToAlgos: vi.fn((microAlgos: bigint | number | string) => {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { Decimal } = require('decimal.js')
-        return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
-    }),
-    toBigInt: vi.fn((decimal: { toFixed: (dp: number) => string }) =>
-        BigInt(decimal.toFixed(0)),
-    ),
-    baseUnitsToDisplayUnits: vi.fn(
-        (baseUnits: bigint | number | string, decimals: number) => {
+        toAlgodError: vi.fn(
+            (err: unknown) =>
+                new MockAlgodError(
+                    'unknown_node_error',
+                    { raw: err instanceof Error ? err.message : String(err) },
+                    err instanceof Error ? err : undefined,
+                ),
+        ),
+        microAlgosToAlgos: vi.fn((microAlgos: bigint | number | string) => {
             // eslint-disable-next-line @typescript-eslint/no-require-imports
             const { Decimal } = require('decimal.js')
-            return new Decimal(baseUnits.toString()).dividedBy(
-                new Decimal(10).pow(decimals),
-            )
-        },
-    ),
-    percentChange: vi.fn((first: unknown, last: unknown) => {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { Decimal } = require('decimal.js')
-        const firstDp = new Decimal(String(first))
-        const lastDp = new Decimal(String(last))
-        if (firstDp.isZero()) return new Decimal(0)
-        return lastDp.minus(firstDp).div(firstDp).mul(100)
-    }),
-}))
+            return new Decimal(microAlgos.toString()).dividedBy(1_000_000)
+        }),
+        toBigInt: vi.fn((decimal: { toFixed: (dp: number) => string }) =>
+            BigInt(decimal.toFixed(0)),
+        ),
+        baseUnitsToDisplayUnits: vi.fn(
+            (baseUnits: bigint | number | string, decimals: number) => {
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
+                const { Decimal } = require('decimal.js')
+                return new Decimal(baseUnits.toString()).dividedBy(
+                    new Decimal(10).pow(decimals),
+                )
+            },
+        ),
+        percentChange: vi.fn((first: unknown, last: unknown) => {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const { Decimal } = require('decimal.js')
+            const firstDp = new Decimal(String(first))
+            const lastDp = new Decimal(String(last))
+            if (firstDp.isZero()) return new Decimal(0)
+            return lastDp.minus(firstDp).div(firstDp).mul(100)
+        }),
+        useCustomNetworkStore,
+        getCustomNetworkConfig,
+        isCustomNetworkConfigured,
+    }
+})
 
 // Stub lottie-react-native globally. It ships untransformed TSX inside its
 // commonjs build, which Vitest's external module loader can't parse — any

@@ -21,10 +21,28 @@ export type PushNotificationInitResult = {
  */
 export type NotificationOpenListener = (deeplinkUrl: string) => void
 
+/** Called with the freshly issued push token whenever it changes. */
+export type PushTokenRefreshListener = (token: string) => void
+
 export interface PushNotificationService {
     /** Static platform fact: can this platform deliver push at all? */
     isSupported(): boolean
     initializeNotifications(): Promise<PushNotificationInitResult>
+    /**
+     * Re-reads the push token, returning `undefined` while notification
+     * permission is not granted (or registration is unavailable, e.g. offline).
+     * `initializeNotifications` only resolves a token if permission was already
+     * granted at cold start, so callers use this to pick one up after the user
+     * grants permission mid-session.
+     */
+    getPushToken(): Promise<string | undefined>
+    /**
+     * Subscribes to token rotation. The platform can reissue a token at any
+     * point in a session (reinstall-restore, app-data clear, FCM-side
+     * rotation); without this the backend keeps pushing to the dead one until
+     * the next cold start. Returns an unsubscribe function.
+     */
+    addTokenRefreshListener(listener: PushTokenRefreshListener): () => void
     /**
      * Registers a listener for push-notification taps that carry a deeplink
      * URL. Returns an unsubscribe function. A cold-start tap that resolves

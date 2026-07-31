@@ -37,6 +37,14 @@ vi.mock('../endpoints', () => ({
         mockedRegisterDeviceEndpoint(...args),
 }))
 
+// PERA-4670's orphaning telemetry: replacing a migrated device id loses its
+// device-keyed server state, and the only signal is this event.
+const mockLogEvent = vi.fn()
+
+vi.mock('@perawallet/wallet-core-analytics', () => ({
+    logEvent: (...args: unknown[]) => mockLogEvent(...args),
+}))
+
 // Mock device info service via provider. v3 no longer sends `model`, but
 // requires `appVersion` on every payload.
 const mockDeviceInfoService = {
@@ -321,6 +329,142 @@ describe('services/device/hooks', () => {
             data: expect.not.objectContaining({ id: expect.anything() }),
         })
         expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe('FRESH')
+    })
+
+    // PERA-4670, carried onto the v3 flow. Only the 404 recreate can replace
+    // an id under v3 — a 400 is a push-token race that retries with the same
+    // id (see `isPushTokenClaimedError`), so `device_already_exists` is no
+    // longer a replacement reason and the two tests asserting it were dropped.
+    test('emits the replacement event and flips the origin when the 404 recreate replaces a migrated id', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const useDevice = await importUseDevice()
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('mainnet', 'MIGRATED-1')
+        useDeviceStore.getState().setDeviceIdOrigin('mainnet', 'migrated')
+
+        mockedRegisterDeviceMutation
+            .mockRejectedValueOnce(
+                new PeraNetworkError('client', { status: 404 }),
+            )
+            .mockResolvedValueOnce({ id: 'FRESH-1' })
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(accounts)
+        })
+
+        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
+            'FRESH-1',
+        )
+        expect(useDeviceStore.getState().deviceIdOrigins.mainnet).toBe(
+            'recreated',
+        )
+        expect(mockLogEvent).toHaveBeenCalledExactlyOnceWith(
+            'migrated_device_id_replaced',
+            { network: 'mainnet', reason: 'not_found' },
+        )
+    })
+
+    test('emits no replacement event when the recreated id did not come from migration', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const useDevice = await importUseDevice()
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('mainnet', 'stale-id')
+
+        mockedRegisterDeviceMutation
+            .mockRejectedValueOnce(
+                new PeraNetworkError('client', { status: 404 }),
+            )
+            .mockResolvedValueOnce({ id: 'FRESH-3' })
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(accounts)
+        })
+
+        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
+            'FRESH-3',
+        )
+        expect(mockLogEvent).not.toHaveBeenCalled()
+        expect(
+            useDeviceStore.getState().deviceIdOrigins.mainnet,
+        ).toBeUndefined()
+    })
+
+    test('a successful registration preserves the migrated id and its origin without emitting', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const useDevice = await importUseDevice()
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('mainnet', 'MIGRATED-1')
+        useDeviceStore.getState().setDeviceIdOrigin('mainnet', 'migrated')
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        let outcome: { createdNew: boolean } | undefined
+        await act(async () => {
+            outcome = await result.current.registerDevice(accounts)
+        })
+
+        expect(outcome).toEqual({ createdNew: false })
+        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
+            'MIGRATED-1',
+        )
+        expect(useDeviceStore.getState().deviceIdOrigins.mainnet).toBe(
+            'migrated',
+        )
+        expect(mockLogEvent).not.toHaveBeenCalled()
+    })
+
+    // A 400 retries with the SAME id, so a migrated id survives it untouched
+    // and nothing is orphaned — the inverse of the 404 case above.
+    test('a push-token race does not replace or re-flag a migrated id', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const useDevice = await importUseDevice()
+
+        useDeviceStore.getState().resetState()
+        await seedDeviceId('mainnet', 'MIGRATED-1')
+        useDeviceStore.getState().setDeviceIdOrigin('mainnet', 'migrated')
+
+        mockedRegisterDeviceMutation
+            .mockRejectedValueOnce(
+                new PeraNetworkError('client', { status: 400 }),
+            )
+            .mockResolvedValueOnce({ id: 'MIGRATED-1' })
+
+        const { result } = renderHook(() => useDevice(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(accounts)
+        })
+
+        expect(useDeviceStore.getState().deviceIDs.get('mainnet')).toBe(
+            'MIGRATED-1',
+        )
+        expect(useDeviceStore.getState().deviceIdOrigins.mainnet).toBe(
+            'migrated',
+        )
+        expect(mockLogEvent).not.toHaveBeenCalled()
     })
 
     test('retries once with the same id when the push token was claimed in a race', async () => {

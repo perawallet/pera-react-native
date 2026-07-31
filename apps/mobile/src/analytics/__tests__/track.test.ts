@@ -28,7 +28,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
-    isTestnet: (network: string) => network === 'testnet',
+    isMainnet: (network: string) => network === 'mainnet',
 }))
 
 import { trackEvent, trackScreen } from '../track'

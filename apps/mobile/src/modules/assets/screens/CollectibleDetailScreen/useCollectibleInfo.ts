@@ -44,7 +44,8 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
         [pushWebView],
     )
 
-    const onCreatorPressed = useCallback(() => {
+    const creatorPressed = useCallback(() => {
+        if (!config.explorerUrl) return
         openExternalLink(
             `${config.explorerUrl}/address/${asset.creator.address}`,
         )
@@ -57,7 +58,8 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
         }) // Navigate to the Asset Details screen
     }, [asset.assetId, navigate])
 
-    const onOpenExplorer = useCallback(() => {
+    const openExplorer = useCallback(() => {
+        if (!config.explorerUrl) return
         openExternalLink(`${config.explorerUrl}/asset/${asset.assetId}`)
     }, [asset.assetId, openExternalLink, config.explorerUrl])
 
@@ -65,9 +67,13 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
         formatWithUnits(toWholeUnits(asset.totalSupply, asset))
 
     return {
-        onCreatorPressed,
+        // Both undefined on a network with no explorer (`custom`'s
+        // `explorerUrl` is `''` by design), so the rows stop being CTAs rather
+        // than opening the schemeless relative paths the interpolations would
+        // otherwise produce.
+        onCreatorPressed: config.explorerUrl ? creatorPressed : undefined,
         onAssetIdPressed,
-        onOpenExplorer,
+        onOpenExplorer: config.explorerUrl ? openExplorer : undefined,
         totalSupplyAmount,
         totalSupplyUnit,
     }

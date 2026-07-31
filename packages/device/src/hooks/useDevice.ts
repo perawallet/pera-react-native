@@ -17,6 +17,7 @@ import {
     type Network,
 } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { logEvent } from '@perawallet/wallet-core-analytics'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useRegisterDeviceMutation } from './useRegisterDeviceMutation'
 import { usePushToken } from './usePushToken'
@@ -27,6 +28,8 @@ import type {
     DeviceRegistration,
     DeviceResponse,
 } from '../models'
+
+const MIGRATED_DEVICE_ID_REPLACED_EVENT = 'migrated_device_id_replaced'
 
 /**
  * v3 returns 404 when the id we hold is unknown — it never auto-creates. A
@@ -111,6 +114,7 @@ export const useDevice = () => {
     const { network } = useNetwork()
     const { pushToken } = usePushToken()
     const setDeviceID = useDeviceStore(state => state.setDeviceID)
+    const setDeviceIdOrigin = useDeviceStore(state => state.setDeviceIdOrigin)
     const deviceInfoService = getProvider().deviceInfo
 
     const { mutateAsync: register } = useRegisterDeviceMutation()
@@ -207,11 +211,47 @@ export const useDevice = () => {
                 // payload cannot fix it, and re-creating would hide the bug
                 // behind a duplicate device.
                 if (!shouldRecreateDevice(error)) throw error
+                // Read live from the store rather than a subscribed snapshot:
+                // the origin is only needed at recreate time, and subscribing
+                // would rebuild this callback on every unrelated origin flip.
+                const isReplacingMigratedId =
+                    useDeviceStore.getState().deviceIdOrigins[targetNetwork] ===
+                    'migrated'
                 await createDeviceForNetwork(targetNetwork, accounts)
+                // Replacing a migrated id orphans its device-keyed server
+                // state (Discover favorites, price alerts, banner
+                // dismissals) — no reconciliation endpoint exists yet
+                // (PERA-4670), so the loss is only made observable here.
+                //
+                // PERA-4670 additionally guarded this on an in-flight attempt
+                // id, to be sure the write it is reporting is still the
+                // current one. v3 does not need that guard: every registration
+                // is chained through `enqueueRegistration`, so only one task
+                // per network runs at a time and this recreate cannot be
+                // superseded while it is in flight (see `registerDevice`).
+                //
+                // `reason` is always `not_found` here, unlike PERA-4670's
+                // 404-or-`device_already_exists` pair: v3's
+                // `shouldRecreateDevice` matches 404 only, because a 400 is a
+                // push-token race that must be retried rather than re-created
+                // (see `isPushTokenClaimedError`). A 400 therefore never
+                // reaches this branch and never replaces an id.
+                if (isReplacingMigratedId) {
+                    setDeviceIdOrigin(targetNetwork, 'recreated')
+                    logEvent(MIGRATED_DEVICE_ID_REPLACED_EVENT, {
+                        network: targetNetwork,
+                        reason: 'not_found',
+                    })
+                }
                 return { createdNew: true }
             }
         },
-        [buildPayload, submitRegistration, createDeviceForNetwork],
+        [
+            buildPayload,
+            submitRegistration,
+            createDeviceForNetwork,
+            setDeviceIdOrigin,
+        ],
     )
 
     /**

@@ -24,6 +24,7 @@
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-database": "workspace:*",
     "@perawallet/wallet-core-polling": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",

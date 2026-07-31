@@ -17,10 +17,12 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import { config } from '@perawallet/wallet-core-config'
-import type { Arc59SendSummaryResponse } from '../api'
+import { getArc59SignedFundingAmount } from '../getArc59SignedFundingAmount'
 import { ARC59Client } from '../clients'
+import { requireArc59Config } from './requireArc59Config'
 import { buildGroup } from '../utils'
+
+import type { Arc59SendSummaryResponse } from '../api'
 
 type SendViaInboxParams = {
     sender: string
@@ -37,15 +39,13 @@ type UseArc59SendTransactionResult = {
 }
 
 export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
-    const { isMainnet } = useNetwork()
+    const { network } = useNetwork()
     const algokit = useAlgorandClient()
 
     const buildSendViaInboxTxs = useCallback(
         async (params: SendViaInboxParams): Promise<PeraTransaction[]> => {
             const { sender, receiver, assetId, amount, summary } = params
-            const arc59Config = isMainnet
-                ? config.arc59.mainnet
-                : config.arc59.testnet
+            const arc59Config = requireArc59Config(network)
 
             const suggestedParams = await algokit.getSuggestedParams()
             const minFee = BigInt(suggestedParams.minFee)
@@ -58,10 +58,10 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
 
             const composer = algokit.newGroup()
 
-            // Payment = algo_fund_amount + minimum_balance_requirement
-            const totalPaymentAmount =
-                BigInt(summary.algo_fund_amount) +
-                BigInt(summary.minimum_balance_requirement)
+            // Payment = algo_fund_amount + minimum_balance_requirement. Shared
+            // with the summary screen's display + balance-check so the amount
+            // shown/checked can never diverge from the amount signed (PERA-4710).
+            const totalPaymentAmount = getArc59SignedFundingAmount(summary)
 
             if (totalPaymentAmount > 0n) {
                 composer.addPayment({
@@ -134,7 +134,7 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
 
             return buildGroup(composer)
         },
-        [algokit, isMainnet],
+        [algokit, network],
     )
 
     return { buildSendViaInboxTxs }

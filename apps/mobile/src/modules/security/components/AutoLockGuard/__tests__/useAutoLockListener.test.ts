@@ -21,12 +21,18 @@ import {
 import { AppState, type AppStateStatus } from 'react-native'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
-const securityStoreState = vi.hoisted(() => ({ lockRequestVersion: 0 }))
+const securityStoreState = vi.hoisted(() => ({
+    lockRequestVersion: 0,
+    setAppLockActive: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),
     useSecurityStore: (
-        selector: (state: { lockRequestVersion: number }) => unknown,
+        selector: (state: {
+            lockRequestVersion: number
+            setAppLockActive: (active: boolean) => void
+        }) => unknown,
     ) => selector(securityStoreState),
 }))
 
@@ -97,6 +103,51 @@ describe('useAutoLockListener', () => {
 
         await waitFor(() => {
             expect(mockCheckPinEnabled).toHaveBeenCalled()
+        })
+    })
+
+    describe('mirroring the guard overlay into the security store', () => {
+        const lastMirroredValue = () =>
+            securityStoreState.setAppLockActive.mock.calls.at(-1)?.[0]
+
+        it('reports active while checking, inactive once init resolves unlocked', async () => {
+            const { result } = renderHook(() => useAutoLockListener())
+
+            expect(lastMirroredValue()).toBe(true)
+
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+            expect(lastMirroredValue()).toBe(false)
+        })
+
+        it('reports active while locked, inactive after unlock', async () => {
+            mockCheckPinEnabled.mockResolvedValue(true)
+
+            const { result } = renderHook(() => useAutoLockListener())
+
+            await waitFor(() => {
+                expect(result.current.isLocked).toBe(true)
+            })
+            expect(lastMirroredValue()).toBe(true)
+
+            act(() => {
+                result.current.unlock()
+            })
+            expect(lastMirroredValue()).toBe(false)
+        })
+
+        it('resets to inactive on unmount so signing never wedges', async () => {
+            mockCheckPinEnabled.mockResolvedValue(true)
+
+            const { result, unmount } = renderHook(() => useAutoLockListener())
+            await waitFor(() => {
+                expect(result.current.isLocked).toBe(true)
+            })
+
+            unmount()
+
+            expect(lastMirroredValue()).toBe(false)
         })
     })
 

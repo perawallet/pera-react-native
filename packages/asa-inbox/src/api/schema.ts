@@ -36,15 +36,38 @@ const safeBaseUnitInteger = z
     .nonnegative()
     .lte(Number.MAX_SAFE_INTEGER)
 
-export const arc59SendSummaryResponseSchema = z.object({
-    is_arc59_opted_in: z.boolean(),
-    minimum_balance_requirement: safeBaseUnitInteger,
-    inner_tx_count: safeBaseUnitInteger,
-    total_protocol_and_mbr_fee: safeBaseUnitInteger,
-    inbox_address: z.string().nullable(),
-    algo_fund_amount: safeBaseUnitInteger,
-    warning_message: arc59WarningMessageSchema.nullable(),
-})
+// The sender's ARC-59 payment is `algo_fund_amount + minimum_balance_requirement`
+// (see getArc59SignedFundingAmount) and is signed headlessly. Both are pure
+// MBR/funding values — inbox creation + asset opt-in MBR is O(0.2 ALGO) — so an
+// absolute ceiling far above any legitimate value hard-rejects a hostile
+// summary that would otherwise drain the account. MAX_SAFE_INTEGER (~9e9 ALGO)
+// is not a bound (PERA-4710).
+//
+// Deliberately a build-time constant and NOT remote-config: remote config is
+// served by the same backend as the summary this bound exists to distrust, so a
+// remotely tunable ceiling could be raised by whoever is sending the hostile
+// value. Raising it should require a release.
+export const MAX_ARC59_FUNDING_MICRO_ALGO = 10_000_000 // 10 ALGO
+export const arc59SendSummaryResponseSchema = z
+    .object({
+        is_arc59_opted_in: z.boolean(),
+        minimum_balance_requirement: safeBaseUnitInteger,
+        inner_tx_count: safeBaseUnitInteger,
+        total_protocol_and_mbr_fee: safeBaseUnitInteger,
+        inbox_address: z.string().nullable(),
+        algo_fund_amount: safeBaseUnitInteger,
+        warning_message: arc59WarningMessageSchema.nullable(),
+    })
+    // The ceiling applies to the SUM, because the sum is what gets signed.
+    // Bounding each field on its own would still admit 2 × the limit.
+    .refine(
+        summary =>
+            summary.algo_fund_amount + summary.minimum_balance_requirement <=
+            MAX_ARC59_FUNDING_MICRO_ALGO,
+        {
+            message: `ARC-59 funding total exceeds ${MAX_ARC59_FUNDING_MICRO_ALGO} microAlgo`,
+        },
+    )
 
 export type Arc59SendSummaryResponse = z.infer<
     typeof arc59SendSummaryResponseSchema

@@ -32,8 +32,16 @@ vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ goBack: mockGoBack }),
 }))
 
+let mockNetwork = 'mainnet'
+
+// Captures what the screen hands the swap hook, so the "no known USDC id"
+// branch can be asserted on the `enabled` flag it computes.
+const mockSwapParams = vi.hoisted(() => ({
+    current: undefined as { enabled: boolean; usdcAssetId: string } | undefined,
+}))
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useNetwork: () => ({ network: mockNetwork }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -42,7 +50,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    getKnownAssetId: () => 'usdc-id',
+    // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane, so
+    // the hook's `usdcAssetId !== null` gate is actually reachable here.
+    getKnownAssetId: (_key: string, network: string) =>
+        network === 'mainnet' || network === 'testnet' ? 'usdc-id' : null,
     useAssetsQuery: () => ({
         data: new Map([
             ['usdc-id', { assetId: 'usdc-id', decimals: 6, unitName: 'USDC' }],
@@ -56,14 +67,20 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('../../CardAddFundsScreen/useCardAddFundsSwap', () => ({
-    useCardAddFundsSwap: () => ({
-        quote: mockSwap.quote,
-        rate: null,
-        usdcOut: null,
-        isQuoteFetching: mockSwap.isQuoteFetching,
-        isSwapping: mockSwap.isSwapping,
-        executeSwap: mockExecuteSwap,
-    }),
+    useCardAddFundsSwap: (params: {
+        enabled: boolean
+        usdcAssetId: string
+    }) => {
+        mockSwapParams.current = params
+        return {
+            quote: mockSwap.quote,
+            rate: null,
+            usdcOut: null,
+            isQuoteFetching: mockSwap.isQuoteFetching,
+            isSwapping: mockSwap.isSwapping,
+            executeSwap: mockExecuteSwap,
+        }
+    },
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -105,10 +122,32 @@ const QUOTE = {
 describe('useCardConfirmSwapScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockNetwork = 'mainnet'
+        mockSwapParams.current = undefined
         mockSwap.quote = null
         mockSwap.isQuoteFetching = false
         mockSwap.isSwapping = false
         mockExecuteSwap.mockResolvedValue({ kind: 'success' })
+    })
+
+    it('keeps the swap disabled when the network has no known USDC id', () => {
+        mockNetwork = 'betanet'
+        renderHook(() => useCardConfirmSwapScreen())
+
+        // Nothing to swap INTO there, so the quote must never be requested.
+        expect(mockSwapParams.current).toMatchObject({
+            enabled: false,
+            usdcAssetId: '',
+        })
+    })
+
+    it('enables the swap on a network that has a known USDC id', () => {
+        renderHook(() => useCardConfirmSwapScreen())
+
+        expect(mockSwapParams.current).toMatchObject({
+            enabled: true,
+            usdcAssetId: 'usdc-id',
+        })
     })
 
     it('disables Confirm and shows loading while the quote is still fetching', () => {

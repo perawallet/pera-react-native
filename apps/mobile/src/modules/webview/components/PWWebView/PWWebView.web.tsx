@@ -179,6 +179,7 @@ export const PWWebView = ({
     useNotifyWebViewOnContextChange(
         bridgeWebviewRef,
         enablePeraConnect ? contextFingerprints : undefined,
+        isSecure,
     )
 
     // Mirror native handleEvent's dispatch order (PWWebView.tsx:173-215),

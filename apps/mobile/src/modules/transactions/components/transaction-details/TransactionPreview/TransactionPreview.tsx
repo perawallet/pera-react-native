@@ -32,12 +32,14 @@ export type TransactionPreviewProps = {
      * {@link ExternalTransactionInfoContent} bottom sheet.
      */
     isExternal?: boolean
+    testID?: string
 }
 
 export const TransactionPreview = ({
     transaction,
     onPress,
     isExternal = false,
+    testID,
 }: TransactionPreviewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -58,6 +60,7 @@ export const TransactionPreview = ({
 
     return (
         <PWTouchableOpacity
+            testID={testID}
             style={styles.container}
             onPress={handleRowPress}
         >

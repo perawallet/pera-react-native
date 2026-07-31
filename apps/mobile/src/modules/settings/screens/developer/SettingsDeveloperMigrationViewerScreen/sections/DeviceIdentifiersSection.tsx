@@ -10,11 +10,25 @@
  limitations under the License
  */
 
+import type { DeviceIdOrigin } from '@perawallet/wallet-core-device'
 import type { LegacyDeviceIdentifiers } from '@perawallet/wallet-extension-platform'
 import { MigrationDataSection } from '../components/MigrationDataSection'
 import { LegacyVsRnRow } from '../components/LegacyVsRnRow'
 import { MigrationDataRow } from '../components/MigrationDataRow'
 import type { RNMigrationSnapshot } from '../useRNMigrationSnapshot'
+
+const describeDeviceIdOrigin = (
+    id: string | null,
+    origin: DeviceIdOrigin | null,
+): string => {
+    const status =
+        origin === 'migrated'
+            ? 'migrated id active'
+            : origin === 'recreated'
+              ? 'recreated — migrated id replaced'
+              : 'not from migration'
+    return `${id ?? 'null'} (${status})`
+}
 
 export const DeviceIdentifiersSection = ({
     deviceIdentifiers,
@@ -37,6 +51,13 @@ export const DeviceIdentifiersSection = ({
                     deviceIdentifiers.mainnetDeviceId === rn.deviceIDs.mainnet
                 }
             />
+            <MigrationDataRow
+                label='mainnetDeviceIdOrigin'
+                value={describeDeviceIdOrigin(
+                    rn.deviceIDs.mainnet,
+                    rn.deviceIdOrigins.mainnet,
+                )}
+            />
             <LegacyVsRnRow
                 label='testnetDeviceId'
                 legacyValue={deviceIdentifiers.testnetDeviceId}
@@ -44,6 +65,13 @@ export const DeviceIdentifiersSection = ({
                 matches={
                     deviceIdentifiers.testnetDeviceId === rn.deviceIDs.testnet
                 }
+            />
+            <MigrationDataRow
+                label='testnetDeviceIdOrigin'
+                value={describeDeviceIdOrigin(
+                    rn.deviceIDs.testnet,
+                    rn.deviceIdOrigins.testnet,
+                )}
             />
             <MigrationDataRow
                 label='lastSeenNotificationId'

@@ -33,8 +33,15 @@ export const GroupTransactionListScreen = () => {
     } = useGroupTransactionListScreen()
 
     const renderItem = useCallback(
-        ({ item }: { item: PeraDisplayableTransaction }) => (
+        ({
+            item,
+            index,
+        }: {
+            item: PeraDisplayableTransaction
+            index: number
+        }) => (
             <TransactionPreview
+                testID={`transaction_row_${index}`}
                 transaction={item}
                 onPress={() => handleTransactionPress(item)}
             />

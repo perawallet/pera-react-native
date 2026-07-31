@@ -25,6 +25,9 @@ import { useBidaliTransport } from '../useBidaliTransport'
 const mockAddSignRequest = vi.fn()
 const mockAddPayment = vi.fn()
 const mockAddAssetTransfer = vi.fn()
+// Mutable so the "fallback network" providerJS test below can switch away
+// from mainnet without a new vi.mock factory.
+let mockNetwork = 'mainnet'
 const mockBuildTransactions = vi.fn().mockResolvedValue({
     transactions: [{ fake: 'txn' }],
 })
@@ -49,6 +52,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         bidaliApiKey: 'test-api-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     }),
+    isMainnet: (network: string) => network === 'mainnet',
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -56,7 +60,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({
         newGroup: () => mockComposer,
     }),
-    useNetwork: () => ({ network: 'mainnet' }),
+    useNetwork: () => ({ network: mockNetwork }),
     displayUnitsToBaseUnits: (amount: string, decimals: number) => ({
         toFixed: () => String(Number(amount) * 10 ** decimals),
     }),
@@ -64,8 +68,12 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET: { decimals: 6 },
-    getKnownAssetId: (key: string, _network: string) =>
-        key === 'USDC' ? '31566704' : '0',
+    // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane, so
+    // getCurrencyInfo's `assetId === null` branch is reachable here.
+    getKnownAssetId: (key: string, network: string) => {
+        if (key !== 'USDC') return null
+        return { mainnet: '31566704', testnet: '10458941' }[network] ?? null
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -131,6 +139,7 @@ const bidaliRPC = (method: string, params?: Record<string, unknown>) => ({
 describe('useBidaliTransport', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockNetwork = 'mainnet'
     })
 
     // -- providerJS --------------------------------------------------------
@@ -150,6 +159,20 @@ describe('useBidaliTransport', () => {
             )
             expect(result.current.providerJS).toContain('"algorand"')
             expect(result.current.providerJS).toContain('"usdcalgorand"')
+        })
+
+        // computeBidaliBalances's isMainnetCatalogue branch: custom has no
+        // Bidali catalogue of its own, so it must select the same
+        // testusdcalgorand balance key as testnet, not usdcalgorand.
+        it('selects the testusdcalgorand balance key for a fallback network (custom)', () => {
+            mockNetwork = 'custom'
+
+            const { result } = renderHook(() =>
+                useBidaliTransport(mockAccount, emptyBalances),
+            )
+
+            expect(result.current.providerJS).toContain('"testusdcalgorand":')
+            expect(result.current.providerJS).not.toContain('"usdcalgorand":')
         })
     })
 
@@ -423,6 +446,33 @@ describe('useBidaliTransport', () => {
             expect(call.receiver).toBe(VALID_ADDRESS)
             expect(call.assetId.toString()).toBe('31566704')
             expect(mockAddSignRequest).toHaveBeenCalled()
+        })
+
+        it('refuses a USDC transfer on a network with no known USDC id', async () => {
+            // getCurrencyInfo returns null there, which the caller already
+            // treats as an unsupported protocol — no transfer is composed
+            // against another chain's asset id.
+            mockNetwork = 'betanet'
+            const { logger } = await import('@perawallet/wallet-core-shared')
+            const { result } = renderHook(() =>
+                useBidaliTransport(mockAccount, emptyBalances),
+            )
+            await act(async () =>
+                result.current.handleMessage(
+                    bidaliRPC('bidaliPaymentRequest', {
+                        address: VALID_ADDRESS,
+                        amount: '10',
+                        protocol: 'usdcalgorand',
+                    }),
+                ),
+            )
+
+            expect(mockAddAssetTransfer).not.toHaveBeenCalled()
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(logger.warn).toHaveBeenCalledWith(
+                'Bidali: unsupported protocol',
+                expect.anything(),
+            )
         })
 
         it('passes extraId as note when provided', async () => {

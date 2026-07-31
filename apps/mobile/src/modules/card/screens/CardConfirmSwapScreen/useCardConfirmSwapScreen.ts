@@ -75,12 +75,12 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
         [network],
     )
     const assetIds = useMemo(
-        () => [usdcAssetId, params.sourceAssetId],
+        () => [usdcAssetId, params.sourceAssetId].filter(id => id !== null),
         [usdcAssetId, params.sourceAssetId],
     )
     const { data: assets } = useAssetsQuery(assetIds)
     const usdcAsset = useMemo(
-        () => assets.get(usdcAssetId),
+        () => (usdcAssetId === null ? undefined : assets.get(usdcAssetId)),
         [assets, usdcAssetId],
     )
     const sourceAsset = useMemo(
@@ -104,10 +104,13 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
             account,
             sourceAssetId: params.sourceAssetId,
             sourceDecimals,
-            usdcAssetId,
+            usdcAssetId: usdcAssetId ?? '',
             usdcDecimals,
             amount: amountDecimal,
-            enabled: true,
+            // No known USDC id on this network — nothing to swap into. In
+            // practice this screen is unreachable in that case (Add Funds
+            // never offers the swap), but the type still admits it.
+            enabled: usdcAssetId !== null,
         })
 
     const payDisplay = useMemo(() => {

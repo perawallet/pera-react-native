@@ -55,6 +55,15 @@ export const configSchema = z
         mainnetExplorerUrl: z.url(),
         testnetExplorerUrl: z.url(),
 
+        // Networks without a Pera backend. Chain endpoints only — their Pera
+        // service traffic has no Pera backend and fails typed (see createPeraClient).
+        betanetAlgodUrl: z.url(),
+        betanetIndexerUrl: z.url(),
+        betanetGenesisHash: z.string(),
+        betanetExplorerUrl: z.url(),
+        /** Per-network faucet. Empty for MainNet, which has none. */
+        mainnetDispenserUrl: z.string(),
+
         appStoreAppID: z.string(),
         playIntegrityCloudProjectNumber: z.string(),
 
@@ -182,7 +191,17 @@ export const configSchema = z
             }),
         }),
 
-        defaultNetwork: z.enum(['mainnet', 'testnet']).default('mainnet'),
+        /**
+         * Build-time active network. Deliberately NOT the full `Network` union:
+         * `custom` has no baked chain config — every value comes from the
+         * custom-network store, which is empty until a developer fills the Node
+         * Settings sheet in — so no build-time value could make it valid. Making
+         * it the default would make `custom` ACTIVE and unconfigured on first
+         * launch, where every resolved endpoint is `''`.
+         */
+        defaultNetwork: z
+            .enum(['mainnet', 'testnet', 'betanet'])
+            .default('mainnet'),
 
         /** Build channel. Sourced from APP_ENV; defaults to development when unset. */
         appEnvironment: z
@@ -288,6 +307,11 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
+    betanetAlgodUrl: 'https://betanet-api.algonode.cloud',
+    betanetIndexerUrl: 'https://betanet-idx.algonode.cloud',
+    betanetGenesisHash: 'mFgazF+2uRS1tMiL9dsj01hJGySEmPN28B/TjjvpVW0=',
+    betanetExplorerUrl: 'https://lora.algokit.io/betanet',
+    mainnetDispenserUrl: '',
     onrampSupportEmail: 'support@xoswap.com',
     cardSupportEmail: 'support@baanx.com',
     supportBaseUrl: 'https://support.perawallet.app/',
@@ -432,6 +456,11 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
 
     mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
     testnetExplorerUrl: 'TESTNET_EXPLORER_URL',
+    betanetAlgodUrl: 'BETANET_ALGOD_URL',
+    betanetIndexerUrl: 'BETANET_INDEXER_URL',
+    betanetGenesisHash: 'BETANET_GENESIS_HASH',
+    betanetExplorerUrl: 'BETANET_EXPLORER_URL',
+    mainnetDispenserUrl: 'MAINNET_DISPENSER_URL',
     onrampSupportEmail: 'ONRAMP_SUPPORT_EMAIL',
     cardSupportEmail: 'CARD_SUPPORT_EMAIL',
     supportBaseUrl: 'SUPPORT_BASE_URL',

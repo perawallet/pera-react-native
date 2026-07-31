@@ -32,10 +32,30 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
-    isTestnet: (network: string) => network === 'testnet',
+    isMainnet: (network: string) => network === 'mainnet',
 }))
 
-import { logEvent, createBaseLogger } from '../log'
+import { logEvent, createBaseLogger, resolveEventName } from '../log'
+
+describe('resolveEventName', () => {
+    beforeEach(() => {
+        currentNetwork = 'mainnet'
+    })
+
+    it('leaves mainnet event names untouched', () => {
+        currentNetwork = 'mainnet'
+
+        expect(resolveEventName('screen_view')).toBe('screen_view')
+    })
+
+    it('prefixes every non-mainnet network', () => {
+        for (const network of ['testnet', 'betanet', 'custom']) {
+            currentNetwork = network
+
+            expect(resolveEventName('screen_view')).toBe('t_screen_view')
+        }
+    })
+})
 
 describe('logEvent (base)', () => {
     beforeEach(() => {

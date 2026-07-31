@@ -22,11 +22,21 @@ describe('Networks', () => {
         expect(Networks.mainnet).toBe('mainnet')
     })
 
-    test('has only two networks', () => {
+    test('has betanet network', () => {
+        expect(Networks.betanet).toBe('betanet')
+    })
+
+    test('has custom network', () => {
+        expect(Networks.custom).toBe('custom')
+    })
+
+    test('has exactly four networks', () => {
         const keys = Object.keys(Networks)
-        expect(keys).toHaveLength(2)
+        expect(keys).toHaveLength(4)
         expect(keys).toContain('testnet')
         expect(keys).toContain('mainnet')
+        expect(keys).toContain('betanet')
+        expect(keys).toContain('custom')
     })
 })
 
@@ -41,6 +51,16 @@ describe('Network type', () => {
         expect(network).toBe('mainnet')
     })
 
+    test('accepts betanet value', () => {
+        const network: Network = 'betanet'
+        expect(network).toBe('betanet')
+    })
+
+    test('accepts custom value', () => {
+        const network: Network = 'custom'
+        expect(network).toBe('custom')
+    })
+
     test('can use Networks.testnet constant', () => {
         const network: Network = Networks.testnet
         expect(network).toBe(Networks.testnet)
@@ -49,6 +69,16 @@ describe('Network type', () => {
     test('can use Networks.mainnet constant', () => {
         const network: Network = Networks.mainnet
         expect(network).toBe(Networks.mainnet)
+    })
+
+    test('can use Networks.betanet constant', () => {
+        const network: Network = Networks.betanet
+        expect(network).toBe(Networks.betanet)
+    })
+
+    test('can use Networks.custom constant', () => {
+        const network: Network = Networks.custom
+        expect(network).toBe(Networks.custom)
     })
 })
 

@@ -12,7 +12,9 @@
 
 import { describe, test, expect } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
+import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-blockchain'
 import {
+    MODULE_PREFIX,
     removeAccountQueriesForAddresses,
     getAccountBalancesQueryKey,
     getAccountAssetBalanceHistoryQueryKey,
@@ -149,5 +151,17 @@ describe('isAccountBalancesHistoryQuery', () => {
                 getAccountBalancesQueryKey('ADDR1', 'mainnet'),
             ),
         ).toBe(false)
+    })
+})
+
+describe('NETWORK_PARTITIONED_QUERY_MODULES (blockchain)', () => {
+    test('includes this package MODULE_PREFIX, so clearCustomNetworkCache sweeps its custom-network entries', () => {
+        // blockchain/clearCustomNetworkCache.ts duplicates this package's
+        // MODULE_PREFIX rather than importing it (importing back would cycle
+        // — accounts depends on blockchain). This test is the drift guard:
+        // if MODULE_PREFIX is ever renamed here, this fails in this package,
+        // where the rename is happening, instead of silently going stale on
+        // the blockchain side.
+        expect(NETWORK_PARTITIONED_QUERY_MODULES.has(MODULE_PREFIX)).toBe(true)
     })
 })

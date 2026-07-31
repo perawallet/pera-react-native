@@ -29,6 +29,7 @@ import {
     getToken,
     onMessage,
     onNotificationOpenedApp,
+    onTokenRefresh,
 } from '@react-native-firebase/messaging'
 import {
     type Analytics,
@@ -47,6 +48,7 @@ import {
     type NotificationOpenListener,
     type PushNotificationInitResult,
     type PushNotificationService,
+    type PushTokenRefreshListener,
     type RemoteConfigService,
     type AnalyticsService,
     RemoteConfigDefaults,
@@ -192,6 +194,66 @@ export class RNFirebaseService
         }
     }
 
+    /**
+     * FCM registration + token. Time-boxed because getMessaging/getToken can
+     * hang indefinitely offline; failures degrade to `undefined` rather than
+     * rejecting.
+     */
+    private async fetchToken(): Promise<string | undefined> {
+        try {
+            return await withTimeout(
+                (async () => {
+                    this.messaging ??= await getMessaging()
+                    return getToken(this.messaging)
+                })(),
+                FCM_TOKEN_FETCH_TIMEOUT_MS,
+                'FCM token fetch',
+            )
+        } catch {
+            // noop — degrade to no token (offline or timed-out registration)
+            return undefined
+        }
+    }
+
+    async getPushToken(): Promise<string | undefined> {
+        try {
+            const settings = await notifee.getNotificationSettings()
+            if (
+                settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED
+            ) {
+                return undefined
+            }
+        } catch {
+            return undefined
+        }
+
+        return this.fetchToken()
+    }
+
+    addTokenRefreshListener(listener: PushTokenRefreshListener): () => void {
+        let detach: (() => void) | undefined
+        let cancelled = false
+
+        // `getMessaging` is async and may not have run yet (a cold start that
+        // timed out or was denied permission leaves `messaging` null), so
+        // attach lazily instead of silently dropping the subscription.
+        void (async () => {
+            try {
+                this.messaging ??= await getMessaging()
+                if (cancelled) return
+                detach = onTokenRefresh(this.messaging, listener)
+            } catch {
+                // No messaging instance — rotation events are unavailable. The
+                // resume-time `getPushToken` re-read still covers the gap.
+            }
+        })()
+
+        return () => {
+            cancelled = true
+            detach?.()
+        }
+    }
+
     async initializeNotifications(): Promise<PushNotificationInitResult> {
         // Allow user to opt into notifications. A rejection here (native
         // permission surface failing offline) degrades to "not authorized"
@@ -223,22 +285,7 @@ export class RNFirebaseService
             })
         }
 
-        // FCM registration + token. Time-boxed because getMessaging/getToken
-        // can hang indefinitely offline; a timeout rejection is swallowed here
-        // so `token` simply stays undefined.
-        let token: string | undefined
-        try {
-            token = await withTimeout(
-                (async () => {
-                    this.messaging = await getMessaging()
-                    return getToken(this.messaging)
-                })(),
-                FCM_TOKEN_FETCH_TIMEOUT_MS,
-                'FCM token fetch',
-            )
-        } catch {
-            // noop — degrade to no token (offline or timed-out registration)
-        }
+        const token = await this.fetchToken()
 
         // Foreground message handler (show a local notification)
         const unsubscribeOnMessage = this.messaging

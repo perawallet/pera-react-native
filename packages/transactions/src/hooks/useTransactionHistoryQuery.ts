@@ -179,6 +179,21 @@ export const useTransactionHistoryQuery = (
                 const result = await fetchMoreTransactions({
                     url: pageParam.url,
                     network,
+                    // Only meaningful on indexer-backed networks (see
+                    // `isPeraBackedNetwork`), which have no replayable
+                    // pagination URL and need the address alongside the
+                    // cursor. Harmless to pass on Pera-backed networks.
+                    accountAddress,
+                    // Indexer-backed networks only: the indexer's
+                    // next-token does not encode these filters the way the
+                    // Pera path's absolute `url` does — omitting them here
+                    // would silently widen a filtered list (one asset, or a
+                    // date range) back to everything from page 2 onward.
+                    // Harmless to pass on Pera-backed networks.
+                    assetId,
+                    afterTime,
+                    beforeTime,
+                    limit,
                 })
 
                 // Persist to DB in background
