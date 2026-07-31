@@ -9,7 +9,7 @@ name: Release Candidate Tag
 on:
   schedule:
     # Fridays 12:00 UTC. GitHub cron is UTC-only (no DST).
-    - cron: "0 12 * * 5"
+    - cron: "0 10 * * 5"
   # Allow cutting an rc on demand from the Actions tab.
   workflow_dispatch: {}
 
