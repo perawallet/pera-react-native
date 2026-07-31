@@ -60,6 +60,30 @@ const assetTransfer = (
         },
     }) as unknown as PeraDisplayableTransaction
 
+const assetConfig = (
+    overrides: Partial<{
+        sender: string
+        assetId: bigint
+        name: string
+        unitName: string
+        total: bigint
+        decimals: number
+    }> = {},
+): PeraDisplayableTransaction =>
+    ({
+        sender: overrides.sender ?? USER,
+        fee: 1000n,
+        assetConfigTransaction: {
+            assetId: overrides.assetId ?? 0n,
+            params: {
+                name: overrides.name ?? 'Minted Asset',
+                unitName: overrides.unitName ?? 'MINT',
+                total: overrides.total ?? 1n,
+                decimals: overrides.decimals ?? 0,
+            },
+        },
+    }) as unknown as PeraDisplayableTransaction
+
 describe('computeBalanceImpact', () => {
     it('records an outgoing ALGO payment as a negative delta and tracks the fee', () => {
         const { deltas, totalFeeMicroAlgos, hasCloseRemainder } =
@@ -218,5 +242,50 @@ describe('computeBalanceImpact', () => {
 
         expect(deltas).toEqual([])
         expect(totalFeeMicroAlgos).toBe(0n)
+    })
+
+    describe('asset creation', () => {
+        it('credits every asset the user mints in the group', () => {
+            const { createdAssets } = computeBalanceImpact(
+                [
+                    assetConfig({ unitName: 'MINT1', total: 1n }),
+                    assetConfig({
+                        unitName: 'MINT2',
+                        total: 250n,
+                        decimals: 2,
+                    }),
+                ],
+                users,
+            )
+
+            expect(createdAssets).toEqual([
+                {
+                    key: 'created-0',
+                    name: 'Minted Asset',
+                    unitName: 'MINT1',
+                    total: 1n,
+                    decimals: 0,
+                },
+                {
+                    key: 'created-1',
+                    name: 'Minted Asset',
+                    unitName: 'MINT2',
+                    total: 250n,
+                    decimals: 2,
+                },
+            ])
+        })
+
+        it('ignores a reconfigure of an existing asset and mints by other accounts', () => {
+            const { createdAssets } = computeBalanceImpact(
+                [
+                    assetConfig({ assetId: 31566704n }),
+                    assetConfig({ sender: OTHER }),
+                ],
+                users,
+            )
+
+            expect(createdAssets).toEqual([])
+        })
     })
 })
