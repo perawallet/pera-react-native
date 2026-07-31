@@ -10,13 +10,4 @@
  limitations under the License
  */
 
-export {
-    fetchCardStatus,
-    orderCard,
-    freezeCard,
-    unfreezeCard,
-    type FetchCardStatusParams,
-    type OrderCardParams,
-    type CardLifecycleParams,
-} from './endpoints'
-export { CardOrderNotVerifiedError } from './errors'
+export { CardKycRequiredView } from './CardKycRequiredView'

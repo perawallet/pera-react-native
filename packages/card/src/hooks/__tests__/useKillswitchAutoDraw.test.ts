@@ -21,6 +21,7 @@ const { useAlgorandClient, useNetwork } = vi.hoisted(() => ({
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient,
     useNetwork,
+    FALLBACK_MIN_TXN_FEE: 1000n,
 }))
 vi.mock('@algorandfoundation/algokit-utils', () => ({
     // Identity passthrough: the "populated" ATC is the one build() returned.
@@ -95,7 +96,7 @@ describe('isKillswitchConfigured', () => {
 })
 
 describe('useKillswitchAutoDraw', () => {
-    it('buildEnable calls enable(card, asset) fee-delegation-ready (zero static fee, no self-funding)', async () => {
+    it('buildEnable calls enable(card, asset) fee-delegation-ready (simulate fee stripped, no self-funding)', async () => {
         const { result } = renderHook(() => useKillswitchAutoDraw())
 
         const txns = await result.current.buildEnable({
@@ -104,19 +105,22 @@ describe('useKillswitchAutoDraw', () => {
             asset: '10458941',
         })
 
-        // No self-funded MBR payment — the fee-delegation sponsor covers it.
+        // No self-funded MBR payment: the accounts-box MBR is funded by the
+        // Killswitch app account, and the group's fees by the sponsor.
         expect(addPayment).not.toHaveBeenCalled()
-        // enable(card, asset) with a zeroed static fee (sponsor tops up the
-        // group's fee pool instead).
         expect(paramsCall).toHaveBeenCalledWith(
             expect.objectContaining({
                 method: 'enable',
                 args: ['CARD', 10458941n],
             }),
         )
-        expect(paramsCall.mock.calls[0][0].staticFee.microAlgo).toBe(0n)
+        // The build carries a simulate-only fee (call + one inner txn) so the
+        // resource-population simulate passes algod's min-fee validation...
+        expect(paramsCall.mock.calls[0][0].staticFee.microAlgo).toBe(2000n)
         expect(addAppCallMethodCall).toHaveBeenCalledWith(ENABLE_CALL)
-        expect(txns).toEqual([{ id: 'txn-1' }])
+        // ...but the returned txns are zero-fee and ungrouped: the
+        // fee-delegation sponsor pays, and the backend re-groups.
+        expect(txns).toEqual([{ id: 'txn-1', fee: 0n, group: undefined }])
     })
 
     it('buildKill calls kill(asset) with no funding and no extra fee', async () => {

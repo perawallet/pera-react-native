@@ -11,6 +11,8 @@
  */
 
 import React from 'react'
+import { ActivityIndicator } from 'react-native'
+import { useTheme } from '@rneui/themed'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { type CardCreateStepStatus } from './useCardCreateSigningScreen'
 import { useStyles } from './styles'
@@ -19,6 +21,8 @@ type CardCreateStepRowProps = {
     stepNumber: number
     label: string
     status: CardCreateStepStatus
+    /** The step's work is in flight; a spinner replaces the number. */
+    isBusy?: boolean
     testID?: string
 }
 
@@ -27,9 +31,11 @@ export const CardCreateStepRow = ({
     stepNumber,
     label,
     status,
+    isBusy = false,
     testID,
 }: CardCreateStepRowProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const isPending = status === 'pending'
 
     return (
@@ -48,6 +54,12 @@ export const CardCreateStepRow = ({
                         name='check'
                         size='xs'
                         variant='positive'
+                    />
+                ) : isBusy ? (
+                    <ActivityIndicator
+                        size='small'
+                        color={theme.colors.positive}
+                        testID={testID ? `${testID}-spinner` : undefined}
                     />
                 ) : (
                     <PWText

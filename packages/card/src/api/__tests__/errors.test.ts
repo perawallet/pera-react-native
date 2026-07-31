@@ -16,6 +16,7 @@ import {
     isConflictError,
     isInvalidInputError,
     isDuplicateError,
+    isNotVerifiedError,
 } from '../errors'
 
 describe('getCardApiError', () => {
@@ -208,5 +209,27 @@ describe('isDuplicateError', () => {
     it('is false for unrelated failures', () => {
         expect(isDuplicateError({ status: 500, message: 'boom' })).toBe(false)
         expect(isDuplicateError({})).toBe(false)
+    })
+})
+
+describe('isNotVerifiedError', () => {
+    it('matches the documented code and the observed sandbox message', () => {
+        expect(isNotVerifiedError({ code: 'USER_NOT_VERIFIED' })).toBe(true)
+        expect(
+            isNotVerifiedError({
+                status: 403,
+                message: 'Account has not been verified',
+            }),
+        ).toBe(true)
+        expect(isNotVerifiedError({ message: 'User is not verified' })).toBe(
+            true,
+        )
+    })
+
+    it('is false for unrelated failures', () => {
+        expect(isNotVerifiedError({ status: 403, message: 'Forbidden' })).toBe(
+            false,
+        )
+        expect(isNotVerifiedError({})).toBe(false)
     })
 })

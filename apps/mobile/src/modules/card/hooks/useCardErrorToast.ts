@@ -24,6 +24,14 @@ export type CardErrorToastKeys = {
     titleKey?: string
     /** i18n key for the body shown when the error carries no message. */
     bodyKey?: string
+    /**
+     * Whether the backend's own message may be shown as the body. Defaults to
+     * true (most card errors are short, actionable Baanx validation strings).
+     * Set false on flows whose failures are raw chain/infra errors: algod
+     * simulate dumps and `[network:server] 503 ...` are unreadable, so those
+     * surface `bodyKey` and log the detail instead.
+     */
+    shouldUseBackendMessage?: boolean
 }
 
 /**
@@ -36,6 +44,7 @@ export type CardErrorToastKeys = {
 export const useCardErrorToast = ({
     titleKey = 'peraCard.account.error_title',
     bodyKey = 'peraCard.account.error_body',
+    shouldUseBackendMessage = true,
 }: CardErrorToastKeys = {}): ((
     error: unknown,
     resolvedApiError?: CardApiError,
@@ -52,9 +61,13 @@ export const useCardErrorToast = ({
                 )
                 return
             }
+            if (!shouldUseBackendMessage) {
+                errorToast(t(titleKey), t(bodyKey))
+                return
+            }
             const apiError = resolvedApiError ?? (await getCardApiError(error))
             errorToast(t(titleKey), apiError.message ?? t(bodyKey))
         },
-        [errorToast, t, titleKey, bodyKey],
+        [errorToast, t, titleKey, bodyKey, shouldUseBackendMessage],
     )
 }

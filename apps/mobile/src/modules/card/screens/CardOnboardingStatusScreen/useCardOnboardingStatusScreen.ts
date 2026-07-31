@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Linking } from 'react-native'
 import {
     useNavigation,
     useRoute,
@@ -32,15 +31,13 @@ import {
     useSelectedAccountAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { config } from '@perawallet/wallet-core-config'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { useWebView } from '@modules/webview'
-import { routeCapabilities } from '@routes/capabilities'
 import {
     canAutoFund,
     useCardFundingSourcePicker,
     useCardOnboardingLogout,
     useEscrowCardCreation,
+    useOpenCardSupport,
     isSigningCapableFundingSource,
 } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -143,7 +140,6 @@ export const useCardOnboardingStatusScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
-        const { pushWebView } = useWebView()
         const { handleLogout } = useCardOnboardingLogout()
 
         // You land here once Veriff has reported back (PENDING or a decision).
@@ -273,11 +269,18 @@ export const useCardOnboardingStatusScreen =
         }, [documentsState, stackNavigation, navigation])
 
         const handleEnterDetails = useCallback(() => {
+            // Defence in depth: the CTA is already hidden unless KYC is
+            // submitted, but a future entry point (or a state flip between
+            // render and tap) must not persist a step Baanx will refuse.
+            if (!isKycSubmitted) {
+                handleVerifyIdentity()
+                return
+            }
             useCardStore
                 .getState()
                 .setOnboardingStep(OnboardingStep.PersonalDetails)
             navigation.navigate('CardOnboardingPersonalDetails')
-        }, [navigation])
+        }, [isKycSubmitted, handleVerifyIdentity, navigation])
 
         // Onboarding creation always needs a signature, so only offer accounts
         // that can sign (excludes Ledger, which is otherwise fundable).
@@ -344,13 +347,7 @@ export const useCardOnboardingStatusScreen =
             t,
         ])
 
-        const handleOpenSupport = useCallback(() => {
-            if (!routeCapabilities.inAppWebView) {
-                void Linking.openURL(config.supportBaseUrl)
-                return
-            }
-            pushWebView({ url: config.supportBaseUrl, id: 'card-support' })
-        }, [pushWebView])
+        const handleOpenSupport = useOpenCardSupport()
 
         return {
             documentsState,

@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useCardStore } from '@perawallet/wallet-core-card'
+import { useCardIssuance, useCardStore } from '@perawallet/wallet-core-card'
 import { type AccountDisplayCard } from '@modules/accounts/components/AccountDisplay'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -34,6 +34,13 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     const connectedAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
     )
+
+    // The dashboard shell (not a tab) owns making sure the Baanx card gets
+    // ordered once KYC clears: the KYC watch and the one-shot auto-order run
+    // regardless of which tab is mounted or whether tabs become lazy. The
+    // details tab mounts its own instance for display; the shared mutation
+    // key keeps the two coordinated.
+    useCardIssuance()
 
     const cardDisplay = useMemo<AccountDisplayCard>(() => {
         const account = connectedAddress

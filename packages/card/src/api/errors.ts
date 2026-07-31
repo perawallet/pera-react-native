@@ -212,3 +212,36 @@ export const isDuplicateError = (apiError: CardApiError): boolean =>
     /duplicate|already exists/i.test(
         `${apiError.code ?? ''} ${apiError.message ?? ''}`,
     )
+
+/**
+ * True when Baanx refused because the user's KYC isn't VERIFIED yet. The
+ * guides document `code: USER_NOT_VERIFIED` with status 400 or 403; the live
+ * sandbox has been seen returning only `message: "Account has not been
+ * verified"`. So, like {@link isDuplicateError}, match on text rather than
+ * HTTP status.
+ */
+export const isNotVerifiedError = (apiError: CardApiError): boolean =>
+    /USER_NOT_VERIFIED|not (been )?verified/i.test(
+        `${apiError.code ?? ''} ${apiError.message ?? ''}`,
+    )
+
+/**
+ * Thrown when a registration step is refused because the user's KYC isn't
+ * far enough along. This is the only trustworthy signal that verification is
+ * incomplete: Baanx reports `PENDING` from the moment a Veriff session is
+ * *created*, so an abandoned session looks submitted right up until a step
+ * like personal-details or address rejects it.
+ *
+ * Lives here (rather than an `api/onboarding/errors.ts`) because the
+ * onboarding barrel is wholesale-mocked in tests, which would leave the class
+ * undefined and break `instanceof`. Named for the flow, not one step, since
+ * both the details and address steps raise it.
+ */
+export class OnboardingNotVerifiedError extends Error {
+    constructor(
+        message = 'Identity verification must be submitted before registration can continue.',
+    ) {
+        super(message)
+        this.name = 'OnboardingNotVerifiedError'
+    }
+}

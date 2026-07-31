@@ -14,6 +14,7 @@ import { Controller } from 'react-hook-form'
 import { formatDobInput } from '@perawallet/wallet-core-card'
 import { PWButton, PWInput, PWScreen, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { CardKycRequiredView } from '../../components/CardKycRequiredView'
 import { CountrySelectorField } from '../../components/CountrySelectorField'
 import { useCardOnboardingPersonalDetailsScreen } from './useCardOnboardingPersonalDetailsScreen'
 import { useStyles } from './styles'
@@ -31,9 +32,17 @@ export const CardOnboardingPersonalDetailsScreen = () => {
         isLastNameLocked,
         isDateOfBirthLocked,
         isNationalityLocked,
+        isKycRequired,
+        handleVerifyIdentity,
         handleSelectNationality,
         handleConfirm,
     } = useCardOnboardingPersonalDetailsScreen()
+
+    // Baanx refuses this step until the identity check is far enough along, so
+    // the form is replaced rather than shown unsubmittable.
+    if (isKycRequired) {
+        return <CardKycRequiredView onVerify={handleVerifyIdentity} />
+    }
 
     return (
         <PWScreen testID='card-onboarding-personal-details'>
@@ -57,7 +66,7 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 autoCapitalize='words'
                                 autoCorrect={false}
                                 returnKeyType='next'
-                                editable={!isFirstNameLocked}
+                                isDisabled={isFirstNameLocked}
                                 showErrorOnBlur
                                 renderErrorMessage
                                 errorStyle={styles.errorMessage}
@@ -91,7 +100,7 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 autoCapitalize='words'
                                 autoCorrect={false}
                                 returnKeyType='next'
-                                editable={!isLastNameLocked}
+                                isDisabled={isLastNameLocked}
                                 showErrorOnBlur
                                 renderErrorMessage
                                 errorStyle={styles.errorMessage}
@@ -124,7 +133,7 @@ export const CardOnboardingPersonalDetailsScreen = () => {
                                 onBlur={onBlur}
                                 keyboardType='number-pad'
                                 returnKeyType='done'
-                                editable={!isDateOfBirthLocked}
+                                isDisabled={isDateOfBirthLocked}
                                 onSubmitEditing={handleConfirm}
                                 showErrorOnBlur
                                 renderErrorMessage

@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { decodeAddress } from 'algosdk'
 import {
+    FALLBACK_MIN_TXN_FEE,
     useAlgorandClient,
     useNetwork,
     type PeraTransaction,
@@ -69,10 +70,11 @@ export type UseKillswitchAutoDrawResult = {
      * Builds the unsigned `enable(card, asset)` call (one inner `getCardData`
      * call to verify card ownership), fee-delegation-ready: `staticFee` is
      * zeroed rather than self-funded, since the caller submits this via the
-     * Pera backend's fee-delegation endpoint (`includeMbr: true`), which
-     * sponsors both the accounts-box MBR and the group's total fee — the
-     * enabling account needs no ALGO of its own. Resources (box, Main-app,
-     * card-account refs) are populated via simulate.
+     * Pera backend's fee-delegation endpoint. The sponsor covers the group's
+     * total fee (the backend simulates the group, so the inner call is priced
+     * in) and tops the account up to min balance; the accounts-box MBR is
+     * funded by the Killswitch app account, not the sponsor. Resources (box,
+     * Main-app, card-account refs) are populated via simulate.
      */
     buildEnable: (params: {
         sender: string
@@ -140,10 +142,17 @@ export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
                 await appClient.params.call({
                     method: 'enable',
                     args: [cardAddress, BigInt(asset)],
-                    // Zero — the fee-delegation sponsor tops up the group's
-                    // fee pool to cover this call AND its one inner
-                    // `getCardData` call.
-                    staticFee: AlgoAmount.MicroAlgo(0),
+                    // Simulate-only fee. The resource-population simulate
+                    // below validates the group like a real submission and
+                    // algod has no fee waiver, so a zero-fee group dies with
+                    // "group fee too small" before any resources are
+                    // discovered. Covers this call plus its one inner
+                    // `getCardData` call, then gets stripped after populating,
+                    // since the fee-delegation sponsor tops up the real
+                    // group's fee pool on submission.
+                    staticFee: AlgoAmount.MicroAlgo(
+                        Number(FALLBACK_MIN_TXN_FEE) * 2,
+                    ),
                 }),
             )
 
@@ -152,7 +161,14 @@ export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
                 atc,
                 algokit.client.algod,
             )
-            return populated.buildGroup().map(t => t.txn)
+            return populated.buildGroup().map(({ txn }) => {
+                // Fee-delegated: drop the simulate-only fee and any group id.
+                // The backend re-groups the txns with the sponsor's fee/MBR
+                // payment, recomputing the group id, so neither survives.
+                txn.fee = 0n
+                txn.group = undefined
+                return txn
+            })
         },
         [algokit, getAppClient],
     )

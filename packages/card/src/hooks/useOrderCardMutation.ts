@@ -12,23 +12,65 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { orderCard } from '../api/card'
-import { cardQueryKeys } from './querykeys'
+import { orderCard, CardOrderNotVerifiedError } from '../api/card'
+import {
+    getCardApiError,
+    isDuplicateError,
+    isNotVerifiedError,
+} from '../api/errors'
+import { cardMutationKeys, cardQueryKeys } from './querykeys'
 import { toCardMutationResult, type CardMutationResult } from './types'
 
 export type UseOrderCardMutationResult = CardMutationResult<void>
 
+/**
+ * Orders the Baanx card record (`POST /v1/card/order`, always VIRTUAL).
+ * Failure classification:
+ * - "already has a card" (CARD_EXISTS/duplicate) resolves as success, since
+ *   the goal state is reached; the status invalidation picks the card up.
+ * - "not verified" rethrows as {@link CardOrderNotVerifiedError} so callers
+ *   can treat it as "keep waiting for KYC" rather than a failed order.
+ * Registered under `cardMutationKeys.order` so concurrent mounted callers
+ * (dashboard shell + details tab) can observe one shared in-flight attempt.
+ */
 export const useOrderCardMutation = (): UseOrderCardMutationResult => {
     const { network } = useNetwork()
     const queryClient = useQueryClient()
 
     const mutation = useMutation<void, Error, void>({
-        mutationFn: () => orderCard({ network }),
+        mutationKey: cardMutationKeys.order,
+        mutationFn: async () => {
+            try {
+                await orderCard({ network })
+            } catch (error) {
+                const apiError = await getCardApiError(error)
+                if (
+                    apiError.code === 'CARD_EXISTS' ||
+                    isDuplicateError(apiError)
+                ) {
+                    return
+                }
+                if (isNotVerifiedError(apiError)) {
+                    throw new CardOrderNotVerifiedError()
+                }
+                throw error
+            }
+        },
         throwOnError: false,
         onSuccess: () => {
             void queryClient.invalidateQueries({
                 queryKey: cardQueryKeys.status(network),
             })
+        },
+        onError: error => {
+            // The order endpoint disagreed with our cached VERIFIED state, so
+            // that cache is stale: refresh it and let the issuance flow fall
+            // back to the verification-pending view.
+            if (error instanceof CardOrderNotVerifiedError) {
+                void queryClient.invalidateQueries({
+                    queryKey: cardQueryKeys.user(network),
+                })
+            }
         },
     })
 

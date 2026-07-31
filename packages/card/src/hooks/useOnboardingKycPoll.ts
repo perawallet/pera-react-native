@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { VerificationState } from '../models'
+import { OnboardingStep, VerificationState } from '../models'
 import { useCardStore } from '../store'
 import { useOnboardingDetailsQuery } from './useOnboardingDetailsQuery'
 
@@ -54,17 +54,24 @@ export type UseOnboardingKycPollResult = {
  * Polls the onboarding KYC state and knows when to give up. Shared by the
  * setup-status checklist and the verification entry screen so both stop
  * hammering a dead record and can surface an explicit error instead.
+ * Self-disables once registration completes: the final address step consumes
+ * the onboarding session server-side, so GET register only answers
+ * "Invalid onboarding ID" from then on and the KYC decision must be tracked
+ * via the authenticated user record instead.
  */
 export const useOnboardingKycPoll = ({
     enabled = true,
 }: UseOnboardingKycPollOptions = {}): UseOnboardingKycPollResult => {
     const onboardingId = useCardStore(state => state.onboardingId)
+    const isRegistrationComplete = useCardStore(
+        state => state.onboardingStep === OnboardingStep.Completed,
+    )
     const [hasPollTimedOut, setHasPollTimedOut] = useState(false)
 
     const { data, isLoading, refetch, dataUpdatedAt, errorUpdatedAt } =
         useOnboardingDetailsQuery({
             onboardingId,
-            enabled,
+            enabled: enabled && !isRegistrationComplete,
             // Function form so polling stops on the very fetch that lands a
             // decision — no mirror state, no one-render lag.
             refetchInterval: query => {

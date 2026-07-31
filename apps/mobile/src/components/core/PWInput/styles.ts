@@ -50,6 +50,12 @@ export const useStyles = makeStyles(
                 borderRadius: theme.borderRadius.xs,
             },
             input,
+            // Locked value: dimmed with the same token the checklist uses for
+            // inactive rows, so "read-only" reads consistently. Text only:
+            // the field keeps its normal border.
+            disabledInput: {
+                color: theme.colors.textGrayLighter,
+            },
         }
     },
 )

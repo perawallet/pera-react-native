@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { isKycSubmitted, VerificationState } from '../user'
+import { isKycSubmitted, isKycVerified, VerificationState } from '../user'
 
 describe('isKycSubmitted', () => {
     it('is true once KYC is submitted (PENDING) or complete (VERIFIED)', () => {
@@ -23,5 +23,18 @@ describe('isKycSubmitted', () => {
         expect(isKycSubmitted(VerificationState.Unverified)).toBe(false)
         expect(isKycSubmitted(VerificationState.Rejected)).toBe(false)
         expect(isKycSubmitted(null)).toBe(false)
+    })
+})
+
+describe('isKycVerified', () => {
+    it('is true only for a complete (VERIFIED) review', () => {
+        expect(isKycVerified(VerificationState.Verified)).toBe(true)
+    })
+
+    it('is false for every other state, including submitted-but-PENDING', () => {
+        expect(isKycVerified(VerificationState.Pending)).toBe(false)
+        expect(isKycVerified(VerificationState.Unverified)).toBe(false)
+        expect(isKycVerified(VerificationState.Rejected)).toBe(false)
+        expect(isKycVerified(null)).toBe(false)
     })
 })

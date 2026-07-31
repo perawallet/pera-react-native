@@ -85,9 +85,15 @@ vi.mock('@modules/card/hooks', async () => {
     const { useCardErrorToast } = await vi.importActual<
         typeof import('../../../hooks/useCardErrorToast')
     >('../../../hooks/useCardErrorToast')
+    // Real support hook (over the mocked webview + capabilities) so the
+    // in-app-vs-browser assertions below keep testing real behavior.
+    const { useOpenCardSupport } = await vi.importActual<
+        typeof import('../../../hooks/useOpenCardSupport')
+    >('../../../hooks/useOpenCardSupport')
     return {
         useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
         useCardErrorToast,
+        useOpenCardSupport,
     }
 })
 

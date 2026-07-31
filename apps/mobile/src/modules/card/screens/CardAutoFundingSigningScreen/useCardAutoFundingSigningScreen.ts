@@ -13,12 +13,23 @@
 import { useCallback, useMemo, useState } from 'react'
 import { FundingType, useCardStore } from '@perawallet/wallet-core-card'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import {
     useAutoDrawSwitch,
     useCardErrorToast,
     useFinishCardCreation,
 } from '@modules/card/hooks'
+
+/**
+ * True when the failure is the user declining a signing prompt rather than
+ * something going wrong. Two shapes reach here: the typed error from the
+ * signing pipeline, and the fee-delegation hook's plain-`Error` rejection
+ * (see useFeeDelegation; worth typing upstream).
+ */
+const isUserRejection = (error: Error): boolean =>
+    error instanceof UserRejectedSigningError ||
+    /user rejected/i.test(error.message)
 
 export type UseCardAutoFundingSigningScreenResult = {
     isPending: boolean
@@ -55,7 +66,14 @@ export const useCardAutoFundingSigningScreen =
 
         const { enableAutoDraw } = useAutoDrawSwitch()
         const { finish } = useFinishCardCreation()
-        const showError = useCardErrorToast()
+        // Generic authorization copy, not the raw failure: the inline notice
+        // and this toast both stay human-readable, and the real error goes to
+        // the logger below.
+        const showError = useCardErrorToast({
+            titleKey: 'peraCard.auto_funding_signing.error_title',
+            bodyKey: 'peraCard.auto_funding_signing.error_body',
+            shouldUseBackendMessage: false,
+        })
 
         const [isPending, setIsPending] = useState(false)
         const [error, setError] = useState<Nullable<Error>>(null)
@@ -77,6 +95,15 @@ export const useCardAutoFundingSigningScreen =
                 } catch (err) {
                     const normalizedError =
                         err instanceof Error ? err : new Error(String(err))
+                    // Declining the signing review is a normal user action, so
+                    // it stays out of the error logs; everything else (algod
+                    // dumps, backend 5xx) is logged in full, because the screen
+                    // and toast only show short human-readable copy.
+                    if (!isUserRejection(normalizedError)) {
+                        logger.error('Card auto-funding authorization failed', {
+                            error: err,
+                        })
+                    }
                     setError(normalizedError)
                     await showError(err)
                 } finally {

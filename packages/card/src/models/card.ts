@@ -14,6 +14,13 @@ export const CardStatus = {
     Active: 'ACTIVE',
     Frozen: 'FROZEN',
     Blocked: 'BLOCKED',
+    /**
+     * Transient provisioning state right after `POST /v1/card/order` (the
+     * docs say up to ~2 minutes). Not in the status-endpoint schema enum but
+     * documented in prose; without this member it would fall through the
+     * transformer's fail-safe and render as permanently BLOCKED.
+     */
+    Pending: 'PENDING',
 } as const
 export type CardStatus = (typeof CardStatus)[keyof typeof CardStatus]
 
