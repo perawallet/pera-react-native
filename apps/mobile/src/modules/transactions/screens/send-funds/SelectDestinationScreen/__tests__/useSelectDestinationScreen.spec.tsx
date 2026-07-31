@@ -68,9 +68,10 @@ describe('useSelectDestinationScreen', () => {
 
         // clearAllMocks wipes call history but keeps implementations, so a
         // per-test mockReturnValue on useAssetsQuery would leak. Re-seed the
-        // default (ASA_ID resolvable) every run.
+        // default (ASA_ID resolvable, query settled) every run.
         ;(useAssetsQuery as Mock).mockReturnValue({
             data: new Map([[ASA_ID, { assetId: ASA_ID, name: 'TestToken' }]]),
+            isFetched: true,
         })
 
         ;(useSendFunds as Mock).mockReturnValue({
@@ -81,6 +82,7 @@ describe('useSelectDestinationScreen', () => {
 
         ;(useAccountBalancesQuery as Mock).mockReturnValue({
             accountBalances: new Map(),
+            isPending: false,
         })
 
         ;(useAllAccounts as Mock).mockReturnValue([])
@@ -293,6 +295,51 @@ describe('useSelectDestinationScreen', () => {
 
             expect(mockNavigate).not.toHaveBeenCalled()
             expect(result.current.isAutoAdvancing).toBe(false)
+        })
+
+        it('stops auto-advancing (no infinite spinner) when the deeplinked asset is not in the local DB', () => {
+            // Asset query settled but the id resolves to nothing — an
+            // ASSET_TRANSFER for an ASA the user has never held.
+            ;(useAssetsQuery as Mock).mockReturnValue({
+                data: new Map(),
+                isFetched: true,
+            })
+            ;(useSendFunds as Mock).mockReturnValue({
+                selectedAssetId: ASA_ID,
+                destination: EXTERNAL_ADDR,
+                setDestination: mockSetDestination,
+                setSendMode: mockSetSendMode,
+            })
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            // Bail so the error EmptyView renders instead of spinning forever.
+            expect(result.current.isAutoAdvancing).toBe(false)
+            expect(result.current.selectedAsset).toBeUndefined()
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('waits for balances before routing a prefill (no opt-in misroute)', () => {
+            // The deeplink resolves the instant this mounts; while balances are
+            // pending the map is empty, which must NOT read as "not opted in".
+            ;(useAccountBalancesQuery as Mock).mockReturnValue({
+                accountBalances: new Map(),
+                isPending: true,
+            })
+            ;(useSendFunds as Mock).mockReturnValue({
+                selectedAssetId: ASA_ID,
+                destination: INTERNAL_OPTED_IN_ADDR,
+                setDestination: mockSetDestination,
+                setSendMode: mockSetSendMode,
+            })
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            // Still waiting — crucially not misrouted to Express / ARC-59 off a
+            // stale empty balance map.
+            expect(result.current.isAutoAdvancing).toBe(true)
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockSetSendMode).not.toHaveBeenCalled()
         })
     })
 })

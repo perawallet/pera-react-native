@@ -11,161 +11,58 @@
  */
 
 import { useSendFunds } from '@modules/transactions/hooks'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
-import type { SendFundsStackParamList } from '@modules/transactions/routes/send-funds'
-import {
-    canSignWith,
-    useAccountBalancesQuery,
-    useAllAccounts,
-    useOnChainAccountInformationQuery,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { useNavigation } from '@react-navigation/native'
-import { type StackNavigationProp } from '@react-navigation/stack'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { useEffect, useState } from 'react'
+import { useSendDestinationRouter } from '../useSendDestinationRouter'
 
 export const useSelectDestinationScreen = () => {
-    const { selectedAssetId, destination, setDestination, setSendMode } =
-        useSendFunds()
+    const { destination } = useSendFunds()
     const selectedAccount = useSelectedAccount()
-    const accounts = useAllAccounts()
-    const { accountBalances } = useAccountBalancesQuery(accounts)
-    const [pendingExternalAddress, setPendingExternalAddress] = useState<
-        string | null
-    >(null)
+    const {
+        selectedAsset,
+        resolveDestination,
+        isResolvingDestination,
+        isReady,
+        isAssetUnavailable,
+    } = useSendDestinationRouter()
+
     // A value-bearing deeplink (algorand://<address>?amount=…) prefills the
-    // destination before this screen mounts. Seed the auto-advance flag from
-    // that initial value so the picker never flashes while we route through.
+    // destination before this screen mounts (it's the initial route for a
+    // pure-NFT transfer). Seed the auto-advance flag from that initial value
+    // so the picker never flashes while we route through.
     const [isAutoAdvancing, setIsAutoAdvancing] = useState(() => !!destination)
 
-    const assetIDs = useMemo(
-        () => (selectedAssetId ? [selectedAssetId] : []),
-        [selectedAssetId],
-    )
-    const { data: assets } = useAssetsQuery(assetIDs)
-    const selectedAsset = useMemo(() => {
-        if (!selectedAssetId) return undefined
-        return assets.get(selectedAssetId)
-    }, [selectedAssetId, assets])
-
-    const navigation =
-        useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-
-    const {
-        data: externalAccountInfo,
-        isFetching: isCheckingExternalOptIn,
-        isSuccess: isExternalQuerySuccess,
-        isError: isExternalQueryError,
-    } = useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
-
-    useEffect(() => {
-        if (!pendingExternalAddress || !selectedAsset) return
-
-        if (!isExternalQuerySuccess && !isExternalQueryError) return
-
-        const isReceiverOptedIn = externalAccountInfo?.assets.some(
-            a => a.assetId === BigInt(selectedAsset.assetId),
-        )
-
-        if (isReceiverOptedIn) {
-            setSendMode('normal')
-            navigation.navigate('ConfirmTransaction')
-        } else {
-            setSendMode('sendArc59')
-            navigation.navigate('ARC59SendSummary')
-        }
-
-        setPendingExternalAddress(null)
-    }, [
-        pendingExternalAddress,
-        externalAccountInfo,
-        isExternalQuerySuccess,
-        isExternalQueryError,
-        selectedAsset,
-        setSendMode,
-        navigation,
-    ])
-
-    const handleSelected = useCallback(
-        (address: string) => {
-            setDestination(address)
-
-            // ALGO sends always go through normal flow
-            if (
-                !selectedAsset?.assetId ||
-                isAlgoAssetId(selectedAsset.assetId)
-            ) {
-                setSendMode('normal')
-                navigation.navigate('ConfirmTransaction')
-                return
-            }
-
-            // Check if receiver already holds the asset (opted in)
-            const receiverBalances = accountBalances.get(address)
-            const isReceiverOptedIn = receiverBalances?.assetBalances.some(
-                b => b.assetId === selectedAsset.assetId,
-            )
-
-            if (isReceiverOptedIn) {
-                // Receiver already opted in — normal transfer
-                setSendMode('normal')
-                navigation.navigate('ConfirmTransaction')
-                return
-            }
-
-            // Check if receiver is a local account we can sign for
-            const receiver = accounts.find(a => a.address === address)
-            const isLocalSignable =
-                !!receiver && canSignWith(receiver, accounts)
-
-            if (isLocalSignable) {
-                // Express send: local account, we handle opt-in + transfer
-                setSendMode('express')
-                navigation.navigate('ExpressSend')
-                return
-            }
-
-            if (receiver) {
-                setSendMode('sendArc59')
-                navigation.navigate('ARC59SendSummary')
-                return
-            }
-
-            setPendingExternalAddress(address)
-        },
-        [
-            selectedAsset,
-            accounts,
-            accountBalances,
-            setSendMode,
-            setDestination,
-            navigation,
-        ],
-    )
-
     // When the destination arrived via deeplink, use it directly instead of
-    // making the user re-pick a receiver. Reuses `handleSelected` so the
-    // opt-in / express / ARC-59 routing decision stays in one place. Waits for
-    // the asset to load (that decision needs it) and runs once — going back
-    // from a later screen leaves `isAutoAdvancing` false so the picker shows.
+    // making the user re-pick a receiver. Runs once, and only once the routing
+    // inputs are ready — going back from a later screen leaves `isAutoAdvancing`
+    // false so the picker shows.
     useEffect(() => {
         if (!isAutoAdvancing) return
-        if (!destination) {
+        // No prefill, or the asset can't be resolved — stop auto-advancing and
+        // let the normal picker / error EmptyView render instead of spinning.
+        if (!destination || isAssetUnavailable) {
             setIsAutoAdvancing(false)
             return
         }
-        if (!selectedAsset) return
+        // Wait for the asset + balances so the opt-in routing isn't decided
+        // against an empty (still-loading) balances map.
+        if (!isReady) return
 
         setIsAutoAdvancing(false)
-        handleSelected(destination)
-    }, [isAutoAdvancing, destination, selectedAsset, handleSelected])
+        resolveDestination(destination)
+    }, [
+        isAutoAdvancing,
+        destination,
+        isReady,
+        isAssetUnavailable,
+        resolveDestination,
+    ])
 
     return {
         selectedAsset,
         selectedAccount,
-        handleSelected,
-        isCheckingExternalOptIn,
+        handleSelected: resolveDestination,
+        isCheckingExternalOptIn: isResolvingDestination,
         isAutoAdvancing,
     }
 }
