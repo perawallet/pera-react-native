@@ -42,7 +42,8 @@ describe('WithChromePlatformExtension', () => {
 
     it('initialize() resolves a push init result', async () => {
         const extension = WithChromePlatformExtension(undefined)
-        const result = await extension.initialize()
+        const { notifications } = await extension.initialize()
+        const result = await notifications
         expect(result.token).toBeUndefined()
         expect(typeof result.unsubscribe).toBe('function')
     })
