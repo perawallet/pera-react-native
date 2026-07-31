@@ -27,7 +27,10 @@ export const TransactionFeeRow = ({
     const { t } = useLanguage()
 
     return (
-        <KeyValueRow title={t('transactions.common.fee')}>
+        <KeyValueRow
+            testID='transaction_detail_fee'
+            title={t('transactions.common.fee')}
+        >
             <AssetAmount
                 asset={ALGO_ASSET}
                 value={microAlgosToAlgos(transaction.fee ?? 0n)}
