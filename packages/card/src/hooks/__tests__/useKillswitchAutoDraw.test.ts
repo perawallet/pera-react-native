@@ -105,7 +105,8 @@ describe('useKillswitchAutoDraw', () => {
             asset: '10458941',
         })
 
-        // No self-funded MBR payment — the fee-delegation sponsor covers it.
+        // No self-funded MBR payment: the accounts-box MBR is funded by the
+        // Killswitch app account, and the group's fees by the sponsor.
         expect(addPayment).not.toHaveBeenCalled()
         expect(paramsCall).toHaveBeenCalledWith(
             expect.objectContaining({

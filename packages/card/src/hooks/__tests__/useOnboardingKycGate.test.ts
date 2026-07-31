@@ -66,9 +66,7 @@ describe('useOnboardingKycGate', () => {
         fetchOnboardingDetails.mockResolvedValue(record(state))
         const { result } = renderGate()
 
-        await waitFor(() =>
-            expect(result.current.isKycRequired).toBe(expected),
-        )
+        await waitFor(() => expect(result.current.isKycRequired).toBe(expected))
     })
 
     it('does not block while the record is unfetched', () => {

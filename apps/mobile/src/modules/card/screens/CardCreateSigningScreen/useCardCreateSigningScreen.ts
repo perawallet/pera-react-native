@@ -37,11 +37,15 @@ export type CardCreateStepRowModel = {
     id: CardCreateStepId
     stepNumber: number
     status: CardCreateStepStatus
+    /** The active step's work is in flight; the row shows a spinner. */
+    isBusy: boolean
 }
 
 type UseCardCreateSigningScreenResult = {
     steps: CardCreateStepRowModel[]
     isProceeding: boolean
+    /** All steps ran; the success toast/navigation is on its way. */
+    isComplete: boolean
     onProceed: () => void
 }
 
@@ -97,9 +101,14 @@ export const useCardCreateSigningScreen =
                             : index === currentStepIndex
                               ? 'active'
                               : 'pending',
+                    // The cursor advances mid-run, so the spinner follows the
+                    // step that is actually working (sign, then create, ...).
+                    isBusy: isProceeding && index === currentStepIndex,
                 })),
-            [stepIds, currentStepIndex],
+            [stepIds, currentStepIndex, isProceeding],
         )
+
+        const isComplete = currentStepIndex >= stepIds.length
 
         // Step 2 has no separate user gate — it runs immediately once Step 1's
         // proof is in hand, per the product flow: sign → (auto) create+approve
@@ -134,7 +143,9 @@ export const useCardCreateSigningScreen =
         )
 
         const onProceed = useCallback(() => {
-            if (!connectedAccount || isProceeding) return
+            // isComplete guards the finish window (success toast + delayed
+            // navigation): a second tap must not re-prompt PIN + signature.
+            if (!connectedAccount || isProceeding || isComplete) return
 
             const stepId = stepIds[currentStepIndex]
             if (stepId === 'authorize') {
@@ -160,6 +171,7 @@ export const useCardCreateSigningScreen =
         }, [
             connectedAccount,
             isProceeding,
+            isComplete,
             stepIds,
             currentStepIndex,
             navigation,
@@ -168,5 +180,5 @@ export const useCardCreateSigningScreen =
             showLinkedElsewhereError,
         ])
 
-        return { steps, isProceeding, onProceed }
+        return { steps, isProceeding, isComplete, onProceed }
     }

@@ -186,7 +186,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         expect(submitWithFeeDelegationMock).toHaveBeenCalledWith({
             account: ADDRESS,
             transactions: [{ id: 'optin' }],
-            includeMbr: true,
+            includeAssetOptInMbr: true,
             optInAssetIds: [ASSET_ID],
             sourceMetadata: expect.objectContaining({
                 name: 'onramp-opt-in',

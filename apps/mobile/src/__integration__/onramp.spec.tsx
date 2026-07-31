@@ -387,7 +387,7 @@ const buildSponsorTxn = (mbrFunding: bigint): Transaction =>
 type CapturedFeeDelegationBody = {
     txnGroup: { txn: string }[]
     account: string
-    includeMbr: boolean
+    includeAssetOptInMbr: boolean
     optInAssetIds: string[]
 }
 
@@ -871,7 +871,7 @@ describe('Flow: Onramp buy (native XO)', () => {
             })
             expect(feeDelegationBody).toMatchObject({
                 account: account.address,
-                includeMbr: true,
+                includeAssetOptInMbr: true,
                 optInAssetIds: [String(USDC_MAINNET_ASSET_ID)],
             })
             expect(feeDelegationBody!.txnGroup).toHaveLength(1)
@@ -931,11 +931,11 @@ describe('Flow: Onramp buy (native XO)', () => {
             await waitFor(() => expect(feeDelegationBody).not.toBeNull(), {
                 timeout: 10_000,
             })
-            // includeMbr is always requested; the backend decides the funding
-            // amount (zero here) from the account's live balance.
+            // MBR funding is always requested; the backend decides the amount
+            // (zero here) from the account's live balance.
             expect(feeDelegationBody).toMatchObject({
                 account: account.address,
-                includeMbr: true,
+                includeAssetOptInMbr: true,
                 optInAssetIds: [String(USDC_MAINNET_ASSET_ID)],
             })
 

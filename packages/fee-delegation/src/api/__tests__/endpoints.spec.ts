@@ -69,7 +69,7 @@ afterAll(() => server.close())
 const REQUEST = {
     txnGroup: [{ txn: 'dW5zaWduZWQ=' }],
     account: 'TESTADDRESS',
-    includeMbr: true,
+    includeAssetOptInMbr: true,
     optInAssetIds: ['31566704'],
 }
 

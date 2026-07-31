@@ -55,8 +55,8 @@ const logFeeDelegationFailure = (error: unknown): void => {
 }
 
 /**
- * Asks the backend to sponsor the fees (and, with `includeMbr`, the MBR
- * shortfall) for an unsigned transaction group. The backend prepends a
+ * Asks the backend to sponsor the fees (and, with `includeAssetOptInMbr`,
+ * the account's MBR shortfall) for an unsigned transaction group. The backend prepends a
  * sponsor payment, RE-GROUPS the whole payload (new group id), signs only the
  * sponsor slot, and returns the ARC-0001 group for the wallet to sign its own
  * slots. The route sits behind the app-integrity guard, so a valid (non-

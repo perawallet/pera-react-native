@@ -49,9 +49,8 @@ export type UseOnboardingKycGateResult = {
 export const useOnboardingKycGate = ({
     onboardingId,
 }: UseOnboardingKycGateParams): UseOnboardingKycGateResult => {
-    const { data: onboardingDetails, dataUpdatedAt } = useOnboardingDetailsQuery(
-        { onboardingId },
-    )
+    const { data: onboardingDetails, dataUpdatedAt } =
+        useOnboardingDetailsQuery({ onboardingId })
     const [refusedAt, setRefusedAt] = useState<Nullable<number>>(null)
 
     const kycState = onboardingDetails?.verificationState ?? null

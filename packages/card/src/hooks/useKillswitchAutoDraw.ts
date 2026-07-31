@@ -70,10 +70,11 @@ export type UseKillswitchAutoDrawResult = {
      * Builds the unsigned `enable(card, asset)` call (one inner `getCardData`
      * call to verify card ownership), fee-delegation-ready: `staticFee` is
      * zeroed rather than self-funded, since the caller submits this via the
-     * Pera backend's fee-delegation endpoint (`includeMbr: true`), which
-     * sponsors both the accounts-box MBR and the group's total fee — the
-     * enabling account needs no ALGO of its own. Resources (box, Main-app,
-     * card-account refs) are populated via simulate.
+     * Pera backend's fee-delegation endpoint. The sponsor covers the group's
+     * total fee (the backend simulates the group, so the inner call is priced
+     * in) and tops the account up to min balance; the accounts-box MBR is
+     * funded by the Killswitch app account, not the sponsor. Resources (box,
+     * Main-app, card-account refs) are populated via simulate.
      */
     buildEnable: (params: {
         sender: string

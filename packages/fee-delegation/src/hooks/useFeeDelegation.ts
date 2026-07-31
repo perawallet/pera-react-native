@@ -51,8 +51,12 @@ export type FeeDelegatedSubmitParams = {
      * nothing may be signed before the response comes back.
      */
     transactions: PeraTransaction[]
-    /** Also fund the account's MBR shortfall (e.g. for new opt-ins). */
-    includeMbr?: boolean
+    /**
+     * Also top the account up to its minimum balance, including new asset
+     * opt-ins. Named after the backend field; box/app-storage MBR is out of
+     * its scope.
+     */
+    includeAssetOptInMbr?: boolean
     /** Asset ids of the opt-in transactions contained in `transactions`. */
     optInAssetIds?: bigint[]
     /** Source metadata shown in the signing sheet for the wallet slot(s). */
@@ -143,7 +147,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
         async ({
             account,
             transactions,
-            includeMbr = false,
+            includeAssetOptInMbr = false,
             optInAssetIds = [],
             sourceMetadata,
         }: FeeDelegatedSubmitParams): Promise<void> => {
@@ -158,7 +162,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                         txn: encodeToBase64(encodeTransaction(txn)),
                     })),
                     account,
-                    includeMbr,
+                    includeAssetOptInMbr,
                     optInAssetIds: optInAssetIds.map(id => id.toString()),
                 },
                 integrityToken ?? '',

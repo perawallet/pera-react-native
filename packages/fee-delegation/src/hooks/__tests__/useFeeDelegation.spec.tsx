@@ -116,7 +116,7 @@ const baseParams = {
     transactions: [
         { id: 'optin', sender: { toString: () => ACCOUNT } },
     ] as never[],
-    includeMbr: true,
+    includeAssetOptInMbr: true,
     optInAssetIds: [ASSET_ID],
     sourceMetadata: { name: 'test-flow', description: 'Test flow' },
 }
@@ -238,7 +238,7 @@ describe('fee-delegation/useFeeDelegation', () => {
             {
                 txnGroup: [{ txn: toBase64('optin') }],
                 account: ACCOUNT,
-                includeMbr: true,
+                includeAssetOptInMbr: true,
                 optInAssetIds: [ASSET_ID.toString()],
             },
             'valid-token',

@@ -126,12 +126,13 @@ describe('useAutoDrawSwitch', () => {
             cardAddress: 'CARD',
             asset: '10458941',
         })
-        // Fee-delegated: the sponsor covers the accounts-box MBR + fees.
+        // Fee-delegated: the sponsor covers the fees (the backend simulate
+        // prices in enable's inner call) and the account's min-balance top-up.
         expect(mockSubmitWithFeeDelegation).toHaveBeenCalledWith(
             expect.objectContaining({
                 account: 'FUNDINGADDR',
                 transactions: [{ txn: 'enable' }],
-                includeMbr: true,
+                includeAssetOptInMbr: true,
             }),
         )
         expect(postDelegatorLsig.mock.invocationCallOrder[0]).toBeLessThan(

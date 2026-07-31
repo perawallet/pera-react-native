@@ -239,6 +239,67 @@ describe('useCardCreateSigningScreen', () => {
         expect(mockFinish).not.toHaveBeenCalled()
     })
 
+    it('marks the working step busy so the row spinner follows the cursor', async () => {
+        let resolveSign: ((proof: typeof PROOF) => void) | undefined
+        mockSignOwnership.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    resolveSign = resolve
+                }),
+        )
+        let resolveCreate: ((value: unknown) => void) | undefined
+        mockCreateAndApprove.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    resolveCreate = resolve
+                }),
+        )
+        const { result } = renderHook(() => useCardCreateSigningScreen())
+
+        expect(result.current.steps.some(step => step.isBusy)).toBe(false)
+
+        act(() => {
+            result.current.onProceed()
+        })
+
+        // Signing is in flight: the sign row carries the spinner.
+        await waitFor(() =>
+            expect(
+                result.current.steps.find(step => step.id === 'sign')?.isBusy,
+            ).toBe(true),
+        )
+
+        // Sign resolves; the cursor moves and the spinner follows to create.
+        await act(async () => {
+            resolveSign?.(PROOF)
+        })
+        expect(stepStatus(result.current.steps, 'sign')).toBe('done')
+        expect(
+            result.current.steps.find(step => step.id === 'create')?.isBusy,
+        ).toBe(true)
+
+        await act(async () => {
+            resolveCreate?.({ cardAddress: 'CARD1' })
+        })
+        await waitFor(() => expect(result.current.isProceeding).toBe(false))
+        expect(result.current.steps.some(step => step.isBusy)).toBe(false)
+    })
+
+    it('Manual: after completion Proceed is a no-op so the finish window cannot re-prompt', async () => {
+        const { result } = renderHook(() => useCardCreateSigningScreen())
+
+        await proceed(result)
+        expect(result.current.isComplete).toBe(true)
+
+        act(() => {
+            result.current.onProceed()
+        })
+
+        expect(mockRequirePin).toHaveBeenCalledTimes(1)
+        expect(mockSignOwnership).toHaveBeenCalledTimes(1)
+        expect(mockFinish).toHaveBeenCalledTimes(1)
+    })
+
     it('Auto: retrying after the create step fails does not fake-advance to authorize', async () => {
         routeState.fundingType = FundingType.Auto
         mockCreateAndApprove.mockRejectedValueOnce(new Error('create boom'))
