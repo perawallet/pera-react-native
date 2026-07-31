@@ -125,6 +125,45 @@ describe('ARC-90 Algorand Parser', () => {
                 expect(result.address).toBe(TEST_ADDRESS)
             }
         })
+
+        it('parses an address-less opt-in (algorand://?amount=0&asset=…)', () => {
+            // The real reported QR — no receiver, account picked downstream.
+            const result = parseAlgorandUri(
+                'algorand://?amount=0&asset=1152109334',
+            )
+            expect(result?.type).toBe(DeeplinkType.ASSET_OPT_IN)
+            if (result?.type === DeeplinkType.ASSET_OPT_IN) {
+                expect(result.assetId).toBe('1152109334')
+                expect(result.address).toBeUndefined()
+            }
+        })
+
+        it('rejects a present-but-malformed address (corruption ≠ address-less)', () => {
+            // A truncated/misread QR carries an invalid address — distinct from
+            // a legitimately address-less opt-in. Reject it (→ "unrecognized")
+            // rather than silently opting a different account in.
+            const truncated = TEST_ADDRESS.slice(0, -1)
+            expect(
+                parseAlgorandUri(`algorand://${truncated}?amount=0&asset=123`),
+            ).toBeNull()
+            expect(
+                parseAlgorandUri('algorand://NOTANADDRESS?amount=0&asset=123'),
+            ).toBeNull()
+        })
+
+        it('keeps the address on an opt-in that carries one', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?amount=0&asset=999`,
+            )
+            expect(result?.type).toBe(DeeplinkType.ASSET_OPT_IN)
+            if (result?.type === DeeplinkType.ASSET_OPT_IN) {
+                expect(result.address).toBe(TEST_ADDRESS)
+            }
+        })
+
+        it('still rejects an address-less transfer (no asset, non-zero amount)', () => {
+            expect(parseAlgorandUri('algorand://?amount=100')).toBeNull()
+        })
     })
 
     describe('Keyreg', () => {
