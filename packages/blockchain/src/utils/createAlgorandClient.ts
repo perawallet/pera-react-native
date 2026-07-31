@@ -19,6 +19,8 @@ import { TimeoutHttpClient } from './TimeoutHttpClient'
 type AlgorandClientNetworkConfig = {
     algodUrl: string
     indexerUrl: string
+    algodToken: string
+    indexerToken: string
 }
 
 /**
@@ -36,7 +38,17 @@ export const createTimeoutBoundedAlgorandClient = (
 ): AlgorandClient => {
     const algod = new Algodv2(
         new TimeoutHttpClient(
-            { 'X-Algo-API-Token': config.algodApiKey },
+            // Omit the header key entirely rather than sending it with an
+            // empty-string value: betanet/custom deliberately carry an empty
+            // `algodToken`/`indexerToken` (see network-config.ts — their
+            // algod/indexer are public third-party endpoints Pera does not
+            // control), and `resolveGenesisHash.ts` / `query-client.ts`'s
+            // `createTokenHeaderClient` already follow this same
+            // empty-means-omit convention for the other two request paths
+            // that carry these tokens.
+            networkConfig.algodToken.length
+                ? { 'X-Algo-API-Token': networkConfig.algodToken }
+                : {},
             networkConfig.algodUrl,
             undefined,
             config.algodReadTimeout,
@@ -47,7 +59,9 @@ export const createTimeoutBoundedAlgorandClient = (
 
     const indexer = new Indexer(
         new TimeoutHttpClient(
-            { 'X-Indexer-API-Token': config.indexerApiKey },
+            networkConfig.indexerToken.length
+                ? { 'X-Indexer-API-Token': networkConfig.indexerToken }
+                : {},
             networkConfig.indexerUrl,
             undefined,
             config.algodReadTimeout,

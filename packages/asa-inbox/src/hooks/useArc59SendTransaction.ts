@@ -17,9 +17,9 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import { config } from '@perawallet/wallet-core-config'
 import { getArc59SignedFundingAmount } from '../getArc59SignedFundingAmount'
 import { ARC59Client } from '../clients'
+import { requireArc59Config } from './requireArc59Config'
 import { buildGroup } from '../utils'
 
 import type { Arc59SendSummaryResponse } from '../api'
@@ -39,15 +39,13 @@ type UseArc59SendTransactionResult = {
 }
 
 export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
-    const { isMainnet } = useNetwork()
+    const { network } = useNetwork()
     const algokit = useAlgorandClient()
 
     const buildSendViaInboxTxs = useCallback(
         async (params: SendViaInboxParams): Promise<PeraTransaction[]> => {
             const { sender, receiver, assetId, amount, summary } = params
-            const arc59Config = isMainnet
-                ? config.arc59.mainnet
-                : config.arc59.testnet
+            const arc59Config = requireArc59Config(network)
 
             const suggestedParams = await algokit.getSuggestedParams()
             const minFee = BigInt(suggestedParams.minFee)
@@ -136,7 +134,7 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
 
             return buildGroup(composer)
         },
-        [algokit, isMainnet],
+        [algokit, network],
     )
 
     return { buildSendViaInboxTxs }

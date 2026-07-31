@@ -10,18 +10,82 @@
  limitations under the License
  */
 
-import { fetchAssets, transformAssetResponse } from '../api'
-import { upsertAssets, getStaleOrMissingAssetIds } from '../db'
+import {
+    fetchAssets,
+    fetchIndexerAssetDetails,
+    transformAssetResponse,
+    transformIndexerAssetResponse,
+} from '../api'
+import {
+    upsertAssets,
+    upsertNodeAssets,
+    getStaleOrMissingAssetIds,
+} from '../db'
 
 import { ASSET_BULK_CHUNK_SIZE, ASSET_CACHE_TTL_MS } from '../constants'
 import {
     isAlgoAssetId,
     partition,
     type Network,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useDeviceStore } from '@perawallet/wallet-core-device'
+import { type PeraAsset } from '../models'
 
 const ASSET_FETCH_CONCURRENCY = 5
+
+// The indexer has no bulk asset endpoint, so persistChainIntrinsics below
+// fans out one request per id. Kept small because the outer loop already runs
+// ASSET_FETCH_CONCURRENCY batches at once: the product is the real ceiling on
+// concurrent requests against what is usually a single dev node.
+const INDEXER_ASSET_CONCURRENCY = 5
+
+/**
+ * Writes one batch the ordinary way: the Pera backend for this network is a
+ * deployment of THIS chain, so its response is authoritative for both tables.
+ */
+const persistFromPeraBackend = async (
+    batch: string[],
+    network: Network,
+    deviceId: Nullable<string>,
+): Promise<void> => {
+    const response = await fetchAssets(batch, network, deviceId)
+    const assets = response.results.map(transformAssetResponse)
+    await upsertAssets({ items: assets, network })
+}
+
+/**
+ * Writes the `assets_node` table on a network with no Pera deployment: read
+ * straight from the ACTIVE chain's indexer. There is no `assets_pera` half —
+ * no Pera opinion data exists for these networks.
+ *
+ * Ids whose lookup fails are simply omitted. A missing row costs a retry on
+ * the next tick (its absence is what getStaleOrMissingAssetIds keys on);
+ * inventing one from another chain's data would be silently wrong forever.
+ */
+const persistChainIntrinsics = async (
+    batch: string[],
+    network: Network,
+): Promise<void> => {
+    const items: PeraAsset[] = []
+
+    for (const slice of partition(batch, INDEXER_ASSET_CONCURRENCY)) {
+        const settled = await Promise.allSettled(
+            slice.map(async assetId =>
+                transformIndexerAssetResponse(
+                    await fetchIndexerAssetDetails(assetId, network),
+                ),
+            ),
+        )
+
+        for (const result of settled) {
+            if (result.status === 'fulfilled') items.push(result.value)
+        }
+    }
+
+    await upsertNodeAssets({ items, network })
+}
 
 /**
  * Bulk-fetches asset metadata for the given IDs and persists them to the
@@ -51,14 +115,19 @@ export async function fetchAndPersistAssets(
     // at once can flood the API when an account holds hundreds of assets on
     // first load (when nothing is cached yet and getStaleOrMissingAssetIds
     // doesn't short-circuit anything).
+    //
+    // Networks with no Pera deployment get chain intrinsics only — there is no
+    // Pera opinion data (verification tier, favorites, collectibles) to fetch.
+    // persistChainIntrinsics simply ignores the deviceId argument — a Pera
+    // device id means nothing to a chain indexer.
+    const persistBatch = isPeraBackedNetwork(network)
+        ? persistFromPeraBackend
+        : persistChainIntrinsics
+
     for (let i = 0; i < batches.length; i += ASSET_FETCH_CONCURRENCY) {
         const slice = batches.slice(i, i + ASSET_FETCH_CONCURRENCY)
         await Promise.allSettled(
-            slice.map(async batch => {
-                const response = await fetchAssets(batch, network, deviceId)
-                const assets = response.results.map(transformAssetResponse)
-                await upsertAssets({ items: assets, network })
-            }),
+            slice.map(batch => persistBatch(batch, network, deviceId)),
         )
     }
 }

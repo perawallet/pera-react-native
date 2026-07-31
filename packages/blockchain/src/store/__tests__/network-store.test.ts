@@ -96,4 +96,117 @@ describe('services/blockchain/network-store', () => {
         // persist storage is exercised by the resetState path above.
         expect(() => registration.clearStorage()).not.toThrow()
     })
+
+    describe('mergePersistedNetwork', () => {
+        test('a persisted network outside the union falls back to the default', async () => {
+            // 'fnet' was a valid value before the union narrowed. A device that
+            // selected it must not rehydrate an unknown string into
+            // getNetworkConfig, whose chain-table lookup misses and yields
+            // `{ algodUrl: undefined, … }` — no failure at the lookup itself,
+            // just a throw later at client construction, far from the cause.
+            const { mergePersistedNetwork } = await import('../network-store')
+
+            const merged = mergePersistedNetwork({ network: 'fnet' })
+
+            expect(merged.network).toBe('mainnet')
+        })
+
+        test('a persisted network inside the union is preserved', async () => {
+            const { mergePersistedNetwork } = await import('../network-store')
+
+            expect(mergePersistedNetwork({ network: 'betanet' }).network).toBe(
+                'betanet',
+            )
+        })
+
+        describe('the custom slot', () => {
+            test('a persisted custom with a saved config is preserved', async () => {
+                const { useCustomNetworkStore } =
+                    await import('../custom-network-store')
+                const { mergePersistedNetwork } =
+                    await import('../network-store')
+
+                useCustomNetworkStore.getState().setCustomNetwork({
+                    algodUrl: 'http://10.0.0.5:4001',
+                    indexerUrl: 'http://10.0.0.5:8980',
+                    genesisHash: 'HASH=',
+                    genesisId: 'dockernet-v1',
+                })
+
+                expect(
+                    mergePersistedNetwork({ network: 'custom' }).network,
+                ).toBe('custom')
+            })
+
+            test('a persisted custom with NO saved config falls back to the default', async () => {
+                // The two stores can diverge (an interrupted write, a corrupt
+                // custom-network entry). `custom` carries no baked config, so
+                // rehydrating it unconfigured resolves every endpoint to '',
+                // and TimeoutHttpClient's `new URL('/')` throws inside
+                // useAlgorandClient's useMemo — an uncaught throw during
+                // render, not a graceful refusal.
+                const { useCustomNetworkStore } =
+                    await import('../custom-network-store')
+                const { mergePersistedNetwork } =
+                    await import('../network-store')
+
+                useCustomNetworkStore.getState().resetState()
+
+                expect(
+                    mergePersistedNetwork({ network: 'custom' }).network,
+                ).toBe('mainnet')
+            })
+        })
+
+        test.each([
+            ['null', null],
+            ['undefined', undefined],
+            ['a non-string network', { network: 7 }],
+            ['an empty object', {}],
+        ])('%s falls back to the default', async (_label, persisted) => {
+            const { mergePersistedNetwork } = await import('../network-store')
+
+            expect(mergePersistedNetwork(persisted).network).toBe('mainnet')
+        })
+
+        test('rehydration keeps the store actions callable', async () => {
+            // mergePersistedNetwork returns only { network }, so the persist
+            // `merge` option must spread it over the current state. Returning it
+            // directly would drop setNetwork and resetState from the rehydrated
+            // store and every caller would crash.
+            const { useNetworkStore } = await import('../network-store')
+
+            const merged = useNetworkStore.persist
+                .getOptions()
+                .merge?.({ network: 'testnet' }, useNetworkStore.getState())
+
+            expect(merged?.network).toBe('testnet')
+            expect(typeof merged?.setNetwork).toBe('function')
+            expect(typeof merged?.resetState).toBe('function')
+        })
+
+        test.each([
+            ['undefined', undefined],
+            ['null', null],
+        ])(
+            'rehydrating from empty storage (%s) leaves the current state alone',
+            async (_label, persisted) => {
+                // zustand calls `merge` even when storage held nothing, and
+                // applies the result with replace:true. With nothing persisted
+                // there is no value to guard, so the current state must survive
+                // untouched rather than being forced to config.defaultNetwork.
+                const { useNetworkStore } = await import('../network-store')
+
+                act(() => {
+                    useNetworkStore.getState().setNetwork('betanet')
+                })
+
+                const merged = useNetworkStore.persist
+                    .getOptions()
+                    .merge?.(persisted, useNetworkStore.getState())
+
+                expect(merged?.network).toBe('betanet')
+            },
+        )
+    })
 })

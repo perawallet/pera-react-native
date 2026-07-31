@@ -31,13 +31,41 @@ import {
     stripNulls,
     type Network,
 } from '@perawallet/wallet-core-shared'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAssetById } from '../db'
 
-async function fetchAssetFromApis(
+/**
+ * Re-asserts the real chain's values for fields that are facts about the chain
+ * rather than Pera's opinion about the asset.
+ *
+ * Pera requests on a network with no Pera deployment now fail outright, so
+ * `peraData` should never describe the same asset id on a DIFFERENT chain.
+ * This is defence-in-depth against exactly that: `fetchAssetFromApis` is
+ * exported, and its chain-truth guarantee must not depend on a chokepoint
+ * that lives in another package (the ky client in `packages/shared`). If that
+ * remote invariant ever breaks, the failure mode without this guard is a
+ * foreign `decimals` making `displayUnitsToBaseUnits` build a wrong-amount
+ * transaction that then SUCCEEDS on chain — lost funds, not an error.
+ *
+ * MainNet/TestNet merge order is untouched.
+ */
+const withChainIntrinsics = (
+    merged: PeraAsset,
+    indexerData: Partial<PeraAsset>,
+): PeraAsset => ({
+    ...merged,
+    name: indexerData.name ?? merged.name,
+    unitName: indexerData.unitName ?? merged.unitName,
+    decimals: indexerData.decimals ?? merged.decimals,
+    totalSupply: indexerData.totalSupply ?? merged.totalSupply,
+    creator: indexerData.creator ?? merged.creator,
+})
+
+export const fetchAssetFromApis = async (
     assetId: string,
     network: Network,
-): Promise<PeraAsset> {
+): Promise<PeraAsset> => {
     const [peraResult, indexerResult, publicResult] = await Promise.allSettled([
         fetchAssetDetails(assetId, network).then(transformAssetResponse),
         fetchIndexerAssetDetails(assetId, network).then(
@@ -55,7 +83,7 @@ async function fetchAssetFromApis(
     const publicData =
         publicResult.status === 'fulfilled' ? publicResult.value : undefined
 
-    return {
+    const merged: PeraAsset = {
         ...DEFAULT_ASSET_VALUES,
         assetId,
         ...indexerData,
@@ -66,6 +94,10 @@ async function fetchAssetFromApis(
             ...(peraData?.peraMetadata ?? {}),
         },
     }
+
+    return indexerData && !isPeraBackedNetwork(network)
+        ? withChainIntrinsics(merged, indexerData)
+        : merged
 }
 
 export const useSingleAssetDetailsQuery = (

@@ -13,6 +13,15 @@
 export const Networks = {
     testnet: 'testnet',
     mainnet: 'mainnet',
+    betanet: 'betanet',
+    /**
+     * A single runtime-configurable slot for any node the developer points at —
+     * a LocalNet, an fnet instance, a private node. Deliberately NOT a named
+     * network: fnet is a *sequence* (fnet1, fnet2, …) and LocalNet's ports vary,
+     * so neither has a stable genesis hash or endpoint to bake. Its chain config
+     * lives in the custom-network store, not in `config`.
+     */
+    custom: 'custom',
 } as const
 
 export type Network = (typeof Networks)[keyof typeof Networks]

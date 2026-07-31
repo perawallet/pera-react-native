@@ -63,7 +63,11 @@ export const CollectibleInfoSection = ({
                         </PWText>
                         <PWText
                             variant='body'
-                            style={styles.infoValueLink}
+                            style={
+                                onCreatorPressed
+                                    ? styles.infoValueLink
+                                    : styles.infoValue
+                            }
                         >
                             {truncateAlgorandAddress(asset.creator.address)}
                         </PWText>
@@ -109,31 +113,35 @@ export const CollectibleInfoSection = ({
                 </PWText>
             </PWView>
 
-            <PWDivider style={styles.infoDivider} />
-            <PWTouchableOpacity
-                style={styles.infoRow}
-                onPress={onOpenExplorer}
-            >
-                <PWText
-                    variant='body'
-                    truncate
-                    style={styles.infoLabel}
-                >
-                    {t('asset_details.collectible.show_on')}
-                </PWText>
-                <PWView style={styles.explorerRow}>
-                    <PWIcon
-                        name='pera'
-                        size='md'
-                    />
-                    <PWText
-                        variant='body'
-                        style={styles.infoValueLink}
+            {onOpenExplorer && (
+                <>
+                    <PWDivider style={styles.infoDivider} />
+                    <PWTouchableOpacity
+                        style={styles.infoRow}
+                        onPress={onOpenExplorer}
                     >
-                        {t('asset_details.collectible.explorer')}
-                    </PWText>
-                </PWView>
-            </PWTouchableOpacity>
+                        <PWText
+                            variant='body'
+                            truncate
+                            style={styles.infoLabel}
+                        >
+                            {t('asset_details.collectible.show_on')}
+                        </PWText>
+                        <PWView style={styles.explorerRow}>
+                            <PWIcon
+                                name='pera'
+                                size='md'
+                            />
+                            <PWText
+                                variant='body'
+                                style={styles.infoValueLink}
+                            >
+                                {t('asset_details.collectible.explorer')}
+                            </PWText>
+                        </PWView>
+                    </PWTouchableOpacity>
+                </>
+            )}
         </PWView>
     )
 }

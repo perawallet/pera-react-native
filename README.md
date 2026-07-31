@@ -92,16 +92,23 @@ Prerequisites: Docker (running) and the AlgoKit CLI
 
 ```sh
 pnpm localnet             # start the LocalNet (algod :4001, indexer :8980, kmd :4002)
-pnpm localnet:use         # point the app's testnet slot at LocalNet
 pnpm localnet:fund --new 100   # create + fund a throwaway account (prints mnemonic)
-pnpm ios                  # or: pnpm android — app now talks to LocalNet as "testnet"
-pnpm localnet:unset       # restore live endpoints
+pnpm ios                  # or: pnpm android
 pnpm localnet:stop        # stop the LocalNet
 ```
 
-LocalNet reuses the **testnet** slot; **mainnet stays on live infrastructure**.
-`localnet:use` fetches the node's genesis hash live, so re-run it after any
-`pnpm localnet:reset`.
+Point the app at it from **Settings → Developer → Node Settings → Custom
+network**. Selecting it opens a sheet for the algod and indexer URLs, their
+optional tokens, and the genesis hash and ID — **Fetch from node** fills the
+genesis values in for you. **Save and switch** applies the config at runtime:
+no rebuild, no env rewrite, and MainNet/TestNet are untouched.
+
+Two things to watch:
+
+- On a **physical device**, `localhost` resolves to the device, not your
+  machine. Use the host's LAN address (e.g. `http://192.168.1.50:4001`).
+- `pnpm localnet:reset` regenerates the genesis hash, so re-enter the custom
+  config afterwards.
 
 ## Workspace layout
 

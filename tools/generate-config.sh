@@ -20,7 +20,7 @@ if [ -f "$ENV_FILE" ]; then
   export $(grep -v '^#' "$ENV_FILE" | xargs)
 fi
 
-# Load an optional overlay file (e.g. .env.localnet) AFTER .env so it wins.
+# Load an optional overlay file (e.g. a per-lane .env) AFTER .env so it wins.
 if [ -n "${PERA_ENV_OVERLAY:-}" ] && [ -f "$PERA_ENV_OVERLAY" ]; then
   echo "Loading overlay environment variables from $PERA_ENV_OVERLAY"
   export $(grep -v '^#' "$PERA_ENV_OVERLAY" | xargs)
@@ -89,6 +89,14 @@ append_config "MAINNET_INDEXER_URL" "mainnetIndexerUrl" "string"
 append_config "TESTNET_INDEXER_URL" "testnetIndexerUrl" "string"
 append_config "MAINNET_GENESIS_HASH" "mainnetGenesisHash" "string"
 append_config "TESTNET_GENESIS_HASH" "testnetGenesisHash" "string"
+
+# Networks without a Pera backend (betanet). Chain endpoints only; their Pera
+# service traffic resolves to TestNet's via pera-service-fallback.ts.
+append_config "BETANET_ALGOD_URL" "betanetAlgodUrl" "string"
+append_config "BETANET_INDEXER_URL" "betanetIndexerUrl" "string"
+append_config "BETANET_GENESIS_HASH" "betanetGenesisHash" "string"
+append_config "BETANET_EXPLORER_URL" "betanetExplorerUrl" "string"
+append_config "MAINNET_DISPENSER_URL" "mainnetDispenserUrl" "string"
 
 # Backend URLs and API Keys
 append_config "MAINNET_BACKEND_URL" "mainnetBackendUrl" "string"

@@ -19,9 +19,50 @@ import {
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { config } from '@perawallet/wallet-core-config'
+import { config, Networks } from '@perawallet/wallet-core-config'
+import { isCustomNetworkConfigured } from './custom-network-store'
 
 const STORE_NAME = 'network-store'
+
+const SUPPORTED_NETWORKS = new Set<string>(Object.values(Networks))
+
+/**
+ * Guards rehydration on two counts.
+ *
+ * 1. A persisted value that is no longer a union member — e.g. a device that
+ *    selected 'fnet' or 'localnet' before those were replaced by the custom
+ *    slot. The unknown string would flow into `getNetworkConfig`, whose
+ *    chain-table lookup misses and yields `{ algodUrl: undefined, … }`
+ *    (spreading `undefined` is a legal no-op, so nothing fails here); the throw
+ *    lands later, at client construction, far from the cause.
+ * 2. A persisted `'custom'` whose config is not there. The two stores can
+ *    diverge — a corrupt or absent `custom-network-store` entry, an interrupted
+ *    write — and `custom` is the one member with no baked fallback, so every
+ *    endpoint resolves to `''` and `TimeoutHttpClient`'s `new URL('/')` throws
+ *    inside `useAlgorandClient`'s `useMemo`: an uncaught throw during render.
+ *
+ * The `custom` check reads the sibling store, which the static import above
+ * guarantees is created — and therefore hydrated, since every
+ * `KeyValueStorageService` implementation is synchronous — before this module
+ * evaluates.
+ */
+export const mergePersistedNetwork = (
+    persisted: unknown,
+): { network: Network } => {
+    const network = (persisted as { network?: unknown } | null | undefined)
+        ?.network
+
+    const isUsable =
+        typeof network === 'string' &&
+        SUPPORTED_NETWORKS.has(network) &&
+        (network !== Networks.custom || isCustomNetworkConfigured())
+
+    return {
+        network: isUsable
+            ? (network as Network)
+            : (config.defaultNetwork as Network),
+    }
+}
 
 type NetworkState = BaseStoreState & {
     network: Network
@@ -46,6 +87,21 @@ export const useNetworkStore: UseBoundStore<
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
             partialize: state => ({ network: state.network }),
+            merge: (persisted, current) => {
+                // zustand calls `merge` unconditionally — including on a first
+                // launch where storage held nothing — and applies the result
+                // with replace:true. There is no persisted value to guard in
+                // that case, and forcing config.defaultNetwork here would
+                // overwrite whatever the current state holds.
+                if (persisted === undefined || persisted === null) {
+                    return current
+                }
+
+                // Spread over `current` deliberately: mergePersistedNetwork
+                // returns only { network }, so returning it directly would drop
+                // setNetwork and resetState from the rehydrated store.
+                return { ...current, ...mergePersistedNetwork(persisted) }
+            },
         },
     ),
 )

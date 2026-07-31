@@ -33,7 +33,13 @@ type SuccessRouteParams = {
 
 type UseTransactionSuccessScreenResult = {
     handleDone: () => void
-    handleViewInExplorer: () => void
+    /**
+     * Undefined on a network with no explorer (`custom`'s `explorerUrl` is `''`
+     * by design), so the CTA is hidden rather than opening the schemeless
+     * relative path the interpolation would otherwise produce. Same shape as
+     * `useTransactionHashRow.onOpenExplorer`.
+     */
+    handleViewInExplorer: (() => void) | undefined
     variant: SuccessVariant
 }
 
@@ -68,12 +74,17 @@ export const useTransactionSuccessScreen =
             }
         }, [isClaimFlow, claimOnFinished, sendFundsOnFinished])
 
-        const handleViewInExplorer = useCallback(() => {
+        const viewInExplorer = useCallback(() => {
+            if (!networkConfig.explorerUrl) return
             pushWebView({
                 url: `${networkConfig.explorerUrl}/tx/${transactionId}`,
                 id: generateUniqueId(),
             })
         }, [networkConfig.explorerUrl, transactionId, pushWebView])
+
+        const handleViewInExplorer = networkConfig.explorerUrl
+            ? viewInExplorer
+            : undefined
 
         useEffect(() => {
             const subscription = BackHandler.addEventListener(

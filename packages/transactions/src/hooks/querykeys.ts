@@ -13,7 +13,7 @@
 import type { Network } from '@perawallet/wallet-core-shared'
 import { type QueryClient, type QueryKey } from '@tanstack/react-query'
 
-const MODULE_PREFIX = 'transactions'
+export const MODULE_PREFIX = 'transactions'
 
 export const isTransactionQuery = (queryKey: QueryKey): boolean =>
     queryKey[0] === MODULE_PREFIX

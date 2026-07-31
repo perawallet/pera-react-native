@@ -34,11 +34,13 @@ type TestPaymentParams = {
     closeRemainderTo?: Address
     rekeyTo?: Address
     note?: Uint8Array
+    /** Overrides TEST_SUGGESTED_PARAMS' genesisHash — for specs that vary chain identity. */
+    genesisHash?: Uint8Array
 }
 
 export const makeTestPaymentTx = (
     sender: Address,
-    { rekeyTo, note, ...paymentParams }: TestPaymentParams,
+    { rekeyTo, note, genesisHash, ...paymentParams }: TestPaymentParams,
 ): Transaction =>
     new Transaction({
         type: TransactionType.pay,
@@ -46,7 +48,9 @@ export const makeTestPaymentTx = (
         rekeyTo,
         note,
         paymentParams: { amount: 0n, ...paymentParams },
-        suggestedParams: TEST_SUGGESTED_PARAMS,
+        suggestedParams: genesisHash
+            ? { ...TEST_SUGGESTED_PARAMS, genesisHash }
+            : TEST_SUGGESTED_PARAMS,
     })
 
 type TestAssetTransferParams = {

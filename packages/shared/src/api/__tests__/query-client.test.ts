@@ -10,39 +10,148 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, test, expect, vi, beforeEach } from 'vitest'
+import { config, Networks } from '@perawallet/wallet-core-config'
 
-// Mock logger
-const mockLogger = {
+// Mock logger. Hoisted (like the ky mocks below) because vi.mock factories
+// are hoisted above all imports, so a plain `const` declared here (instead of
+// via vi.hoisted) would not exist yet when this factory runs.
+const mockLogger = vi.hoisted(() => ({
     debug: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     critical: vi.fn(),
-}
+}))
 vi.mock('../../utils', async importOriginal => ({
     ...(await importOriginal<typeof import('../../utils')>()),
     logger: mockLogger,
 }))
 
-// Mock config
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: {
-        mainnetBackendUrl: 'https://mainnet.pera.algo',
-        testnetBackendUrl: 'https://testnet.pera.algo',
-        mainnetAlgodUrl: 'https://mainnet.algod.algo',
-        testnetAlgodUrl: 'https://testnet.algod.algo',
-        mainnetIndexerUrl: 'https://mainnet.indexer.algo',
-        testnetIndexerUrl: 'https://testnet.indexer.algo',
-        debugEnabled: true,
-        backendAPIKey: 'test-api-key',
-        algodApiKey: 'test-algod-key',
-        indexerApiKey: 'test-indexer-key',
-    },
-    Networks: {
+// Shared fixtures for the @perawallet/wallet-core-config mock below AND for
+// test bodies that assert on per-network values directly (e.g. "this
+// network's algod client used exactly this URL/token"). Hoisted because a
+// vi.mock factory can't reference a later plain `const` (see the mockLogger
+// comment above) and because test bodies need the same values the mock
+// hands back, without duplicating the fixture data in two places.
+const {
+    mockNetworks,
+    mockAlgodApiKey,
+    mockIndexerApiKey,
+    mockCustomNodeToken,
+    chainUrlsByNetwork,
+    backendUrlByNetwork,
+} = vi.hoisted(() => {
+    const mockNetworks = {
         testnet: 'testnet',
         mainnet: 'mainnet',
+        betanet: 'betanet',
+        custom: 'custom',
+    }
+
+    // Real production default (packages/config/src/main.ts) is `''` —
+    // AlgoNode's public endpoints need no key, injected via env var only
+    // for keyed deployments. An empty token would make the token-header
+    // assertions below vacuous: createTokenHeaderClient's `if
+    // (token.length)` guard means an empty token never sets a header at
+    // all. Use a non-empty test value instead, and route every keyed
+    // network's algodToken through this SAME constant (not a separately
+    // typed-out duplicate) so they can never silently drift apart.
+    const mockAlgodApiKey = 'test-algod-key'
+
+    // Same reasoning as mockAlgodApiKey above, for the indexer's token.
+    const mockIndexerApiKey = 'test-indexer-key'
+
+    // `custom`'s algod/indexer tokens are runtime-provided by the
+    // developer-entered custom-network store (packages/config's real
+    // `custom` row is hardcoded empty), and production reads the SAME value
+    // for both algodToken and indexerToken. Mirrored below by using this one
+    // constant for both, so the "does not cross-wire" test below must tell
+    // the algod and indexer clients apart by header NAME, not by token
+    // value.
+    const mockCustomNodeToken = 'custom-node-token'
+
+    const chainUrlsByNetwork: Record<
+        string,
+        {
+            algodUrl: string
+            indexerUrl: string
+            algodToken: string
+            indexerToken: string
+        }
+    > = {
+        mainnet: {
+            algodUrl: 'https://mainnet.algod.algo',
+            indexerUrl: 'https://mainnet.indexer.algo',
+            algodToken: mockAlgodApiKey,
+            indexerToken: mockIndexerApiKey,
+        },
+        testnet: {
+            algodUrl: 'https://testnet.algod.algo',
+            indexerUrl: 'https://testnet.indexer.algo',
+            algodToken: mockAlgodApiKey,
+            indexerToken: mockIndexerApiKey,
+        },
+        betanet: {
+            algodUrl: 'https://betanet.algod.algo',
+            indexerUrl: 'https://betanet.indexer.algo',
+            algodToken: mockAlgodApiKey,
+            indexerToken: mockIndexerApiKey,
+        },
+        // Deliberately NOT 'https://custom.algod.algo': the
+        // "updateNodeEndpoints" tests below reuse that exact literal for an
+        // unrelated override scenario, and findClientConfig matches by URL —
+        // colliding would make it find whichever client was built first
+        // instead of the one each test actually means to inspect.
+        custom: {
+            algodUrl: 'https://custom-node.algod.algo',
+            indexerUrl: 'https://custom-node.indexer.algo',
+            algodToken: mockCustomNodeToken,
+            indexerToken: mockCustomNodeToken,
+        },
+    }
+
+    // Only MainNet and TestNet have real Pera backend deployments. BetaNet
+    // and `custom` are absent from this table entirely — mirrored below by
+    // getNetworkConfig's `?? ''`, which is exactly what createPeraClient
+    // branches on.
+    const backendUrlByNetwork: Record<string, string> = {
+        mainnet: 'https://mainnet.pera.algo',
+        testnet: 'https://testnet.pera.algo',
+    }
+
+    return {
+        mockNetworks,
+        mockAlgodApiKey,
+        mockIndexerApiKey,
+        mockCustomNodeToken,
+        chainUrlsByNetwork,
+        backendUrlByNetwork,
+    }
+})
+
+// Mock config. `getNetworkConfig` stands in for the real per-network chain
+// table (packages/config/src/network-config.ts): the fixtures above cover
+// all 4 networks, and betanet/custom's `backendUrl` is empty — mirroring the
+// real per-network table's empty rows — rather than a value borrowed from
+// another network.
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: {
+        debugEnabled: true,
+        backendAPIKey: 'test-api-key',
+        algodApiKey: mockAlgodApiKey,
+        indexerApiKey: mockIndexerApiKey,
     },
+    Networks: mockNetworks,
+    // Mirrors the real per-network table: betanet/custom carry an EMPTY
+    // backendUrl rather than a borrowed one, which is exactly what
+    // createPeraClient branches on.
+    getNetworkConfig: (network: string) => ({
+        ...chainUrlsByNetwork[network],
+        backendUrl: backendUrlByNetwork[network] ?? '',
+    }),
+    isPeraBackedNetwork: (network: string) =>
+        backendUrlByNetwork[network] !== undefined,
 }))
 
 // Mock ky with hooks support
@@ -99,7 +208,11 @@ const { mockKy, mockJson, mockText, mockStatus, capturedHooks } = vi.hoisted(
         })
 
         mockKy.create = vi.fn((config: any) => {
-            // Capture hooks from config
+            // Every client is built the same way now — including the `pera`
+            // client of a network with no deployment, whose prefix is simply
+            // `''`. Nothing ever calls that one: createFetchClient throws a
+            // PeraServiceUnavailableError before it reaches ky, which is what
+            // "mockKy was never called" asserts below.
             if (config.hooks) {
                 Object.assign(capturedHooks, config.hooks)
             }
@@ -373,17 +486,237 @@ describe('queryClient', () => {
         expect(options).not.toHaveProperty('timeout')
     })
 
-    it('creates every client with an explicit capped retry config', async () => {
+    it('lazily builds all 12 clients on first use, never at import time', async () => {
         vi.resetModules()
         mockKy.create.mockClear()
 
-        await import('../query-client')
+        const { queryClient } = await import('../query-client')
 
-        // 2 networks × (pera + algod + indexer)
-        expect(mockKy.create).toHaveBeenCalledTimes(6)
+        // Importing this module must not call getNetworkConfig(): several
+        // consuming packages' tests mock it as a bare vi.fn() with no
+        // default return, and building eagerly at import time crashes those
+        // suites during collection (see packages/card's lsig.spec.ts).
+        expect(mockKy.create).not.toHaveBeenCalled()
+
+        mockJson.mockResolvedValue({ status: 'ok' })
+        await queryClient({
+            backend: 'algod',
+            network: 'mainnet',
+            method: 'GET',
+            url: '/v2/status',
+        })
+
+        // One request for one network builds ALL 4 networks ×
+        // (pera + algod + indexer) — the gate is shared, not a per-network
+        // build-on-miss.
+        expect(mockKy.create).toHaveBeenCalledTimes(12)
+
+        // Every client is built uniformly — a `prefix` (empty for betanet's
+        // and custom's `pera` slot, which is never invoked) and the same
+        // retry policy. No client is special-cased at construction time; the
+        // "no Pera deployment" refusal lives on the request path instead.
         for (const [clientConfig] of mockKy.create.mock.calls) {
-            expect(clientConfig.retry).toMatchObject({ limit: 1 })
+            expect(clientConfig).toMatchObject({ retry: { limit: 1 } })
+            expect(clientConfig.prefix).toBeTypeOf('string')
         }
+    })
+
+    it('does not cross-wire algod/indexer URLs or tokens between networks', async () => {
+        vi.resetModules()
+        mockKy.create.mockClear()
+        const { queryClient } = await import('../query-client')
+        mockJson.mockResolvedValue({ status: 'ok' })
+
+        await queryClient({
+            backend: 'algod',
+            network: 'mainnet',
+            method: 'GET',
+            url: '/v2/status',
+        })
+
+        type CapturedClientConfig = {
+            prefix: string
+            hooks: {
+                beforeRequest: Array<
+                    (state: {
+                        request: { headers: Map<string, string> }
+                    }) => void
+                >
+            }
+        }
+
+        const findClientConfig = (
+            prefix: string,
+        ): CapturedClientConfig | undefined =>
+            mockKy.create.mock.calls.find(
+                ([clientConfig]: [CapturedClientConfig]) =>
+                    clientConfig.prefix === prefix,
+            )?.[0]
+
+        const readHeader = (
+            clientConfig: CapturedClientConfig,
+            headerName: string,
+        ): string | undefined => {
+            const request = { headers: new Map<string, string>() }
+            clientConfig.hooks.beforeRequest[0]({ request })
+            return request.headers.get(headerName)
+        }
+
+        for (const network of Object.values(Networks)) {
+            const { algodUrl, indexerUrl, algodToken, indexerToken } =
+                chainUrlsByNetwork[network]
+
+            const algodConfig = findClientConfig(algodUrl)
+            expect(algodConfig).toBeDefined()
+            expect(
+                readHeader(
+                    algodConfig as CapturedClientConfig,
+                    'X-Algo-API-Token',
+                ),
+            ).toBe(algodToken)
+
+            const indexerConfig = findClientConfig(indexerUrl)
+            expect(indexerConfig).toBeDefined()
+            expect(
+                readHeader(
+                    indexerConfig as CapturedClientConfig,
+                    'X-Indexer-API-Token',
+                ),
+            ).toBe(indexerToken)
+        }
+
+        // Pin the fixture to the real production constants (not just to each
+        // other) so a genuine regression in either value would fail here.
+        expect(chainUrlsByNetwork.custom.algodToken).toBe(mockCustomNodeToken)
+        // MainNet (and TestNet/BetaNet) route their algod token through
+        // config.algodApiKey — a regression that stopped reading it (e.g.
+        // hardcoding a different value) fails here even though nothing else
+        // in this test would notice.
+        expect(chainUrlsByNetwork.mainnet.algodToken).toBe(config.algodApiKey)
+        // Keep the mutual check too: confirms the two are actually distinct
+        // constants, not the same value doing double duty.
+        expect(chainUrlsByNetwork.custom.algodToken).not.toBe(
+            chainUrlsByNetwork.mainnet.algodToken,
+        )
+
+        // Same pins for the indexer token. Unlike algod, `custom`'s indexer
+        // token is NOT distinct from its algod token — production reads both
+        // from the SAME developer-entered custom-network store value — so
+        // there is no mutual-inequality check to keep here; asserting
+        // equality to the one real constant is the correct model, not a
+        // weakening.
+        expect(chainUrlsByNetwork.custom.indexerToken).toBe(mockCustomNodeToken)
+        expect(chainUrlsByNetwork.mainnet.indexerToken).toBe(
+            config.indexerApiKey,
+        )
+
+        // Now that custom's algod and indexer tokens are equal (mirroring
+        // production), a token-VALUE comparison alone can no longer tell the
+        // two clients apart for that network. Assert the header NAME each
+        // one actually sets instead, which stays distinct regardless of
+        // token equality — this is what would catch the algod and indexer
+        // clients being swapped (wrong URL/role paired with the other's
+        // header name) even when their token values happen to match.
+        const customAlgodConfig = findClientConfig(
+            chainUrlsByNetwork.custom.algodUrl,
+        ) as CapturedClientConfig
+        const customAlgodRequest = { headers: new Map<string, string>() }
+        customAlgodConfig.hooks.beforeRequest[0]({
+            request: customAlgodRequest,
+        })
+        expect(customAlgodRequest.headers.has('X-Algo-API-Token')).toBe(true)
+        expect(customAlgodRequest.headers.has('X-Indexer-API-Token')).toBe(
+            false,
+        )
+
+        const customIndexerConfig = findClientConfig(
+            chainUrlsByNetwork.custom.indexerUrl,
+        ) as CapturedClientConfig
+        const customIndexerRequest = { headers: new Map<string, string>() }
+        customIndexerConfig.hooks.beforeRequest[0]({
+            request: customIndexerRequest,
+        })
+        expect(customIndexerRequest.headers.has('X-Indexer-API-Token')).toBe(
+            true,
+        )
+        expect(customIndexerRequest.headers.has('X-Algo-API-Token')).toBe(false)
+    })
+
+    test('resolves algod for every network, including the new ones', async () => {
+        const { queryClient } = await import('../query-client')
+        mockJson.mockResolvedValue({ version: '1.0' })
+
+        for (const network of Object.values(Networks)) {
+            await expect(
+                queryClient({
+                    backend: 'algod',
+                    network,
+                    method: 'GET',
+                    url: '/v2/status',
+                }),
+            ).resolves.toBeDefined()
+        }
+    })
+
+    test('a network with no Pera deployment throws instead of reaching a backend', async () => {
+        // The failure must happen BEFORE ky is invoked at all: asserting
+        // mockKy was never called is what distinguishes "refused to send"
+        // from "sent somewhere and failed" — and, since real ky would build
+        // the Request synchronously in its constructor, it is also what stops
+        // the typed error degrading into a URL-parse TypeError.
+        mockKy.mockClear()
+
+        const { queryClient } = await import('../query-client')
+        // Dynamically imported (not the file's static top-level import):
+        // several earlier tests call vi.resetModules(), which makes a later
+        // *static* import's class reference stale — the error queryClient
+        // throws would be an instance of a DIFFERENT (freshly re-evaluated)
+        // PeraServiceUnavailableError class, failing toBeInstanceOf below
+        // for reasons unrelated to the behavior under test. Importing here
+        // guarantees both come from the same module registry snapshot.
+        const {
+            PeraServiceUnavailableError: FreshPeraServiceUnavailableError,
+        } = await import('../../errors/pera-service')
+
+        await expect(
+            queryClient({
+                backend: 'pera',
+                network: 'betanet',
+                method: 'GET',
+                url: '/v1/assets/',
+            }),
+        ).rejects.toBeInstanceOf(FreshPeraServiceUnavailableError)
+
+        expect(mockKy).not.toHaveBeenCalled()
+    })
+
+    test('Pera-backed networks still reach their own backend', async () => {
+        mockKy.mockClear()
+        mockJson.mockResolvedValue({ results: [] })
+
+        const { queryClient } = await import('../query-client')
+
+        await queryClient({
+            backend: 'pera',
+            network: 'testnet',
+            method: 'GET',
+            url: '/v1/assets/',
+        })
+
+        expect(mockKy).toHaveBeenCalled()
+    })
+
+    it('updateBackendHeaders reaches every network even when called before any request', async () => {
+        vi.resetModules()
+        mockKy.extend.mockClear()
+        const { updateBackendHeaders } = await import('../query-client')
+
+        updateBackendHeaders(new Map([['X-Custom-Header', 'custom-value']]))
+
+        // 4 networks × (algod + indexer + pera) — updateBackendHeaders must
+        // build before extending, not silently skip networks nothing has
+        // requested yet.
+        expect(mockKy.extend).toHaveBeenCalledTimes(12)
     })
 
     it('does not re-append the request logger when extending clients', async () => {
@@ -417,6 +750,171 @@ describe('queryClient', () => {
 
         // Verify extend was called
         expect(mockKy.extend).toHaveBeenCalled()
+    })
+
+    describe('updateNodeEndpoints', () => {
+        type CapturedClientConfig = {
+            prefix: string
+            hooks: {
+                beforeRequest: Array<
+                    (state: {
+                        request: { headers: Map<string, string> }
+                    }) => void
+                >
+            }
+        }
+
+        const findClientConfig = (
+            prefix: string,
+        ): CapturedClientConfig | undefined =>
+            mockKy.create.mock.calls.find(
+                ([clientConfig]: [CapturedClientConfig]) =>
+                    clientConfig.prefix === prefix,
+            )?.[0]
+
+        const readHeader = (
+            clientConfig: CapturedClientConfig,
+            headerName: string,
+        ): string | undefined => {
+            const request = { headers: new Map<string, string>() }
+            clientConfig.hooks.beforeRequest[0]({ request })
+            return request.headers.get(headerName)
+        }
+
+        it('rebuilds algod/indexer for the given network against the new endpoints and tokens, even when called before any request', async () => {
+            vi.resetModules()
+            mockKy.create.mockClear()
+            const { updateNodeEndpoints } = await import('../query-client')
+
+            updateNodeEndpoints(Networks.mainnet, {
+                algodUrl: 'https://overridden.algod.algo',
+                indexerUrl: 'https://overridden.indexer.algo',
+                algodToken: mockAlgodApiKey,
+                indexerToken: mockIndexerApiKey,
+            })
+
+            // 12 from ensureClientsBuilt (4 networks x algod+indexer+pera)
+            // + 2 for the rebuilt algod/indexer of the overridden network.
+            // 15 would mean pera got needlessly rebuilt too; fewer than 14
+            // would mean the override was silently dropped because the
+            // ensureClientsBuilt gate never ran (clients.get would have
+            // returned undefined on an empty, never-built map).
+            expect(mockKy.create).toHaveBeenCalledTimes(14)
+
+            const algodConfig = findClientConfig(
+                'https://overridden.algod.algo',
+            )
+            expect(algodConfig).toBeDefined()
+            expect(
+                readHeader(
+                    algodConfig as CapturedClientConfig,
+                    'X-Algo-API-Token',
+                ),
+            ).toBe(mockAlgodApiKey)
+
+            const indexerConfig = findClientConfig(
+                'https://overridden.indexer.algo',
+            )
+            expect(indexerConfig).toBeDefined()
+            expect(
+                readHeader(
+                    indexerConfig as CapturedClientConfig,
+                    'X-Indexer-API-Token',
+                ),
+            ).toBe(mockIndexerApiKey)
+        })
+
+        // The `custom` network is the case that matters: getNetworkConfig
+        // returns empty tokens for it by design (its chain values live in the
+        // custom-network store, which `config` cannot read), so re-deriving
+        // them here instead of taking them from the caller silently drops
+        // them. Asserted on mainnet for simplicity — the discriminator
+        // (passed token differs from the baked one) is the same regardless
+        // of which network's override this exercises.
+        it('takes the tokens from the caller, not from the baked chain config', async () => {
+            vi.resetModules()
+            mockKy.create.mockClear()
+            const { updateNodeEndpoints } = await import('../query-client')
+
+            updateNodeEndpoints(Networks.mainnet, {
+                algodUrl: 'https://custom.algod.algo',
+                indexerUrl: 'https://custom.indexer.algo',
+                algodToken: 'a'.repeat(64),
+                indexerToken: 'store-indexer-token',
+            })
+
+            const algodConfig = findClientConfig('https://custom.algod.algo')
+            expect(algodConfig).toBeDefined()
+            expect(
+                readHeader(
+                    algodConfig as CapturedClientConfig,
+                    'X-Algo-API-Token',
+                ),
+            ).toBe('a'.repeat(64))
+
+            const indexerConfig = findClientConfig(
+                'https://custom.indexer.algo',
+            )
+            expect(indexerConfig).toBeDefined()
+            expect(
+                readHeader(
+                    indexerConfig as CapturedClientConfig,
+                    'X-Indexer-API-Token',
+                ),
+            ).toBe('store-indexer-token')
+        })
+
+        it('does not rebuild other networks', async () => {
+            vi.resetModules()
+            mockKy.create.mockClear()
+            const { updateNodeEndpoints } = await import('../query-client')
+
+            updateNodeEndpoints(Networks.mainnet, {
+                algodUrl: 'https://overridden.algod.algo',
+                indexerUrl: 'https://overridden.indexer.algo',
+                algodToken: mockAlgodApiKey,
+                indexerToken: mockIndexerApiKey,
+            })
+
+            // TestNet's algod client was only ever built once, by
+            // ensureClientsBuilt — overriding MainNet must not rebuild it.
+            const testnetAlgodCalls = mockKy.create.mock.calls.filter(
+                ([clientConfig]: [CapturedClientConfig]) =>
+                    clientConfig.prefix === chainUrlsByNetwork.testnet.algodUrl,
+            )
+            expect(testnetAlgodCalls).toHaveLength(1)
+        })
+
+        it('smoke check: the replaced client map entry does not break a subsequent request', async () => {
+            // Only proves updateNodeEndpoints leaves `clients` in a shape
+            // queryClient can still look up (right backend keys present,
+            // nothing set to undefined) — NOT that the request actually used
+            // the new prefix/token. `mockKy.create` always returns the same
+            // `mockKy` singleton regardless of the `prefix` it was configured
+            // with, and the request function it returns never reads `prefix`
+            // either, so this call can't observe which endpoint was actually
+            // targeted. The two tests above cover the real endpoint/token
+            // values, via the captured `mockKy.create` config instead.
+            const { updateNodeEndpoints, queryClient } =
+                await import('../query-client')
+            mockJson.mockResolvedValue({ version: '1.0' })
+
+            updateNodeEndpoints(Networks.mainnet, {
+                algodUrl: 'https://overridden.algod.algo',
+                indexerUrl: 'https://overridden.indexer.algo',
+                algodToken: mockAlgodApiKey,
+                indexerToken: mockIndexerApiKey,
+            })
+
+            await expect(
+                queryClient({
+                    backend: 'algod',
+                    network: Networks.mainnet,
+                    method: 'GET',
+                    url: '/v2/status',
+                }),
+            ).resolves.toBeDefined()
+        })
     })
 
     it('should set Content-Type and API key headers via setStandardHeaders', async () => {

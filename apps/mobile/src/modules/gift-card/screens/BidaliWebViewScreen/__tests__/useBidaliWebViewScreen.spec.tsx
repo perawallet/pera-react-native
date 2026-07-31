@@ -43,6 +43,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         bidaliApiKey: 'test-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     }),
+    isMainnet: (network: string) => network === 'mainnet',
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -58,7 +59,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET: { decimals: 6 },
-    getKnownAssetId: () => '31566704',
+    // Mirrors the real getKnownAssetId: `null` off the Pera-backed lane.
+    getKnownAssetId: (key: string, network: string) =>
+        key === 'USDC'
+            ? ({ mainnet: '31566704', testnet: '10458941' }[network] ?? null)
+            : null,
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({

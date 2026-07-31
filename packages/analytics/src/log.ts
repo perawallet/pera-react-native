@@ -13,18 +13,19 @@
 import type { AnalyticsService } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
-import { isTestnet } from '@perawallet/wallet-core-config'
+import { isMainnet } from '@perawallet/wallet-core-config'
 
 const TESTNET_PREFIX = 't_'
 
 /**
- * Resolves the raw event/screen name to send, prepending the testnet prefix when
- * the active network is testnet. This naming convention is shared across every
- * Pera client app, so it lives in the base layer rather than the per-app catalog.
+ * Resolves the raw event/screen name to send, prefixing on every network that
+ * is not MainNet. The `t_` prefix is shared across every Pera client app, so
+ * betanet and custom reuse it rather than introducing per-network prefixes
+ * that would fragment existing dashboards.
  */
-const resolveName = (name: string): string => {
+export const resolveEventName = (name: string): string => {
     const { network } = useNetworkStore.getState()
-    return isTestnet(network) ? `${TESTNET_PREFIX}${name}` : name
+    return isMainnet(network) ? name : `${TESTNET_PREFIX}${name}`
 }
 
 /**
@@ -42,7 +43,7 @@ const safeLog = (
     payload?: Record<string, unknown>,
 ): void => {
     try {
-        analytics.logEvent(resolveName(name), payload)
+        analytics.logEvent(resolveEventName(name), payload)
     } catch (error) {
         // Analytics is best-effort and must NEVER break app flow — swallow
         // any failure (network store, logEvent) and only log it. console.warn

@@ -16,6 +16,8 @@ import { renderHook } from '@testing-library/react'
 import { useAlgorandClient } from '../../hooks'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { useNetwork } from '../useNetwork'
+import { useCustomNetworkStore } from '../../store'
+import { createTimeoutBoundedAlgorandClient } from '../../utils/createAlgorandClient'
 
 // Mock AlgorandClient factory methods so we can assert which one is chosen
 vi.mock('@algorandfoundation/algokit-utils', () => {
@@ -36,13 +38,7 @@ vi.mock('@algorandfoundation/algokit-utils', () => {
 
 // Mock useNetwork
 vi.mock('../useNetwork', () => ({
-    useNetwork: vi.fn(() => ({
-        network: 'mainnet',
-        networkConfig: {
-            algodUrl: 'https://mainnet.algod.node',
-            indexerUrl: 'https://mainnet.indexer.node',
-        },
-    })),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 // Mock encodeSignedTransactions
@@ -50,26 +46,32 @@ vi.mock('../../utils/transact', () => ({
     encodeSignedTransactions: vi.fn(txs => txs),
 }))
 
+// Spy on createTimeoutBoundedAlgorandClient while still delegating to the
+// real implementation — every test in this file relies on the REAL chain
+// running through to the (mocked) AlgorandClient.fromClients, so this must
+// not become a stub.
+vi.mock('../../utils/createAlgorandClient', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('../../utils/createAlgorandClient')
+        >()
+    return {
+        ...actual,
+        createTimeoutBoundedAlgorandClient: vi.fn(
+            actual.createTimeoutBoundedAlgorandClient,
+        ),
+    }
+})
+
 describe('services/blockchain/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useNetwork as Mock).mockReturnValue({
-            network: 'mainnet',
-            networkConfig: {
-                algodUrl: 'https://mainnet.algod.node',
-                indexerUrl: 'https://mainnet.indexer.node',
-            },
-        })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+        useCustomNetworkStore.getState().resetState()
     })
 
     test('returns fromClients client for mainnet', () => {
-        ;(useNetwork as Mock).mockReturnValue({
-            network: 'mainnet',
-            networkConfig: {
-                algodUrl: 'https://mainnet.algod.node',
-                indexerUrl: 'https://mainnet.indexer.node',
-            },
-        })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromClients).toHaveBeenCalledTimes(1)
@@ -77,13 +79,7 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('returns fromClients client for testnet', () => {
-        ;(useNetwork as Mock).mockReturnValue({
-            network: 'testnet',
-            networkConfig: {
-                algodUrl: 'https://testnet.algod.node',
-                indexerUrl: 'https://testnet.indexer.node',
-            },
-        })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'testnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromClients).toHaveBeenCalledTimes(1)
@@ -113,13 +109,7 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('configures signer when provided', async () => {
-        ;(useNetwork as Mock).mockReturnValue({
-            network: 'mainnet',
-            networkConfig: {
-                algodUrl: 'https://mainnet.algod.node',
-                indexerUrl: 'https://mainnet.indexer.node',
-            },
-        })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
         const mockSigner = vi.fn().mockResolvedValue(['signed-tx'])
         const { result } = renderHook(() => useAlgorandClient(mockSigner))
 
@@ -132,5 +122,45 @@ describe('services/blockchain/hooks', () => {
 
         expect(mockSigner).toHaveBeenCalled()
         expect(resultTx).toEqual(['signed-tx'])
+    })
+
+    test('re-memoizes the client when the custom-network config changes while the active network is custom', () => {
+        ;(useNetwork as Mock).mockReturnValue({ network: 'custom' })
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            genesisHash: 'HASH',
+            genesisId: 'dockernet-v1',
+        })
+
+        const { rerender } = renderHook(() => useAlgorandClient())
+
+        expect(createTimeoutBoundedAlgorandClient).toHaveBeenCalledTimes(1)
+        expect(createTimeoutBoundedAlgorandClient).toHaveBeenNthCalledWith(1, {
+            algodUrl: 'http://10.0.0.5:4001',
+            indexerUrl: 'http://10.0.0.5:8980',
+            algodToken: '',
+            indexerToken: '',
+        })
+
+        useCustomNetworkStore.getState().setCustomNetwork({
+            algodUrl: 'http://10.0.0.9:4001',
+            indexerUrl: 'http://10.0.0.9:8980',
+            genesisHash: 'HASH2',
+            genesisId: 'dockernet-v2',
+        })
+        rerender()
+
+        // A stale memo (deps missing customNetwork) would still show only 1
+        // call here and the OLD endpoint — this is the exact defect a prior
+        // review caught by mutation: dropping customNetwork from the deps
+        // array left the whole package suite green.
+        expect(createTimeoutBoundedAlgorandClient).toHaveBeenCalledTimes(2)
+        expect(createTimeoutBoundedAlgorandClient).toHaveBeenNthCalledWith(2, {
+            algodUrl: 'http://10.0.0.9:4001',
+            indexerUrl: 'http://10.0.0.9:8980',
+            algodToken: '',
+            indexerToken: '',
+        })
     })
 })

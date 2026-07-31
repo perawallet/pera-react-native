@@ -21,7 +21,7 @@ import ky, {
     isNetworkError,
     isTimeoutError,
 } from 'ky'
-import { config } from '@perawallet/wallet-core-config'
+import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     type RequestConfiguration,
     type ResponseConfiguration,
@@ -29,6 +29,7 @@ import {
 import { type Network, Networks } from '../models/base-types'
 import { logger, parsePrecisionSafeJson } from '../utils'
 import { PeraNetworkError, isPeraNetworkError } from '../errors/network'
+import { PeraServiceUnavailableError } from '../errors/pera-service'
 
 type BackendInstances = {
     algod: KyInstance
@@ -164,6 +165,8 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             throw new Error('URL is required')
         }
 
+        ensureClientsBuilt()
+
         const backends = clients.get(requestConfig.network)
 
         if (!backends) {
@@ -178,6 +181,24 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             throw new Error(
                 'Could not get KY client for ' + requestConfig.backend,
             )
+        }
+
+        // No Pera deployment for this network (betanet, custom). Refuse HERE,
+        // before ky is invoked at all, rather than inside a `beforeRequest`
+        // hook: ky builds the `Request` synchronously in its constructor,
+        // BEFORE running beforeRequest, so a hookless client with no `prefix`
+        // would first hit `new Request('v1/assets/')` and a spec-compliant
+        // implementation (undici, and the direction Expo's fetch is heading)
+        // throws a bare `TypeError: Failed to parse URL` from there. That
+        // TypeError lands in the catch below and gets normalized into a
+        // generic PeraNetworkError('unknown') — exactly the outcome the typed
+        // error exists to avoid. Throwing on this side of the call also means
+        // no socket opens and no consumer needs its own guard.
+        if (
+            requestConfig.backend === 'pera' &&
+            networksWithoutPeraBackend.has(requestConfig.network)
+        ) {
+            throw new PeraServiceUnavailableError(requestConfig.network)
         }
 
         try {
@@ -287,111 +308,153 @@ const peraRetryConfig = {
     maxRetryAfter: 5000,
 }
 
-const mainnetPeraClient = ky.create({
-    hooks: {
-        ...standardHooks,
-        beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
+const createPeraClient = (network: Network): KyInstance =>
+    ky.create({
+        hooks: {
+            ...standardHooks,
+            beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
+        },
+        prefix: getNetworkConfig(network).backendUrl,
+        retry: peraRetryConfig,
+    })
+
+const createTokenHeaderClient = (
+    prefix: string,
+    headerName: string,
+    token: string,
+): KyInstance =>
+    ky.create({
+        hooks: {
+            ...standardHooks,
+            beforeRequest: [
+                ({ request }) => {
+                    request.headers.set('Content-Type', 'application/json')
+                    if (token.length) {
+                        request.headers.set(headerName, token)
+                    }
+                },
+                ...standardHooks.beforeRequest,
+            ],
+        },
+        prefix,
+        retry: peraRetryConfig,
+    })
+
+const createChainClients = (
+    network: Network,
+): Pick<BackendInstances, 'algod' | 'indexer'> => {
+    const { algodUrl, indexerUrl, algodToken, indexerToken } =
+        getNetworkConfig(network)
+
+    return {
+        algod: createTokenHeaderClient(
+            algodUrl,
+            'X-Algo-API-Token',
+            algodToken,
+        ),
+        indexer: createTokenHeaderClient(
+            indexerUrl,
+            'X-Indexer-API-Token',
+            indexerToken,
+        ),
+    }
+}
+
+/**
+ * Networks whose Pera `backendUrl` is empty — i.e. no Pera deployment exists
+ * for them (betanet, custom). Recorded by the same pass that builds the
+ * clients, from the same `getNetworkConfig` read `createPeraClient` makes, so
+ * the request-path guard in `createFetchClient` can never disagree with what
+ * the client was actually built against. Populated before any request can be
+ * served, because both go through `ensureClientsBuilt`.
+ */
+const networksWithoutPeraBackend = new Set<Network>()
+
+const buildClientsFor = (network: Network): BackendInstances => {
+    if (getNetworkConfig(network).backendUrl === '') {
+        networksWithoutPeraBackend.add(network)
+    }
+
+    return {
+        ...createChainClients(network),
+        pera: createPeraClient(network),
+    }
+}
+
+let clientsInitialized = false
+
+// Builds every network's clients on first use — NEVER at module import
+// time. Importing this module must not require getNetworkConfig() to
+// resolve to a real object: several consuming packages' tests mock it as a
+// bare `vi.fn()` with no default return, and an eager build at import time
+// crashed those suites during collection (packages/card's lsig.spec.ts
+// imports bytesToHex/decodeFromBase64 from this package and got no
+// further).
+//
+// Shared by every call site that touches `clients` — the request path in
+// createFetchClient above and updateBackendHeaders below (and, from a later
+// change, updateNodeEndpoints) — so a lazily-populated map can never be
+// silently incomplete: whichever call site runs first builds EVERY member of
+// the Networks union, never just the one it needed. Do not replace this with a
+// per-network build-on-miss — that would silently skip networks nothing
+// has requested yet when updateBackendHeaders (or updateNodeEndpoints) runs
+// before any request has.
+const ensureClientsBuilt = (): void => {
+    if (clientsInitialized) return
+    clientsInitialized = true
+
+    for (const network of Object.values(Networks)) {
+        clients.set(network, buildClientsFor(network))
+    }
+}
+
+/**
+ * Rebuilds a single network's algod/indexer ky instances against new endpoints.
+ * Called from a `blockchain` subscription to the custom-network config store,
+ * because `shared` cannot import `blockchain`. The `pera` instance is left
+ * untouched — the custom-network config only carries chain endpoints.
+ *
+ * Tokens are part of the endpoint, so they arrive with it and are NEVER
+ * re-derived from `getNetworkConfig` here: `custom` has no baked chain config
+ * (its tokens are `''` by design), so re-deriving would silently drop the ones
+ * the developer entered — a token-protected node then 401s every ky-transport
+ * read (indexer history, indexer asset lookups) while the AlgorandClient
+ * transport, which does read the store, keeps working.
+ */
+export const updateNodeEndpoints = (
+    network: Network,
+    endpoints: {
+        algodUrl: string
+        indexerUrl: string
+        algodToken: string
+        indexerToken: string
     },
-    prefix: config.mainnetBackendUrl,
-    retry: peraRetryConfig,
-})
+): void => {
+    // Must go through the gate, not `clients.get(network)` with an early
+    // return: the map is lazily populated (Task 2), so a bail-on-miss would
+    // silently discard an override written before that network's first request.
+    ensureClientsBuilt()
+    const existing = clients.get(network)
+    if (!existing) return
 
-const testnetPeraClient = ky.create({
-    hooks: {
-        ...standardHooks,
-        beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
-    },
-    prefix: config.testnetBackendUrl,
-    retry: peraRetryConfig,
-})
-const mainnetAlgodClient = ky.create({
-    hooks: {
-        ...standardHooks,
-        beforeRequest: [
-            ({ request }) => {
-                request.headers.set('Content-Type', 'application/json')
-
-                if (config.algodApiKey?.length) {
-                    request.headers.set('X-Algo-API-Token', config.algodApiKey)
-                }
-            },
-            ...standardHooks.beforeRequest,
-        ],
-    },
-    prefix: config.mainnetAlgodUrl,
-    retry: peraRetryConfig,
-})
-const testnetAlgodClient = ky.create({
-    hooks: {
-        ...standardHooks,
-        beforeRequest: [
-            ({ request }) => {
-                request.headers.set('Content-Type', 'application/json')
-
-                if (config.algodApiKey?.length) {
-                    request.headers.set('X-Algo-API-Token', config.algodApiKey)
-                }
-            },
-            ...standardHooks.beforeRequest,
-        ],
-    },
-    prefix: config.testnetAlgodUrl,
-    retry: peraRetryConfig,
-})
-
-const mainnetIndexerClient = ky.create({
-    hooks: {
-        ...standardHooks,
-        beforeRequest: [
-            ({ request }) => {
-                request.headers.set('Content-Type', 'application/json')
-
-                if (config.indexerApiKey?.length) {
-                    request.headers.set(
-                        'X-Indexer-API-Token',
-                        config.indexerApiKey,
-                    )
-                }
-            },
-            ...standardHooks.beforeRequest,
-        ],
-    },
-    prefix: config.mainnetIndexerUrl,
-    retry: peraRetryConfig,
-})
-const testnetIndexerClient = ky.create({
-    hooks: {
-        ...standardHooks,
-        beforeRequest: [
-            ({ request }) => {
-                request.headers.set('Content-Type', 'application/json')
-
-                if (config.indexerApiKey?.length) {
-                    request.headers.set(
-                        'X-Indexer-API-Token',
-                        config.indexerApiKey,
-                    )
-                }
-            },
-            ...standardHooks.beforeRequest,
-        ],
-    },
-    prefix: config.testnetIndexerUrl,
-    retry: peraRetryConfig,
-})
-
-clients.set(Networks.mainnet, {
-    algod: mainnetAlgodClient,
-    indexer: mainnetIndexerClient,
-    pera: mainnetPeraClient,
-})
-clients.set(Networks.testnet, {
-    algod: testnetAlgodClient,
-    indexer: testnetIndexerClient,
-    pera: testnetPeraClient,
-})
+    clients.set(network, {
+        ...existing,
+        algod: createTokenHeaderClient(
+            endpoints.algodUrl,
+            'X-Algo-API-Token',
+            endpoints.algodToken,
+        ),
+        indexer: createTokenHeaderClient(
+            endpoints.indexerUrl,
+            'X-Indexer-API-Token',
+            endpoints.indexerToken,
+        ),
+    })
+}
 
 export const updateBackendHeaders = (headers: Map<string, string>) => {
+    ensureClientsBuilt()
+
     const applyHeaders = (instance: KyInstance): KyInstance =>
         instance.extend({
             hooks: {

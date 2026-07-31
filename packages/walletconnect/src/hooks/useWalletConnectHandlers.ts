@@ -16,7 +16,6 @@ import {
     generateOrderedUniqueId,
     logger,
     type Network,
-    Networks,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
@@ -47,6 +46,7 @@ import {
     type WalletConnectConnection,
     type WalletConnectTransactionPayload,
 } from '../models'
+import { getExpectedChainId } from '../utils/expectedChainId'
 import { MAX_DATA_SIGN_REQUESTS, WC_DELIVERY_TIMEOUT_MS } from '../constants'
 import { arc60PayloadSchema, assertArc60RequestWithinLimits } from '../schema'
 import {
@@ -152,10 +152,7 @@ const validateRequest = (
         throw new WalletConnectInvalidSessionError('No session found')
     }
 
-    const expectedChainId =
-        network === Networks.testnet
-            ? AlgorandChainId.testnet
-            : AlgorandChainId.mainnet
+    const expectedChainId = getExpectedChainId(network)
 
     const { chainId } = foundConnection.session
 
@@ -191,10 +188,7 @@ const validateDataSignRequest = (
         throw new WalletConnectSignRequestError('Too many sign requests found')
     }
 
-    const expectedChainId =
-        network === Networks.testnet
-            ? AlgorandChainId.testnet
-            : AlgorandChainId.mainnet
+    const expectedChainId = getExpectedChainId(network)
 
     data.forEach(item => {
         if (

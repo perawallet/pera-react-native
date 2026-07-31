@@ -11,7 +11,11 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { type Network } from '@perawallet/wallet-core-config'
+import {
+    type Network,
+    type PeraBackedNetwork,
+    isPeraBackedNetwork,
+} from '@perawallet/wallet-core-config'
 
 import { type PeraCollectible } from './collectibles'
 import {
@@ -116,12 +120,24 @@ export type PeraAssetMetadata = {
 
 export const KNOWN_ASSET_IDS = {
     USDC: { mainnet: '31566704', testnet: '10458941' },
-} as const satisfies Record<string, Record<'mainnet' | 'testnet', string>>
+} as const satisfies Record<string, Record<PeraBackedNetwork, string>>
 
 export type KnownAssetKey = keyof typeof KNOWN_ASSET_IDS
 
-export const getKnownAssetId = (key: KnownAssetKey, network: Network): string =>
-    KNOWN_ASSET_IDS[key][network]
+/**
+ * The network's id for a well-known asset, or `null` where there is no known
+ * id.
+ *
+ * Returned `null` rather than TestNet's id: that id does not identify the same
+ * asset on another chain. Every consumer is a Pera-backed feature that is
+ * already unavailable on those networks, so this changes nothing user-visible
+ * — it just stops a wrong id circulating.
+ */
+export const getKnownAssetId = (
+    key: KnownAssetKey,
+    network: Network,
+): Nullable<string> =>
+    isPeraBackedNetwork(network) ? KNOWN_ASSET_IDS[key][network] : null
 
 export const ALGO_ASSET: PeraAsset = {
     assetId: ALGO_ASSET_ID,

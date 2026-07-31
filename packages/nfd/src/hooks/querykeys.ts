@@ -13,7 +13,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { Network } from '@perawallet/wallet-core-shared'
 
-const MODULE_PREFIX = 'nfd'
+export const MODULE_PREFIX = 'nfd'
 
 export const nfdQueryKeys = {
     all: [MODULE_PREFIX] as const,

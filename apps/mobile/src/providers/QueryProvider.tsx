@@ -25,6 +25,7 @@ import {
 } from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
 import {
+    isPeraServiceUnavailableError,
     isTransientNetworkError,
     logger,
     mutationDefaults,
@@ -41,14 +42,28 @@ const cache = new QueryCache({
         if (isTransientNetworkError(error)) {
             return
         }
+        // A Pera service that is simply not deployed on the active network
+        // (betanet, custom) is an expected condition, not a crash: every
+        // ungated Pera query — useCurrenciesQuery mounts on any screen with a
+        // fiat value — would otherwise fire a crash-report non-fatal and a
+        // dev RedBox on every render. Kept separate from
+        // isTransientNetworkError, which means "retrying may succeed" and
+        // must keep meaning exactly that.
+        if (isPeraServiceUnavailableError(error)) {
+            return
+        }
         logger.error('An error has occurred:', { error })
     },
 })
 
 const mutationCache = new MutationCache({
     onError: (error, _variables, _context, mutation) => {
-        // Same transient-skip rationale as the query cache above.
-        if (isTransientNetworkError(error)) {
+        // Same transient- and not-deployed-skip rationale as the query cache
+        // above.
+        if (
+            isTransientNetworkError(error) ||
+            isPeraServiceUnavailableError(error)
+        ) {
             return
         }
         logger.error('Mutation failed:', {

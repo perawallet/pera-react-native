@@ -13,13 +13,25 @@
 import { type Network, Networks } from './models/network'
 import { config } from './main'
 
-export type NetworkConfig = {
-    network: Network
-    backendUrl: string
+/** Chain-intrinsic endpoints. Always the real active network — never falls back. */
+type ChainConfig = {
     algodUrl: string
     indexerUrl: string
     genesisHash: string
+    genesisId: string
     explorerUrl: string
+    algodToken: string
+    indexerToken: string
+    dispenserUrl: string
+}
+
+/**
+ * Pera-ecosystem services. Populated only for `PeraBackedNetwork`s; empty
+ * (see `EMPTY_PERA_SERVICES`) everywhere else — never resolved from another
+ * network's deployment.
+ */
+type PeraServices = {
+    backendUrl: string
     bidaliBaseUrl: string
     bidaliApiKey: string
     baanxBaseUrl: string
@@ -31,62 +43,174 @@ export type NetworkConfig = {
     cardW3CardAppId: string
     cardKillswitchAppId: string
     cardUsdcAssetId: string
-    isTestnet: boolean
-    isMainnet: boolean
 }
+
+export type NetworkConfig = ChainConfig &
+    PeraServices & {
+        network: Network
+        isTestnet: boolean
+        isMainnet: boolean
+    }
 
 export const isTestnet = (network: Network) => network === Networks.testnet
 export const isMainnet = (network: Network) => network === Networks.mainnet
 
-export const getNetworkConfig = (network: Network): NetworkConfig => {
-    const isMain = isMainnet(network)
+const chainConfigByNetwork: Record<Network, ChainConfig> = {
+    [Networks.mainnet]: {
+        algodUrl: config.mainnetAlgodUrl,
+        indexerUrl: config.mainnetIndexerUrl,
+        genesisHash: config.mainnetGenesisHash,
+        genesisId: 'mainnet-v1.0',
+        explorerUrl: config.mainnetExplorerUrl,
+        algodToken: config.algodApiKey,
+        indexerToken: config.indexerApiKey,
+        dispenserUrl: config.mainnetDispenserUrl,
+    },
+    [Networks.testnet]: {
+        algodUrl: config.testnetAlgodUrl,
+        indexerUrl: config.testnetIndexerUrl,
+        genesisHash: config.testnetGenesisHash,
+        genesisId: 'testnet-v1.0',
+        explorerUrl: config.testnetExplorerUrl,
+        algodToken: config.algodApiKey,
+        indexerToken: config.indexerApiKey,
+        dispenserUrl: config.dispenserUrl,
+    },
+    [Networks.betanet]: {
+        algodUrl: config.betanetAlgodUrl,
+        indexerUrl: config.betanetIndexerUrl,
+        genesisHash: config.betanetGenesisHash,
+        genesisId: 'betanet-v1.0',
+        explorerUrl: config.betanetExplorerUrl,
+        // Deliberately empty, NOT config.algodApiKey/indexerApiKey: those are
+        // Pera's own injected secrets, and betanet's algod/indexer are public
+        // third-party endpoints (algonode.cloud) Pera does not control and
+        // that need no token. Sending Pera's real credential to a host Pera
+        // doesn't operate is a needless credential leak. The client factories
+        // (createTokenHeaderClient in query-client.ts, TimeoutHttpClient) skip
+        // the auth header entirely when the token is empty, so this is safe.
+        algodToken: '',
+        indexerToken: '',
+        dispenserUrl: 'https://lora.algokit.io/betanet/fund/',
+    },
+    [Networks.custom]: {
+        // Deliberately all empty. `custom` has no baked chain config — its real
+        // values live in the custom-network store (packages/blockchain), which
+        // `config` cannot read: config is the leaf package and must stay free of
+        // store dependencies. The blockchain-layer resolvers overlay the store on
+        // top of this placeholder:
+        //   - algodUrl/indexerUrl/tokens -> resolveChainEndpoints()
+        //   - genesisHash/genesisId      -> getExpectedGenesisHash()
+        // explorerUrl and dispenserUrl stay empty: an arbitrary node has no known
+        // explorer or faucet, and the existing non-mainnet-AND-non-empty gate
+        // already hides the dispenser row on an empty value.
+        algodUrl: '',
+        indexerUrl: '',
+        genesisHash: '',
+        genesisId: '',
+        explorerUrl: '',
+        algodToken: '',
+        indexerToken: '',
+        dispenserUrl: '',
+    },
+}
 
-    return {
-        network,
-        isMainnet: isMain,
-        isTestnet: !isMain,
-        backendUrl: isMain
-            ? config.mainnetBackendUrl
-            : config.testnetBackendUrl,
-        algodUrl: isMain ? config.mainnetAlgodUrl : config.testnetAlgodUrl,
-        indexerUrl: isMain
-            ? config.mainnetIndexerUrl
-            : config.testnetIndexerUrl,
-        genesisHash: isMain
-            ? config.mainnetGenesisHash
-            : config.testnetGenesisHash,
-        explorerUrl: isMain
-            ? config.mainnetExplorerUrl
-            : config.testnetExplorerUrl,
-        bidaliBaseUrl: isMain
-            ? config.mainnetBidaliBaseUrl
-            : config.testnetBidaliBaseUrl,
-        bidaliApiKey: isMain
-            ? config.mainnetBidaliApiKey
-            : config.testnetBidaliApiKey,
-        baanxBaseUrl: isMain
-            ? config.mainnetBaanxBaseUrl
-            : config.testnetBaanxBaseUrl,
-        baanxClientKey: isMain
-            ? config.mainnetBaanxClientKey
-            : config.testnetBaanxClientKey,
-        baanxTenantId: isMain
-            ? config.mainnetBaanxTenantId
-            : config.testnetBaanxTenantId,
-        cardEscrowBaseUrl: isMain
-            ? config.mainnetCardEscrowBaseUrl
-            : config.testnetCardEscrowBaseUrl,
-        cardEscrowAuthToken: isMain
-            ? config.mainnetCardEscrowAuthToken
-            : config.testnetCardEscrowAuthToken,
-        cardW3CardAppId: isMain
-            ? config.mainnetCardW3CardAppId
-            : config.testnetCardW3CardAppId,
-        cardKillswitchAppId: isMain
-            ? config.mainnetCardKillswitchAppId
-            : config.testnetCardKillswitchAppId,
-        cardUsdcAssetId: isMain
-            ? config.mainnetCardUsdcAssetId
-            : config.testnetCardUsdcAssetId,
-    }
+/**
+ * The networks that have a real Pera backend deployment.
+ *
+ * A type guard, not a boolean: `KNOWN_ASSET_IDS` and the `PeraServices` table
+ * are keyed by these two, so callers need the narrowing to index them.
+ */
+const PERA_BACKED_NETWORKS = [Networks.mainnet, Networks.testnet] as const
+
+export type PeraBackedNetwork = (typeof PERA_BACKED_NETWORKS)[number]
+
+export const isPeraBackedNetwork = (
+    network: Network,
+): network is PeraBackedNetwork =>
+    (PERA_BACKED_NETWORKS as readonly Network[]).includes(network)
+
+/**
+ * Every field empty. Named rather than inlined twice so the two rows below
+ * cannot drift, and so `satisfies` fails the build if a field is added to
+ * `PeraServices` without an empty counterpart here.
+ */
+const EMPTY_PERA_SERVICES = {
+    backendUrl: '',
+    bidaliBaseUrl: '',
+    bidaliApiKey: '',
+    baanxBaseUrl: '',
+    baanxClientKey: '',
+    baanxTenantId: '',
+    cardEscrowBaseUrl: '',
+    cardEscrowAuthToken: '',
+    cardW3CardAppId: '',
+    cardKillswitchAppId: '',
+    cardUsdcAssetId: '',
+} satisfies PeraServices
+
+/**
+ * `Record<Network, …>`, not `Partial<…>` plus a fallback: a fifth network added
+ * to the union fails TypeScript here until someone decides its Pera services,
+ * rather than silently resolving to TestNet's deployment. Same reasoning as
+ * `EXPECTED_CHAIN_ID_BY_NETWORK` in the walletconnect package.
+ */
+const peraServicesByNetwork: Record<Network, PeraServices> = {
+    [Networks.mainnet]: {
+        backendUrl: config.mainnetBackendUrl,
+        bidaliBaseUrl: config.mainnetBidaliBaseUrl,
+        bidaliApiKey: config.mainnetBidaliApiKey,
+        baanxBaseUrl: config.mainnetBaanxBaseUrl,
+        baanxClientKey: config.mainnetBaanxClientKey,
+        baanxTenantId: config.mainnetBaanxTenantId,
+        cardEscrowBaseUrl: config.mainnetCardEscrowBaseUrl,
+        cardEscrowAuthToken: config.mainnetCardEscrowAuthToken,
+        cardW3CardAppId: config.mainnetCardW3CardAppId,
+        cardKillswitchAppId: config.mainnetCardKillswitchAppId,
+        cardUsdcAssetId: config.mainnetCardUsdcAssetId,
+    },
+    [Networks.testnet]: {
+        backendUrl: config.testnetBackendUrl,
+        bidaliBaseUrl: config.testnetBidaliBaseUrl,
+        bidaliApiKey: config.testnetBidaliApiKey,
+        baanxBaseUrl: config.testnetBaanxBaseUrl,
+        baanxClientKey: config.testnetBaanxClientKey,
+        baanxTenantId: config.testnetBaanxTenantId,
+        cardEscrowBaseUrl: config.testnetCardEscrowBaseUrl,
+        cardEscrowAuthToken: config.testnetCardEscrowAuthToken,
+        cardW3CardAppId: config.testnetCardW3CardAppId,
+        cardKillswitchAppId: config.testnetCardKillswitchAppId,
+        cardUsdcAssetId: config.testnetCardUsdcAssetId,
+    },
+    // No Pera deployment. Empty, never borrowed: createPeraClient turns an
+    // empty backendUrl into a thrown PeraServiceUnavailableError.
+    [Networks.betanet]: EMPTY_PERA_SERVICES,
+    [Networks.custom]: EMPTY_PERA_SERVICES,
+}
+
+export const getNetworkConfig = (network: Network): NetworkConfig => ({
+    network,
+    isMainnet: isMainnet(network),
+    isTestnet: isTestnet(network),
+    ...chainConfigByNetwork[network],
+    ...peraServicesByNetwork[network],
+})
+
+/**
+ * ARC-59 inbox app id/address for `network`, or `null` where the inbox app is
+ * not deployed.
+ *
+ * Returned `null` rather than TestNet's ids: those ids do not exist on another
+ * chain, so building against them aims a wrong app id at the real chain's
+ * algod. Group atomicity meant no funds moved, but it failed opaquely — the
+ * caller now fails with a typed error instead.
+ */
+export const getArc59Config = (
+    network: Network,
+): { appId: bigint; appAddress: string } | null => {
+    if (!isPeraBackedNetwork(network)) return null
+
+    return network === Networks.mainnet
+        ? config.arc59.mainnet
+        : config.arc59.testnet
 }

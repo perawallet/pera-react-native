@@ -80,4 +80,28 @@ describe('config/main', () => {
         })
         expect(result.success).toBe(false)
     })
+
+    test.each(['mainnet', 'testnet', 'betanet'] as const)(
+        'accepts %s as a build-time defaultNetwork',
+        defaultNetwork => {
+            expect(getConfig({ defaultNetwork }).defaultNetwork).toBe(
+                defaultNetwork,
+            )
+        },
+    )
+
+    test('rejects custom as a build-time defaultNetwork', () => {
+        // `custom` is the one union member with no baked chain config — every
+        // value comes from the custom-network store, which is empty on a fresh
+        // install. DEFAULT_NETWORK=custom would therefore make `custom` the
+        // ACTIVE network with empty endpoints on first launch, and
+        // TimeoutHttpClient's `new URL('/')` throws during render. There is no
+        // build-time value that could make it valid, so it must not be a legal
+        // default at all.
+        const result = configSchema.safeParse({
+            ...config,
+            defaultNetwork: 'custom',
+        })
+        expect(result.success).toBe(false)
+    })
 })

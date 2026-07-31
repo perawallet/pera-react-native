@@ -18,5 +18,30 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'column',
             gap: theme.spacing.md,
         },
+        sheetContent: {
+            flexDirection: 'column',
+            gap: theme.spacing.md,
+            // No bottom-affecting padding here: PWScrollView's own
+            // inset-aware paddingBottom (safe-area + spacing.xl) only
+            // applies when the caller hasn't set padding / paddingBottom /
+            // paddingVertical on this same style object — see
+            // PWScrollView.tsx's hasBottomPadding check.
+            paddingHorizontal: theme.spacing.lg,
+            paddingTop: theme.spacing.lg,
+        },
+        fetchButton: {
+            alignSelf: 'flex-start',
+        },
+        errorText: {
+            color: theme.colors.error,
+        },
+        actionsRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+        },
+        notice: {
+            marginTop: theme.spacing.lg,
+        },
     }
 })

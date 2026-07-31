@@ -10,10 +10,16 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import { Networks } from '../models/network'
 import { config } from '../main'
-import { getNetworkConfig, isMainnet, isTestnet } from '../network-config'
+import {
+    getArc59Config,
+    getNetworkConfig,
+    isMainnet,
+    isPeraBackedNetwork,
+    isTestnet,
+} from '../network-config'
 
 describe('network-config', () => {
     test('isMainnet returns correct boolean', () => {
@@ -21,9 +27,11 @@ describe('network-config', () => {
         expect(isMainnet(Networks.testnet)).toBe(false)
     })
 
-    test('isTestnet returns correct boolean', () => {
+    test('isTestnet is a real testnet check, not the mainnet inverse', () => {
         expect(isTestnet(Networks.testnet)).toBe(true)
         expect(isTestnet(Networks.mainnet)).toBe(false)
+        expect(isTestnet(Networks.betanet)).toBe(false)
+        expect(isTestnet(Networks.custom)).toBe(false)
     })
 
     test('getNetworkConfig returns correct mainnet config', () => {
@@ -37,7 +45,11 @@ describe('network-config', () => {
             algodUrl: config.mainnetAlgodUrl,
             indexerUrl: config.mainnetIndexerUrl,
             genesisHash: config.mainnetGenesisHash,
+            genesisId: 'mainnet-v1.0',
             explorerUrl: config.mainnetExplorerUrl,
+            algodToken: config.algodApiKey,
+            indexerToken: config.indexerApiKey,
+            dispenserUrl: config.mainnetDispenserUrl,
             bidaliBaseUrl: config.mainnetBidaliBaseUrl,
             bidaliApiKey: config.mainnetBidaliApiKey,
             baanxBaseUrl: config.mainnetBaanxBaseUrl,
@@ -62,7 +74,11 @@ describe('network-config', () => {
             algodUrl: config.testnetAlgodUrl,
             indexerUrl: config.testnetIndexerUrl,
             genesisHash: config.testnetGenesisHash,
+            genesisId: 'testnet-v1.0',
             explorerUrl: config.testnetExplorerUrl,
+            algodToken: config.algodApiKey,
+            indexerToken: config.indexerApiKey,
+            dispenserUrl: config.dispenserUrl,
             bidaliBaseUrl: config.testnetBidaliBaseUrl,
             bidaliApiKey: config.testnetBidaliApiKey,
             baanxBaseUrl: config.testnetBaanxBaseUrl,
@@ -74,6 +90,119 @@ describe('network-config', () => {
             cardKillswitchAppId: config.testnetCardKillswitchAppId,
             cardUsdcAssetId: config.testnetCardUsdcAssetId,
         })
+    })
+
+    test('union is exactly the four supported networks', () => {
+        expect(Object.values(Networks)).toEqual([
+            'testnet',
+            'mainnet',
+            'betanet',
+            'custom',
+        ])
+    })
+
+    test('custom carries no baked chain config', () => {
+        const custom = getNetworkConfig(Networks.custom)
+
+        expect(custom.algodUrl).toBe('')
+        expect(custom.indexerUrl).toBe('')
+        expect(custom.genesisHash).toBe('')
+        expect(custom.genesisId).toBe('')
+        expect(custom.explorerUrl).toBe('')
+        expect(custom.dispenserUrl).toBe('')
+    })
+
+    test('isPeraBackedNetwork is true only where a Pera backend is deployed', () => {
+        expect(isPeraBackedNetwork(Networks.mainnet)).toBe(true)
+        expect(isPeraBackedNetwork(Networks.testnet)).toBe(true)
+        expect(isPeraBackedNetwork(Networks.betanet)).toBe(false)
+        expect(isPeraBackedNetwork(Networks.custom)).toBe(false)
+    })
+
+    test('networks without a Pera deployment get empty services, never borrowed ones', () => {
+        // The whole point of the change: betanet's backendUrl used to BE
+        // testnet's. Asserting inequality with the real testnet value is what
+        // makes this test fail if the lane indirection ever comes back.
+        const testnetBackend = getNetworkConfig(Networks.testnet).backendUrl
+        expect(testnetBackend).not.toBe('')
+
+        for (const network of [Networks.betanet, Networks.custom]) {
+            const networkConfig = getNetworkConfig(network)
+
+            expect(networkConfig.backendUrl).toBe('')
+            expect(networkConfig.backendUrl).not.toBe(testnetBackend)
+            expect(networkConfig.bidaliBaseUrl).toBe('')
+            expect(networkConfig.baanxBaseUrl).toBe('')
+            expect(networkConfig.cardEscrowBaseUrl).toBe('')
+            expect(networkConfig.cardUsdcAssetId).toBe('')
+        }
+    })
+
+    test('chain truth is untouched by the Pera-services change', () => {
+        // Guards the one thing that must NOT go empty alongside the services.
+        expect(getNetworkConfig(Networks.betanet).algodUrl).not.toBe('')
+        expect(getNetworkConfig(Networks.betanet).genesisHash).not.toBe('')
+    })
+
+    test('betanet keeps its pinned chain identity', () => {
+        const betanet = getNetworkConfig(Networks.betanet)
+
+        expect(betanet.genesisHash).toBe(config.betanetGenesisHash)
+        expect(betanet.genesisId).toBe('betanet-v1.0')
+        expect(betanet.genesisHash).not.toBe(config.testnetGenesisHash)
+    })
+
+    test('betanet and custom carry no algod/indexer token, even with a real key configured', async () => {
+        // Their algod/indexer are public third-party endpoints (algonode.cloud)
+        // Pera does not control and that need no token — sending Pera's real
+        // algodApiKey/indexerApiKey (as mainnet/testnet correctly do) would
+        // leak that credential to hosts outside Pera's control. custom has no
+        // baked endpoint at all yet (its fields are hardcoded ''), so it must
+        // be immune to a real key exactly the same way.
+        //
+        // `config.algodApiKey`/`indexerApiKey` are blank in this test
+        // environment (no key configured), so asserting against a bare
+        // `getNetworkConfig(betanet).algodToken === ''` would pass whether
+        // betanet's token is hardcoded empty (the fix) OR still wired to
+        // `config.algodApiKey` (the bug) — both would coincidentally read as
+        // `''` here. Mocking a non-empty key makes the two cases actually
+        // observably different, so this only passes for the real fix.
+        vi.resetModules()
+        vi.doMock('../main', async importOriginal => {
+            const actual = await importOriginal<typeof import('../main')>()
+            return {
+                ...actual,
+                config: {
+                    ...actual.config,
+                    algodApiKey: 'REAL_PERA_ALGOD_SECRET',
+                    indexerApiKey: 'REAL_PERA_INDEXER_SECRET',
+                },
+            }
+        })
+
+        const { getNetworkConfig: freshGetNetworkConfig } =
+            await import('../network-config')
+
+        // The mock took effect — mainnet correctly uses the real key.
+        expect(freshGetNetworkConfig(Networks.mainnet).algodToken).toBe(
+            'REAL_PERA_ALGOD_SECRET',
+        )
+        // betanet/custom must not, even though the same real secret is
+        // configured for the process.
+        for (const network of [Networks.betanet, Networks.custom]) {
+            expect(freshGetNetworkConfig(network).algodToken).toBe('')
+            expect(freshGetNetworkConfig(network).indexerToken).toBe('')
+        }
+
+        vi.doUnmock('../main')
+    })
+
+    test('getArc59Config returns null where the inbox app is not deployed', () => {
+        expect(getArc59Config(Networks.mainnet)).toEqual(config.arc59.mainnet)
+        expect(getArc59Config(Networks.testnet)).toEqual(config.arc59.testnet)
+        // Was config.arc59.testnet — TestNet's app id aimed at another chain.
+        expect(getArc59Config(Networks.betanet)).toBeNull()
+        expect(getArc59Config(Networks.custom)).toBeNull()
     })
 })
 
@@ -87,6 +216,26 @@ describe('getNetworkConfig genesisHash', () => {
     test('returns the canonical testnet genesis hash', () => {
         expect(getNetworkConfig('testnet').genesisHash).toBe(
             'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=',
+        )
+    })
+})
+
+describe('getNetworkConfig genesisId', () => {
+    test('returns the canonical mainnet genesis id', () => {
+        expect(getNetworkConfig(Networks.mainnet).genesisId).toBe(
+            'mainnet-v1.0',
+        )
+    })
+
+    test('returns the canonical testnet genesis id', () => {
+        expect(getNetworkConfig(Networks.testnet).genesisId).toBe(
+            'testnet-v1.0',
+        )
+    })
+
+    test('returns the canonical betanet genesis id', () => {
+        expect(getNetworkConfig(Networks.betanet).genesisId).toBe(
+            'betanet-v1.0',
         )
     })
 })
