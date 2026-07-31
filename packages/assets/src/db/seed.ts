@@ -11,12 +11,29 @@
  */
 
 import type { Database } from '@perawallet/wallet-core-database'
+import { Networks } from '@perawallet/wallet-core-config'
 import { ALGO_ASSET } from '../models'
 import { upsertAssets } from './repository'
 
+/**
+ * Seeds the ALGO asset row for EVERY network.
+ *
+ * Derived from `Networks` rather than a hand-written list: this seed previously
+ * named mainnet and testnet literally, so when betanet and the runtime-
+ * configurable custom slot were added the row was silently missing for them.
+ * `useAssetsQuery` reads assets from this table (network-scoped) and only hits
+ * the network when explicitly asked to `fetchMissing`, so a missing ALGO row is
+ * not merely cosmetic — `InputScreen` gates its whole form on `!asset` and
+ * renders a spinner forever, making Send permanently unusable on the affected
+ * network. Iterating the enum means a future network cannot reintroduce that.
+ *
+ * ALGO's metadata is a local constant (`ALGO_ASSET`), so this needs no Pera
+ * service and is correct even on a network with no Pera deployment.
+ */
 export async function seedAlgoAsset(db: Database): Promise<void> {
     const items = [ALGO_ASSET]
 
-    await upsertAssets({ db, items, network: 'mainnet' })
-    await upsertAssets({ db, items, network: 'testnet' })
+    for (const network of Object.values(Networks)) {
+        await upsertAssets({ db, items, network })
+    }
 }
