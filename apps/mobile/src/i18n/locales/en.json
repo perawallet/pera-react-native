@@ -1475,7 +1475,9 @@
             "addresses_count": "{{count}} addresses",
             "select_all": "Select all",
             "already_imported": "already imported",
-            "finish_button": "Finish Account Creation"
+            "finish_button": "Finish Account Creation",
+            "all_imported_title": "Already in your wallet",
+            "all_imported_body": "Every address this wallet derives is already in Pera — including any you are only watching. Remove an address to re-add it with its private key."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed accounts found",
