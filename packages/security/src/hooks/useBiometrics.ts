@@ -18,6 +18,7 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from '@perawallet/wallet-core-kms'
 import { BIOMETRIC_BLOB_KEY_ID, PIN_RECORD_KEY_ID } from '../constants'
+import { useSecurityStore } from '../store'
 
 /**
  * Why enabling biometrics failed, so callers can show targeted guidance
@@ -69,7 +70,12 @@ export const useBiometrics = (): UseBiometricsResult => {
     const { commitSecret, withSecret, hasSecret, removeSecret } =
         useKMSService()
 
-    const [isEnabled, setIsEnabled] = useState(false)
+    // Shared, not per-hook: Settings, the lock screen and PIN edit all mount
+    // their own useBiometrics, and a reconcile that cleared a revoked blob used
+    // to update only the calling screen's copy — leaving the Settings toggle
+    // showing ON (PERA-4702). Granular selectors, per the store conventions.
+    const isEnabled = useSecurityStore(state => state.isBiometricsEnabled)
+    const setIsEnabled = useSecurityStore(state => state.setBiometricsEnabled)
     const [isAvailable, setIsAvailable] = useState(false)
 
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {

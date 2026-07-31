@@ -50,6 +50,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 import { useBiometrics, type EnableBiometricsResult } from '../useBiometrics'
 import { PIN_RECORD_KEY_ID, BIOMETRIC_BLOB_KEY_ID } from '../../constants'
+import { useSecurityStore } from '../../store'
 
 const wireBlobMocks = () => {
     kmsMocks.commitSecret.mockImplementation(
@@ -101,6 +102,9 @@ describe('useBiometrics', () => {
         kmsMocks.pinBytes = null
         kmsMocks.biometricBytes = null
         wireBlobMocks()
+        // isEnabled lives in the module-level store now, so it outlives a
+        // render and would leak into the next test.
+        useSecurityStore.getState().resetState()
         // Default to a device with a strong (class-3) biometric enrolled; tests
         // covering unavailable / weak / revoked devices override these.
         mockCheckBiometricsAvailable.mockResolvedValue(true)
@@ -488,6 +492,29 @@ describe('useBiometrics', () => {
         })
 
         expect(authenticated).toBe(false)
+    })
+
+    // The QA gap in the first revision: the reconcile cleared the blob but only
+    // the calling screen's copy of isEnabled, so Settings kept showing ON while
+    // the lock screen had already fallen back to PIN (PERA-4702).
+    test('a revoked blob clears isEnabled for every mounted consumer', async () => {
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+
+        const settings = await renderAndSettle()
+        const lockScreen = await renderAndSettle()
+
+        expect(settings.result.current.isEnabled).toBe(true)
+        expect(lockScreen.result.current.isEnabled).toBe(true)
+
+        // Enrollment removed in OS settings while the app was running.
+        mockCheckBiometricsAvailable.mockResolvedValue(false)
+
+        await act(async () => {
+            await lockScreen.result.current.checkBiometricsEnabled()
+        })
+
+        expect(lockScreen.result.current.isEnabled).toBe(false)
+        expect(settings.result.current.isEnabled).toBe(false)
     })
 
     test('authenticateWithBiometrics returns false on error', async () => {
