@@ -15,31 +15,13 @@ import { PWIcon, PWInput, type PWInputProps, PWView } from '@components/core'
 import { QRScannerView } from '@components/QRScannerView'
 import { useState } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
-import { parseDeeplink } from '@hooks/deeplink/parser'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useScannedAddress } from '@hooks/useScannedAddress'
 
 export type AddressEntryFieldProps = {
     allowQRCode?: boolean
     onScanned?: (address: string) => void
     testID?: string
 } & PWInputProps
-
-export const extractAddressFromScannedUrl = (url: string): Nullable<string> => {
-    if (isValidAlgorandAddress(url)) return url
-
-    const parsed = parseDeeplink(url)
-    if (!parsed) return null
-
-    if ('receiverAddress' in parsed && parsed.receiverAddress) {
-        return parsed.receiverAddress
-    }
-    if ('address' in parsed && parsed.address) {
-        return parsed.address
-    }
-
-    return null
-}
 
 export const AddressEntryField = ({
     allowQRCode,
@@ -49,11 +31,14 @@ export const AddressEntryField = ({
 }: AddressEntryFieldProps) => {
     const [scannerVisible, setScannerVisible] = useState(false)
     const { t } = useLanguage()
+    const resolveScannedAddress = useScannedAddress()
 
     const addressScanned = (url: string) => {
-        const address = extractAddressFromScannedUrl(url)
-
+        // Dismiss first: the error toast routes to the global Notifier, which
+        // renders behind this Modal's native window while it is open.
         setScannerVisible(false)
+
+        const address = resolveScannedAddress(url)
 
         if (address) {
             rest.onChangeText?.(address)

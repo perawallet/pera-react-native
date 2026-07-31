@@ -30,7 +30,7 @@ import {
 } from '@components/core'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { QRScannerView } from '@components/QRScannerView'
-import { extractAddressFromScannedUrl } from '@components/AddressEntryField/AddressEntryField'
+import { useScannedAddress } from '@hooks/useScannedAddress'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -69,6 +69,7 @@ export const ContactForm = <T extends FieldValues>({
     const styles = useStyles()
     const [scannerVisible, setScannerVisible] = useState(false)
     const addressInputRef = useRef<PWInputRef>(null)
+    const resolveScannedAddress = useScannedAddress()
 
     const renderAvatar = () => (
         <ContactAvatar
@@ -79,13 +80,15 @@ export const ContactForm = <T extends FieldValues>({
 
     const handleScan = useCallback(
         (url: string) => {
-            const scanned = extractAddressFromScannedUrl(url)
+            // Dismiss first: the error toast routes to the global Notifier,
+            // which renders behind this Modal's native window while it is open.
             setScannerVisible(false)
+            const scanned = resolveScannedAddress(url)
             if (scanned) {
                 onAddressInputChange?.(scanned)
             }
         },
-        [onAddressInputChange],
+        [onAddressInputChange, resolveScannedAddress],
     )
 
     const handleOpenScanner = useCallback(() => setScannerVisible(true), [])
