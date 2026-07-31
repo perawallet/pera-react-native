@@ -196,6 +196,26 @@ describe('useAccountBalances', () => {
 
         // 50 (456) + 0.5 (789) + 5 (ALGO) = 55.5 ALGO
         expect(result.current.portfolioAlgoValue).toEqual(new Decimal(55.5))
+        // 100 (456) + 1 (789) + 10 (ALGO) = $111
+        expect(accountData?.usdValue).toEqual(new Decimal(111))
+    })
+
+    it('treats a holding with no price as zero in the USD total', async () => {
+        mockGetAccountHoldingsPage.mockResolvedValue([
+            algoRow(1_000_000, 2), // 1 ALGO @ $2
+            asaRow('999', 100, 0, 0, 'Unpriced'),
+        ])
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(result.current.accountBalances.get('ADDR1')?.usdValue).toEqual(
+            new Decimal(2),
+        )
     })
 
     it('passes filters through to the holdings read', async () => {

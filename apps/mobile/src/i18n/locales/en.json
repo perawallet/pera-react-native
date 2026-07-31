@@ -2057,6 +2057,7 @@
             "title": "Send to Asset Inbox",
             "description": "The receiver is not opted into this asset. You can send it to their asset inbox instead.",
             "read_more": "Read more",
+            "recipient_label": "To",
             "fees_label": "Protocol & minimum balance fees",
             "disclaimer": "The fee above will be used to cover the minimum balance requirements of the receiver. If the receiver rejects the asset, you will not receive anything back."
         },

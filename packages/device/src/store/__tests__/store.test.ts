@@ -116,6 +116,49 @@ describe('device/store', () => {
         expect(result.current.deviceIDs).not.toBe(original)
     })
 
+    test('setDeviceIdOrigin tracks origins per network', async () => {
+        const { useDeviceStore } = await import('../index')
+        const { result } = renderHook(() => useDeviceStore())
+
+        expect(result.current.deviceIdOrigins).toEqual({})
+
+        act(() => {
+            result.current.setDeviceIdOrigin('mainnet', 'migrated')
+            result.current.setDeviceIdOrigin('testnet', 'migrated')
+            result.current.setDeviceIdOrigin('mainnet', 'recreated')
+        })
+
+        expect(result.current.deviceIdOrigins).toEqual({
+            mainnet: 'recreated',
+            testnet: 'migrated',
+        })
+    })
+
+    test('persists deviceIdOrigins', async () => {
+        const { useDeviceStore } = await import('../index')
+        act(() => {
+            useDeviceStore.getState().setDeviceIdOrigin('mainnet', 'migrated')
+        })
+
+        const { partialize } = useDeviceStore.persist.getOptions()
+        const persisted = partialize?.(useDeviceStore.getState())
+
+        expect(persisted).toMatchObject({
+            deviceIdOrigins: { mainnet: 'migrated' },
+        })
+    })
+
+    test('resetState clears deviceIdOrigins', async () => {
+        const { useDeviceStore } = await import('../index')
+        act(() => {
+            useDeviceStore.getState().setDeviceIdOrigin('mainnet', 'migrated')
+        })
+
+        act(() => useDeviceStore.getState().resetState())
+
+        expect(useDeviceStore.getState().deviceIdOrigins).toEqual({})
+    })
+
     test('does not persist pendingRegistrationNetworks', async () => {
         const { useDeviceStore } = await import('../index')
         act(() => {

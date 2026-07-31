@@ -97,6 +97,41 @@ export const useDeepLink = (): UseDeepLinkResult => {
         return parseDeeplink(url) !== null
     }
 
+    /**
+     * Runs a handler that opens its own bottom sheet, deliberately WITHOUT
+     * awaiting it.
+     *
+     * Sheets render at the app root; the QR scanner is a native `<Modal>` in a
+     * separate OS window above that root. The trailing `onSuccess?.()` below is
+     * what dismisses the Modal, so awaiting a handler that itself waits on a
+     * sheet pins the camera open on top of UI the user can neither see nor
+     * reach — it reads as a freeze rather than an error (PERA-4744).
+     *
+     * Every sheet-opening case must dispatch through here instead of `await`.
+     * WalletConnect is the one deliberate exception: the scanner observes its
+     * outcome to re-arm on a rejected handshake.
+     */
+    const dispatchDetached = (
+        run: Promise<unknown>,
+        parsedType: string,
+        url: string,
+    ): void => {
+        void run.catch(error => {
+            logger.error(error as Error, { type: parsedType })
+            showError({
+                variant: 'generic',
+                // Same rule as the outer catch: never hand the error sheet a
+                // PERA_WEB_IMPORT url, which carries the encryption key.
+                sourceUrl:
+                    parsedType === DeeplinkType.PERA_WEB_IMPORT
+                        ? undefined
+                        : url,
+                parsedType,
+                error,
+            })
+        })
+    }
+
     const handleDeepLink = async (
         url: string,
         replaceCurrentScreen: boolean = false,
@@ -285,11 +320,18 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // prompts the user to pick one; if the link names an
                     // address it's used directly. The handler also confirms,
                     // executes the opt-in, and surfaces already-opted-in /
-                    // insufficient-balance as readable errors.
-                    await optInAsset({
-                        assetId: parsedData.assetId,
-                        address: parsedData.address,
-                    })
+                    // insufficient-balance as readable errors — it owns its own
+                    // success/error toasts, so there is no outcome the scanner
+                    // needs to observe. Detached (see `dispatchDetached`)
+                    // because it awaits its own sheets.
+                    dispatchDetached(
+                        optInAsset({
+                            assetId: parsedData.assetId,
+                            address: parsedData.address,
+                        }),
+                        parsedData.type,
+                        url,
+                    )
                     break
                 }
 

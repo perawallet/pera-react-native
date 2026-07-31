@@ -79,6 +79,12 @@ export const buildTestPlatform = (
         async initializeNotifications() {
             return { unsubscribe: () => {} }
         },
+        async getPushToken() {
+            return undefined
+        },
+        addTokenRefreshListener() {
+            return () => {}
+        },
         addNotificationOpenListener() {
             return () => {}
         },

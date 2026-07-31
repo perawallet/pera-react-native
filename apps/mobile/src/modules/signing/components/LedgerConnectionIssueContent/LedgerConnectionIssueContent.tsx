@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
@@ -30,7 +31,8 @@ const TIP_KEYS = [
  * this component renders only the body.
  */
 export const LedgerConnectionIssueContent = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ bottomInset: insets.bottom })
     const { t } = useLanguage()
     // Re-run the signing actor after the user fixes the connection (unlock the
     // device, open the app, re-enable Bluetooth). The retry re-runs the

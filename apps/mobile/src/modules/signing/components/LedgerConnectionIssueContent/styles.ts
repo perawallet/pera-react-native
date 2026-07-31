@@ -13,9 +13,15 @@
 import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { bottomInset: number }
+
+export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
     container: {
         padding: theme.spacing.xl,
+        // PWBottomSheet draws edge-to-edge, so the content owns the bottom
+        // safe-area inset — without it the Retry button sits under the Android
+        // nav bar.
+        paddingBottom: theme.spacing.xl + bottomInset,
     },
     title: {
         ...getTypography(theme, 'h3'),

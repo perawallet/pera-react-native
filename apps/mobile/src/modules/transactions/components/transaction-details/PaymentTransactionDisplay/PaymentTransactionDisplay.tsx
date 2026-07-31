@@ -68,7 +68,10 @@ export const PaymentTransactionDisplay = ({
             />
 
             <PWView style={styles.detailContainer}>
-                <KeyValueRow title={t('transactions.common.amount')}>
+                <KeyValueRow
+                    testID='transaction_detail_amount'
+                    title={t('transactions.common.amount')}
+                >
                     <AssetAmount
                         asset={ALGO_ASSET}
                         value={amount}
@@ -78,13 +81,19 @@ export const PaymentTransactionDisplay = ({
                     />
                 </KeyValueRow>
 
-                <KeyValueRow title={t('transactions.common.from')}>
+                <KeyValueRow
+                    testID='transaction_detail_from'
+                    title={t('transactions.common.from')}
+                >
                     <PWView style={styles.detailRow}>
                         <AddressDisplay address={senderAddress} />
                     </PWView>
                 </KeyValueRow>
 
-                <KeyValueRow title={t('transactions.common.to')}>
+                <KeyValueRow
+                    testID='transaction_detail_to'
+                    title={t('transactions.common.to')}
+                >
                     <PWView style={styles.detailRow}>
                         <AddressDisplay address={receiverAddress ?? ''} />
                     </PWView>

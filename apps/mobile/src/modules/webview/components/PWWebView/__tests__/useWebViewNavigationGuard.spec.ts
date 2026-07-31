@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { Linking } from 'react-native'
 import { useWebViewNavigationGuard } from '../useWebViewNavigationGuard'
 
@@ -38,12 +38,35 @@ const renderGuard = (isTrustedOrigin: boolean) =>
         }),
     )
 
+// The social branch reads install results pre-warmed in a mount effect, so
+// these renders flush that promise chain before asserting.
+const renderSocialGuard = async (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    webviewRef?: any,
+    isTrustedOrigin = true,
+) => {
+    const rendered = renderHook(() =>
+        useWebViewNavigationGuard({
+            isTrustedOrigin,
+            pageUrl: isTrustedOrigin
+                ? 'https://discover.perawallet.app/'
+                : 'https://evil.example/',
+            webviewRef,
+        }),
+    )
+    await act(async () => {})
+    return rendered
+}
+
 const RECEIVER = '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 
 describe('useWebViewNavigationGuard', () => {
     beforeEach(() => {
         handleDeepLink.mockReset()
-        vi.spyOn(Linking, 'openURL').mockResolvedValue(true)
+        // Default to "no social app installed" so the guard's mount probes
+        // resolve false and only the social tests opt into a handoff.
+        vi.spyOn(Linking, 'canOpenURL').mockReset().mockResolvedValue(false)
+        vi.spyOn(Linking, 'openURL').mockReset().mockResolvedValue(true)
     })
 
     it('allows http/https navigation to load inside the WebView', () => {
@@ -238,5 +261,109 @@ describe('useWebViewNavigationGuard', () => {
             ),
         ).toBe(false)
         expect(handleDeepLink).not.toHaveBeenCalled()
+    })
+
+    describe('social media handoff', () => {
+        it('opens the native app and blocks the web load when installed', async () => {
+            vi.mocked(Linking.canOpenURL).mockResolvedValue(true)
+            const { result } = await renderSocialGuard()
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('https://twitter.com/PeraAlgoWallet'),
+                ),
+            ).toBe(false)
+            expect(Linking.openURL).toHaveBeenCalledWith(
+                'twitter://user?screen_name=PeraAlgoWallet',
+            )
+            expect(handleDeepLink).not.toHaveBeenCalled()
+        })
+
+        it('hands off from an untrusted origin too — opening X is not a wallet capability', async () => {
+            vi.mocked(Linking.canOpenURL).mockResolvedValue(true)
+            const { result } = await renderSocialGuard(undefined, false)
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('https://twitter.com/PeraAlgoWallet'),
+                ),
+            ).toBe(false)
+            expect(Linking.openURL).toHaveBeenCalledWith(
+                'twitter://user?screen_name=PeraAlgoWallet',
+            )
+            expect(handleDeepLink).not.toHaveBeenCalled()
+        })
+
+        it('routes a social app-scheme link straight to the installed app', async () => {
+            vi.mocked(Linking.canOpenURL).mockResolvedValue(true)
+            const { result } = await renderSocialGuard()
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('tg://resolve?domain=PeraWallet'),
+                ),
+            ).toBe(false)
+            expect(Linking.openURL).toHaveBeenCalledWith(
+                'tg://resolve?domain=PeraWallet',
+            )
+        })
+
+        it('falls through to the in-app web load when the app is not installed', async () => {
+            const { result } = await renderSocialGuard()
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('https://t.me/PeraWallet'),
+                ),
+            ).toBe(true)
+            expect(Linking.openURL).not.toHaveBeenCalled()
+        })
+
+        it('drives the web load itself when the handoff fails, so the tap is not swallowed', async () => {
+            vi.mocked(Linking.canOpenURL).mockResolvedValue(true)
+            vi.mocked(Linking.openURL).mockRejectedValue(new Error('no app'))
+            const injectJavaScript = vi.fn()
+            const { result } = await renderSocialGuard({
+                current: { injectJavaScript },
+            })
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('https://x.com/perawallet'),
+                ),
+            ).toBe(false)
+
+            await act(async () => {})
+
+            expect(injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('https://x.com/perawallet'),
+            )
+        })
+
+        it('treats a failing install check as not installed', async () => {
+            vi.mocked(Linking.canOpenURL).mockRejectedValue(
+                new Error('unsupported'),
+            )
+            const { result } = await renderSocialGuard()
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('https://discord.com/invite/gR2UdkCTXQ'),
+                ),
+            ).toBe(true)
+            expect(Linking.openURL).not.toHaveBeenCalled()
+        })
+
+        it('loads reserved twitter paths in the webview even when the app is installed', async () => {
+            vi.mocked(Linking.canOpenURL).mockResolvedValue(true)
+            const { result } = await renderSocialGuard()
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('https://twitter.com/home'),
+                ),
+            ).toBe(true)
+            expect(Linking.openURL).not.toHaveBeenCalled()
+        })
     })
 })

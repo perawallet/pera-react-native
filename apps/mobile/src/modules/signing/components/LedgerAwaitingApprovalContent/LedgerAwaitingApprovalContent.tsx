@@ -11,6 +11,7 @@
  */
 
 import React from 'react'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWButton, PWLottie, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -61,7 +62,11 @@ export const LedgerAwaitingApprovalContent = ({
             ? Math.min(100, Math.max(0, (currentTx / totalTxs) * 100))
             : 0
 
-    const styles = useStyles({ progressFillPercent })
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({
+        progressFillPercent,
+        bottomInset: insets.bottom,
+    })
 
     return (
         <PWView style={styles.container}>

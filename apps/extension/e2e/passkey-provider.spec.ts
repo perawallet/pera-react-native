@@ -27,13 +27,13 @@ import {
     chromium,
     type BrowserContext,
     type CDPSession,
-    type Locator,
     type Page,
 } from '@playwright/test'
 import http from 'node:http'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
 
 declare global {
     interface Window {
@@ -88,33 +88,6 @@ const trackPageErrors = (targetPage: Page): Error[] => {
     const errors: Error[] = []
     targetPage.on('pageerror', error => errors.push(error))
     return errors
-}
-
-// PromptContainer's one-time security nudge fires on a wall-clock delay from
-// account creation (see wallet-smoke.spec.ts) — dismiss it wherever it lands.
-const dismissPinPromptIfPresent = async (targetPage: Page): Promise<void> => {
-    const notNow = targetPage.getByTestId('pin_security_prompt_not_now_button')
-    if (await notNow.isVisible().catch(() => false)) {
-        await notNow.click()
-    }
-}
-
-// Same click-through-the-pin-prompt-race guard as feature-tabs.spec.ts /
-// discover.spec.ts.
-const clickThroughPinPrompt = async (
-    targetPage: Page,
-    locator: Locator,
-): Promise<void> => {
-    for (let attempt = 0; attempt < 5; attempt++) {
-        await dismissPinPromptIfPresent(targetPage)
-        const clicked = await locator
-            .click({ timeout: 3000 })
-            .then(() => true)
-            .catch(() => false)
-        if (clicked) return
-        await dismissPinPromptIfPresent(targetPage)
-    }
-    await locator.click({ timeout: 10_000 })
 }
 
 // A platform ('internal') virtual authenticator with automatic presence
@@ -517,19 +490,30 @@ test('interception on: get() asserts against the stored credential and the RP pa
 // directly from a user gesture), not a bug in this repo's fall-through
 // logic. Clearing the authenticator's existing credential first (test 1
 // already minted one for this rpId) narrows but does not eliminate it — the
-// retry loop below is load-bearing, not defensive padding, and 8 attempts
-// (measured ~50% single-attempt failure rate) keeps the overall flake
-// probability well under 1%.
+// retry loop below is load-bearing, not defensive padding.
+//
+// The original budget of 8 attempts assumed a ~50% single-attempt failure
+// rate. CI says otherwise: this test still failed on 3 of the last ~30
+// Pre-Merge runs across four unrelated branches, which puts the real rate
+// near 75% (0.75^8 ≈ 10%). A hung attempt always burns the full poll window,
+// so the budget is raised and the per-attempt poll shortened to buy the extra
+// attempts back in wall-clock: 20 × 5s ≈ 0.3% expected failure, at a
+// worst-case cost close to the old 8 × 8s. Shortening the poll is safe
+// because the ceremony either resolves promptly or hangs forever — it does
+// not resolve slowly.
 //
 // CRITICAL: each attempt must start from a fresh document. A hung create()
 // stays pending on the document, and every further create() on that same
 // document rejects immediately with "OperationError: A request is already
 // pending." (verified against this exact fixture by driving it with a
 // non-simulating virtual authenticator) — so a re-click without a reload
-// can never recover, and the loop's 8 attempts collapse into one coin flip.
-// That is precisely how this test's first CI run failed 8/8. The reload
+// can never recover, and the loop's attempts collapse into one coin flip.
+// That is precisely how this test's first CI run failed every attempt. The reload
 // tears the pending ceremony down with the document; the CDP virtual
 // authenticator is attached to the CDP session, so it survives the reload.
+const FALLTHROUGH_MAX_ATTEMPTS = 20
+const FALLTHROUGH_POLL_MS = 5000
+
 const attemptDeclineFallThrough = async (): Promise<{
     resolved: boolean
     approvalErrors: Error[]
@@ -551,7 +535,7 @@ const attemptDeclineFallThrough = async (): Promise<{
 
     const resolved = await expect
         .poll(() => dappPage.locator('#create-credential-id').textContent(), {
-            timeout: 8000,
+            timeout: FALLTHROUGH_POLL_MS,
         })
         .not.toBe('')
         .then(() => true)
@@ -568,12 +552,16 @@ test('declining the consent screen falls through to the native virtual authentic
 
     let resolved = false
     let approvalErrors: Error[] = []
-    for (let attempt = 0; attempt < 8 && !resolved; attempt++) {
+    for (
+        let attempt = 0;
+        attempt < FALLTHROUGH_MAX_ATTEMPTS && !resolved;
+        attempt++
+    ) {
         ;({ resolved, approvalErrors } = await attemptDeclineFallThrough())
     }
     expect(
         resolved,
-        'fallthrough create() never resolved after 8 attempts',
+        `fallthrough create() never resolved after ${FALLTHROUGH_MAX_ATTEMPTS} attempts`,
     ).toBe(true)
     // A resolved credential from the virtual authenticator, NOT a rejection
     // — passkey-router.ts's DECLINE collapses to the content script's

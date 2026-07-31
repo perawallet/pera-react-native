@@ -145,6 +145,7 @@ const balancesWith = (algo: string, usdc: string): AccountBalances =>
                     },
                 ],
                 algoValue: new Decimal(algo),
+                usdValue: new Decimal(0),
                 isPending: false,
                 isFetched: true,
                 isRefetching: false,

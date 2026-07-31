@@ -27,6 +27,7 @@ const initialState = {
     lockoutEndTime: null,
     autoLockStartedAt: null,
     lockRequestVersion: 0,
+    isAppLockActive: false,
 }
 
 // `autoLockStartedAt` is persisted to unencrypted storage; a tampered/corrupt
@@ -68,6 +69,8 @@ export const useSecurityStore: UseBoundStore<
                 set(state => ({
                     lockRequestVersion: state.lockRequestVersion + 1,
                 })),
+            setAppLockActive: (active: boolean) =>
+                set({ isAppLockActive: active }),
             resetState: () => set(initialState),
         }),
         {

@@ -19,10 +19,13 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useSignRequestDriver } from '../useSignRequestDriver'
 
-const { requestBottomSheetMock, dismissMock } = vi.hoisted(() => ({
-    requestBottomSheetMock: vi.fn(() => new Promise(() => {})),
-    dismissMock: vi.fn(),
-}))
+const { requestBottomSheetMock, dismissMock, hostCountState, appLockState } =
+    vi.hoisted(() => ({
+        requestBottomSheetMock: vi.fn(() => new Promise(() => {})),
+        dismissMock: vi.fn(),
+        hostCountState: { current: 1 },
+        appLockState: { current: false },
+    }))
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({
@@ -31,6 +34,14 @@ vi.mock('@modules/bottom-sheet', () => ({
         requestByType: vi.fn(),
         dismissAll: vi.fn(),
     }),
+    useBottomSheetStore: (selector: (state: { hostCount: number }) => number) =>
+        selector({ hostCount: hostCountState.current }),
+}))
+
+vi.mock('@perawallet/wallet-core-security', () => ({
+    useSecurityStore: (
+        selector: (state: { isAppLockActive: boolean }) => boolean,
+    ) => selector({ isAppLockActive: appLockState.current }),
 }))
 
 vi.mock('../../SignRequestContent', () => ({
@@ -79,6 +90,8 @@ const mockQueue = (
 describe('useSignRequestDriver', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        hostCountState.current = 1
+        appLockState.current = false
     })
 
     it('opens the sheet for the first interactive request', () => {
@@ -153,5 +166,84 @@ describe('useSignRequestDriver', () => {
         rerender()
 
         expect(dismissMock).toHaveBeenCalledWith('wc-request')
+    })
+
+    it('waits for a bottom-sheet host before opening', () => {
+        // BottomSheetManager can be unmounted during route-tree swaps
+        // (migration/onboarding gates). Requesting a sheet then rejects and
+        // previously wedged the queue — the driver must hold the request and
+        // open once a host registers.
+        hostCountState.current = 0
+        mockQueue([wcRequest])
+        const { rerender } = renderHook(() => useSignRequestDriver())
+
+        expect(requestBottomSheetMock).not.toHaveBeenCalled()
+
+        hostCountState.current = 1
+        rerender()
+
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+        expect(requestBottomSheetMock).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'wc-request' }),
+        )
+    })
+
+    it('holds the sheet while the app lock overlay is active, presents on unlock', () => {
+        // A dApp request arriving while the auto-lock overlay covers the app
+        // must not present into the covered layer — that reads as "entered my
+        // PIN, then the TX appeared" in the field (PERA-4743). The unlock
+        // flips the flag and the effect re-runs.
+        appLockState.current = true
+        mockQueue([wcRequest])
+        const { rerender } = renderHook(() => useSignRequestDriver())
+
+        expect(requestBottomSheetMock).not.toHaveBeenCalled()
+
+        appLockState.current = false
+        rerender()
+
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+        expect(requestBottomSheetMock).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'wc-request' }),
+        )
+    })
+
+    it('keeps an already-open sheet mounted across a relock, and still dismisses on queue drain', () => {
+        mockQueue([wcRequest])
+        const { rerender } = renderHook(() => useSignRequestDriver())
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+
+        // Relock with the sheet open: leave it mounted (it sits behind the
+        // lock overlay), do not churn the bookkeeping.
+        appLockState.current = true
+        rerender()
+        expect(dismissMock).not.toHaveBeenCalled()
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+
+        // The request settles while still locked (e.g. dApp cancels): the
+        // hidden sheet must still be dismissed so it isn't stale on unlock.
+        mockQueue([])
+        rerender()
+        expect(dismissMock).toHaveBeenCalledWith('wc-request')
+    })
+
+    it('re-opens the sheet after the host unmounts mid-display', () => {
+        mockQueue([wcRequest])
+        const { rerender } = renderHook(() => useSignRequestDriver())
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+
+        // Last host unmounted: the store force-settled the sheet promise;
+        // the request is still pending in the signing queue.
+        hostCountState.current = 0
+        rerender()
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
+
+        hostCountState.current = 1
+        rerender()
+
+        expect(requestBottomSheetMock).toHaveBeenCalledTimes(2)
+        expect(requestBottomSheetMock).toHaveBeenLastCalledWith(
+            expect.objectContaining({ id: 'wc-request' }),
+        )
     })
 })

@@ -399,10 +399,10 @@ describe('useWalletConnectHandlers', () => {
         ;(useNetwork as any).mockReturnValue({
             network: Networks.mainnet,
         })
-        ;(useWalletConnectStore as any).mockImplementation((selector: any) =>
-            selector({ walletConnectConnections: mockSessions }),
-        )
+        // Validation reads connections via getState() at request time (the
+        // hook holds no render subscription on the store anymore).
         ;(useWalletConnectStore as any).getState = () => ({
+            walletConnectConnections: mockSessions,
             setConnectionError: mockSetConnectionError,
         })
         // Default: ensureConnectorReady resolves to a connector with
@@ -620,9 +620,10 @@ describe('useWalletConnectHandlers', () => {
         })
 
         it('should throw WalletConnectInvalidSessionError if session not found', () => {
-            ;(useWalletConnectStore as any).mockImplementation(
-                (selector: any) => selector({ walletConnectConnections: [] }),
-            )
+            ;(useWalletConnectStore as any).getState = () => ({
+                walletConnectConnections: [],
+                setConnectionError: mockSetConnectionError,
+            })
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = { clientId: 'test-client-id' }
 
@@ -637,20 +638,18 @@ describe('useWalletConnectHandlers', () => {
         })
 
         it('should throw WalletConnectInvalidNetworkError if chainId mismatches', () => {
-            ;(useWalletConnectStore as any).mockImplementation(
-                (selector: any) =>
-                    selector({
-                        walletConnectConnections: [
-                            {
-                                clientId: 'test-client-id',
-                                session: {
-                                    clientId: 'test-client-id',
-                                    chainId: 999999,
-                                },
-                            },
-                        ],
-                    }),
-            )
+            ;(useWalletConnectStore as any).getState = () => ({
+                walletConnectConnections: [
+                    {
+                        clientId: 'test-client-id',
+                        session: {
+                            clientId: 'test-client-id',
+                            chainId: 999999,
+                        },
+                    },
+                ],
+                setConnectionError: mockSetConnectionError,
+            })
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = { clientId: 'test-client-id' }
 
@@ -847,21 +846,19 @@ describe('useWalletConnectHandlers', () => {
                     type: 'hardware',
                 },
             ]
-            ;(useWalletConnectStore as any).mockImplementation(
-                (selector: any) =>
-                    selector({
-                        walletConnectConnections: [
-                            {
-                                clientId: 'test-client-id',
-                                session: {
-                                    clientId: 'test-client-id',
-                                    chainId: 4160,
-                                    accounts: ['ledger-addr'],
-                                },
-                            },
-                        ],
-                    }),
-            )
+            ;(useWalletConnectStore as any).getState = () => ({
+                walletConnectConnections: [
+                    {
+                        clientId: 'test-client-id',
+                        session: {
+                            clientId: 'test-client-id',
+                            chainId: 4160,
+                            accounts: ['ledger-addr'],
+                        },
+                    },
+                ],
+                setConnectionError: mockSetConnectionError,
+            })
             ;(isHardwareWalletAccount as any).mockReturnValue(true)
 
             const { result } = renderHook(() => useWalletConnectHandlers())
@@ -1011,9 +1008,10 @@ describe('useWalletConnectHandlers', () => {
         })
 
         it('throws WalletConnectInvalidSessionError when no session matches', () => {
-            ;(useWalletConnectStore as any).mockImplementation(
-                (selector: any) => selector({ walletConnectConnections: [] }),
-            )
+            ;(useWalletConnectStore as any).getState = () => ({
+                walletConnectConnections: [],
+                setConnectionError: mockSetConnectionError,
+            })
             const { result } = renderHook(() => useWalletConnectHandlers())
 
             expect(() =>
@@ -1024,6 +1022,36 @@ describe('useWalletConnectHandlers', () => {
                     {} as WalletConnectTransactionPayload,
                 ),
             ).toThrow(WalletConnectInvalidSessionError)
+        })
+
+        it('validates against live store state, not the handler render snapshot', () => {
+            // First algo_signTxn right after pairing: the handlers were bound
+            // from a render that happened before approval, so the store is
+            // empty at render time and only gains the session afterwards.
+            ;(useWalletConnectStore as any).getState = () => ({
+                walletConnectConnections: [],
+                setConnectionError: mockSetConnectionError,
+            })
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            ;(useWalletConnectStore as any).getState = () => ({
+                walletConnectConnections: mockSessions,
+                setConnectionError: mockSetConnectionError,
+            })
+            const connector = {
+                clientId: 'test-client-id',
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+
+            expect(() =>
+                result.current.handleSignTransaction(
+                    connector as any,
+                    Networks.mainnet,
+                    null,
+                    txnPayload(),
+                ),
+            ).not.toThrow()
+            expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
         })
 
         it('excludes transactions with signers: [] from the sign request', () => {
@@ -1417,22 +1445,20 @@ describe('useWalletConnectHandlers', () => {
             ;(useAllAccounts as any).mockImplementation(
                 () => signingAccountsState.current,
             )
-            ;(useWalletConnectStore as any).mockImplementation(
-                (selector: any) =>
-                    selector({
-                        walletConnectConnections: [
-                            {
-                                clientId: 'test-client-id',
-                                session: {
-                                    clientId: 'test-client-id',
-                                    chainId: 4160,
-                                    accounts: ['addr1'],
-                                    peerMeta: approvedPeerMeta,
-                                },
-                            },
-                        ],
-                    }),
-            )
+            ;(useWalletConnectStore as any).getState = () => ({
+                walletConnectConnections: [
+                    {
+                        clientId: 'test-client-id',
+                        session: {
+                            clientId: 'test-client-id',
+                            chainId: 4160,
+                            accounts: ['addr1'],
+                            peerMeta: approvedPeerMeta,
+                        },
+                    },
+                ],
+                setConnectionError: mockSetConnectionError,
+            })
         })
 
         const spoofedConnector = () => ({

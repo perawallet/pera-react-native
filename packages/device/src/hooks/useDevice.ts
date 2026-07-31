@@ -17,6 +17,7 @@ import {
     type Network,
 } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { logEvent } from '@perawallet/wallet-core-analytics'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useCreateDeviceMutation } from './useCreateDeviceMutation'
 import { useUpdateDeviceMutation } from './useUpdateDeviceMutation'
@@ -26,6 +27,7 @@ import { useDeviceStore } from '../store'
 import { updateDevice as updateDeviceEndpoint } from './endpoints'
 
 const DEVICE_ALREADY_EXISTS = 'device_already_exists'
+const MIGRATED_DEVICE_ID_REPLACED_EVENT = 'migrated_device_id_replaced'
 
 const shouldRecreateDevice = (error: unknown): boolean =>
     isNotFoundError(error) ||
@@ -37,6 +39,7 @@ export const useDevice = () => {
     const deviceId = useDeviceID(network)
     const { pushToken } = usePushToken()
     const setDeviceID = useDeviceStore(state => state.setDeviceID)
+    const setDeviceIdOrigin = useDeviceStore(state => state.setDeviceIdOrigin)
     const deviceInfoService = getProvider().deviceInfo
 
     const { mutateAsync: createDevice } = useCreateDeviceMutation()
@@ -126,15 +129,44 @@ export const useDevice = () => {
                 return { createdNew: false }
             } catch (error) {
                 if (!shouldRecreateDevice(error)) throw error
+                // Read live from the store rather than a subscribed snapshot:
+                // the origin is only needed at recreate time, and subscribing
+                // would rebuild this callback on every unrelated origin flip.
+                const isReplacingMigratedId =
+                    useDeviceStore.getState().deviceIdOrigins[targetNetwork] ===
+                    'migrated'
                 await createDeviceForNetwork(
                     targetNetwork,
                     addresses,
                     attemptId,
                 )
+                // Replacing a migrated id orphans its device-keyed server
+                // state (Discover favorites, price alerts, banner
+                // dismissals) — no reconciliation endpoint exists yet
+                // (PERA-4670), so the loss is only made observable here.
+                if (
+                    isReplacingMigratedId &&
+                    inFlightIdRef.current === attemptId
+                ) {
+                    setDeviceIdOrigin(targetNetwork, 'recreated')
+                    logEvent(MIGRATED_DEVICE_ID_REPLACED_EVENT, {
+                        network: targetNetwork,
+                        reason: isNotFoundError(error)
+                            ? 'not_found'
+                            : DEVICE_ALREADY_EXISTS,
+                    })
+                }
                 return { createdNew: true }
             }
         },
-        [deviceId, network, buildPayload, updateDevice, createDeviceForNetwork],
+        [
+            deviceId,
+            network,
+            buildPayload,
+            updateDevice,
+            createDeviceForNetwork,
+            setDeviceIdOrigin,
+        ],
     )
 
     /**

@@ -30,8 +30,7 @@ internal class AuthReader(
 
     fun build(): WritableMap {
         val auth = Arguments.createMap()
-        val raw = prefs.optString("lock_password") ?: decryptEncryptedPin()
-        val pin = raw?.let(::normalizeLegacyPinString)
+        val pin = decryptEncryptedPin()?.let(::normalizeLegacyPinString)
         if (pin != null) {
             auth.putString("pin", Base64Util.encode(pin.toByteArray(Charsets.UTF_8)))
         } else {

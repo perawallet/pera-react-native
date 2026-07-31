@@ -17,12 +17,16 @@ const LOTTIE_WIDTH = 164
 const LOTTIE_HEIGHT = 48
 const PROGRESS_BAR_HEIGHT = 2
 
-type StyleProps = { progressFillPercent: number }
+type StyleProps = { progressFillPercent: number; bottomInset: number }
 
 export const useStyles = makeStyles(
-    (theme, { progressFillPercent }: StyleProps) => ({
+    (theme, { progressFillPercent, bottomInset }: StyleProps) => ({
         container: {
             padding: theme.spacing.xl,
+            // PWBottomSheet draws edge-to-edge, so the content owns the bottom
+            // safe-area inset — without it the footnote renders under the
+            // Android nav bar.
+            paddingBottom: theme.spacing.xl + bottomInset,
             alignItems: 'center',
         },
         lottie: {

@@ -40,10 +40,24 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const lockRequestVersion = useSecurityStore(
         state => state.lockRequestVersion,
     )
+    const setAppLockActive = useSecurityStore(state => state.setAppLockActive)
 
     const [isLocked, setIsLocked] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
     const [isChecking, setIsChecking] = useState(false)
+
+    // Mirror the guard overlay into the security store so UI drivers outside
+    // this component (e.g. the sign-request sheet driver) can hold new
+    // presentation while the overlay covers the app — otherwise a sheet
+    // presents into the covered layer and "pops in" the moment the PIN is
+    // accepted (PERA-4743).
+    const isGuardActive = isLocked || isChecking || !isInitialized
+    useEffect(() => {
+        setAppLockActive(isGuardActive)
+    }, [setAppLockActive, isGuardActive])
+    // Never leave the flag stuck on if the guard unmounts (route-tree swap) —
+    // a stale `true` would hold sign sheets forever.
+    useEffect(() => () => setAppLockActive(false), [setAppLockActive])
     const appState = useRef<AppStateValue>(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
     const isForegroundCheckInFlight = useRef(false)

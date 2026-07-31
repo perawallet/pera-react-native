@@ -24,3 +24,4 @@ export {
     useRequirePinVerification,
     type UseRequirePinVerificationResult,
 } from './hooks/useRequirePinVerification'
+export { useIsLockOverlayVisible } from './components/AutoLockGuard/lockOverlayContext'

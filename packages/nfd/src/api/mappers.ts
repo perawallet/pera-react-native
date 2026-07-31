@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { logger } from '@perawallet/wallet-core-shared'
 import type { NfdBulkResult, NfdName, NfdSearchResult } from '../models'
 import type {
     NfdBulkReadApiResponse,
@@ -39,11 +41,24 @@ export const transformBulkResults = (
 export const transformSearchResults = (
     response: NfdSearchApiResponse,
 ): NfdSearchResult[] =>
-    response.results.map(item => ({
-        name: item.name,
-        address: item.address,
-        service: {
-            name: item.service.name,
-            logo: item.service.logo,
-        },
-    }))
+    response.results
+        // A name search returns a backend-asserted address that can become a
+        // send destination. The backend is semi-trusted, so a malformed/garbage
+        // address must never reach the destination picker. This closes the
+        // malformed-response case; a VALID attacker-supplied address still needs
+        // on-chain registry verification (PERA-4718, follow-up).
+        .filter(item => {
+            if (isValidAlgorandAddress(item.address)) return true
+            logger.warn('NFD search result dropped: invalid Algorand address', {
+                name: item.name,
+            })
+            return false
+        })
+        .map(item => ({
+            name: item.name,
+            address: item.address,
+            service: {
+                name: item.service.name,
+                logo: item.service.logo,
+            },
+        }))

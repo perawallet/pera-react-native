@@ -20,6 +20,7 @@ import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 const mockCreateDevice = vi.fn()
 const mockUpdateDevice = vi.fn()
 const mockUpdateDeviceEndpoint = vi.fn()
+const mockLogEvent = vi.fn()
 
 vi.mock('../useCreateDeviceMutation', () => ({
     useCreateDeviceMutation: () => ({
@@ -35,6 +36,10 @@ vi.mock('../useUpdateDeviceMutation', () => ({
 
 vi.mock('../endpoints', () => ({
     updateDevice: (...args: unknown[]) => mockUpdateDeviceEndpoint(...args),
+}))
+
+vi.mock('@perawallet/wallet-core-analytics', () => ({
+    logEvent: (...args: unknown[]) => mockLogEvent(...args),
 }))
 
 // Mock device info service via provider
@@ -282,6 +287,54 @@ describe('services/device/hooks', () => {
 
         expect(mockCreateDevice).not.toHaveBeenCalled()
         expect(registrationResult).toEqual({ createdNew: false })
+    })
+
+    // A rotated push token reaches the backend only because writing it changes
+    // registerDevice's identity, which useDeviceRegistration lists in the deps
+    // of its registering effect. Nothing calls registerDevice on the write, so
+    // memoising registerDevice to a stable reference would silently strand
+    // every token rotation on the device. Both halves are asserted here.
+    test('useDevice re-issues registerDevice when the push token changes, carrying the new token', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+
+        const { result: store } = renderHook(() => useDeviceStore())
+        act(() => {
+            store.current.setDeviceID('mainnet', 'existing-id')
+            store.current.setPushToken('OLD_TOKEN')
+        })
+
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
+
+        const { result } = renderHook(() => useDevice(), { wrapper })
+        const registerBefore = result.current.registerDevice
+
+        act(() => {
+            store.current.setPushToken('NEW_TOKEN')
+        })
+
+        expect(result.current.registerDevice).not.toBe(registerBefore)
+
+        await act(async () => {
+            await result.current.registerDevice(['account-1'])
+        })
+
+        expect(mockUpdateDevice).toHaveBeenCalledWith({
+            deviceId: 'existing-id',
+            data: expect.objectContaining({ push_token: 'NEW_TOKEN' }),
+        })
     })
 
     test('useDevice falls back to createDevice when updateDevice 404s (stale id)', async () => {
@@ -561,6 +614,163 @@ describe('services/device/hooks', () => {
         expect(mockCreateDevice).toHaveBeenCalledOnce()
         expect(store.current.deviceIDs.get('mainnet')).toBe('DEV-2')
         expect(registrationResult).toEqual({ createdNew: true })
+    })
+
+    test('emits the replacement event and flips the origin when the recreate-fallback replaces a migrated id', async () => {
+        vi.resetModules()
+        mockUpdateDevice.mockRejectedValueOnce(
+            new PeraNetworkError('client', { status: 404 }),
+        )
+        mockCreateDevice.mockResolvedValueOnce({ id: 'FRESH-1' })
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+        const { result: store } = renderHook(() => useDeviceStore())
+        act(() => {
+            store.current.setDeviceID('mainnet', 'MIGRATED-1')
+            store.current.setDeviceIdOrigin('mainnet', 'migrated')
+        })
+
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
+
+        const { result } = renderHook(() => useDevice(), { wrapper })
+
+        await act(async () => {
+            await result.current.registerDevice(['ADDR'])
+        })
+
+        expect(store.current.deviceIDs.get('mainnet')).toBe('FRESH-1')
+        expect(store.current.deviceIdOrigins.mainnet).toBe('recreated')
+        expect(mockLogEvent).toHaveBeenCalledExactlyOnceWith(
+            'migrated_device_id_replaced',
+            { network: 'mainnet', reason: 'not_found' },
+        )
+    })
+
+    test('reports device_already_exists as the replacement reason', async () => {
+        vi.resetModules()
+        mockUpdateDevice.mockRejectedValueOnce(
+            new PeraNetworkError('client', {
+                status: 400,
+                backendType: 'device_already_exists',
+            }),
+        )
+        mockCreateDevice.mockResolvedValueOnce({ id: 'FRESH-2' })
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+        const { result: store } = renderHook(() => useDeviceStore())
+        act(() => {
+            store.current.setDeviceID('mainnet', 'MIGRATED-1')
+            store.current.setDeviceIdOrigin('mainnet', 'migrated')
+        })
+
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
+
+        const { result } = renderHook(() => useDevice(), { wrapper })
+
+        await act(async () => {
+            await result.current.registerDevice(['ADDR'])
+        })
+
+        expect(mockLogEvent).toHaveBeenCalledExactlyOnceWith(
+            'migrated_device_id_replaced',
+            { network: 'mainnet', reason: 'device_already_exists' },
+        )
+    })
+
+    test('emits no replacement event when the recreated id did not come from migration', async () => {
+        vi.resetModules()
+        mockUpdateDevice.mockRejectedValueOnce(
+            new PeraNetworkError('client', { status: 404 }),
+        )
+        mockCreateDevice.mockResolvedValueOnce({ id: 'FRESH-3' })
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+        const { result: store } = renderHook(() => useDeviceStore())
+        act(() => {
+            store.current.setDeviceID('mainnet', 'stale-id')
+        })
+
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
+
+        const { result } = renderHook(() => useDevice(), { wrapper })
+
+        await act(async () => {
+            await result.current.registerDevice(['ADDR'])
+        })
+
+        expect(store.current.deviceIDs.get('mainnet')).toBe('FRESH-3')
+        expect(mockLogEvent).not.toHaveBeenCalled()
+        expect(store.current.deviceIdOrigins.mainnet).toBeUndefined()
+    })
+
+    test('a successful PUT preserves the migrated id and its origin without emitting', async () => {
+        vi.resetModules()
+
+        const { useDeviceStore } = await import('../../store')
+        const { useDevice } = await import('../useDevice')
+
+        useDeviceStore.getState().resetState()
+        const { result: store } = renderHook(() => useDeviceStore())
+        act(() => {
+            store.current.setDeviceID('mainnet', 'MIGRATED-1')
+            store.current.setDeviceIdOrigin('mainnet', 'migrated')
+        })
+
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
+
+        const { result } = renderHook(() => useDevice(), { wrapper })
+
+        let registrationResult: { createdNew: boolean } | undefined
+        await act(async () => {
+            registrationResult = await result.current.registerDevice(['ADDR'])
+        })
+
+        expect(mockCreateDevice).not.toHaveBeenCalled()
+        expect(store.current.deviceIDs.get('mainnet')).toBe('MIGRATED-1')
+        expect(store.current.deviceIdOrigins.mainnet).toBe('migrated')
+        expect(mockLogEvent).not.toHaveBeenCalled()
+        expect(registrationResult).toEqual({ createdNew: false })
     })
 
     test('still rethrows unrelated client errors without re-creating', async () => {
