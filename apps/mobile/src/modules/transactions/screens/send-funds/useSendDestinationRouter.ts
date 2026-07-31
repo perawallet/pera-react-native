@@ -155,7 +155,8 @@ export const useSendDestinationRouter = () => {
     // named an ASA that isn't in the local DB (e.g. a payment request for a
     // token the user has never held). Terminal: callers must surface the
     // error state instead of waiting forever for `selectedAsset`.
-    const isAssetUnavailable = !!selectedAssetId && isAssetFetched && !selectedAsset
+    const isAssetUnavailable =
+        !!selectedAssetId && isAssetFetched && !selectedAsset
 
     // Safe to route: the asset is known and the opt-in inputs are settled.
     // `accountBalances` is an empty Map while pending, so resolving before it
