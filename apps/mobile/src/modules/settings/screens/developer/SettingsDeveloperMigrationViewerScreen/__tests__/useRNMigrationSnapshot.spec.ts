@@ -84,6 +84,7 @@ const { stores, withSecretMock, parsePinRecordMock, mkStore, seedStores } =
                     ['mainnet', 'm-id'],
                     ['testnet', 't-id'],
                 ]),
+                deviceIdOrigins: { mainnet: 'migrated' },
             })
             Object.assign(stores.swaps, { slippage: '0.5' })
         }
@@ -261,6 +262,23 @@ describe('useRNMigrationSnapshot > derived maps', () => {
             mainnet: 'only-m',
             testnet: null,
         })
+    })
+
+    it('extracts deviceIdOrigins per network, null when untracked', () => {
+        const { result } = renderHook(() => useRNMigrationSnapshot())
+
+        expect(result.current.deviceIdOrigins).toEqual({
+            mainnet: 'migrated',
+            testnet: null,
+        })
+    })
+
+    it('reflects a recreated device id origin', () => {
+        stores.device.deviceIdOrigins = { mainnet: 'recreated' }
+
+        const { result } = renderHook(() => useRNMigrationSnapshot())
+
+        expect(result.current.deviceIdOrigins.mainnet).toBe('recreated')
     })
 
     it('collects legacy.* preferences into legacyStash and drops other keys', () => {

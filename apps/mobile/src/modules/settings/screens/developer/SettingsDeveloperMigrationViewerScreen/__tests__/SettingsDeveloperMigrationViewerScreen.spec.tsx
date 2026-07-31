@@ -85,6 +85,7 @@ const emptySnapshot = () => ({
     contactsByAddress: new Map(),
     notificationDisabledAccounts: new Set<string>(),
     deviceIDs: { mainnet: null, testnet: null },
+    deviceIdOrigins: { mainnet: null, testnet: null },
     legacyStash: {},
 })
 
