@@ -50,8 +50,8 @@ import {
 import {
     BROWSER_FAVORITE_ACTION,
     GET_DEVICE_ID_ACTION,
-    isSafeBrowserUrl,
     JsonRpcErrorCode,
+    toValidatedBrowserUrl,
     requireSecure,
     safeOrigin,
     sendActionToWebview,
@@ -209,12 +209,18 @@ export const usePeraWebviewInterface = (
                     if (!hadRequiredParams(['url'], message)) {
                         return
                     }
-                    const url = message.params!.url as string
-                    if (!isSafeBrowserUrl(url)) {
+                    const rawUrl = message.params!.url
+                    // Normalize before the https-only gate so a bare domain
+                    // typed into the Discover URL bar ("perawallet.app")
+                    // still opens [PERA-4553]; unsafe schemes stay rejected.
+                    const url = toValidatedBrowserUrl(rawUrl)
+                    if (!url) {
                         sendErrorToWebview(
                             message.id,
                             JsonRpcErrorCode.InvalidParams,
-                            t('errors.webview.unsupported_url', { url }),
+                            t('errors.webview.unsupported_url', {
+                                url: String(rawUrl),
+                            }),
                             webview,
                         )
                         return
@@ -278,16 +284,20 @@ export const usePeraWebviewInterface = (
                     if (!hadRequiredParams(['url'], message)) {
                         return
                     }
-                    const url = message.params!.url as string
+                    const rawUrl = message.params!.url
                     // https-only until product confirms a broader allow-list
                     // (mailto:/tel:). canOpenURL stays as the secondary check,
                     // and is a no-op on web (react-native-web always resolves
                     // true), so this gate is the only one on that platform.
-                    if (!isSafeBrowserUrl(url)) {
+                    // Bare domains are normalized to https:// first.
+                    const url = toValidatedBrowserUrl(rawUrl)
+                    if (!url) {
                         sendErrorToWebview(
                             message.id,
                             JsonRpcErrorCode.InvalidParams,
-                            t('errors.webview.unsupported_url', { url }),
+                            t('errors.webview.unsupported_url', {
+                                url: String(rawUrl),
+                            }),
                             webview,
                         )
                         return

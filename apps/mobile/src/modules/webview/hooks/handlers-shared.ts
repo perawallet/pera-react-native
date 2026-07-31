@@ -13,6 +13,8 @@
 import { logger, AppError, bytesToHex } from '@perawallet/wallet-core-shared'
 import type WebView from 'react-native-webview'
 
+import { toLoadableUrl } from '../components/PWWebView/toLoadableUrl'
+
 const MAX_ERROR_LENGTH = 200
 const GENERIC_ERROR_MESSAGE = 'An error occurred during signing'
 
@@ -158,6 +160,24 @@ export const isSafeBrowserUrl = (url: string): boolean => {
         return false
     }
     return parsed.protocol === 'https:'
+}
+
+/**
+ * Normalizes a host-app-supplied browser URL (bare domains like
+ * `perawallet.app` get an https:// prefix, per {@link toLoadableUrl}) before
+ * the https-only gate. Returns the normalized URL, or null when the input is
+ * not a string, is empty, is scheme-relative (`//host` — nothing legitimate
+ * produces it, so it stays rejected), or fails {@link isSafeBrowserUrl} after
+ * normalization (http:, javascript:, data:, file:, blob:, unparseable).
+ * Non-strings must be rejected before normalization: `https://` + a coerced
+ * number parses as an IPv4 host and would slip through the gate.
+ */
+export const toValidatedBrowserUrl = (raw: unknown): string | null => {
+    if (typeof raw !== 'string') return null
+    const trimmed = raw.trim()
+    if (!trimmed || trimmed.startsWith('//')) return null
+    const normalized = toLoadableUrl(trimmed)
+    return isSafeBrowserUrl(normalized) ? normalized : null
 }
 
 const RELATIVE_PATH_BASE = 'https://perawallet.invalid/'

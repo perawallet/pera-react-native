@@ -24,6 +24,7 @@ import {
     requireSecure,
     sendActionToWebview,
     sendNotificationToWebview,
+    toValidatedBrowserUrl,
 } from '../handlers'
 
 const mockLogger = { debug: vi.fn(), warn: vi.fn(), error: vi.fn() }
@@ -287,6 +288,52 @@ describe('isSafeBrowserUrl', () => {
     it('rejects malformed URLs without throwing', () => {
         expect(isSafeBrowserUrl('not a url')).toBe(false)
         expect(isSafeBrowserUrl('')).toBe(false)
+    })
+})
+
+describe('toValidatedBrowserUrl', () => {
+    it('normalizes a bare domain to https', () => {
+        expect(toValidatedBrowserUrl('perawallet.app')).toBe(
+            'https://perawallet.app',
+        )
+        expect(toValidatedBrowserUrl('hay.app/pools?q=1')).toBe(
+            'https://hay.app/pools?q=1',
+        )
+    })
+
+    it('trims surrounding whitespace before normalizing', () => {
+        expect(toValidatedBrowserUrl(' perawallet.app ')).toBe(
+            'https://perawallet.app',
+        )
+    })
+
+    it('passes well-formed https URLs through unchanged', () => {
+        expect(toValidatedBrowserUrl('https://tinyman.org/')).toBe(
+            'https://tinyman.org/',
+        )
+    })
+
+    it.each([
+        ['http URL', 'http://example.com'],
+        ['javascript: URL', 'javascript:alert(1)'],
+        ['data: URL', 'data:text/html,<script>x</script>'],
+        ['file: URL', 'file:///etc/passwd'],
+        ['blob: URL', 'blob:https://example.com/uuid'],
+        ['scheme-relative URL', '//evil.com/page'],
+        ['empty string', ''],
+        ['whitespace-only string', '   '],
+        ['malformed input', 'not a url'],
+    ])('returns null for a %s', (_label, input) => {
+        expect(toValidatedBrowserUrl(input)).toBeNull()
+    })
+
+    it.each([
+        ['number', 123],
+        ['null', null],
+        ['undefined', undefined],
+        ['object', { url: 'https://example.com' }],
+    ])('returns null for a non-string input (%s)', (_label, input) => {
+        expect(toValidatedBrowserUrl(input)).toBeNull()
     })
 })
 
