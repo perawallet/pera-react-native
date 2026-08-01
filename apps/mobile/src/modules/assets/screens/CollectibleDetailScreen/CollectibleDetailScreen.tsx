@@ -99,6 +99,7 @@ export const CollectibleDetailScreen = ({
     return (
         <>
             <PWScreen
+                testID='collectible_detail_screen'
                 horizontalPadding='none'
                 style={styles.container}
             >

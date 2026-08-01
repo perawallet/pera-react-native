@@ -30,6 +30,7 @@ const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
 
     return (
         <PWTouchableOpacity
+            testID={`collectible_row_${item.assetId}`}
             style={styles.container}
             onPress={onPress}
         >
