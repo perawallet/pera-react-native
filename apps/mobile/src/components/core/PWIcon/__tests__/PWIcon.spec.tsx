@@ -43,9 +43,10 @@ describe('PWIcon', () => {
 // The barrel + direct-path mocks above stub out PWIcon entirely (real .svg
 // assets crash under jsdom), so these tests import the real implementation
 // via importActual and spy on the icon leaf to inspect the style it receives.
-describe('PWIcon style merge (web rigidity)', () => {
+describe('PWIcon forwarded props', () => {
     const theme = getTheme('light') as Theme
     let RealPWIcon: (typeof import('../PWIcon'))['PWIcon']
+    let getCapturedProps: () => Record<string, unknown>
     let getCapturedStyle: () => StyleProp<ViewStyle> | undefined
 
     // Load the real component + its capturing icon leaf once — the icon
@@ -53,17 +54,19 @@ describe('PWIcon style merge (web rigidity)', () => {
     // second doMock/importActual pair would be ignored by the already-cached
     // module. Both tests re-render through the one captured leaf instead.
     beforeAll(async () => {
-        let capturedStyle: StyleProp<ViewStyle> | undefined
+        let capturedProps: Record<string, unknown> = {}
         vi.doMock('@assets/icons/algo.svg', () => ({
-            default: ({ style }: { style?: StyleProp<ViewStyle> }) => {
-                capturedStyle = style
+            default: (props: Record<string, unknown>) => {
+                capturedProps = props
                 return null
             },
         }))
         const mod =
             await vi.importActual<typeof import('../PWIcon')>('../PWIcon')
         RealPWIcon = mod.PWIcon
-        getCapturedStyle = () => capturedStyle
+        getCapturedProps = () => capturedProps
+        getCapturedStyle = () =>
+            capturedProps.style as StyleProp<ViewStyle> | undefined
     })
 
     it('merges the pixel size and flexShrink: 0 into the forwarded style', () => {
@@ -106,5 +109,52 @@ describe('PWIcon style merge (web rigidity)', () => {
             height: expectedSize,
             flexShrink: 0,
         })
+    })
+
+    // 'no-hide-descendants' is what makes RN's isSpeakingNode bail instead of
+    // walking the SVG subtree — the traversal behind the accessibility ANRs.
+    it('keeps a decorative icon out of the accessibility tree', () => {
+        render(
+            <ThemeProvider theme={theme}>
+                <RealPWIcon name='algo' />
+            </ThemeProvider>,
+            { bare: true },
+        )
+
+        expect(getCapturedProps()).toMatchObject({
+            importantForAccessibility: 'no-hide-descendants',
+            accessibilityElementsHidden: true,
+        })
+    })
+
+    it('leaves a labelled icon in the accessibility tree', () => {
+        render(
+            <ThemeProvider theme={theme}>
+                <RealPWIcon
+                    name='algo'
+                    accessibilityLabel='Algo'
+                />
+            </ThemeProvider>,
+            { bare: true },
+        )
+
+        expect(getCapturedProps()).toMatchObject({
+            accessibilityLabel: 'Algo',
+        })
+        expect(getCapturedProps().importantForAccessibility).toBeUndefined()
+    })
+
+    it('leaves a pressable icon in the accessibility tree', () => {
+        render(
+            <ThemeProvider theme={theme}>
+                <RealPWIcon
+                    name='algo'
+                    onPress={vi.fn()}
+                />
+            </ThemeProvider>,
+            { bare: true },
+        )
+
+        expect(getCapturedProps().importantForAccessibility).toBeUndefined()
     })
 })

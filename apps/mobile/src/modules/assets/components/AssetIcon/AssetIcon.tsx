@@ -122,5 +122,25 @@ export const AssetIcon = (props: AssetIconProps) => {
         initials,
     ])
 
-    return <PWView style={[style, styles.container]}>{icon}</PWView>
+    // Hidden from the accessibility tree for the same reason PWIcon is: this
+    // renders per row in asset and transaction lists, and TalkBack's node walk
+    // over each row is quadratic in the subtree it has to visit. Nothing is
+    // lost — every row already states the asset name in text, so the initials
+    // fallback would only announce it a second time.
+    const decorativeAccessibilityProps =
+        rest.accessibilityLabel === undefined
+            ? ({
+                  accessibilityElementsHidden: true,
+                  importantForAccessibility: 'no-hide-descendants',
+              } as const)
+            : undefined
+
+    return (
+        <PWView
+            style={[style, styles.container]}
+            {...decorativeAccessibilityProps}
+        >
+            {icon}
+        </PWView>
+    )
 }
