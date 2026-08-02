@@ -144,6 +144,11 @@ describe('inject-main provider', () => {
                 forwarded.push((e as CustomEvent).detail),
             )
             window.addEventListener('message', (e: MessageEvent) => {
+                // Same-window only, matching the provider's own guard. `null`
+                // is allowed here but not in production: jsdom reports
+                // `source: null` for the provider's `window.postMessage`
+                // replies, which are what this collector exists to observe.
+                if (e.source && e.source !== window) return
                 // Exclude our own dispatched message: this listener sees it
                 // too, and a response-shaped input would otherwise look like a
                 // reply the provider never sent.
