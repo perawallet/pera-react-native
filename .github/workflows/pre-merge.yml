@@ -435,14 +435,19 @@ jobs:
           fi
           # Paths that cannot affect the extension bundle.
           irrelevant='^(apps/mobile/|docs/|[^/]*\.md$)'
+          # Filtered once into a variable, then printed with a herestring.
+          # Piping the filter straight into `head` sent SIGPIPE to `grep` the
+          # moment `head` had its 20 lines, and under `pipefail` that failed
+          # the step outright on any PR with more than 20 relevant files.
           # Counted rather than `grep -q`: with -v, BSD and GNU grep disagree on
           # the exit status, so a count is the only form that means the same
           # thing on a dev machine and on the runner.
-          relevant=$(printf '%s\n' "$files" | grep -vE "$irrelevant" | grep -c . || true)
+          relevant_files=$(printf '%s\n' "$files" | grep -vE "$irrelevant" || true)
+          relevant=$(printf '%s\n' "$relevant_files" | grep -c . || true)
           if [ "${relevant:-0}" -gt 0 ]; then
             echo "affected=true" >> "$GITHUB_OUTPUT"
             echo "Extension-relevant changes ($relevant):"
-            printf '%s\n' "$files" | grep -vE "$irrelevant" | head -20
+            head -20 <<< "$relevant_files"
           else
             echo "affected=false" >> "$GITHUB_OUTPUT"
             echo "Only mobile/docs paths changed — skipping the extension bundle and e2e."
