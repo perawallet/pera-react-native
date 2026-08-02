@@ -181,10 +181,8 @@ const isResourceLimitError = (error: unknown): boolean =>
 const toRound = (round: Optional<bigint>): Nullable<number> =>
     round === undefined ? null : Number(round)
 
-const minRound = (
-    a: Nullable<number>,
-    b: Nullable<number>,
-): Nullable<number> => (a === null ? b : b === null ? a : Math.min(a, b))
+const minRound = (a: Nullable<number>, b: Nullable<number>): Nullable<number> =>
+    a === null ? b : b === null ? a : Math.min(a, b)
 
 /**
  * Fetch balance info + ASA holdings for an account, preferring a single algod

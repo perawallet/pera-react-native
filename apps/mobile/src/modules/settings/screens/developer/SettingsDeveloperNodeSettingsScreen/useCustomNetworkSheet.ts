@@ -56,9 +56,7 @@ const BLANK_DRAFT: CustomNetworkDraft = {
     genesisId: '',
 }
 
-const toDraft = (
-    config: CustomNetworkConfig | undefined,
-): CustomNetworkDraft =>
+const toDraft = (config: CustomNetworkConfig | undefined): CustomNetworkDraft =>
     config === undefined
         ? { ...BLANK_DRAFT }
         : {
