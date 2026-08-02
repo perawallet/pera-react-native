@@ -96,16 +96,10 @@ test.afterAll(async () => {
     await context.close()
 })
 
-// Menu row + intro sheet: MenuScreen.tsx's 'Buy Gift Card' PanelButton
-// (routeCapabilities.giftCards, now on) has no testID of its own — unlike
-// its 'menu_staking_button'/'menu_contacts_button' siblings in the same
-// file — so it's selected by its rendered title text (i18n key
-// menu.buy_gift_card = 'Buy Gift Card'). It is NOT wrapped in withAgeGate
-// (unlike Discover/Swap/Onramp/Staking in tab-screens.web.tsx), so no age
-// gate is expected here. Pressing it opens requestBottomSheet({ contents:
-// <BidaliContent /> }), whose independent NavigationContainer boots
-// straight into BidaliIntroScreen (initialRouteName='BidaliIntro') —
-// proving the whole gift-card screen graph mounted with no eval-time crash.
+// The 'Buy Gift Card' row has no testID of its own, unlike its menu siblings,
+// so it's selected by rendered text. It is NOT age-gated, unlike
+// Discover/Swap/Onramp/Staking. Reaching BidaliIntroScreen proves the whole
+// gift-card graph mounted with no eval-time crash.
 test('menu row opens the gift-card sheet on the intro screen', async () => {
     await dismissPinPromptIfPresent(page)
     await clickThroughPinPrompt(page, page.getByTestId('tab_menu_button'))
@@ -124,18 +118,11 @@ test('menu row opens the gift-card sheet on the intro screen', async () => {
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
 
-// Account-selection -> webview: BidaliAccountSelectionScreen renders an
-// AccountPicker with no rowTestIDPrefix, so SelectableAccountRow falls back
-// to testID=`account-row-${address}` — one row for a fresh wallet's single
-// account, unfiltered by balance (no funded-account requirement).
-// Selecting it navigates straight to BidaliWebViewScreen, whose PWWebView.web
-// iframe src is built by bidali-url.web.ts (`${baseUrl}?key=...&
-// peraBidaliBalances=...`) then stamped with `peraBridgeToken=` by
-// PWWebView.web.tsx. networkConfig.bidaliBaseUrl resolves (mainnet is the
-// e2e bundle's default network) to commerce.bidali.com/dapp — the
-// CONFIGURED base host; the 302 redirect to the giftcards.* twin only
-// happens once the network actually resolves it, so assert against the
-// configured host, not the twin.
+// The account picker passes no rowTestIDPrefix, so rows fall back to
+// `account-row-${address}` — one row here, unfiltered by balance.
+//
+// Assert against the CONFIGURED base host (commerce.bidali.com/dapp): the 302
+// to the giftcards.* twin only happens once the network resolves it.
 test('account selection advances to the webview iframe with the bridge params', async () => {
     // Resumes the sheet left open on BidaliIntro by the previous test —
     // BidaliIntroScreen.handleBuyGiftCards navigates to

@@ -15,20 +15,15 @@
 // this same `.web.tsx` file instead of the intended `PWWebView.tsx` sibling
 // (TypeScript itself resolves it correctly — `pnpm build` passes).
 
-// Web replacement for PWWebView: react-native-webview does not exist on web
-// (metro webStubs shims it to a throwing stub). Renders the URL in an iframe
-// (PWStaticWebView.web.tsx cast precedent) and rebuilds the bridge transport:
-// the Discover-origin content scripts (apps/extension/src/content/
-// discover-main.ts / discover-relay.ts) install window.peraMobileInterface
-// inside the iframe and relay over a chrome.runtime Port that
-// createDiscoverBridgeHost accepts only for this mount's token + the
-// Discover origin. The native usePeraWebviewInterface registry handles every
-// op unchanged (its senders resolve to handlers.web.ts on web); only one op
-// is intercepted here: pushWebView (dapps open in real tabs — the injected
-// ARC-0027 provider supplies connect/sign, no nested viewer). walletConnect
-// falls through to the registry's openWalletConnect: it validates
-// { uri }, parses it, and calls connect() — the mounted WalletConnectProvider
-// then surfaces ConnectionView for the real pairing flow.
+// Web replacement for PWWebView, since react-native-webview doesn't exist on
+// web. Renders the URL in an iframe and rebuilds the bridge transport: the
+// Discover content scripts install `peraMobileInterface` inside the iframe and
+// relay over a chrome.runtime Port that createDiscoverBridgeHost accepts only
+// for this mount's token and the Discover origin.
+//
+// The usePeraWebviewInterface registry handles every op unchanged. Only
+// pushWebView is intercepted — dapps open in real tabs, where the injected
+// ARC-0027 provider supplies connect/sign, so there's no nested viewer.
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
 import {

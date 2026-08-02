@@ -30,16 +30,11 @@ export type CardUxState = BaseStoreState & {
     email: Nullable<string>
     /** ISO 3166-1 alpha-2 country of residence picked on the first step. */
     countryIso: Nullable<string>
-    /**
-     * The email verification code the user typed. Transient OTP — held in
-     * memory only and never persisted (excluded from `partialize`).
-     */
+    /** Transient OTP — memory only, excluded from `partialize`. */
     verificationCode: Nullable<string>
     /**
-     * Set when a verification code is rejected — 'email' by the Set-Password
-     * step (where `email/verify` fires), 'phone' by the phone-verify screen —
-     * so the matching verify screen can show an inline "code invalid" error.
-     * Transient — never persisted; cleared once the user edits the code.
+     * Drives the inline "code invalid" error. Transient — never persisted,
+     * cleared once the user edits the code.
      */
     codeVerificationError: Nullable<CodeVerificationTarget>
     /** Phone dialing code (no leading '+') entered on the phone/send step. */
@@ -51,48 +46,27 @@ export type CardUxState = BaseStoreState & {
     /** Returned by email/verify; required by every later registration step. */
     onboardingId: Nullable<string>
     /**
-     * Returned by the consent-create step (`POST /v2/consent/onboarding`).
-     * Persisted so the consent-link step can still bind it to the user after a
-     * cross-reload retry (where re-creating returns "Duplicate" with no id).
+     * Persisted so the consent-link step can still bind it after a cross-reload
+     * retry, where re-creating returns "Duplicate" with no id.
      */
     consentSetId: Nullable<string>
     /**
-     * Marketing-communication opt-in. Captured (unchecked by default) on the
-     * Set-Password screen, sent on the required `email/verify` call, and reused
-     * by the address-step `/v2/consent` call (drives marketing + email consents).
-     * `null` = never asked this session (e.g. a resumed sign-in that skipped
-     * the Set-Password screen) — the address step must re-collect it rather
-     * than record a silent "denied".
+     * Captured unchecked on Set-Password, sent on `email/verify`, reused by the
+     * address step's `/v2/consent`. `null` means never asked this session (e.g.
+     * a resumed sign-in) — the address step must re-collect rather than record
+     * a silent "denied".
      */
     allowMarketing: Nullable<boolean>
-    /**
-     * SMS-communication opt-in. Captured alongside `allowMarketing` on the
-     * Set-Password screen and sent on `email/verify` (both are required there);
-     * drives the `smsNotifications` consent independently at the address step.
-     * `null` = never asked this session, same re-collect rule as
-     * `allowMarketing`.
-     */
+    /** Same capture and re-collect rules as {@link allowMarketing}. */
     allowSms: Nullable<boolean>
-    /**
-     * Address of the Pera account connected as the card's funding source on the
-     * setup checklist's Connect Funds step. Persisted so the row stays "done"
-     * across a cold resume.
-     */
+    /** Persisted so the Connect Funds row stays "done" across a cold resume. */
     connectedFundingSourceAddress: Nullable<string>
-    /**
-     * Funding type (Auto vs Manual) chosen on the setup checklist's "Select
-     * Funding Type" step. Persisted so the card-creation step can read it.
-     */
+    /** Persisted so the card-creation step can read it. */
     selectedFundingType: Nullable<FundingType>
     /**
-     * Escrow card account address returned by the backend card-creation call,
-     * plus the transaction id of the on-chain `cardCreate`, the funding
-     * account, and the network it was created for. Persisted (and left
-     * intact by `resetOnboardingProgress`) so a retry reuses the
-     * already-created card instead of creating a second one. Reuse is scoped
-     * to BOTH `escrowCardOwner` and `escrowCardNetwork` — a different funding
-     * account, or the same account on the other network, never reuses this
-     * card.
+     * Persisted, and left intact by `resetOnboardingProgress`, so a retry
+     * reuses the created card instead of creating a second one. Reuse is scoped
+     * to BOTH {@link escrowCardOwner} and {@link escrowCardNetwork}.
      */
     escrowCardAddress: Nullable<string>
     /** Funding-source address that owns {@link escrowCardAddress}. */
@@ -102,11 +76,9 @@ export type CardUxState = BaseStoreState & {
     /** Transaction id of the on-chain `cardCreate` call. */
     escrowCardTxId: Nullable<string>
     /**
-     * Whether the AB approval call (which carries {@link escrowCardTxId})
-     * has succeeded for the current {@link escrowCardAddress}. False between
-     * a successful create and a successful approve — e.g. after an app
-     * restart mid-flow — so a retry knows to re-sign and call approval only,
-     * without re-triggering the on-chain create.
+     * False between a successful create and a successful approve — e.g. an app
+     * restart mid-flow — so a retry re-signs and calls approval only, without
+     * re-triggering the on-chain create.
      */
     escrowCardApproved: boolean
     cardId: Nullable<string>

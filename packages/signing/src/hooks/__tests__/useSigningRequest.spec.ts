@@ -32,10 +32,6 @@ import type {
 import type { TransportResult } from '../../pipeline/types'
 import { createSigningMachine } from '../../machine/createSigningMachine'
 
-// =============================================================================
-// Module mocks
-// =============================================================================
-
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
@@ -114,10 +110,6 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
 
 vi.mock('../../machine/createSigningMachine')
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
 /**
  * Builds a mock actor whose subscriber callback can be triggered manually.
  */
@@ -193,10 +185,6 @@ const makeArbRequest = (
     data: [{ signer: 'ADDR1', data: 'hello', chainId: 4160 }],
     ...overrides,
 })
-
-// =============================================================================
-// Tests
-// =============================================================================
 
 describe('useSigningRequest', () => {
     beforeEach(() => {

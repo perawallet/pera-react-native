@@ -14,33 +14,19 @@ import { Networks, type Network } from '@perawallet/wallet-core-shared'
 import { AlgorandChainId } from '../models'
 
 /**
- * The CAIP-configured (WalletConnect v1 `chainId`) session identity expected
- * for each network. A `Record`, not a fallback ladder — a future network
- * added to `Network` fails TypeScript here rather than silently resolving to
- * whatever the last `? :` branch happened to default to (the bug this table
- * replaces: every network past testnet used to compute `expectedChainId` as
- * `network === Networks.testnet ? AlgorandChainId.testnet :
- * AlgorandChainId.mainnet`, so betanet — which HAS a real registered id —
- * was rejected when presented correctly, and silently accepted MainNet's id
- * instead).
+ * A `Record`, not a fallback ladder, so adding a network to `Network` fails
+ * TypeScript here instead of silently defaulting to whatever the last `? :`
+ * branch resolved to.
  *
- * - betanet has a real registered CAIP id (`416_003`) — use it.
- * - custom (an arbitrary developer-pointed node — LocalNet, an fnet instance,
- *   a private node) has NO registered CAIP id of its own; there is no
- *   registry entry for "whatever node you happen to be pointed at". It maps
- *   to TestNet's (`416_002`) because a dApp needs *some* id to establish a
- *   session at all. The real safety net is the genesis-hash assertion below,
- *   not this id.
+ * `custom` (LocalNet, fnet, a private node) has no registered CAIP id of its
+ * own, so it borrows TestNet's — a dApp needs *some* id to establish a session
+ * at all. Borrowing is safe: the dApp then builds transactions with that
+ * chain's genesis hash and `assertTransactionsMatchNetwork` rejects the
+ * mismatch loudly at submit time. This table decides which session is waved
+ * through and how it's labelled, never what gets signed.
  *
- * Signing stays safe regardless: a dApp that paired under a borrowed chain
- * id builds transactions with THAT chain's genesis hash, and
- * `assertTransactionsMatchNetwork` compares against the real active
- * network's genesis — a mismatch is rejected loudly at submit time. This
- * table only affects which session gets waved through and how it is
- * labelled in the UI, never what gets signed.
- *
- * `AlgorandChainId.all` (`4160`, matches any network) is a separate constant
- * and is unaffected by this table — every call site still checks it first.
+ * `AlgorandChainId.all` (`4160`) is separate and checked first at every call
+ * site.
  */
 export const EXPECTED_CHAIN_ID_BY_NETWORK: Record<Network, AlgorandChainId> = {
     [Networks.mainnet]: AlgorandChainId.mainnet,

@@ -10,21 +10,15 @@
  limitations under the License
  */
 
-// Web replacement for PWScrollView: the native version renders gorhom's
-// `BottomSheetScrollView` whenever `isInBottomSheet` is true (either the
-// explicit `inBottomSheet` prop or the auto-detected `PWInBottomSheetContext`
-// — a plain ScrollView silently fails to scroll inside a real gorhom sheet).
-// On web, PWBottomSheet.web.tsx renders a plain Modal instead — no gorhom
-// provider ever exists — so `BottomSheetScrollView` throws
-// "'useBottomSheetInternal' cannot be used out of the BottomSheet!" the
-// instant a component like SwapIntroductionContent renders inside a sheet.
-// That's an uncaught error caught by AppShell.web's WebShellErrorBoundary (or
-// App.web's outer RootBoundary), so it shows the shell's error fallback
-// rather than a blank screen — still broken UX, but not a full app unmount.
-// This file always renders the plain gesture-handler ScrollView — no
-// `@gorhom/bottom-sheet` import at all — so it can never hit that failure.
-// The `isInBottomSheet` calculation is kept because it still feeds
-// `bottomInset` (a sheet has no tab bar to clear, native or not).
+// Web replacement for PWScrollView. The native version reaches for gorhom's
+// `BottomSheetScrollView` inside a sheet, but PWBottomSheet.web renders a plain
+// Modal with no gorhom provider, so that component throws
+// "'useBottomSheetInternal' cannot be used out of the BottomSheet!" and trips
+// the shell's error boundary.
+//
+// This file never imports `@gorhom/bottom-sheet` at all, so it can't hit that.
+// `isInBottomSheet` is still computed because it feeds `bottomInset` — a sheet
+// has no tab bar to clear.
 import { useContext } from 'react'
 import { getContainerTestProps } from '@utils/test-id-helper'
 import { type ScrollViewProps, StyleSheet } from 'react-native'

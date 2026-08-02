@@ -89,19 +89,12 @@ export const requestSwapSignatures = (
             groupContext,
             sourceMetadata: source,
             approve: async signed => {
-                // Quantum accounts are kept out of swap only by a feature
-                // flag today — there is no structural guard in this module
-                // stopping a quantum account from routing into a swap
-                // (PQ-024 / PERA-4705 adds real support). The null-filter is
-                // defensive narrowing back to the swap module's
-                // plain-signature contract (this single full-group sign
-                // never pads null slots), but a quantum-signed carrier is
-                // not something we can silently drop: doing so would vanish
-                // signed slots and corrupt the group downstream into an
-                // opaque submission crash. Fail loudly instead — this
-                // mirrors the fail-loud contract of
-                // `assertNoQuantumSignedTransactions`, the callback-transport
-                // gate PQ-017 removed from the signing machine.
+                // Only a feature flag keeps quantum accounts out of swap today
+                // — nothing structural. The null-filter narrows back to the
+                // module's plain-signature contract, but silently dropping a
+                // quantum carrier would vanish signed slots and corrupt the
+                // group into an opaque submission crash downstream. Fail loudly
+                // instead (PQ-024 adds real support).
                 const nonNull = compactSignedResults(signed)
                 if (nonNull.some(isQuantumSignedTransaction)) {
                     reject(

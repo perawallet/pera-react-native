@@ -63,10 +63,8 @@ export type SigningPipeline = {
     /** The error if stage === 'failed', otherwise null. */
     error: Nullable<Error>
 
-    // -------------------------------------------------------------------------
     // Display data — equivalent to useSigningRequestAnalysis output.
     // Populated from request.txs for transaction requests; empty for others.
-    // -------------------------------------------------------------------------
     allTransactions: PeraDisplayableTransaction[]
     listItems: TransactionListItem[]
     signableAddresses: Set<string>
@@ -89,10 +87,6 @@ export type SigningPipeline = {
      * original → adjusted delta from these entries.
      */
     feeAdjustments: FeeAdjustment[]
-
-    // -------------------------------------------------------------------------
-    // Controls
-    // -------------------------------------------------------------------------
 
     /** Approve the current request (sends USER_APPROVED). No-op when idle. */
     next: () => void
@@ -118,10 +112,6 @@ export type MachineSnapshot = {
     context: SigningMachineContext
     matches: (stateValue: string) => boolean
 }
-
-// =============================================================================
-// Resolved request types
-// =============================================================================
 
 type Arc60ParsedForDisplay = ReturnType<typeof parseArc60ForDisplay>
 

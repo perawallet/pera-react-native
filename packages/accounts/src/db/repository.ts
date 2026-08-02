@@ -367,14 +367,12 @@ export async function getAccountHoldings({
     }))
 }
 
-// ---------------------------------------------------------------------------
 // Home-screen reads: a lite portfolio-total aggregate and a sorted/paginated
 // holdings page. Both join on the indexed accountAddress (no `WHERE assetId IN
 // (…)` list) and let SQLite do the summing / sorting / windowing, so the JS
 // thread only ever materializes the rows actually on screen. ALGO participates
 // like any holding (stored in microalgos with 6 decimals), so there's no
 // synthetic-row union or per-row special-casing here.
-// ---------------------------------------------------------------------------
 
 const join = (
     table:

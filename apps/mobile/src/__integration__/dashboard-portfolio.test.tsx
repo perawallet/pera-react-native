@@ -10,26 +10,12 @@
  limitations under the License
  */
 
-// Integration coverage for dashboard portfolio aggregation:
+// Portfolio aggregation: accounts store -> useAccountBalancesQuery (balances,
+// holdings, metadata and prices out of SQLite) -> usePortfolioTotals.
 //
-//   accounts store  ──► useSigningAccounts ──► useAccountBalancesQuery
-//                                              │
-//                                              ├─► reads SQLite balance rows
-//                                              ├─► reads SQLite holdings rows
-//                                              ├─► reads SQLite asset metadata
-//                                              └─► reads SQLite asset prices
-//                                              │
-//                                              ▼
-//                                       usePortfolioTotals
-//                                              │
-//                                              ▼
-//                                       portfolioUsdValue
-//
-// The PortfolioView UI on the dashboard wraps these same hooks, but it
-// also pulls a balance-history endpoint (chart) and the
-// preferred-currency rate from the API — both out of scope here. This
-// test stays at the hook layer so the assertion is on the aggregation
-// math, not on the chart / currency formatting.
+// Stays at the hook layer deliberately, so the assertion is on the aggregation
+// math. PortfolioView wraps these same hooks but also pulls balance history and
+// the preferred-currency rate, both out of scope here.
 
 import {
     afterAll,

@@ -10,24 +10,15 @@
  limitations under the License
  */
 
-// Runs the authenticator core (createCredential/assertCredential) for
-// the passkey-create / passkey-get approval kinds. Unlike
-// useEnableRequestScreen/useSignRequestApprovalScreen, the "resolve" here
-// isn't a plain user decision — it's the *output of a real WebAuthn
-// ceremony* run against the unlocked keystore, so this hook does its own
-// deserialize -> sign -> resolvePasskey/rejectPasskey plumbing instead of
-// reusing useDappRequest's generic approve()/reject() (those only know how
-// to post `resolve-approval`/`reject-approval`).
+// Runs the authenticator core for the passkey-create / passkey-get approval
+// kinds. The "resolve" here isn't a plain user decision but the output of a
+// real WebAuthn ceremony, so this does its own deserialize -> sign ->
+// resolvePasskey plumbing rather than reusing useDappRequest's generic
+// approve()/reject(), which only post `resolve-approval`/`reject-approval`.
 //
-// This executes in the approval PAGE (under VaultGate), never the service
-// worker: the SW has no WebAuthn/keystore access, and only here is the
-// keystore actually unlocked. `createKeystoreSigner` + `getKeystoreStore`
-// mirror the exact pattern `packages/kms`'s hooks use to reach the live
-// keystore Store through the platform provider singleton — apps/mobile is
-// allowed to import both `@perawallet/wallet-extension-keystore-chrome` and
-// `@perawallet/wallet-extension-provider` directly (they're extension
-// packages/the platform provider, not the ambient `chrome` global that
-// oxlint's no-restricted-globals rule bars).
+// Executes in the approval PAGE under VaultGate, never the service worker: the
+// SW has no WebAuthn or keystore access, and only here is the keystore
+// unlocked.
 import { useCallback, useState } from 'react'
 import {
     assertCredential,

@@ -47,10 +47,6 @@ import {
     isArc60Request,
 } from '../models'
 
-// =============================================================================
-// Signer type resolution
-// =============================================================================
-
 /**
  * Determines the signing strategy type from the AUTH account — the account
  * whose key (or multisig template) actually authorizes the signature after
@@ -91,10 +87,6 @@ const determineSignerType = (
     )
 }
 
-// =============================================================================
-// Group signer type map
-// =============================================================================
-
 /**
  * Resolves the signing type for every unique signer address in the request.
  * Iterates all signable groups and determines the signer type per address,
@@ -131,10 +123,6 @@ export const buildGroupSignerTypeMap = (
     }
     return map
 }
-
-// =============================================================================
-// SignableGroup construction
-// =============================================================================
 
 /**
  * Constructs {@link SourceMetadata} from a {@link SignRequest}.
@@ -275,18 +263,14 @@ const buildSignableGroups = (
     const source = buildSourceMetadata(request)
 
     if (isTransactionRequest(request)) {
-        // Validate atomic-group integrity over the full payload. External
-        // sources that filter `txs` down to the wallet's signable subset
-        // (WalletConnect) supply the original array via `groupContext`.
-        // Internal sources where `txs` is already the full group leave
-        // `groupContext` unset and we fall back to `txs`.
+        // Group integrity is checked over the full payload: sources that filter
+        // `txs` supply the original via `groupContext`, others fall back to
+        // `txs`.
         //
-        // Multisig co-sign is the exception: the co-signer's device only holds
-        // the signable subset of the proposed group (a swap's backend
-        // pre-signed pool/fee slots never reach them), so the full-group hash
-        // can't match. The dedicated cosign validator skips the recompute —
-        // contiguity is still enforced, and full-group integrity is verified on
-        // the submitter and by algod at submission.
+        // Multisig co-sign is the exception — the co-signer only holds the
+        // signable subset, so the full-group hash can't match. Its validator
+        // skips the recompute; contiguity is still enforced, and full-group
+        // integrity is verified on the submitter and by algod.
         const txsToValidate = request.groupContext ?? request.txs
         if (request.sourceType === 'multisig-cosign') {
             validateCosignSubsetIntegrity(txsToValidate)
@@ -376,10 +360,6 @@ const buildSignableGroups = (
         `Unsupported request type: ${(exhaustiveCheck as { type: string }).type}`,
     )
 }
-
-// =============================================================================
-// Context factories
-// =============================================================================
 
 /**
  * Extracts the external dependencies from {@link SigningMachineInput} into

@@ -93,19 +93,13 @@ export const useAccountNotificationToggle =
         const { showError } = useErrorToast()
         const { t } = useLanguage()
 
-        // `inFlightAddresses` (module scope, above) is the synchronous source
-        // of truth for the guard, shared app-wide: two taps in the same tick
-        // — from this instance or another — must both see the first one.
+        // `inFlightAddresses` is module-scoped so two taps in the same tick,
+        // from any instance, both see the first one.
         //
-        // `ownPendingAddressesRef`/`pendingAddresses` below are local to this
-        // instance and deliberately track only the addresses *this instance*
-        // added to the shared set — never the shared set's full contents.
-        // Copying the shared set wholesale would leak: if instance A starts
-        // ADDR1 and instance B separately starts ADDR2, both entries land in
-        // `inFlightAddresses`, and mirroring that whole set into B's local
-        // state would make B report ADDR1 as pending even though B never
-        // touched it — and that stale `true` would never clear, since only A
-        // (not B) will remove ADDR1 from the shared set.
+        // The local refs track only what THIS instance added, never the shared
+        // set's full contents: mirroring it wholesale would make one instance
+        // report another's address as pending, and that stale `true` would
+        // never clear, since only the owner removes it.
         const ownPendingAddressesRef = useRef<Set<string>>(new Set())
         const [pendingAddresses, setPendingAddresses] = useState<
             readonly string[]

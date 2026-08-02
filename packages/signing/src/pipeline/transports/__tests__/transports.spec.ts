@@ -52,10 +52,6 @@ const arbitraryResult: SigningResult = {
     signers: [{ address: 'ADDR' }],
 }
 
-// =============================================================================
-// createAlgodTransport
-// =============================================================================
-
 describe('createAlgodTransport', () => {
     const makeAlgokit = (txid: Optional<string | string[]> = 'TX_ID') => ({
         client: {
@@ -278,10 +274,6 @@ describe('createAlgodTransport', () => {
     })
 })
 
-// =============================================================================
-// createCallbackTransport
-// =============================================================================
-
 describe('createCallbackTransport', () => {
     test('calls approve and returns callback-sent', async () => {
         const approve = vi.fn().mockResolvedValue(undefined)
@@ -357,10 +349,6 @@ describe('createCallbackTransport', () => {
         )
     })
 })
-
-// =============================================================================
-// createWalletConnectTransport
-// =============================================================================
 
 describe('createWalletConnectTransport', () => {
     test('calls approve and returns callback-sent with requestId', async () => {
@@ -444,10 +432,6 @@ describe('createWalletConnectTransport', () => {
     })
 })
 
-// =============================================================================
-// createMultisigCosignTransport
-// =============================================================================
-
 describe('createMultisigCosignTransport', () => {
     test('adds signatures and returns signatures-added result', async () => {
         const addSignatures = vi.fn().mockResolvedValue({ status: 'ready' })
@@ -528,10 +512,6 @@ describe('createMultisigCosignTransport', () => {
         ).rejects.toThrow(TransportError)
     })
 })
-
-// =============================================================================
-// createMultisigProposeTransport
-// =============================================================================
 
 describe('createMultisigProposeTransport', () => {
     const MSIG_METADATA = {

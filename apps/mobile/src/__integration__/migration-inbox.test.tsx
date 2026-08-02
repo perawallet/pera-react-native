@@ -71,10 +71,8 @@ import {
 const INTEGRATION_TIMEOUT = 30_000
 const LEGACY_DEVICE_ID = 'LEGACY-DEVICE-1'
 
-// ---------------------------------------------------------------------------
 // Legacy payload builders. These wrap `createEmptyLegacyMigrationData()` so a
 // test only spells out the accounts + device id it asserts on.
-// ---------------------------------------------------------------------------
 
 // A signable Pera 6 standard account: the 64-byte tweetnacl secret key whose
 // first 32 bytes are the ed25519 seed for ALGO25_TEST_ADDRESS. `runMigration`
@@ -155,13 +153,11 @@ const installStubMigrationService = (
     Object.assign(target, rebound)
 }
 
-// ---------------------------------------------------------------------------
 // App-ish harness. Mirrors production's RootComponent gating: the migration
 // splash runs first (driving the real `runMigration`), then — once the store
 // holds the migrated accounts AND the legacy device id has been written (the
 // device step runs last, after accounts) — it swaps to the device registrar +
 // inbox, exactly as RootComponent does behind `!migrationInProgress`.
-// ---------------------------------------------------------------------------
 
 const InboxWithDeviceRegistration = ({
     addresses,

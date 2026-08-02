@@ -91,18 +91,14 @@ export class RNBiometricsService implements BiometricsService {
                 promptMessage: prompt.title ?? 'Authenticate',
                 cancelLabel: prompt.cancelLabel || 'Cancel',
                 disableDeviceFallback: true,
-                // Require a hardware-backed class-3 (`BIOMETRIC_STRONG`)
-                // authenticator. This is the single choke point for both
-                // enrollment and wallet unlock, so a spoofable class-2 ("weak")
-                // modality can neither be bound nor used to unlock. On a
-                // weak-only Android device the OS prompt fails and callers fall
-                // back to the PIN flow. (iOS ignores this option — Face ID /
-                // Touch ID are always strong.)
+                // The single choke point for both enrollment and unlock, so
+                // requiring class-3 means a spoofable "weak" modality can
+                // neither be bound nor used to unlock. Weak-only Android devices
+                // fail the OS prompt and fall back to PIN; iOS ignores this,
+                // since Face ID / Touch ID are always strong.
                 //
-                // Intentionally stricter than the legacy native Android app,
-                // which uses BIOMETRIC_WEAK for app unlock. Restores the
-                // pre-expo behaviour (`BiometricStrength.Strong`) that was
-                // dropped during the expo-local-authentication migration.
+                // Deliberately stricter than the legacy Android app, which uses
+                // BIOMETRIC_WEAK for unlock.
                 biometricsSecurityLevel: 'strong',
             })
             if (!result.success) {

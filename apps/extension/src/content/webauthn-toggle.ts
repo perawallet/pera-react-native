@@ -10,17 +10,13 @@
  limitations under the License
  */
 
-// Pure parser for the settings zustand store's persisted envelope, mirroring
-// apps/extension/src/background/network.ts's parseActiveNetwork. The store
-// persists through ChromeKeyValueStorageService (kv: prefix, JSON-stringified
-// envelope), so the raw chrome.storage.local value is a JSON *string* under
-// key `kv:settings-store`, e.g.
-// '{"state":{"preferences":{"webauthnInterceptionEnabled":true}}},"version":1}'.
-// Kept side-effect-free (no chrome.*) so it's usable from webauthn-relay.ts
-// (ISOLATED, has chrome.storage) and unit-tested directly without a chrome
-// fake. Default is OFF on every failure mode (missing key, malformed JSON,
-// wrong type) — this is an opt-in feature, Pera must never silently hijack
-// WebAuthn.
+// Pure parser for the settings store's persisted envelope, which lands in
+// chrome.storage.local as a JSON *string* under `kv:settings-store`. Kept
+// side-effect-free so it's usable from the ISOLATED relay and unit-testable
+// without a chrome fake.
+//
+// Defaults OFF on every failure mode — this is opt-in, and Pera must never
+// silently hijack WebAuthn.
 export const SETTINGS_STORE_KV_KEY = 'kv:settings-store'
 export const WEBAUTHN_TOGGLE_PREFERENCE_KEY = 'webauthnInterceptionEnabled'
 

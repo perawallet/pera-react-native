@@ -10,15 +10,10 @@
  limitations under the License
  */
 
-// M4a Task 9: the end-to-end proof of the injected ARC-0027 dapp provider.
-// A plain http(s) page (the ONLY origin content scripts match — manifest.json
-// declares `matches: ['http://*/*', 'https://*/*']`, never `file://`) speaks
-// the real ARC-0027 postMessage wire, exercising the full round-trip: page ->
-// MAIN-world content script -> isolated-world relay -> service worker router
-// -> (fresh enable) approval popup window -> back down the same chain. This
-// is the "moment of truth" for the content-script handshake landed in Tasks
-// 5 and 7 — if discover times out here, the wiring is genuinely broken in
-// real Chrome, not just under test.
+// End-to-end proof of the injected ARC-0027 dapp provider: a plain http(s)
+// page speaks the real postMessage wire through the full round-trip — page ->
+// MAIN-world content script -> isolated relay -> service worker router ->
+// approval popup -> back down the same chain.
 import {
     expect,
     test,
@@ -61,16 +56,13 @@ let pageErrors: Error[]
 let dappPageErrors: Error[]
 let server: http.Server
 let dappOrigin: string
-// Populated once enable is approved (Assertion 2) so Assertion 3 can confirm
-// the silent re-enable returns the SAME account, not just any account.
+// Lets the silent re-enable assert it gets back the SAME account.
 let grantedAddress: string
 const PASSWORD = 'e2e-dapp-connect-password-1'
 
-// The approval handler calls window.close(), so the popup can vanish while
-// Playwright is still finishing the click — surfacing as "Target page, context
-// or browser has been closed". That rejection means the click landed, not that
-// it failed, so it's swallowed; every caller asserts the approval's effect on
-// the dapp page immediately after, which is what actually proves the click.
+// The approval handler calls window.close(), so the popup can vanish mid-click
+// and surface "Target page... has been closed". That means the click LANDED,
+// so swallow it — every caller then asserts the effect on the dapp page.
 const clickAcceptingPopupClose = async (locator: Locator): Promise<void> => {
     try {
         await locator.click()
@@ -81,24 +73,19 @@ const clickAcceptingPopupClose = async (locator: Locator): Promise<void> => {
     }
 }
 
-// Module-eval crashes in the extension bundle otherwise surface as bare
-// selector timeouts with no indication of the real cause (see onboarding.spec.ts).
+// Without this, module-eval crashes in the bundle surface as bare selector
+// timeouts with no sign of the real cause.
 const trackPageErrors = (targetPage: Page): Error[] => {
     const errors: Error[] = []
     targetPage.on('pageerror', error => errors.push(error))
     return errors
 }
 
-// M4c: enable now opens the extension's TOOLBAR POPUP via
-// chrome.action.openPopup() instead of a dedicated approval window. Playwright
-// can neither click the toolbar icon nor observe that popup as a 'page', so
-// drive the approval by opening popup.html directly — the SAME 'popup' surface
-// and getCurrentApproval() discovery path the real toolbar popup uses. Wait for
-// the SW to register the pending approval first (mirrors real Chrome, where the
-// SW calls openPopup only AFTER registering the pending approval), so the popup
-// we open is guaranteed to discover it instead of falling through to the wallet
-// home. Attaches the pageerror listener BEFORE navigation so module-eval
-// crashes on load are caught, not missed.
+// Playwright can neither click the toolbar icon nor see its popup as a 'page',
+// so open popup.html directly — the same surface and getCurrentApproval()
+// discovery path the real popup uses. Waiting for the SW to register the
+// pending approval first mirrors real Chrome and guarantees the popup
+// discovers it instead of falling through to the wallet home.
 const openEnableApprovalPopup = async (): Promise<{
     approvalPage: Page
     approvalErrors: Error[]
@@ -139,8 +126,7 @@ const openEnableApprovalPopup = async (): Promise<{
         )
         .not.toBeNull()
     const approvalPage = await context.newPage()
-    // Match the real toolbar popup's dimensions (360x600) so the tab is a
-    // faithful proxy rather than a full-width window.
+    // The real toolbar popup's dimensions, so the tab is a faithful proxy.
     await approvalPage.setViewportSize({ width: 360, height: 600 })
     const approvalErrors = trackPageErrors(approvalPage)
     await approvalPage.goto(`chrome-extension://${extensionId}/popup.html`)
@@ -149,10 +135,9 @@ const openEnableApprovalPopup = async (): Promise<{
 }
 
 test.beforeAll(async () => {
-    // The fixture MUST be served over http(s) — content scripts are declared
-    // with `matches: ['http://*/*', 'https://*/*']` and never match `file://`,
-    // so a page.goto('file://...') would silently get no injected provider at
-    // all (a real bug looks identical to "no page.goto over http" here).
+    // Must be http(s): content scripts declare
+    // `matches: ['http://*/*', 'https://*/*']` and never match `file://`, where
+    // a missing provider looks identical to a real bug.
     server = http.createServer((_req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' })
         res.end(fixtureHtml)
@@ -163,9 +148,8 @@ test.beforeAll(async () => {
     const address = server.address()
     const port =
         address !== null && typeof address === 'object' ? address.port : 0
-    // Chrome only treats http:// as a secure context (crypto.randomUUID etc.)
-    // for 127.0.0.1/localhost specifically — a plain LAN http:// origin would
-    // not get this exception.
+    // http:// is only a secure context on 127.0.0.1/localhost — a LAN origin
+    // would not get crypto.randomUUID etc.
     dappOrigin = `http://localhost:${port}`
 
     context = await chromium.launchPersistentContext('', {
@@ -181,9 +165,7 @@ test.beforeAll(async () => {
     }
     extensionId = new URL(serviceWorker.url()).host
 
-    // Onboard exactly as wallet-smoke.spec.ts: create password -> terms ->
-    // create wallet -> name account -> home. An account must exist for the
-    // enable-approval screen to have something to grant.
+    // An account must exist for the enable-approval screen to grant.
     page = await context.newPage()
     pageErrors = trackPageErrors(page)
     await page.goto(`chrome-extension://${extensionId}/expanded.html`)
@@ -214,9 +196,8 @@ test.beforeAll(async () => {
     dappPage = await context.newPage()
     dappPageErrors = trackPageErrors(dappPage)
     await dappPage.goto(dappOrigin)
-    // window.sendArc is defined synchronously by the fixture's inline
-    // <script>; if this ever times out, the fixture itself failed to load,
-    // not the extension.
+    // Defined synchronously by the fixture's inline <script>, so a timeout
+    // here means the fixture failed to load, not the extension.
     await dappPage.waitForFunction(() => typeof window.sendArc === 'function')
 })
 
@@ -249,8 +230,7 @@ test('discover resolves providerId + active-network genesisHash with no approval
     expect(result.providerId).toBe('pera-wallet')
     expect(result.networks).toHaveLength(1)
     expect(result.networks[0].genesisHash).toBe(expectedGenesisHash)
-    // icon must be a data URI — a chrome-extension:// URL can't be loaded by
-    // a normal https dapp page (no web_accessible_resources entry).
+    // Must be a data URI — a chrome-extension:// URL isn't web-accessible.
     expect(result.icon).toMatch(/^data:image\//)
 
     // discover never opens an approval window — only enable does.
@@ -263,18 +243,15 @@ test('enable opens the approval popup; approving one account returns it', async 
 
     expect(approvalPage.url()).toContain('popup.html')
 
-    // Vault-lock gate wraps the approval surface too (VaultGate is outermost)
-    // — unlock defensively in case the vault ever re-locks between specs,
-    // even though this suite's own onboarding leaves it unlocked.
+    // VaultGate is outermost, so it wraps the approval surface too.
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
     if (await unlockInput.isVisible({ timeout: 5000 }).catch(() => false)) {
         await unlockInput.fill(PASSWORD)
         await approvalPage.getByTestId('unlock-submit').click()
     }
 
-    // Task-6-flagged concern: does the account list hydrate reliably, or does
-    // it flash empty first? Assert the real content directly with a generous
-    // timeout rather than assuming an instant render.
+    // The account list may flash empty before hydrating, so assert the real
+    // content with a generous timeout rather than assuming an instant render.
     await expect(approvalPage.getByTestId('dapp-enable-origin')).toBeVisible({
         timeout: 20_000,
     })
@@ -285,10 +262,8 @@ test('enable opens the approval popup; approving one account returns it', async 
     const connectButton = approvalPage.getByTestId('dapp-enable-connect')
     await expect(connectButton).toBeVisible()
 
-    // useEnableRequestScreen seeds the default selection with the active
-    // account ONLY if the account store had already hydrated by the time this
-    // screen's local `selected` state initializes. Don't assume either
-    // branch: only click the checkbox if Connect isn't already enabled.
+    // The default selection is seeded only if the account store had hydrated
+    // in time, so don't assume either branch.
     const alreadySelected =
         (await connectButton.getAttribute('aria-disabled')) !== 'true'
     if (!alreadySelected) {
@@ -317,10 +292,8 @@ test('enable opens the approval popup; approving one account returns it', async 
     expect(accounts[0].address.length).toBe(58)
     grantedAddress = accounts[0].address
 
-    // approve() calls window.close(); the real toolbar popup is terminal, but a
-    // Playwright-opened tab won't self-close on script request, so close it
-    // explicitly to emulate the popup's terminal teardown and keep page counts
-    // clean for later serial tests.
+    // A Playwright-opened tab ignores approve()'s window.close(), so close it
+    // explicitly to emulate the popup's terminal teardown.
     await approvalPage.close()
 
     expect(approvalErrors, 'approval popup threw an uncaught error').toEqual([])
@@ -361,10 +334,7 @@ test('Connections settings lists the localhost origin and can revoke it', async 
         timeout: 20_000,
     })
 
-    // The unified Connections screen (connectionsSettings capability, web
-    // only) supersedes the old standalone Connected Sites menu entry —
-    // settings_item_${title...} (SettingsScreen.tsx) on 'Connections'
-    // (settings.main.connections_title) → settings_item_connections.
+    // The unified Connections screen supersedes the old Connected Sites entry.
     await clickThroughPinPrompt(
         page,
         page.getByTestId('settings_item_connections'),

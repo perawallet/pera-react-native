@@ -50,16 +50,14 @@ vi.mock('@perawallet/wallet-core-config', async () => {
     }
 })
 
-// The ARC-60 ownership-proof signer (Step 1) is left REAL and driven through
-// the actual interactive review overlay — `useLocalKeyArc60Signer` is
-// imported by a relative path inside packages/signing's own actor lifecycle,
-// so a `@perawallet/wallet-core-signing` barrel mock never reaches it; it
-// needs a genuinely KMS-backed key (seeded below via seedFundingSigner),
-// exactly like sign-arc60.test.tsx. The LSig delegation signer (Step 3,
-// `useProgramSigner`) IS consumed via the barrel by `useAutoDrawSwitch`
-// directly, so stubbing it here is both valid and necessary — its junk
-// bytes would otherwise fail `encodeDelegatedLsigAccount`'s signature check,
-// so that's stubbed too.
+// The ARC-60 ownership-proof signer stays REAL and runs through the actual
+// review overlay: it's imported by relative path inside packages/signing's own
+// actor lifecycle, so a barrel mock never reaches it, and it needs a genuinely
+// KMS-backed key.
+//
+// The LSig delegation signer IS consumed via the barrel, so stubbing it is both
+// valid and necessary — its junk bytes would otherwise fail
+// `encodeDelegatedLsigAccount`'s signature check, which is stubbed too.
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     ...(await vi.importActual<object>('@perawallet/wallet-core-signing')),
     useProgramSigner: () => ({
@@ -161,17 +159,12 @@ const seedFundingSigner = async (): Promise<void> => {
     }
 }
 
-// The setup checklist, plus the real downstream signing screens the create
-// sequence now runs on (CardOnboardingSigning → CardCreateSigningScreen, and
-// for Auto, CardOnboardingAutoFundingSigning → CardAutoFundingSigningScreen),
-// and a stub Home tab so the terminal `finish()` (navigate to TabBar → Home)
-// resolves without a registered tab navigator.
+// The checklist plus the real downstream signing screens, and a stub Home tab
+// so the terminal `finish()` resolves without a registered tab navigator.
 //
-// `signOwnership`'s ARC-60 request is an INTERACTIVE_SOURCES source, so it
-// only resolves once `SigningOverlays` (mounted here in a second, sibling
-// render tree sharing the same global signing store — the established
-// pattern, e.g. wc-sign-quantum-fee.test.tsx) renders the review sheet and
-// its slide-to-confirm is tapped.
+// `signOwnership`'s request is an INTERACTIVE_SOURCES source, so it resolves
+// only once SigningOverlays — mounted here in a sibling render tree sharing the
+// same global signing store — renders the review sheet and its slide is tapped.
 const renderStatus = () => {
     renderWithNavigation(() => <SigningOverlays />, 'CardSigningOverlaysHost')
     return renderWithNavigation(

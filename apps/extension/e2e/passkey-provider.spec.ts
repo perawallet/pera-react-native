@@ -10,17 +10,14 @@
  limitations under the License
  */
 
-// M9 Task 7: the end-to-end proof of the WebAuthn/passkey interception
-// provider (Tasks 1-6). A plain http(s) page (webauthn-rp-page.html) speaks
-// the real `navigator.credentials.create()`/`.get()` API — the MAIN-world
-// interceptor (webauthn-main.ts) wraps it, the ISOLATED relay
-// (webauthn-relay.ts) gates it on the `webauthnInterceptionEnabled` toggle,
-// and the service worker (passkey-router.ts) routes it to the SAME
-// popup-approval surface enable/sign-transactions already use (Tasks 4-5).
-// Chrome DevTools Protocol's WebAuthn domain provides a virtual
-// authenticator so the FALL-THROUGH path (interception off, or declined) has
-// a real native implementation to complete the ceremony against — this repo
-// has never driven a real WebAuthn ceremony in e2e before this file.
+// End-to-end proof of the WebAuthn interception provider: a plain http(s) page
+// speaks the real credentials API, the MAIN-world interceptor wraps it, the
+// ISOLATED relay gates it on `webauthnInterceptionEnabled`, and the service
+// worker routes it to the same popup-approval surface enable/sign use.
+//
+// CDP's WebAuthn domain supplies a virtual authenticator so the FALL-THROUGH
+// path (interception off, or declined) has a real implementation to complete
+// the ceremony against.
 import {
     expect,
     test,
@@ -63,39 +60,27 @@ let pageErrors: Error[]
 let dappPageErrors: Error[]
 let server: http.Server
 let dappOrigin: string
-// Populated once test 2's create() is approved — test 3 (get) asserts
-// against it, and test 5 (delete) removes it. Deletion is deliberately held
-// until test 5, AFTER test 3 depends on the credential still existing (see
-// that test's comment) — the brief's "create -> appears in Settings -> is
-// deletable" is spread across tests 2, 2, and 5 for exactly this reason.
+// Populated by test 2's create(); test 3 asserts against it and test 5 deletes
+// it. Deletion is held until last precisely because test 3 needs it alive.
 let createdCredentialId = ''
-// The Settings row's testID (`settings_passkeys_item_${passkey.id}`).
-// models/passkey.ts documents `Passkey.id` as "url-safe base64 of the raw
-// keystore key.id; this is the WebAuthn credentialId" — but empirically,
-// keystore-chrome's `createP256Credential` (extensions/keystore-chrome/src/
-// webauthn/keystore-signer.ts) assigns `keyId` from the underlying keystore
-// library's own `generateKey()` call, which mints an unrelated internal id,
-// never `deriveCredentialId(publicKeyXY)` (the value actually sent to the
-// page as `credential.id`). The two do NOT match in practice, so this is
-// captured by locating the (single) rendered row rather than reconstructed
-// from `createdCredentialId` — see test 2's comment.
+// Captured by locating the rendered row, NOT reconstructed from
+// `createdCredentialId`: despite what models/passkey.ts documents, keystore
+// `keyId` comes from the library's own `generateKey()` and does not match the
+// derived credentialId sent to the page.
 let createdPasskeyRowTestId = ''
 const PASSWORD = 'e2e-passkey-provider-password-1'
 
-// Module-eval crashes in the extension bundle otherwise surface as bare
-// selector timeouts with no indication of the real cause (see onboarding.spec.ts).
+// Without this, module-eval crashes in the bundle surface as bare selector
+// timeouts with no sign of the real cause.
 const trackPageErrors = (targetPage: Page): Error[] => {
     const errors: Error[] = []
     targetPage.on('pageerror', error => errors.push(error))
     return errors
 }
 
-// A platform ('internal') virtual authenticator with automatic presence
-// simulation — the ceremony resolves immediately with no native OS/Chrome
-// UI, which is what makes the FALL-THROUGH path (tests 1 and 4) drivable
-// headlessly at all. hasResidentKey/hasUserVerification/isUserVerified all
-// on so a discoverable, user-verified credential is always mintable —
-// matching what a real platform authenticator (Touch ID / Windows Hello)
+// Automatic presence simulation resolves the ceremony with no native OS UI,
+// which is what makes the fall-through path drivable headlessly at all. The
+// resident-key/user-verification flags match what Touch ID / Windows Hello
 // would report.
 const VIRTUAL_AUTHENTICATOR_OPTIONS = {
     protocol: 'ctap2',
@@ -106,8 +91,7 @@ const VIRTUAL_AUTHENTICATOR_OPTIONS = {
     automaticPresenceSimulation: true,
 } as const
 
-// Captured for test 4's WebAuthn.clearCredentials call — see that test's
-// comment for why it needs to reach back into this specific authenticator.
+// Captured for test 4's WebAuthn.clearCredentials call.
 let dappCdp: CDPSession
 let dappAuthenticatorId: string
 
@@ -125,12 +109,8 @@ const attachVirtualAuthenticator = async (
     return cdp
 }
 
-// Passkey create/get approvals share the EXACT SAME pending-approval store
-// and 'get-current-approval' discovery message as enable/sign-transactions
-// (see PasskeyRouter/ApprovalWindowBridge — one pending approval at a time,
-// keyed generically by `kind`), so this is byte-for-byte the same pattern
-// dapp-connect.spec.ts's openEnableApprovalPopup / dapp-sign.spec.ts's
-// openApprovalPopup use, just generalized to this file's own module state.
+// Passkey approvals share the pending-approval store and discovery message
+// with enable/sign, so this mirrors dapp-connect/dapp-sign's helpers.
 const openApprovalPopup = async (): Promise<{
     approvalPage: Page
     approvalErrors: Error[]
@@ -169,16 +149,13 @@ const openApprovalPopup = async (): Promise<{
         .not.toBeNull()
 
     const approvalPage = await context.newPage()
-    // Match the real toolbar popup's dimensions (360x600), same as
-    // dapp-connect.spec.ts/dapp-sign.spec.ts.
+    // The real toolbar popup's dimensions.
     await approvalPage.setViewportSize({ width: 360, height: 600 })
     const approvalErrors = trackPageErrors(approvalPage)
     await approvalPage.goto(`chrome-extension://${extensionId}/popup.html`)
     await approvalPage.waitForLoadState('domcontentloaded')
 
-    // Defensive vault-unlock check, same as dapp-sign.spec.ts — VaultGate
-    // wraps the approval surface too, even though this suite's own
-    // onboarding leaves it unlocked.
+    // VaultGate wraps the approval surface too.
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
     if (await unlockInput.isVisible({ timeout: 5000 }).catch(() => false)) {
         await unlockInput.fill(PASSWORD)
@@ -188,9 +165,7 @@ const openApprovalPopup = async (): Promise<{
     return { approvalPage, approvalErrors }
 }
 
-// Defensive vault-unlock check for the onboarded tab, mirroring
-// openApprovalPopup's — a full page.reload() re-runs the whole app's
-// bootstrap, and VaultGate wraps every surface, not just the approval popup.
+// A full reload re-runs bootstrap, and VaultGate wraps every surface.
 const unlockIfLocked = async (targetPage: Page): Promise<void> => {
     const unlockInput = targetPage.getByTestId('unlock-password-input')
     if (await unlockInput.isVisible({ timeout: 5000 }).catch(() => false)) {
@@ -218,11 +193,9 @@ const navigateToPasskeysSettings = async (): Promise<void> => {
     })
 }
 
-// Navigates the onboarded tab to Settings > Passkeys and flips the
-// interception toggle ON, then reloads the dapp page. webauthn-relay.ts
-// reads `webauthnInterceptionEnabled` ONCE per page load (cached promise) —
-// a live toggle flip only takes effect on the dapp page's NEXT
-// navigation/reload, so the reload here is load-bearing, not incidental.
+// The reload is load-bearing: webauthn-relay.ts reads
+// `webauthnInterceptionEnabled` once per page load, so a live flip only takes
+// effect on the dapp page's next navigation.
 const enableInterceptionAndReloadDapp = async (): Promise<void> => {
     await navigateToPasskeysSettings()
 
@@ -234,15 +207,9 @@ const enableInterceptionAndReloadDapp = async (): Promise<void> => {
     await dappPage.waitForFunction(() => typeof window.doCreate === 'function')
 }
 
-// The keystore's reactive store (extensions/provider/src/singleton.ts) is a
-// module-level singleton PER TAB — each tab's own JS bundle instantiates and
-// hydrates it once from persisted storage at bootstrap. Unlike native (which
-// mounts usePasskeyAutofillLifecycle's focus-triggered reconcileKeystore()),
-// App.web.tsx never re-syncs it from storage on its own, so a key minted in
-// a DIFFERENT tab (the approval popup) is invisible to the already-mounted
-// Settings screen here until this tab's own bootstrap re-runs. A full
-// reload does that — it re-executes hydrateKeystore() against whatever the
-// popup tab persisted.
+// The keystore's reactive store is a per-tab singleton hydrated once at
+// bootstrap, and App.web.tsx never re-syncs it. A key minted in the approval
+// popup's tab is invisible here until a full reload re-runs hydrateKeystore().
 const reloadAndReturnToPasskeysSettings = async (): Promise<void> => {
     await page.reload()
     await unlockIfLocked(page)
@@ -250,10 +217,8 @@ const reloadAndReturnToPasskeysSettings = async (): Promise<void> => {
 }
 
 test.beforeAll(async () => {
-    // The fixture MUST be served over http(s) — the webauthn-main.ts/
-    // webauthn-relay.ts content scripts are declared with
-    // `matches: ['http://*/*', 'https://*/*']` and never match `file://`
-    // (same rule dapp-connect.spec.ts documents for the ARC-0027 pair).
+    // Must be http(s): the content scripts declare
+    // `matches: ['http://*/*', 'https://*/*']` and never match `file://`.
     server = http.createServer((_req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' })
         res.end(fixtureHtml)
@@ -264,10 +229,9 @@ test.beforeAll(async () => {
     const address = server.address()
     const port =
         address !== null && typeof address === 'object' ? address.port : 0
-    // Chrome only treats http:// as a secure context for 127.0.0.1/localhost
-    // specifically — and 'localhost' doubles as this suite's rp.id, since a
-    // bare, dot-less rpId is only accepted by resolveRpId when it EQUALS the
-    // caller's hostname.
+    // http:// is only a secure context on 127.0.0.1/localhost, and 'localhost'
+    // doubles as the rp.id — resolveRpId accepts a dot-less rpId only when it
+    // equals the caller's hostname.
     dappOrigin = `http://localhost:${port}`
 
     context = await chromium.launchPersistentContext('', {
@@ -283,15 +247,9 @@ test.beforeAll(async () => {
     }
     extensionId = new URL(serviceWorker.url()).host
 
-    // Pre-dismiss the PromptContainer PIN-security nudge (modules/prompts):
-    // it fires LONG_PROMPT_DISPLAY_DELAY (3s wall-clock from account
-    // creation, not from anything a test controls) and can land mid-flow as
-    // a full-screen backdrop the reactive dismissPinPromptIfPresent helper
-    // below doesn't always win the race against. Seeding
-    // security_pin_setup_prompt (constants/user-preferences.ts) true makes
-    // usePromptContainer's `!pref` check false on first render, so the
-    // prompt never mounts instead of racing it reactively. Same trick as
-    // pera-card.spec.ts's remote-config override seed.
+    // Seed the PIN-security nudge as already dismissed so it never mounts. It
+    // fires on a wall-clock delay and lands mid-flow as a full-screen backdrop
+    // that the reactive dismiss helper doesn't always beat.
     await serviceWorker.evaluate(async () => {
         await chrome.storage.local.set({
             'kv:settings-store': JSON.stringify({
@@ -301,10 +259,8 @@ test.beforeAll(async () => {
         })
     })
 
-    // Onboard exactly as the other e2e specs: create password -> terms ->
-    // create wallet -> name account -> home. An HD-wallet account must exist
-    // for the passkey authenticator core's key derivation to have anything
-    // to derive from.
+    // An HD-wallet account must exist for the authenticator's key derivation
+    // to have anything to derive from.
     page = await context.newPage()
     pageErrors = trackPageErrors(page)
     await page.goto(`chrome-extension://${extensionId}/expanded.html`)
@@ -334,9 +290,8 @@ test.beforeAll(async () => {
 
     dappPage = await context.newPage()
     dappPageErrors = trackPageErrors(dappPage)
-    // Attached once, before any navigation — CDP WebAuthn state is scoped to
-    // the page's target/frame, not a single document, so it survives the
-    // reload() enableInterceptionAndReloadDapp does between tests 1 and 2.
+    // CDP WebAuthn state is scoped to the target, not the document, so this
+    // survives the reload between tests 1 and 2.
     await attachVirtualAuthenticator(dappPage)
     await dappPage.goto(dappOrigin)
     await dappPage.waitForFunction(() => typeof window.doCreate === 'function')
@@ -347,10 +302,8 @@ test.afterAll(async () => {
     await new Promise<void>(resolve => server.close(() => resolve()))
 })
 
-// 1. Toggle default OFF -> native path. Proves the interception wrap is
-// inert when disabled: no Pera approval window opens, and the ceremony
-// completes against the CDP virtual authenticator exactly as if Pera's
-// content scripts were never injected.
+// Toggle OFF: the wrap must be inert — no approval window, and the ceremony
+// completes against the virtual authenticator as if we never injected.
 test('interception off by default: create() completes natively with no Pera approval window', async () => {
     const pagesBefore = context.pages().length
 
@@ -367,11 +320,8 @@ test('interception off by default: create() completes natively with no Pera appr
     expect(dappPageErrors, 'dapp page threw an uncaught error').toEqual([])
 })
 
-// 2. Toggle ON -> Pera consent + create. The RP page's create() is
-// intercepted, routed to the SAME popup-approval surface enable/sign use,
-// approved, and the resulting credential both round-trips to the page and
-// shows up in Settings > Passkeys after a reload (see
-// reloadAndReturnToPasskeysSettings's comment on why the reload is needed).
+// Toggle ON: create() is intercepted, approved in the popup, and the
+// credential both round-trips to the page and lands in Settings > Passkeys.
 test('interception on: create() opens the Pera consent screen; approving returns a credential that appears in Settings', async () => {
     await enableInterceptionAndReloadDapp()
 
@@ -404,11 +354,8 @@ test('interception on: create() opens the Pera consent screen; approving returns
 
     await approvalPage.close()
 
-    // A reload is required first — see reloadAndReturnToPasskeysSettings's
-    // comment. This is the only passkey in the store at this point in the
-    // suite, so the row is located structurally (see
-    // createdPasskeyRowTestId's doc for why it isn't reconstructed from
-    // createdCredentialId) rather than by an exact testID match.
+    // Only one passkey exists at this point, so locate the row structurally
+    // rather than by testID (see createdPasskeyRowTestId).
     await reloadAndReturnToPasskeysSettings()
     const row = page.locator('[data-testid^="settings_passkeys_item_"]')
     await expect(row).toBeVisible({ timeout: 20_000 })
@@ -419,13 +366,10 @@ test('interception on: create() opens the Pera consent screen; approving returns
     expect(dappPageErrors, 'dapp page threw an uncaught error').toEqual([])
 })
 
-// 3. Toggle ON -> get asserts + verifies. Reuses test 2's credential (still
-// present — deletion is deferred to test 5 for exactly this reason). The
-// load-bearing proof here isn't just that get() resolves: it's the RP
-// page's own WebCrypto ECDSA-P256-SHA256 verify() of the assertion
-// signature against the public key it independently extracted from test 2's
-// attestationObject — byte-correctness of the DER signature, authData, and
-// clientDataHash end to end, with no network round-trip.
+// The proof isn't that get() resolves — it's the RP page's own WebCrypto
+// verify() of the assertion against the public key it independently extracted
+// from test 2's attestation, covering DER signature, authData and
+// clientDataHash byte-correctness end to end.
 test('interception on: get() asserts against the stored credential and the RP page verifies the signature', async () => {
     expect(
         createdCredentialId.length,
@@ -458,14 +402,12 @@ test('interception on: get() asserts against the stored credential and the RP pa
         createdCredentialId,
     )
 
-    // The opaque random user.id test 2's create() sent round-trips back as
-    // response.userHandle on this discoverable assertion.
+    // The user.id test 2 sent round-trips back as response.userHandle.
     expect(await dappPage.locator('#user-handle-match').textContent()).toBe(
         'MATCH',
     )
-    // The byte-correctness proof: DER signature -> raw r||s, authenticatorData
-    // || SHA256(clientDataJSON), verified with the SPKI key rebuilt from the
-    // create() attestation's COSE key.
+    // DER signature -> raw r||s, verified against the SPKI key rebuilt from
+    // the create() attestation's COSE key.
     expect(await dappPage.locator('#verify-result').textContent()).toBe('PASS')
 
     await approvalPage.close()
@@ -473,43 +415,18 @@ test('interception on: get() asserts against the stored credential and the RP pa
     expect(dappPageErrors, 'dapp page threw an uncaught error').toEqual([])
 })
 
-// 4. Decline -> fall-through. Interception is still ON (the toggle is a
-// global master switch, not per-request), but declining in Pera must fall
-// through to the REAL navigator.credentials.create() — completed here by
-// the same CDP virtual authenticator test 1 used — rather than leaving the
-// page's promise unsettled or rejecting it outright.
+// Declining must fall through to the REAL navigator.credentials.create(),
+// not leave the page's promise unsettled or reject it.
 //
-// Unlike test 2/3's approve (Pera mints/asserts the credential itself, no
-// real browser API involved), declining falls through to that REAL
-// navigator.credentials.create() call. On Linux (matching CI's ubuntu-24.04
-// runner — reproduced repeatedly in a from-scratch Linux container, never
-// once on macOS across ~15 local runs) that real ceremony hangs indefinitely
-// — neither resolving nor rejecting — on roughly half of all attempts. This
-// is a Chromium/CDP virtual-authenticator flake specific to this exact call
-// pattern (create() reached via an async cross-context relay rather than
-// directly from a user gesture), not a bug in this repo's fall-through
-// logic. Clearing the authenticator's existing credential first (test 1
-// already minted one for this rpId) narrows but does not eliminate it — the
-// retry loop below is load-bearing, not defensive padding.
+// That real ceremony hangs forever on ~75% of Linux attempts (a Chromium/CDP
+// virtual-authenticator flake specific to reaching create() through an async
+// relay rather than a user gesture) — so the retry loop is load-bearing, not
+// padding. 20 × 5s puts expected failure near 0.3%; the short poll is safe
+// because the ceremony either resolves promptly or never.
 //
-// The original budget of 8 attempts assumed a ~50% single-attempt failure
-// rate. CI says otherwise: this test still failed on 3 of the last ~30
-// Pre-Merge runs across four unrelated branches, which puts the real rate
-// near 75% (0.75^8 ≈ 10%). A hung attempt always burns the full poll window,
-// so the budget is raised and the per-attempt poll shortened to buy the extra
-// attempts back in wall-clock: 20 × 5s ≈ 0.3% expected failure, at a
-// worst-case cost close to the old 8 × 8s. Shortening the poll is safe
-// because the ceremony either resolves promptly or hangs forever — it does
-// not resolve slowly.
-//
-// CRITICAL: each attempt must start from a fresh document. A hung create()
-// stays pending on the document, and every further create() on that same
-// document rejects immediately with "OperationError: A request is already
-// pending." (verified against this exact fixture by driving it with a
-// non-simulating virtual authenticator) — so a re-click without a reload
-// can never recover, and the loop's attempts collapse into one coin flip.
-// That is precisely how this test's first CI run failed every attempt. The reload
-// tears the pending ceremony down with the document; the CDP virtual
+// CRITICAL: each attempt must reload first. A hung create() stays pending on
+// the document and every further create() on it rejects with "A request is
+// already pending", collapsing the whole loop into one coin flip. The virtual
 // authenticator is attached to the CDP session, so it survives the reload.
 const FALLTHROUGH_MAX_ATTEMPTS = 20
 const FALLTHROUGH_POLL_MS = 5000
@@ -563,8 +480,7 @@ test('declining the consent screen falls through to the native virtual authentic
         resolved,
         `fallthrough create() never resolved after ${FALLTHROUGH_MAX_ATTEMPTS} attempts`,
     ).toBe(true)
-    // A resolved credential from the virtual authenticator, NOT a rejection
-    // — passkey-router.ts's DECLINE collapses to the content script's
+    // A resolved credential, NOT a rejection — DECLINE collapses to the
     // fall-through path, never a fabricated error.
     expect(await dappPage.locator('#create-error').textContent()).toBe('')
 
@@ -572,13 +488,9 @@ test('declining the consent screen falls through to the native virtual authentic
     expect(dappPageErrors, 'dapp page threw an uncaught error').toEqual([])
 })
 
-// 5. The passkey created in test 2 is deletable from Settings. Run last,
-// after test 3's get() no longer needs it. PasskeyListItem.tsx's trash
-// PWTouchableIcon renders with no testID in production code (only a vitest
-// mock fabricates one — see the icon-count comment below), and the shared
-// ConfirmActionContent sheet call site doesn't pass confirmTestID/
-// cancelTestID either, so both are selected structurally/by text instead of
-// by testID.
+// Runs last, once test 3 no longer needs the credential. Neither the trash
+// icon nor the confirm sheet carries a testID in production code, so both are
+// selected structurally.
 test('the passkey created in test 2 is deletable from Settings', async () => {
     expect(
         createdPasskeyRowTestId.length,
@@ -587,9 +499,7 @@ test('the passkey created in test 2 is deletable from Settings', async () => {
     const row = page.getByTestId(createdPasskeyRowTestId)
     await expect(row).toBeVisible({ timeout: 20_000 })
 
-    // PasskeyListItem renders exactly two <svg> icons: the decorative
-    // 'person-key' header icon, then the 'trash' touchable — the trash
-    // icon is always last.
+    // Two icons per row: the decorative header one, then the trash touchable.
     await clickThroughPinPrompt(page, row.locator('svg').last())
 
     await clickThroughPinPrompt(page, page.getByText('Remove', { exact: true }))

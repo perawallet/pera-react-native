@@ -183,19 +183,15 @@ export class RNLedgerService implements HardwareWalletService {
             },
 
             async connect(deviceId: string): Promise<LedgerTransport> {
-                // Pre-flight: is Bluetooth powered on at the OS level?
-                // NOTE: `TransportBLE.isSupported()` only reports whether the
-                // native BLE module is linked — it resolves `true` whenever the
-                // module is bundled, regardless of adapter state — so it can
-                // NOT detect a disabled radio (the previous check here was dead
-                // code). Read the observed adapter state instead: the scan
-                // screen keeps the shared observer running, so by connect time
-                // it reflects the real state. Only block on a definitive
-                // `poweredOff`; `unknown` (no observer yet, e.g. cold-start
-                // signing) falls through to `TransportBLE.open`, whose failure
-                // is classified as a generic connection error — the ble-plx
-                // "powered off" (102) → typed-error mapping only applies to the
-                // scan path (`listen`), not `open`.
+                // Reads the observed adapter state, NOT
+                // `TransportBLE.isSupported()` — that only reports whether the
+                // native module is linked and resolves true regardless of radio
+                // state, so it can't detect a disabled radio.
+                //
+                // Blocks only on a definitive `poweredOff`. `unknown` (no
+                // observer yet, e.g. cold-start signing) falls through to
+                // `open`, whose failure classifies as a generic connection
+                // error — the ble-plx 102 mapping only covers the scan path.
                 if (latestBluetoothState === 'poweredOff') {
                     throw new LedgerBluetoothDisabledError()
                 }

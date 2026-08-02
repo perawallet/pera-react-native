@@ -10,41 +10,29 @@
  limitations under the License
  */
 
-/**
- * URI scheme names used by Pera deeplink handling. Each constant is the
- * scheme name only — append `://` (hierarchical) or `:` (opaque) at the
- * use site so every URI reads as `${SCHEME}://${rest}` or `${SCHEME}:${rest}`
- * consistently.
- */
+/** Scheme names only — call sites append `://` (hierarchical) or `:` (opaque). */
 export const PERAWALLET_SCHEME = 'perawallet'
 export const PERAWALLET_WC_SCHEME = 'perawallet-wc'
 export const WC_SCHEME = 'wc'
 
 /**
- * Native-parity WalletConnect wrapper scheme. The native iOS app registered
- * `algorand-wc`; the parser rewrites `algorand-wc:` → `wc:` so existing
- * WalletConnect deep links keep routing after the RN migration.
+ * Registered by the native iOS app. The parser rewrites `algorand-wc:` -> `wc:`
+ * so existing links keep routing after the RN migration.
  */
 export const ALGORAND_WC_SCHEME = 'algorand-wc'
 export const ALGORAND_SCHEME = 'algorand'
 export const ALGO_SCHEME = 'algo'
 /**
- * FIDO2 / WebAuthn URI scheme used by Liquid Auth. The OS routes opens of
- * `fido://…` URLs to the registered credential provider extension, so the
- * app's job is just to recognize the scheme and hand the URL back to the OS.
+ * The OS routes `fido://…` opens to the registered credential provider
+ * extension, so we only recognize the scheme and hand the URL back.
  */
 export const FIDO_SCHEME = 'fido'
 
 /**
- * Liquid Auth comms-protocol URI scheme. Reserved for the upcoming in-app
- * Liquid Auth flow (signaling channel + WebAuthn assertion handoff) — the
- * parser recognises the scheme today so QR / deeplink callers don't fall
- * through to "invalid URL", but the dispatcher only logs a placeholder until
- * the protocol implementation lands.
+ * Recognised today only so QR/deeplink callers don't fall through to "invalid
+ * URL"; the dispatcher logs a placeholder until the Liquid Auth flow lands.
  */
 export const LIQUID_SCHEME = 'liquid'
 
-/**
- * Universal-link base for QR-share URLs that mirror native scheme handlers.
- */
+/** Universal-link base for QR-share URLs mirroring the native handlers. */
 export const PERAWALLET_UNIVERSAL_LINK_HOST = 'https://perawallet.app'

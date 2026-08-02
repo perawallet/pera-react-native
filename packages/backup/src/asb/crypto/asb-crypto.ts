@@ -28,14 +28,9 @@ import { wordlist } from '@scure/bip39/wordlists/english.js'
 const CIPHER_KEY_CONTEXT = new TextEncoder().encode('Algorand export 1.0')
 
 /**
- * Recover the 16-byte BIP-39 entropy that seeds the backup key.
- *
- * Important: this is *not* a BIP-39 seed (no PBKDF2, no `mnemonic` salt). It
- * is the raw 16 bytes of entropy that the 12-word phrase encodes, verified
- * against the BIP-39 checksum. The 16 bytes are then fed into
- * `generateBackupCipherKey` to derive the 32-byte symmetric key.
- *
- * Throws if the phrase is the wrong length or has an invalid checksum.
+ * NOT a BIP-39 seed — no PBKDF2, no `mnemonic` salt. This is the raw 16 bytes
+ * of entropy the 12-word phrase encodes, checksum-verified, which
+ * `generateBackupCipherKey` then stretches to the 32-byte symmetric key.
  */
 export const backupMnemonicToKey = (mnemonic: string): Uint8Array => {
     const normalized = mnemonic.trim().split(/\s+/).join(' ')
@@ -43,11 +38,8 @@ export const backupMnemonicToKey = (mnemonic: string): Uint8Array => {
 }
 
 /**
- * Derive the 32-byte secretbox key from the 16-byte BIP-39 entropy.
- *
- * HMAC-SHA256 with the string `"Algorand export 1.0"` as the HMAC key (not as
- * the message). The argument order matches the Go reference:
- * `hmac.New(sha256, []byte("Algorand export 1.0")).Write(seed)`.
+ * The context string is the HMAC *key*, not the message — argument order
+ * matches the Go reference `hmac.New(sha256, context).Write(seed)`.
  */
 export const generateBackupCipherKey = (seed: Uint8Array): Uint8Array =>
     hmac(sha256, CIPHER_KEY_CONTEXT, seed)

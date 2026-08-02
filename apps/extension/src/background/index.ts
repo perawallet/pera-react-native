@@ -54,26 +54,19 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true
 })
 
-// ARC-0027 dapp relay: permission store + approval bridge feed the router,
-// which answers discover/enable/disable over chrome.runtime
-// messaging from the content-script relay. discoverInfo() advertises the
-// single ACTIVE network (design decision: multi-network advertising is
-// deferred), read from the network store's own persisted zustand envelope
-// rather than importing the store itself — the SW has no React tree to
-// mount a store hook in.
+// ARC-0027 dapp relay: the permission store and approval bridge feed the
+// router, which answers discover/enable/disable over chrome.runtime messaging.
+// discoverInfo() advertises only the ACTIVE network (multi-network advertising
+// is deferred), read out of the network store's persisted envelope rather than
+// the store itself — the SW has no React tree to mount a hook in.
 //
-// The store persists through ChromeKeyValueStorageService
-// (extensions/platform-chrome/src/services/key-value-storage.ts), which (a)
-// prefixes every key with `kv:` and (b) stores the envelope as a
-// JSON-stringified string, not an object — so the real chrome.storage.local
-// entry is `kv:network-store` holding a string like
-// '{"state":{"network":"testnet"},"version":1}'. parseActiveNetwork does the
-// JSON.parse + validation (pure, unit-tested in ./network).
+// That envelope lands in chrome.storage.local as `kv:network-store` holding a
+// JSON *string*, not an object, because ChromeKeyValueStorageService prefixes
+// keys and stringifies values. parseActiveNetwork handles the parse.
 //
-// The custom slot's chain identity is read the same way, from its own store:
-// `custom`'s baked chain-table row is empty by design, so getNetworkConfig
-// cannot supply it and resolveAdvertisedGenesis has to consult this key or the
-// wallet would advertise genesisHash: '' to every dApp.
+// The custom slot's chain identity comes from its own store the same way:
+// `custom`'s baked chain-table row is empty by design, so without it the wallet
+// would advertise `genesisHash: ''` to every dApp.
 const NETWORK_STORE_KV_KEY = 'kv:network-store'
 const CUSTOM_NETWORK_STORE_KV_KEY = 'kv:custom-network-store'
 

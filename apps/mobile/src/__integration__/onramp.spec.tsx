@@ -10,31 +10,14 @@
  limitations under the License
  */
 
-// Integration coverage for the native onramp BUY flow, exercised end-to-end
-// through the real OnrampScreen + OnrampForm + the real
-// @perawallet/wallet-core-onramp hooks (pairs query, region query, quote
-// mutation, order mutation, ensure-opt-in). Only the network (MSW) and the
-// base app state (selected account, network, device, opt-in holdings) are
-// seeded.
+// The native onramp BUY flow end-to-end through the real OnrampScreen,
+// OnrampForm and wallet-core-onramp hooks. Only the network (MSW) and base app
+// state (selected account, network, device, opt-in holdings) are seeded.
 //
-//   OnrampScreen
-//     ├─ useOnrampScreen → useRampPairsQuery (GET /v1/ramp/pairs/)
-//     │                  → useRampRegionQuery (GET /v1/ramp/region/)
-//     │                  → seeds selectedPairId, flips isReady
-//     └─ OnrampForm / useOnrampForm
-//          ├─ amount entered → debounced useCreateRampQuoteMutation
-//          │                   (POST /v1/ramp/quotes/) → receive amount
-//          └─ Buy pressed → useEnsureDestinationOptIn
-//                              (ALGO: no-op · already-opted-in ASA: no-op)
-//                         → useCreateRampOrderMutation
-//                              (POST /v1/ramp/orders/)
-//                         → XO order-review sheet with pay_in_address
-//
-// XO quotes are fetched once per pair with a null source amount (the provider
-// returns a fixed rate + limits); the receive amount is then computed locally
-// as `sourceAmount * amount.value - minerFee.value`. The quote fetch is
-// debounced (500ms) so the test waits on the receive amount with real timers
-// rather than mocking the clock — matching the other flow tests.
+// XO quotes are fetched once per pair with a null source amount — the provider
+// returns a fixed rate and limits, and the receive amount is computed locally.
+// The fetch is debounced 500ms, so the test waits on the receive amount with
+// real timers rather than mocking the clock.
 
 import {
     afterAll,
@@ -342,10 +325,6 @@ const seedSignableAccount = async (): Promise<WalletAccount> => {
     useAccountsStore.getState().setSelectedAccountAddress(account.address)
     return account
 }
-
-// ---------------------------------------------------------------------------
-// Fee-delegation fixtures
-// ---------------------------------------------------------------------------
 
 // Fee delegation requires a valid (non-expired) device attestation token.
 const seedAttestation = () => {
@@ -793,10 +772,6 @@ describe('Flow: Onramp buy (native XO)', () => {
         },
         SLOW_TEST_TIMEOUT_MS,
     )
-
-    // -----------------------------------------------------------------------
-    // Fee-delegated opt-in flows
-    // -----------------------------------------------------------------------
 
     // Drives the shared front half of the delegated flows: render, quote,
     // tap Buy, and wait for the opt-in confirmation sheet.

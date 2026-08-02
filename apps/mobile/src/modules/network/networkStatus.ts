@@ -15,32 +15,26 @@ import { onlineManager } from '@tanstack/react-query'
 import { useNetworkStatusStore } from './hooks/useNetworkStatusStore'
 
 /**
- * Endpoint used to actively probe internet reachability. A successful probe
- * returns HTTP 204 (empty body). iOS has no native reachability signal, so
- * without an explicit probe URL `isInternetReachable` never turns `false` on a
- * captive portal / dead-gateway link — configuring this is what unifies
- * captive-portal detection across platforms.
+ * Must return HTTP 204 with an empty body. iOS has no native reachability
+ * signal, so without an explicit probe URL `isInternetReachable` never turns
+ * `false` on a captive portal or dead gateway.
  *
- * TODO(PERA-4570): swap for a Pera-controlled 204 endpoint once ops hosts it;
- * Google's `generate_204` is the agreed interim.
+ * TODO(PERA-4570): swap for a Pera-controlled 204 endpoint once ops hosts it.
  */
 export const REACHABILITY_URL = 'https://clients3.google.com/generate_204'
 
 /**
- * Trailing debounce applied before committing a going-offline transition.
- * Rapid airplane-mode flapping (PERA-4543 Part A) collapses to at most one
- * transition per window; going online is applied immediately so recovery
- * feels instant.
+ * Trailing debounce on going-offline only, so airplane-mode flapping collapses
+ * to one transition per window. Going online applies immediately.
  */
 export const OFFLINE_DEBOUNCE_MS = 2000
 
 let offlineTimer: ReturnType<typeof setTimeout> | null = null
 
 /**
- * Set once a live NetInfo event has been handled after the current boot began.
- * The boot seed's `fetch()` can resolve seconds later (active reachability
- * probing), by which point the listener may already have committed a fresher
- * state — the stale boot result must not clobber it.
+ * The boot seed's `fetch()` can resolve seconds later (active probing), by
+ * which point the listener may have committed fresher state that the stale
+ * boot result must not clobber.
  */
 let liveSignalSinceBoot = false
 
@@ -52,10 +46,8 @@ const clearOfflineTimer = (): void => {
 }
 
 /**
- * Commit a connectivity value to the store. The store is the single source of
- * truth (and the only writer to TanStack Query's `onlineManager`), so this is
- * the one place connectivity state is mutated. No-ops when the value is
- * unchanged to avoid redundant transitions.
+ * The one place connectivity is mutated — the store is the single source of
+ * truth and the only writer to TanStack Query's `onlineManager`.
  */
 const applyConnectivity = (hasInternet: boolean): void => {
     if (useNetworkStatusStore.getState().hasInternet === hasInternet) {
@@ -64,20 +56,15 @@ const applyConnectivity = (hasInternet: boolean): void => {
     useNetworkStatusStore.getState().setHasInternet(hasInternet)
 }
 
-/**
- * Apply a connectivity value immediately, cancelling any pending debounced
- * transition. Used for the boot seed where there is no prior state to debounce.
- */
+/** Skips the debounce — for the boot seed, which has no prior state. */
 export const setConnectivity = (hasInternet: boolean): void => {
     clearOfflineTimer()
     applyConnectivity(hasInternet)
 }
 
 /**
- * Handle a live connectivity change from NetInfo.
- * - Going online applies immediately and cancels any pending offline timer.
- * - Going offline is trailing-debounced: rapid flaps coalesce into the single
- *   timer already in flight, and recovery within the window cancels it.
+ * Online applies immediately and cancels any pending offline timer. Offline is
+ * trailing-debounced: flaps coalesce into the timer already in flight.
  */
 export const handleConnectivityChange = (hasInternet: boolean): void => {
     liveSignalSinceBoot = true
@@ -97,32 +84,22 @@ export const handleConnectivityChange = (hasInternet: boolean): void => {
     }, OFFLINE_DEBOUNCE_MS)
 }
 
-/**
- * Cancel any pending debounced offline transition. Used on listener teardown
- * and in tests to reset the module timer between cases.
- */
+/** For listener teardown, and to reset the module timer between tests. */
 export const cancelPendingConnectivityChange = (): void => {
     clearOfflineTimer()
 }
 
-/**
- * Wire the connectivity store to TanStack Query's `onlineManager` so the store
- * is the single source of truth: every store transition is mirrored to
- * `onlineManager`, and nothing else writes to it. Returns an unsubscribe fn.
- */
+/** Mirrors every store transition to `onlineManager`; nothing else writes it. */
 export const bindOnlineManager = (): (() => void) =>
     useNetworkStatusStore.subscribe(state =>
         onlineManager.setOnline(state.hasInternet),
     )
 
 /**
- * Configure NetInfo's active reachability probing. The URL is supplied by the
- * caller (sourced from Remote Config, see useNetworkStatusListener) so it can
- * change without a redeploy; it MUST return HTTP 204 with an empty body, since
- * `reachabilityTest` treats anything else as unreachable — that is what unmasks
- * a captive portal answering 200 + HTML. Conservative timeouts (5s short / 60s
- * long) keep the probe cheap while giving iOS the captive-portal detection
- * Android already gets via NET_CAPABILITY_VALIDATED.
+ * The URL comes from the caller (Remote Config, see useNetworkStatusListener)
+ * so it can change without a redeploy. It MUST answer 204 with an empty body:
+ * `reachabilityTest` treats anything else as unreachable, which is what unmasks
+ * a captive portal answering 200 + HTML.
  */
 export const configureNetInfo = (reachabilityUrl: string): void => {
     NetInfo.configure({
@@ -137,20 +114,18 @@ export const configureNetInfo = (reachabilityUrl: string): void => {
 }
 
 /**
- * Boot seed for connectivity. Wires the store to `onlineManager`, then seeds it
- * from a one-shot fetch routed through {@link computeHasInternet} so early
- * queries never fire-and-fail against a dead link. Runs once at module load,
- * before the query layer mounts (see App.tsx) — the provider (and thus Remote
- * Config) is not ready yet, so reachability probing is configured later by the
- * listener; until then NetInfo's built-in generate_204 default applies.
+ * Seeds from a one-shot fetch so early queries never fire-and-fail against a
+ * dead link. Runs at module load, before the query layer mounts — Remote Config
+ * isn't ready yet, so the listener configures probing later; until then
+ * NetInfo's built-in generate_204 default applies.
  */
 export const initNetworkStatus = (): Promise<void> => {
     bindOnlineManager()
 
     liveSignalSinceBoot = false
     const seedIfStillAuthoritative = (hasInternet: boolean): void => {
-        // A live event during boot supersedes this (older, more optimistic)
-        // snapshot — don't clobber the fresher state.
+        // A live event during boot supersedes this older, more optimistic
+        // snapshot.
         if (liveSignalSinceBoot) {
             return
         }
@@ -163,14 +138,9 @@ export const initNetworkStatus = (): Promise<void> => {
 }
 
 /**
- * Single source of truth for "is the app actually online?".
- *
- * Combines NetInfo's link-level `isConnected` with its actively-probed
- * `isInternetReachable`. NetInfo reachability is tri-state:
- * - `true`  → probe succeeded, internet confirmed
- * - `false` → probe failed (captive portal / dead gateway), treat as offline
- * - `null`  → not yet known; treated as reachable so we never flip the app
- *   offline on a link that simply hasn't been probed yet.
+ * `isInternetReachable` is tri-state, and `null` (not yet probed) counts as
+ * reachable — otherwise the app flips offline on a link that simply hasn't
+ * been probed yet.
  */
 export const computeHasInternet = (state: NetInfoState): boolean =>
     state.isConnected === true && state.isInternetReachable !== false

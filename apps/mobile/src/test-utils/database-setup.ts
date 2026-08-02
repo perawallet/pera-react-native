@@ -10,22 +10,14 @@
  limitations under the License
  */
 
-// Integration-test plumbing for the on-device SQLite database. Tests
-// that exercise repositories (assets, accounts, NFD, transactions, …)
-// need the real schema in place, not the throwing stub from the
-// platform driver. This module:
+// Gives repository tests the real SQLite schema instead of the platform
+// driver's throwing stub. Expected lifecycle:
 //
-//   - Initializes the test database (runs all drizzle migrations)
-//   - Resets it between tests (drops + re-migrates)
-//   - Exposes seed helpers for common fixtures (e.g. ALGO_ASSET)
-//
-// The expected lifecycle inside a test file:
 //   beforeAll(setupTestDatabase)
 //   beforeEach(resetTestDatabase)
 //   afterAll(teardownTestDatabase)
 //
-// Or use `withTestDatabase()` from a fixture wrapper if you want a
-// single helper.
+// or `withTestDatabase()` for all three at once.
 
 import {
     initializeDatabase,
@@ -69,10 +61,8 @@ export const teardownTestDatabase = async (): Promise<void> => {
     resetDatabase()
 }
 
-// ---------------------------------------------------------------------------
 // Seed helpers — narrow, named fixtures rather than a god-mode setter.
 // Add new helpers here as more flows need richer pre-loaded state.
-// ---------------------------------------------------------------------------
 
 /**
  * Insert ALGO_ASSET into the assets cache. Required by any flow that

@@ -10,21 +10,13 @@
  limitations under the License
  */
 
-// Integration coverage for the Staking module.
+// Staking: the project list, the disclaimer gate, and list/loading/error/empty
+// rendering.
 //
-//   useStakingProjectsQuery  ──► remote-config `staking_projects` (the project
-//                                list) merged with
-//                                GET /v1/staking/projects-information/ (TVL).
-//   useStakingScreen         ──► list / loading / error / empty rendering plus
-//                                the disclaimer-gated project open.
-//   useStakingDisclaimer     ──► settings preference `stakingDisclaimerAccepted`.
-//
-// The project list is sourced from Firebase Remote Config, not the API — the
-// API only supplies per-project TVL. We seed the config via the real
-// remote-config override store (useRemoteConfig reads overrides first) and the
-// TVL via MSW. mapProjects sorts by descending tvlInAlgo, which we assert.
-// `@perawallet/wallet-core-staking` is unmocked for integration tests in
-// vitest.integration-setup.ts so the real query runs end-to-end.
+// The list comes from Remote Config, not the API — the API only supplies
+// per-project TVL — so the config is seeded via the real override store and the
+// TVL via MSW. `mapProjects` sorts by descending tvlInAlgo, which is asserted.
+// wallet-core-staking is unmocked here so the real query runs end-to-end.
 
 import {
     afterAll,

@@ -18,9 +18,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { LEDGER_STATUS_CODES } from './constants'
 
-/**
- * BLE connection or scanning failure.
- */
 export class LedgerConnectionError extends AppError {
     constructor(message: string, originalError?: Error) {
         super(
@@ -35,9 +32,7 @@ export class LedgerConnectionError extends AppError {
     }
 }
 
-/**
- * The Algorand app is not open on the Ledger device (APDU status 0x6e00).
- */
+/** APDU status 0x6e00. */
 export class LedgerAppNotOpenError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -52,10 +47,7 @@ export class LedgerAppNotOpenError extends AppError {
     }
 }
 
-/**
- * The device is locked on its PIN screen (APDU status 0x5515). The user
- * unlocks the device and retries — no app-side remediation beyond that.
- */
+/** APDU status 0x5515. No app-side remediation — the user unlocks and retries. */
 export class LedgerDeviceLockedError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -70,9 +62,6 @@ export class LedgerDeviceLockedError extends AppError {
     }
 }
 
-/**
- * No Ledger device is attached over USB at connect time.
- */
 export class LedgerUsbNoDeviceError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -88,9 +77,8 @@ export class LedgerUsbNoDeviceError extends AppError {
 }
 
 /**
- * More than one Ledger is attached over USB. The Android HID layer selects
- * by vendorId alone, so a specific device cannot be targeted — the user must
- * disconnect the extras.
+ * The Android HID layer selects by vendorId alone, so a specific device can't
+ * be targeted — the user must disconnect the extras.
  */
 export class LedgerUsbMultipleDevicesError extends AppError {
     constructor(originalError?: Error) {
@@ -106,9 +94,7 @@ export class LedgerUsbMultipleDevicesError extends AppError {
     }
 }
 
-/**
- * The user rejected an operation on the Ledger device (APDU status 0x6985/0x6986).
- */
+/** APDU status 0x6985/0x6986. */
 export class LedgerUserRejectedError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -120,17 +106,13 @@ export class LedgerUserRejectedError extends AppError {
             },
             originalError,
         )
-        // Pinned as a literal (AppError derives `name` from
-        // `constructor.name`, which a minifier can mangle): the swap flow's
-        // user-rejection classification matches this error by name to avoid
-        // a value import of this package.
+        // Pinned as a literal because AppError derives `name` from
+        // `constructor.name`, which a minifier can mangle — the swap flow
+        // matches this error by name to avoid a value import of this package.
         this.name = 'LedgerUserRejectedError'
     }
 }
 
-/**
- * The BLE connection was lost during an operation.
- */
 export class LedgerDisconnectedError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -145,9 +127,6 @@ export class LedgerDisconnectedError extends AppError {
     }
 }
 
-/**
- * An operation timed out waiting for device response or user confirmation.
- */
 export class LedgerTimeoutError extends AppError {
     constructor(operation: string, originalError?: Error) {
         super(
@@ -163,9 +142,8 @@ export class LedgerTimeoutError extends AppError {
 }
 
 /**
- * The address returned by the Ledger device does not match the expected address.
- * Guards against signing with the wrong index if the on-device account order
- * or selected app has changed since the account was imported.
+ * Guards against signing with the wrong index when the on-device account order
+ * or selected app changed since the account was imported.
  */
 export class LedgerAddressMismatchError extends AppError {
     constructor(expected: string, actual: string, originalError?: Error) {
@@ -182,10 +160,7 @@ export class LedgerAddressMismatchError extends AppError {
     }
 }
 
-/**
- * The Ledger device returned an empty signature for a signing request.
- * Indicates a protocol or device-state failure rather than user rejection.
- */
+/** Empty signature returned — a protocol/device-state failure, not a rejection. */
 export class LedgerSigningError extends AppError {
     constructor(message: string, originalError?: Error) {
         super(
@@ -200,10 +175,7 @@ export class LedgerSigningError extends AppError {
     }
 }
 
-/**
- * No transport provider is registered for the requested (manufacturer,
- * transportType) tuple, or no provider was tracked for a scanned device.
- */
+/** No provider registered for the (manufacturer, transportType) tuple. */
 export class LedgerProviderNotFoundError extends AppError {
     constructor(reason: string, originalError?: Error) {
         super(
@@ -219,9 +191,6 @@ export class LedgerProviderNotFoundError extends AppError {
     }
 }
 
-/**
- * Account discovery completed without finding any usable accounts on the device.
- */
 export class LedgerNoAccountsFoundError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -236,9 +205,6 @@ export class LedgerNoAccountsFoundError extends AppError {
     }
 }
 
-/**
- * The device's Bluetooth adapter is disabled at sign time.
- */
 export class LedgerBluetoothDisabledError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -253,9 +219,6 @@ export class LedgerBluetoothDisabledError extends AppError {
     }
 }
 
-/**
- * BLE scan permission was denied or revoked.
- */
 export class LedgerPermissionDeniedError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -271,12 +234,10 @@ export class LedgerPermissionDeniedError extends AppError {
 }
 
 /**
- * BLE scanning cannot run because the OS location services (GPS) toggle is
- * off. Android ≤ 11 requires location services to be enabled for BLE
- * discovery even when the location *permission* is granted — the scan
- * otherwise fails with `react-native-ble-plx` `BleErrorCode.LocationServicesDisabled`
- * (601) and no devices are ever surfaced, leaving the user stuck on "Scan
- * Again". Android 12+ (`neverForLocation`) is unaffected.
+ * Android <= 11 needs the location services *toggle* on for BLE discovery even
+ * when the permission is granted; without it the scan fails with ble-plx 601
+ * and surfaces no devices, stranding the user on "Scan Again". Android 12+
+ * (`neverForLocation`) is unaffected.
  */
 export class LedgerLocationServicesDisabledError extends AppError {
     constructor(originalError?: Error) {
@@ -293,9 +254,8 @@ export class LedgerLocationServicesDisabledError extends AppError {
 }
 
 /**
- * BLE scan completed without locating the target device. Distinct from
- * `LedgerTimeoutError` (which covers any device-communication timeout) so
- * the UI can render scan-specific copy and the troubleshooting link.
+ * Distinct from `LedgerTimeoutError` so the UI can render scan-specific copy
+ * and the troubleshooting link.
  */
 export class LedgerScanTimeoutError extends AppError {
     constructor(message: string, originalError?: Error) {
@@ -311,11 +271,7 @@ export class LedgerScanTimeoutError extends AppError {
     }
 }
 
-/**
- * Signature attachment or post-sign processing failed after the device
- * returned a signature. Indicates an internal protocol/encoding failure,
- * not a user action.
- */
+/** Post-sign processing failed — an encoding failure, not a user action. */
 export class LedgerSigningFailedError extends AppError {
     constructor(message: string, originalError?: Error) {
         super(
@@ -330,9 +286,6 @@ export class LedgerSigningFailedError extends AppError {
     }
 }
 
-/**
- * Failed to write a BLE characteristic when sending data to the Ledger.
- */
 export class LedgerTransmissionError extends AppError {
     constructor(message: string, originalError?: Error) {
         super(
@@ -347,9 +300,6 @@ export class LedgerTransmissionError extends AppError {
     }
 }
 
-/**
- * Failed to read the device's public key during connect-time verification.
- */
 export class LedgerPublicKeyReadError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -364,10 +314,7 @@ export class LedgerPublicKeyReadError extends AppError {
     }
 }
 
-/**
- * Network/indexer error during a Ledger-driven flow (e.g. account
- * existence check).
- */
+/** e.g. the indexer account-existence check. */
 export class LedgerNetworkError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -382,9 +329,6 @@ export class LedgerNetworkError extends AppError {
     }
 }
 
-/**
- * The connected device returned an unsupported-model indicator.
- */
 export class LedgerUnsupportedDeviceError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -433,17 +377,11 @@ const getStatusCode = (error: unknown): Nullable<number> => {
 }
 
 /**
- * `@ledgerhq/react-native-hw-transport-ble` remaps raw `react-native-ble-plx`
- * scan/connect failures to an `@ledgerhq/errors` `HwTransportError` before they
- * reach us. The original numeric `BleErrorCode` survives in two places: the
- * typed `.type` field (for the handful of codes the lib maps) and appended to
- * the message as `". Origin: <code>"` (for every code). We read both so Android
- * BLE scan failures surface as actionable, typed errors instead of a generic
- * retry. Detected structurally (by `name`) to avoid coupling to the lib's
- * class identity across versions.
- *
- * Ref: `@ledgerhq/react-native-hw-transport-ble/.../remapErrors` →
- * `mapBleErrorToHwTransportError`.
+ * `@ledgerhq/react-native-hw-transport-ble` remaps ble-plx failures to an
+ * `HwTransportError` before they reach us. The numeric `BleErrorCode` survives
+ * both in `.type` (for the codes the lib maps) and appended to the message as
+ * `". Origin: <code>"` (for every code) — we read both. Detected by `name` to
+ * avoid coupling to the lib's class identity across versions.
  */
 const isHwTransportError = (
     error: unknown,
@@ -462,10 +400,9 @@ const parseBleOriginCode = (message: string): Nullable<number> => {
 }
 
 /**
- * Maps the specific BLE-adapter/location failures we can act on. Returns
- * `null` for anything else so the caller falls through to the shared
- * message-based heuristics (disconnect/timeout) rather than flattening every
- * unmapped transport error to a generic connection error.
+ * `null` for anything unmapped, so the caller falls through to the shared
+ * message heuristics rather than flattening every transport error to a
+ * generic connection error.
  */
 const classifyHwTransportError = (
     error: Error & { type?: string },
@@ -478,9 +415,8 @@ const classifyHwTransportError = (
     ) {
         return new LedgerLocationServicesDisabledError(error)
     }
-    // The lib labels a location-permission failure `LocationServicesUnauthorized`
-    // (Android maps `BleErrorCode.BluetoothUnauthorized` → this). It's a
-    // permission problem, so route it to the permission-denied preset.
+    // The lib labels a location-*permission* failure
+    // `LocationServicesUnauthorized`, so it routes to permission-denied.
     if (error.type === 'LocationServicesUnauthorized') {
         return new LedgerPermissionDeniedError(error)
     }
@@ -491,14 +427,9 @@ const classifyHwTransportError = (
 }
 
 /**
- * Maps raw errors from `@algorandfoundation/ledger-algorand-js` or BLE transport
- * to typed Ledger error classes. Pass-through for already-classified
- * AppError instances so re-classification at catch sites preserves the
- * specific error type.
- *
- * Errors that this codebase throws directly (bluetooth disabled, scan
- * timeout, transmission, etc.) are AppError subclasses already, so they
- * fall through the AppError short-circuit without needing a mapping rule.
+ * Pass-through for already-classified AppErrors, so re-classifying at a catch
+ * site preserves the specific type — which is also why errors this codebase
+ * throws directly need no mapping rule.
  */
 export const classifyLedgerError = (error: unknown): AppError => {
     if (error instanceof AppError) return error

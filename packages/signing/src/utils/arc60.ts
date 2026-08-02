@@ -42,10 +42,6 @@ export const ARC60_SCOPE_AUTH = 1
 export const ARC60_SUPPORTED_ENCODINGS = ['base64'] as const
 export type Arc60SupportedEncoding = (typeof ARC60_SUPPORTED_ENCODINGS)[number]
 
-// =============================================================================
-// Crypto / payload helpers
-// =============================================================================
-
 /**
  * Decodes the ARC-60 `data` field per `metadata.encoding`.
  *

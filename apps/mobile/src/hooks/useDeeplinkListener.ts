@@ -15,19 +15,13 @@ import { Linking } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useDeepLink } from './useDeepLink'
 
-// This hook is mounted by every layout (SafeAreaLayout / FullScreenLayout /
-// HeaderedLayout), so several instances coexist and each one's listener fires
-// for the same URL. The guards below are module-level — shared across all
-// instances — so a given deep link is processed exactly once:
+// Every layout mounts this hook, so several instances coexist and each fires
+// for the same URL. The guards below are module-level so a link is handled once.
 //
-//  - `hasHandledInitialUrl` makes the cold-start launch URL fire a single
-//    time. `Linking.getInitialURL()` keeps returning the launch URL for the
-//    whole session, so without a shared guard every newly mounted layout
-//    (i.e. every screen the user navigates to) would re-handle it — the
-//    "modal keeps popping up" bug.
-//  - `lastHandledUrl` + `DUPLICATE_WINDOW_MS` collapse the warm-start fan-out:
-//    when multiple listeners receive the same `url` event in the same instant,
-//    only the first is handled.
+// `hasHandledInitialUrl` is needed because `Linking.getInitialURL()` keeps
+// returning the launch URL all session — without it, every newly mounted layout
+// re-handles it (the "modal keeps popping up" bug). `lastHandledUrl` +
+// `DUPLICATE_WINDOW_MS` collapse the warm-start fan-out.
 let hasHandledInitialUrl = false
 let lastHandledUrl: string | null = null
 let lastHandledAt = 0

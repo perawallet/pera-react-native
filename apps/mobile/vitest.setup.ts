@@ -955,17 +955,12 @@ vi.mock('expo-clipboard', () => ({
     getStringAsync: vi.fn(),
 }))
 
-// `expo-modules-core` references `__DEV__` at module-load time in
-// `setUpJsLogger.fx.ts`; under jsdom this is undefined and any expo-* package
-// that transitively imports it crashes during import. Define the global up
-// front so consumers that aren't separately mocked (e.g. expo-screen-capture)
-// can be loaded by the routes barrel under unit tests.
+// `expo-modules-core` reads `__DEV__` at module-load time, which is undefined
+// under jsdom, so any expo-* package importing it crashes on import.
 //
-// Side-effect: every unit test now sees `__DEV__ === false`. App code that
-// gates dev-only logging/asserts on `__DEV__` will run as if in a production
-// build. If a spec ever wants to exercise a dev-mode branch it should set
-// the global itself (and restore it afterwards) rather than rely on the
-// default.
+// Side-effect: every unit test sees `__DEV__ === false`, so dev-only branches
+// run as in a production build. A spec wanting the dev branch must set and
+// restore the global itself.
 ;(globalThis as { __DEV__?: boolean }).__DEV__ = false
 
 vi.mock('expo-screen-capture', () => ({

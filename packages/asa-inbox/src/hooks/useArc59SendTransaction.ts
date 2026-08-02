@@ -71,21 +71,15 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                 })
             }
 
-            // Attach the ARC-59 resource references explicitly so the group
-            // always builds WITHOUT a live simulate (`populateAppCallResources`),
+            // Explicit references so the group builds without a live simulate,
             // which the production algod proxy rejects. Everything the router
-            // touches is derivable client-side: the router box is keyed by the
-            // receiver's (recipient's) public key, and the asset is known.
+            // touches is derivable client-side.
             //
-            // The receiver's inbox account is referenced ONLY when it already
-            // exists (`summary.inbox_address`): the router reads the existing
-            // inbox's state, so it must be available. On a first send the inbox
-            // does not exist yet and is created inside `arc59_sendAsset` (inner
-            // txn) — an account created in-call is available without being
-            // pre-referenced, so it must be omitted (referencing the
-            // zero/unknown address would fail). `receiver` alone is enough
-            // there. Verified on-chain against a simulate-blocked node for both
-            // the fresh-receiver and existing-inbox cases.
+            // The inbox account is referenced ONLY when it already exists: the
+            // router reads its state, so it must be available. On a first send
+            // the inbox is created inside the call as an inner txn, and an
+            // account created in-call needs no pre-reference — referencing the
+            // unknown address would fail.
             const inboxAddress = summary.inbox_address
             const receiverBox = {
                 appId: arc59Config.appId,

@@ -10,49 +10,28 @@
  limitations under the License
  */
 
-// MAIN-world WebAuthn interceptor. No chrome.* here (MAIN world has none —
-// see inject-main.ts's header for the same constraint). Wraps
+// MAIN-world WebAuthn interceptor. No chrome.* available here. Wraps
 // navigator.credentials.create/get and round-trips `publicKey` ceremonies to
-// the ISOLATED relay (webauthn-relay.ts) over a per-load-randomized
-// CustomEvent channel, the same ARC-0027 pattern inject-main.ts/
-// relay-isolated.ts use.
+// the ISOLATED relay over a per-load-randomized CustomEvent channel — the same
+// pattern inject-main.ts uses for ARC-0027.
 //
-// FALL-THROUGH CONTRACT (the whole point of this file): the stashed
-// `origCreate`/`origGet` are captured synchronously, before anything wraps
-// `navigator.credentials`, so the real implementation is always available as
-// the terminal path. Every non-success outcome — no publicKey option,
-// conditional mediation, a relay decline, a dead/uninstalled toggle, a
-// timeout, a transport error, or a throw from this file's own
-// serialize/reconstruct code (malformed page input or a malformed relay
-// payload) — resolves/rejects the page's promise with the STASHED
-// ORIGINAL's own outcome. The one deliberate exception is a `{ error: name }`
-// response: that's a REAL authenticator-level failure (InvalidStateError,
-// SecurityError, ...) surfaced by Pera's authenticator core, and it must
-// reject with that exact native DOMException rather than fall through —
-// falling through past e.g. InvalidStateError would let the platform
-// authenticator mint a duplicate credential the RP explicitly tried to
-// exclude, silently defeating the check that produced the error. Short of
-// that one case, this file never fabricates a rejection of its own; it
-// either hands back a real Pera-minted credential, surfaces Pera's own
-// authenticator error verbatim, or gets out of the way entirely and lets the
-// browser's real WebAuthn implementation (platform authenticator, security
-// key, etc.) decide.
+// FALL-THROUGH CONTRACT: every non-success outcome — no publicKey option,
+// conditional mediation, a decline, a dead toggle, a timeout, a transport
+// error, or a throw from this file's own serialize code — settles the page's
+// promise with the STASHED ORIGINAL's outcome. This file never fabricates a
+// rejection.
 //
-// BUNDLE-SIZE NOTE: only `import type` from `@perawallet/wallet-core-passkeys`
-// below — those vanish entirely at build time (erased by the TS/esbuild
-// compile step), so they cost this bundle nothing. The serialize/deserialize
-// *functions* from that package's wire codec are deliberately NOT imported
-// here at runtime: pulling in `@perawallet/wallet-core-passkeys/webauthn`
-// drags in its authenticator core (`@algorandfoundation/dp256`) and
-// `@perawallet/wallet-core-shared`'s full barrel (react-query, zod, ky,
-// decimal.js, ...) transitively, ballooning this script from ~2KB to
-// ~900KB — a cost paid on EVERY http/https page at document_start
-// (all_frames), unlike the SW/approval-window contexts where that weight is
-// a non-issue. The base64url codec + serialize functions below are
-// therefore a deliberate, minimal duplication of
-// packages/passkeys/src/authenticator/wire.ts, kept byte-for-byte
-// wire-compatible with it (see __tests__/webauthn-main.test.ts's round-trip
-// tests against the real package's codec, which catch any drift).
+// The one exception is an `{ error: name }` response: a real
+// authenticator-level failure from Pera's core, which must reject with that
+// exact DOMException. Falling through past e.g. InvalidStateError would let the
+// platform authenticator mint the very duplicate credential the RP excluded.
+//
+// BUNDLE SIZE: `import type` only from wallet-core-passkeys — importing its
+// wire codec at runtime drags in the authenticator core and shared's full
+// barrel, taking this script from ~2KB to ~900KB on EVERY page at
+// document_start. The base64url codec and serialize functions below are a
+// deliberate minimal duplication of the package's wire.ts, held
+// wire-compatible by round-trip tests against the real codec.
 import type {
     SerializedCreateOptions,
     SerializedCredential,
@@ -70,11 +49,9 @@ import {
     type WebauthnCeremonyResponse,
 } from '@perawallet/wallet-extension-platform-chrome'
 
-// Captured BEFORE anything below ever assigns to navigator.credentials.
-// Order matters: if this ran after installProvider() wrapped the container,
-// it would stash our own wrapper as "the original" and every fall-through
-// would recurse into itself instead of reaching the browser's real
-// implementation.
+// Must be captured BEFORE anything assigns to navigator.credentials — running
+// after installProvider() would stash our own wrapper as "the original" and
+// every fall-through would recurse instead of reaching the real implementation.
 const nativeCredentials: CredentialsContainer | undefined =
     typeof navigator !== 'undefined' ? navigator.credentials : undefined
 const origCreate = nativeCredentials?.create?.bind(nativeCredentials)
@@ -84,9 +61,8 @@ const rand = (): string => globalThis.crypto.randomUUID().replace(/-/g, '')
 const requestEventName = `__pera_webauthn_req_${rand()}__`
 const responseEventName = `__pera_webauthn_res_${rand()}__`
 
-// Safety timeout so a torn-down SW (or a relay that never answers) can never
-// leave the page's create()/get() promise pending forever — mirrors
-// inject-main.ts's 120s ARC-0027 backstop.
+// Backstop so a torn-down SW, or a relay that never answers, can't leave the
+// page's promise pending forever.
 const RELAY_TIMEOUT_MS = 120_000
 
 let channelSeq = 0
@@ -106,10 +82,8 @@ const dispatchHandshake = (): void => {
     )
 }
 
-// --- Minimal base64url (RFC 4648 §5) codec — see the BUNDLE-SIZE NOTE above
-// for why this duplicates wire.ts's bytesToB64url/b64urlToBytes instead of
-// importing them. `btoa`/`atob` operate on binary strings (one code unit per
-// byte), which is exactly what these loops build/consume.
+// Duplicates wire.ts's codec — see the BUNDLE SIZE note above. `btoa`/`atob`
+// operate on binary strings, which is what these loops build and consume.
 
 const bytesToB64url = (bytes: Uint8Array): string => {
     let binary = ''
@@ -244,9 +218,7 @@ const reconstructCredential = (
     } as unknown as Credential
 }
 
-// Sends `request` to the relay and resolves with its terminal response, or
-// `null` on timeout — callers treat both a `null` and a `{decline:true}`
-// response identically (fall through to the stashed original).
+// `null` on timeout; callers treat that and `{decline:true}` identically.
 const callRelay = (
     request: WebauthnCeremonyRequest,
 ): Promise<WebauthnCeremonyResponse | null> =>
@@ -272,9 +244,8 @@ const fallThrough = <T>(
     options: T | undefined,
 ): Promise<Credential | null> => {
     if (!original) {
-        // No native implementation to fall through to at all (an
-        // environment with no CredentialsContainer whatsoever) — reject the
-        // way a browser lacking WebAuthn support would.
+        // No CredentialsContainer at all — reject as a browser without
+        // WebAuthn support would.
         return Promise.reject(
             new DOMException(
                 'The operation is not supported.',
@@ -285,12 +256,8 @@ const fallThrough = <T>(
     return original(options)
 }
 
-// Thrown authenticator-level names (InvalidStateError, SecurityError,
-// NotAllowedError, ...) reject the page's promise with the matching native
-// DOMException — see webauthn-router-protocol.ts's WebauthnCeremonyResponse
-// doc for why this must NOT fall through to native (a fall-through past e.g.
-// InvalidStateError would let the platform authenticator mint a duplicate
-// credential the RP explicitly tried to exclude).
+// Authenticator-level names reject with the matching native DOMException and
+// must NOT fall through — see the FALL-THROUGH CONTRACT above.
 const rejectWithAuthenticatorError = (name: string): never => {
     throw new DOMException(`WebAuthn ceremony failed: ${name}`, name)
 }
@@ -308,18 +275,15 @@ const wrappedCreate = async (
             options: serializeCreateOptions(options.publicKey),
         })
     } catch {
-        // Malformed page input (e.g. a `challenge`/`user.id` that isn't a
-        // real BufferSource) threw during serialization, before the relay
-        // was ever reached — never surface a Pera-internal error to the
-        // page; let native decide what to do with the same options.
+        // Serialization threw on malformed page input, before the relay was
+        // reached. Never surface a Pera-internal error — let native decide.
         return fallThrough(origCreate, options)
     }
     if (response && 'credential' in response) {
         try {
             return reconstructCredential(response.credential)
         } catch {
-            // A malformed "success" payload from the relay/SW — same rule:
-            // never throw Pera internals at the page, fall through instead.
+            // Malformed success payload — same rule, fall through.
             return fallThrough(origCreate, options)
         }
     }
@@ -333,12 +297,9 @@ const wrappedCreate = async (
 const wrappedGet = async (
     options?: CredentialRequestOptions,
 ): Promise<Credential | null> => {
-    // Conditional mediation (autofill UI) and non-publicKey requests are out
-    // of scope for this interception layer — always defer to the real
-    // implementation, and never touch the relay channel for them. (There is
-    // no equivalent `mediation` option on `create()` today — WebAuthn's
-    // conditional-UI mediation is a `get()`-only concept — so create() only
-    // needs the publicKey check above.)
+    // Conditional mediation and non-publicKey requests are out of scope, so
+    // defer without ever touching the relay. `create()` needs only the
+    // publicKey check above — mediation is a `get()`-only concept.
     if (!options?.publicKey || options.mediation === 'conditional') {
         return fallThrough(origGet, options)
     }
@@ -367,13 +328,9 @@ const wrappedGet = async (
 }
 
 const installProvider = (): void => {
-    // Idempotent: same rationale as inject-main.ts — guards against
-    // double-wrapping navigator.credentials if this module is ever
-    // re-invoked (re-injection, or a test calling install() again). A
-    // second call re-wrapping the ALREADY-wrapped container would stash its
-    // own wrapper as "original," breaking every fall-through into infinite
-    // recursion — the guard is what keeps origCreate/origGet pinned to the
-    // one true native implementation captured at module load.
+    // Idempotent: a second call re-wrapping the already-wrapped container
+    // would stash its own wrapper as "original" and turn every fall-through
+    // into infinite recursion.
     if (installed) return
     installed = true
 
@@ -394,17 +351,11 @@ const installProvider = (): void => {
         resolve(response)
     })
 
-    // NOT hardened against reassignment (deliberately): a plain property
-    // assignment, not `Object.defineProperty` with `configurable: false`.
-    // A page (or another extension's content script) can freely reassign
-    // `navigator.credentials.create`/`.get` again after this — including
-    // right back to `origCreate`/`origGet`, opting itself out of Pera's
-    // interception entirely. That's accepted, not a gap to close: making
-    // this non-configurable would also break any legitimate page or
-    // password-manager extension that wraps `navigator.credentials` itself
-    // (a common, non-hostile pattern), and a page can only ever strip its
-    // OWN interception this way — it has no way to spoof being intercepted
-    // when it isn't, or to reach another frame's wrapped container.
+    // Deliberately a plain assignment, not a non-configurable defineProperty:
+    // a page can reassign these and opt itself out of interception. Accepted,
+    // not a gap — hardening would break password managers that legitimately
+    // wrap `navigator.credentials`, and a page can only ever strip its OWN
+    // interception, never spoof being intercepted or reach another frame.
     nativeCredentials.create = wrappedCreate as CredentialsContainer['create']
     nativeCredentials.get = wrappedGet as CredentialsContainer['get']
 }

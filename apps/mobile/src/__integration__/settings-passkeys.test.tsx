@@ -10,22 +10,14 @@
  limitations under the License
  */
 
-// Integration coverage for the Settings → Passkeys screen. Passkey
-// registration / assertion lives in the native Credential Provider
-// extension and can't run under jsdom, so this exercises the parts the
-// app actually owns: how the screen resolves its display state and which
+// Settings -> Passkeys. Registration and assertion live in the native
+// Credential Provider extension and can't run under jsdom, so this covers what
+// the app owns: how the screen resolves its display state and which
 // prerequisite warning it surfaces.
 //
-// The screen is driven by three inputs, all swapped for in-memory test
-// doubles by the integration harness:
-//   - provider.passkeyAutofill  → mocked in vitest.setup.ts; its
-//                                  isProviderActive() / getStoredCredentials()
-//                                  vi.fns are rewired per scenario below.
-//   - biometrics.getSecurityLevel() → the test platform driver returns
-//                                  'strong'; spied to 'none' for the
-//                                  screen-lock-warning case.
-//   - useAccountsStore           → real Zustand store; seeded with an HD
-//                                  wallet account to satisfy the HD prereq.
+// Its three inputs are all test doubles: `provider.passkeyAutofill` (rewired
+// per scenario), `biometrics.getSecurityLevel()` (spied to 'none' for the
+// screen-lock case), and a real accounts store seeded with an HD account.
 
 import {
     afterAll,

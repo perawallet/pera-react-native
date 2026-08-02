@@ -126,10 +126,6 @@ export const __resetSigningActorRegistryForTests = (): void => {
     signingEventBus.__resetForTests()
 }
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
 /** Checks if the machine is in `failed` with a non-retryable error (terminal). */
 const isNonRetryableFailure = (
     snapshot: SnapshotFrom<typeof signingMachine>,
@@ -155,20 +151,12 @@ const isNonInteractiveFailure = (
     return !isInteractiveSource(snapshot.context.request.sourceType)
 }
 
-// =============================================================================
-// Types
-// =============================================================================
-
 type UseSigningActorLifecycleResult = {
     /** Returns the running actor ref for a request ID, if any */
     getActorRef: (requestId: string) => Optional<AnyActorRef>
     /** Stops and removes the actor for the given request */
     stopActor: (requestId: string) => void
 }
-
-// =============================================================================
-// Hook
-// =============================================================================
 
 /**
  * Manages XState actor lifecycle: creation, subscription, cleanup.

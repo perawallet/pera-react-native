@@ -10,27 +10,15 @@
  limitations under the License
  */
 
-// In-memory replacement for `@perawallet/walletconnect` (WC v1 fork).
+// In-memory replacement for `@perawallet/walletconnect`, whose real relay
+// socket jsdom can't service. Implements only the surface `useWalletConnect`
+// calls into.
 //
-// The real package opens a relay socket which jsdom can't service. The
-// integration tests need only the surface that
-// `packages/walletconnect/src/hooks/useWalletConnect.ts` calls into:
+// Every instance is pushed into `walletConnectClientStub.instances` so a test
+// can grab it, fire `session_request` the way the relay would, and assert on
+// approveSession / rejectSession.
 //
-//   - `new WalletConnect(opts)` constructor
-//   - `connector.on(event, cb)` / `off(event)` / `clientId` /
-//     `connected` / `session`
-//   - `connector.approveSession(...)` / `rejectSession()` /
-//     `killSession(...)` / `rejectRequest(...)`
-//
-// Every `new WalletConnect()` instance is pushed into the exported
-// `walletConnectClientStub.instances` registry so a test can grab it
-// after the fact, fire `session_request` (or any other captured
-// handler) the way the real relay would, and assert on
-// `approveSession` / `rejectSession` calls.
-//
-// Aliased into the test build via `apps/mobile/vitest.config.ts`, so
-// every consumer that imports `@perawallet/walletconnect` ends up with
-// this class instead of the production transport.
+// Aliased in via vitest.config.ts, so every consumer gets this class.
 
 import { type Optional } from '@perawallet/wallet-core-shared'
 

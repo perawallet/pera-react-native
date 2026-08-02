@@ -10,29 +10,13 @@
  limitations under the License
  */
 
-// Integration coverage for the biometric authentication lifecycle:
+// The biometric enable / authenticate / disable lifecycle, end-to-end through
+// the security package against the in-memory keystore and the driver's
+// always-approve biometrics stub.
 //
-//   precondition           PIN must be set first (biometrics shadows
-//                          the PIN by storing the PIN bytes under a
-//                          biometric-protected keystore entry; without
-//                          a PIN, enableBiometrics short-circuits).
-//
-//   enable                 useBiometrics.enableBiometrics()
-//                              └─► biometricsService.authenticate()
-//                              └─► copies PIN bytes into
-//                                  BIOMETRIC_BLOB_KEY_ID typed-secret
-//
-//   authenticate           useBiometrics.authenticateWithBiometrics()
-//                              └─► biometricsService.authenticate()
-//                                  (FaceID / TouchID prompt)
-//
-//   disable                useBiometrics.disableBiometrics()
-//                              └─► removes BIOMETRIC_BLOB_KEY_ID record
-//
-// Pin-lifecycle is covered by `pin-lifecycle.test.tsx`. This file
-// covers the biometric path end-to-end through the security package
-// against the in-memory keystore + the test platform driver's
-// biometrics stub (which approves all authenticate() calls).
+// A PIN must exist first: biometrics shadows it by storing the PIN bytes under
+// a biometric-protected keystore entry, so enableBiometrics short-circuits
+// without one. PIN lifecycle itself is covered by `pin-lifecycle.test.tsx`.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'

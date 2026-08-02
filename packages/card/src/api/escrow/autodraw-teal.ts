@@ -10,19 +10,15 @@
  limitations under the License
  */
 
-// SWAP POINT: AppliedBlockchain (AB) AutoDraw delegated LogicSig template.
+// AppliedBlockchain's AutoDraw delegated LogicSig template, vendored VERBATIM.
+// KEEP IT BYTE-IDENTICAL — the compiled program is what the delegation
+// authorizes, so any drift changes the LogicSig address AB's contract expects.
+// Replace wholesale when AB updates the contract.
 //
-// Vendored VERBATIM from AB's contract (`smart_contracts/auto_draw/contract.algo.ts`,
-// compiled to `smart_contracts/artifacts/auto_draw/AutoDraw.teal`, #pragma version 11).
-// The three `TMPL_` placeholders are string-substituted with the escrow chain config
-// (killswitch app id, W3Card app id, genesis hash) and compiled by algod before the
-// user signs it. Unlike the prior revision, the settlement asset is NO LONGER baked
-// into the LSig at compile time (`TMPL_ASSET` is gone) — the same LSig now authorizes
-// a draw of ANY asset, and per-asset gating happens entirely via the Killswitch's
-// `authorize(account, asset)` check (see ASSET_MISMATCH_KILLSWITCH below). KEEP THIS
-// BYTE-IDENTICAL to AB's template — the compiled program is what the delegation
-// authorizes, and any drift changes the LogicSig address AB's contract expects. When
-// AB updates the contract, replace this constant wholesale.
+// The three `TMPL_` placeholders are substituted with the escrow chain config
+// and compiled by algod before the user signs. The settlement asset is
+// deliberately NOT baked in: one LSig authorizes a draw of any asset, and
+// per-asset gating happens via the Killswitch's `authorize(account, asset)`.
 
 /** Placeholder for the Killswitch application id (`TMPL_KILLSWITCH_APP`). */
 export const TMPL_KILLSWITCH_APP = 'TMPL_KILLSWITCH_APP'

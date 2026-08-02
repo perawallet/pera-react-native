@@ -10,25 +10,15 @@
  limitations under the License
  */
 
-// Shared ARC-0027 sign-approval wrapper (generalizes an earlier
-// transaction-only wrapper): enqueues both `sign-transactions` and
-// `sign-message` approvals into the same shared signing pipeline, then lets
-// the existing SignRequestView/SigningRoutes pick the right screen off the
-// enqueued request's `type` (transactions vs arc60) — no signing UI is
-// authored here.
+// Enqueues both `sign-transactions` and `sign-message` approvals into the
+// shared signing pipeline and lets SignRequestView pick the screen off the
+// request's `type` — no signing UI is authored here.
 //
-// - sign-transactions: decodes the ARC-0001 group with the shared resolver
-//   and hands it to useEnqueueArc0001SignRequest.
-// - sign-message: adapted from
-//   apps/mobile/src/modules/webview/hooks/usePeraWebviewInterface.ts
-//   (requestDataSigning's ARC-60 branch) — parses the ARC-60 wire payload
-//   and calls addSignRequest directly with an Arc60SignRequest. Legacy
-//   (non-ARC-60) arbitrary-data signing is out of v1 scope: anything that
-//   isn't a valid ARC-60 wire payload is rejected instead of hanging.
+// Legacy (non-ARC-60) arbitrary-data signing is out of scope: an invalid
+// ARC-60 wire payload is rejected rather than left hanging.
 //
-// Both branches set `transportId: requestId`, so the same
-// `currentRequest?.transportId === requestId` gate (below) surfaces only the
-// request this screen itself enqueued, regardless of kind.
+// Both branches set `transportId: requestId`, so the gate below surfaces only
+// the request this screen itself enqueued.
 import { useEffect, useRef, useState } from 'react'
 import {
     useArc0001Resolver,
@@ -99,18 +89,11 @@ export const useSignRequestApprovalScreen =
             ) {
                 return
             }
-            // The accounts store (zustand `persist` over chrome.storage.local)
-            // rehydrates asynchronously. On a cold approval window this
-            // effect can otherwise fire before hydration completes, handing
-            // the resolver/signer checks below an empty account set — the
-            // resolver then throws (no signable txn), which rejects the
-            // request and closes the window before any signing UI appears.
-            // Stay in the loading state until accounts are present; the
-            // `accounts` dependency below re-runs this effect once they
-            // hydrate. This can't hang: reaching this screen required an
-            // already-granted account for the origin, so accounts hydrate
-            // non-empty (a genuinely account-less wallet just stays loading
-            // until the user closes the window, which already rejects).
+            // The accounts store rehydrates asynchronously, so on a cold
+            // approval window this effect can fire against an empty set — the
+            // resolver then throws and closes the window before any signing UI
+            // appears. Can't hang: reaching this screen required an already
+            // granted account, so accounts hydrate non-empty.
             if (accounts.length === 0) return
             enqueuedRef.current = true
 
@@ -178,17 +161,11 @@ export const useSignRequestApprovalScreen =
                     approval.message,
                 )
 
-                // Security: only accounts explicitly granted to this origin
-                // (approval.approvedAddresses) may be named as the ARC-60
-                // signer. Without this, a dapp connected with account A
-                // could request a signature naming account B (also held by
-                // the wallet but never granted to this origin) — a
-                // cross-account/SIWA impersonation escalation. Transaction
-                // signing already enforces this via the resolver's
-                // authorizedAddresses above; mirrors the same
-                // signer-eligibility guard used by
-                // usePeraWebviewInterface.requestDataSigning's ARC-60 branch
-                // and useWalletConnectHandlers.
+                // Only accounts granted to THIS origin may be named as the
+                // ARC-60 signer. Without it, a dapp connected with account A
+                // could request a signature naming account B — a cross-account
+                // SIWA impersonation escalation. Transaction signing enforces
+                // the same via the resolver's authorizedAddresses.
                 const signerAccount = accounts.find(
                     account => account.address === stdSigData.signer,
                 )

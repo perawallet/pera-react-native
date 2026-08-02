@@ -31,10 +31,6 @@ import type {
 import { useBidaliWebViewScreen } from '../useBidaliWebViewScreen'
 import { useBidali } from '../../../hooks/useBidali'
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
 // useBidaliClose dismisses the host sheet via useBottomSheetResult, which
 // needs a bottom-sheet context this hook-only render doesn't provide.
 const { mockBidaliClose } = vi.hoisted(() => ({ mockBidaliClose: vi.fn() }))
@@ -112,10 +108,6 @@ vi.mock('../bidali-url', async () => {
     return { buildBidaliUrl: web.buildBidaliUrl }
 })
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const VALID_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
@@ -153,10 +145,6 @@ const balancesWith = (algo: string, usdc: string): AccountBalances =>
             },
         ],
     ])
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('useBidaliWebViewScreen (web)', () => {
     beforeEach(() => {

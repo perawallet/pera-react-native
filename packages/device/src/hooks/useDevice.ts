@@ -87,25 +87,17 @@ export const useDevice = () => {
         [buildPayload, createDevice, setDeviceID],
     )
 
-    // Single-attempt registration. The returned `createdNew` tells callers
-    // whether this attempt created a fresh device record (no prior id, or a
-    // recreate fallback) versus a clean PUT against an existing one — e.g. to
-    // replay locally-migrated notification mute preferences, which the
-    // backend otherwise defaults to "notifying" for a brand-new device row.
+    // Single-attempt: ky already retries 5xx/network errors inside the shared
+    // query-client, and a second loop here would compound to 6 requests a call.
     //
-    // Transient retries (5xx, network errors) are
-    // handled by ky inside the shared query-client; layering another retry
-    // loop here would compound to up to 6 requests per call.
+    // `createdNew` tells callers a fresh device row was minted, so they can
+    // replay locally-migrated mute preferences — the backend defaults a new row
+    // to "notifying".
     //
-    // The createDevice fallback stays at this layer because it is application
-    // logic, not a transport concern: it fires when the server doesn't
-    // recognize this device anymore, either because (a) the PUT 404s — stale
-    // ID after env reset, deletion, etc. (mirrors Android's 404 →
-    // re-register handling), or (b) the backend reports
-    // `device_already_exists` — Pera 6 iOS's DeviceRegistrationController hit
-    // this when the device row exists but is no longer addressable by this
-    // ID, and fell back to POST the same way. Either condition re-registers
-    // via createDevice.
+    // The createDevice fallback is application logic, not transport: it fires
+    // when the server no longer recognizes this device, either a 404 on the PUT
+    // (stale id after an env reset or deletion) or a `device_already_exists`
+    // response (the row exists but isn't addressable by this id).
     const registerDevice = useCallback(
         async (addresses: string[]): Promise<{ createdNew: boolean }> => {
             const attemptId = ++inFlightIdRef.current

@@ -12,13 +12,7 @@
 
 import type { Optional } from './types'
 
-/**
- * Calculates the next backoff interval using exponential backoff.
- * @param currentInterval The current interval in milliseconds.
- * @param multiplier The multiplier for each backoff step (default: 2).
- * @param maxInterval The maximum interval in milliseconds (default: 30000).
- * @returns The next backoff interval, capped at maxInterval.
- */
+/** Exponential backoff, in milliseconds, capped at `maxInterval`. */
 export function calculateBackoff(
     currentInterval: number,
     multiplier = 2,
@@ -28,23 +22,13 @@ export function calculateBackoff(
 }
 
 /**
- * Defers the execution of a function to a future event loop cycle and returns a Promise.
- * This is useful for allowing the UI to update (e.g., showing a spinner)
- * before starting a heavy synchronous task, or for scheduling delayed work.
- * @param callback The function to be executed.
- * @param delay The delay in milliseconds (default: 0).
- * @returns A Promise that resolves with the callback result.
+ * Lets the UI paint (e.g. a spinner) before a heavy synchronous task starts.
  */
 export function deferToNextCycle<T>(
     callback: () => T | Promise<T>,
     delay?: number,
 ): Promise<T>
-/**
- * Defers execution to a future event loop cycle and returns a Promise that resolves after the delay.
- * Works like a sleep/delay function.
- * @param delay The delay in milliseconds (default: 0).
- * @returns A Promise that resolves after the delay.
- */
+/** Sleep overload: resolves after `delay` ms. */
 export function deferToNextCycle(delay?: number): Promise<void>
 export function deferToNextCycle<T>(
     callbackOrDelay?: (() => T | Promise<T>) | number,
@@ -73,15 +57,10 @@ export function deferToNextCycle<T>(
 }
 
 /**
- * Wrap a promise with a timeout. If the promise does not settle within
- * `ms` milliseconds, the returned promise rejects with the value returned
- * by `rejectWith(operation, ms)` (or a default `Error` if not provided).
- *
- * The timer is cleared when the underlying promise settles so fast-finishing
- * calls don't leave a pending setTimeout pinning the rejection closure for
- * the full timeout window. Callers are expected to handle cleanup of any
- * late-resolving resource themselves — see the hardware-wallet strategy for
- * an example that disconnects a BLE link that arrives after the timeout.
+ * The timer is cleared on settle, so fast calls don't leave a setTimeout
+ * pinning the rejection closure for the full window. Cleaning up a
+ * late-resolving resource is the caller's job — see the hardware-wallet
+ * strategy, which disconnects a BLE link arriving after the timeout.
  */
 export function withTimeout<T>(
     promise: Promise<T>,

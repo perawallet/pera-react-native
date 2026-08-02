@@ -24,10 +24,6 @@ vi.mock('../../../hooks/useBidaliClose', () => ({
     useBidaliClose: () => mockBidaliClose,
 }))
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
 vi.mock('react-native', () => ({
     Linking: { openURL: vi.fn() },
 }))
@@ -79,10 +75,6 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const VALID_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
@@ -93,10 +85,6 @@ const mockAccount: WalletAccount = {
     type: 'algo25',
     keyPairId: 'test-key-pair-id',
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('useBidaliWebViewScreen', () => {
     beforeEach(() => {

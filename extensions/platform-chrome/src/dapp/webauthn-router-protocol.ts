@@ -49,19 +49,14 @@ export const isWebauthnRelayMessage = (
     return request.kind === 'create' || request.kind === 'get'
 }
 
-// The THREE terminal shapes webauthn-main.ts ever sees from the relay: a
-// minted credential, a decline (fall through to native — a true user
-// decision, an unauthenticated sender, a bad RP ID, or the approval window
-// being closed with no answer), or a specific authenticator-level error name
-// (an `Error.name`-shaped string, e.g. 'InvalidStateError', 'SecurityError',
-// 'NotAllowedError' — see authenticator.ts and usePasskeyApproval.ts's
-// catch handler, which is what actually produces
-// these). The `{ error }` case matters precisely BECAUSE it must NOT fall
-// through: an `InvalidStateError` means the page's `excludeCredentials`
-// already matched a real Pera-minted credential, so falling through would
-// let the native/OS authenticator mint a DUPLICATE the RP never asked for —
-// webauthn-main.ts instead rejects the page's promise with the matching
-// native `DOMException`, exactly as a real authenticator would have.
+// The three terminal shapes webauthn-main.ts ever sees: a minted credential, a
+// decline (a user decision, an unauthenticated sender, a bad RP ID, or a closed
+// window — all fall through to native), or an authenticator-level `Error.name`.
+//
+// The `{ error }` case matters BECAUSE it must NOT fall through: an
+// `InvalidStateError` means `excludeCredentials` already matched a real
+// Pera-minted credential, so falling through would let the OS authenticator
+// mint the duplicate the RP explicitly excluded.
 export type WebauthnCeremonyResponse =
     | { credential: SerializedCredential }
     | { decline: true }

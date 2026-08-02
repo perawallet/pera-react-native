@@ -187,10 +187,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.RECEIVER_ACCOUNT_SELECTION: {
-                    // Mirrors native: capture the address as the receiver and
-                    // open the Send flow. Native invokes this from inside the
-                    // Send destination picker; reaching it as a top-level
-                    // deeplink falls back to opening Send fresh.
+                    // Native invokes this from inside the Send destination
+                    // picker; as a top-level deeplink we open Send fresh.
                     openSendFunds({ destination: parsedData.address })
                     break
                 }
@@ -211,8 +209,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     openSendFunds({
                         assetId: ALGO_ASSET_ID,
                         destination: parsedData.receiverAddress,
-                        // ALGO amounts arrive in microAlgos; the store holds
-                        // the display value (ALGOs) so convert here.
+                        // Wire is microAlgos; the store holds display units.
                         amount: parsedData.amount
                             ? microAlgosToAlgos(BigInt(parsedData.amount))
                             : undefined,
@@ -225,9 +222,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     openSendFunds({
                         assetId: parsedData.assetId,
                         destination: parsedData.receiverAddress,
-                        // Asset amounts are in base units. The InputScreen
-                        // converts to display units once the asset's
-                        // `decimals` resolve via the assets query.
+                        // Base units — InputScreen converts once the asset's
+                        // `decimals` resolve.
                         amountBaseUnits: parsedData.amount,
                         note: parsedData.note ?? parsedData.xnote,
                     })
@@ -250,19 +246,14 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.WALLET_CONNECT: {
-                    // `connect` constructs the WC v1 client + registers
-                    // listeners synchronously; the actual bridge handshake
-                    // (and subsequent `session_request` from the dApp)
-                    // happens asynchronously after `connect` returns.
+                    // `connect` only constructs the client and registers
+                    // listeners; the bridge handshake happens after it returns.
                     //
-                    // WC v1 bridges were sunset by the WalletConnect
-                    // Foundation in mid-2024 — most public bridges 404,
-                    // including the legacy pera bridge that older QR
-                    // codes embed. The client doesn't surface this as a
-                    // sync throw, so we have to detect it ourselves:
-                    // `connect` returns the new connector's clientId; we then
-                    // wait briefly for a session_request / error on THAT
-                    // connector and toast a clear error if neither lands.
+                    // WC v1 bridges were sunset in mid-2024, so most public ones
+                    // — including the legacy pera bridge older QR codes embed —
+                    // now 404 without surfacing a sync throw. Detect it by
+                    // waiting briefly on the returned clientId for a
+                    // session_request or error, and toasting if neither lands.
                     let pairingClientId: string
                     try {
                         pairingClientId = await withTimeout(
@@ -291,11 +282,9 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         8000,
                     )
                     if (outcome.type === 'error') {
-                        // The dApp responded but the handshake was rejected —
-                        // most commonly the QR was scanned on the wrong
-                        // network. The WalletConnect provider surfaces this as
-                        // a toast, routed to the scanner's own notifier when
-                        // the scanner is open so it shows on top of the live
+                        // Handshake rejected — usually the QR was scanned on the
+                        // wrong network. The provider toasts it, routed to the
+                        // scanner's own notifier when open so it shows above the
                         // camera. Keep the scanner open and re-armed rather
                         // than closing it or firing the misleading "no
                         // response" error below.

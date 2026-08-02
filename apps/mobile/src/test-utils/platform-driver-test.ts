@@ -10,18 +10,13 @@
  limitations under the License
  */
 
-// Test implementation of `@perawallet/wallet-extension-platform-driver`.
+// Test implementation of the platform driver. The production stub throws at
+// runtime, expecting the bundler to alias it to a concrete impl; tests need a
+// third sibling of real-ish in-memory services that don't require MMKV,
+// Keychain or native crypto.
 //
-// The production stub at `extensions/platform-driver/src/index.ts` throws at
-// runtime — it expects the bundler to alias the package to a concrete impl
-// (platform-react-native, eventually platform-chrome, etc.). Tests need a
-// third sibling: real-ish in-memory services that don't require MMKV /
-// Keychain / native crypto, so flow tests can exercise the rest of the
-// domain code end-to-end.
-//
-// The vitest config aliases `@perawallet/wallet-extension-platform-driver`
-// to this file, so any import of `WithPlatformExtension` /
-// `getPlatformServices` resolves here at test time.
+// The vitest config aliases the package here, so every
+// `getPlatformServices` import resolves to this at test time.
 import {
     MemoryKeyValueStorage,
     DevicePlatforms,

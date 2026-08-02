@@ -33,10 +33,6 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 // flagged for our Pera REST mocks. We keep the types local so this file
 // doesn't pull algokit's internal codec types into a public surface.
 
-// ---------------------------------------------------------------------------
-// algod
-// ---------------------------------------------------------------------------
-
 /**
  * Shape of the algod `GET /v2/accounts/{address}` response. Exposed loosely
  * so tests can pass partial fixtures and let the type system stay honest.
@@ -281,10 +277,6 @@ export const mockAlgodTealCompile = ({
     http.post('*/v2/teal/compile', () =>
         HttpResponse.json({ hash, result }, { status }),
     )
-
-// ---------------------------------------------------------------------------
-// indexer
-// ---------------------------------------------------------------------------
 
 export type IndexerAccountTransactionsResponse = {
     transactions: unknown[]

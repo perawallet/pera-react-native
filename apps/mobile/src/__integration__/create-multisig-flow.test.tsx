@@ -43,19 +43,14 @@ import {
     REKEY_TARGET_ADDRESS,
 } from './__fixtures__/onboarding'
 
-// The in-app create flow never carries route params into `NameMultisig`; the
-// screen reads the participants/threshold the user built from
-// `useMultisigCreationStore`. The AddParticipant bottom sheet that populates
-// that store drives a full AddressSearchView (search / QR scan / contact list)
-// which is impractical to exercise under jsdom, so — per the flow's design,
-// where the store is the source of truth — we seed it directly and drive every
-// other step (the threshold stepper, the BeforeYouCreate info sheet, naming)
-// through the real screens.
+// The store is the flow's source of truth — `NameMultisig` reads participants
+// and threshold from it, never from route params — so it's seeded directly,
+// since the AddParticipant sheet drives a full AddressSearchView that's
+// impractical under jsdom. Every other step runs through the real screens.
 //
-// `generateMultisigAddress` runs for real inside `useNameMultisigScreen` and
-// rejects non-base32 input, so participants must be real Algorand addresses;
-// the persisted multisig address is derived from them, so the expected address
-// is computed here the same way the screen computes it at persist time.
+// `generateMultisigAddress` runs for real and rejects non-base32 input, so
+// participants must be real addresses and the expected multisig address is
+// derived the same way the screen derives it.
 const VERSION = 1
 
 const seedParticipants = (addresses: string[]) => {
