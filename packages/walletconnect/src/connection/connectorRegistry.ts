@@ -20,25 +20,19 @@ import {
 import { useConnectorRegistryStore } from '../store/connectorRegistryStore'
 
 /**
- * Shared registry of live WalletConnect v1 connectors.
+ * Registry of live WalletConnect v1 connectors, one bridge WebSocket each.
  *
- * Pera RN is on WalletConnect v1, where each session is one `Connector`
- * backed by a single bridge WebSocket. The OS suspends that socket while
- * the app is backgrounded; v1's transport then silently queues any
- * outgoing message into the dead socket — no error, no rejection — so a
- * signed transaction handed back after backgrounding never reaches the
- * dApp even though the UI reports success.
+ * The OS suspends that socket while backgrounded, and v1's transport then
+ * silently queues outgoing messages into the dead socket — no error, no
+ * rejection — so a signed transaction handed back after backgrounding never
+ * reaches the dApp while the UI reports success.
  *
- * Connector + tombstone state lives in
- * {@link useConnectorRegistryStore}. This file owns the side-effectful
- * lifecycle on top — readiness checking, recreation on dead sockets, and
- * the reconnect sweep (run on foreground and on network regain) — plus
- * two transients (in-flight readiness promises and the handler binder)
- * that don't belong in the store.
+ * State lives in {@link useConnectorRegistryStore}; this file owns the
+ * side-effectful lifecycle on top — readiness checks, recreation on dead
+ * sockets, and the reconnect sweep.
  *
- * v1 constraint: the SDK has no ping/heartbeat, so a half-open socket is
- * undetectable until a delivery fails — the sweeps above are the only
- * recovery. Revisit when migrating to WalletConnect v2.
+ * The SDK has no ping/heartbeat, so a half-open socket is undetectable until a
+ * delivery fails and those sweeps are the only recovery. Revisit at v2.
  */
 
 /** Re-binds dApp request handlers (`algo_signTxn`, …) onto a connector. */
@@ -54,24 +48,17 @@ const POLL_INTERVAL_MS = 50
 const readinessInFlight = new Map<string, Promise<WalletConnect>>()
 
 /**
- * Registered by `useWalletConnect`. A recreated connector starts with no
- * dApp request handlers; this re-attaches them so it can still receive
- * `algo_signTxn` etc. after recovery.
+ * A recreated connector starts with no request handlers, so this re-attaches
+ * them and it can still receive `algo_signTxn` after recovery.
  */
 let handlerBinder: HandlerBinder | null = null
 
 /**
- * Whether a connector's bridge WebSocket is currently OPEN.
- *
- * The WC v1 protocol exposes no public socket-state API, and the
- * `transport_open` / `transport_close` events `Connector._initTransport`
- * subscribes to are never emitted — the bundled `SocketTransport` only
- * fires `message` and `error`. The one real-time signal is the connector's
- * private `_transport`: a `SocketTransport` whose public `connected` getter
- * is `readyState === 1`.
- *
- * `@perawallet/walletconnect` is pinned to an exact version, so this
- * internal field is stable.
+ * v1 exposes no public socket-state API, and the `transport_open`/`_close`
+ * events it subscribes to are never emitted — the bundled transport only fires
+ * `message` and `error`. The one real signal is the private `_transport`, whose
+ * `connected` getter is `readyState === 1`. Safe to reach for: the package is
+ * pinned to an exact version.
  */
 const isSocketOpen = (connector: WalletConnect): boolean =>
     Boolean(
@@ -91,11 +78,7 @@ export const setConnectorHandlerBinder = (binder: HandlerBinder): void => {
 export const getConnector = (clientId: string): WalletConnect | undefined =>
     useConnectorRegistryStore.getState().connectors[clientId]
 
-/**
- * Adopt a connector into the registry. Called by
- * `useWalletConnect.connect()` for freshly created connectors and by
- * `recreateConnector` for recovered ones.
- */
+/** Called for both freshly created and recovered connectors. */
 export const registerConnector = (
     clientId: string,
     connector: WalletConnect,
@@ -104,9 +87,8 @@ export const registerConnector = (
 }
 
 /**
- * Detach every Pera-registered listener from a connector and close its
- * transport, so a superseded connector's dead socket stops its own
- * background reconnect loop instead of leaking.
+ * Stops a superseded connector's dead socket running its own background
+ * reconnect loop instead of leaking.
  */
 const teardownConnector = (connector: WalletConnect): void => {
     try {
@@ -123,9 +105,8 @@ const teardownConnector = (connector: WalletConnect): void => {
 }
 
 /**
- * Drop a session from the registry entirely (user disconnect). The
- * tombstone makes any `recreateConnector` already in flight for this
- * session abort instead of resurrecting it.
+ * User disconnect. The tombstone aborts any in-flight `recreateConnector`
+ * instead of letting it resurrect the session.
  */
 export const forgetConnector = (clientId: string): void => {
     useConnectorRegistryStore.getState().forgetConnector(clientId)
@@ -154,10 +135,8 @@ const waitForSocketOpen = (
     })
 
 /**
- * Replace a session's dead connector with a fresh one and wait for its
- * socket to open. A new `Connector` builds a new `SocketTransport` that
- * opens in its constructor — the only reliable way past v1's
- * zombie-`_nextSocket` reconnect deadlock.
+ * A new `Connector` builds a transport that opens in its constructor — the only
+ * reliable way past v1's zombie-`_nextSocket` reconnect deadlock.
  */
 const recreateConnector = async (
     clientId: string,
@@ -199,14 +178,9 @@ const recreateConnector = async (
 }
 
 /**
- * Return a connector for `clientId` whose bridge socket is verified open.
- *
- * Fast path: the connector's socket is already open — resolve it as-is
- * (the common case: connect, then sign). Otherwise the connector is
- * recreated from its stored session and awaited until its fresh socket
- * opens — or a `WalletConnectConnectionTimeoutError` is thrown if it
- * cannot within `timeoutMs`. Concurrent calls for the same session share
- * a single recreation.
+ * A connector whose socket is verified open: resolved as-is in the common
+ * connect-then-sign case, otherwise recreated from the stored session and
+ * awaited (or timed out). Concurrent calls share one recreation.
  */
 export const ensureConnectorReady = (
     clientId: string,
@@ -244,10 +218,8 @@ export const ensureConnectorReady = (
 }
 
 /**
- * Warm every session whose socket is not currently open. Fire-and-forget:
- * a failed warm-up is not user-facing — the next real delivery attempt
- * surfaces a genuine error if the socket is still down. Used by the
- * app-foreground reconnect hook.
+ * Fire-and-forget: a failed warm-up isn't user-facing, since the next real
+ * delivery surfaces a genuine error if the socket is still down.
  */
 export const reconnectAllConnectors = (
     timeoutMs: number = WC_DELIVERY_TIMEOUT_MS,

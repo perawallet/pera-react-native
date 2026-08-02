@@ -30,10 +30,8 @@ import { generatedEnv } from './generated-env'
 const isFirstPartyUrl = (url: string): boolean => url.includes('perawallet.app')
 
 /**
- * Only fields with an env override can be *missing* one, which is what the
- * guard checks. It also keeps `discoverBaseUrl` out: getConfig derives that
- * from appEnvironment structurally, so a production build always gets the
- * production URL and there is nothing to override.
+ * Excludes `discoverBaseUrl`: getConfig derives it from appEnvironment
+ * structurally, so there is nothing to override.
  */
 const hasEnvOverride = (field: string): boolean =>
     field in overrideEnvironmentMap
@@ -140,11 +138,9 @@ export const configSchema = z
         profilingEnabled: z.boolean(),
         pollingEnabled: z.boolean(),
 
-        // Build-time escape hatch for e2e automation (Appium/BrowserStack), whose
-        // tooling can't drive a FLAG_SECURE surface. Sourced only from the
-        // DISABLE_SCREEN_CAPTURE_PREVENTION build env — never a remote/runtime
-        // signal. Defaults safe (false) so seed-screen capture protection can't be
-        // weakened post-release.
+        // Escape hatch for e2e automation, whose tooling can't drive a
+        // FLAG_SECURE surface. Build env only, never a runtime signal, and
+        // defaults false so capture protection can't be weakened post-release.
         disableScreenCapturePrevention: z.boolean().default(false),
 
         mainnetBidaliApiKey: z.string(),
@@ -163,12 +159,10 @@ export const configSchema = z
         mainnetBaanxTenantId: z.string(),
         testnetBaanxTenantId: z.string(),
 
-        // SWAP POINT: AppliedBlockchain (AB) escrow card service. Card creation and
-        // the delegated-LSig `/lsig` endpoint are hosted by AB on testnet until Baanx
-        // wraps them. The auth token is an AB-issued static secret sent as a RAW
-        // `Authorization` header (no Bearer). Base URL uses z.string() (not z.url())
-        // so an empty default validates before the values arrive. App ids and the
-        // USDC asset id feed the AutoDraw LogicSig TEAL template.
+        // AppliedBlockchain hosts card creation and the `/lsig` endpoint on
+        // testnet until Baanx wraps them. The auth token is a static secret sent
+        // as a RAW `Authorization` header, no Bearer. `z.string()` not
+        // `z.url()`, so the empty default validates before values arrive.
         mainnetCardEscrowBaseUrl: z.string(),
         testnetCardEscrowBaseUrl: z.string(),
         mainnetCardEscrowAuthToken: z.string(),
@@ -192,12 +186,9 @@ export const configSchema = z
         }),
 
         /**
-         * Build-time active network. Deliberately NOT the full `Network` union:
-         * `custom` has no baked chain config — every value comes from the
-         * custom-network store, which is empty until a developer fills the Node
-         * Settings sheet in — so no build-time value could make it valid. Making
-         * it the default would make `custom` ACTIVE and unconfigured on first
-         * launch, where every resolved endpoint is `''`.
+         * Deliberately NOT the full `Network` union: `custom` has no baked chain
+         * config, so no build-time value could make it valid — and defaulting to
+         * it would leave every endpoint `''` on first launch.
          */
         defaultNetwork: z
             .enum(['mainnet', 'testnet', 'betanet'])
@@ -209,29 +200,22 @@ export const configSchema = z
             .default('development'),
 
         /**
-         * Full git release tag baked at build time (e.g. "v7.0.0-alpha.9"), shown
-         * in-app so QA can see the exact prerelease they're testing. Sourced from
-         * BITRISE_GIT_TAG; empty for local/non-tag builds (the version display then
-         * falls back to the native store version).
+         * Baked from BITRISE_GIT_TAG so QA can see the exact prerelease. Empty
+         * for local builds, where the display falls back to the store version.
          */
         releaseTag: z.string().default(''),
 
         /**
-         * Incrementing CI build number baked at build time, mirroring mobile's
-         * `Application.nativeBuildVersion`. Sourced from BITRISE_BUILD_NUMBER;
-         * empty for local builds (getAppBuild then falls back to the manifest
-         * version). Feeds the user-agent so backend/Cloudflare rules can key off
-         * it the same way they do on mobile.
+         * Baked from BITRISE_BUILD_NUMBER, empty locally. Feeds the user-agent so
+         * backend/Cloudflare rules can key off it as they do on mobile.
          */
         appBuildNumber: z.string().default(''),
     })
     .check(ctx => {
-        // The committed defaults deliberately point first-party URLs at staging
-        // (safe for open-source builds); production builds override them via env.
-        // tools/generate-config.sh fails the build when an override is missing —
-        // this is the last line of defence, and throws when the config module is
-        // first imported. Matched by value rather than a hand-kept field list so
-        // a future staging default can't slip in unguarded.
+        // Committed defaults point first-party URLs at staging, safe for
+        // open-source builds; production overrides them via env. This is the last
+        // line of defence behind generate-config.sh, matched by VALUE rather than
+        // a hand-kept field list so a future staging default can't slip past.
         if (ctx.value.appEnvironment !== 'production') return
         for (const [field, value] of Object.entries(ctx.value)) {
             if (typeof value !== 'string') continue
@@ -278,14 +262,10 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     appStoreAppID: '',
     playIntegrityCloudProjectNumber: '',
 
-    // Defaults to the "pera-wallet-public" Firebase project — a distinct,
-    // non-sensitive project safe to ship in source (same posture as the
-    // public AlgoNode URLs above). The real production Firebase project
-    // ("algorand-e3fe3") is NOT checked in; it's injected at build time via
-    // the FIREBASE_* env vars below for staging/production builds. A
-    // Firebase web apiKey only identifies the project — it is not a secret —
-    // but it's still overridable, not hardcoded-only, so official builds can
-    // point at the real project without a source change.
+    // Defaults to a distinct non-sensitive Firebase project, safe to ship in
+    // source; the real one is injected at build time via FIREBASE_* env. A web
+    // apiKey only identifies a project and isn't a secret, but keeping it
+    // overridable lets official builds repoint without a source change.
     firebaseApiKey: 'AIzaSyA49zDfujF8SCdxQrfC38bM2TdzSFPtIJA',
     firebaseAuthDomain: 'pera-wallet-public.firebaseapp.com',
     // This project has no Realtime Database provisioned; Remote Config
@@ -384,12 +364,9 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     mainnetBaanxTenantId: '',
     testnetBaanxTenantId: 'perawallet',
 
-    // SWAP POINT: AB escrow card service. Base URLs, auth tokens, and app ids
-    // are injected at build time from env (bitrise secrets in CI, .env locally)
-    // via tools/generate-config.sh — empty defaults keep the flow dev-mockable
-    // until AB provides testnet values. The USDC asset ids default to the public
-    // network assets (mirrors KNOWN_ASSET_IDS.USDC); AB may override with a test
-    // asset via TESTNET_CARD_USDC_ASSET_ID.
+    // AB escrow card service, injected at build time from env. Empty defaults
+    // keep the flow dev-mockable until AB provides testnet values. USDC ids
+    // default to the public network assets; AB may override with a test asset.
     mainnetCardEscrowBaseUrl: '',
     testnetCardEscrowBaseUrl: '',
     mainnetCardEscrowAuthToken: '',
@@ -518,12 +495,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     appBuildNumber: 'BITRISE_BUILD_NUMBER',
 }
 
-/**
- * Load configuration.
- * It merges the safe production defaults with the generated environment configuration.
- *
- * @returns Validated configuration object
- */
+/** Merges the safe production defaults with the generated env configuration. */
 export function getConfig(overrides: ConfigOverrides = generatedEnv): Config {
     const mergedConfig = { ...productionConfig, ...overrides }
 

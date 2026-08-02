@@ -39,24 +39,17 @@ const getResponse = (error: unknown): JsonReadable | undefined => {
         : undefined
 }
 
-/**
- * HTTP status off the error's `response`, when present. Inlined (rather than
- * importing the shared helper) so this normalizer stays self-contained and
- * never depends on an external export — matching its body-parsing duck-typing.
- */
+/** Inlined rather than imported so this normalizer stays self-contained. */
 const getStatus = (error: unknown): number | undefined => {
     const status = getResponse(error)?.status
     return typeof status === 'number' ? status : undefined
 }
 
 /**
- * Best-effort JSON parse of the error body. Clones first (so the original stream
- * is never consumed) when the response supports it, and swallows any failure —
- * the body shape is undocumented, so callers should never depend on it.
- *
- * Prefers `text()` + `JSON.parse` (what the transport itself uses, and the most
- * robust across runtimes); falls back to `json()` for sources that only expose
- * it (e.g. test mocks).
+ * Clones first so the original stream is never consumed, and swallows failures —
+ * the body shape is undocumented, so callers must not depend on it. Prefers
+ * `text()` + `JSON.parse` (most robust across runtimes), falling back to
+ * `json()` for sources that only expose that.
  */
 const readJsonBody = async (response: JsonReadable): Promise<unknown> => {
     try {
@@ -88,11 +81,9 @@ type NestedError = { status?: number; code?: string; message?: string }
 
 /**
  * Baanx nests its real error as a JSON *string* inside `message`, e.g.
- * `{"message":"{\"error\":{\"status\":500,\"message\":\"…\",\"errorCode\":null}}"}`
- * or `{"message":"{\"error\":\"Duplicate onboardingId\",\"details\":[\"…\"]}"}`.
- * Best-effort parse it and pull out the inner status/code/message; returns
- * undefined when `value` isn't a JSON-object string (the common case) or parsing
- * fails, so the caller keeps the original message untouched.
+ * `{"message":"{\"error\":\"Duplicate onboardingId\"}"}`. Returns undefined
+ * when `value` isn't a JSON-object string (the common case), so the caller keeps
+ * the original message untouched.
  */
 const unwrapNestedError = (
     value: string | undefined,
@@ -137,10 +128,9 @@ const unwrapNestedError = (
 }
 
 /**
- * Resolves the error body. ky pre-parses and *consumes* the response body into
- * `error.data` (so `error.response.json()`/`text()` no longer work) — that's the
- * canonical source. Falls back to reading the response body directly for non-ky
- * errors / test mocks that expose it there.
+ * ky pre-parses and CONSUMES the body into `error.data`, so
+ * `error.response.json()` no longer works — that's the canonical source. Falls
+ * back to the response directly for non-ky errors and test mocks.
  */
 const resolveErrorBody = async (error: unknown): Promise<unknown> => {
     if (typeof error === 'object' && error !== null) {
@@ -152,10 +142,8 @@ const resolveErrorBody = async (error: unknown): Promise<unknown> => {
 }
 
 /**
- * Normalizes an unknown thrown value into a {@link CardApiError}. The HTTP
- * status is always extracted when present; the response body is parsed
- * best-effort for a `code`/`message` (Baanx's exact shape is undocumented).
- * Always resolves — never throws — so callers can branch in a `catch`.
+ * Always resolves, never throws, so callers can branch inside a `catch`. The
+ * body is parsed best-effort — Baanx's exact shape is undocumented.
  */
 export const getCardApiError = async (
     error: unknown,
@@ -203,10 +191,8 @@ export const isInvalidInputError = (apiError: CardApiError): boolean =>
     apiError.status === 400 || apiError.status === 422
 
 /**
- * True when the failure means the record already exists (e.g. Baanx's
- * "Duplicate onboardingId … already exists"). Matched by message text rather
- * than HTTP status — Baanx's status for this case is unconfirmed — so a retry
- * of a non-idempotent submit can be treated as success.
+ * Lets a retried non-idempotent submit count as success. Matched on message
+ * text, since Baanx's status for this case is unconfirmed.
  */
 export const isDuplicateError = (apiError: CardApiError): boolean =>
     /duplicate|already exists/i.test(
@@ -214,11 +200,9 @@ export const isDuplicateError = (apiError: CardApiError): boolean =>
     )
 
 /**
- * True when Baanx refused because the user's KYC isn't VERIFIED yet. The
- * guides document `code: USER_NOT_VERIFIED` with status 400 or 403; the live
- * sandbox has been seen returning only `message: "Account has not been
- * verified"`. So, like {@link isDuplicateError}, match on text rather than
- * HTTP status.
+ * KYC not yet VERIFIED. Matched on text like {@link isDuplicateError}: the
+ * guides document a `USER_NOT_VERIFIED` code, but the live sandbox has been
+ * seen returning only the message.
  */
 export const isNotVerifiedError = (apiError: CardApiError): boolean =>
     /USER_NOT_VERIFIED|not (been )?verified/i.test(

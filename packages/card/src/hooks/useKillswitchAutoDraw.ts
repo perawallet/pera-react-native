@@ -24,21 +24,17 @@ import { AlgoAmount } from '@algorandfoundation/algokit-utils/types/amount'
 import type { Arc56Contract } from '@algorandfoundation/algokit-utils/types/app-arc56'
 import killswitchArc56 from '../api/escrow/killswitch-arc56.json'
 
-// SWAP POINT: AppliedBlockchain Killswitch contract (`enable(card,asset)` /
-// `kill(asset)` / `authorize(account,asset)`). The AutoDraw delegated LSig
-// only draws while the Killswitch holds an on-chain "accounts" box for the
-// (funding account, asset) pair — created by `enable`, deleted by `kill`.
-// Delegation is per-asset now (the LSig itself no longer pins a single asset),
-// so every call and the box key below are keyed by (account, asset), not just
-// account. Vendored ARC-56 spec + app id (`cardKillswitchAppId`) come from AB;
-// regenerate the spec if the contract changes.
+// AppliedBlockchain's Killswitch contract. The AutoDraw LSig only draws while
+// the Killswitch holds an on-chain "accounts" box for the (funding account,
+// asset) pair — created by `enable`, deleted by `kill`. The LSig no longer pins
+// a single asset, so every call and the box key are keyed by both. Regenerate
+// the vendored ARC-56 spec if AB changes the contract.
 const KILLSWITCH_SPEC = killswitchArc56 as unknown as Arc56Contract
 
 /**
- * Builds the Killswitch "accounts" box key for (account, asset): the raw
- * 32-byte address followed by the asset id as an 8-byte big-endian `uint64` —
- * matching how puya-ts ARC-4-encodes a `[Account, Asset]` box-map key (static
- * types concatenate directly, no length prefix, no keyPrefix on this box map).
+ * Raw 32-byte address followed by the asset id as big-endian uint64 — how puya-ts
+ * ARC-4-encodes a `[Account, Asset]` box-map key: static types concatenate
+ * directly, no length prefix and no keyPrefix on this box map.
  */
 const buildAccountAssetBoxName = (
     address: string,
@@ -67,41 +63,31 @@ const isNotFoundError = (error: unknown): boolean => {
 
 export type UseKillswitchAutoDrawResult = {
     /**
-     * Builds the unsigned `enable(card, asset)` call (one inner `getCardData`
-     * call to verify card ownership), fee-delegation-ready: `staticFee` is
-     * zeroed rather than self-funded, since the caller submits this via the
-     * Pera backend's fee-delegation endpoint. The sponsor covers the group's
-     * total fee (the backend simulates the group, so the inner call is priced
-     * in) and tops the account up to min balance; the accounts-box MBR is
-     * funded by the Killswitch app account, not the sponsor. Resources (box,
-     * Main-app, card-account refs) are populated via simulate.
+     * Fee-delegation-ready: `staticFee` is zeroed rather than self-funded, since
+     * the caller submits via the backend's fee-delegation endpoint. The sponsor
+     * covers the group fee (the backend simulates, so the inner `getCardData`
+     * call is priced in) and tops up to min balance; the accounts-box MBR comes
+     * from the Killswitch app account, not the sponsor.
      */
     buildEnable: (params: {
         sender: string
         cardAddress: string
         asset: string
     }) => Promise<PeraTransaction[]>
-    /**
-     * Builds the unsigned group to DISABLE auto-draw for (sender, asset):
-     * `kill(asset)`, which deletes the caller's accounts box for that asset
-     * (releasing its MBR). No funding, no inner txns.
-     */
+    /** Deletes the caller's accounts box for that asset, releasing its MBR. */
     buildKill: (params: {
         sender: string
         asset: string
     }) => Promise<PeraTransaction[]>
     /**
-     * Reads the sender's on-chain auto-draw state for a given asset. The
-     * Killswitch keeps one `accounts` box per enabled (account, asset) pair,
-     * keyed by the raw 32-byte address followed by the 8-byte big-endian
-     * asset id (no prefix), so a present box == enabled for that asset. Callers
-     * MUST pre-check this instead of submitting and parsing reverts:
-     * `enable`/`kill` assert ALREADY_ENABLED/ALREADY_DISABLED, and on our
-     * raw-composer path those surface from the resource-population simulate as
-     * opaque plain-`Error` "assert failed pc=NNN" messages (the ARC-56 error
-     * mapping never runs). The AB demo uses the same avoidance strategy.
-     * Network errors (non-404) are rethrown — an unknown state must not be
-     * read as "disabled".
+     * A present `accounts` box means enabled for that asset. Callers MUST
+     * pre-check rather than submit and parse reverts: `enable`/`kill` assert
+     * ALREADY_ENABLED/ALREADY_DISABLED, and on the raw-composer path those
+     * surface from the simulate as opaque "assert failed pc=NNN" errors, since
+     * the ARC-56 mapping never runs.
+     *
+     * Non-404 network errors rethrow — an unknown state must not read as
+     * "disabled".
      */
     isAutoDrawEnabled: (params: {
         sender: string
@@ -142,14 +128,11 @@ export const useKillswitchAutoDraw = (): UseKillswitchAutoDrawResult => {
                 await appClient.params.call({
                     method: 'enable',
                     args: [cardAddress, BigInt(asset)],
-                    // Simulate-only fee. The resource-population simulate
-                    // below validates the group like a real submission and
-                    // algod has no fee waiver, so a zero-fee group dies with
-                    // "group fee too small" before any resources are
-                    // discovered. Covers this call plus its one inner
-                    // `getCardData` call, then gets stripped after populating,
-                    // since the fee-delegation sponsor tops up the real
-                    // group's fee pool on submission.
+                    // Simulate-only, and stripped after populating. The
+                    // resource-population simulate validates like a real
+                    // submission with no fee waiver, so a zero-fee group dies
+                    // with "group fee too small" before any resources are
+                    // discovered.
                     staticFee: AlgoAmount.MicroAlgo(
                         Number(FALLBACK_MIN_TXN_FEE) * 2,
                     ),

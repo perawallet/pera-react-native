@@ -28,10 +28,8 @@ import { NetworkChangedError, TransportError } from '../errors'
 import { walletConnectHandoffs } from '../walletConnectHandoffs'
 
 /**
- * Function type for proposing a multisig transaction to the backend.
- * The transport supplies the propose `type` (sync for WC handoffs,
- * async for in-app flows) so the backend can pick the right
- * post-threshold behavior.
+ * The transport supplies the propose `type` — sync for handoffs, async for
+ * in-app — so the backend picks the right post-threshold behaviour.
  */
 export type ProposeSignRequestFn = (params: {
     multisigAddress: string
@@ -42,10 +40,8 @@ export type ProposeSignRequestFn = (params: {
     signRequestId: string
     status: SignRequestStatus
     /**
-     * The base64-encoded raw transaction bytes the adapter actually sent
-     * to the propose endpoint. Pinned on the WC handoff so the resolver
-     * can refuse backend poll responses whose bytes differ from what the
-     * user reviewed.
+     * Pinned on the handoff so the resolver can refuse poll responses whose
+     * bytes differ from what the user reviewed.
      */
     rawTransactionsBase64: string[]
 }>
@@ -61,29 +57,21 @@ export type GetMsigMetadataFn = (
     multisigAddress: string,
 ) => MsigMetadata | undefined
 
-/**
- * Resolves the device ID used in `with-signatures` and `mark-confirmed`
- * requests. Injected so the signing pkg doesn't depend on whatever
- * device-id source the app uses.
- */
+/** Injected so this package doesn't depend on the app's device-id source. */
 export type GetDeviceIdFn = () => string | undefined
 
 /**
- * Input passed to {@link CreateDraftSignRequestFn} when the propose flow
- * needs to defer the backend call. Carries everything the per-row Sign
- * tap will need later to bootstrap the real propose with one participant's
- * signature.
+ * Everything a later per-row Sign tap needs to bootstrap the real propose from
+ * one participant's signature.
  */
 export type CreateDraftSignRequestInput = {
     multisigAddress: string
     /**
-     * Unsigned transactions — `.txn` is populated, `sig`/`msig` are absent.
-     * Typed as `PeraSignedTxnResult[]` because it's sourced directly from
-     * `SigningResult['signedData']['signed']`; deferred propose is a
-     * multisig-only path, so this is a plain `PeraSignedTransaction[]` in
-     * practice. The app-side createDraftSignRequest only reads `.txn` to
-     * encode the raw msgpack bytes (without the "TX" prefix) that the
-     * propose API expects, and persists them in the draft store.
+     * Unsigned: `.txn` is populated, `sig`/`msig` absent. Typed
+     * `PeraSignedTxnResult[]` only because it comes straight from
+     * `SigningResult`; deferred propose is multisig-only, so in practice these
+     * are plain. Only `.txn` is read, to encode the unprefixed msgpack bytes
+     * the propose API expects.
      */
     signedTransactions: PeraSignedTxnResult[]
     proposeType: MultisigProposeMode
@@ -91,35 +79,26 @@ export type CreateDraftSignRequestInput = {
 }
 
 /**
- * Creates a draft sign-request entry in a local store and returns its
- * synthetic id (prefixed with `draft-`). Injected from the app side so the
- * signing pkg doesn't depend on the mobile draft store directly. When
- * absent, the transport falls back to the legacy behavior of throwing on
- * empty signers (preserves current behavior for callers that don't opt in).
+ * Returns a synthetic `draft-`-prefixed id. Injected so this package doesn't
+ * depend on the mobile draft store. Absent, the transport throws on empty
+ * signers, preserving behaviour for callers that haven't opted in.
  */
 export type CreateDraftSignRequestFn = (
     input: CreateDraftSignRequestInput,
 ) => string
 
 /**
- * Creates a transport that proposes a new multisig transaction to the backend.
- * Used by two flows:
- *  - **Local (in-app)**: proposer's first send from a multisig account.
- *    Uses `type: 'async'` — backend collects sigs and (eventually) broadcasts.
- *  - **Sync-flow (WC / webview / deeplink)**: dApp sends sign-tx for a
- *    multisig sender. Uses `type: 'sync'` — backend collects sigs, and the
- *    wallet is responsible for delivering the assembled signed bytes to
- *    the dApp via WC `approveRequest`. The transport registers a pending
- *    handoff in {@link walletConnectHandoffs}; an app-side resolver hook
- *    polls for threshold-met and fires the WC `approve` callback.
+ * Two flows:
+ *  - **In-app**: `type: 'async'` — the backend collects signatures and
+ *    eventually broadcasts.
+ *  - **External handoff**: `type: 'sync'` — the backend collects signatures but
+ *    the WALLET delivers the assembled bytes to the dApp. The transport
+ *    registers a pending handoff in {@link walletConnectHandoffs}, and an
+ *    app-side resolver polls for threshold-met and fires the callback.
  *
- * @param proposeSignRequest - Function to call the backend API.
- * @param capturedNetwork - Network active when the signing actor was created.
- *   Re-checked before submission — abort on mid-flow network switch so the
- *   backend record isn't created on the wrong chain.
- * @param getMsigMetadata - Resolves multisig metadata by address; needed
- *   downstream by the resolver to assemble subsigs in canonical order.
- * @param getDeviceId - Returns the persistent device id for backend calls.
+ *
+ * `capturedNetwork` is re-checked before submission, so a mid-flow network
+ * switch aborts rather than creating the backend record on the wrong chain.
  */
 export const createMultisigProposeTransport = (
     proposeSignRequest: ProposeSignRequestFn,
@@ -154,12 +133,9 @@ export const createMultisigProposeTransport = (
                 source.transportOptions?.multisig?.proposeMode ??
                 (isExternal ? 'sync' : 'async')
 
-            // Deferred propose: hardware-only proposer. `multisigSignerActor`
-            // signaled by returning an empty `signers` array (see
-            // `shouldDeferPropose` / `buildDeferredProposeSigningResult`).
-            // Skip the backend call and create a local draft instead; the
-            // user's first per-row Sign in the pending sheet will bootstrap
-            // the real propose with that participant's signature.
+            // An empty `signers` array is how `multisigSignerActor` signals a
+            // hardware-only proposer. Create a local draft instead of calling
+            // the backend; the first per-row Sign bootstraps the real propose.
             if (result.signers.length === 0) {
                 if (!createDraftSignRequest) {
                     throw new TransportError(
@@ -196,21 +172,15 @@ export const createMultisigProposeTransport = (
                     type: proposeType,
                 })
 
-                // Sync-flow handoff: register a pending handoff so the
-                // resolver can deliver the assembled signed bytes to the
-                // dApp once threshold is met. The resolver decides between
-                // `approveSignedBytes` (success), `error` (terminal failure),
-                // and `reject({ kind: 'softReject', error })` (participant
-                // decline / expired) when status becomes terminal.
+                // The resolver delivers the assembled bytes once threshold is
+                // met, choosing between `approveSignedBytes`, `error`, and
+                // `softReject` (decline / expired) at terminal status.
                 if (isExternal) {
                     const msig = getMsigMetadata(multisigAddress)
                     if (!msig) {
-                        // Without metadata we can't assemble. This is a
-                        // programmer error (multisig should be locally
-                        // known by the time the transport runs); surface
-                        // it via the WC `error` callback if available, and
-                        // fail the transport so the user sees an inline
-                        // error.
+                        // A programmer error — the multisig should be locally
+                        // known by now — so surface it to the peer and fail the
+                        // transport rather than assembling without metadata.
                         const err = new Error(
                             `Multisig metadata not found for address ${multisigAddress}`,
                         )
@@ -244,11 +214,9 @@ export const createMultisigProposeTransport = (
                     })
                 }
 
-                // In-app async proposer (shared-account swap) handoff: hand
-                // back the backend id + the exact raw transactions sent, so the
-                // caller can register a handoff to finish the flow once
-                // threshold is met. Best-effort — a throw here must not fail a
-                // propose that already succeeded on the backend.
+                // Hands back the backend id and the exact bytes sent so the
+                // caller can finish the flow at threshold. Best-effort: a throw
+                // here must not fail a propose that already succeeded.
                 try {
                     await source.callbacks?.onProposed?.({
                         signRequestId: response.signRequestId,

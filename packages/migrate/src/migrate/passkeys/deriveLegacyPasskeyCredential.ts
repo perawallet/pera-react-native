@@ -20,36 +20,30 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 /**
- * Pure-JS reproduction of a legacy passkey's deterministic P-256 keypair.
+ * Pure-JS reproduction of a legacy passkey's deterministic P-256 keypair. A
+ * passkey is never a transferred secret — the legacy apps re-derive it from the
+ * owning HD wallet through the DeterministicP256 (Liquid Auth) contract:
  *
- * A passkey is never a transferred secret — the legacy apps (pera-ios
- * `PassKeyService.dp256KeyPair`, pera-android `DeterministicBip39SignManager`)
- * register it with the relying party by *re-deriving* it from the owning HD
- * wallet through the `DeterministicP256` (Liquid Auth) contract:
+ *   1. `genDerivedMainKeyWithBIP39(mnemonic)` — PBKDF2-HMAC-SHA512, salt
+ *      "liquid", 210k iterations, 64 bytes.
+ *   2. `genDomainSpecificKeyPair(derivedMainKey, origin, userName)` — `userName`
+ *      verbatim, NOT lowercased: the native RN module lowercases, legacy does
+ *      not, and we match legacy.
+ *   3. `SHA256(publicKey)` — over the SPKI DER on Android, the raw point on iOS
+ *      (see {@link PasskeyCredentialIdBasis}).
  *
- *   1. `derivedMainKey = genDerivedMainKeyWithBIP39(mnemonic)`
- *        — PBKDF2-HMAC-SHA512, salt "liquid", 210k iterations, 64 bytes.
- *   2. `privateKey = genDomainSpecificKeyPair(derivedMainKey, origin, userName)`
- *        — `userName` is the WebAuthn `user.name`, used verbatim (NOT lowercased;
- *          the native RN module lowercases it, legacy does not — we match legacy).
- *   3. `credentialId = SHA256(publicKey)` — Android hashes the SPKI DER encoding,
- *        iOS the raw 64-byte point (see {@link PasskeyCredentialIdBasis}).
- *
- * For a migrated passkey to *sign in* (rather than re-register), the keystore
- * must hold this exact keypair under this exact `credentialId`. We reproduce it
- * here and the caller verifies the recomputed `credentialId` against the legacy
- * one before persisting — a mismatch means the derivation inputs don't line up,
- * so we skip rather than write an unsignable credential.
+ * For a migrated passkey to sign in rather than re-register, the keystore must
+ * hold this exact keypair under this exact credentialId — so the caller verifies
+ * the recomputed id before persisting, and skips rather than writing an
+ * unsignable credential.
  */
 
 const dp256 = new DeterministicP256()
 
 /**
- * Fixed P-256 SubjectPublicKeyInfo (X.509) DER prefix, up to and including the
- * BIT STRING header (`03 42 00`). A full uncompressed-point SPKI is this 26-byte
- * prefix, followed by the `0x04` uncompressed-point indicator and the 64-byte
- * `X || Y` coordinates — 91 bytes total. `dp256.getPurePKBytes` returns the raw
- * 64-byte `X || Y` (no `0x04`), so we splice the indicator back in.
+ * P-256 SPKI DER prefix through the BIT STRING header. Full SPKI = this 26-byte
+ * prefix + `0x04` + the 64-byte `X || Y` = 91 bytes. `getPurePKBytes` returns
+ * the raw point without `0x04`, so the indicator is spliced back in.
  */
 const P256_SPKI_PREFIX = Uint8Array.from([
     0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02,
@@ -58,10 +52,9 @@ const P256_SPKI_PREFIX = Uint8Array.from([
 ])
 
 /**
- * Wraps the raw 64-byte (`X || Y`) P-256 public key in X.509/SPKI DER, matching
- * `KeyPair.public.encoded` on the native side. The native provider's
- * `getKeyPairFromCredential` reconstructs the key from this DER (its happy path),
- * and `generateCredentialId` hashes exactly these bytes.
+ * Matches `KeyPair.public.encoded` on the native side — its
+ * `getKeyPairFromCredential` reconstructs from this DER, and
+ * `generateCredentialId` hashes exactly these bytes.
  */
 export const p256RawPublicKeyToSpkiDer = (pubRaw: Uint8Array): Uint8Array => {
     const der = new Uint8Array(P256_SPKI_PREFIX.length + 1 + pubRaw.length)
@@ -72,11 +65,9 @@ export const p256RawPublicKeyToSpkiDer = (pubRaw: Uint8Array): Uint8Array => {
 }
 
 /**
- * Decodes a credentialId string to its raw 32-byte SHA-256 digest. Accepts the
- * standard-base64 form the legacy migration data carries, plus url-safe base64
- * and lowercase hex as defensive fallbacks (the legacy DB has been observed in
- * more than one encoding across platforms). Returns null when it doesn't decode
- * to a plausible 32-byte digest.
+ * Accepts standard base64 (what the migration data carries) plus url-safe base64
+ * and hex — the legacy DB has been seen in more than one encoding across
+ * platforms. Null when it doesn't decode to a plausible 32-byte digest.
  */
 export const decodeCredentialIdToBytes = (raw: string): Uint8Array | null => {
     if (/^[0-9a-fA-F]{64}$/.test(raw)) {
@@ -100,20 +91,13 @@ export const decodeCredentialIdToBytes = (raw: string): Uint8Array | null => {
 export const credentialIdBytesToStandardBase64 = (bytes: Uint8Array): string =>
     encodeToBase64(bytes)
 
-/**
- * Derives the BIP39 "derived main key" via `deriveLiquidAuthMainKey`. PBKDF2 is
- * heavy, so callers cache the result per HD seed and reuse it across that seed's
- * passkeys.
- */
+/** PBKDF2 is heavy, so callers cache this per HD seed across its passkeys. */
 export const deriveMainKey = (mnemonic: string): Promise<Uint8Array> =>
     deriveLiquidAuthMainKey(mnemonic)
 
 /**
- * Which encoding of the P-256 public key the legacy platform hashed to form the
- * `credentialId`. Same keypair, different digest:
- *   • `'spki-der'` — Android: SHA256 of the 91-byte X.509/SPKI DER.
- *   • `'raw-point'` — iOS: SHA256 of the raw 64-byte point `X || Y`
- *     (CryptoKit `publicKey.rawRepresentation`).
+ * Which public-key encoding the legacy platform hashed for the `credentialId` —
+ * same keypair, different digest. Android hashed the SPKI DER, iOS the raw point.
  */
 export type PasskeyCredentialIdBasis = 'spki-der' | 'raw-point'
 
@@ -128,11 +112,7 @@ export type DerivedLegacyPasskeyCredential = {
     publicKeySpkiDer: Uint8Array
 }
 
-/**
- * Reproduces a single passkey's keypair + credentialId from an already-derived
- * main key. Split from {@link deriveMainKey} so the expensive PBKDF2 step is
- * shared across every passkey owned by the same HD seed.
- */
+/** Split from {@link deriveMainKey} so its PBKDF2 is shared across a seed. */
 export const deriveLegacyPasskeyCredentialFromMainKey = async (params: {
     derivedMainKey: Uint8Array
     origin: string

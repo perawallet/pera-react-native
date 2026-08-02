@@ -38,11 +38,9 @@ import {
 // Max holdings per indexer page, used by the large-account fallback path.
 export const HOLDINGS_PAGE_LIMIT = 1000
 
-// algod rejects full account reads (exclude=none) with HTTP 400 once the
-// account's total resources (asset holdings + created assets + app local
-// states + created apps) exceed the node's MaxAPIResourcesPerAccount, which
-// defaults to 1000. Below that, one algod call returns balance AND holdings
-// from the same round — unlike the indexer, which lags algod by a few seconds
+// algod rejects a full account read with HTTP 400 once total resources exceed
+// MaxAPIResourcesPerAccount (default 1000). Below that, one call returns balance
+// AND holdings from the same round — unlike the indexer, which lags by seconds
 // and can hand back pre-transaction holdings right after a confirmation.
 const MAX_INLINE_RESOURCES = 1000
 
@@ -52,23 +50,19 @@ export type AccountSyncResult = {
     /** True if the holding set/amounts changed — drives asset/price re-sync. */
     holdingsChanged: boolean
     /**
-     * Chain round the persisted state is valid for — the minimum round across
-     * the sources read (algod info, and indexer holdings pages on the
-     * large-account path). The sync service uses this to advance the
-     * should-refresh checkpoint only past rounds it has actually observed, so
-     * a lagging source can't permanently swallow an update. Null when the
-     * node response omits the round.
+     * The MINIMUM round across every source read, so the sync service advances
+     * its checkpoint only past rounds it actually observed and a lagging source
+     * can't permanently swallow an update. Null when the node omits it.
      */
     observedRound: Nullable<number>
 }
 
 type HoldingInput = { assetId: string; amount: Decimal }
 
-// Coalesce concurrent fetches for the same account into one. On a fresh import
-// the background sync and every distinct balance/summary query call this with
-// no balance row yet, which would otherwise fire N parallel account fetches + N
-// parallel paginated holdings fetches, all contending on the single SQLite
-// connection. Sharing one in-flight promise collapses that to a single pass.
+// On a fresh import the background sync and every balance/summary query call
+// this with no balance row yet, firing N parallel account and holdings fetches
+// that all contend on the single SQLite connection. One shared in-flight promise
+// collapses them to a single pass.
 const inFlight = new Map<string, Promise<AccountSyncResult>>()
 
 export function fetchAndPersistAccount(
@@ -87,15 +81,10 @@ export function fetchAndPersistAccount(
 }
 
 /**
- * Ensure an account has been fetched into the DB at least once before a read.
- *
- * The home-screen reads (summary, holdings page) rely on the background sync to
- * populate holdings, but a freshly imported/selected account may not be picked
- * up by the next gated poll tick (the sync is already running, and
- * `checkShouldRefresh` can skip it). So trigger a one-off fetch when there's no
- * balance row yet — restoring the self-heal the old balances query did on read.
- * Deduped via `fetchAndPersistAccount`'s in-flight map, so the summary and the
- * first holdings page collapse to a single fetch.
+ * The home-screen reads rely on the background sync, but a freshly imported
+ * account may not be picked up by the next gated tick — so fetch once when there
+ * is no balance row yet. Deduped via `fetchAndPersistAccount`'s in-flight map,
+ * so the summary and first holdings page collapse to one fetch.
  */
 export async function ensureAccountFetched(
     address: string,
@@ -121,22 +110,15 @@ export async function ensureAccountFetched(
 }
 
 /**
- * Targeted first-read sync for an account that was just added to the wallet
- * (imported, created, watched, or discovered).
- *
- * The gated background poll won't pick a new account up on its own: its
- * activity predates the should-refresh checkpoint, so the backend keeps
- * answering "nothing new" and the sync's asset/price pass never runs for its
- * holdings. The read-time self-heal only fetches holdings — without asset
- * metadata the balance reads deliberately render zero amounts (no decimals to
- * scale by), and without prices the account contributes nothing to the
- * portfolio value. So fetch the account AND enrich metadata + prices here,
+ * First-read sync for a newly added account. The gated poll won't pick one up on
+ * its own — its activity predates the should-refresh checkpoint, so the backend
+ * keeps answering "nothing new" — and the read-time self-heal only fetches
+ * holdings, which without metadata render as zero amounts and without prices
+ * contribute nothing to the portfolio. So enrich metadata and prices here too,
  * invalidating after each phase so the UI fills in as data lands.
  *
- * Always fetches (no balance-row short-circuit) so a removed-and-re-imported
- * account starts from fresh chain state rather than leftover rows. Failures
- * are logged, never thrown — the read-time self-heal and the account-overview
- * enrichment remain the safety nets.
+ * Always fetches, with no balance-row short-circuit, so a re-imported account
+ * starts from fresh chain state. Failures are logged, never thrown.
  */
 export async function syncAndEnrichNewAccount(
     address: string,
@@ -187,13 +169,10 @@ const minRound = (
 ): Nullable<number> => (a === null ? b : b === null ? a : Math.min(a, b))
 
 /**
- * Fetch balance info + ASA holdings for an account, preferring a single algod
- * read so both come from the same (current) round.
- *
- * Falls back to the split read — algod info without assets + paginated indexer
- * holdings — when the account is too large for algod's inline-resource cap:
- * pre-emptively when the last persisted resource counts already exceed it, or
- * reactively when algod rejects the full read with 400.
+ * Prefers a single algod read so balance and holdings come from the same round.
+ * Falls back to the split read (algod info plus paginated indexer holdings) when
+ * the account exceeds algod's inline-resource cap — pre-emptively from the last
+ * persisted counts, or reactively on a 400.
  */
 async function fetchAccountSnapshot(
     algokit: ReturnType<typeof getAlgorandClient>,
@@ -314,13 +293,10 @@ async function doFetchAndPersistAccount(
         .getState()
         .updateAccountRekeyAddress(address, authAddress, network)
 
-    // Persist ALGO as a regular holding (in base units / microalgos, matching
-    // ASA amounts and ALGO's 6 decimals) so the home-screen reads can sort,
-    // filter and paginate it uniformly alongside ASAs — no synthetic-row union
-    // or per-row special-casing in the hot read path. ALGO metadata is seeded
-    // into assets_node/assets_pera at startup and its price syncs under id '0',
-    // so the holdings-page join resolves it like any asset. The display-unit
-    // algo balance also lives on the account_balances row for non-list callers.
+    // ALGO is persisted as a regular holding in base units, so the home-screen
+    // reads sort, filter and paginate it uniformly alongside ASAs with no
+    // synthetic-row union in the hot path. Its metadata is seeded at startup and
+    // its price syncs under id '0', so the join resolves it like any asset.
     holdings.unshift({
         assetId: ALGO_ASSET_ID,
         amount: new Decimal(info.amount.toString()),

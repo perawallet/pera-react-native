@@ -25,11 +25,7 @@ type ChainConfig = {
     dispenserUrl: string
 }
 
-/**
- * Pera-ecosystem services. Populated only for `PeraBackedNetwork`s; empty
- * (see `EMPTY_PERA_SERVICES`) everywhere else — never resolved from another
- * network's deployment.
- */
+/** Empty outside `PeraBackedNetwork`s — never borrowed from another network. */
 type PeraServices = {
     backendUrl: string
     bidaliBaseUrl: string
@@ -82,28 +78,23 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
         genesisHash: config.betanetGenesisHash,
         genesisId: 'betanet-v1.0',
         explorerUrl: config.betanetExplorerUrl,
-        // Deliberately empty, NOT config.algodApiKey/indexerApiKey: those are
-        // Pera's own injected secrets, and betanet's algod/indexer are public
-        // third-party endpoints (algonode.cloud) Pera does not control and
-        // that need no token. Sending Pera's real credential to a host Pera
-        // doesn't operate is a needless credential leak. The client factories
-        // (createTokenHeaderClient in query-client.ts, TimeoutHttpClient) skip
-        // the auth header entirely when the token is empty, so this is safe.
+        // Deliberately empty, NOT config.algodApiKey/indexerApiKey: betanet's
+        // endpoints are public third-party hosts Pera doesn't control and that
+        // need no token, so sending Pera's own credential would just leak it.
+        // The client factories skip the auth header when the token is empty.
         algodToken: '',
         indexerToken: '',
         dispenserUrl: 'https://lora.algokit.io/betanet/fund/',
     },
     [Networks.custom]: {
-        // Deliberately all empty. `custom` has no baked chain config — its real
-        // values live in the custom-network store (packages/blockchain), which
-        // `config` cannot read: config is the leaf package and must stay free of
-        // store dependencies. The blockchain-layer resolvers overlay the store on
-        // top of this placeholder:
-        //   - algodUrl/indexerUrl/tokens -> resolveChainEndpoints()
-        //   - genesisHash/genesisId      -> getExpectedGenesisHash()
-        // explorerUrl and dispenserUrl stay empty: an arbitrary node has no known
-        // explorer or faucet, and the existing non-mainnet-AND-non-empty gate
-        // already hides the dispenser row on an empty value.
+        // Deliberately all empty: `custom`'s real values live in the
+        // custom-network store, which `config` can't read — it's the leaf package
+        // and must stay free of store dependencies. The blockchain-layer
+        // resolvers overlay the store on top of this placeholder.
+        //
+        // explorerUrl and dispenserUrl stay empty for good: an arbitrary node has
+        // no known explorer or faucet, and the existing gate already hides the
+        // dispenser row on an empty value.
         algodUrl: '',
         indexerUrl: '',
         genesisHash: '',
@@ -116,10 +107,8 @@ const chainConfigByNetwork: Record<Network, ChainConfig> = {
 }
 
 /**
- * The networks that have a real Pera backend deployment.
- *
- * A type guard, not a boolean: `KNOWN_ASSET_IDS` and the `PeraServices` table
- * are keyed by these two, so callers need the narrowing to index them.
+ * A type guard, not a boolean: `KNOWN_ASSET_IDS` and the `PeraServices` table are
+ * keyed by these networks, so callers need the narrowing to index them.
  */
 const PERA_BACKED_NETWORKS = [Networks.mainnet, Networks.testnet] as const
 
@@ -131,9 +120,8 @@ export const isPeraBackedNetwork = (
     (PERA_BACKED_NETWORKS as readonly Network[]).includes(network)
 
 /**
- * Every field empty. Named rather than inlined twice so the two rows below
- * cannot drift, and so `satisfies` fails the build if a field is added to
- * `PeraServices` without an empty counterpart here.
+ * Named rather than inlined twice, so the rows below can't drift and `satisfies`
+ * fails the build if `PeraServices` gains a field without a counterpart here.
  */
 const EMPTY_PERA_SERVICES = {
     backendUrl: '',

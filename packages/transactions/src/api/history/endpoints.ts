@@ -49,26 +49,21 @@ export type FetchTransactionHistoryParams = {
  */
 export type FetchMoreTransactionsParams = {
     /**
-     * The full URL to fetch (from previous response's nextUrl or previousUrl)
-     * on Pera-backed networks. On indexer-backed networks (see
-     * `isPeraBackedNetwork`) this instead carries the indexer's opaque
-     * `next-token`, since the indexer has no absolute next-page URL to replay.
+     * A full URL on Pera-backed networks; the indexer's opaque `next-token`
+     * elsewhere, since the indexer has no absolute next-page URL to replay.
      */
     url: string
     /** The network to fetch transactions from */
     network: Network
     /**
-     * Required only on indexer-backed networks: the indexer paginates by
-     * account, and its opaque next-token has no address encoded in it the way
-     * a Pera pagination URL does.
+     * Indexer-backed networks only: it paginates by account, and its next-token
+     * encodes no address the way a Pera pagination URL does.
      */
     accountAddress?: string
     /**
-     * Indexer-backed networks only: the indexer's `next-token` does not
-     * encode the filters applied to the first page (unlike the Pera path's
-     * absolute `url`, which already carries them), so these must be re-sent
-     * on every page. Harmless to pass on Pera-backed networks — ignored,
-     * since that path replays `url` as-is.
+     * The indexer's `next-token` doesn't encode the first page's filters, so
+     * they must be re-sent every page. Ignored on the Pera path, which replays
+     * `url` as-is.
      */
     assetId?: string
     /** Indexer-backed networks only: see `assetId`. */
@@ -111,13 +106,7 @@ const buildQueryParams = (
     return queryParams
 }
 
-/**
- * Fetches transaction history for a given account from the Pera backend.
- *
- * This handles the initial request to get the first page of results with
- * optional filtering. Used directly on networks with a real Pera backend;
- * routed to via `fetchTransactionHistory` below on the rest.
- */
+/** First page from the Pera backend. Routed to by `fetchTransactionHistory`. */
 const fetchPeraTransactionHistory = async (
     params: FetchTransactionHistoryParams,
 ): Promise<TransactionHistoryResult> => {
@@ -136,13 +125,7 @@ const fetchPeraTransactionHistory = async (
     return transformTransactionHistoryResponse(validated)
 }
 
-/**
- * Fetches more transactions from the Pera backend using a pagination URL.
- *
- * Use this function when you have a nextUrl or previousUrl from a previous
- * response and want to fetch that specific page. Routed to via
- * `fetchMoreTransactions` below on networks with a real Pera backend.
- */
+/** A specific page by URL. Routed to by `fetchMoreTransactions`. */
 const fetchMorePeraTransactions = async (
     params: FetchMoreTransactionsParams,
 ): Promise<TransactionHistoryResult> => {
@@ -165,8 +148,7 @@ const fetchMorePeraTransactions = async (
 }
 
 /**
- * Transaction history for an account. Networks with no Pera backend read from
- * their own chain's indexer: there is no Pera history to read, and another
+ * Networks with no Pera backend read their own chain's indexer — another
  * chain's history would never show a transaction just sent.
  */
 export const fetchTransactionHistory = async (
@@ -176,14 +158,7 @@ export const fetchTransactionHistory = async (
         ? fetchPeraTransactionHistory(params)
         : fetchIndexerTransactionHistory(params)
 
-/**
- * Fetches more transactions using a pagination cursor from a previous
- * response.
- *
- * Use this function when you have a nextUrl (Pera-backed networks) or a
- * next-token (indexer-backed networks) from a previous response and want to
- * fetch that specific page.
- */
+/** Takes a nextUrl on Pera-backed networks, a next-token on indexer-backed ones. */
 export const fetchMoreTransactions = async (
     params: FetchMoreTransactionsParams,
 ): Promise<TransactionHistoryResult> => {

@@ -30,11 +30,7 @@ import {
 import { resolveDeviceModel } from './constants'
 import { createLedgerTransportWrapper } from './transport-wrapper'
 
-/**
- * Map the underlying ble-plx / CoreBluetooth state string emitted by
- * `TransportBLE.observeState` onto our platform-agnostic adapter state.
- * Unrecognized values fall back to `unknown`.
- */
+/** Unrecognized values fall back to `unknown`. */
 const BLE_STATE_MAP: Record<string, HardwareWalletAdapterState> = {
     PoweredOn: 'poweredOn',
     PoweredOff: 'poweredOff',
@@ -49,10 +45,8 @@ const mapBluetoothState = (type: string): HardwareWalletAdapterState =>
 type BluetoothStateListener = (state: HardwareWalletAdapterState) => void
 
 /**
- * Expo local module (`apps/mobile/native-modules/bluetooth`) that surfaces the OS
- * "turn on Bluetooth" prompt. Absent in unit tests and any build where the
- * module isn't linked, so access is guarded (`requireOptionalNativeModule`
- * returns null when unlinked).
+ * Surfaces the OS "turn on Bluetooth" prompt. Absent in unit tests and unlinked
+ * builds, hence the optional require.
  */
 interface NativePeraBluetooth {
     requestEnable(): Promise<boolean>
@@ -62,15 +56,10 @@ const getNativeBluetoothModule = (): NativePeraBluetooth | null =>
     requireOptionalNativeModule<NativePeraBluetooth>('PeraBluetooth')
 
 /**
- * Shared Bluetooth adapter-state observer.
- *
- * `TransportBLE.observeState` registers a state listener on the underlying
- * BLE manager but returns a no-op `unsubscribe` (the lib never detaches it).
- * To avoid leaking a fresh, un-removable listener on every screen mount, we
- * attach exactly one underlying observer at module scope and fan its updates
- * out to our own set of subscribers. Subscribers add/remove freely; the
- * underlying observer is created lazily on first use and then lives for the
- * process lifetime (matching the lib's behavior anyway).
+ * `TransportBLE.observeState` returns a no-op `unsubscribe` — the lib never
+ * detaches its listener — so a fresh one would leak on every screen mount.
+ * One module-scope observer fans out to our own subscriber set instead; it's
+ * created lazily and then lives for the process, matching the lib anyway.
  */
 let bluetoothStateListeners: Nullable<Set<BluetoothStateListener>> = null
 let latestBluetoothState: HardwareWalletAdapterState = 'unknown'
@@ -94,18 +83,12 @@ const ensureBluetoothObserver = (): Set<BluetoothStateListener> => {
 }
 
 /**
- * Pre-flight check that BLE scan + connect permissions are granted at sign time
- * (Android API ≥ 31 requires both BLUETOOTH_SCAN and BLUETOOTH_CONNECT).
- * Mirrors the gate in `useBlePermissions` but is callable from the
- * non-React transport layer.
+ * `useBlePermissions`' gate, callable from the non-React transport layer. iOS
+ * needs no pre-flight — the Transport library prompts itself when scanning
+ * begins and classifies a denial.
  *
- * iOS does not require pre-flighting: the Transport library handles the
- * CoreBluetooth permission prompt automatically when scanning begins and
- * surfaces a classified error if the user denies it.
- *
- * This only CHECKS — it does not prompt. The pairing flow already
- * prompts for these permissions; if they're revoked at sign time we
- * surface a typed error and the UI handles the recovery.
+ * CHECKS only, never prompts: the pairing flow already did, so a revocation at
+ * sign time surfaces as a typed error for the UI to recover from.
  */
 const hasBlePermissions = async (): Promise<boolean> => {
     if (Platform.OS !== 'android') return true

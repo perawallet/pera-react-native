@@ -57,20 +57,15 @@ export const getProvider = (): PeraProvider => {
 }
 
 /**
- * Returns the keystore's reactive TanStack Store. The same instance is held by
- * the {@link KeyStoreExtension}, so it reflects every keystore mutation
- * (`import` / `generate` / `remove` / `clear`). Subscribe via `useSyncExternalStore`.
+ * The same instance the {@link KeyStoreExtension} holds, so it reflects every
+ * keystore mutation. Subscribe via `useSyncExternalStore`.
  */
 export const getKeystoreStore = (): Store<KeyStoreState> => keystoreStore
 
 /**
- * Returns the keystore's hook collection (`before-after-hook`). Wallet-domain
- * packages register `before` / `after` / `wrap` / `error` hooks here to
- * intercept keystore operations such as `sign`, `generate`, `remove`, etc.
- *
- * `wrap` lets a registrant fully replace an operation — used by the kms
- * package to route signing for our custom `type: 'algo25'` keys through
- * tweetnacl.
+ * Where wallet-domain packages register hooks to intercept keystore operations.
+ * `wrap` fully replaces one — kms uses it to route `type: 'algo25'` signing
+ * through tweetnacl.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const getKeystoreHooks = (): HookCollection<any> => keystoreHooks
@@ -94,10 +89,9 @@ export const clearKeystore = async (): Promise<void> => {
 }
 
 /**
- * Decrypts a single keystore MMKV entry into its metadata-only {@link Key}.
- * The `privateKey` / `seed` bytes are zeroed before returning. Returns `null`
- * (and logs) when the entry is missing or fails to decode, so callers can skip
- * it rather than aborting a whole hydration/reconcile pass.
+ * Metadata only — the `privateKey`/`seed` bytes are zeroed before returning.
+ * `null` on a missing or undecodable entry, so a caller can skip it rather than
+ * abort a whole hydration pass.
  */
 const decodeKeyEntry = (id: string, masterKey: Buffer): Key | null => {
     const encrypted = keystoreStorage.getString(id)
@@ -120,22 +114,15 @@ const decodeKeyEntry = (id: string, masterKey: Buffer): Key | null => {
 }
 
 /**
- * Reads every entry out of the keystore's MMKV namespace, decrypts metadata,
- * and seeds the reactive store with the result. Must be called once during
- * app bootstrap — the underlying `react-native-keystore` package only mutates
- * `state.keys` on `commit` / `removeKey`, so without this step persisted
- * entries from previous sessions are invisible to the synchronous lookups
- * (`hasSecret`, `useKMS.getKey`, etc.) until a session-local mutation
+ * Seeds the reactive store from the keystore MMKV namespace. Must run once at
+ * bootstrap: `react-native-keystore` only mutates `state.keys` on
+ * `commit`/`removeKey`, so without this, entries persisted in earlier sessions
+ * are invisible to the synchronous lookups until a session-local mutation
  * happens to add them.
  *
- * The reactive store holds metadata only — `privateKey` and `seed` bytes are
- * decrypted briefly to read the rest of the record, then zeroed before any
- * Key is pushed into `state.keys`. The master key copy is fetched once and
- * zeroed in `finally`.
- *
- * Idempotent: skips if the reactive store is already populated. Safe to call
- * even if the keystore is empty (no master key generated yet) — entries that
- * fail to decrypt are logged and skipped rather than aborting hydration.
+ * Metadata only — secret bytes are decrypted briefly to read the rest of the
+ * record, then zeroed. Idempotent, safe on an empty keystore, and entries that
+ * fail to decrypt are logged and skipped rather than aborting.
  */
 export const hydrateKeystore = async (): Promise<void> => {
     if (keystoreStore.state.keys.length > 0) return
@@ -157,13 +144,10 @@ export const hydrateKeystore = async (): Promise<void> => {
 }
 
 /**
- * Re-seeds the reactive store from the keystore MMKV namespace so the in-process
- * store reflects writes made by an out-of-process writer. The Android passkey
- * credential provider runs in a separate process and writes straight to the
- * keystore MMKV namespace — both newly-registered `hd-derived-p256` keys AND
- * metadata updates on existing keys (e.g. bumping `lastUsedAt`/`count` when a
- * credential is used). The in-process reactive store learns about neither until
- * the next cold-start `hydrateKeystore`.
+ * Re-seeds the store to pick up out-of-process writes. The Android passkey
+ * credential provider runs in its own process and writes straight to the MMKV
+ * namespace — both new keys and metadata updates on existing ones — none of
+ * which the in-process store sees until the next cold-start hydrate.
  *
  * Unlike {@link hydrateKeystore} this does NOT skip when the store is already
  * populated: it re-reads every entry and re-initializes the store. Re-reading
