@@ -35,7 +35,7 @@ const mocks = vi.hoisted(() => {
     }
 })
 
-vi.mock('../../../hooks/useDappRequest', () => ({
+vi.mock('../../../hooks/useDappRequest.web', () => ({
     useDappRequest: mocks.useDappRequest,
 }))
 
@@ -70,7 +70,7 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import { usePasskeyApproval } from '../usePasskeyApproval'
+import { usePasskeyApproval } from '../usePasskeyApproval.web'
 
 const CREATE_APPROVAL = {
     kind: 'passkey-create' as const,

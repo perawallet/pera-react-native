@@ -53,7 +53,7 @@ vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
     },
 }))
 
-import { useUnlockScreen } from '../useUnlockScreen'
+import { useUnlockScreen } from '../useUnlockScreen.web'
 
 describe('useUnlockScreen', () => {
     beforeEach(() => {

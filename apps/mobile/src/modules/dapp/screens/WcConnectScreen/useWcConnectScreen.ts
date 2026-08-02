@@ -20,7 +20,7 @@ import {
     type AlgorandChainId,
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
-import { useDappRequest } from '../../hooks/useDappRequest'
+import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseWcConnectScreenResult = {
     /**

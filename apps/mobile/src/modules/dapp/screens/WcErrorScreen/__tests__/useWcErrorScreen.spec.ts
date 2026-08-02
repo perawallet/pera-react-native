@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
     useDappRequest: vi.fn(),
 }))
 
-vi.mock('../../../hooks/useDappRequest', () => ({
+vi.mock('../../../hooks/useDappRequest.web', () => ({
     useDappRequest: mocks.useDappRequest,
 }))
 

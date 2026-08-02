@@ -50,7 +50,7 @@ const mocks = vi.hoisted(() => {
     }
 })
 
-vi.mock('../../../hooks/useDappRequest', () => ({
+vi.mock('../../../hooks/useDappRequest.web', () => ({
     useDappRequest: mocks.useDappRequest,
 }))
 
@@ -90,7 +90,7 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import { useSignRequestApprovalScreen } from '../useSignRequestApprovalScreen'
+import { useSignRequestApprovalScreen } from '../useSignRequestApprovalScreen.web'
 
 const SIGN_TRANSACTIONS_APPROVAL = {
     kind: 'sign-transactions' as const,

@@ -12,7 +12,7 @@
 
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useDappRequest } from '../useDappRequest'
+import { useDappRequest } from '../useDappRequest.web'
 
 const sendMessage = vi.fn()
 

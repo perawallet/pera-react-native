@@ -21,7 +21,7 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { formatTime } from '@perawallet/wallet-core-shared'
-import { useUnlockScreen } from './useUnlockScreen'
+import { useUnlockScreen } from './useUnlockScreen.web'
 import { useStyles } from './styles'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'

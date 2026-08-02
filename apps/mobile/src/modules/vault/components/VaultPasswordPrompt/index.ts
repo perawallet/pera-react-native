@@ -11,4 +11,4 @@
  */
 
 export { VaultPasswordPrompt } from './VaultPasswordPrompt'
-export { useVaultPasswordPrompt } from './useVaultPasswordPrompt'
+export { useVaultPasswordPrompt } from './useVaultPasswordPrompt.web'

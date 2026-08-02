@@ -35,7 +35,7 @@ import {
 } from '@perawallet/wallet-extension-platform-chrome'
 import { useRequireVaultPassword } from '@modules/vault'
 import { useLanguage } from '@hooks/useLanguage'
-import { useDappRequest } from '../../hooks/useDappRequest'
+import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 /**
  * Whether the relying party demanded user verification for this ceremony.

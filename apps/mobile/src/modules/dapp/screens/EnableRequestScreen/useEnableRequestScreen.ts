@@ -17,7 +17,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
-import { useDappRequest } from '../../hooks/useDappRequest'
+import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseEnableRequestScreenResult = {
     origin: string

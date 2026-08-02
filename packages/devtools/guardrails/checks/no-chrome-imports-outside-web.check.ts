@@ -44,13 +44,6 @@ const isWebOnlyFile = (fileName: string): boolean =>
  * established pattern).
  */
 const KNOWN_WEB_ONLY_PATHS = [
-    // Whole modules that exist only for the extension. Not relocated yet:
-    // both are built on apps/mobile's design system (modules/dapp alone has
-    // ~48 imports of @components/@hooks/@modules/@theme), so moving them
-    // would invert the app dependency and require apps/browser to replicate
-    // apps/mobile's React Native test environment.
-    'modules/dapp/',
-    'modules/vault/',
     // NOT a web-only file. `settings/routes/index.tsx` is shared and imports
     // ConnectedSitesScreen / ConnectionsSettingsScreen unconditionally, so a
     // `.web` rename here would break the native build. Both screens are

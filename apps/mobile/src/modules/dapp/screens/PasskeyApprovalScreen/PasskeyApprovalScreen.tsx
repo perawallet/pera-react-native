@@ -19,7 +19,7 @@ import React from 'react'
 import { PWButton, PWScreen, PWText, PWView } from '@components/core'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { useLanguage } from '@hooks/useLanguage'
-import { usePasskeyApproval } from './usePasskeyApproval'
+import { usePasskeyApproval } from './usePasskeyApproval.web'
 import { useStyles } from './styles'
 
 export const PasskeyApprovalScreen = (): React.JSX.Element => {

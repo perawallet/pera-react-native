@@ -19,7 +19,7 @@ import { formatTime } from '@perawallet/wallet-core-shared'
 import { PWButton, PWInput, PWText, PWView } from '@components/core'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useVaultPasswordPrompt } from './useVaultPasswordPrompt'
+import { useVaultPasswordPrompt } from './useVaultPasswordPrompt.web'
 import { useStyles } from './styles'
 
 type VaultPasswordPromptProps = {

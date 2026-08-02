@@ -13,7 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { AlgorandChain } from '@perawallet/wallet-core-walletconnect'
 import { useLanguage } from '@hooks/useLanguage'
-import { useDappRequest } from '../../hooks/useDappRequest'
+import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type TranslateFn = (key: string, values?: Record<string, unknown>) => string
 

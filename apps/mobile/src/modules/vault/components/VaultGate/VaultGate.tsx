@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { PWLoadingOverlay } from '@components/core'
-import { useVaultLockState } from '../../hooks/useVaultLockState'
+import { useVaultLockState } from '../../hooks/useVaultLockState.web'
 import { UnlockScreen } from '../UnlockScreen'
 
 type VaultGateProps = { children: React.ReactNode }

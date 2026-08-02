@@ -59,7 +59,7 @@ import {
     rejectApproval,
 } from '@perawallet/wallet-extension-platform-chrome'
 import { useLanguage } from '@hooks/useLanguage'
-import { useDappRequest } from '../../hooks/useDappRequest'
+import { useDappRequest } from '../../hooks/useDappRequest.web'
 
 type UseSignRequestApprovalScreenResult = {
     isLoading: boolean

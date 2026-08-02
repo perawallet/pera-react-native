@@ -28,7 +28,7 @@ import { LedgerSigningOverlays } from '@modules/signing/components/SigningOverla
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getNavigationTheme } from '@theme/theme'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
-import { useDappRequest } from '../hooks/useDappRequest'
+import { useDappRequest } from '../hooks/useDappRequest.web'
 import { EnableRequestScreen } from '../screens/EnableRequestScreen'
 import { PasskeyApprovalScreen } from '../screens/PasskeyApprovalScreen'
 import { SignRequestApprovalScreen } from '../screens/SignRequestApprovalScreen'

@@ -26,7 +26,7 @@ import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSignRequestApprovalScreen } from './useSignRequestApprovalScreen'
+import { useSignRequestApprovalScreen } from './useSignRequestApprovalScreen.web'
 import { useStyles } from './styles'
 
 export const SignRequestApprovalScreen = (): React.JSX.Element => {
