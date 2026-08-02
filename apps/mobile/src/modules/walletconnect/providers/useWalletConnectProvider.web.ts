@@ -10,6 +10,11 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
+import { onWcErrorNotice } from '@perawallet/wallet-extension-platform-chrome'
+import { scannerNotifier } from '@components/QRScannerView'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import type { useWalletConnectProvider as useNativeWalletConnectProvider } from './useWalletConnectProvider'
 
 /**
@@ -40,9 +45,11 @@ type UseWalletConnectProviderResult = ReturnType<
  *   (`EnableRequestScreen`, via `apps/browser/src/background/
  *   walletconnect.ts`'s `installWcApprovalRouter`) — a real browser
  *   window, not a bottom sheet in this tree.
- * - `connectionError` is set only by that same disused handler set (see
- *   `useWalletConnectPairing.web.ts`'s doc comment for the one path that
- *   still can report a failure: the control-message send itself failing).
+ * - `connectionError` is set only by that same disused handler set — in the
+ *   OFFSCREEN realm, whose store this one never sees (`connectionError` is
+ *   not persisted, so the cross-realm rehydrate doesn't carry it). Offscreen
+ *   therefore forwards each one over the `wc-error-notice` broadcast, which
+ *   this hook subscribes to below and renders exactly as native does.
  *
  * `WalletConnectProvider` is still mounted on web for `
  * WalletConnectErrorBoundary` — a real, WC-unrelated crash guard for the nav
@@ -55,6 +62,33 @@ type UseWalletConnectProviderResult = ReturnType<
  * a body again.
  */
 export const useWalletConnectProvider = (): UseWalletConnectProviderResult => {
+    const { showToast } = useToast()
+    const { t } = useLanguage()
+
+    useEffect(
+        () =>
+            onWcErrorNotice(notice => {
+                showToast(
+                    {
+                        title: t('walletconnect.request.error_sheet_title'),
+                        body: notice.isFeeAdjustmentDeliveryError
+                            ? t(
+                                  'walletconnect.request.quantum_fee_delivery_failed',
+                              )
+                            : notice.message,
+                        type: 'error',
+                    },
+                    // Route to the scanner's notifier when it's open, for the
+                    // same reason native does: its Modal covers the root tree,
+                    // so the global notifier would paint behind the camera.
+                    { notifier: scannerNotifier.current ?? undefined },
+                )
+            }),
+        [showToast, t],
+    )
+
+    // Still inert: the request queue and success sheet are driven by handlers
+    // that only ever run where a connector lives, which on web is offscreen.
     return {
         nextRequest: undefined,
         successRequest: null,

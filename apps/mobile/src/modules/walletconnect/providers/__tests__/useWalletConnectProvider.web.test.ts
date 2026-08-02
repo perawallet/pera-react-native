@@ -29,6 +29,31 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: (...args: unknown[]) => useWalletConnectSpy(...args),
 }))
 
+// The twin now subscribes to the offscreen error broadcast, which reaches for
+// the ambient `chrome` global. Capture the handler so the toast behaviour can
+// be driven directly.
+const noticeHandler = vi.hoisted(() => ({
+    current: null as null | ((notice: Record<string, unknown>) => void),
+}))
+const unsubscribeSpy = vi.hoisted(() => vi.fn())
+vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+    onWcErrorNotice: (handler: (notice: Record<string, unknown>) => void) => {
+        noticeHandler.current = handler
+        return unsubscribeSpy
+    },
+}))
+
+const showToastSpy = vi.hoisted(() => vi.fn())
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: showToastSpy }),
+}))
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: (key: string) => key }),
+}))
+vi.mock('@components/QRScannerView', () => ({
+    scannerNotifier: { current: null },
+}))
+
 describe('useWalletConnectProvider (web)', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -69,5 +94,57 @@ describe('useWalletConnectProvider (web)', () => {
             } as never),
         ).not.toThrow()
         expect(useWalletConnectSpy).not.toHaveBeenCalled()
+    })
+
+    // Wrong-network, rejected and expired handshakes are raised by the
+    // connector, which on web lives in offscreen — its store's
+    // `connectionError` is not persisted, so this realm never saw them and
+    // they produced no UI at all.
+    describe('connector failures broadcast from offscreen', () => {
+        it('renders one as an error toast', async () => {
+            const { useWalletConnectProvider } =
+                await import('../useWalletConnectProvider.web')
+            renderHook(() => useWalletConnectProvider())
+
+            noticeHandler.current?.({ message: 'Wrong network' })
+
+            expect(showToastSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    body: 'Wrong network',
+                    type: 'error',
+                }),
+                expect.anything(),
+            )
+        })
+
+        // Native replaces the raw message with its own copy for this case;
+        // the twin must not diverge on what the user reads.
+        it('uses the dedicated copy for a fee-adjustment delivery failure', async () => {
+            const { useWalletConnectProvider } =
+                await import('../useWalletConnectProvider.web')
+            renderHook(() => useWalletConnectProvider())
+
+            noticeHandler.current?.({
+                message: 'raw internal text',
+                isFeeAdjustmentDeliveryError: true,
+            })
+
+            expect(showToastSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    body: 'walletconnect.request.quantum_fee_delivery_failed',
+                }),
+                expect.anything(),
+            )
+        })
+
+        it('unsubscribes on unmount', async () => {
+            const { useWalletConnectProvider } =
+                await import('../useWalletConnectProvider.web')
+            const { unmount } = renderHook(() => useWalletConnectProvider())
+
+            unmount()
+
+            expect(unsubscribeSpy).toHaveBeenCalled()
+        })
     })
 })

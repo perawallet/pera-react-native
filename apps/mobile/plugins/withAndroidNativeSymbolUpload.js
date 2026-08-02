@@ -51,9 +51,9 @@ function addNativeSymbolUpload(buildGradle) {
   // Idempotent: prebuild re-runs mods, and we must not inject the block twice.
   if (!patched.includes('debugSymbolLevel')) {
     const injected = [
-      '            // Native debug symbols for release crash symbolication (see',
-      '            // docs/SECURITY_OBFUSCATION_AUDIT.md). Uploaded to Crashlytics /',
-      '            // Play Console metadata, not shipped to devices.',
+      '            // Native debug symbols for release crash symbolication.',
+      '            // Uploaded to Crashlytics / Play Console metadata, never',
+      '            // shipped to devices.',
       "            ndk {\n                debugSymbolLevel 'FULL'\n            }",
       '            firebaseCrashlytics {\n                nativeSymbolUploadEnabled true\n            }',
       '',

@@ -37,10 +37,25 @@ export const installConnectModalWatcher = ({
         injectExtensionRow(wrapper, requestPair)
     }
 
+    // Coalesce bursts. This observer is subtree-wide on every http(s) page for
+    // the document's lifetime, and `process` does a getElementById each time —
+    // on a mutation-heavy SPA that is a real per-mutation cost for a check
+    // whose answer cannot change within one task. One scheduled run per burst
+    // is equivalent and bounded.
+    let scheduled = false
+    const scheduleProcess = (): void => {
+        if (scheduled) return
+        scheduled = true
+        queueMicrotask(() => {
+            scheduled = false
+            process()
+        })
+    }
+
     let observer: MutationObserver | null = null
     const attach = (): void => {
         try {
-            observer = new MutationObserver(process)
+            observer = new MutationObserver(scheduleProcess)
             observer.observe(document.body, { childList: true, subtree: true })
         } catch {
             // document.body absent/inaccessible — nothing to observe.

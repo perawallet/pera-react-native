@@ -11,7 +11,7 @@
  */
 
 // Discover is intentionally absent from the web tab registration below (see
-// tab-screens.web.tsx's own comment and docs/DISCOVER_WEB_FEATURE_GATE.md).
+// tab-screens.web.tsx's own comment and routes/capabilities.web.ts's discoverTab comment).
 import { describe, expect, it, vi } from 'vitest'
 
 const {

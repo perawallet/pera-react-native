@@ -29,6 +29,8 @@ const {
     setWalletConnectConnections,
     walletConnectHasHydrated,
     walletConnectOnFinishHydration,
+    walletConnectSubscribe,
+    sendWcErrorNotice,
 } = vi.hoisted(() => {
     const setWalletConnectConnections = vi.fn()
     return {
@@ -53,6 +55,8 @@ const {
         walletConnectOnFinishHydration: vi.fn((_listener: () => void) =>
             vi.fn(),
         ),
+        walletConnectSubscribe: vi.fn(),
+        sendWcErrorNotice: vi.fn(),
     }
 })
 
@@ -65,6 +69,7 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     onWcControlMessage,
     sendWcApprovalRequest,
     sendPairOutcome,
+    sendWcErrorNotice,
 }))
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     getPlatformServices: vi.fn(() => ({ database: {} })),
@@ -107,20 +112,35 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         getState: networkGetState,
         persist: { rehydrate: vi.fn() },
     },
+    // Only ever stashed in REHYDRATE_BY_KEY — no accessor needed, but the
+    // export must exist or the module-level table throws on import.
+    useCustomNetworkStore: {
+        persist: { rehydrate: vi.fn() },
+    },
 }))
 vi.mock('@perawallet/wallet-core-polling', () => ({
     usePollingStore: { persist: { rehydrate: vi.fn() } },
 }))
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     createWalletConnectConnector,
+    getConnectionErrorClientId: (error: { clientId?: string }) =>
+        error.clientId ?? null,
     useWalletConnectStore: {
         getState: walletConnectGetState,
+        // The host forwards connector failures to the UI over the
+        // wc-error-notice broadcast; capture the listener so that path can be
+        // driven directly.
+        subscribe: walletConnectSubscribe,
         persist: {
             rehydrate: vi.fn(),
             hasHydrated: walletConnectHasHydrated,
             onFinishHydration: walletConnectOnFinishHydration,
         },
     },
+}))
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER: 'fee-adjusted',
+    FeeAdjustmentDeliveryError: class FeeAdjustmentDeliveryError extends Error {},
 }))
 
 describe('runOffscreenApp WC wiring', () => {
@@ -134,6 +154,9 @@ describe('runOffscreenApp WC wiring', () => {
         walletConnectGetState.mockReturnValue({
             walletConnectConnections: [],
             setWalletConnectConnections,
+            // Cleared after each failure is broadcast, so a settled error is
+            // never re-announced to the next subscriber.
+            setConnectionError: vi.fn(),
         })
     })
 
@@ -290,5 +313,66 @@ describe('runOffscreenApp WC wiring', () => {
         deps.removeConnection('never-paired')
 
         expect(setWalletConnectConnections).not.toHaveBeenCalled()
+    })
+
+    // On web the connector lives here, and `connectionError` is not persisted
+    // (the store's partialize keeps only walletConnectConnections), so the UI
+    // realm never saw wrong-network / rejected / expired handshakes at all.
+    describe('connector failures reaching the UI', () => {
+        const emitError = async (
+            error: Error & { clientId?: string },
+        ): Promise<void> => {
+            const { runOffscreenApp } = await import('../runOffscreenApp')
+            await runOffscreenApp()
+            const listener = walletConnectSubscribe.mock.calls.at(-1)?.[0] as (
+                state: unknown,
+                previous: unknown,
+            ) => void
+            listener({ connectionError: error }, { connectionError: null })
+        }
+
+        it('broadcasts the failure to UI realms', async () => {
+            const error = Object.assign(new Error('Wrong network'), {
+                clientId: 'client-9',
+            })
+
+            await emitError(error)
+
+            expect(sendWcErrorNotice).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    message: 'Wrong network',
+                    clientId: 'client-9',
+                }),
+            )
+        })
+
+        // Otherwise the store keeps a settled error that the next subscriber
+        // would re-announce as if it had just happened.
+        it('clears the error after broadcasting it', async () => {
+            const setConnectionError = vi.fn()
+            walletConnectGetState.mockReturnValue({
+                setWalletConnectConnections,
+                walletConnectConnections: [],
+                setConnectionError,
+            })
+
+            await emitError(new Error('boom'))
+
+            expect(setConnectionError).toHaveBeenCalledWith(null)
+        })
+
+        it('ignores an unchanged error so one failure is announced once', async () => {
+            const { runOffscreenApp } = await import('../runOffscreenApp')
+            await runOffscreenApp()
+            const listener = walletConnectSubscribe.mock.calls.at(-1)?.[0] as (
+                state: unknown,
+                previous: unknown,
+            ) => void
+            const same = new Error('same')
+
+            listener({ connectionError: same }, { connectionError: same })
+
+            expect(sendWcErrorNotice).not.toHaveBeenCalled()
+        })
     })
 })

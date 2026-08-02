@@ -20,7 +20,7 @@ export const routeCapabilities: RouteCapabilities = {
     // DISCOVER_V3 = { ios, android } — our honest clientType 'web' makes that
     // lookup undefined, compare-versions throws mid-render, and React unmounts
     // the whole Discover root (renders, then blanks). The iframe/bridge layer
-    // itself is verified working. See docs/DISCOVER_WEB_FEATURE_GATE.md.
+    // itself is verified working. See routes/capabilities.web.ts's discoverTab comment.
     discoverTab: false,
     swapTab: true, // native RN screen graph
     fundTab: true, // native RN screen graph (Meld checkout via window.open)
@@ -48,5 +48,10 @@ export const routeCapabilities: RouteCapabilities = {
     // signer path in the browser extension yet.
     quantum: false,
     rekeyFlows: false, // RescanRekeyed/RekeyToStandard/RekeyToShared stacks aren't registered in WebMainRoutes
+    // The Multisig stack is deliberately omitted from WebMainRoutes (see its
+    // header comment). Without this flag the SHARED_ACCOUNT_IMPORT deeplink
+    // navigated to an unregistered route — a complete no-op that also left
+    // the QR scanner locked, since it waits for one of its callbacks.
+    sharedAccounts: false,
     connectionsSettings: true, // unified WalletConnect + dapp connections settings screen
 }

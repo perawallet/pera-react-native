@@ -11,14 +11,21 @@
  */
 
 import { createElement, type ReactNode } from 'react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createTestQueryClient } from '@test-utils/render'
 import {
     DAPP_PERMISSIONS_STORAGE_KEY,
     type DappPermissionsMap,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-arc0027'
+const signingAccounts = vi.hoisted(() => ({
+    current: [] as { address: string }[],
+}))
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useSigningAccounts: () => signingAccounts.current,
+}))
+
 import { useDappConnectionsStore } from '../useDappConnectionsStore'
 
 // Minimal in-memory LocalStorageArea fake, mirroring
@@ -60,6 +67,9 @@ describe('useDappConnectionsStore', () => {
             },
         }
         area.backing[DAPP_PERMISSIONS_STORAGE_KEY] = map
+        // Both grants are held by accounts the wallet still has, unless a
+        // test narrows this.
+        signingAccounts.current = [{ address: 'ADDR_A' }, { address: 'ADDR_B' }]
         ;(globalThis as unknown as { chrome?: unknown }).chrome = {
             storage: { local: area },
         }
@@ -96,5 +106,42 @@ describe('useDappConnectionsStore', () => {
                 'https://old.com',
             ]),
         )
+    })
+
+    // Deleting a wallet account left its address granted to every origin that had
+    // it, which surfaced later as a confusing "unauthorized signer" instead of an
+    // honest missing grant. Nothing observes account removal, so this screen
+    // self-heals on read.
+    describe('stale grants after an account is deleted', () => {
+        it('drops addresses the wallet no longer holds', async () => {
+            signingAccounts.current = [{ address: 'ADDR_B' }]
+
+            const { result } = renderHook(() => useDappConnectionsStore(), {
+                wrapper: buildWrapper(),
+            })
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+            // old.com only ever had ADDR_A, so it disappears entirely; new.com
+            // keeps the address that still exists.
+            expect(result.current.sites.map(s => s.origin)).toEqual([
+                'https://new.com',
+            ])
+            expect(result.current.sites[0]?.addresses).toEqual(['ADDR_B'])
+        })
+
+        it('persists the prune rather than only filtering the view', async () => {
+            signingAccounts.current = [{ address: 'ADDR_B' }]
+
+            const { result } = renderHook(() => useDappConnectionsStore(), {
+                wrapper: buildWrapper(),
+            })
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+            const stored = area.backing[
+                DAPP_PERMISSIONS_STORAGE_KEY
+            ] as DappPermissionsMap
+            expect(stored['https://old.com']).toBeUndefined()
+            expect(stored['https://new.com']?.addresses).toEqual(['ADDR_B'])
+        })
     })
 })

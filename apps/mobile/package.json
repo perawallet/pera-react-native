@@ -51,6 +51,7 @@
     "@perawallet/wallet-core-age-gate": "workspace:*",
     "@perawallet/wallet-core-analytics": "workspace:*",
     "@perawallet/wallet-core-app-integrity": "workspace:*",
+    "@perawallet/wallet-core-arc0027": "workspace:*",
     "@perawallet/wallet-core-asa-inbox": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-background": "workspace:*",

@@ -199,7 +199,7 @@ test('pasting a bridge-less WC URI is rejected and keeps the scanner open', asyn
 // SKIPPED with the Discover tab: it is not registered on web while Discover's
 // feature-gate map lacks a 'web' key. The window.open('wc:...') hook this
 // covers (discover-main.ts) is unchanged. See
-// docs/DISCOVER_WEB_FEATURE_GATE.md.
+// routes/capabilities.web.ts's discoverTab comment.
 //
 // Runs on its OWN page: visiting Discover on the same page that later opens
 // the WC scanner intermittently surfaces an unrelated price-fetch rejection as

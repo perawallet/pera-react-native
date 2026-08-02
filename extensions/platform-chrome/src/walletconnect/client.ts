@@ -13,6 +13,21 @@
 import { DB_CONTROL_SCOPE } from '../database/protocol'
 import { isTrustedExtensionPageSender } from '../trusted-sender'
 
+import {
+    WC_CONTROL_SCOPE,
+    WC_ERROR_NOTICE_SCOPE,
+    WC_PAIR_OUTCOME_SCOPE,
+    WC_REQUEST_SCOPE,
+    isWcAck,
+    isWcErrorNoticeMessage,
+    isWcPairOutcomeMessage,
+    type WcAck,
+    type WcErrorNoticeMessage,
+    type WcApprovalRequestMessage,
+    type WcControlMessage,
+    type WcPairOutcomeMessage,
+} from './protocol'
+
 /**
  * Asks the service worker to (re)create the offscreen document, and resolves
  * once it has — or immediately if the request can't be delivered.
@@ -34,17 +49,6 @@ const ensureOffscreenHost = async (): Promise<void> => {
         // control message below reports the real outcome.
     }
 }
-import {
-    WC_CONTROL_SCOPE,
-    WC_PAIR_OUTCOME_SCOPE,
-    WC_REQUEST_SCOPE,
-    isWcAck,
-    isWcPairOutcomeMessage,
-    type WcAck,
-    type WcApprovalRequestMessage,
-    type WcControlMessage,
-    type WcPairOutcomeMessage,
-} from './protocol'
 
 /**
  * Sends an approval request to the service worker's `installWcApprovalRouter`
@@ -212,6 +216,48 @@ export const onPairOutcome = (
         ) {
             handler(message)
         }
+        return false
+    }
+    chrome.runtime.onMessage.addListener(listener)
+    return () => chrome.runtime.onMessage.removeListener(listener)
+}
+
+/**
+ * Offscreen-side sender for a connector-level failure (see
+ * {@link WcErrorNoticeMessage}). Best-effort for the same reason
+ * {@link sendPairOutcome} is: when every UI realm is closed there is nobody to
+ * tell, and Chrome reports that as a rejection.
+ */
+export const sendWcErrorNotice = async (
+    notice: Omit<WcErrorNoticeMessage, 'scope'>,
+): Promise<void> => {
+    try {
+        await chrome.runtime.sendMessage({
+            scope: WC_ERROR_NOTICE_SCOPE,
+            ...notice,
+        })
+    } catch {
+        // No UI realm open — the failure is still recorded in the offscreen
+        // log; there is simply no one to show it to.
+    }
+}
+
+/**
+ * Subscribes a UI realm to connector-level failures, gated the same way as
+ * {@link onPairOutcome}: a content script shares `chrome.runtime.onMessage`
+ * with every extension page, and this drives a user-visible error toast, so an
+ * untrusted sender must never reach `handler`.
+ */
+export const onWcErrorNotice = (
+    handler: (notice: WcErrorNoticeMessage) => void,
+): (() => void) => {
+    const listener = (
+        message: unknown,
+        sender: chrome.runtime.MessageSender,
+    ): boolean => {
+        if (!isTrustedExtensionPageSender(sender)) return false
+        if (!isWcErrorNoticeMessage(message)) return false
+        handler(message)
         return false
     }
     chrome.runtime.onMessage.addListener(listener)

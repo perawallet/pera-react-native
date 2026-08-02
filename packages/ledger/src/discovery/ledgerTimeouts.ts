@@ -15,7 +15,7 @@ import {
     LEDGER_CONFIRMATION_TIMEOUT_MS,
     LEDGER_CONNECTION_TIMEOUT_MS,
     LedgerTimeoutError,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 /**
  * Factory for the `rejectWith` callback of the shared `withTimeout` helper,

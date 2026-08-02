@@ -20,7 +20,7 @@ import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {
     classifyLedgerError,
     createLedgerTransportWrapper,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 /**
  * Maps a WebHID device's USB product ID to a friendly model name.

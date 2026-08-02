@@ -166,9 +166,22 @@ if (mainChannel) {
         // window.open is non-configurable in some hosts — fall back to no hook.
     }
 
+    // Same coalescing rationale as connect-modal-watcher: this observer is
+    // subtree-wide for the document's lifetime, and one scheduled run per
+    // mutation burst is equivalent to one per mutation.
+    let scheduled = false
+    const scheduleProcessModals = (): void => {
+        if (scheduled) return
+        scheduled = true
+        queueMicrotask(() => {
+            scheduled = false
+            processModals()
+        })
+    }
+
     const attachObserver = (): void => {
         try {
-            const observer = new MutationObserver(processModals)
+            const observer = new MutationObserver(scheduleProcessModals)
             observer.observe(document.body, {
                 childList: true,
                 subtree: true,

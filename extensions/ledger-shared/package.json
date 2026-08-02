@@ -1,9 +1,10 @@
 {
-    "name": "@perawallet/wallet-extension-ledger-web-ble",
+    "name": "@perawallet/wallet-extension-ledger-shared",
     "version": "0.0.0",
+    "private": true,
+    "type": "module",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
-    "type": "module",
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
@@ -19,12 +20,11 @@
     },
     "dependencies": {
         "@algorandfoundation/ledger-algorand-js": "catalog:",
+        "@ledgerhq/devices": "^8.13.0",
         "@ledgerhq/errors": "catalog:",
-        "@ledgerhq/hw-transport-web-ble": "catalog:",
         "@perawallet/wallet-core-hardware-wallet": "workspace:*",
         "@perawallet/wallet-core-shared": "workspace:*",
-        "@perawallet/wallet-extension-ledger-shared": "workspace:*",
-        "@perawallet/wallet-extension-platform": "workspace:*"
+        "buffer": "catalog:"
     },
     "devDependencies": {
         "@perawallet/wallet-core-devtools": "workspace:*",

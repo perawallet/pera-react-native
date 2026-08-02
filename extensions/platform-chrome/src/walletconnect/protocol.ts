@@ -240,6 +240,46 @@ export const isWcAck = (value: unknown): value is WcAck =>
  * bounded wait — see `useWalletConnectPairing.web.ts`), since offscreen
  * has no reason to guess how long a caller is willing to wait.
  */
+/**
+ * Offscreen → UI broadcast for connector-level failures (wrong network,
+ * rejected or expired handshake, a fee-adjustment delivery failure).
+ *
+ * Native surfaces these by reading `connectionError` straight off the
+ * WalletConnect store, because the connector and the UI share one realm.
+ * On web the connector lives in offscreen and `connectionError` is NOT
+ * persisted (the store's `partialize` keeps only `walletConnectConnections`),
+ * so the UI realm's copy never sees it — which is why these failures produced
+ * no UI at all. This is the missing channel.
+ *
+ * Deliberately NOT the pair-outcome scope: that one is correlated to a
+ * specific pairing attempt a caller is actively awaiting, whereas these can
+ * arrive at any time from a session established long ago.
+ */
+export const WC_ERROR_NOTICE_SCOPE = 'pera-wc-error-notice' as const
+
+export type WcErrorNoticeMessage = {
+    scope: typeof WC_ERROR_NOTICE_SCOPE
+    /** Already-formatted for display; Error itself is not worth cloning. */
+    message: string
+    /** Lets the UI drop only the pending request belonging to the connector
+     *  that failed, matching native's per-clientId behaviour. */
+    clientId?: string
+    /** Set when the failure was a fee-adjustment delivery error, which native
+     *  renders with its own copy rather than the raw message. */
+    isFeeAdjustmentDeliveryError?: boolean
+}
+
+export const isWcErrorNoticeMessage = (
+    value: unknown,
+): value is WcErrorNoticeMessage => {
+    if (typeof value !== 'object' || value === null) return false
+    const candidate = value as Record<string, unknown>
+    return (
+        candidate.scope === WC_ERROR_NOTICE_SCOPE &&
+        typeof candidate.message === 'string'
+    )
+}
+
 export const WC_PAIR_OUTCOME_SCOPE = 'pera-wc-pair-outcome' as const
 
 export type WcPairOutcome =

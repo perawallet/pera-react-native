@@ -51,6 +51,10 @@ export type RouteCapabilities = {
      * standard/shared/ledger flows) — native-only; these stacks aren't
      * registered in WebMainRoutes. */
     rekeyFlows: boolean
+    /** Multisig / shared-account flows. Off where the Multisig stack isn't
+     * registered, so the SHARED_ACCOUNT_IMPORT deeplink can decline cleanly
+     * instead of navigating nowhere. */
+    sharedAccounts: boolean
     /** Unified settings screen merging WalletConnect sessions and ARC-0027
      * dapp connections into one list (web only). When on, it supersedes the
      * separate walletConnectSettings/dappConnections settings-menu entries —

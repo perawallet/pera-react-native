@@ -33,7 +33,12 @@ import {
     resolvePasskey,
     type PendingApproval,
 } from '@perawallet/wallet-extension-platform-chrome'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useRequireVaultPassword } from '@modules/vault'
+import {
+    PasskeyChooserContent,
+    type PasskeyChoice,
+} from '../../components/PasskeyChooserContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDappRequest } from '../../hooks/useDappRequest.web'
 
@@ -93,6 +98,7 @@ type UsePasskeyApprovalResult = {
 export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
     const { requestId, approval, isLoading } = useDappRequest()
     const { requireVaultPassword } = useRequireVaultPassword()
+    const { request: requestBottomSheet } = useBottomSheet()
     const { t } = useLanguage()
     const [isBusy, setIsBusy] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -128,7 +134,33 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
                 return
             }
         }
-        const context = { origin: current.origin, userVerified }
+        const context = {
+            origin: current.origin,
+            userVerified,
+            // Only reached for a discoverable request with more than one
+            // stored credential — the core decides when to ask (see
+            // SigningContext.selectCredential). Dismissing resolves the sheet
+            // with undefined, which becomes `null` here and the core treats
+            // as a decline rather than falling back to the first credential.
+            selectCredential: async (
+                choices: PasskeyChoice[],
+            ): Promise<string | null> => {
+                const chosen = await requestBottomSheet<string>({
+                    contents: (
+                        <PasskeyChooserContent
+                            rpId={current.rpId}
+                            choices={choices}
+                        />
+                    ),
+                    options: {
+                        size: 'auto',
+                        enablePanDownToClose: false,
+                        enableCloseOnBackdropPress: false,
+                    },
+                })
+                return chosen ?? null
+            },
+        }
         try {
             const signer = createKeystoreSigner(getKeystoreStore())
             const credential =
@@ -158,7 +190,7 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
         } finally {
             setIsBusy(false)
         }
-    }, [requestId, approval, requireVaultPassword, t])
+    }, [requestId, approval, requireVaultPassword, requestBottomSheet, t])
 
     const decline = useCallback(async (): Promise<void> => {
         if (!requestId) return

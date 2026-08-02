@@ -26,13 +26,17 @@
 // ARC-0027 provider supplies connect/sign, so there's no nested viewer.
 // walletConnect falls through to the registry, which pairs via the offscreen
 // host; that approval opens as its own window, not a sheet in this tree.
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     createDiscoverBridgeHost,
     openExternalTab,
 } from '@perawallet/wallet-extension-platform-chrome'
 import { PWView } from '@components/core/PWView'
+import { PWButton } from '@components/core/PWButton'
+import { EmptyView } from '@components/EmptyView/EmptyView'
+import { useLanguage } from '@hooks/useLanguage'
+import { useNetworkStatus } from '@modules/network'
 import { usePeraWebviewInterface } from '../../hooks/usePeraWebviewInterface'
 import { useNotifyWebViewOnContextChange } from '../../hooks/useNotifyWebViewOnContextChange'
 import { useContextFingerprints } from '../../hooks/useContextFingerprints'
@@ -58,6 +62,9 @@ import {
 } from '../../hooks/handlers.web'
 import { toLoadableUrl } from './toLoadableUrl'
 import { useStyles } from './styles'
+// Same timeout the native load-state machine uses, so both platforms give up
+// on a silent navigation after the same wait.
+import { WEBVIEW_LOADING_TIMEOUT_MS } from './usePWWebViewLoadState'
 import type { PWWebViewProps } from './PWWebView'
 
 export type { PWWebViewProps } from './PWWebView'
@@ -77,6 +84,9 @@ const IFrame = 'iframe' as unknown as React.ComponentType<{
     sandbox?: string
     title: string
     style?: Record<string, string | number>
+    // Coarse load signals — a cross-origin frame exposes nothing finer.
+    onLoad?: () => void
+    onError?: () => void
 }>
 
 export const PWWebView = ({
@@ -97,6 +107,43 @@ export const PWWebView = ({
     webviewRef,
 }: PWWebViewProps) => {
     const styles = useStyles({ bottomInset: 0 })
+    const { t } = useLanguage()
+
+    // A cross-origin iframe reports only a coarse load/error signal — there is
+    // no per-subresource `onError` the way react-native-webview gives native,
+    // and no way to read the framed document's status. That is enough for the
+    // thing that actually mattered: a Bidali load failure previously left a
+    // blank panel with no explanation and no way back.
+    //
+    // `onError` on an iframe is unreliable across browsers for navigation
+    // failures, so offline is inferred from the connectivity the app already
+    // tracks rather than from the element.
+    const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
+        'loading',
+    )
+    // Bumping this remounts the iframe (via its `key`) to re-attempt the load.
+    const [reloadNonce, setReloadNonce] = useState(0)
+    const { hasInternet } = useNetworkStatus()
+    const isOffline = !hasInternet
+
+    const handleLoad = useCallback(() => setStatus('ready'), [])
+    const handleError = useCallback(() => setStatus('error'), [])
+    const handleRetry = useCallback(() => {
+        setStatus('loading')
+        setReloadNonce(nonce => nonce + 1)
+    }, [])
+
+    // Nothing fires when a navigation is simply never answered (blocked host,
+    // dead network), so bound the wait — otherwise the spinner is the new
+    // blank panel.
+    useEffect(() => {
+        if (status !== 'loading') return
+        const timer = setTimeout(
+            () => setStatus('error'),
+            WEBVIEW_LOADING_TIMEOUT_MS,
+        )
+        return () => clearTimeout(timer)
+    }, [status, reloadNonce])
 
     // Regenerated when the bridge host reports its port died mid-life
     // (extension reload, host disposal) so every future call wouldn't
@@ -275,16 +322,60 @@ export const PWWebView = ({
     return (
         <PWView style={[styles.flex, containerStyle]}>
             <IFrame
-                key={bridgeToken}
+                key={`${bridgeToken}:${reloadNonce}`}
                 src={src}
                 sandbox='allow-same-origin allow-scripts allow-forms allow-popups'
                 title='pera-webview'
+                onLoad={handleLoad}
+                onError={handleError}
                 // Raw DOM element rendered via react-dom, not an RN View:
                 // makeStyles produces RN stylesheet ids that a host
                 // <iframe> can't consume.
                 // oxlint-disable-next-line react-native/no-inline-styles
                 style={{ border: 0, width: '100%', height: '100%', flex: 1 }}
             />
+            {/* Overlays rather than replacements: swapping the iframe out on
+                failure would discard its bridge Port and force a full
+                re-handshake on retry. */}
+            {status === 'loading' && (
+                <PWView
+                    style={styles.absoluteFill}
+                    testID='pw-webview-loading'
+                >
+                    <EmptyView
+                        body=''
+                        isLoading
+                    />
+                </PWView>
+            )}
+            {status === 'error' && (
+                <PWView
+                    style={styles.absoluteFill}
+                    testID={
+                        isOffline ? 'pw-webview-offline' : 'pw-webview-timeout'
+                    }
+                >
+                    <EmptyView
+                        title={t(
+                            isOffline
+                                ? 'common.webview.offline_title'
+                                : 'common.webview.failed_title',
+                        )}
+                        body={t(
+                            isOffline
+                                ? 'common.webview.offline_body'
+                                : 'common.webview.failed_body',
+                        )}
+                        button={
+                            <PWButton
+                                title={t('common.webview.reload')}
+                                onPress={handleRetry}
+                                variant='primary'
+                            />
+                        }
+                    />
+                </PWView>
+            )}
         </PWView>
     )
 }

@@ -21,7 +21,7 @@ import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {
     classifyLedgerError,
     createLedgerTransportWrapper,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 type WebBluetoothDevice = { id: string; name?: string }
 

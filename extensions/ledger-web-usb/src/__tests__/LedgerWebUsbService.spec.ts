@@ -59,7 +59,7 @@ import { LedgerWebUsbService } from '../LedgerWebUsbService'
 import {
     LedgerSigningError,
     LedgerUserRejectedError,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 const NANO_S_PLUS_DEVICE = {
     vendorId: 0x2c_97,

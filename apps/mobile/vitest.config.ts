@@ -202,13 +202,16 @@ export default defineConfig({
                 ),
             },
             {
-                // Platform-agnostic types/errors/constants — safe to alias
-                // straight to source. MUST come before the main package alias
-                // below so prefix matching doesn't shadow it.
-                find: '@perawallet/wallet-extension-ledger-react-native/protocol',
+                // Platform-agnostic types/errors/constants, now its own
+                // package (it has no react-native dependency, and the two web
+                // transports were reaching it through a package named
+                // "react-native"). Safe to alias straight to source. MUST come
+                // before the ledger-react-native alias below so prefix
+                // matching doesn't shadow it.
+                find: '@perawallet/wallet-extension-ledger-shared',
                 replacement: path.resolve(
                     __dirname,
-                    '../../extensions/ledger-react-native/src/protocol.ts',
+                    '../../extensions/ledger-shared/src/index.ts',
                 ),
             },
             {

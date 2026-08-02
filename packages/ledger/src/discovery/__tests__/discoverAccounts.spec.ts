@@ -15,8 +15,8 @@ import { discoverLedgerAccounts } from '../discoverAccounts'
 import type {
     LedgerTransport,
     LedgerAccount,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
-import { LedgerAppNotOpenError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
+import { LedgerAppNotOpenError } from '@perawallet/wallet-extension-ledger-shared'
 
 const createMockAccount = (index: number): LedgerAccount => ({
     address: `ADDR_${index}`,

@@ -12,11 +12,17 @@
 
 import { useCallback, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSigningAccounts } from '@perawallet/wallet-core-accounts'
+// From the platform-agnostic ARC-0027 core, NOT platform-chrome. The store is
+// pure over an injectable storage area and touches no chrome API — only
+// platform-chrome's barrel re-exported it, and importing through that barrel
+// dragged chrome-only code into a file the shared settings routes reach, i.e.
+// into the native bundle.
 import {
     DappPermissionStore,
     type DappPermission,
     type LocalStorageArea,
-} from '@perawallet/wallet-extension-platform-chrome'
+} from '@perawallet/wallet-core-arc0027'
 
 export const DAPP_CONNECTIONS_QUERY_KEY = ['dapp-connections'] as const
 
@@ -49,9 +55,23 @@ export const useDappConnectionsStore = (): UseDappConnectionsStoreResult => {
         return area ? new DappPermissionStore(area) : null
     }, [])
 
+    const accounts = useSigningAccounts()
+
     const query = useQuery({
         queryKey: DAPP_CONNECTIONS_QUERY_KEY,
-        queryFn: () => (store ? store.list() : Promise.resolve([])),
+        queryFn: async () => {
+            if (!store) return []
+            // Deleting a wallet account left its address granted to every
+            // origin that had it, which later surfaced as a confusing
+            // "unauthorized signer" rather than an honest missing grant.
+            // Nothing observes account removal from here, so self-heal on the
+            // one screen that shows these grants — and prune BEFORE listing so
+            // the user never sees an address they no longer hold.
+            await store.pruneAddresses(
+                new Set(accounts.map(account => account.address)),
+            )
+            return store.list()
+        },
     })
 
     const revokeMutation = useMutation({

@@ -30,7 +30,21 @@ Environment variables and API keys should be in `.env` files, not hardcoded.
 | Addresses          | Any storage        | Safe    |
 | Transaction hashes | Any storage        | Safe    |
 
-## Supply Chain
+## Known limitation: changing the vault password does not rotate the key
+
+On the browser extension, `changePassword` re-wraps the **same** 32-byte master key under a key
+derived from the new password. It changes who can open the vault going forward; it does not change
+what is inside it.
+
+So it is not a remedy for a suspected compromise. An attacker who already extracted the master key,
+or who holds a copy of the old `vault:wrapped-master-key` blob together with the old password, is
+unaffected by a password change. The passkey (PRF) blob likewise keeps wrapping the unchanged key —
+correct for continuity, but it means that path is not invalidated either.
+
+The real remedy is a key rotation: generate a fresh master key, re-encrypt every `keystore:` entry
+under it, and invalidate the PRF blob. That is a distinct, more invasive operation than a password
+change and is not implemented. Until it is, advise a user who believes their key material is
+compromised to move funds to a newly generated wallet rather than to change their password.
 
 Review dependency updates carefully — supply chain attacks are real. The
 repo has several layers of automated defense:

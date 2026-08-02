@@ -40,17 +40,38 @@ const write = async (record: LockoutRecord): Promise<void> => {
     await chrome.storage.local.set({ [LOCKOUT_STORAGE_KEY]: record })
 }
 
-export const recordFailedAttempt = async (): Promise<void> => {
-    const record = await read()
-    const failedAttempts = record.failedAttempts + 1
-    let lockoutEndTime = record.lockoutEndTime
-    if (failedAttempts % MAX_ATTEMPTS_BEFORE_LOCKOUT === 0) {
-        const block = failedAttempts / MAX_ATTEMPTS_BEFORE_LOCKOUT
-        const seconds = INITIAL_LOCKOUT_SECONDS * 2 ** (block - 1)
-        lockoutEndTime = Date.now() + seconds * 1000
+// Serialises the read-modify-write below. Concurrent unlock attempts from
+// different extension surfaces (popup, expanded tab, approval window) each
+// read the same `failedAttempts: N` and write `N+1`, so parallel guesses
+// under-count against the threshold. PBKDF2's cost limited how much
+// parallelism was reachable in practice, but Argon2id is a fixed cost too —
+// the counter should be correct on its own terms.
+//
+// Same shape as DappPermissionStore.withLock, including the in-process queue
+// fallback for contexts without the Web Locks API.
+let lockQueue: Promise<unknown> = Promise.resolve()
+
+const withLock = async <T>(fn: () => Promise<T>): Promise<T> => {
+    if (typeof navigator !== 'undefined' && navigator.locks) {
+        return navigator.locks.request('pera-vault-lockout', fn)
     }
-    await write({ failedAttempts, lockoutEndTime })
+    const next = lockQueue.then(fn)
+    lockQueue = next.catch(() => {})
+    return next
 }
+
+export const recordFailedAttempt = async (): Promise<void> =>
+    withLock(async () => {
+        const record = await read()
+        const failedAttempts = record.failedAttempts + 1
+        let lockoutEndTime = record.lockoutEndTime
+        if (failedAttempts % MAX_ATTEMPTS_BEFORE_LOCKOUT === 0) {
+            const block = failedAttempts / MAX_ATTEMPTS_BEFORE_LOCKOUT
+            const seconds = INITIAL_LOCKOUT_SECONDS * 2 ** (block - 1)
+            lockoutEndTime = Date.now() + seconds * 1000
+        }
+        await write({ failedAttempts, lockoutEndTime })
+    })
 
 export const getLockoutRemainingSeconds = async (): Promise<number> => {
     const { lockoutEndTime } = await read()

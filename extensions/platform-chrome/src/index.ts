@@ -55,6 +55,9 @@ export {
     type WcPairOutcomeMessage,
     isWcAck,
     type WcAck,
+    WC_ERROR_NOTICE_SCOPE,
+    isWcErrorNoticeMessage,
+    type WcErrorNoticeMessage,
 } from './walletconnect/protocol'
 export {
     WC_PAGE_PAIR_SCOPE,
@@ -67,6 +70,8 @@ export {
     sendWcControlMessage,
     sendPairOutcome,
     onPairOutcome,
+    sendWcErrorNotice,
+    onWcErrorNotice,
 } from './walletconnect/client'
 export {
     DB_SCOPE,

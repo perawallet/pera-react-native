@@ -19,7 +19,7 @@
 // registered as pure RN screen graphs with native's layouts and age gates.
 // Discover is deliberately absent — its screen, iframe webview layer, and
 // bridge all work, but the Discover web app crashes on our honest
-// clientType 'web' (see docs/DISCOVER_WEB_FEATURE_GATE.md). Restoring
+// clientType 'web' (see routes/capabilities.web.ts's discoverTab comment). Restoring
 // it is: re-add the descriptor below, flip discoverTab back to true in
 // capabilities.web.ts, un-skip discover.spec.ts and walletconnect.spec.ts's
 // Discover hand-off test.

@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-extension-ledger-react-native'
-
-export { WithLedgerExtension } from './extension'
-export { RNLedgerService } from './RNLedgerService'
-// Re-exported so existing consumers of this package's barrel keep working;
-// the shared core itself now lives in its own package (it has no react-native
-// dependency, and the two web transports were importing it through a package
-// named "react-native").
-export * from '@perawallet/wallet-extension-ledger-shared'
+export {
+    PasskeyChooserContent,
+    type PasskeyChoice,
+} from './PasskeyChooserContent'

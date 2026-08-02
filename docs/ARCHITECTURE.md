@@ -76,6 +76,25 @@ A guardrail (`pnpm lint:guardrails`) enforces the boundary in the direction that
 a file that is **not** `.web.*` may not import `platform-chrome` or `keystore-chrome`, because such a
 file is reachable from the native bundle and would fail at runtime on the missing `chrome` global.
 
+### Turning features off per platform
+
+Neither platform hides a feature with scattered `Platform.OS` checks. `routeCapabilities`
+(`apps/mobile/src/routes/capabilities.ts` and its `.web.ts` twin) is one typed object per platform,
+consumed at ~22 call sites, and a test asserts the two maps declare the same keys so a new capability
+cannot be added to one and forgotten in the other.
+
+The rule for adding an entry: **the flag records a decision, the comment next to it records the
+reason.** Anything off on web is off for one of three reasons, and the comment says which — a
+permanent platform limit (no push notifications, no store review), a dependency that cannot build
+for the web bundle (quantum accounts: the Emscripten Falcon-1024 signer does not parse under Metro's
+web bundler), or an external blocker (the Discover tab: Discover's own `DISCOVER_V3` minimum-version
+map has no `web` key, so the lookup is `undefined`, `compareVersions` throws mid-render and unmounts
+the tab — our iframe and content-script bridge are verified working, and reporting a dishonest
+client type to work around it would corrupt analytics and device registration).
+
+Keeping the reason at the flag rather than in a separate document is deliberate: the next person to
+consider flipping it is already reading that line.
+
 ## Core Principle: Separation of Concerns
 
 ### UI Layer (`apps/mobile`)

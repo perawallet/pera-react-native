@@ -72,7 +72,7 @@ const passAgeGateIfOffered = async (targetPage: Page): Promise<void> => {
 // and blanks the whole Discover root). Everything this spec covers — the
 // iframe mount, the stamped bridge token, the MAIN-world interface install —
 // is verified working and unchanged. Un-skip together with the
-// tab-screens.web.tsx descriptor. See docs/DISCOVER_WEB_FEATURE_GATE.md.
+// tab-screens.web.tsx descriptor. See routes/capabilities.web.ts's discoverTab comment.
 test.describe.skip('discover tab (web)', () => {
     test.beforeAll(async () => {
         context = await chromium.launchPersistentContext('', {

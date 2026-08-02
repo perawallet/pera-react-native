@@ -51,7 +51,7 @@ describe('route capabilities', () => {
             // map only has ios/android keys, so it throws mid-render on our
             // honest clientType 'web' and React unmounts the whole root. Off
             // until Discover fixes its gate. See
-            // docs/DISCOVER_WEB_FEATURE_GATE.md.
+            // routes/capabilities.web.ts's discoverTab comment.
             discoverTab: false,
             // M7 (2026-07-17 shipped): WalletConnect v1 pairing + sessions on web.
             walletConnectSettings: true,

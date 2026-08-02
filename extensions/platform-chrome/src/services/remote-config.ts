@@ -21,7 +21,7 @@ import {
     type RemoteConfigKey,
     type RemoteConfigService,
 } from '@perawallet/wallet-extension-platform'
-import { config } from '@perawallet/wallet-core-config'
+import { config, isDebug } from '@perawallet/wallet-core-config'
 import { getFirebaseApp } from './firebase-app'
 
 /** Serves bundled defaults when unconfigured; fetches real Firebase Remote
@@ -32,14 +32,22 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
     async initializeRemoteConfig(): Promise<void> {
         const app = getFirebaseApp()
         if (!app) {
-            // Not an error in a local/dev build, but in a staging or
+            const message =
+                '[pera] Remote Config disabled: no Firebase project configured; serving bundled defaults'
+            // In a local/dev build this is expected. In a staging or
             // production zip it means the FIREBASE_* build secrets were
-            // missing and every remote flag will silently serve its bundled
-            // default (e.g. staking_projects: '' → an empty Staking screen).
-            console.warn(
-                '[pera] Remote Config disabled: no Firebase project configured; serving bundled defaults',
-                { appEnvironment: config.appEnvironment },
-            )
+            // missing, and every remote flag then silently serves its bundled
+            // default — `staking_projects: ''` renders an empty Staking
+            // screen that looks like a backend outage rather than a
+            // misconfigured build. A console.warn nobody reads is not enough
+            // signal for that, so a shipped build reports it as a real error.
+            if (isDebug) {
+                console.warn(message, { appEnvironment: config.appEnvironment })
+            } else {
+                console.error(message, {
+                    appEnvironment: config.appEnvironment,
+                })
+            }
             return
         }
         this.remoteConfig = getRemoteConfig(app)

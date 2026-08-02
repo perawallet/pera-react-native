@@ -14,8 +14,8 @@ import { discoverAccounts } from '@perawallet/wallet-core-hardware-wallet'
 import type {
     LedgerAccount,
     LedgerTransport,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
-import { classifyLedgerError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
+import { classifyLedgerError } from '@perawallet/wallet-extension-ledger-shared'
 
 export type DiscoverAccountsOptions = {
     /** The connected Ledger transport */

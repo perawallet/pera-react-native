@@ -436,6 +436,14 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
+                    // `onError` rather than a bare return, same as the
+                    // PeraCard/Sell gates above: the QR scanner stays locked
+                    // until one of its callbacks fires, so dropping the link
+                    // silently would freeze it.
+                    if (!routeCapabilities.sharedAccounts) {
+                        onError?.()
+                        return
+                    }
                     navigateToScreen(replaceCurrentScreen, 'Multisig', {
                         screen: 'ImportSharedAccount',
                         params: { address: parsedData.address },

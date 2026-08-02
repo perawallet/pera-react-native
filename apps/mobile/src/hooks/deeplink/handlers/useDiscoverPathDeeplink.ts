@@ -51,7 +51,7 @@ export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
             if (!routeCapabilities.discoverTab) {
                 // The Discover tab isn't registered on this platform (web:
                 // Discover's feature-gate map has no 'web' key and throws
-                // mid-render — see docs/DISCOVER_WEB_FEATURE_GATE.md). navigateToScreen would be a
+                // mid-render — see routes/capabilities.web.ts's discoverTab comment). navigateToScreen would be a
                 // silent no-op, and the paste-a-link sheet locks until one of
                 // its callbacks fires, so fail loudly instead.
                 logger.warn(

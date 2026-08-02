@@ -36,6 +36,7 @@ export const routeCapabilities: RouteCapabilities = {
     dappConnections: false,
     quantum: true,
     rekeyFlows: true,
+    sharedAccounts: true,
     // Native keeps the two separate WalletConnect/Connected Sites menu
     // entries (dappConnections is off there anyway).
     connectionsSettings: false,

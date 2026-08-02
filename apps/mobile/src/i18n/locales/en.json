@@ -31,7 +31,11 @@
             },
             "approve_button": "Continue",
             "decline_button": "Cancel",
-            "error": "Pera couldn't complete this passkey request. The request has been declined."
+            "error": "Pera couldn't complete this passkey request. The request has been declined.",
+            "choose": {
+                "title": "Choose a passkey",
+                "description": "You have more than one passkey saved for {{origin}}. Pick the one to sign in with."
+            }
         },
         "approval": {
             "delivery_failed": "Pera couldn't deliver your decision to the site. The extension went to sleep while this window was open. Close this window and try the request again from the site."

@@ -11,7 +11,6 @@
  */
 
 import { defineConfig } from 'vite'
-import { resolve } from 'path'
 import dts from 'vite-plugin-dts'
 
 export default defineConfig({
@@ -35,23 +34,17 @@ export default defineConfig({
     ],
     build: {
         lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-            },
+            entry: { index: 'src/index.ts' },
             formats: ['es'],
         },
         rollupOptions: {
             external: [
                 '@ledgerhq/devices',
                 '@ledgerhq/errors',
-                '@ledgerhq/hw-transport',
-                '@ledgerhq/hw-transport-webhid',
                 '@algorandfoundation/ledger-algorand-js',
                 '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-shared',
-                '@perawallet/wallet-extension-platform',
-                '@perawallet/wallet-extension-ledger-react-native',
-                '@perawallet/wallet-extension-ledger-shared',
+                'buffer',
             ],
         },
     },

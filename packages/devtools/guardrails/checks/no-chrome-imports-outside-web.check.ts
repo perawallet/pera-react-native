@@ -28,40 +28,15 @@ const isChromeOnly = (specifier: string): boolean =>
 const isWebOnlyFile = (fileName: string): boolean =>
     /\.web\.tsx?$/.test(fileName)
 
-/**
- * Known web-only code that still lives under apps/mobile without a `.web.*`
- * suffix. Every entry is DEBT, not an exemption on principle — each is kept
- * out of the native bundle only because nothing native imports it, which is a
- * property no tool checks.
- *
- * The point of listing them explicitly is that the rule still fails for
- * anything NEW: a fresh chrome import outside these paths is a build error
- * rather than a runtime crash on device.
- *
- * To retire an entry, either move the code to apps/browser/src or rename the
- * file to `.web.tsx` (importers then need the explicit `.web` specifier, since
- * tsc has no platform resolution — see QRScannerContent.web's import for the
- * established pattern).
- */
-const KNOWN_WEB_ONLY_PATHS = [
-    // NOT a web-only file. `settings/routes/index.tsx` is shared and imports
-    // ConnectedSitesScreen / ConnectionsSettingsScreen unconditionally, so a
-    // `.web` rename here would break the native build. Both screens are
-    // capability-gated and never render on native, and the store already reads
-    // `chrome` defensively off globalThis (returning null when absent), so it
-    // is inert rather than broken — but it does bundle chrome-only code into
-    // the native app. The real fix is to route it through the platform
-    // provider like every other platform concern, or to import the screens
-    // lazily. Tracked, not exempted on principle.
-    'modules/settings/hooks/useDappConnectionsStore.ts',
-]
-
-const isKnownWebOnly = (fileName: string): boolean => {
-    const idx = fileName.indexOf(MOBILE_SRC)
-    if (idx === -1) return false
-    const relative = fileName.slice(idx + MOBILE_SRC.length)
-    return KNOWN_WEB_ONLY_PATHS.some(known => relative.startsWith(known))
-}
+// There is deliberately NO allowlist. Every candidate for one was retired
+// instead: the web-only modules took `.web.*` names, and the last holdout (the
+// dapp-connections store) turned out not to need chrome at all — it was
+// importing a chrome-free store through platform-chrome's barrel.
+//
+// If you are reaching for an exemption, prefer, in order: import from the
+// platform-agnostic package that actually owns the symbol; move the file to
+// apps/browser/src; rename it `.web.tsx` (importers then need the explicit
+// `.web` specifier, since tsc has no platform resolution).
 
 /**
  * A type-only import emits nothing, so it cannot drag chrome code into the
@@ -88,7 +63,6 @@ const check: Check = {
         [ts.SyntaxKind.ImportDeclaration]: (node, sf, emit) => {
             if (!sf.fileName.includes(MOBILE_SRC)) return
             if (isWebOnlyFile(sf.fileName)) return
-            if (isKnownWebOnly(sf.fileName)) return
 
             const decl = node as ts.ImportDeclaration
             const spec = decl.moduleSpecifier

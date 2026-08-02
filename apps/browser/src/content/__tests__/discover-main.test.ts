@@ -56,6 +56,14 @@ beforeEach(() => {
     document.documentElement.replaceChild(freshBody, document.body)
 })
 
+// The MutationObserver callback is a microtask, and discover-main coalesces
+// processing into one further microtask (see scheduleProcessModals), so tests
+// must yield twice before asserting on what the observer did.
+const flushObserver = async (): Promise<void> => {
+    await Promise.resolve()
+    await Promise.resolve()
+}
+
 describe('discover-main content script', () => {
     it('is inert without the bridge token param', async () => {
         window.history.replaceState(null, '', '/')
@@ -282,7 +290,7 @@ describe('discover-main content script', () => {
             redirect.id = 'pera-wallet-redirect-modal-wrapper'
             document.body.appendChild(redirect)
 
-            await Promise.resolve()
+            await flushObserver()
 
             expect(
                 document.getElementById('pera-wallet-redirect-modal-wrapper'),
@@ -301,7 +309,7 @@ describe('discover-main content script', () => {
             connect.appendChild(modal)
             document.body.appendChild(connect)
 
-            await Promise.resolve()
+            await flushObserver()
 
             const wcMessages = received.filter(
                 m => m.method === 'walletConnect',

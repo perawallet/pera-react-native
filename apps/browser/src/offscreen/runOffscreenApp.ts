@@ -21,6 +21,7 @@ import {
     onWcControlMessage,
     sendPairOutcome,
     sendWcApprovalRequest,
+    sendWcErrorNotice,
     startDatabaseHost,
 } from '@perawallet/wallet-extension-platform-chrome'
 import { getPlatformServices } from '@perawallet/wallet-extension-platform-driver'
@@ -41,8 +42,13 @@ import {
 import { usePollingStore } from '@perawallet/wallet-core-polling'
 import {
     createWalletConnectConnector,
+    getConnectionErrorClientId,
     useWalletConnectStore,
 } from '@perawallet/wallet-core-walletconnect'
+import {
+    FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER,
+    FeeAdjustmentDeliveryError,
+} from '@perawallet/wallet-core-signing'
 import { logger } from '@perawallet/wallet-core-shared'
 import { queryClient } from '@providers/queryClient'
 import { startWcHost } from './walletconnect/wcHost'
@@ -207,5 +213,26 @@ export const runOffscreenApp = async (): Promise<void> => {
             },
         )
     }
+    // Native reads `connectionError` straight off this store because its
+    // connector and its UI share a realm. Here the connector lives in
+    // offscreen and `connectionError` is not persisted (the store's
+    // `partialize` keeps only `walletConnectConnections`), so the UI realm's
+    // copy never changes — which is why wrong-network, rejected and expired
+    // handshakes produced no UI at all. Forward each one over the notice
+    // broadcast and clear it, so the store doesn't hold a stale error that a
+    // later subscriber would re-announce.
+    useWalletConnectStore.subscribe((state, previous) => {
+        const error = state.connectionError
+        if (!error || error === previous.connectionError) return
+        void sendWcErrorNotice({
+            message: error.message,
+            clientId: getConnectionErrorClientId(error) ?? undefined,
+            isFeeAdjustmentDeliveryError:
+                error.name === FeeAdjustmentDeliveryError.name ||
+                error.message.includes(FEE_ADJUSTMENT_DELIVERY_MESSAGE_MARKER),
+        })
+        useWalletConnectStore.getState().setConnectionError(null)
+    })
+
     logger.info('[offscreen] WalletConnect host started')
 }
