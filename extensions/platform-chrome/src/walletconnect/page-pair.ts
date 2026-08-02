@@ -25,7 +25,7 @@
 // cannot forge. Any origin-shaped field on this message is ignored.
 export const WC_PAGE_PAIR_SCOPE = 'pera-wc-page-pair' as const
 
-// Mirrors the cap in apps/extension/src/content/connect-modal-uri.ts. Real WC
+// Mirrors the cap in apps/browser/src/content/connect-modal-uri.ts. Real WC
 // URIs are far under this; longer inputs are malformed or hostile.
 const WC_URI_MAX_LENGTH = 4096
 

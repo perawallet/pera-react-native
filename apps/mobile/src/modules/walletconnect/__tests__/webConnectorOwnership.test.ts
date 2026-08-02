@@ -40,11 +40,11 @@ import { join, relative, sep } from 'node:path'
 
 // vitest's root for this package is apps/mobile/ (see vitest.config.ts), so
 // resolve relative to the process cwd rather than import.meta.url/__dirname
-// — the same reasoning as apps/extension/src/content/__tests__/manifest.test.ts.
+// — the same reasoning as apps/browser/src/content/__tests__/manifest.test.ts.
 const MOBILE_SRC_ROOT = join(process.cwd(), 'src')
 const REPO_ROOT = join(process.cwd(), '..', '..')
 const PACKAGES_ROOT = join(REPO_ROOT, 'packages')
-// apps/mobile/src + packages/*/src alone would miss apps/extension/src (the
+// apps/mobile/src + packages/*/src alone would miss apps/browser/src (the
 // service worker, content scripts, and the offscreen HTML entry) and every
 // extensions/*/src (platform-chrome et al.) — both web-reachable by
 // construction, exactly the category this allowlist exists to guard.

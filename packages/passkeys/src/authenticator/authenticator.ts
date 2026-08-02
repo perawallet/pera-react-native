@@ -92,6 +92,19 @@ export type SigningContext = {
      * only as trustworthy as this field.
      */
     origin: string
+
+    /**
+     * Whether the approval surface verified the user with a factor (vault
+     * password, PIN, biometric) as part of THIS ceremony. Sets the UV bit in
+     * `authenticatorData`.
+     *
+     * A button press is user *presence*, not verification — see
+     * `authenticatorData`'s `userVerified` doc for why relying parties treat
+     * the difference as load-bearing. Defaults to unverified when omitted, so
+     * a transport that forgets to plumb it understates assurance instead of
+     * lying about it.
+     */
+    userVerified?: boolean
 }
 
 /** WebAuthn §5.1.3: the RP ID must be a registrable suffix of the origin. */
@@ -257,7 +270,7 @@ const idsMatch = (a: Uint8Array, b: Uint8Array): boolean =>
 export const createCredential = async (
     options: PublicKeyCredentialCreationOptions,
     signer: KeystoreSigner,
-    { origin }: SigningContext,
+    { origin, userVerified = false }: SigningContext,
 ): Promise<SerializedCredential> => {
     const rpId = resolveRpId(options.rp.id, origin)
 
@@ -298,6 +311,7 @@ export const createCredential = async (
         attested: true,
         credentialId,
         publicKeyXY: publicKeyPoint,
+        userVerified,
     })
     const attestationObject = attestationObjectNone(authData)
 
@@ -322,7 +336,7 @@ export const createCredential = async (
 export const assertCredential = async (
     options: PublicKeyCredentialRequestOptions,
     signer: KeystoreSigner,
-    { origin }: SigningContext,
+    { origin, userVerified = false }: SigningContext,
 ): Promise<SerializedCredential> => {
     const rpId = resolveRpId(options.rpId, origin)
     const candidates = await signer.listP256Credentials(rpId)
@@ -348,7 +362,11 @@ export const assertCredential = async (
         bufferSourceToBytes(options.challenge),
         origin,
     )
-    const authData = await authenticatorData({ rpId, attested: false })
+    const authData = await authenticatorData({
+        rpId,
+        attested: false,
+        userVerified,
+    })
     const clientDataHash = sha256(clientDataJSON)
     const signedPayload = concatBytes(authData, clientDataHash)
     const rawSignature = await signer.signP256(resolved.keyId, signedPayload)

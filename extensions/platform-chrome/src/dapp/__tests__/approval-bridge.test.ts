@@ -1210,4 +1210,127 @@ describe('ApprovalWindowBridge', () => {
 
         expect(await decision).toBeNull()
     })
+
+    // Every pending approval past the first becomes a real OS window, and
+    // `enable` needs no prior permission — so without a cap a page that varies
+    // the request id could bury the desktop with a loop of a few hundred.
+    describe('capacity limits', () => {
+        const openEnableFrom = (
+            bridge: ApprovalWindowBridge,
+            origin: string,
+            requestId: string,
+        ): Promise<unknown> =>
+            bridge
+                .openEnable({ requestId, origin })
+                // Each rejection is asserted via the returned value; catching
+                // here keeps an expected rejection from failing the run as an
+                // unhandled one.
+                .catch((error: unknown) => error)
+
+        it('refuses more than three concurrent approvals for one origin', async () => {
+            const { chromeLike, created } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            for (let i = 0; i < 3; i++) {
+                void openEnableFrom(bridge, 'https://spam.example', `q${i}`)
+                await flush()
+            }
+            expect(created).toHaveLength(3)
+
+            const fourth = await openEnableFrom(
+                bridge,
+                'https://spam.example',
+                'q3',
+            )
+            await flush()
+
+            expect(fourth).toBeInstanceOf(Error)
+            expect((fourth as Error).name).toBe('ApprovalRejectedError')
+            // The point of the cap: no additional window was opened.
+            expect(created).toHaveLength(3)
+        })
+
+        it('still admits a different origin once one origin is at its limit', async () => {
+            const { chromeLike, created } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            for (let i = 0; i < 3; i++) {
+                void openEnableFrom(bridge, 'https://spam.example', `q${i}`)
+                await flush()
+            }
+
+            void openEnableFrom(bridge, 'https://other.example', 'other-1')
+            await flush()
+
+            expect(created).toHaveLength(4)
+        })
+
+        it('caps the total across origins', async () => {
+            const { chromeLike, created } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            // 3 origins x 3 each would be 9; the global cap of 8 bites first.
+            for (const origin of ['a', 'b', 'c']) {
+                for (let i = 0; i < 3; i++) {
+                    void openEnableFrom(
+                        bridge,
+                        `https://${origin}.example`,
+                        `${origin}-${i}`,
+                    )
+                    await flush()
+                }
+            }
+
+            expect(created).toHaveLength(8)
+        })
+
+        it('frees capacity once an approval settles', async () => {
+            const { chromeLike, created, closeWindow } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            for (let i = 0; i < 3; i++) {
+                void openEnableFrom(bridge, 'https://spam.example', `q${i}`)
+                await flush()
+            }
+            expect(created).toHaveLength(3)
+            closeWindow(100) // user dismisses the first
+
+            // Not awaited: a successfully registered approval stays pending
+            // until the user decides. The new window is the evidence it was
+            // admitted rather than refused.
+            void openEnableFrom(bridge, 'https://spam.example', 'q-next')
+            await flush()
+
+            expect(created).toHaveLength(4)
+        })
+
+        // Overwriting left the previous `settle` unreachable, so the request it
+        // belonged to was answered by nobody for the life of the worker.
+        it('refuses a requestId that is already pending instead of orphaning it', async () => {
+            const { chromeLike, created, closeWindow } = makeChrome()
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            const first = bridge.openEnable({
+                requestId: 'dupe',
+                origin: 'https://x.com',
+            })
+            await flush()
+
+            const second = await openEnableFrom(bridge, 'https://x.com', 'dupe')
+            await flush()
+
+            expect(second).toBeInstanceOf(Error)
+            expect((second as Error).name).toBe('ApprovalRejectedError')
+            expect(created).toHaveLength(1)
+
+            // The original entry survived the collision and still settles.
+            closeWindow(100)
+            expect(await first).toBeNull()
+        })
+    })
 })

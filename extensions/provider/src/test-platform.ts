@@ -62,7 +62,7 @@ export const buildTestPlatform = (
     }
 
     const defaultRemote: RemoteConfigService = {
-        initializeRemoteConfig() {},
+        async initializeRemoteConfig() {},
         getStringValue(_, f) {
             return f ?? ''
         },

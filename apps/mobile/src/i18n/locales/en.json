@@ -32,6 +32,9 @@
             "approve_button": "Continue",
             "decline_button": "Cancel",
             "error": "Pera couldn't complete this passkey request. The request has been declined."
+        },
+        "approval": {
+            "delivery_failed": "Pera couldn't deliver your decision to the site. The extension went to sleep while this window was open. Close this window and try the request again from the site."
         }
     },
     "account_menu": {
@@ -3414,6 +3417,12 @@
             "onboarding_body": "Wallet setup opens in a full browser tab so you can back up your recovery phrase safely.",
             "onboarding_cta": "Continue in a new tab",
             "redirecting": "Continuing in a new tab…"
+        },
+        "reauth": {
+            "title": "Confirm it's you",
+            "confirm_button": "Confirm",
+            "passkey_description": "This site requires you to verify your identity before signing in with your passkey.",
+            "confirm_description": "Enter your password to confirm this action."
         }
     },
     "migration": {

@@ -46,4 +46,14 @@ export const useStyles = makeStyles(theme => ({
     verifiedBadgeText: {
         color: theme.colors.verifiedBannerContent,
     },
+    // Also has no mobile counterpart: mobile's approve-delivery failure is a
+    // toast over a sheet that stays open for an in-place retry, whereas this
+    // window has lost the service worker's pending entry and can only tell the
+    // user to start the request again from the site.
+    deliveryError: {
+        color: theme.colors.negative,
+        textAlign: 'center',
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.md,
+    },
 }))

@@ -22,6 +22,62 @@ import { DAPP_APPROVAL_SCOPE, type PendingApproval } from './approval-bridge'
 const isPendingApproval = (value: unknown): value is PendingApproval =>
     typeof value === 'object' && value !== null && 'origin' in value
 
+/**
+ * Thrown when a decision could not be handed back to the bridge. The caller
+ * must NOT close its window on this: the dApp has not been answered, and
+ * closing would tell the user they approved something that was never
+ * delivered.
+ */
+export class ApprovalDeliveryError extends Error {
+    constructor(kind: string, detail: string) {
+        super(`Could not deliver '${kind}' to the approval bridge: ${detail}`)
+        this.name = 'ApprovalDeliveryError'
+    }
+}
+
+/**
+ * Sends a decision and asserts the bridge accepted it.
+ *
+ * Why this is not optional: `ApprovalWindowBridge.pending` lives in
+ * service-worker memory, and MV3 evicts the worker while an approval window
+ * sits idle (an open window emits no events to keep it alive). A user who
+ * deliberates past that point clicks Approve, the bridge answers
+ * `{ok: false, error: 'unknown request'}` — and every caller here used to
+ * discard that and close the window, so the user saw a successful signature
+ * the dApp never received.
+ */
+const deliverDecision = async (
+    kind: string,
+    message: Record<string, unknown>,
+): Promise<void> => {
+    let response: unknown
+    try {
+        response = await chrome.runtime.sendMessage({
+            scope: DAPP_APPROVAL_SCOPE,
+            kind,
+            ...message,
+        })
+    } catch (cause) {
+        // The worker died mid-send, or no listener remains to answer.
+        throw new ApprovalDeliveryError(
+            kind,
+            cause instanceof Error ? cause.message : String(cause),
+        )
+    }
+    const ok =
+        typeof response === 'object' &&
+        response !== null &&
+        (response as { ok?: unknown }).ok === true
+    if (ok) return
+    const detail =
+        typeof response === 'object' &&
+        response !== null &&
+        typeof (response as { error?: unknown }).error === 'string'
+            ? (response as { error: string }).error
+            : 'no acknowledgement'
+    throw new ApprovalDeliveryError(kind, detail)
+}
+
 export const getPendingApproval = async (
     requestId: string,
 ): Promise<PendingApproval | null> => {
@@ -44,70 +100,34 @@ export const getCurrentApproval = async (): Promise<PendingApproval | null> => {
 export const resolveApproval = async (
     requestId: string,
     approvedAddresses: string[],
-): Promise<void> => {
-    await chrome.runtime.sendMessage({
-        scope: DAPP_APPROVAL_SCOPE,
-        kind: 'resolve-approval',
-        requestId,
-        approvedAddresses,
-    })
-}
+): Promise<void> =>
+    deliverDecision('resolve-approval', { requestId, approvedAddresses })
 
-export const rejectApproval = async (requestId: string): Promise<void> => {
-    await chrome.runtime.sendMessage({
-        scope: DAPP_APPROVAL_SCOPE,
-        kind: 'reject-approval',
-        requestId,
-    })
-}
+export const rejectApproval = async (requestId: string): Promise<void> =>
+    deliverDecision('reject-approval', { requestId })
 
 export const resolveSignTransactions = async (
     requestId: string,
     stxns: (string | null)[],
-): Promise<void> => {
-    await chrome.runtime.sendMessage({
-        scope: DAPP_APPROVAL_SCOPE,
-        kind: 'resolve-sign-transactions',
-        requestId,
-        stxns,
-    })
-}
+): Promise<void> =>
+    deliverDecision('resolve-sign-transactions', { requestId, stxns })
 
 export const resolveSignMessage = async (
     requestId: string,
     signature: string,
-): Promise<void> => {
-    await chrome.runtime.sendMessage({
-        scope: DAPP_APPROVAL_SCOPE,
-        kind: 'resolve-sign-message',
-        requestId,
-        signature,
-    })
-}
+): Promise<void> =>
+    deliverDecision('resolve-sign-message', { requestId, signature })
 
 export const resolveWcSign = async (
     requestId: string,
     result: unknown,
-): Promise<void> => {
-    await chrome.runtime.sendMessage({
-        scope: DAPP_APPROVAL_SCOPE,
-        kind: 'resolve-wc-sign',
-        requestId,
-        result,
-    })
-}
+): Promise<void> => deliverDecision('resolve-wc-sign', { requestId, result })
 
 export const resolvePasskey = async (
     requestId: string,
     credential: SerializedCredential,
-): Promise<void> => {
-    await chrome.runtime.sendMessage({
-        scope: DAPP_APPROVAL_SCOPE,
-        kind: 'resolve-passkey',
-        requestId,
-        credential,
-    })
-}
+): Promise<void> =>
+    deliverDecision('resolve-passkey', { requestId, credential })
 
 // `reason` is a WebAuthn-ish error name ('declined' for an explicit user
 // decline, or an Error.name like 'SecurityError'/'InvalidStateError' from a
@@ -116,11 +136,4 @@ export const resolvePasskey = async (
 export const rejectPasskey = async (
     requestId: string,
     reason: string,
-): Promise<void> => {
-    await chrome.runtime.sendMessage({
-        scope: DAPP_APPROVAL_SCOPE,
-        kind: 'reject-passkey',
-        requestId,
-        reason,
-    })
-}
+): Promise<void> => deliverDecision('reject-passkey', { requestId, reason })

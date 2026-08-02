@@ -22,10 +22,10 @@ const fs = require('fs');
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '../..');
 // Web-only platform shims live with the extension build they belong to
-// (apps/extension), not comingled in the mobile app tree. Metro resolves them
+// (apps/browser), not comingled in the mobile app tree. Metro resolves them
 // from here for the web bundle; `.web.tsx` component variants stay colocated
 // with their native siblings under src/.
-const webShimsRoot = path.resolve(projectRoot, '../extension/web-shims');
+const webShimsRoot = path.resolve(projectRoot, '../browser/web-shims');
 
 const defaultConfig = getDefaultConfig(projectRoot);
 

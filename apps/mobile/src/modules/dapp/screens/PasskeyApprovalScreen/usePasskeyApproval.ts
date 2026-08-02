@@ -33,8 +33,33 @@ import {
     resolvePasskey,
     type PendingApproval,
 } from '@perawallet/wallet-extension-platform-chrome'
+import { useRequireVaultPassword } from '@modules/vault'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDappRequest } from '../../hooks/useDappRequest'
+
+/**
+ * Whether the relying party demanded user verification for this ceremony.
+ *
+ * We prompt only for `'required'`. `'preferred'` is an explicit statement that
+ * the RP will accept an unverified assertion, so making every passkey sign-in
+ * carry a password prompt would be friction the RP didn't ask for — and the UV
+ * bit stays off in that case, which is the honest report. `'discouraged'`
+ * obviously never prompts. Absent means `'preferred'` per WebAuthn L3 §5.5.
+ */
+const requiresUserVerification = (
+    approval: PasskeyPendingApproval,
+): boolean => {
+    if (approval.kind === 'passkey-get') {
+        return (
+            deserializeGetOptions(approval.options).userVerification ===
+            'required'
+        )
+    }
+    return (
+        deserializeCreateOptions(approval.options).authenticatorSelection
+            ?.userVerification === 'required'
+    )
+}
 
 type PasskeyPendingApproval = Extract<
     PendingApproval,
@@ -67,6 +92,7 @@ type UsePasskeyApprovalResult = {
 
 export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
     const { requestId, approval, isLoading } = useDappRequest()
+    const { requireVaultPassword } = useRequireVaultPassword()
     const { t } = useLanguage()
     const [isBusy, setIsBusy] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -84,7 +110,25 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
         // anything else here would let a malicious page register/assert a
         // credential under an `rp.id` it doesn't own (see SigningContext's
         // doc in the authenticator core).
-        const context = { origin: current.origin }
+        // A button press is user PRESENCE. When the RP asked for user
+        // verification we must actually check a factor before claiming the UV
+        // bit — mobile gets that for free from the OS credential-provider
+        // ceremony (Face ID), the extension has to ask.
+        let userVerified = false
+        if (requiresUserVerification(current)) {
+            userVerified = await requireVaultPassword(
+                t('vault.reauth.passkey_description'),
+            )
+            if (!userVerified) {
+                // Declining the check is declining the ceremony — never fall
+                // through and assert with UV off, since the RP said required.
+                setIsBusy(false)
+                await rejectPasskey(requestId, 'NotAllowedError')
+                window.close()
+                return
+            }
+        }
+        const context = { origin: current.origin, userVerified }
         try {
             const signer = createKeystoreSigner(getKeystoreStore())
             const credential =
@@ -114,7 +158,7 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
         } finally {
             setIsBusy(false)
         }
-    }, [requestId, approval, t])
+    }, [requestId, approval, requireVaultPassword, t])
 
     const decline = useCallback(async (): Promise<void> => {
         if (!requestId) return

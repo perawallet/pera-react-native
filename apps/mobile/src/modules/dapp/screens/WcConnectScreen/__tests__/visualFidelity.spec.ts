@@ -74,13 +74,15 @@ describe('WcConnectScreen visual fidelity with mobile ConnectionView', () => {
         expect(twinHeader).toContain(shared)
         expect(twinView).toContain(shared)
 
-        // The twin's local stylesheet must stay limited to the requester row.
-        // Anything else appearing here is a value copied out of mobile's, which
-        // is how the two drift on spacing or colour.
+        // The twin's local stylesheet must stay limited to the requester row
+        // and the delivery-failure notice — the two things mobile has no
+        // counterpart for. Anything else appearing here is a value copied out
+        // of mobile's, which is how the two drift on spacing or colour.
         const localDeclared = [
             ...twinStyles.matchAll(/^\s{4}([A-Za-z0-9_]+):\s*\{/gm),
         ].map(m => m[1])
         expect(localDeclared.sort()).toEqual([
+            'deliveryError',
             'requesterOrigin',
             'verifiedBadge',
             'verifiedBadgeText',

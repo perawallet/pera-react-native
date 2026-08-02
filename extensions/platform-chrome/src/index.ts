@@ -53,6 +53,8 @@ export {
     isWcPairOutcomeMessage,
     type WcPairOutcome,
     type WcPairOutcomeMessage,
+    isWcAck,
+    type WcAck,
 } from './walletconnect/protocol'
 export {
     WC_PAGE_PAIR_SCOPE,

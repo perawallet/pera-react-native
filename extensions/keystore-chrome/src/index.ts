@@ -33,6 +33,7 @@ export {
     lockVault,
     onLockStateChanged,
     unlockVault,
+    verifyVaultPassword,
     PBKDF2_ITERATIONS,
     PBKDF2_MAX_ITERATIONS,
 } from './vault/vault'

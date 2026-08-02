@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => {
         getKeystoreStore: vi.fn(),
         resolvePasskey: vi.fn(),
         rejectPasskey: vi.fn(),
+        requireVaultPassword: vi.fn(),
     }
 })
 
@@ -57,6 +58,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     resolvePasskey: mocks.resolvePasskey,
     rejectPasskey: mocks.rejectPasskey,
+}))
+
+vi.mock('@modules/vault', () => ({
+    useRequireVaultPassword: () => ({
+        requireVaultPassword: mocks.requireVaultPassword,
+    }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -137,7 +144,7 @@ describe('usePasskeyApproval', () => {
         expect(mocks.createCredential).toHaveBeenCalledWith(
             DESERIALIZED_CREATE,
             FAKE_SIGNER,
-            { origin: 'https://webauthn.io' },
+            { origin: 'https://webauthn.io', userVerified: false },
         )
         expect(mocks.assertCredential).not.toHaveBeenCalled()
         expect(mocks.resolvePasskey).toHaveBeenCalledWith(
@@ -163,7 +170,7 @@ describe('usePasskeyApproval', () => {
         expect(mocks.assertCredential).toHaveBeenCalledWith(
             DESERIALIZED_GET,
             FAKE_SIGNER,
-            { origin: 'https://webauthn.io' },
+            { origin: 'https://webauthn.io', userVerified: false },
         )
         expect(mocks.createCredential).not.toHaveBeenCalled()
         expect(mocks.resolvePasskey).toHaveBeenCalledWith(
@@ -215,4 +222,78 @@ describe('usePasskeyApproval', () => {
         expect(mocks.resolvePasskey).not.toHaveBeenCalled()
         expect(mocks.rejectPasskey).not.toHaveBeenCalled()
     })
+
+    // A button press is user PRESENCE. When the RP demands user verification
+    // we must actually check a factor before setting the UV bit — mobile gets
+    // that from the OS credential-provider ceremony; the extension asks.
+    describe('when the relying party requires user verification', () => {
+        beforeEach(() => {
+            mocks.useDappRequest.mockReturnValue({
+                requestId: 'pk2',
+                approval: GET_APPROVAL,
+                isLoading: false,
+            })
+            mocks.deserializeGetOptions.mockReturnValue({
+                ...DESERIALIZED_GET,
+                userVerification: 'required',
+            })
+        })
+
+        it('re-authenticates and reports the ceremony as verified', async () => {
+            mocks.requireVaultPassword.mockResolvedValue(true)
+            const { result } = renderHook(() => usePasskeyApproval())
+
+            await act(async () => result.current.approve())
+
+            expect(mocks.requireVaultPassword).toHaveBeenCalled()
+            expect(mocks.assertCredential).toHaveBeenCalledWith(
+                expect.anything(),
+                FAKE_SIGNER,
+                { origin: 'https://webauthn.io', userVerified: true },
+            )
+        })
+
+        // Falling through with UV off would hand the RP an assertion it
+        // explicitly said it would not accept, so this declines outright.
+        it('declines the ceremony when re-authentication is dismissed', async () => {
+            mocks.requireVaultPassword.mockResolvedValue(false)
+            const { result } = renderHook(() => usePasskeyApproval())
+
+            await act(async () => result.current.approve())
+
+            expect(mocks.assertCredential).not.toHaveBeenCalled()
+            expect(mocks.resolvePasskey).not.toHaveBeenCalled()
+            expect(mocks.rejectPasskey).toHaveBeenCalledWith(
+                'pk2',
+                'NotAllowedError',
+            )
+        })
+    })
+
+    // 'preferred' is the RP stating it will accept an unverified assertion, so
+    // prompting on every sign-in would be friction it never asked for.
+    it.each(['preferred', 'discouraged', undefined])(
+        'does not re-authenticate when userVerification is %s',
+        async requirement => {
+            mocks.useDappRequest.mockReturnValue({
+                requestId: 'pk2',
+                approval: GET_APPROVAL,
+                isLoading: false,
+            })
+            mocks.deserializeGetOptions.mockReturnValue({
+                ...DESERIALIZED_GET,
+                userVerification: requirement,
+            })
+            const { result } = renderHook(() => usePasskeyApproval())
+
+            await act(async () => result.current.approve())
+
+            expect(mocks.requireVaultPassword).not.toHaveBeenCalled()
+            expect(mocks.assertCredential).toHaveBeenCalledWith(
+                expect.anything(),
+                FAKE_SIGNER,
+                { origin: 'https://webauthn.io', userVerified: false },
+            )
+        },
+    )
 })

@@ -190,6 +190,38 @@ export const isWcApprovalRequestMessage = (
 }
 
 /**
+ * Reply shape for both WC message channels.
+ *
+ * These channels are `await`ed by their senders, so a listener that never
+ * calls `sendResponse` makes the awaited promise settle at *dispatch* time
+ * (or reject outright, since Chrome closes the port with "The message port
+ * closed before a response was received" when listeners exist and none
+ * answers). Both are wrong, and in opposite directions: it silently defeats
+ * `wcHost`'s single-error-surface guard — which the guard's own comment says
+ * exists to stop a hostile page forcing an endless run of approval windows —
+ * and it fires every "the request never reached a window" recovery path on
+ * requests that in fact succeeded.
+ *
+ * So every listener on these scopes must answer. The two channels mean
+ * different things by it, deliberately:
+ *
+ * - `WC_CONTROL_SCOPE` and the `wc-connect`/`wc-sign` approval requests ack
+ *   **acceptance**: the message reached a handler that owns it from here.
+ *   Their real decisions come back later on their own channels
+ *   (`approve-session` / `deliver`), so waiting for the surface would
+ *   deadlock the sender.
+ * - `wc-error` acks **dismissal**: it is notification-only with no decision
+ *   to route, and the sender's only reason to await is to know when the
+ *   surface closed so it can allow the next one.
+ */
+export type WcAck = { ok: true }
+
+export const isWcAck = (value: unknown): value is WcAck =>
+    typeof value === 'object' &&
+    value !== null &&
+    (value as { ok?: unknown }).ok === true
+
+/**
  * Offscreen → UI traffic: reports how a `pair` control message (see
  * {@link WcControlMessage}'s `pair` variant) ultimately resolved. Distinct
  * scope from {@link WC_CONTROL_SCOPE} (the opposite direction — UI/SW →

@@ -76,7 +76,7 @@ describe('attestedCredentialData', () => {
 })
 
 describe('authenticatorData', () => {
-    it('for an assertion (no attested data) is SHA256(rpId) || 0x1D || 00000000, 37 bytes', async () => {
+    it('for an unverified assertion is SHA256(rpId) || 0x19 || 00000000, 37 bytes', async () => {
         const expectedDigest = sha256(new TextEncoder().encode('webauthn.io'))
 
         const result = await authenticatorData({
@@ -88,11 +88,33 @@ describe('authenticatorData', () => {
         expect(Array.from(result.slice(0, 32))).toEqual(
             Array.from(expectedDigest),
         )
-        expect(result[32]).toBe(0x1d)
+        // UP|BE|BS — no UV. Omitting `userVerified` means the ceremony did not
+        // verify the user, and claiming otherwise would tell a relying party
+        // that a factor was checked when only a button was pressed.
+        expect(result[32]).toBe(0x19)
         expect(Array.from(result.slice(33, 37))).toEqual([0, 0, 0, 0])
     })
 
-    it('for attestation (attested data included) starts with SHA256(rpId) || 0x5D and has the attested block appended', async () => {
+    // Mobile's byte-for-byte parity vector: iOS/Android gate the ceremony
+    // behind Face ID, so their assertions are always verified and carry UV.
+    // Parity therefore holds at userVerified: true, not by default.
+    it('sets the UV bit only when the ceremony verified the user', async () => {
+        const verified = await authenticatorData({
+            rpId: 'webauthn.io',
+            attested: false,
+            userVerified: true,
+        })
+        expect(verified[32]).toBe(0x1d)
+
+        const unverified = await authenticatorData({
+            rpId: 'webauthn.io',
+            attested: false,
+            userVerified: false,
+        })
+        expect(unverified[32]).toBe(0x19)
+    })
+
+    it('for an unverified attestation starts with SHA256(rpId) || 0x59 and has the attested block appended', async () => {
         const expectedDigest = sha256(new TextEncoder().encode('webauthn.io'))
         const publicKeyXY = { x: X, y: Y }
         const attested = attestedCredentialData(CREDENTIAL_ID, publicKeyXY)
@@ -108,9 +130,22 @@ describe('authenticatorData', () => {
         expect(Array.from(result.slice(0, 32))).toEqual(
             Array.from(expectedDigest),
         )
-        expect(result[32]).toBe(0x5d)
+        // AT|UP|BE|BS — no UV, same reasoning as the assertion case above.
+        expect(result[32]).toBe(0x59)
         expect(Array.from(result.slice(33, 37))).toEqual([0, 0, 0, 0])
         expect(Array.from(result.slice(37))).toEqual(Array.from(attested))
+    })
+
+    it('sets the UV bit on an attestation that verified the user', async () => {
+        const result = await authenticatorData({
+            rpId: 'webauthn.io',
+            attested: true,
+            credentialId: CREDENTIAL_ID,
+            publicKeyXY: { x: X, y: Y },
+            userVerified: true,
+        })
+
+        expect(result[32]).toBe(0x5d)
     })
 
     it('throws when attested is true but credentialId/publicKeyXY are omitted', async () => {

@@ -93,7 +93,11 @@ export const RemoteConfigDefaults: Record<
 }
 
 export interface RemoteConfigService {
-    initializeRemoteConfig(): void
+    // Async on every implementation (both fetch-and-activate against a remote
+    // backend), and both platform extensions already await it in their
+    // `initialize()` — declaring it `void` here only hid that from the type
+    // checker and let a caller read flags before activation had landed.
+    initializeRemoteConfig(): Promise<void>
     getStringValue(key: string, fallback?: string): string
     getBooleanValue(key: string, fallback?: boolean): boolean
     getNumberValue(key: string, fallback?: number): number

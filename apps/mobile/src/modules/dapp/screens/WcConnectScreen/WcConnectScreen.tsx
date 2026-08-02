@@ -35,6 +35,7 @@ import {
     PWCheckbox,
     PWFlatList,
     PWScreen,
+    PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
@@ -43,11 +44,15 @@ import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from '@modules/walletconnect/components/ConnectionView/styles'
+// Same split as WcConnectHeader: shared visuals come from ConnectionView's
+// stylesheet, and only what mobile has no counterpart for lives locally.
+import { useStyles as useLocalStyles } from './styles'
 import { WcConnectHeader } from './WcConnectHeader'
 import { useWcConnectScreen } from './useWcConnectScreen'
 
 export const WcConnectScreen = (): React.JSX.Element => {
     const styles = useStyles()
+    const localStyles = useLocalStyles()
     const { t } = useLanguage()
     const {
         request,
@@ -61,6 +66,7 @@ export const WcConnectScreen = (): React.JSX.Element => {
         isConnecting,
         handleConnect,
         handleCancel,
+        deliveryError,
     } = useWcConnectScreen()
 
     const renderAccountRow = ({
@@ -105,6 +111,15 @@ export const WcConnectScreen = (): React.JSX.Element => {
                 }
                 showsVerticalScrollIndicator={false}
             />
+            {deliveryError && (
+                <PWText
+                    variant='caption'
+                    style={localStyles.deliveryError}
+                    testID='wc-connect-delivery-error'
+                >
+                    {t('dapp.approval.delivery_failed')}
+                </PWText>
+            )}
             <PWView style={styles.buttonContainer}>
                 <PWButton
                     variant='secondary'

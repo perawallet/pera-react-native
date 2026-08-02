@@ -110,6 +110,24 @@ export type PendingApproval =
 // open* method's promise executor, not here.
 type Settle = (decision: unknown) => void
 
+// Deliberately generous: a well-behaved dApp has one approval in flight at a
+// time, and two tabs of the same site is the only ordinary reason to exceed
+// it. See assertCapacity for what these bound.
+const MAX_PENDING_APPROVALS_PER_ORIGIN = 3
+const MAX_PENDING_APPROVALS = 8
+
+/**
+ * Thrown when an approval cannot be registered — the caps above, or a
+ * requestId that is already pending. Callers surface it to the dApp as a
+ * declined request rather than opening a surface for it.
+ */
+export class ApprovalRejectedError extends Error {
+    constructor(message: string) {
+        super(message)
+        this.name = 'ApprovalRejectedError'
+    }
+}
+
 export class ApprovalWindowBridge
     implements Arc0027ApprovalOpener, PasskeyApprovalOpener
 {
@@ -274,12 +292,59 @@ export class ApprovalWindowBridge
     // path) matching that approval's `kind` — with the exact `T | null` shape
     // this method's caller declares — so the cast back to `T | null` is safe.
     private awaitApproval<T>(approval: PendingApproval): Promise<T | null> {
+        // A colliding requestId used to overwrite the entry outright, which
+        // left the previous `settle` unreachable — its open* promise never
+        // settled and the request it belonged to was answered by nobody, for
+        // the life of the worker. Reachable via the derived WC ids
+        // (`wc-wc-sign-${wcRequestId}-${clientId}`) when a peer retries a
+        // request id. The ARC-0027 path is covered upstream by the core
+        // router's in-flight map; this is the bridge's own guard.
+        const existing = this.pending.get(approval.requestId)
+        if (existing) {
+            throw new ApprovalRejectedError(
+                `An approval for '${approval.requestId}' is already pending`,
+            )
+        }
+        this.assertCapacity(approval.origin)
         return new Promise<T | null>(resolve => {
             this.pending.set(approval.requestId, {
                 approval,
                 settle: resolve as Settle,
             })
         })
+    }
+
+    /**
+     * Bounds how many approval surfaces one page can force open at once.
+     *
+     * Every pending approval past the first becomes a real OS window
+     * (`openViaPopupOrWindow` reserves the single toolbar-popup slot and
+     * routes the rest to `windows.create`). `enable` needs no prior
+     * permission and the core router only de-dupes on `origin::requestId`, so
+     * a page that varies the request id could otherwise bury the desktop with
+     * a loop of a few hundred, recoverable only by force-quitting the
+     * browser. The offscreen WC host already guards its own error surface
+     * this way; this is the same protection for the shared bridge.
+     *
+     * The limits sit far above real use — a dApp needs one approval at a
+     * time, and the per-origin allowance only exists so two tabs of the same
+     * site aren't blocked by each other.
+     */
+    private assertCapacity(origin: string): void {
+        if (this.pending.size >= MAX_PENDING_APPROVALS) {
+            throw new ApprovalRejectedError(
+                'Too many approval requests are already open',
+            )
+        }
+        let forOrigin = 0
+        for (const entry of this.pending.values()) {
+            if (entry.approval.origin === origin) forOrigin++
+        }
+        if (forOrigin >= MAX_PENDING_APPROVALS_PER_ORIGIN) {
+            throw new ApprovalRejectedError(
+                `Too many approval requests are already open for ${origin}`,
+            )
+        }
     }
 
     // Shared by every open* method: every approval kind prefers the toolbar

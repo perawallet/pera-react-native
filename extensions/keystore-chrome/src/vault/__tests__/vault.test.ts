@@ -21,8 +21,11 @@ import {
     lockVault,
     onLockStateChanged,
     unlockVault,
+    verifyVaultPassword,
+    ARGON2_MEMORY_KIB,
+    ARGON2_ITERATIONS,
+    ARGON2_PARALLELISM,
     PBKDF2_ITERATIONS,
-    PBKDF2_MAX_ITERATIONS,
 } from '../vault'
 import { getSessionMasterKey } from '../session'
 import {
@@ -114,10 +117,16 @@ describe('vault', () => {
         await createVault('correct horse')
         const raw = fake.data.get('vault:wrapped-master-key')
         const blob = JSON.parse(String(raw))
-        expect(blob.version).toBe(1)
-        expect(blob.kdf).toBe('PBKDF2-SHA256')
-        expect(blob.iterations).toBe(600_000)
-        expect(PBKDF2_ITERATIONS).toBe(600_000)
+        expect(blob.version).toBe(2)
+        expect(blob.kdf).toBe('Argon2id')
+        // Pinned against OWASP's baseline (19 MiB, t=2, p=1). Memory-hardness
+        // is the point — see the constants' doc comment.
+        expect(blob.m).toBe(19_456)
+        expect(blob.t).toBe(2)
+        expect(blob.p).toBe(1)
+        expect(ARGON2_MEMORY_KIB).toBe(19_456)
+        expect(ARGON2_ITERATIONS).toBe(2)
+        expect(ARGON2_PARALLELISM).toBe(1)
         expect(base64.decode(blob.salt)).toHaveLength(16)
         expect(base64.decode(blob.iv)).toHaveLength(12)
     })
@@ -130,24 +139,119 @@ describe('vault', () => {
         )
     })
 
-    it('rejects a downgraded iteration count as corruption', async () => {
+    // Existing installs hold PBKDF2 `version: 1` blobs. They must keep
+    // opening, and must not stay on the weaker KDF forever.
+    describe('legacy PBKDF2 (version 1) blobs', () => {
+        const writeLegacyBlob = async (
+            password: string,
+            masterKey: Uint8Array,
+        ): Promise<void> => {
+            const salt = new Uint8Array(16).fill(3)
+            const iv = new Uint8Array(12).fill(5)
+            const material = await crypto.subtle.importKey(
+                'raw',
+                new TextEncoder().encode(password),
+                'PBKDF2',
+                false,
+                ['deriveKey'],
+            )
+            const kek = await crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    hash: 'SHA-256',
+                    salt,
+                    iterations: PBKDF2_ITERATIONS,
+                },
+                material,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt'],
+            )
+            const ciphertext = new Uint8Array(
+                await crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv },
+                    kek,
+                    masterKey,
+                ),
+            )
+            fake.data.set(
+                'vault:wrapped-master-key',
+                JSON.stringify({
+                    version: 1,
+                    kdf: 'PBKDF2-SHA256',
+                    iterations: PBKDF2_ITERATIONS,
+                    salt: base64.encode(salt),
+                    iv: base64.encode(iv),
+                    ciphertext: base64.encode(ciphertext),
+                }),
+            )
+        }
+
+        const LEGACY_MASTER_KEY = new Uint8Array(32).fill(9)
+
+        it('still unlock with the original password', async () => {
+            await writeLegacyBlob('legacy-password', LEGACY_MASTER_KEY)
+
+            await unlockVault('legacy-password')
+
+            expect(await getSessionMasterKey()).toEqual(LEGACY_MASTER_KEY)
+        })
+
+        it('are re-wrapped as Argon2id on that unlock, preserving the master key', async () => {
+            await writeLegacyBlob('legacy-password', LEGACY_MASTER_KEY)
+
+            await unlockVault('legacy-password')
+
+            const migrated = JSON.parse(
+                String(fake.data.get('vault:wrapped-master-key')),
+            )
+            expect(migrated.version).toBe(2)
+            expect(migrated.kdf).toBe('Argon2id')
+
+            // The upgraded blob opens with the same password and yields the
+            // same key — a migration that changed either would lock the user
+            // out of their own wallet.
+            await lockVault()
+            await unlockVault('legacy-password')
+            expect(await getSessionMasterKey()).toEqual(LEGACY_MASTER_KEY)
+        })
+
+        it('reject a wrong password without migrating anything', async () => {
+            await writeLegacyBlob('legacy-password', LEGACY_MASTER_KEY)
+
+            await expect(unlockVault('wrong-password')).rejects.toBeInstanceOf(
+                InvalidPasswordError,
+            )
+
+            const untouched = JSON.parse(
+                String(fake.data.get('vault:wrapped-master-key')),
+            )
+            expect(untouched.version).toBe(1)
+        })
+    })
+
+    it('rejects downgraded Argon2 cost parameters as corruption', async () => {
         await createVault('correct horse')
         const blob = JSON.parse(
             String(fake.data.get('vault:wrapped-master-key')),
         )
-        blob.iterations = 1000
+        // An attacker with write access to the profile could otherwise rewrite
+        // the blob's own cost down and brute-force a near-unprotected password.
+        blob.m = 8
         fake.data.set('vault:wrapped-master-key', JSON.stringify(blob))
         await expect(unlockVault('correct horse')).rejects.toBeInstanceOf(
             VaultCorruptedError,
         )
     })
 
-    it('rejects an iterations count above PBKDF2_MAX_ITERATIONS as corruption (DoS ceiling)', async () => {
+    it('rejects an Argon2 memory cost above the ceiling as corruption (OOM guard)', async () => {
         await createVault('correct horse')
         const blob = JSON.parse(
             String(fake.data.get('vault:wrapped-master-key')),
         )
-        blob.iterations = PBKDF2_MAX_ITERATIONS + 1
+        // `m` is a real allocation, so an unbounded value is an OOM rather
+        // than merely a slow unlock.
+        blob.m = 1_000_000
         fake.data.set('vault:wrapped-master-key', JSON.stringify(blob))
         await expect(unlockVault('correct horse')).rejects.toBeInstanceOf(
             VaultCorruptedError,
@@ -190,5 +294,78 @@ describe('vault', () => {
             VaultLockedOutError,
         )
         expect(await isUnlocked()).toBe(false)
+    })
+
+    // Every password check shares one throttle. These two are reachable from
+    // an already-unlocked session, where the value at stake is the password
+    // itself — and they used to check it without consulting or recording an
+    // attempt, making them unmetered guessing oracles.
+    describe('brute-force throttling covers every password entry point', () => {
+        it('locks out changePassword after repeated wrong current passwords', async () => {
+            await createVault('the-password')
+            for (let i = 0; i < 5; i++) {
+                await expect(
+                    changePassword('wrong-password', 'next-password'),
+                ).rejects.toBeInstanceOf(InvalidPasswordError)
+            }
+            await expect(
+                changePassword('the-password', 'next-password'),
+            ).rejects.toBeInstanceOf(VaultLockedOutError)
+        })
+
+        it('locks out verifyVaultPassword after repeated wrong passwords', async () => {
+            await createVault('the-password')
+            for (let i = 0; i < 5; i++) {
+                expect(await verifyVaultPassword('wrong-password')).toBe(false)
+            }
+            await expect(
+                verifyVaultPassword('the-password'),
+            ).rejects.toBeInstanceOf(VaultLockedOutError)
+        })
+
+        it('a wrong attempt on one entry point counts against the others', async () => {
+            await createVault('the-password')
+            for (let i = 0; i < 4; i++) {
+                expect(await verifyVaultPassword('wrong-password')).toBe(false)
+            }
+            // Fifth failure arrives via a different entry point.
+            await expect(
+                changePassword('wrong-password', 'next-password'),
+            ).rejects.toBeInstanceOf(InvalidPasswordError)
+
+            await expect(unlockVault('the-password')).rejects.toBeInstanceOf(
+                VaultLockedOutError,
+            )
+        })
+
+        it('a successful check clears the accumulated attempts', async () => {
+            await createVault('the-password')
+            for (let i = 0; i < 4; i++) {
+                expect(await verifyVaultPassword('wrong-password')).toBe(false)
+            }
+            expect(await verifyVaultPassword('the-password')).toBe(true)
+
+            // The counter reset, so five fresh failures are needed again.
+            for (let i = 0; i < 4; i++) {
+                expect(await verifyVaultPassword('wrong-password')).toBe(false)
+            }
+            expect(await verifyVaultPassword('the-password')).toBe(true)
+        })
+    })
+
+    describe('verifyVaultPassword', () => {
+        it('confirms the password without unlocking or touching the session', async () => {
+            await createVault('the-password')
+            await lockVault()
+
+            expect(await verifyVaultPassword('the-password')).toBe(true)
+            // Verification is not authentication: a locked vault stays locked.
+            expect(await isUnlocked()).toBe(false)
+        })
+
+        it('returns false rather than throwing on a wrong password', async () => {
+            await createVault('the-password')
+            expect(await verifyVaultPassword('nope')).toBe(false)
+        })
     })
 })

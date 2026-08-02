@@ -52,6 +52,7 @@ export const EnableRequestScreen = (): React.JSX.Element => {
         isLoading,
         handleConnect,
         handleCancel,
+        deliveryError,
     } = useEnableRequestScreen()
 
     const renderAccountRow = ({
@@ -141,22 +142,33 @@ export const EnableRequestScreen = (): React.JSX.Element => {
                 </PWView>
             }
             footer={
-                <PWView style={styles.buttonContainer}>
-                    <PWButton
-                        variant='secondary'
-                        title={t('dapp.enable.cancel_button')}
-                        onPress={handleCancel}
-                        style={styles.cancelButton}
-                        testID='dapp-enable-cancel'
-                    />
-                    <PWButton
-                        variant='primary'
-                        title={t('dapp.enable.connect_button')}
-                        onPress={handleConnect}
-                        style={styles.connectButton}
-                        isDisabled={!canConnect}
-                        testID='dapp-enable-connect'
-                    />
+                <PWView>
+                    {deliveryError && (
+                        <PWText
+                            variant='caption'
+                            style={styles.deliveryError}
+                            testID='dapp-enable-delivery-error'
+                        >
+                            {t('dapp.approval.delivery_failed')}
+                        </PWText>
+                    )}
+                    <PWView style={styles.buttonContainer}>
+                        <PWButton
+                            variant='secondary'
+                            title={t('dapp.enable.cancel_button')}
+                            onPress={handleCancel}
+                            style={styles.cancelButton}
+                            testID='dapp-enable-cancel'
+                        />
+                        <PWButton
+                            variant='primary'
+                            title={t('dapp.enable.connect_button')}
+                            onPress={handleConnect}
+                            style={styles.connectButton}
+                            isDisabled={!canConnect}
+                            testID='dapp-enable-connect'
+                        />
+                    </PWView>
                 </PWView>
             }
         >

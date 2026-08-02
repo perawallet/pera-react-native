@@ -44,7 +44,7 @@ const mockPlatformServices = {
         },
     },
     remoteConfig: {
-        initializeRemoteConfig() {},
+        async initializeRemoteConfig() {},
         getStringValue(_: string, f?: string) {
             return f ?? ''
         },

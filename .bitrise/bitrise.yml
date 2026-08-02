@@ -1006,7 +1006,7 @@ workflows:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            pnpm --filter extension bundle
+            pnpm --filter browser bundle
     - script@1:
         title: Zip extension bundle
         inputs:
@@ -1024,7 +1024,7 @@ workflows:
             # build (staging backend, no API key, no Remote Config).
             NAME="pera-extension-web-${ENVIRONMENT:-unknown}-${BITRISE_GIT_TAG:-b$BITRISE_BUILD_NUMBER}-${SHA:-b$BITRISE_BUILD_NUMBER}.zip"
             DEST="${BITRISE_DEPLOY_DIR}/${NAME}"
-            (cd apps/extension/dist && zip -r "$DEST" .)
+            (cd apps/browser/dist && zip -r "$DEST" .)
             envman add --key BITRISE_EXTENSION_ZIP_PATH --value "$DEST"
     - deploy-to-bitrise-io@2:
         is_always_run: true

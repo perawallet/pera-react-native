@@ -76,7 +76,7 @@ const buildServices = (): PlatformServices => {
     }
 
     const remoteConfig: RemoteConfigService = {
-        initializeRemoteConfig() {},
+        async initializeRemoteConfig() {},
         getStringValue: (_key, fallback) => fallback ?? '',
         getBooleanValue: (_key, fallback) => fallback ?? false,
         getNumberValue: (_key, fallback) => fallback ?? 0,

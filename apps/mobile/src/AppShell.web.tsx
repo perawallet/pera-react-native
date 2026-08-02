@@ -62,6 +62,8 @@ import {
 import { WebMainRoutes } from '@routes/WebMainRoutes'
 import { DappRequestRoutes } from '@modules/dapp'
 import { TestnetIndicator } from '@components/TestnetIndicator'
+import { OfflineBanner } from '@components/OfflineBanner'
+import { initNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 import { useWebAppShell } from './useWebAppShell'
 import { updateQueryHeaders } from './bootstrap/query-headers'
@@ -76,6 +78,14 @@ const persister = createAsyncStoragePersister({
 })
 
 updateQueryHeaders()
+
+// Native does this at App.tsx module scope; the extension can't, because
+// App.web.tsx must stay free of store-bearing static imports (see its
+// BOOT-ORDER CONTRACT). Here is the earliest boot-order-safe equivalent, and
+// still before QueryProvider mounts below — which is what the seeding is for,
+// so early queries don't fire-and-fail against a dead link. Without it web had
+// no onlineManager binding at all and every query treated the app as online.
+void initNetworkStatus()
 
 // Boot-order-safe here for the same reason `persister` above is: App.web.tsx
 // only dynamically imports this module after `hydratePlatform()` resolves, so
@@ -309,6 +319,11 @@ const WebShellErrorBoundary = ({
 const AppShellThemedRoot = (): React.JSX.Element => {
     const rootStyles = useAppShellRootStyles()
 
+    // Native does this in RootComponent, which the web shell replaces — so
+    // without it here the reachability probe never runs and onlineManager
+    // keeps whatever seed initNetworkStatus left.
+    useNetworkStatusListener()
+
     return (
         <SafeAreaProvider>
             <GestureHandlerRootView style={rootStyles.root}>
@@ -329,6 +344,9 @@ const AppShellThemedRoot = (): React.JSX.Element => {
                             </QueryProvider>
                         </NotifierWrapper>
                     </KeyboardProvider>
+                    {/* Same contract as RootComponent's: LAST node inside the
+                        card so it paints above navigation and sheets. */}
+                    <OfflineBanner />
                 </PWView>
             </GestureHandlerRootView>
         </SafeAreaProvider>

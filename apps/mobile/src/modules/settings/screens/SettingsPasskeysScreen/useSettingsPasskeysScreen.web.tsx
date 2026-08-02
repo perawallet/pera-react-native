@@ -61,7 +61,7 @@ export type UseSettingsPasskeysScreenResult = {
 // (react-native-passkey-autofill is a no-op web shim), so "active" is derived
 // from the `webauthnInterceptionEnabled` settings-store preference — the same
 // preference the ISOLATED relay content script
-// (apps/extension/src/content/webauthn-toggle.ts) reads once per page load to
+// (apps/browser/src/content/webauthn-toggle.ts) reads once per page load to
 // gate interception. Passkey listing/removal still work identically (both
 // read the keystore projection), so those are unchanged from the native hook.
 export const useSettingsPasskeysScreen =

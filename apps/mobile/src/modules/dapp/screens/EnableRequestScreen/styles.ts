@@ -73,6 +73,12 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
         paddingVertical: theme.spacing.sm,
     },
+    deliveryError: {
+        color: theme.colors.negative,
+        textAlign: 'center',
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.md,
+    },
     buttonContainer: {
         flexDirection: 'row',
         alignItems: 'center',

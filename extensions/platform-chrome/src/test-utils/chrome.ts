@@ -129,8 +129,13 @@ export const createChromeFake = (): ChromeFake => {
                     )
                 }
                 const sender = { ...DEFAULT_SENDER, ...senderOverride }
-                return new Promise(resolve => {
+                return new Promise((resolve, reject) => {
                     let responded = false
+                    let anyKeptAlive = false
+                    // Every listener sees the message, exactly as in Chrome —
+                    // don't stop at the first one that keeps the port open, or
+                    // a later listener's synchronous response is never
+                    // delivered.
                     for (const listener of messageListeners) {
                         const keepAlive = listener(
                             message,
@@ -141,9 +146,21 @@ export const createChromeFake = (): ChromeFake => {
                                 resolve(response)
                             },
                         )
-                        if (keepAlive === true) return // async response pending
+                        if (keepAlive === true) anyKeptAlive = true
                     }
-                    if (!responded) resolve(undefined)
+                    if (responded || anyKeptAlive) return
+                    // Chrome closes the port when listeners exist but none
+                    // answered and none asked to answer later. Modelling this
+                    // as resolve(undefined) is what hid a whole class of bug:
+                    // callers that `await` a send whose listener never calls
+                    // sendResponse look fine under a resolving fake and then
+                    // fire their failure paths on every success in a real
+                    // browser.
+                    reject(
+                        new Error(
+                            'The message port closed before a response was received.',
+                        ),
+                    )
                 })
             },
             onMessage: {

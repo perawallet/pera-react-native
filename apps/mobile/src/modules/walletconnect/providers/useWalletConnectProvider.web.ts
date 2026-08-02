@@ -37,7 +37,7 @@ type UseWalletConnectProviderResult = ReturnType<
  *   `useWalletConnect`'s `session_request` handler, which never runs on
  *   web. A `wc-connect` handshake surviving offscreen's gate is instead
  *   answered by the service worker opening a dedicated approval window
- *   (`EnableRequestScreen`, via `apps/extension/src/background/
+ *   (`EnableRequestScreen`, via `apps/browser/src/background/
  *   walletconnect.ts`'s `installWcApprovalRouter`) — a real browser
  *   window, not a bottom sheet in this tree.
  * - `connectionError` is set only by that same disused handler set (see

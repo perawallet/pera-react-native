@@ -10,21 +10,66 @@
  limitations under the License
  */
 
+import { DB_CONTROL_SCOPE } from '../database/protocol'
 import { isTrustedExtensionPageSender } from '../trusted-sender'
+
+/**
+ * Asks the service worker to (re)create the offscreen document, and resolves
+ * once it has — or immediately if the request can't be delivered.
+ *
+ * Best-effort on purpose: only the SW can call `chrome.offscreen`, so a UI
+ * surface has to route through it, and a failure here should not pre-empt the
+ * caller's own error handling for the command it actually wanted to send.
+ * Creation is idempotent, so calling this before every control message is
+ * safe if slightly redundant.
+ */
+const ensureOffscreenHost = async (): Promise<void> => {
+    try {
+        await chrome.runtime.sendMessage({
+            scope: DB_CONTROL_SCOPE,
+            kind: 'ensure-offscreen',
+        })
+    } catch {
+        // Nothing answered (SW mid-restart). The send itself wakes it, and the
+        // control message below reports the real outcome.
+    }
+}
 import {
     WC_CONTROL_SCOPE,
     WC_PAIR_OUTCOME_SCOPE,
     WC_REQUEST_SCOPE,
+    isWcAck,
     isWcPairOutcomeMessage,
+    type WcAck,
     type WcApprovalRequestMessage,
     type WcControlMessage,
     type WcPairOutcomeMessage,
 } from './protocol'
 
+/**
+ * Sends an approval request to the service worker's `installWcApprovalRouter`
+ * and resolves on its ack. What the ack *means* differs per kind and is the
+ * whole point of awaiting this — see {@link WcAck}: `wc-connect`/`wc-sign`
+ * ack acceptance (their decisions come back later on the control channel),
+ * while `wc-error` acks dismissal, which is what lets the caller hold at most
+ * one error surface open at a time.
+ *
+ * Throws when nothing handled the request — the router is gone, or the
+ * service worker died before answering. That is a real failure the caller
+ * must see: it means no approval surface will ever resolve this request.
+ */
 export const sendWcApprovalRequest = async (
     request: WcApprovalRequestMessage['request'],
 ): Promise<void> => {
-    await chrome.runtime.sendMessage({ scope: WC_REQUEST_SCOPE, request })
+    const response: unknown = await chrome.runtime.sendMessage({
+        scope: WC_REQUEST_SCOPE,
+        request,
+    })
+    if (!isWcAck(response)) {
+        throw new Error(
+            `WalletConnect approval request '${request.kind}' was not acknowledged`,
+        )
+    }
 }
 
 /**
@@ -46,7 +91,7 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
  * currently the offscreen document. UI surfaces use this instead of owning
  * a connector themselves: `useWalletConnectPairing.web.ts` sends `pair`,
  * `useWalletConnectSessionsControl.web.ts` sends `disconnect`, and
- * `apps/extension/src/background/walletconnect.ts`'s `installWcApprovalRouter`
+ * `apps/browser/src/background/walletconnect.ts`'s `installWcApprovalRouter`
  * (the service worker's approval router, downstream of the approval surface
  * a `wc-connect` request opens) sends `approve-session`/`reject-session`.
  * `useWalletConnectProvider.web.tsx` and `ConnectionView.web.tsx` were an
@@ -56,7 +101,29 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
 export const sendWcControlMessage = async (
     message: DistributiveOmit<WcControlMessage, 'scope'>,
 ): Promise<void> => {
-    await chrome.runtime.sendMessage({ scope: WC_CONTROL_SCOPE, ...message })
+    // The offscreen document is the only host for these commands, and it may
+    // be absent — it self-closes after a db-worker death, and a cold browser
+    // start can deliver a UI action before the service worker has re-created
+    // it. Asking the SW to ensure it first is what the page-initiated pair
+    // route already does ("rather than dropping the very first pair on a cold
+    // start", connect-modal-pair.ts); without it the UI route was a
+    // works-on-the-second-try bug, and now that an unanswered send is a hard
+    // error it would be a deterministic failure instead.
+    await ensureOffscreenHost()
+    const response: unknown = await chrome.runtime.sendMessage({
+        scope: WC_CONTROL_SCOPE,
+        ...message,
+    })
+    // No ack means no host consumed it — in practice the offscreen document
+    // is absent (self-closed after a worker death, or not yet recreated on a
+    // cold start). Surfacing that is the point: the connector command did not
+    // happen, and a caller that treated the send as success would report a
+    // pairing or disconnect that never occurred.
+    if (!isWcAck(response)) {
+        throw new Error(
+            `WalletConnect control message '${message.kind}' was not handled`,
+        )
+    }
 }
 
 /**
@@ -82,8 +149,14 @@ export const onWcControlMessage = (
     const listener = (
         message: unknown,
         sender: chrome.runtime.MessageSender,
+        sendResponse: (response: WcAck) => void,
     ): boolean => {
-        if (isTrustedExtensionPageSender(sender)) handler(message)
+        if (!isTrustedExtensionPageSender(sender)) return false
+        // The handler's own "I consumed this" return is what the ack reports;
+        // staying silent on an unconsumed message is how the sender learns
+        // no host owns it (see sendWcControlMessage).
+        if (!handler(message)) return false
+        sendResponse({ ok: true })
         return false
     }
     chrome.runtime.onMessage.addListener(listener)
@@ -102,10 +175,20 @@ export const onWcControlMessage = (
 export const sendPairOutcome = async (
     message: Omit<WcPairOutcomeMessage, 'scope'>,
 ): Promise<void> => {
-    await chrome.runtime.sendMessage({
-        scope: WC_PAIR_OUTCOME_SCOPE,
-        ...message,
-    })
+    try {
+        await chrome.runtime.sendMessage({
+            scope: WC_PAIR_OUTCOME_SCOPE,
+            ...message,
+        })
+    } catch {
+        // Swallowed on purpose, and only here: "nobody is listening" is the
+        // normal steady state for this broadcast (the popup that started the
+        // pairing has usually closed by now), and Chrome reports it as a
+        // rejection. The caller's bounded wait is the real timeout. Contrast
+        // sendWcControlMessage / sendWcApprovalRequest, where an unanswered
+        // send means a command or approval genuinely did not happen and must
+        // propagate.
+    }
 }
 
 /**

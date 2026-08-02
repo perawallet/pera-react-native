@@ -16,10 +16,16 @@
 // none of which a content script needs), which bloats content-script bundles
 // to ~1MB. This file re-exports only the pure ARC-0027 wire from modules that
 // have no chrome.* usage and no side effects, so the content-script build
-// alias (apps/extension/scripts/build.mjs) can point here instead of the
+// alias (apps/browser/scripts/build.mjs) can point here instead of the
 // barrel and stay small.
 export {
     isArc0027Request,
+    // Needed alongside isArc0027Request so the injected provider can tell
+    // "not addressed to us" (ignore) from "our namespace, method we don't
+    // implement" (answer 4003) — dropping the latter left the dApp's promise
+    // pending forever. Pure predicates, no chrome.* usage.
+    isArc0027NamespacedRequest,
+    referenceMethod,
     buildErrorResponse,
     ARC0027_ERROR_CODES,
     DAPP_RELAY_SCOPE,

@@ -19,6 +19,22 @@ import {
     sendWcControlMessage,
 } from '../client'
 
+/**
+ * Fire-and-forget dispatch for the cases where no listener is expected to
+ * answer — a refused sender, an unrecognised shape, or the pair-outcome
+ * broadcast. Chrome reports an unanswered send as a closed port, and these
+ * tests are asserting handler delivery rather than the reply, so the
+ * rejection is the expected condition and not the subject.
+ */
+const dispatch = (
+    fake: ChromeFake,
+    message: unknown,
+    senderOverride?: { url: string },
+): Promise<unknown> =>
+    fake.chrome.runtime
+        .sendMessage(message, senderOverride)
+        .catch(() => undefined)
+
 describe('sendWcControlMessage', () => {
     let fake: ChromeFake
 
@@ -53,7 +69,8 @@ describe('onWcControlMessage', () => {
         const handler = vi.fn(() => true)
         onWcControlMessage(handler)
 
-        await fake.chrome.runtime.sendMessage(
+        await dispatch(
+            fake,
             { scope: 'pera-wc-control', kind: 'reconnect-all' },
             { url: 'https://dapp.example' },
         )
@@ -136,7 +153,7 @@ describe('sendPairOutcome / onPairOutcome', () => {
             correlationId: 'corr-1',
             outcome: { type: 'error', reason: 'network-mismatch' },
         }
-        await fake.chrome.runtime.sendMessage(message, {
+        await dispatch(fake, message, {
             url: 'chrome-extension://test-extension-id/popup.html',
         })
 
@@ -150,7 +167,8 @@ describe('sendPairOutcome / onPairOutcome', () => {
         const handler = vi.fn()
         onPairOutcome(handler)
 
-        await fake.chrome.runtime.sendMessage(
+        await dispatch(
+            fake,
             {
                 scope: 'pera-wc-pair-outcome',
                 correlationId: 'corr-1',
@@ -166,7 +184,8 @@ describe('sendPairOutcome / onPairOutcome', () => {
         const handler = vi.fn()
         onPairOutcome(handler)
 
-        await fake.chrome.runtime.sendMessage(
+        await dispatch(
+            fake,
             { scope: 'pera-wc-control', kind: 'reconnect-all' },
             { url: 'chrome-extension://test-extension-id/popup.html' },
         )

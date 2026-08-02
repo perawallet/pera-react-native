@@ -22,7 +22,7 @@ const SURFACES: readonly string[] = [
 /**
  * Reads the surface flag injected by the extension build: each surface HTML
  * loads a `surface-<name>.js` that sets `window.__PERA_SURFACE__` before the
- * app bundle executes (see apps/extension/scripts/build.mjs). Falls back to
+ * app bundle executes (see apps/browser/scripts/build.mjs). Falls back to
  * 'expanded' for non-extension hosts (expo web dev server) and unknown values.
  */
 export const getSurface = (): ExtensionSurface => {

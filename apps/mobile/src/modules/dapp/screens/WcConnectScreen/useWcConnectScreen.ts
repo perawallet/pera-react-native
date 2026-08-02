@@ -51,6 +51,10 @@ type UseWcConnectScreenResult = {
     isConnecting: boolean
     handleConnect: () => void
     handleCancel: () => void
+    // True once a decision failed to reach the approval bridge. The connect
+    // button is left spinning by design (see handleConnect), so without this
+    // the window would sit there forever with no explanation.
+    deliveryError: boolean
 }
 
 // Default selection seed, matching EnableRequestScreen's: the active account
@@ -100,7 +104,8 @@ const isDistinctFromPeerUrl = (
  * bridge (`useDappRequest`) and the host completes the handshake.
  */
 export const useWcConnectScreen = (): UseWcConnectScreenResult => {
-    const { approval, isLoading, approve, reject } = useDappRequest()
+    const { approval, isLoading, approve, reject, deliveryError } =
+        useDappRequest()
     const accounts = useSigningAccounts()
     const { selectedAccountAddress } = useSelectedAccountAddress()
 
@@ -172,5 +177,6 @@ export const useWcConnectScreen = (): UseWcConnectScreenResult => {
         isConnecting,
         handleConnect,
         handleCancel,
+        deliveryError,
     }
 }

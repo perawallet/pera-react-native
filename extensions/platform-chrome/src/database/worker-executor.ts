@@ -17,6 +17,17 @@ type WorkerResponse =
     | { id: number; ok: true; rows: unknown[][] }
     | { id: number; ok: false; error: string }
 
+// Startup failure announced by the worker itself — see db-worker.ts. A failed
+// sqlite/OPFS init raises no 'error' event, so without this the worker would
+// look alive while answering nothing, and the death-driven recovery path
+// (host un-ready -> offscreen self-close -> recreate) would never run.
+type WorkerFatal = { fatal: true; error: string }
+
+const isWorkerFatal = (value: unknown): value is WorkerFatal =>
+    typeof value === 'object' &&
+    value !== null &&
+    (value as WorkerFatal).fatal === true
+
 /** Correlates request/response pairs with the db worker by id. */
 export const createWorkerExecutor = (worker: Worker): SqlExecutor => {
     let nextId = 1
@@ -48,7 +59,14 @@ export const createWorkerExecutor = (worker: Worker): SqlExecutor => {
     }
 
     worker.addEventListener('message', event => {
-        const response = (event as MessageEvent).data as WorkerResponse
+        const data = (event as MessageEvent).data as unknown
+        if (isWorkerFatal(data)) {
+            handleWorkerCrash(
+                new Error(`db worker failed to start: ${data.error}`),
+            )
+            return
+        }
+        const response = data as WorkerResponse
         const entry = pending.get(response?.id)
         if (!entry) return
         pending.delete(response.id)

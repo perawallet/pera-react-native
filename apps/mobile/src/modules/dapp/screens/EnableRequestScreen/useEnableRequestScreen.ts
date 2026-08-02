@@ -31,6 +31,10 @@ type UseEnableRequestScreenResult = {
     isLoading: boolean
     handleConnect: () => void
     handleCancel: () => void
+    // True once a decision failed to reach the approval bridge; the screen
+    // keeps this window open and explains why rather than reporting a
+    // connection the site never received.
+    deliveryError: boolean
 }
 
 // Default selection seed: the active account, if it's actually signable
@@ -49,7 +53,8 @@ const initialSelection = (
 
 export const useEnableRequestScreen = (): UseEnableRequestScreenResult => {
     const { t } = useLanguage()
-    const { approval, isLoading, approve, reject } = useDappRequest()
+    const { approval, isLoading, approve, reject, deliveryError } =
+        useDappRequest()
     const accounts = useSigningAccounts()
     const { selectedAccountAddress } = useSelectedAccountAddress()
 
@@ -109,5 +114,6 @@ export const useEnableRequestScreen = (): UseEnableRequestScreenResult => {
         isLoading,
         handleConnect,
         handleCancel,
+        deliveryError,
     }
 }

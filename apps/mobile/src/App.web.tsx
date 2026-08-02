@@ -119,7 +119,19 @@ export const App = (): React.JSX.Element => {
             const mod = await import('./AppShell.web')
             setShell(() => mod.AppShell)
         }
-        bootstrap().catch(err => {
+        bootstrap().catch((err: unknown) => {
+            // The offscreen document has no user to read an error, and leaving
+            // it alive is actively harmful: `chrome.offscreen.hasDocument()`
+            // keeps returning true, so `ensureOffscreenDocument` stays a no-op
+            // and nothing can ever recreate it — the database stays unreachable
+            // until the user manually reloads the extension. Closing makes the
+            // next `ensure-offscreen` rebuild it, which is the same recovery
+            // runOffscreenApp uses when the db worker dies under it.
+            if (getSurface() === 'offscreen') {
+                console.error('[pera] offscreen bootstrap failed:', err)
+                window.close()
+                return
+            }
             setError(`bootstrap failed: ${String(err)}`)
         })
     }, [])

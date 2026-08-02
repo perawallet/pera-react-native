@@ -138,4 +138,69 @@ describe('useDappRequest', () => {
         window.dispatchEvent(new Event('pagehide'))
         expect(sendMessage).not.toHaveBeenCalled()
     })
+
+    // MV3 evicts the service worker while an approval window sits idle, taking
+    // its in-memory pending map with it. The bridge then answers
+    // 'unknown request' — and closing the window on that told the user they had
+    // approved something the dApp never received.
+    describe('when the bridge can no longer settle the request', () => {
+        const loadApproval = async (): Promise<
+            ReturnType<
+                typeof renderHook<ReturnType<typeof useDappRequest>, void>
+            >
+        > => {
+            sendMessage.mockResolvedValueOnce({
+                requestId: 'q1',
+                origin: 'https://x.com',
+                kind: 'enable',
+            })
+            const rendered = renderHook(() => useDappRequest())
+            await waitFor(() =>
+                expect(rendered.result.current.approval).not.toBeNull(),
+            )
+            return rendered
+        }
+
+        it('keeps the window open and reports the failure when approve is not acknowledged', async () => {
+            const { result } = await loadApproval()
+            sendMessage.mockResolvedValueOnce({
+                ok: false,
+                error: 'unknown request',
+            })
+
+            await act(async () => result.current.approve(['ADDR']))
+
+            expect(window.close).not.toHaveBeenCalled()
+            await waitFor(() => expect(result.current.deliveryError).toBe(true))
+        })
+
+        it('keeps the window open when the send itself rejects', async () => {
+            const { result } = await loadApproval()
+            sendMessage.mockRejectedValueOnce(
+                new Error(
+                    'The message port closed before a response was received.',
+                ),
+            )
+
+            await act(async () => result.current.approve(['ADDR']))
+
+            expect(window.close).not.toHaveBeenCalled()
+            await waitFor(() => expect(result.current.deliveryError).toBe(true))
+        })
+
+        // The user asked to dismiss and has nothing to act on — the dApp sees
+        // its own timeout rather than a fabricated approval.
+        it('still closes on an unacknowledged reject', async () => {
+            const { result } = await loadApproval()
+            sendMessage.mockResolvedValueOnce({
+                ok: false,
+                error: 'unknown request',
+            })
+
+            await act(async () => result.current.reject())
+
+            expect(window.close).toHaveBeenCalled()
+            expect(result.current.deliveryError).toBe(false)
+        })
+    })
 })
