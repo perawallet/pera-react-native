@@ -44,7 +44,7 @@ import {
     useWalletConnectStore,
 } from '@perawallet/wallet-core-walletconnect'
 import { logger } from '@perawallet/wallet-core-shared'
-import { queryClient } from '@providers/QueryProvider'
+import { queryClient } from '@providers/queryClient'
 import { startWcHost } from './walletconnect/wcHost'
 
 const OFFSCREEN_POLL_INTERVAL_MS = 30_000

@@ -5,14 +5,17 @@ Pera Wallet is built as a **monorepo** with a clear separation between UI and bu
 ## The Big Picture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│           apps/mobile  ·  apps/extension             │
-│                     (UI Only)                        │
-│                                                      │
-│   Components → Screens → Navigation → User Facing    │
-└────────────────────────┬────────────────────────────┘
-                         │ imports
-                         ▼
+┌──────────────────────────┐   ┌──────────────────────────┐
+│       apps/mobile        │   │       apps/browser       │
+│  (React Native — UI)     │   │  (MV3 extension shell)   │
+│                          │   │                          │
+│  Components → Screens →  │   │  manifest, service       │
+│  Navigation → User       │   │  worker, content         │
+│  Facing                  │   │  scripts, offscreen      │
+└───────────┬──────────────┘   └───────────┬──────────────┘
+            │                              │
+            │  both import                 │
+            ▼                              ▼
 ┌─────────────────────────────────────────────────────┐
 │                    packages/*                        │
 │           (Headless Business Logic)                  │
@@ -23,16 +26,55 @@ Pera Wallet is built as a **monorepo** with a clear separation between UI and bu
                          ▼
 ┌─────────────────────────────────────────────────────┐
 │                   extensions/*                       │
-│              (Platform Adapters)                     │
+│      (Platform drivers behind one interface)         │
 │                                                      │
-│   Storage → Keystore → Ledger → Device Info          │
+│   platform (the contract) → platform-chrome /        │
+│   platform-react-native (the implementations)        │
 └─────────────────────────────────────────────────────┘
 ```
 
-The bottom layer is what lets the same packages run on React Native and in
-Chrome: `extensions/platform` defines the contract, `platform-react-native`
-and `platform-chrome` implement it, and packages reach it only through
-`getProvider()`.
+### A note on the two meanings of "extension"
+
+These two directory names look related and are not:
+
+| Path           | What it is                                                                                                                                                              |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/browser` | The **browser extension** — manifest, service worker, content scripts, offscreen document, and the build that assembles them into a loadable zip.                       |
+| `extensions/*` | **Platform extensions** (drivers/plugins) for the upstream `@algorandfoundation/wallet-provider`, whose own API uses the word "extension". Nothing to do with browsers. |
+
+`extensions/` is why mobile-only packages like `wallet-extension-platform-react-native` and
+`wallet-extension-ledger-react-native-usb` live there: they are platform _drivers_, not browser code.
+The directory cannot be renamed — the upstream provider API uses the term, and the churn would reach
+deep into the mobile app — so the disambiguation lives here instead. (`apps/extension` was renamed to
+`apps/browser` in 2026-08 for exactly this reason.)
+
+### How a driver gets selected
+
+`extensions/platform` declares the `PlatformServices` interface. `extensions/platform-driver` is a
+stub that throws if it is ever reached, and each app's bundler aliases it to a concrete driver:
+`platform-chrome` on web, `platform-react-native` on native (see `apps/mobile/metro.config.js`).
+Business logic in `packages/*` reaches the resolved services only through `getProvider()`
+(`extensions/provider`), so it depends on the interface and never on a platform — which is what keeps
+`chrome.*` out of `packages/` entirely.
+
+Two platform concerns are swapped by **module identity** rather than through that interface, and are
+easy to miss when tracing: the keystore (`@algorandfoundation/react-native-keystore` resolves to
+`extensions/keystore-chrome` on web) and the Ledger transports (`.web.ts` twins in
+`extensions/provider`).
+
+### Where browser-specific code lives
+
+- **`apps/browser/src/`** — everything that only exists because this is an extension: the service
+  worker, content scripts, and the offscreen document's headless hosts.
+- **`apps/mobile/src/**/*.web.tsx`** — behavioural twins of a _named native sibling_ (for example
+  `PWBottomSheet.web.tsx`). These stay colocated deliberately: their correctness depends on tracking
+  the file next to them, and colocation is what makes a drifting prop visible in review.
+- **`apps/browser/web-shims/`** — same-shaped stand-ins for native-only modules, mapped in by Metro
+  when `platform === 'web'`.
+
+A guardrail (`pnpm lint:guardrails`) enforces the boundary in the direction that actually matters:
+a file that is **not** `.web.*` may not import `platform-chrome` or `keystore-chrome`, because such a
+file is reachable from the native bundle and would fail at runtime on the missing `chrome` global.
 
 ## Core Principle: Separation of Concerns
 

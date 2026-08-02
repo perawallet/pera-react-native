@@ -626,6 +626,18 @@ export default defineConfig({
                 test: {
                     name: 'unit',
                     setupFiles: ['./vitest.setup.ts'],
+                    // apps/browser's offscreen host is headless production
+                    // code that lives with the extension shell, but its specs
+                    // were written against this project's React Native mock
+                    // environment (the ~2300-line setup above) and need it —
+                    // wallet-core packages pull native modules in transitively
+                    // when their stores evaluate. Running them here is cheaper
+                    // and less brittle than duplicating that environment in
+                    // apps/browser, whose own vitest is deliberately minimal.
+                    include: [
+                        'src/**/*.{test,spec}.{ts,tsx}',
+                        '../browser/src/offscreen/**/*.{test,spec}.{ts,tsx}',
+                    ],
                     exclude: [
                         '**/node_modules/**',
                         '**/dist/**',

@@ -67,7 +67,7 @@ const noopSessionStorage: ISessionStorage = {
  *
  * Lives here rather than in `apps/mobile`: `@perawallet/walletconnect` is
  * only a dependency of this package (see `HeadlessWcConnector`'s doc comment
- * in `apps/mobile/src/offscreen/walletconnect/bindHeadlessHandlers.ts` for
+ * in `apps/browser/src/offscreen/walletconnect/bindHeadlessHandlers.ts` for
  * why apps/mobile can't import it directly), and constructing an SDK client
  * is logic, not UI.
  *

@@ -24,6 +24,17 @@ export default defineConfig({
     plugins: [react()],
     resolve: {
         alias: [
+            // Order matters: the more specific @providers entry must precede
+            // the react-native one, which would otherwise prefix-match nothing
+            // here but will as soon as another alias is added.
+            {
+                // The offscreen host shares the RN app's TanStack query client
+                // so both realms hit one cache. The ONLY apps/mobile import in
+                // apps/browser — keep it that way; anything more and the query
+                // client belongs in a package instead.
+                find: '@providers',
+                replacement: path.resolve(__dirname, '../mobile/src/providers'),
+            },
             {
                 find: 'react-native',
                 replacement: path.resolve(

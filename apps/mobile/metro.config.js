@@ -55,6 +55,10 @@ const aliasMap = {
     '@theme': path.resolve(projectRoot, 'src/theme'),
     '@layouts': path.resolve(projectRoot, 'src/layouts'),
     '@utils': path.resolve(projectRoot, 'src/utils'),
+    // Web-only application code that lives with the extension shell rather
+    // than in the RN app (the offscreen document's headless hosts). Only ever
+    // resolved on platform === 'web' — a native bundle never imports it.
+    '@browser': path.resolve(projectRoot, '../browser/src'),
 };
 
 const polyfillMap = {

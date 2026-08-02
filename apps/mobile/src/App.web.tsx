@@ -105,7 +105,7 @@ export const App = (): React.JSX.Element => {
                 // Headless surface: no shell, no React tree beyond the status
                 // line. Store-bearing imports stay behind this dynamic import
                 // (same boot-order contract as AppShell).
-                const mod = await import('./offscreen/runOffscreenApp')
+                const mod = await import('@browser/offscreen/runOffscreenApp')
                 await mod.runOffscreenApp()
                 setShell(() => OffscreenStatus)
                 return

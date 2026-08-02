@@ -72,6 +72,23 @@ const onRequest = async (e: Event): Promise<void> => {
         return
     }
 
+    try {
+        forwardCeremony(id, request)
+    } catch {
+        // Extension context invalidated (page outlived an extension reload):
+        // sendMessage throws synchronously. Decline so MAIN falls through to
+        // the page's real navigator.credentials rather than leaving the
+        // ceremony hanging — the same fail-open posture the `enabled` check
+        // above uses, and the only safe one for an interception that can no
+        // longer reach the wallet.
+        respond(id, DECLINE)
+    }
+}
+
+// `request` stays `unknown`: this only forwards the envelope the MAIN-world
+// script sent, and the service worker's own isWebauthnRelayMessage guard is
+// what narrows it. Re-asserting a shape here would be a claim we can't back.
+const forwardCeremony = (id: string, request: unknown): void => {
     chrome.runtime.sendMessage(
         { scope: WEBAUTHN_RELAY_SCOPE, request },
         (response: unknown) => {

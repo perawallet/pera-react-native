@@ -53,7 +53,7 @@ export type UseWalletConnectPairingResult = {
  * This is also the seam the web twin (`useWalletConnectPairing.web.ts`)
  * uses to swap the connector-owning half without touching either call
  * site: on web, offscreen is the sole owner of WC connectors (see
- * `apps/mobile/src/offscreen/walletconnect/wcHost.ts`), so merely calling
+ * `apps/browser/src/offscreen/walletconnect/wcHost.ts`), so merely calling
  * `useWalletConnect` here — even just for `connect` — would register a
  * second connector handler binder from a UI surface.
  */

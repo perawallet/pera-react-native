@@ -120,7 +120,7 @@ export const WebMainRoutes = (): React.JSX.Element => {
                 nesting: this tree only renders with the vault unlocked.
                 Unlike native, no WC socket is scoped to this mount — the
                 offscreen document is the sole owner of WC v1 connectors on
-                web (see apps/mobile/src/offscreen/walletconnect/wcHost.ts),
+                web (see apps/browser/src/offscreen/walletconnect/wcHost.ts),
                 long-lived independent of whether this popup/tab is open at
                 all. `useWalletConnectProvider.web.ts` is accordingly an
                 inert no-op; this stays mounted purely for

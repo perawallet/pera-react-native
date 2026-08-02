@@ -10,6 +10,9 @@
       ],
       "@perawallet/wallet-extension-platform-chrome": [
         "../../extensions/platform-chrome/src/index.ts"
+      ],
+      "@providers/*": [
+        "../mobile/src/providers/*"
       ]
     }
   },

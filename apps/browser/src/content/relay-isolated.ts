@@ -31,6 +31,21 @@ let responseEventName: string | null = null
 
 const onRequest = (e: Event): void => {
     const { id, request } = (e as CustomEvent).detail as BridgeRequestEnvelope
+    try {
+        forwardRequest(id, request)
+    } catch {
+        // Extension context invalidated — the page outlived an extension
+        // reload or update, and sendMessage then throws SYNCHRONOUSLY rather
+        // than reporting via lastError. Same guard the connect-modal handler
+        // below already has. Without it every dApp request after an update
+        // raises an uncaught exception in the PAGE's console (attributed to
+        // the site, not the wallet). Swallowed deliberately: MAIN's own 120s
+        // MethodTimedOutError is what tells the dApp, exactly as in the
+        // worker-died case handled inside the callback.
+    }
+}
+
+const forwardRequest = (id: string, request: unknown): void => {
     chrome.runtime.sendMessage(
         { scope: DAPP_RELAY_SCOPE, request },
         (response: unknown) => {

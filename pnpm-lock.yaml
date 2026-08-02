@@ -345,12 +345,45 @@ importers:
 
   apps/browser:
     dependencies:
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../../packages/accounts
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../../packages/assets
+      '@perawallet/wallet-core-background':
+        specifier: workspace:*
+        version: link:../../packages/background
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../../packages/blockchain
+      '@perawallet/wallet-core-card':
+        specifier: workspace:*
+        version: link:../../packages/card
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@perawallet/wallet-core-database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@perawallet/wallet-core-passkeys':
         specifier: workspace:*
         version: link:../../packages/passkeys
+      '@perawallet/wallet-core-polling':
+        specifier: workspace:*
+        version: link:../../packages/polling
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@perawallet/wallet-core-signing':
+        specifier: workspace:*
+        version: link:../../packages/signing
+      '@perawallet/wallet-core-transactions':
+        specifier: workspace:*
+        version: link:../../packages/transactions
+      '@perawallet/wallet-core-walletconnect':
+        specifier: workspace:*
+        version: link:../../packages/walletconnect
       '@perawallet/wallet-extension-keystore-chrome':
         specifier: workspace:*
         version: link:../../extensions/keystore-chrome
@@ -363,6 +396,9 @@ importers:
       '@perawallet/wallet-extension-platform-chrome':
         specifier: workspace:*
         version: link:../../extensions/platform-chrome
+      '@perawallet/wallet-extension-platform-driver':
+        specifier: workspace:*
+        version: link:../../extensions/platform-driver
       '@sqlite.org/sqlite-wasm':
         specifier: 'catalog:'
         version: 3.53.0-build1

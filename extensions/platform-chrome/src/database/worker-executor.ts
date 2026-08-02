@@ -28,6 +28,11 @@ const isWorkerFatal = (value: unknown): value is WorkerFatal =>
     value !== null &&
     (value as WorkerFatal).fatal === true
 
+// Generous: real queries are milliseconds, and OPFS contention can stall a
+// call briefly during migrations. This is a liveness backstop for a wedged
+// worker, not a performance budget.
+const REQUEST_TIMEOUT_MS = 30_000
+
 /** Correlates request/response pairs with the db worker by id. */
 export const createWorkerExecutor = (worker: Worker): SqlExecutor => {
     let nextId = 1
@@ -91,7 +96,31 @@ export const createWorkerExecutor = (worker: Worker): SqlExecutor => {
                 return
             }
             const id = nextId++
-            pending.set(id, { resolve, reject })
+            // A worker wedged inside a long or contended sqlite call emits no
+            // 'error' event, so without a deadline the caller waits forever
+            // and `pending` grows without bound. The offscreen host's own
+            // initializeDatabase awaits this directly (unlike the proxied
+            // paths, which have their own withTimeout), so an unbounded wait
+            // here means the host never reports ready and nothing recovers.
+            const timer = setTimeout(() => {
+                if (!pending.delete(id)) return
+                reject(
+                    new Error(
+                        `db worker request timed out after ${REQUEST_TIMEOUT_MS}ms`,
+                    ),
+                )
+            }, REQUEST_TIMEOUT_MS)
+            const settle = {
+                resolve: (rows: unknown[][]) => {
+                    clearTimeout(timer)
+                    resolve(rows)
+                },
+                reject: (error: Error) => {
+                    clearTimeout(timer)
+                    reject(error)
+                },
+            }
+            pending.set(id, settle)
             worker.postMessage({ ...message, id })
         })
 

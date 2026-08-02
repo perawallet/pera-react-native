@@ -29,7 +29,7 @@ type UseWalletConnectProviderResult = ReturnType<
 
 /**
  * Web twin. Offscreen is the sole owner of WC connectors on web (see
- * `apps/mobile/src/offscreen/walletconnect/wcHost.ts`), so nothing in this
+ * `apps/browser/src/offscreen/walletconnect/wcHost.ts`), so nothing in this
  * UI realm ever binds WC v1 event handlers — which is also what makes this
  * hook's watched state permanently inert here:
  *

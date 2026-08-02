@@ -12,12 +12,24 @@
         "lint": "oxlint --config ../../.oxlintrc.json src scripts e2e web-shims"
     },
     "dependencies": {
+        "@perawallet/wallet-core-accounts": "workspace:*",
+        "@perawallet/wallet-core-assets": "workspace:*",
+        "@perawallet/wallet-core-background": "workspace:*",
+        "@perawallet/wallet-core-blockchain": "workspace:*",
+        "@perawallet/wallet-core-card": "workspace:*",
         "@perawallet/wallet-core-config": "workspace:*",
+        "@perawallet/wallet-core-database": "workspace:*",
         "@perawallet/wallet-core-passkeys": "workspace:*",
+        "@perawallet/wallet-core-polling": "workspace:*",
+        "@perawallet/wallet-core-shared": "workspace:*",
+        "@perawallet/wallet-core-signing": "workspace:*",
+        "@perawallet/wallet-core-transactions": "workspace:*",
+        "@perawallet/wallet-core-walletconnect": "workspace:*",
+        "@perawallet/wallet-extension-keystore-chrome": "workspace:*",
         "@perawallet/wallet-extension-ledger-web-ble": "workspace:*",
         "@perawallet/wallet-extension-ledger-web-usb": "workspace:*",
-        "@perawallet/wallet-extension-keystore-chrome": "workspace:*",
         "@perawallet/wallet-extension-platform-chrome": "workspace:*",
+        "@perawallet/wallet-extension-platform-driver": "workspace:*",
         "@sqlite.org/sqlite-wasm": "catalog:"
     },
     "devDependencies": {

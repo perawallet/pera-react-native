@@ -11,7 +11,7 @@
  */
 
 // Static backstop for the core property this task establishes: on web, the
-// offscreen document (apps/mobile/src/offscreen/walletconnect/wcHost.ts) is
+// offscreen document (apps/browser/src/offscreen/walletconnect/wcHost.ts) is
 // the SOLE owner of WalletConnect connectors — no other module may
 // construct, register, or bind one.
 //
@@ -50,7 +50,7 @@ const PACKAGES_ROOT = join(REPO_ROOT, 'packages')
 // construction, exactly the category this allowlist exists to guard.
 // Scanning them too (confirmed zero legitimate owners live there today, so
 // ALLOWED_CONNECTOR_OWNERS itself is unchanged) closes that gap.
-const APPS_EXTENSION_SRC_ROOT = join(REPO_ROOT, 'apps', 'extension', 'src')
+const APPS_BROWSER_SRC_ROOT = join(REPO_ROOT, 'apps', 'browser', 'src')
 const EXTENSIONS_ROOT = join(REPO_ROOT, 'extensions')
 
 // The four call shapes that create or bind a live WC v1 connector.
@@ -129,7 +129,7 @@ const ALLOWED_CONNECTOR_OWNERS = [
     'apps/mobile/src/modules/walletconnect/components/ConnectionView/ConnectionView.tsx',
     'apps/mobile/src/modules/walletconnect/hooks/useWalletConnectPairing.ts',
     'apps/mobile/src/modules/walletconnect/hooks/useWalletConnectSessionsControl.ts',
-    'apps/mobile/src/offscreen/walletconnect/wcHost.ts',
+    'apps/browser/src/offscreen/walletconnect/wcHost.ts',
     'packages/walletconnect/src/hooks/useWalletConnect.ts',
     'packages/walletconnect/src/connection/createConnector.ts',
     'packages/walletconnect/src/connection/connectorRegistry.ts',
@@ -147,7 +147,7 @@ describe('web connector ownership', () => {
     it('every file that constructs, registers, or binds a WalletConnect connector is on the explicit allowlist — nothing more, nothing less', () => {
         const scanRoots = [
             MOBILE_SRC_ROOT,
-            APPS_EXTENSION_SRC_ROOT,
+            APPS_BROWSER_SRC_ROOT,
             ...listPackageSrcRoots(),
             ...listExtensionsSrcRoots(),
         ]
