@@ -42,11 +42,24 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => providerMock,
 }))
 
+// Only the logger is stubbed — isConnectivityError stays real so the offline
+// classification under test is the one that ships.
+const loggerMocks = vi.hoisted(() => ({ warn: vi.fn(), error: vi.fn() }))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
+    logger: { warn: loggerMocks.warn, error: loggerMocks.error },
+}))
+
+import { PeraNetworkError } from '@perawallet/wallet-core-shared'
 import { registerAppIntegrity } from '../registerAppIntegrity'
 import { useAppIntegrityStore } from '../../store'
 
 describe('registerAppIntegrity', () => {
     beforeEach(() => {
+        loggerMocks.warn.mockReset()
+        loggerMocks.error.mockReset()
         useAppIntegrityStore.getState().resetState()
         requestChallengeMock.mockReset().mockResolvedValue('challenge-1')
         attestDeviceMock.mockReset().mockResolvedValue({
@@ -131,5 +144,32 @@ describe('registerAppIntegrity', () => {
         expect(useAppIntegrityStore.getState().lastError).toContain(
             'network down',
         )
+    })
+
+    // Reporting the error object rather than a fixed message is what lets the
+    // crash reporter separate a native attestation failure from a backend
+    // rejection instead of merging every cause into one issue.
+    it('reports the underlying error so causes stay distinguishable', async () => {
+        const cause = new Error('play integrity unavailable')
+        providerMock.appIntegrity.attest.mockRejectedValueOnce(cause)
+
+        await registerAppIntegrity({ network: 'mainnet' })
+
+        expect(loggerMocks.error).toHaveBeenCalledWith(cause, {
+            step: 'registerAppIntegrity',
+        })
+        expect(loggerMocks.warn).not.toHaveBeenCalled()
+    })
+
+    it('keeps an offline boot off the crash reporter', async () => {
+        requestChallengeMock.mockRejectedValueOnce(
+            new PeraNetworkError('offline'),
+        )
+
+        const result = await registerAppIntegrity({ network: 'mainnet' })
+
+        expect(result.status).toBe('error')
+        expect(loggerMocks.error).not.toHaveBeenCalled()
+        expect(loggerMocks.warn).toHaveBeenCalled()
     })
 })

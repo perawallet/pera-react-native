@@ -12,6 +12,7 @@
 
 import {
     fetchSecret,
+    MasterKeyNotFoundError,
     readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
@@ -92,7 +93,23 @@ const runBootstrap = async (
 
     let masterKey: Buffer | null = null
     try {
-        masterKey = await readMasterKey()
+        try {
+            masterKey = await readMasterKey()
+        } catch (err) {
+            // A missing master key means the user hasn't created or restored a
+            // wallet yet — there is no credential to publish, and the bootstrap
+            // re-runs on the next launch. That's a precondition, not a fault,
+            // so it stays off the crash reporter. Scoped to this call: the same
+            // error from anywhere downstream is unexpected and still reported.
+            if (err instanceof MasterKeyNotFoundError) {
+                logger.warn(
+                    'No master key yet; skipping passkey autofill bootstrap',
+                    { step: 'bootstrapPasskeyAutofill' },
+                )
+                return
+            }
+            throw err
+        }
 
         // Push the master key to the native side as raw bytes — the upstream
         // bridge takes a `Uint8Array`, so a non-zeroable hex string is never

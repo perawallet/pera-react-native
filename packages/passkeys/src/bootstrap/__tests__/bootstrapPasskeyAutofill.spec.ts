@@ -13,18 +13,33 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { KeyData } from '@algorandfoundation/keystore'
 
-const mocks = vi.hoisted(() => ({
-    readMasterKey: vi.fn(),
-    fetchSecret: vi.fn(),
-    getAllKeys: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-}))
+const mocks = vi.hoisted(() => {
+    // Restated rather than imported: the real keystore barrel pulls
+    // react-native-mmkv, which has no loadable build here. Source and test
+    // both resolve this class through the module mock, so the `instanceof`
+    // branch is still what's under test.
+    class MasterKeyNotFoundError extends Error {
+        constructor() {
+            super('Master key not found')
+            this.name = 'MasterKeyNotFoundError'
+        }
+    }
+
+    return {
+        readMasterKey: vi.fn(),
+        fetchSecret: vi.fn(),
+        getAllKeys: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        MasterKeyNotFoundError,
+    }
+})
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     readMasterKey: mocks.readMasterKey,
     fetchSecret: mocks.fetchSecret,
     storage: { getAllKeys: mocks.getAllKeys },
+    MasterKeyNotFoundError: mocks.MasterKeyNotFoundError,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -310,6 +325,24 @@ describe('bootstrapPasskeyAutofill', () => {
         expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
             step: 'bootstrapPasskeyAutofill',
         })
+        expect(service.setMasterKey).not.toHaveBeenCalled()
+    })
+
+    it('skips quietly when no master key exists yet', async () => {
+        const service = makeService()
+        mocks.readMasterKey.mockRejectedValue(
+            new mocks.MasterKeyNotFoundError(),
+        )
+
+        await expect(
+            bootstrapPasskeyAutofill({
+                service: service as never,
+                intentActions,
+            }),
+        ).resolves.toBeUndefined()
+
+        expect(mocks.error).not.toHaveBeenCalled()
+        expect(mocks.warn).toHaveBeenCalled()
         expect(service.setMasterKey).not.toHaveBeenCalled()
     })
 
