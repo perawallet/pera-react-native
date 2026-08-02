@@ -150,7 +150,7 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     }
 })
 
-import { useWebAppShell } from '../useWebAppShell'
+import { useWebAppShell } from '../useWebAppShell.web'
 
 describe('useWebAppShell', () => {
     beforeEach(() => {

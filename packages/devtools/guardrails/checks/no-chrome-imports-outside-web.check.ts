@@ -51,16 +51,16 @@ const KNOWN_WEB_ONLY_PATHS = [
     // apps/mobile's React Native test environment.
     'modules/dapp/',
     'modules/vault/',
-    // Web-only files sitting inside otherwise-shared locations. These are the
-    // cheap ones to retire — each just needs a `.web` rename plus explicit
-    // specifiers at its importers.
-    'bootstrap/wcStoreRehydration.ts',
-    'modules/menu/screens/ScanQRScreen/ScanQRScreen.tsx',
+    // NOT a web-only file. `settings/routes/index.tsx` is shared and imports
+    // ConnectedSitesScreen / ConnectionsSettingsScreen unconditionally, so a
+    // `.web` rename here would break the native build. Both screens are
+    // capability-gated and never render on native, and the store already reads
+    // `chrome` defensively off globalThis (returning null when absent), so it
+    // is inert rather than broken — but it does bundle chrome-only code into
+    // the native app. The real fix is to route it through the platform
+    // provider like every other platform concern, or to import the screens
+    // lazily. Tracked, not exempted on principle.
     'modules/settings/hooks/useDappConnectionsStore.ts',
-    'routes/WebMainRoutes.tsx',
-    'routes/createExpandedRedirect.tsx',
-    'routes/useExpandedFlowNavigation.ts',
-    'useWebAppShell.ts',
 ]
 
 const isKnownWebOnly = (fileName: string): boolean => {

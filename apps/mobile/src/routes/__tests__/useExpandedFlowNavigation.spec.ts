@@ -12,7 +12,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useExpandedFlowNavigation } from '../useExpandedFlowNavigation'
+import { useExpandedFlowNavigation } from '../useExpandedFlowNavigation.web'
 
 const consumeInitialExpandedFlowMock = vi.fn()
 

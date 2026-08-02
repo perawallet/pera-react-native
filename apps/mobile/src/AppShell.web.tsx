@@ -59,15 +59,15 @@ import {
     getSurface,
     openExpandedTab,
 } from '@perawallet/wallet-extension-platform-chrome'
-import { WebMainRoutes } from '@routes/WebMainRoutes'
+import { WebMainRoutes } from '@routes/WebMainRoutes.web'
 import { DappRequestRoutes } from '@modules/dapp'
 import { TestnetIndicator } from '@components/TestnetIndicator'
 import { OfflineBanner } from '@components/OfflineBanner'
 import { initNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
-import { useWebAppShell } from './useWebAppShell'
+import { useWebAppShell } from './useWebAppShell.web'
 import { updateQueryHeaders } from './bootstrap/query-headers'
-import { registerWcStoreRehydration } from './bootstrap/wcStoreRehydration'
+import { registerWcStoreRehydration } from './bootstrap/wcStoreRehydration.web'
 
 // Platform hydration is complete before AppShell mounts (App.web.tsx ensures
 // this), so getProvider() is safe to call at module scope here.

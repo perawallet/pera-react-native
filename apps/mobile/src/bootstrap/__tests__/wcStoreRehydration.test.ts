@@ -34,7 +34,7 @@ describe('registerWcStoreRehydration', () => {
 
     it("subscribes under the WC store's real kv: persisted key", async () => {
         const { registerWcStoreRehydration } =
-            await import('../wcStoreRehydration')
+            await import('../wcStoreRehydration.web')
 
         registerWcStoreRehydration()
 
@@ -46,7 +46,7 @@ describe('registerWcStoreRehydration', () => {
 
     it('rehydrates the WC store when its key changes', async () => {
         const { registerWcStoreRehydration } =
-            await import('../wcStoreRehydration')
+            await import('../wcStoreRehydration.web')
 
         registerWcStoreRehydration()
         const listener = onLocalStorageKeyChanged.mock.calls[0]?.[1] as (
@@ -59,7 +59,7 @@ describe('registerWcStoreRehydration', () => {
 
     it('returns the underlying unsubscribe function', async () => {
         const { registerWcStoreRehydration } =
-            await import('../wcStoreRehydration')
+            await import('../wcStoreRehydration.web')
 
         const result = registerWcStoreRehydration()
 

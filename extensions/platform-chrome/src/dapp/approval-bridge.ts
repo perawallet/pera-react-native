@@ -116,6 +116,39 @@ type Settle = (decision: unknown) => void
 const MAX_PENDING_APPROVALS_PER_ORIGIN = 3
 const MAX_PENDING_APPROVALS = 8
 
+// How long a toolbar-popup approval may go unclaimed before it is treated as
+// dismissed. Comfortably longer than a popup's first paint plus one message
+// round-trip, and far shorter than a user deliberating.
+const POPUP_CLAIM_TIMEOUT_MS = 5000
+
+/**
+ * Which approval kinds each decision message may settle.
+ *
+ * `get-approval` and the two universal rejects are omitted deliberately: they
+ * are valid for every kind. Everything else carries a decision shape that only
+ * one family of approvals can consume.
+ */
+const DECISION_KINDS: Record<string, readonly PendingApproval['kind'][]> = {
+    'resolve-approval': ['enable', 'wc-connect'],
+    'resolve-sign-transactions': ['sign-transactions'],
+    'resolve-sign-message': ['sign-message'],
+    'resolve-wc-sign': ['wc-sign'],
+    'resolve-passkey': ['passkey-create', 'passkey-get'],
+    'reject-passkey': ['passkey-create', 'passkey-get'],
+}
+
+const isDecisionKindAllowed = (
+    // Undefined reaches here from a malformed message; the switch below
+    // answers those with 'unknown kind', so let them through unconstrained.
+    messageKind: string | undefined,
+    approvalKind: PendingApproval['kind'],
+): boolean => {
+    const allowed = messageKind ? DECISION_KINDS[messageKind] : undefined
+    // Not a decision message (get-approval, reject-approval) — unconstrained.
+    if (!allowed) return true
+    return allowed.includes(approvalKind)
+}
+
 /**
  * Thrown when an approval cannot be registered — the caps above, or a
  * requestId that is already pending. Callers surface it to the dApp as a
@@ -138,6 +171,10 @@ export class ApprovalWindowBridge
             settle: Settle
             windowId?: number
             surface?: 'popup' | 'window'
+            // Set once the toolbar popup has fetched this approval via
+            // get-current-approval — see the unclaimed sweep below.
+            claimed?: boolean
+            unclaimedTimer?: ReturnType<typeof setTimeout>
         }
     >()
     private readonly windowToRequest = new Map<number, string>()
@@ -391,7 +428,21 @@ export class ApprovalWindowBridge
         }
         if (usedPopup) {
             const entry = this.pending.get(requestId)
-            if (entry) entry.surface = 'popup'
+            if (entry) {
+                entry.surface = 'popup'
+                // The toolbar popup emits no windows.onRemoved, so a user who
+                // dismisses it before its get-current-approval round-trip
+                // resolves leaves nothing to clean the entry up: the request
+                // is orphaned AND the single popup slot is burned for the rest
+                // of the worker's life, forcing every later approval into a
+                // separate window. Claiming cancels this; not claiming settles
+                // it as a rejection, which is what a dismissal means anyway.
+                entry.unclaimedTimer = setTimeout(() => {
+                    if (this.pending.get(requestId) !== entry) return
+                    if (entry.claimed) return
+                    this.finish(requestId, null)
+                }, POPUP_CLAIM_TIMEOUT_MS)
+            }
             return
         }
         // Fall back to the dedicated window only if openPopup is unavailable
@@ -481,7 +532,15 @@ export class ApprovalWindowBridge
             // (surface: 'window') must be skipped here.
             let current: PendingApproval | null = null
             for (const e of this.pending.values()) {
-                if (e.surface === 'popup') current = e.approval
+                if (e.surface !== 'popup') continue
+                current = e.approval
+                // The popup is alive and has taken ownership — stand down the
+                // unclaimed sweep armed in openViaPopupOrWindow.
+                e.claimed = true
+                if (e.unclaimedTimer !== undefined) {
+                    clearTimeout(e.unclaimedTimer)
+                    e.unclaimedTimer = undefined
+                }
             }
             sendResponse(current)
             return true
@@ -491,6 +550,21 @@ export class ApprovalWindowBridge
             : undefined
         if (!entry) {
             sendResponse({ ok: false, error: 'unknown request' })
+            return true
+        }
+        // The decision shape must match the approval it is settling. Without
+        // this, a `resolve-approval` carrying a `wc-sign` requestId settles
+        // openWcSign's promise with `{approvedAddresses: []}`, and the WC
+        // router then posts `{ok: true, result: undefined}` — a SUCCESSFUL
+        // algo_signTxn response with no signature. Only our own extension
+        // pages can reach this today, so it is a soundness gap rather than a
+        // live exploit, but `Settle`'s deliberate `unknown` widening is what
+        // removed the compiler's ability to catch it.
+        if (!isDecisionKindAllowed(msg.kind, entry.approval.kind)) {
+            sendResponse({
+                ok: false,
+                error: `'${msg.kind}' cannot settle a '${entry.approval.kind}' approval`,
+            })
             return true
         }
         switch (msg.kind) {
@@ -570,6 +644,11 @@ export class ApprovalWindowBridge
         const entry = this.pending.get(requestId)
         if (!entry) return
         this.pending.delete(requestId)
+        // Settled by any route (decision, window close, or the sweep itself) —
+        // the unclaimed timer has nothing left to guard.
+        if (entry.unclaimedTimer !== undefined) {
+            clearTimeout(entry.unclaimedTimer)
+        }
         // The approval can settle (e.g. a fast reject) while its own popup
         // attempt is still unsettled — release the reservation here too, not
         // just in openViaPopupOrWindow's `finally`, so it can't outlive the

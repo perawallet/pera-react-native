@@ -1334,3 +1334,195 @@ describe('ApprovalWindowBridge', () => {
         })
     })
 })
+
+// A decision message settles whatever requestId it names. Without a kind
+// check, a `resolve-approval` carrying a wc-sign requestId resolved that
+// promise with `{approvedAddresses: []}`, and the WC router then posted a
+// SUCCESSFUL algo_signTxn response whose result was undefined.
+describe('decision/approval kind matching', () => {
+    it('refuses a decision that cannot settle the pending approval', async () => {
+        const { chromeLike, fireMessage } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        const decision = bridge.openWcSign({
+            requestId: 'req-mismatch',
+            origin: 'https://dapp.example',
+            clientId: 'client-1',
+            wcRequestId: 7,
+            method: 'algo_signTxn',
+            payload: {},
+        })
+        await flush()
+
+        const res = await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-approval',
+                requestId: 'req-mismatch',
+                approvedAddresses: [],
+            },
+            trustedSender,
+        )
+
+        expect(res).toEqual({
+            ok: false,
+            error: "'resolve-approval' cannot settle a 'wc-sign' approval",
+        })
+
+        // The approval is untouched and still settles correctly on its own
+        // decision message.
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-wc-sign',
+                requestId: 'req-mismatch',
+                result: ['signed'],
+            },
+            trustedSender,
+        )
+        expect(await decision).toEqual({ result: ['signed'] })
+    })
+
+    it('still allows a decision valid for the approval kind', async () => {
+        const { chromeLike, fireMessage } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        const decision = bridge.openEnable({
+            requestId: 'req-enable',
+            origin: 'https://dapp.example',
+        })
+        await flush()
+
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'resolve-approval',
+                requestId: 'req-enable',
+                approvedAddresses: ['ADDR'],
+            },
+            trustedSender,
+        )
+
+        expect(await decision).toEqual({ approvedAddresses: ['ADDR'] })
+    })
+
+    // reject-approval and the window-close path are universal by design.
+    it('lets reject-approval settle any kind', async () => {
+        const { chromeLike, fireMessage } = makeChrome()
+        const bridge = new ApprovalWindowBridge(chromeLike)
+        bridge.listen()
+
+        const decision = bridge.openWcSign({
+            requestId: 'req-any',
+            origin: 'https://dapp.example',
+            clientId: 'client-1',
+            wcRequestId: 8,
+            method: 'algo_signTxn',
+            payload: {},
+        })
+        await flush()
+
+        await fireMessage(
+            {
+                scope: DAPP_APPROVAL_SCOPE,
+                kind: 'reject-approval',
+                requestId: 'req-any',
+            },
+            trustedSender,
+        )
+
+        expect(await decision).toBeNull()
+    })
+})
+
+// The toolbar popup emits no windows.onRemoved, so nothing observes a user
+// dismissing it before its get-current-approval round-trip lands. That left
+// the entry pending forever AND burned the single popup slot, forcing every
+// later approval in the worker's life into a separate window.
+describe('unclaimed toolbar-popup approvals', () => {
+    it('settles as a rejection when the popup never claims it', async () => {
+        vi.useFakeTimers()
+        try {
+            const { chromeLike } = makeChrome(undefined, 'resolve')
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            const decision = bridge.openEnable({
+                requestId: 'unclaimed',
+                origin: 'https://x.com',
+            })
+            await vi.advanceTimersByTimeAsync(0)
+            await vi.advanceTimersByTimeAsync(6000)
+
+            expect(await decision).toBeNull()
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('frees the popup slot so the next approval can use it again', async () => {
+        vi.useFakeTimers()
+        try {
+            const { chromeLike, created, openPopup } = makeChrome(
+                undefined,
+                'resolve',
+            )
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            void bridge.openEnable({
+                requestId: 'first',
+                origin: 'https://x.com',
+            })
+            await vi.advanceTimersByTimeAsync(0)
+            expect(openPopup).toHaveBeenCalledTimes(1)
+            expect(created).toHaveLength(0) // took the popup slot
+
+            await vi.advanceTimersByTimeAsync(6000) // dismissed, never claimed
+
+            void bridge.openEnable({
+                requestId: 'second',
+                origin: 'https://x.com',
+            })
+            await vi.advanceTimersByTimeAsync(0)
+
+            // Slot released, so this one gets the popup too rather than
+            // being forced into a window.
+            expect(openPopup).toHaveBeenCalledTimes(2)
+            expect(created).toHaveLength(0)
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('leaves a claimed approval pending for the user to decide', async () => {
+        vi.useFakeTimers()
+        try {
+            const { chromeLike, fireMessage } = makeChrome(undefined, 'resolve')
+            const bridge = new ApprovalWindowBridge(chromeLike)
+            bridge.listen()
+
+            const decision = bridge.openEnable({
+                requestId: 'claimed',
+                origin: 'https://x.com',
+            })
+            await vi.advanceTimersByTimeAsync(0)
+
+            // The popup fetches it — this is the claim.
+            await fireMessage(
+                { scope: DAPP_APPROVAL_SCOPE, kind: 'get-current-approval' },
+                trustedSender,
+            )
+            await vi.advanceTimersByTimeAsync(60_000)
+
+            let settled = false
+            void decision.then(() => (settled = true))
+            await Promise.resolve()
+            expect(settled).toBe(false)
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+})
