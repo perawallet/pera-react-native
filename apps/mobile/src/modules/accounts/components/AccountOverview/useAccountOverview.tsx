@@ -127,8 +127,6 @@ export const useAccountOverview = ({
     }, [hasCompletedInitialLoad, isBalancesPending])
     const isLoading = !hasCompletedInitialLoad
 
-    // The summary/holdings queries read SQLite with `staleTime: Infinity`, so a
-    // pull has to go through the sync service to pull fresh chain state.
     const refreshAddresses = useMemo(
         () => (account?.address ? [account.address] : []),
         [account?.address],

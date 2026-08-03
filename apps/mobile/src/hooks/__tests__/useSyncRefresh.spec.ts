@@ -48,7 +48,7 @@ describe('useSyncRefresh', () => {
         })
     })
 
-    it('refreshes the given addresses on the active network, then invalidates', async () => {
+    it('refreshes the given addresses on the active network without re-invalidating on top of refreshAccounts', async () => {
         const { result } = renderHook(() =>
             useSyncRefresh({ addresses: ADDRESSES }),
         )
@@ -58,7 +58,7 @@ describe('useSyncRefresh', () => {
         })
 
         expect(refreshAccounts).toHaveBeenCalledWith(ADDRESSES, 'mainnet')
-        expect(invalidateQueries).toHaveBeenCalledTimes(1)
+        expect(invalidateQueries).not.toHaveBeenCalled()
     })
 
     it('reports isRefreshing while the refresh is in flight and false once it settles', async () => {
@@ -104,7 +104,7 @@ describe('useSyncRefresh', () => {
         expect(invalidateQueries).not.toHaveBeenCalled()
     })
 
-    it('ignores a second refresh while one is already in flight', async () => {
+    it('starts no second refreshAccounts while one is already in flight', async () => {
         const deferred = createDeferred()
         refreshAccounts.mockReturnValue(deferred.promise)
 
@@ -129,6 +129,87 @@ describe('useSyncRefresh', () => {
         })
 
         expect(refreshAccounts).toHaveBeenCalledTimes(2)
+    })
+
+    it('joins the in-flight refresh when another hook instance pulls the same addresses', async () => {
+        const deferred = createDeferred()
+        refreshAccounts.mockReturnValue(deferred.promise)
+        const shared = ['SHARED_ADDR']
+
+        const overview = renderHook(() => useSyncRefresh({ addresses: shared }))
+        // A distinct array with the same contents: the key is the addresses,
+        // not the array identity.
+        const history = renderHook(() =>
+            useSyncRefresh({ addresses: [...shared] }),
+        )
+
+        act(() => {
+            overview.result.current.refresh()
+        })
+        act(() => {
+            history.result.current.refresh()
+        })
+
+        expect(refreshAccounts).toHaveBeenCalledTimes(1)
+        expect(overview.result.current.isRefreshing).toBe(true)
+        expect(history.result.current.isRefreshing).toBe(true)
+
+        await act(async () => {
+            deferred.resolve()
+            await deferred.promise
+        })
+
+        expect(overview.result.current.isRefreshing).toBe(false)
+        expect(history.result.current.isRefreshing).toBe(false)
+    })
+
+    it('runs a separate refresh for a different account while one is in flight', async () => {
+        const accountA = createDeferred()
+        const accountB = createDeferred()
+        refreshAccounts
+            .mockReturnValueOnce(accountA.promise)
+            .mockReturnValueOnce(accountB.promise)
+
+        const a = renderHook(() => useSyncRefresh({ addresses: ['A_ADDR'] }))
+        const b = renderHook(() => useSyncRefresh({ addresses: ['B_ADDR'] }))
+
+        act(() => {
+            a.result.current.refresh()
+        })
+        act(() => {
+            b.result.current.refresh()
+        })
+
+        expect(refreshAccounts).toHaveBeenNthCalledWith(
+            1,
+            ['A_ADDR'],
+            'mainnet',
+        )
+        expect(refreshAccounts).toHaveBeenNthCalledWith(
+            2,
+            ['B_ADDR'],
+            'mainnet',
+        )
+
+        await act(async () => {
+            accountA.resolve()
+            accountB.resolve()
+            await Promise.all([accountA.promise, accountB.promise])
+        })
+
+        expect(a.result.current.isRefreshing).toBe(false)
+        expect(b.result.current.isRefreshing).toBe(false)
+    })
+
+    it('settles a refresh with no addresses', async () => {
+        const { result } = renderHook(() => useSyncRefresh({ addresses: [] }))
+
+        await act(async () => {
+            result.current.refresh()
+        })
+
+        expect(refreshAccounts).toHaveBeenCalledWith([], 'mainnet')
+        expect(result.current.isRefreshing).toBe(false)
     })
 
     it('swallows an uninitialized sync service and releases the in-flight guard', async () => {

@@ -93,7 +93,6 @@ export const useAssetTransactionList = ({
         error,
         hasNextPage,
         fetchNextPage,
-        isRefetching,
     } = useTransactionHistoryQuery({
         accountAddress: account.address,
         network,
@@ -115,8 +114,9 @@ export const useAssetTransactionList = ({
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
     const refreshAddresses = useMemo(() => [account.address], [account.address])
-    const { isRefreshing: isSyncRefreshing, refresh: handleRefresh } =
-        useSyncRefresh({ addresses: refreshAddresses })
+    const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
+        addresses: refreshAddresses,
+    })
 
     const { showError } = useErrorToast()
 
@@ -197,7 +197,7 @@ export const useAssetTransactionList = ({
         isEmpty,
         handleLoadMore,
         handleRefresh,
-        isRefreshing: isSyncRefreshing || isRefetching,
+        isRefreshing,
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,

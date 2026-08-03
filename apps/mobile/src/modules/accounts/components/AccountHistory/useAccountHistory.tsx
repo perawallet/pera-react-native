@@ -138,7 +138,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         error,
         hasNextPage,
         fetchNextPage,
-        isRefetching,
     } = useTransactionHistoryQuery({
         accountAddress: account?.address ?? '',
         network,
@@ -162,10 +161,9 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         () => (account?.address ? [account.address] : []),
         [account?.address],
     )
-    // The first page reads SQLite with staleTime: Infinity, so refetching it
-    // returns the same rows — only the sync service pulls fresh chain state.
-    const { isRefreshing: isSyncRefreshing, refresh: handleRefresh } =
-        useSyncRefresh({ addresses: refreshAddresses })
+    const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
+        addresses: refreshAddresses,
+    })
 
     const { t } = useLanguage()
     const { showToast } = useToast()
@@ -236,7 +234,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         hasNextPage,
         handleLoadMore,
         handleRefresh,
-        isRefreshing: isSyncRefreshing || isRefetching,
+        isRefreshing,
         isEmpty,
         handleExportCsv,
         isExportingCsv,

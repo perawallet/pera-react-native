@@ -719,8 +719,8 @@ vi.mock('@components/core', () => {
                 : null,
         PWPinCircles: createMockComponent('PWPinCircles'),
         PWRadioButton: createMockComponent('PWRadioButton'),
-        // Lists pass this as the `refreshControl` prop, never as a child; the
-        // pull gesture has no jsdom equivalent, so render nothing.
+        // This barrel mock is exhaustive, so an omitted entry makes the element
+        // type undefined and any render referencing it throws.
         PWRefreshControl: () => null,
         PWRoundIcon: vi.fn(({ icon, size, testID, ...props }: any) =>
             React.createElement('div', {

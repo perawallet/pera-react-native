@@ -420,7 +420,7 @@ describe('useAccountNfts', () => {
                 [mockAccount.address],
                 'mainnet',
             )
-            expect(mockInvalidateQueries).toHaveBeenCalledTimes(1)
+            expect(mockInvalidateQueries).not.toHaveBeenCalled()
         })
 
         it('reports isRefreshing while the sync refresh is in flight', async () => {

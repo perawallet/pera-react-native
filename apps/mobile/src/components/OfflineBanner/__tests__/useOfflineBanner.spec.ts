@@ -18,6 +18,7 @@ import {
     useNetworkStatusStore,
     useOfflineFeedbackStore,
 } from '@modules/network'
+import { OFFLINE_BANNER_EMPHASIS_MS } from '@constants/ui'
 import { useOfflineBanner } from '../useOfflineBanner'
 
 // The `@modules/network` barrel also re-exports useNetworkStatusListener,
@@ -117,7 +118,7 @@ describe('useOfflineBanner', () => {
             useOfflineFeedbackStore.getState().emphasizeOfflineStatus()
         })
         act(() => {
-            vi.advanceTimersByTime(1200)
+            vi.advanceTimersByTime(OFFLINE_BANNER_EMPHASIS_MS)
         })
         expect(result.current.isEmphasized).toBe(false)
     })

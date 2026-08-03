@@ -40,6 +40,10 @@ export const OFFLINE_RECONNECT_DISPLAY_MS = 3000
 export const OFFLINE_BANNER_FADE_MS = 200
 // How long the banner stays emphasized after an action is blocked by being offline.
 export const OFFLINE_BANNER_EMPHASIS_MS = 1200
+// Peak scale of the attention pulse the banner plays when emphasized.
+export const OFFLINE_BANNER_EMPHASIS_SCALE = 1.08
+// Duration of each leg (up, then back) of that pulse.
+export const OFFLINE_BANNER_EMPHASIS_PULSE_MS = 200
 
 export const SHORT_PROMPT_DISPLAY_DELAY = 300
 export const LONG_PROMPT_DISPLAY_DELAY = 3000

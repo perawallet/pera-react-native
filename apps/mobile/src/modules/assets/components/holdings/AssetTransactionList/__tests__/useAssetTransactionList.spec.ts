@@ -132,7 +132,6 @@ describe('useAssetTransactionList', () => {
             isError: false,
             error: null,
             hasNextPage: false,
-            isRefetching: false,
             fetchNextPage: mockFetchNextPage,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
@@ -514,24 +513,6 @@ describe('useAssetTransactionList', () => {
                 releaseRefresh()
             })
             expect(result.current.isRefreshing).toBe(false)
-        })
-
-        it('reports isRefreshing while the history query refetches', () => {
-            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
-                transactions: [],
-                isLoading: false,
-                isRefetching: true,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any)
-
-            const { result } = renderHook(() =>
-                useAssetTransactionList({
-                    account: mockAccount,
-                    asset: mockAsset,
-                }),
-            )
-
-            expect(result.current.isRefreshing).toBe(true)
         })
     })
 

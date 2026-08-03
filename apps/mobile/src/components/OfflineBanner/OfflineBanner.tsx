@@ -19,7 +19,11 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWText, PWView } from '@components/core'
-import { OFFLINE_BANNER_FADE_MS } from '@constants/ui'
+import {
+    OFFLINE_BANNER_EMPHASIS_PULSE_MS,
+    OFFLINE_BANNER_EMPHASIS_SCALE,
+    OFFLINE_BANNER_FADE_MS,
+} from '@constants/ui'
 import { useOfflineBanner } from './useOfflineBanner'
 import { useStyles } from './styles'
 
@@ -38,8 +42,10 @@ export const OfflineBanner = () => {
         if (!isEmphasized) return
 
         scale.value = withSequence(
-            withTiming(1.08, { duration: OFFLINE_BANNER_FADE_MS }),
-            withTiming(1, { duration: OFFLINE_BANNER_FADE_MS }),
+            withTiming(OFFLINE_BANNER_EMPHASIS_SCALE, {
+                duration: OFFLINE_BANNER_EMPHASIS_PULSE_MS,
+            }),
+            withTiming(1, { duration: OFFLINE_BANNER_EMPHASIS_PULSE_MS }),
         )
     }, [isEmphasized, scale])
 

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useIsMounted } from '@hooks/useIsMounted'
@@ -23,6 +23,14 @@ export type UseSyncRefreshResult = {
     isRefreshing: boolean
     refresh: () => void
 }
+
+// Module-level, not per-hook: the account tabs all stay mounted, so a pull on
+// one must join the refresh another already started rather than duplicate it —
+// or, worse, be dropped by a guard another instance still holds.
+const inFlightRefreshes = new Map<string, Promise<void>>()
+
+const buildRefreshKey = (addresses: string[], network: string) =>
+    `${network}:${[...addresses].sort().join(',')}`
 
 /**
  * Pull-to-refresh for DB-first screens. Their queries hold
@@ -39,25 +47,32 @@ export const useSyncRefresh = ({
     const { network } = useNetwork()
     const isMounted = useIsMounted()
     const [isRefreshing, setIsRefreshing] = useState(false)
-    // A ref, not isRefreshing: the state this callback closes over is the value
-    // captured when it was created, so it can't see a refresh started since.
-    const isInFlightRef = useRef(false)
 
     const refresh = useCallback(() => {
-        if (isInFlightRef.current) return
-
-        isInFlightRef.current = true
+        const key = buildRefreshKey(addresses, network)
         setIsRefreshing(true)
         void (async () => {
             try {
-                const syncService = getSyncService()
-                await syncService.refreshAccounts(addresses, network)
-                syncService.invalidateQueries()
+                const pending = inFlightRefreshes.get(key)
+                if (pending) {
+                    await pending
+                    return
+                }
+
+                // refreshAccounts owns the invalidation fan-out; a second call
+                // here would re-fire it un-debounced for no new data.
+                const work = (async () =>
+                    getSyncService().refreshAccounts(addresses, network))()
+                inFlightRefreshes.set(key, work)
+                try {
+                    await work
+                } finally {
+                    inFlightRefreshes.delete(key)
+                }
             } catch {
                 // Chiefly getSyncService() before init, but a pull gesture must
                 // never surface a crash — the periodic tick is the safety net.
             } finally {
-                isInFlightRef.current = false
                 if (isMounted()) setIsRefreshing(false)
             }
         })()

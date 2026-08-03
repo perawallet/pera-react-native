@@ -70,7 +70,6 @@ export const useOfflineBanner = (): UseOfflineBannerResult => {
         if (emphasisNonce === previousEmphasisNonce.current) return
         previousEmphasisNonce.current = emphasisNonce
 
-        // Restart the window rather than stacking timers on repeated requests.
         if (emphasisTimerRef.current) clearTimeout(emphasisTimerRef.current)
         setIsEmphasized(true)
         emphasisTimerRef.current = setTimeout(() => {

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { RefreshControl } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import { usePWRefreshControl } from './usePWRefreshControl'
@@ -28,12 +29,13 @@ export const PWRefreshControl = ({
         isRefreshing,
         onRefresh,
     })
+    const colors = useMemo(() => [theme.colors.primary], [theme.colors.primary])
 
     return (
         <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            colors={[theme.colors.primary]}
+            colors={colors}
             tintColor={theme.colors.primary}
             progressBackgroundColor={theme.colors.background}
         />
