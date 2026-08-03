@@ -15,6 +15,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useIsMounted } from '@hooks/useIsMounted'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
+import { routeCapabilities } from '@routes/capabilities'
 import {
     useCreateAccount,
     useCreateNextHDAccount,
@@ -245,7 +246,7 @@ export const useAddAccountScreen = () => {
                         onPress: handleLearnMoreQuantum,
                     },
                 },
-                {
+                routeCapabilities.sharedAccounts && {
                     testID: 'add_account_create_multisig_button',
                     titleKey:
                         'onboarding.add_account.create_multisig_option_title',

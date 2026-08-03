@@ -47,11 +47,11 @@ export const routeCapabilities: RouteCapabilities = {
     // parse under Metro's web bundler, so quantum accounts have no working
     // signer path in the browser extension yet.
     quantum: false,
-    rekeyFlows: false, // RescanRekeyed/RekeyToStandard/RekeyToShared stacks aren't registered in WebMainRoutes
-    // The Multisig stack is deliberately omitted from WebMainRoutes (see its
-    // header comment). Without this flag the SHARED_ACCOUNT_IMPORT deeplink
-    // navigated to an unregistered route — a complete no-op that also left
-    // the QR scanner locked, since it waits for one of its callbacks.
-    sharedAccounts: false,
+    rekeyFlows: true,
+    // Gates the SHARED_ACCOUNT_IMPORT deeplink as well as the UI entry points;
+    // without the Multisig stack registered it navigated to an unregistered
+    // route — a no-op that also left the QR scanner locked, since it waits for
+    // one of its callbacks.
+    sharedAccounts: true,
     connectionsSettings: true, // unified WalletConnect + dapp connections settings screen
 }

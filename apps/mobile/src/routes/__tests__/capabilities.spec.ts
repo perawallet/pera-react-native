@@ -22,8 +22,7 @@ describe('route capabilities', () => {
         // ARC-0027 injected provider; native keeps the two separate
         // WalletConnect/Connected Sites menu entries instead of the unified
         // screen) — all are deliberately off for native, not a
-        // current-behavior regression. rekeyFlows is native-only (the
-        // opposite polarity), asserted separately below. deepLinkPaste is
+        // current-behavior regression. deepLinkPaste is
         // web-only (native keeps the qrScanner camera instead — the two
         // flags are mutually exclusive per platform).
         const {
@@ -70,9 +69,11 @@ describe('route capabilities', () => {
             // web (Pera Connect covers the pairing path scanning existed for).
             qrScanner: false,
             deepLinkPaste: true,
-            // RescanRekeyed/RekeyToStandard/RekeyToShared stacks aren't
-            // registered in WebMainRoutes — native-only.
-            rekeyFlows: false,
+            // Rekey + Multisig stacks are now registered in WebMainRoutes, so
+            // the account-options rows and the SHARED_ACCOUNT_IMPORT deeplink
+            // reach real screens instead of no-oping on an unregistered route.
+            rekeyFlows: true,
+            sharedAccounts: true,
             // Task 11: unified Connections settings screen supersedes the
             // separate WalletConnect/Connected Sites menu entries on web.
             connectionsSettings: true,

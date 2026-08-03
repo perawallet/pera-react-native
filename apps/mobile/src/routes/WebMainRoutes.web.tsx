@@ -46,6 +46,13 @@ import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
 import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen'
 import { GroupTransactionListScreen } from '@modules/transactions/screens/GroupTransactionListScreen'
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
+import { BannersCarouselModalScreen } from '@modules/banners/screens/BannersCarouselModalScreen'
+import { MultisigStackNavigator } from '@modules/multisig'
+import { RekeyToLedgerStackNavigator } from '@modules/rekey/routes/rekey-to-ledger'
+import { RekeyToSharedStackNavigator } from '@modules/rekey/routes/rekey-to-shared'
+import { RekeyToStandardStackNavigator } from '@modules/rekey/routes/rekey-to-standard'
+import { RescanRekeyedStackNavigator } from '@modules/rekey/routes/rescan-rekeyed'
+import { UndoRekeyStackNavigator } from '@modules/rekey/routes/undo-rekey'
 import { withAgeGate } from '@components/AgeGated'
 import { fullScreenLayout } from '@layouts/index'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
@@ -215,6 +222,44 @@ export const WebMainRoutes = (): React.JSX.Element => {
                             title: 'signing.transactions.details',
                         }}
                     />
+                    <RootStack.Screen
+                        name='BannersCarouselModal'
+                        component={BannersCarouselModalScreen}
+                        options={{
+                            presentation: 'modal',
+                            headerShown: false,
+                        }}
+                    />
+                    {routeCapabilities.sharedAccounts && (
+                        <RootStack.Screen
+                            name='Multisig'
+                            component={MultisigStackNavigator}
+                        />
+                    )}
+                    {routeCapabilities.rekeyFlows && (
+                        <>
+                            <RootStack.Screen
+                                name='UndoRekey'
+                                component={UndoRekeyStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='RekeyToLedger'
+                                component={RekeyToLedgerStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='RekeyToStandard'
+                                component={RekeyToStandardStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='RekeyToShared'
+                                component={RekeyToSharedStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='RescanRekeyed'
+                                component={RescanRekeyedStackNavigator}
+                            />
+                        </>
+                    )}
                 </RootStack.Navigator>
             </WalletConnectProvider>
             {/* Sibling of WalletConnectProvider (not nested inside it),
