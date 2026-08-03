@@ -6,16 +6,16 @@ contract so behaviour isn't re-derived from the screens.
 
 ## Where the code lives
 
-| Path                            | Holds                                        |
-| ------------------------------- | -------------------------------------------- |
-| `packages/card/`                | API clients, session, stores, models         |
-| `apps/mobile/src/modules/card/` | Screens, onboarding routes, dashboard        |
-| `modules/gift-card/`            | Gift cards — separate flow, same backend      |
+| Path                            | Holds                                    |
+| ------------------------------- | ---------------------------------------- |
+| `packages/card/`                | API clients, session, stores, models     |
+| `apps/mobile/src/modules/card/` | Screens, onboarding routes, dashboard    |
+| `modules/gift-card/`            | Gift cards — separate flow, same backend |
 
 ## Ownership
 
-| Concern                              | Owner  |
-| ------------------------------------ | ------ |
+| Concern                               | Owner  |
+| ------------------------------------- | ------ |
 | Card issuance, status, PAN, balances  | Baanx  |
 | KYC identity verification             | Veriff |
 | Onboarding form state, funding intent | App    |
@@ -28,12 +28,12 @@ on demand and never persisted.
 
 `GET /v1/card/status` returns one of:
 
-| Status    | Meaning                                                        |
-| --------- | -------------------------------------------------------------- |
-| `ACTIVE`  | Usable.                                                          |
-| `FROZEN`  | User-initiated pause; reversible.                                |
-| `BLOCKED` | Terminal for that card.                                          |
-| `PENDING` | Transient, up to ~2 min after `POST /v1/card/order`.             |
+| Status    | Meaning                                              |
+| --------- | ---------------------------------------------------- |
+| `ACTIVE`  | Usable.                                              |
+| `FROZEN`  | User-initiated pause; reversible.                    |
+| `BLOCKED` | Terminal for that card.                              |
+| `PENDING` | Transient, up to ~2 min after `POST /v1/card/order`. |
 
 `PENDING` is **not** in the backend's status enum — it's documented only in
 prose. It is modelled explicitly because the transformer's fail-safe would
@@ -75,7 +75,7 @@ A killswitch app (ARC-56) can disable AutoDraw independently of the delegation.
 
 ## Session and secrets
 
-- `POST /v1/auth/login` returns a 6-hour access token used *only* to complete
+- `POST /v1/auth/login` returns a 6-hour access token used _only_ to complete
   the OAuth authorize step. It is never persisted.
 - The durable pair comes from the token exchange; the 7-day refresh token is
   exchanged on a 401 to keep the user signed in.
@@ -85,7 +85,7 @@ A killswitch app (ARC-56) can disable AutoDraw independently of the delegation.
 
 ## Feature gate
 
-Card entry points are gated on remote config (`useIsPeraCardEnabled`) *and*
+Card entry points are gated on remote config (`useIsPeraCardEnabled`) _and_
 route capabilities. A card deeplink reaching a build with the flag off is a
 deliberate no-op — see `useDeepLink`.
 
