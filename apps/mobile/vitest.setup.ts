@@ -2872,7 +2872,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         ),
         canSignProgram: vi.fn(
             (account: any) =>
-                account?.type !== 'hardware' && !!account?.keyPairId,
+                account?.type !== 'hardware' &&
+                !account?.rekeyAddress &&
+                !!account?.keyPairId,
         ),
         isRekeyedUnsignable: vi.fn(() => false),
         isMultisigUnsignable: vi.fn(() => false),

@@ -229,15 +229,23 @@ export const canSignArc60 = (account: WalletAccount): boolean =>
     canSignArbitraryData(account) || isHardwareWalletAccount(account)
 
 /**
- * Whether `account` can sign a LogicSig *program* (delegated LSig / dLSig),
- * which requires the raw private key. Hardware wallets are excluded by design,
- * not merely because they carry no `keyPairId`: their firmware signs
- * transactions and ARC-60 payloads only, and will never sign a program. That
- * makes this a permanent limitation, unlike {@link canSignArc60}, which Ledger
- * does satisfy.
+ * Whether `account` can produce a *usable* delegated LogicSig (LSig / dLSig).
+ *
+ * Two exclusions, both deliberate:
+ * - Hardware wallets, not merely because they carry no `keyPairId`: their
+ *   firmware signs transactions and ARC-60 payloads only, and will never sign a
+ *   program. A permanent limitation, unlike {@link canSignArc60}, which Ledger
+ *   does satisfy.
+ * - Rekeyed accounts. Their key can still produce the signature, but a
+ *   delegated LSig authorizes spending, and on-chain authorization follows the
+ *   sender's auth-addr — so the delegation would be rejected. This is where
+ *   this predicate has to diverge from {@link canSignArbitraryData}, which
+ *   deliberately ignores rekeys because off-chain data has no auth-addr lookup.
  */
 export const canSignProgram = (account: WalletAccount): boolean =>
-    !isHardwareWalletAccount(account) && hasSigningKeys(account)
+    !isHardwareWalletAccount(account) &&
+    !isRekeyedAccount(account) &&
+    hasSigningKeys(account)
 
 /** The "rekeyed but stranded" display state, distinct from `isWatchAccount`. */
 export const isRekeyedUnsignable = (

@@ -749,6 +749,10 @@ describe('usePeraCardDetails', () => {
             expect(mocks.cancelDelegation).not.toHaveBeenCalled()
         })
 
+        // Guards the restore path, not a path the UI can reach today: the
+        // Change link is hidden, so the only entry point is Connect, which
+        // needs no linked account while Auto needs one. Keep this green so the
+        // guard still holds when the link comes back.
         it('blocks changing the account while Auto funding is on', async () => {
             // The AutoDraw authorization (AB LSig + Killswitch box) is
             // per-account, so repointing under Auto would strand the old
