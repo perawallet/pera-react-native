@@ -68,11 +68,13 @@ export const AccountOverviewHeader = ({
             return (
                 <>
                     <PWTouchableOpacity
+                        testID='account_portfolio'
                         onPress={togglePrivacyMode}
                         style={styles.valueBarContainer}
                     >
                         <PWView style={styles.valueBar}>
                             <AssetAmount
+                                testID='portfolio_primary_value'
                                 variant='h1'
                                 value={
                                     selectedPoint
