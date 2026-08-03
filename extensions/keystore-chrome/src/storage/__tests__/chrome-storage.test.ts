@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 import { ChromeSecureEntryStorage } from '../chrome-storage'
 
@@ -24,8 +24,32 @@ describe('ChromeSecureEntryStorage', () => {
         storage = new ChromeSecureEntryStorage()
     })
 
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
     it('throws on read before hydrate()', () => {
         expect(() => storage.getString('k')).toThrow(/hydrate/)
+    })
+
+    // A swallowed delete failure drops the entry from the cache while its
+    // ciphertext stays on disk — the app reports the key gone when it is still
+    // recoverable from the profile.
+    it('reports a failed delete instead of swallowing it', async () => {
+        await storage.hydrate()
+        const consoleError = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {})
+        vi.spyOn(fake.chrome.storage.local, 'remove').mockRejectedValue(
+            new Error('storage unavailable'),
+        )
+
+        storage.remove('entry-1')
+        await vi.waitFor(() => expect(consoleError).toHaveBeenCalled())
+
+        expect(JSON.stringify(consoleError.mock.calls)).toContain(
+            'may remain on disk',
+        )
     })
 
     it('round-trips entries and returns undefined for missing (MMKV parity)', async () => {

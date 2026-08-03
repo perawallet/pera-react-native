@@ -10,11 +10,37 @@
  limitations under the License
  */
 
+import * as Sentry from '@sentry/browser'
 import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
 
 // Namespaces app KV entries apart from other extension storage (device id,
 // dapp permissions, vault) sharing chrome.storage.local.
 const KV_PREFIX = 'kv:'
+
+/**
+ * The KeyValueStorageService surface is synchronous (MMKV-shaped), so a write
+ * can only be fired and forgotten. Left unhandled that is silent data loss:
+ * the in-memory cache keeps serving the value for the rest of the session and
+ * nothing reaches disk, so the loss only shows up after a restart.
+ *
+ * Reports the key but NEVER the value — the persisted TanStack Query cache
+ * lives under this prefix and its contents are not safe to ship to telemetry.
+ */
+const reportWriteFailure = (
+    operation: 'set' | 'remove',
+    key: string,
+    error: unknown,
+): void => {
+    const message = `chrome.storage.local ${operation} failed for kv:${key}`
+    console.error(`[pera] ${message}`, error)
+    // No-ops when Sentry has not been initialized (dev builds, missing DSN),
+    // which is why the console line above is unconditional.
+    Sentry.captureException(
+        error instanceof Error
+            ? error
+            : new Error(`${message}: ${String(error)}`),
+    )
+}
 
 /**
  * KeyValueStorageService backed by chrome.storage.local behind a synchronous
@@ -70,12 +96,16 @@ export class ChromeKeyValueStorageService implements KeyValueStorageService {
 
     setItem(key: string, value: string): void {
         this.ensureCache().set(key, value)
-        void chrome.storage.local.set({ [KV_PREFIX + key]: value })
+        chrome.storage.local
+            .set({ [KV_PREFIX + key]: value })
+            .catch(error => reportWriteFailure('set', key, error))
     }
 
     removeItem(key: string): void {
         this.ensureCache().delete(key)
-        void chrome.storage.local.remove(KV_PREFIX + key)
+        chrome.storage.local
+            .remove(KV_PREFIX + key)
+            .catch(error => reportWriteFailure('remove', key, error))
     }
 
     setJSON<T>(key: string, value: T): void {
