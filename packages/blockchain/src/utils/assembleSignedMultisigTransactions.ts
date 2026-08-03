@@ -35,12 +35,7 @@ const MAX_RAW_TXN_B64_BYTES = 64 * 1024
 const PUBLIC_KEY_BYTE_LENGTH = 32
 const SIGNATURE_BYTE_LENGTH = 64
 
-/**
- * Per-participant response from the multisig backend. `signatures[i]` is
- * the base64-encoded signature for transaction index `i` (same order as
- * the enclosing transaction list's `rawTransactions`). Null entries mean
- * "this participant didn't sign this index".
- */
+/** `signatures[i]` matches `rawTransactions[i]`; null means "didn't sign". */
 export type ParticipantResponse = {
     address: string
     response: 'signed' | 'declined'
@@ -59,11 +54,8 @@ export type AssembleSignedMultisigParams = {
     /** Per-participant responses; only entries with `response: 'signed'` contribute sigs. */
     responses: ParticipantResponse[]
     /**
-     * Address of the multisig that authorizes these transactions (the joint
-     * account being signed). When a transaction's sender differs from it — i.e.
-     * the sender is rekeyed to this multisig — the assembled signed transaction
-     * carries an `sgnr` (auth-address) field. Omit for plain multisig spends
-     * where the sender is the multisig itself.
+     * A sender that differs from this is rekeyed to the multisig, so the
+     * envelope gains an `sgnr` field. Omit for plain multisig spends.
      */
     multisigAddress?: string
 }
@@ -72,30 +64,16 @@ export type AssembleSignedMultisigResult =
     | { kind: 'success'; signedTransactionsBytes: Uint8Array[] }
     | { kind: 'error'; reason: string }
 
-/**
- * msgpack `fixmap` header for a 2-entry map. The signed-transaction envelope
- * `{ "msig": ..., "txn": ... }` is built by writing this single structural
- * byte, then appending each msgpack-encoded key/value — so the raw transaction
- * bytes go in verbatim as the final value, never decoded and re-encoded.
- */
+/** Header for `{ msig, txn }` — see `assembleSignedMultisigTransactions`. */
 const SIGNED_TXN_MAP_HEADER = new Uint8Array([0x82])
 
-/**
- * msgpack `fixmap` header for a 3-entry map — the signed-transaction envelope
- * `{ "msig": ..., "sgnr": ..., "txn": ... }` used when the sender is rekeyed to
- * the signing multisig. Keys stay in canonical (alphabetical) order: msig <
- * sgnr < txn.
- */
+/** Header for the rekeyed `{ msig, sgnr, txn }`. Canonical order: msig < sgnr < txn. */
 const SIGNED_TXN_MAP_HEADER_WITH_SIGNER = new Uint8Array([0x83])
 
 /**
- * Reads the 32-byte sender public key (`snd`) from raw transaction msgpack
- * bytes. Decodes only to inspect the sender — the raw bytes are still embedded
- * verbatim in the envelope, never re-encoded. `msgpackRawDecode` yields a plain
- * object keyed by the transaction's string field names, so we read `snd`
- * directly. Returns `null` when the field is absent (e.g. canonical msgpack
- * omits a zero sender) or the bytes can't be decoded. Mirrors pera-android's
- * `MultisigTransactionAssembler.extractSenderPublicKey`.
+ * Decodes only to inspect the sender — the raw bytes still go into the envelope
+ * verbatim. `null` when `snd` is absent (canonical msgpack omits a zero sender)
+ * or undecodable.
  */
 const extractSenderPublicKey = (rawTxBytes: Uint8Array): Uint8Array | null => {
     try {
@@ -113,11 +91,8 @@ const isAllZero = (bytes: Uint8Array): boolean => {
 }
 
 /**
- * Decodes and validates one participant signature from the backend. Returns
- * the raw 64-byte signature, or `null` if the entry is absent, not valid
- * base64, the wrong length, or all-zero (a backend placeholder — matches
- * Android's sanity filter). A `null` means "no signature from this
- * participant for this index", never a hard error.
+ * `null` means "no signature for this index", never an error — including for
+ * an all-zero backend placeholder, matching Android's sanity filter.
  */
 const parseSignature = (sig: Nullable<string>): Uint8Array | null => {
     if (!sig) return null
@@ -135,12 +110,7 @@ const parseSignature = (sig: Nullable<string>): Uint8Array | null => {
     return bytes
 }
 
-/**
- * Resolves base public keys for each participant address. Mirrors
- * algorand's encoded address format: 32-byte pubkey + 4-byte checksum,
- * base32-encoded. `Address.fromString(addr).publicKey` gives us the raw
- * 32-byte pubkey.
- */
+/** An encoded address is a 32-byte pubkey plus a 4-byte checksum, base32'd. */
 const resolvePublicKeys = (
     addresses: string[],
 ): Map<string, Uint8Array> | null => {
@@ -158,39 +128,20 @@ const resolvePublicKeys = (
 }
 
 /**
- * Assembles fully-signed multisig transaction bytes from the per-participant
- * signatures collected by the multisig backend.
- *
- * Builds the canonical algod-compatible msgpack envelope for each item:
- * ```
- * { "msig": { "subsig": [{pk, s?}, ...], "thr": <int>, "v": <int> },
- *   "txn":  <raw transaction bytes, embedded verbatim> }
- * ```
- *
- * The "txn" value is embedded as-is — we do NOT decode + re-encode through
- * algosdk, because canonical-msgpack rules around field ordering and integer
- * size can differ slightly between SDKs. Each participant signed a specific
- * byte sequence; re-encoding it could produce a different sequence and break
- * signature verification on algod. Mirrors pera-android's
+ * Builds the algod-compatible msgpack envelope
+ * `{ msig: { subsig, thr, v }, txn }` per item, with subsigs in
+ * `participantAddresses` order. Mirrors pera-android's
  * `MultisigTransactionAssembler.kt`.
  *
- * Per-transaction subsigs are in `participantAddresses` order. Entries
- * without a signature omit the `s` field; entries with a signature include
- * both `pk` (32 bytes) and `s` (64 bytes). All-zero signatures are treated
- * as missing (matches Android's sanity filter, defends against backend
- * returning placeholder bytes).
+ * `txn` is embedded verbatim, never decoded and re-encoded through algosdk:
+ * canonical-msgpack rules differ slightly between SDKs, so re-encoding could
+ * produce bytes whose signatures algod won't verify.
  *
- * Every contributing signature is Ed25519-verified against
- * `"TX" || <raw transaction bytes>` under the participant's public key
- * before assembly. The backend is a collection/relay service, not a trust
- * anchor: without this check a compromised backend could pair harvested
- * signatures with attacker-substituted transaction bytes and the wallet
- * would affirmatively deliver a transaction nobody reviewed. A
- * non-verifying (or non-participant) signature is a hard error.
- *
- * @returns `success` with the assembled signed-transaction bytes per item,
- *   or `error` with a human-readable reason if any item failed (e.g.
- *   insufficient signatures, invalid pubkey).
+ * Every signature is Ed25519-verified against `"TX" || <raw bytes>` first. The
+ * backend is a relay, not a trust anchor — without this a compromised one could
+ * pair harvested signatures with substituted transaction bytes, and the wallet
+ * would deliver a transaction nobody reviewed. A non-verifying signature is a
+ * hard error.
  */
 export const assembleSignedMultisigTransactions = (
     params: AssembleSignedMultisigParams,
@@ -273,12 +224,9 @@ export const assembleSignedMultisigTransactions = (
             }
         }
 
-        // Cryptographically verify every contributing signature against the
-        // exact bytes being assembled, under the participant's public key.
-        // A well-formed signature that does NOT verify is a hard error, not
-        // a missing signature: it means the backend paired signatures with
-        // transaction bytes the participants never signed (corruption or a
-        // swapped-transaction attack) — refuse to produce output for it.
+        // A well-formed signature that does NOT verify is a hard error, not a
+        // missing one: it means the backend paired signatures with bytes the
+        // participants never signed.
         const signedBytes = addTxPrefix(rawTxBytes)
         let validCount = 0
         for (const [address, sigs] of sigsByAddress) {
@@ -317,11 +265,9 @@ export const assembleSignedMultisigTransactions = (
             return sig ? { pk, s: sig } : { pk }
         })
 
-        // When the transaction's sender differs from the signing multisig
-        // address, the sender is rekeyed to this multisig and the envelope must
-        // carry the auth address in `sgnr` (the multisig's 32-byte pubkey).
-        // Otherwise the sender authorizes itself and no `sgnr` is written.
-        // Mirrors pera-android's MultisigTransactionAssembler.kt.
+        // A sender differing from the signing multisig is rekeyed to it, so the
+        // envelope must carry the auth address in `sgnr`. Otherwise the sender
+        // authorizes itself and `sgnr` is omitted.
         const senderPublicKey = extractSenderPublicKey(rawTxBytes)
         const authAddrPublicKey =
             multisigPublicKey &&
@@ -330,11 +276,9 @@ export const assembleSignedMultisigTransactions = (
                 ? multisigPublicKey
                 : null
 
-        // SignedTransaction envelope: a 2-entry map { msig, txn } (or a 3-entry
-        // map { msig, sgnr, txn } when rekeyed). encodeMsgpack canonically
-        // encodes the `msig` map (sorted keys); the raw transaction bytes are
-        // appended verbatim as the final value — never decoded and re-encoded,
-        // so the exact bytes each participant signed reach algod.
+        // `encodeMsgpack` canonically encodes the `msig` map; the raw
+        // transaction bytes are appended verbatim as the final value, so the
+        // exact bytes each participant signed reach algod.
         signedList.push(
             authAddrPublicKey
                 ? concatBytes(

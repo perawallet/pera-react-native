@@ -16,10 +16,6 @@ import {
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
 
-// =============================================================================
-// Errors
-// =============================================================================
-//
 // Aligned with the ARC-60 error catalogue so the WalletConnect bridge can
 // surface spec-conformant rejection reasons. Kept in their own module so the
 // SIWA parser can throw `Arc60BadJsonError` without creating an import cycle

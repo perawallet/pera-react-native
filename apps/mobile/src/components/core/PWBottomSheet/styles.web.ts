@@ -20,17 +20,12 @@ type StyleProps = {
 
 export const useStyles = makeStyles(
     (theme, { maxHeight, isFixed }: StyleProps) => ({
-        // react-native-web's Modal portals straight to a <div> appended to
-        // document.body (react-native-web/src/exports/Modal/ModalPortal.js)
-        // and its content wrapper is `position: fixed; inset: 0`
-        // (ModalContent.js) — both put the sheet's DOM entirely outside
-        // AppShell.web.tsx's <PWView style={rootStyles.card}>, so it never
-        // inherits the app's width cap. `stage` re-applies that same cap
-        // (View defaults to position:'relative' on web, so it becomes the
-        // containing block `backdrop`/`sheet` position against below,
-        // capping and centering both instead of letting them fill the full
-        // browser-tab width). No-op in the popup, which is already narrower
-        // than the cap.
+        // RNW's Modal portals to document.body with a `position: fixed`
+        // content wrapper, putting the sheet's DOM outside AppShell.web's card
+        // entirely, so it never inherits the app's width cap. `stage`
+        // re-applies it and, being position:relative, becomes the containing
+        // block that `backdrop`/`sheet` position against. No-op in the popup,
+        // already narrower than the cap.
         stage: {
             flex: 1,
             width: '100%',

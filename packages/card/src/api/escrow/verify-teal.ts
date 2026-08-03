@@ -14,23 +14,18 @@ import nacl from 'tweetnacl'
 import { decodeFromBase64, logger } from '@perawallet/wallet-core-shared'
 import { AUTODRAW_TEAL_TEMPLATE } from './autodraw-teal'
 
-// SWAP POINT: integrity check on the vendored AutoDraw TEAL. A delegated LSig
-// is a serious attack vector — a tampered program would authorize USDC draws on
-// terms we don't intend — so before we ever compile + sign it, verify the
-// template bytes carry a valid ed25519 signature from a Pera-controlled key
-// whose PUBLIC key is pinned here (not in env/remote config, so an attacker who
-// swaps the build env can't also swap the key). Because the check lives in the
-// compile path, no other code path can compile a different program through it.
+// Integrity check on the vendored AutoDraw TEAL. A delegated LSig is a serious
+// attack vector — a tampered program would authorize USDC draws on terms we
+// don't intend — so the template bytes must carry a valid ed25519 signature
+// from a Pera key whose PUBLIC key is pinned HERE, not in env or remote config,
+// so swapping the build env can't also swap the key. Living in the compile path
+// means no other path can compile a different program.
 //
-// PROVIDE BEFORE LAUNCH: once AB's AutoDraw contract is final, sign the exact
-// UTF-8 bytes of AUTODRAW_TEAL_TEMPLATE with the pinned key and paste the base64
-// public key + signature below. Until then both are empty and verification is
-// DORMANT (skipped with a warning) — safe because these are committed constants
-// (not per-build env that could be silently forgotten) and Auto funding is
-// separately gated by the `enable_card_auto_funding` remote-config flag. A
-// future hardening is to move `{ template, signature }` into remote config
-// (keyed e.g. `baanx-logic-sig`) so the program can rotate without a release,
-// still verified against this pinned public key.
+// PROVIDE BEFORE LAUNCH: sign the exact UTF-8 bytes of AUTODRAW_TEAL_TEMPLATE
+// with the pinned key and paste the base64 public key + signature below. Both
+// are empty today, so verification is DORMANT (skipped with a warning) — safe
+// because these are committed constants rather than forgettable per-build env,
+// and Auto funding is separately gated by `enable_card_auto_funding`.
 export const AUTODRAW_TEAL_PUBLIC_KEY = ''
 export const AUTODRAW_TEAL_SIGNATURE = ''
 

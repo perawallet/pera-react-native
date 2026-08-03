@@ -256,19 +256,11 @@ describe('transformIndexerTransactions', () => {
             vi.restoreAllMocks()
         })
 
-        // Regression fixture for a real bug: the Algorand indexer does NOT
-        // emit an `id` field on inner transactions at all — verified live
-        // against a real app-calling mainnet account, where every inner
-        // transaction's keys were `application-transaction, close-rewards,
-        // closing-amount, confirmed-round, fee, first-valid,
-        // intra-round-offset, last-valid, logs, receiver-rewards, round-time,
-        // sender, sender-rewards, tx-type` — no `id` among them. Every other
-        // inner-txns fixture in this file gives inner rows an `id` (INNER1,
-        // INNER2, ...), which is NOT what the real wire sends and would not
-        // have caught this. Requiring `id` on the inner node previously
-        // failed the inner node's parse, which failed the PARENT row via
-        // `indexerTransactionSchema.safeParse` — silently dropping every
-        // parent transaction that happened to contain an inner transaction.
+        // The indexer does NOT emit `id` on inner transactions. Every other
+        // inner-txn fixture here gives them one, which is not what the wire
+        // sends and wouldn't catch this: requiring `id` failed the inner
+        // node's parse, which failed the PARENT row, silently dropping every
+        // transaction that contained an inner one.
         const appCallWithInnerPayment = {
             'current-round': 1,
             transactions: [
@@ -348,17 +340,11 @@ describe('transformIndexerTransactions', () => {
     })
 
     test('surfaces a row with an unrecognized tx-type instead of dropping it', () => {
-        // The app has purpose-built generic fallbacks for transaction types
-        // it doesn't specialize for (useTransactionListItem.ts's `default:`
-        // case, mapHistoryItemToDisplayableTransaction.ts's `default:` case).
-        // Dropping an otherwise-well-formed row here — instead of letting it
-        // reach those fallbacks — would silently hide a transaction the UI
-        // could have rendered generically: exactly the "transaction never
-        // appears" failure this task exists to prevent, just moved from
-        // routing into validation. 'stpf' (state-proof) is a real,
-        // currently-active transaction type absent from the 7-member
-        // TransactionTypes enum — a concrete instance of "the next type the
-        // protocol adds before the enum is updated," not a hypothetical.
+        // The app has generic `default:` fallbacks for unspecialized
+        // transaction types, so dropping a well-formed row here would hide one
+        // the UI could have rendered — the same "transaction never appears"
+        // failure, just moved from routing into validation. 'stpf' is a real,
+        // currently-active type missing from the enum, not a hypothetical.
         const unrecognized = {
             'current-round': 1,
             transactions: [

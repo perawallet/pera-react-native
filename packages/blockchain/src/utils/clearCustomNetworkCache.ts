@@ -17,14 +17,10 @@ import { Networks } from '@perawallet/wallet-core-config'
 import { type CustomNetworkConfig } from '../store'
 
 /**
- * Whether reconfiguring the custom slot invalidates its cached data.
- *
- * Keyed on genesis hash, NOT on URL: the same chain reached through a new host
- * (a LAN address change, a container restart on a different port) must keep its
- * cache, while a genuinely different chain must not — otherwise two chains' rows
- * mix under the single `custom` partition.
- *
- * First configuration returns false: there is no prior chain and nothing cached.
+ * Keyed on genesis hash, NOT URL: the same chain behind a new host (LAN address
+ * change, container restart) keeps its cache, while a different chain must not —
+ * otherwise two chains' rows mix under the single `custom` partition. First
+ * configuration returns false; there's nothing cached yet.
  */
 export const shouldClearCustomCache = (
     previous: CustomNetworkConfig | undefined,
@@ -32,15 +28,9 @@ export const shouldClearCustomCache = (
 ): boolean =>
     previous !== undefined && previous.genesisHash !== next.genesisHash
 
-// Physical tables partitioned by a `network` column, spread across the four
-// domain packages that own them (see each package's src/db/schema.ts):
-//   - accounts:      account_asset_holdings, account_balances
-//   - assets:        assets_node, assets_pera, asset_prices
-//   - transactions:  transactions, account_transactions
-//   - nfd:           nfd_cache
-// Named directly as literal SQL rather than importing each package's Drizzle
-// schema object: accounts/assets/transactions/nfd all depend on `blockchain`,
-// so importing them back here would create a dependency cycle.
+// Every table partitioned by a `network` column, across the four domain packages
+// that own them. Named as literal SQL rather than imported Drizzle schemas:
+// those packages all depend on `blockchain`, so importing back would cycle.
 const CUSTOM_NETWORK_PARTITIONED_TABLES = [
     'account_asset_holdings',
     'account_balances',
@@ -53,26 +43,15 @@ const CUSTOM_NETWORK_PARTITIONED_TABLES = [
 ] as const
 
 /**
- * The first segment of every query key the same four domains produce (see
- * each package's src/hooks/querykeys.ts MODULE_PREFIX). Duplicated here for
- * the same cross-cycle reason as the table list above — but unlike the table
- * list, a stale entry here fails silently (a missed cache eviction, not a SQL
- * error), so this one is exported specifically so the four domain packages
- * can defend the correspondence themselves: each carries a test (e.g.
- * `packages/accounts/src/hooks/__tests__/querykeys.test.ts`) asserting its
- * own `MODULE_PREFIX` is a member of this set. Those packages already depend
- * on `blockchain`, so importing this back into them is cycle-free — it's
- * only the reverse direction (blockchain importing their `querykeys.ts`
- * modules) that isn't. A rename in any of the four now fails a test in the
- * package doing the renaming, where the person making the change will see it.
+ * Each domain's `MODULE_PREFIX`, duplicated here for the same cycle reason as the
+ * table list. Unlike that list, a stale entry fails SILENTLY — a missed eviction,
+ * not a SQL error — so this is exported and each domain package carries a test
+ * asserting its own prefix is a member. A rename then fails a test in the package
+ * doing the renaming.
  *
- * Not exactly "packages with a DB table": `packages/currencies`'
- * `algoUsdPrice` key deliberately nests itself under `'assets'` (not
- * `'currencies'`) for cache locality
- * (`packages/currencies/src/hooks/querykeys.ts`), so it is coincidentally
- * swept too when scoped to `custom`. That's fine — it's still per-network
- * price data — just noted so the reach isn't assumed to stop at these four
- * packages' own tables.
+ * Reach isn't exactly "packages with a DB table": `currencies`' `algoUsdPrice`
+ * nests under `'assets'` for cache locality, so it's swept too. Fine — it's still
+ * per-network price data.
  */
 export const NETWORK_PARTITIONED_QUERY_MODULES: ReadonlySet<string> = new Set([
     'accounts',
@@ -82,11 +61,8 @@ export const NETWORK_PARTITIONED_QUERY_MODULES: ReadonlySet<string> = new Set([
 ])
 
 /**
- * True when a query key belongs to one of the four network-partitioned
- * domains AND carries a `network: 'custom'` field in one of its payload
- * objects — mirroring how every one of those domains' key factories embed
- * `{ ..., network, ... }` somewhere in the key (see e.g.
- * `packages/assets/src/hooks/querykeys.ts`).
+ * Mirrors how those domains' key factories all embed `{ ..., network, ... }`
+ * somewhere in the key.
  */
 const queryKeyTargetsCustomNetwork = (queryKey: QueryKey): boolean => {
     const [modulePrefix] = queryKey
@@ -104,15 +80,10 @@ const queryKeyTargetsCustomNetwork = (queryKey: QueryKey): boolean => {
 }
 
 /**
- * Deletes every row and cached query result scoped to the `custom` network
- * slot: the DB rows in each network-partitioned table across the
- * accounts/assets/transactions/nfd packages, plus the matching TanStack query
- * cache entries.
+ * Deletes every DB row and query-cache entry scoped to the `custom` slot.
  *
- * Call this whenever {@link shouldClearCustomCache} reports that reconfiguring
- * the custom slot changed its chain identity — never on first configuration,
- * and never for a host/token-only edit of the same chain, or two unrelated
- * chains' data ends up mixed under the single `custom` partition.
+ * Call only when {@link shouldClearCustomCache} says the chain identity changed
+ * — never on first configuration, never for a host-only edit of the same chain.
  */
 export const clearCustomNetworkCache = async (
     queryClient: QueryClient,

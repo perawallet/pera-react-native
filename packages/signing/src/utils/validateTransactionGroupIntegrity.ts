@@ -21,29 +21,15 @@ import {
 import { InvalidSignableDataError } from '../pipeline/errors'
 
 /**
- * Verifies that any transactions claiming to be part of an atomic group
- * actually form a valid group. Catches cases where a dApp sends transactions
- * with a stale group ID — e.g. a 5-tx group with one tx removed before send,
- * which would otherwise reach the signer and only fail on submission to algod.
+ * Catches a dApp sending a stale group ID — e.g. a 5-tx group with one removed
+ * before send — which would otherwise reach the signer and only fail at algod.
+ * Transactions are partitioned by `group` and each partition's recomputed id
+ * must match what it claims; ungrouped transactions are independent and skipped.
  *
- * Per ARC-0001, a single request may contain any combination of:
- * - Ungrouped (independent) transactions
- * - One or more complete atomic groups
- * Each group is validated independently; ungrouped transactions are skipped.
- *
- * **Must be called over the FULL request payload from the originating
- * source — not over the wallet's signable subset.** The group hash is
- * computed over every transaction algod will see; recomputing over a
- * subset (e.g. just the sender's tx in an express-send pair) would never
- * match the claimed group ID. External sources that pre-filter
- * (WalletConnect) must therefore preserve the original array — see
- * {@link TransactionSignRequest.groupContext}.
- *
- * Rules:
- * - Transactions are partitioned by their `group` field. Each partition
- *   must form a complete, valid group: the recomputed group ID over the
- *   members of that partition must equal the claimed group ID.
- * - Transactions with no `group` field are independent and skipped.
+ * **Must be called over the FULL request payload, not the signable subset.** The
+ * hash covers every transaction algod will see, so recomputing over a subset can
+ * never match. External sources that pre-filter must preserve the original array
+ * — see {@link TransactionSignRequest.groupContext}.
  *
  * Throws `InvalidSignableDataError` (non-retryable) on any violation.
  */
@@ -54,22 +40,16 @@ export const validateTransactionGroupIntegrity = (
 }
 
 /**
- * Co-sign variant of {@link validateTransactionGroupIntegrity}: validates
- * partitioning and ARC-0001 contiguity but **skips the full-group hash
- * recompute**.
+ * Validates partitioning and contiguity but **skips the full-group hash
+ * recompute** — the only sanctioned relaxation, for exactly one caller.
  *
- * This is the ONLY sanctioned way to relax the group-hash check, and it exists
- * for exactly one caller: the multisig **co-sign** path. The co-signer's device
- * holds only the multisig-signable subset of a larger atomic group (a swap
- * mixes in backend pre-signed pool/fee slots that never reach the co-signer),
- * so the full-group hash can never match over the subset. Full-group integrity
- * is enforced instead on the proposer/submitter — which holds the complete
- * group — and ultimately by algod at submission.
+ * A co-signer's device holds only the multisig-signable subset of a larger
+ * group (a swap mixes in backend pre-signed slots that never reach them), so the
+ * full hash can never match. Integrity is enforced on the proposer instead, and
+ * ultimately by algod.
  *
- * Exposed as a dedicated, intent-revealing function (rather than a boolean on
- * the strict validator) so the relaxation can't be switched on by accident.
- *
- * Throws `InvalidSignableDataError` (non-retryable) on any violation.
+ * A dedicated function rather than a boolean flag, so it can't be switched on by
+ * accident. Throws `InvalidSignableDataError` on any violation.
  */
 export const validateCosignSubsetIntegrity = (
     transactions: PeraTransaction[],
@@ -81,11 +61,9 @@ const validateGroupStructure = (
     transactions: PeraTransaction[],
     { recomputeGroupHash }: { recomputeGroupHash: boolean },
 ): void => {
-    // Partition by claimed group ID. Ungrouped transactions are independent
-    // — ARC-0001 allows them alongside grouped txs in the same request.
-    // Per spec, txns sharing a group ID must also be CONTIGUOUS in the
-    // request; we track which group keys have been "closed" (left and not
-    // returned to) and reject any later txn that re-opens one.
+    // ARC-0001 allows ungrouped transactions alongside grouped ones, but
+    // requires those sharing a group ID to be CONTIGUOUS — so closed group keys
+    // are tracked and any later transaction re-opening one is rejected.
     const partitions = new Map<
         string,
         { group: Uint8Array; txs: PeraTransaction[] }

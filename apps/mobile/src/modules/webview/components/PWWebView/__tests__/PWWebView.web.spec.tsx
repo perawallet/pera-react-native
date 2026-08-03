@@ -257,18 +257,12 @@ describe('PWWebView.web', () => {
         expect(src).not.toContain(firstToken)
     })
 
-    // Review finding 1 (M6) / M8 update: every other privileged op runs
-    // through requireSecure inside usePeraWebviewInterface; the web-only
-    // pushWebView intercept must too, rather than trusting the token check
-    // alone. Previously this was exercised by mounting an untrusted URL and
-    // pushing a message straight through the (fully mocked) host — but M8
-    // makes host creation itself conditional on trust (see "does not create
-    // a bridge host for an unrecognized URL" above), so a host existing
-    // for an insecure mount is no longer a reachable state to construct
-    // against the real helper; requireSecure's success path stays covered by
-    // "intercepts pushWebView into a real browser tab" above, and its
-    // isSecure-gating logic has direct unit coverage in handlers-shared's
-    // own spec.
+    // The web-only pushWebView intercept must go through requireSecure like
+    // every other privileged op, not trust the token check alone. It can't be
+    // exercised directly here anymore: host creation is itself gated on trust
+    // (see the test above), so "a host exists for an insecure mount" is no
+    // longer constructible. The success path is covered above, and the
+    // isSecure gating has unit coverage in handlers-shared's own spec.
 
     // Fix 1 (M6 final-review): native (PWWebView.tsx:122-124) passes
     // `enablePeraConnect ? contextFingerprints : undefined` into the notify

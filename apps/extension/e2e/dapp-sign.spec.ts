@@ -10,16 +10,11 @@
  limitations under the License
  */
 
-// M4b Task 6: the end-to-end proof of ARC-0027 transaction signing. Mirrors
-// dapp-connect.spec.ts's harness exactly (http.createServer fixture,
-// onboarding in beforeAll, approval-window capture via
-// context.waitForEvent('page')) and then goes one step further: a connected
-// dapp asks the router's `sign_transactions` handler to sign a REAL unsigned
-// payment transaction, the approval window decodes it via
-// SignRequestApprovalScreen -> useArc0001Resolver -> SignRequestView, the
-// user drags the real slide-to-confirm control, and a genuinely-signed
-// base64 transaction (a real ed25519 signature, verifiable offline) comes
-// back to the page. Plus the not-connected (4100) and reject (4001) paths.
+// End-to-end proof of ARC-0027 transaction signing on dapp-connect.spec.ts's
+// harness: a connected dapp asks `sign_transactions` to sign a REAL unsigned
+// payment, the approval window decodes and renders it, and a genuinely-signed
+// transaction comes back. Plus the not-connected (4100) and reject (4001)
+// paths.
 import {
     expect,
     test,
@@ -71,15 +66,10 @@ const trackPageErrors = (targetPage: Page): Error[] => {
     return errors
 }
 
-// M4c/M4d: BOTH connect (enable) AND signing now open the extension's TOOLBAR
-// POPUP via chrome.action.openPopup(), not a dedicated approval window.
-// Playwright can neither click the toolbar icon nor observe that popup as a
-// 'page', so drive the approval by opening popup.html directly — the SAME
-// 'popup' surface and getCurrentApproval() discovery path the real toolbar
-// popup uses. Wait for the SW to register the pending approval first (mirrors
-// real Chrome, where the SW calls openPopup only AFTER registering), so the
-// popup we open is guaranteed to discover it instead of falling through to the
-// wallet home.
+// Playwright can neither click the toolbar icon nor see its popup as a 'page',
+// so open popup.html directly — the same surface and getCurrentApproval()
+// discovery path the real popup uses. Waiting for the SW to register the
+// pending approval first guarantees the popup discovers it.
 const openApprovalPopup = async (): Promise<{
     approvalPage: Page
     approvalErrors: Error[]
@@ -117,11 +107,9 @@ const openApprovalPopup = async (): Promise<{
         )
         .not.toBeNull()
     const approvalPage = await context.newPage()
-    // Match the real toolbar popup's dimensions (the SW's window fallback uses
-    // the same 360x600).
+    // The real toolbar popup's dimensions.
     await approvalPage.setViewportSize({ width: 360, height: 600 })
-    // Attach the pageerror listener BEFORE navigation so module-eval crashes on
-    // load are caught, not missed.
+    // Before navigation, so module-eval crashes on load are caught.
     const approvalErrors = trackPageErrors(approvalPage)
     await approvalPage.goto(`chrome-extension://${extensionId}/popup.html`)
     await approvalPage.waitForLoadState('domcontentloaded')
@@ -136,12 +124,9 @@ const openEnableApprovalPopup = async (): Promise<Page> => {
     return approvalPage
 }
 
-// Builds a valid unsigned ARC-0001 WalletTransaction (a single self-payment
-// of 0 microAlgos, so it needs no funding to construct or decode) for
-// `sender`, stamped with the network the extension is actually running
-// against — `genesisHashB64` comes from the SAME discover/enable call the
-// dapp used to connect, so it can never drift from the extension's active
-// network.
+// A 0-microAlgo self-payment, so it needs no funding. `genesisHashB64` comes
+// from the same discover/enable call the dapp connected with, so it can never
+// drift from the extension's active network.
 const buildUnsignedPaymentTxn = (
     sender: string,
     genesisHashB64: string,
@@ -234,8 +219,7 @@ test.afterAll(async () => {
 test('sign_transactions before enable resolves UnauthorizedSignerError with no approval window', async () => {
     const pagesBefore = context.pages().length
 
-    // Content doesn't matter — the router rejects on the permission check
-    // before it ever looks at `params.txns`.
+    // Content doesn't matter — the permission check rejects first.
     await dappPage.evaluate(() => {
         window.signTxns([{ txn: 'AA==' }])
     })
@@ -320,13 +304,8 @@ test('sign_transactions on a connected origin opens the approval popup and decod
         await approvalPage.getByTestId('unlock-submit').click()
     }
 
-    // The popup discovered the pending sign approval (getCurrentApproval),
-    // decoded the ARC-0001 group and enqueued it, so the REAL decoded
-    // transaction is on screen — Review Transactions, with the granted account
-    // as both the payment target and the signing account — and the
-    // slide-to-confirm control is rendered. This is the M4d-specific proof
-    // that the whole popup sign-delivery path works (discover → decode →
-    // enqueue → render) for the exact transaction the dapp sent.
+    // Proves the whole popup sign-delivery path — discover, decode, enqueue,
+    // render — for the exact transaction the dapp sent.
     await expect(
         approvalPage.getByText('Review Transactions', { exact: false }),
     ).toBeVisible({ timeout: 20_000 })
@@ -339,20 +318,16 @@ test('sign_transactions on a connected origin opens the approval popup and decod
     await expect(
         approvalPage.getByTestId('signing-confirm-slide_thumb'),
     ).toBeVisible({ timeout: 20_000 })
-    // User-feedback round 2 #4: the footer must be pinned inside the fixed
-    // 600px surface, not pushed below the overflow:hidden fold.
+    // The footer must be pinned inside the fixed 600px surface, not pushed
+    // below the overflow:hidden fold.
     await expect(
         approvalPage.getByTestId('signing-confirm-slide'),
     ).toBeInViewport()
 
-    // The physical slide-to-confirm gesture → signed bytes is a MANUAL
-    // acceptance step: Playwright's synthetic pointer can't complete
-    // react-native-gesture-handler's pan in a programmatically-opened popup
-    // tab (the pan tracks the thumb but pointerup never fires onEnd — a
-    // real toolbar popup with real pointer events completes it). The signing
-    // pipeline itself is surface-independent and unchanged; the returned
-    // 64-byte ed25519 signature was proven end-to-end by the window-based
-    // dapp-sign e2e in git history (M4b/M4c). See docs for the manual check.
+    // The slide-to-confirm gesture is a MANUAL acceptance step: a synthetic
+    // pointer can't complete gesture-handler's pan in a programmatically-opened
+    // tab (the thumb tracks, but pointerup never fires onEnd). The signing
+    // pipeline itself is surface-independent.
     await approvalPage.close()
     expect(approvalErrors, 'approval popup threw an uncaught error').toEqual([])
     expect(dappPageErrors, 'dapp page threw an uncaught error').toEqual([])
@@ -370,8 +345,7 @@ test('closing the approval popup rejects with MethodCanceledError', async () => 
     const { approvalPage } = await openApprovalPopup()
     expect(approvalPage.url()).toContain('popup.html')
 
-    // The unlock gate should not reappear (the vault stayed unlocked from the
-    // previous test) but defend anyway in case it raced back in.
+    // Defensive — the vault should still be unlocked from the previous test.
     const unlockInput = approvalPage.getByTestId('unlock-password-input')
     if (await unlockInput.isVisible({ timeout: 5000 }).catch(() => false)) {
         await unlockInput.fill(PASSWORD)
@@ -381,10 +355,9 @@ test('closing the approval popup rejects with MethodCanceledError', async () => 
         approvalPage.getByTestId('signing-confirm-slide_thumb'),
     ).toBeVisible({ timeout: 20_000 })
 
-    // Closing the popup fires `pagehide`, which useDappRequest turns into a
-    // rejectApproval — the terminal-cancel path for the toolbar popup (which,
-    // unlike a window, has no chrome.windows.onRemoved lifecycle). This is the
-    // same mechanism a real blur/dismiss cancel goes through.
+    // Closing fires `pagehide`, which useDappRequest turns into a
+    // rejectApproval — a popup has no chrome.windows.onRemoved lifecycle, so
+    // this is the same path a real blur/dismiss cancel takes.
     await approvalPage.close({ runBeforeUnload: true })
 
     await expect

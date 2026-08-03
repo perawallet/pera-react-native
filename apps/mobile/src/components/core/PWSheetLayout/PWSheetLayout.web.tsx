@@ -10,21 +10,15 @@
  limitations under the License
  */
 
-// Web replacement for PWSheetLayout: the native version always renders
-// `BottomSheetScrollView` from `@gorhom/bottom-sheet` unconditionally (safe
-// there because every call site is reached through the real gorhom
-// `<BottomSheet>` that native's PWBottomSheet.tsx mounts). On web,
-// PWBottomSheet.web.tsx renders a plain Modal instead — no gorhom provider
-// ever exists — so `BottomSheetScrollView` throws
-// "'useBottomSheetInternal' cannot be used out of the BottomSheet!" the
-// instant any of this component's ~50 call sites render. That's an uncaught
-// error caught by AppShell.web's WebShellErrorBoundary (or App.web's outer
-// RootBoundary), so it shows the shell's error fallback instead of the sheet
-// content — still broken UX, but not a full app unmount. Swap in a plain
-// ScrollView here, mirroring PWScrollView's
-// own .web.tsx twin (same failure, same fix: never import
-// `@gorhom/bottom-sheet` on web at all — the PWInBottomSheetContext gate by
-// itself only picks which scroll component to use, it doesn't avoid gorhom).
+// Web replacement for PWSheetLayout, same failure and fix as
+// PWScrollView.web.tsx: the native version renders gorhom's
+// `BottomSheetScrollView` unconditionally, but PWBottomSheet.web renders a
+// plain Modal with no gorhom provider, so it throws at every one of this
+// component's ~50 call sites and trips the shell's error boundary.
+//
+// The fix is to never import `@gorhom/bottom-sheet` on web at all — the
+// PWInBottomSheetContext gate only picks which scroll component to use, it
+// doesn't avoid gorhom.
 import { ScrollView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useKeyboardState } from 'react-native-keyboard-controller'

@@ -22,11 +22,9 @@ import {
     type ParticipantResponse,
 } from '../assembleSignedMultisigTransactions'
 
-// =============================================================================
 // Test fixtures — real Ed25519 keypairs: the assembler verifies every
 // signature against `"TX" || txnBytes` under the participant pubkey, so
 // fabricated byte-fill signatures no longer pass.
-// =============================================================================
 
 const keyPairOf = (byte: number): nacl.SignKeyPair =>
     nacl.sign.keyPair.fromSeed(new Uint8Array(32).fill(byte))

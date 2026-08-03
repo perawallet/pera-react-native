@@ -149,24 +149,17 @@ export const QRScannerContent = ({
         ],
     )
 
-    // The popup is a 360x600 toolbar window Chrome tears down the instant it
-    // loses focus. `getUserMedia`'s permission *prompt* is an OS-level dialog
-    // that steals focus to grant it — exactly the failure `openExpandedTab`
-    // exists to dodge (see navigation.ts and WebMainRoutes' add-account /
-    // backup-wallet redirects). But camera permission for a
-    // chrome-extension:// origin is granted once and persists — if it's
-    // already 'granted' (typically because the user granted it from the
-    // expanded scan tab previously), `getUserMedia` resolves silently with no
-    // prompt, so the popup can safely auto-start the camera inline. The
-    // danger is strictly the 'prompt' (and unqueryable/'unknown') states: we
-    // never call `getUserMedia` there. In those states, paste stays fully
-    // functional, and a button hands off to the expanded tab so the user can
-    // grant permission somewhere the OS dialog can't kill the surface. The
-    // hand-off button only shows for deep-link-dispatch scans (below): a
-    // value scanned in the tab has no way to round-trip back into a field on
-    // the closed popup, so field-scans keep paste-only. 'denied' also keeps
-    // paste-only (no button): permission is per-origin, so the expanded tab
-    // would hit the same denial.
+    // Chrome tears the popup down the instant it loses focus, and
+    // `getUserMedia`'s permission prompt is an OS dialog that steals focus. But
+    // permission is per-origin and persists, so once 'granted' the call resolves
+    // silently and the popup can auto-start inline.
+    //
+    // So never call `getUserMedia` in the 'prompt' or unqueryable states —
+    // paste stays functional there, plus a button handing off to the expanded
+    // tab where the OS dialog can't kill the surface. That button only shows
+    // for deep-link scans: a value scanned in the tab can't round-trip back
+    // into a field on the closed popup. 'denied' is paste-only too, since the
+    // expanded tab would hit the same per-origin denial.
     const isPopup = getSurface() === 'popup'
 
     const [cameraPermission, setCameraPermission] =

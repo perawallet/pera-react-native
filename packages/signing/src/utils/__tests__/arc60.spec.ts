@@ -98,11 +98,9 @@ describe('verifyAuthenticatorDomain', () => {
     })
 })
 
-// =============================================================================
 // Fixtures shared by validateArc60AuthRequest tests — use the same valid
 // signer/domain shape as useLocalKeyArc60Signer.spec.ts, with a realistic 37-byte
 // authenticatorData (first 32 bytes = sha256(domain)).
-// =============================================================================
 
 const DOMAIN = 'arc60.io'
 const SIGNER = 'HD_ADDR'

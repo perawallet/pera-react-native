@@ -10,20 +10,10 @@
  limitations under the License
  */
 
-// Integration coverage for asset discovery (Pera asset search):
-//
-//   user types in AddAssetView ── debounce ──► useAssetSearchQuery
-//                                                    │
-//                                                    └─► GET /v1/assets/search/
-//                                                           returns results[]
-//                                                           with verification_tier
-//                                                           per row + next cursor
-//
-// The UI uses verification_tier to decorate each row (verified badge,
-// unverified neutral, suspicious warning). This file asserts:
-//   1. Results round-trip with all three tiers preserved.
-//   2. Pagination follows `next` URL cursor across pages.
-//   3. The query is gated by `enabled` so empty queries don't fire.
+// Asset discovery: AddAssetView -> debounce -> useAssetSearchQuery ->
+// GET /v1/assets/search/. Covers all three verification tiers round-tripping,
+// cursor pagination via the `next` URL, and the `enabled` gate that keeps empty
+// queries from firing.
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import React from 'react'

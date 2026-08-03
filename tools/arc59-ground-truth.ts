@@ -11,21 +11,14 @@
  */
 
 /*
- Ground-truth capture tool (PERA-4655, Task 3).
-
- Read-only dev tool — NEVER signs or submits. It finds real, currently-pending
- ARC59 mainnet state (via the public indexer/algod), builds each ARC59 flow's
- transaction group exactly as the app's hooks do (same fee math, same
- `staticFee`/`extraFee` placement), runs the group through algokit's
- `populateAppCallResources` (the same `buildPopulatedGroup` helper the app
- uses), and strict-simulates the populated group (empty signatures, NO
- unnamed resources allowed) to prove the recorded resource references are
- submission-valid. The per-txn `accounts` / `foreignAssets` / `foreignApps` /
- `boxes` populated by simulate are written to a checked-in JSON fixture that
- downstream tasks (5, 6) assert their explicit-ref builders reproduce.
-
+ Read-only dev tool — NEVER signs or submits. Does not run in CI.
  Run with: pnpm exec tsx tools/arc59-ground-truth.ts
- This is a dev tool, not a vitest test — it does not run in CI.
+
+ Finds real pending ARC59 mainnet state, builds each flow's group exactly as the
+ app's hooks do, populates resources through the same helper, then
+ strict-simulates (empty signatures, no unnamed resources) to prove the recorded
+ references are submission-valid. The populated per-txn resources are written to
+ a checked-in fixture that the explicit-ref builders assert they reproduce.
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -59,16 +52,13 @@ const FIXTURE_PATH = fileURLToPath(
     ),
 )
 
-// Conservative, documented stand-in for the backend's arc59-send-summary
-// endpoint (which requires a backend API key this tool does not have).
-// Values match the baseline used across this repo's own unit tests
-// (packages/asa-inbox/src/hooks/__tests__/useArc59Transaction.test.ts,
-// useArc59SendSummaryQuery.test.ts): a receiver whose inbox already exists
-// needs only (1) an inner opt-in of the new asset into the inbox and (2) an
-// inner axfer to it -> inner_tx_count=2, a 0.1 ALGO MBR bump for the new
-// asset holding row, and no extra algo_fund_amount. These are picked to be
-// sufficient (not exact) so the strict simulate proves the composed group is
-// valid to submit; they are NOT a claim about the real backend's numbers.
+// Stand-in for the arc59-send-summary endpoint, which needs a backend API key
+// this tool doesn't have. Matches the baseline in the repo's own unit tests: an
+// existing inbox needs an inner opt-in plus an inner axfer, a 0.1 ALGO MBR bump
+// for the new holding row, and no extra funding.
+//
+// Chosen to be SUFFICIENT, not exact — enough for the strict simulate to prove
+// the group is submittable, not a claim about the backend's real numbers.
 const SYNTHESIZED_SEND_SUMMARY_BASE = {
     minimum_balance_requirement: 100_000,
     inner_tx_count: 2,
@@ -162,11 +152,9 @@ type PendingInbox = {
 }
 
 /**
- * Scan ARC59 router boxes (paginated via the indexer's next-token) for real
- * pending inboxes, classifying each as a "claim" candidate (receiver not
- * opted into the held asset, inbox holds no spare ALGO) or a "claimWithAlgo"
- * candidate (inbox holds spare ALGO above its own MBR). Returns as soon as
- * both are found, or after `maxPages` pages of `pageSize` boxes each.
+ * Scans router boxes for pending inboxes, classifying each as a "claim"
+ * candidate (no spare ALGO) or "claimWithAlgo" (spare above its own MBR).
+ * Returns as soon as both are found, or after `maxPages`.
  */
 async function findPendingInboxes(
     algod: algosdk.Algodv2,

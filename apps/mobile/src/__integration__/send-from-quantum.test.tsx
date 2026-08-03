@@ -10,19 +10,12 @@
  limitations under the License
  */
 
-// PQ-006 / PERA-4488: quantum accounts now route end-to-end through the signing
-// state machine via the dedicated `quantumSignerActor` + `createQuantumStrategy`,
-// producing a `QuantumSignedTransaction` carrier. The second test below drives a
-// real quantum payment through the machine and proves the carrier is produced.
+// Quantum accounts route through the signing machine via `quantumSignerActor`
+// and `createQuantumStrategy`, producing a `QuantumSignedTransaction` carrier.
 //
-// PERA-4490 (PQ-017 task 3): the callback transport used to throw
-// (`assertNoQuantumSignedTransactions`) rather than deliver a Falcon pqsig
-// carrier to a peer. That gate is gone — the carrier-aware `encodeSignedTransaction`
-// means callback delivery hands the pqsig bytes straight through. The local send
-// still self-submits via the callback transport (not algod), so this test asserts
-// the carrier reaches the request's `approve` callback and that NO algod
-// `/v2/transactions` broadcast ever happens (submission itself stays
-// GATED/synthetic — out of scope here, see PQ-019).
+// A local send self-submits through the callback transport rather than algod,
+// so this asserts the carrier reaches the request's `approve` callback and that
+// no algod broadcast ever happens — submission itself stays gated (PQ-019).
 
 import {
     afterAll,

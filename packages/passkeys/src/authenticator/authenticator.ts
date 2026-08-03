@@ -29,49 +29,31 @@ import {
 } from './wire'
 
 /**
- * Platform-agnostic WebAuthn authenticator core: builds create/get
- * ceremonies over an injected {@link KeystoreSigner}. This module depends
- * only on the CBOR/attestation structures, `@noble/hashes`, and
- * `@algorandfoundation/dp256` (for `rawToDER`) — never on keystore-chrome or
- * any `chrome.*` API, so it can run (and be tested) outside the extension.
+ * Platform-agnostic WebAuthn authenticator core. Must never depend on
+ * keystore-chrome or any `chrome.*` API, so it can run (and be tested)
+ * outside the extension.
  *
- * It is a byte-for-byte port of the ceremony assembly in
- * `PasskeyAutofillCredentialProvider/CredentialProviderViewController.swift` +
- * `WebAuthn.swift` — see per-function notes below for the exact lines it
- * mirrors.
+ * Byte-for-byte port of the ceremony assembly in mobile's
+ * `CredentialProviderViewController.swift` + `WebAuthn.swift`.
  */
 
 /**
- * Injected keystore port. keystore-chrome implements this; tests
- * use a fake. Every method takes/lists by `rpId` (the bare, validated
- * effective domain resolved by {@link resolveRpId}) — NEVER the full
- * scheme-qualified page origin. Naming it `rpId` (not `origin`) here is
- * deliberate: an earlier draft of this port called it `origin`, which is a
- * landmine for an implementer who'd reasonably expect the full origin.
+ * Every method takes `rpId` — the bare, validated effective domain from
+ * {@link resolveRpId} — NEVER the full scheme-qualified page origin.
  */
 export type KeystoreSigner = {
     /**
-     * Derives (or reuses) a domain-specific P-256 keypair and persists it.
-     * `userHandle` here is the *derivation input* — the lowercased UTF-8
-     * decoding of the WebAuthn `user.id` bytes (falling back to base64url
-     * when the bytes aren't valid UTF-8), matching
-     * `identity.userHandleString.lowercased()` in
-     * `CredentialProviderViewController.swift:158,162`. It is NOT
-     * necessarily byte-reversible to the original `user.id` — that's
-     * intentional, mobile computes the same lossy string so both sides
-     * derive the same keypair. Implementations MUST NOT feed
-     * `userHandleOriginalB64Url` into key derivation — only `userHandle` is
-     * the derivation input; changing that would silently derive a different
-     * keypair than mobile's parity vector.
+     * `userHandle` is the *derivation input*: the lowercased UTF-8 decoding of
+     * `user.id` (base64url fallback when not valid UTF-8), matching mobile's
+     * `identity.userHandleString.lowercased()`. Deliberately lossy — both
+     * sides compute the same lossy string, so both derive the same keypair.
+     * Feeding `userHandleOriginalB64Url` into derivation instead would
+     * silently diverge from mobile's parity vector.
      *
-     * `userHandleOriginalB64Url` is the byte-exact companion: base64url of
-     * the RAW, case-preserving WebAuthn `user.id` bytes, unmodified by
-     * lowercasing or UTF-8 (re)decoding. Implementations must persist this
-     * verbatim (alongside, not instead of, the derivation `userHandle`) so
-     * {@link KeystoreSigner.listP256Credentials} can return the RP's
-     * original `user.id` bytes for `response.userHandle` on assertion —
-     * required for discoverable/usernameless login, where the RP looks the
-     * user up by that exact value.
+     * `userHandleOriginalB64Url` is the byte-exact companion, persisted
+     * alongside (not instead of) it so {@link listP256Credentials} can return
+     * the RP's original `user.id` for `response.userHandle` — required for
+     * discoverable login, where the RP looks the user up by that exact value.
      */
     createP256Credential(input: {
         rpId: string
@@ -83,15 +65,9 @@ export type KeystoreSigner = {
     /** Signs `data` with the P-256 key `keyId`; returns a RAW 64-byte (r‖s) signature — DER-encoding happens in this core. */
     signP256(keyId: string, data: Uint8Array): Promise<Uint8Array>
     /**
-     * Lists this RP ID's stored P-256 passkey credentials. `userHandle`
-     * here is base64url of the ORIGINAL (case-preserved) `user.id` bytes —
-     * i.e. the `userHandleOriginalB64Url` a matching
-     * {@link createP256Credential} call persisted — the byte-exact form
-     * needed to reconstruct `response.userHandle` on assertion, matching the
-     * `Passkey.userHandle` convention documented in `../models/passkey.ts`.
-     * This is deliberately a different encoding of "userHandle" than
-     * {@link createP256Credential}'s `userHandle` (derivation-input) field;
-     * see that field's doc for why.
+     * `userHandle` here is the persisted `userHandleOriginalB64Url`, NOT the
+     * derivation-input `userHandle` of {@link createP256Credential} — a
+     * deliberately different encoding. See that field's doc.
      */
     listP256Credentials(rpId: string): Promise<
         Array<{
@@ -105,28 +81,20 @@ export type KeystoreSigner = {
 
 export type SigningContext = {
     /**
-     * The full serialized page origin the ceremony was intercepted on, e.g.
-     * `https://webauthn.io` — used verbatim as `clientDataJSON.origin`
-     * (RPs verify this includes the scheme). NOT the same value passed to
-     * the `KeystoreSigner` (see {@link resolveRpId}).
+     * Full scheme-qualified page origin, e.g. `https://webauthn.io`. Used
+     * verbatim as `clientDataJSON.origin`; NOT what reaches `KeystoreSigner`
+     * (see {@link resolveRpId}).
      *
-     * CRITICAL: this MUST be the browser-stamped, trustworthy frame origin
-     * (read by the content script/service worker from the real frame, e.g.
-     * `location.origin`) — NEVER a value asserted by the intercepted page
-     * itself. `resolveRpId`'s registrable-suffix check below is the only
-     * thing standing between a malicious page and registering/asserting a
-     * credential under an `rp.id` it doesn't own; that check is only as
-     * trustworthy as this field, which the transport layer must guarantee.
+     * CRITICAL: must be the browser-stamped frame origin (`location.origin`
+     * read from the real frame) — NEVER a value asserted by the intercepted
+     * page. `resolveRpId`'s registrable-suffix check is all that stops a
+     * malicious page claiming an `rp.id` it doesn't own, and that check is
+     * only as trustworthy as this field.
      */
     origin: string
 }
 
-/**
- * Thrown when the RP-supplied `rp.id`/`rpId` is not the caller's own
- * hostname or a registrable parent domain of it (WebAuthn §5.1.3 "relying
- * party identifier" — the client MUST reject an RP ID that isn't a
- * registrable domain suffix of, or equal to, the origin's effective domain).
- */
+/** WebAuthn §5.1.3: the RP ID must be a registrable suffix of the origin. */
 export class SecurityError extends Error {
     constructor(
         message = 'The relying party ID is not a registrable domain suffix of, or equal to, the caller origin.',
@@ -145,20 +113,15 @@ const extractHostname = (origin: string): string => {
 }
 
 /**
- * Real browsers validate this via the Public Suffix List (true eTLD+1); we
- * don't have a PSL here, so this is a label-boundary suffix check instead:
- * `rpId` must equal `hostname`, or `hostname` must end with `.${rpId}`. A
- * bare, dot-less `rpId` (e.g. `com`) is rejected unless it's an exact match
- * (covers `localhost`) — without this, `hostname.endsWith('.' + rpId)` would
- * accept `rpId: 'com'` for literally any `.com` origin.
+ * A label-boundary suffix check standing in for the Public Suffix List, which
+ * we don't have here. The dot-less rejection matters: without it,
+ * `hostname.endsWith('.' + rpId)` would accept `rpId: 'com'` for any `.com`
+ * origin. The exact-match escape hatch covers `localhost`.
  *
- * Known accepted gap: a contrived `rpId` that IS a real public suffix (e.g.
- * `co.uk` for an `x.co.uk` origin) passes this check but shouldn't per a
- * full eTLD+1 PSL lookup. Mobile never faced this — OS-mediated passkey
- * registration handles RP ID validation before this code ever runs. The
- * attack this check DOES stop — a page claiming an unrelated domain
- * (`rpId: 'evil.com'` from `webauthn.io`) — is the one that matters for an
- * extension intercepting page-level WebAuthn with no OS mediation.
+ * Accepted gap: an `rpId` that IS a real public suffix (`co.uk` for an
+ * `x.co.uk` origin) passes but shouldn't under a true eTLD+1 lookup. The
+ * attack that matters — a page claiming `evil.com` from `webauthn.io` — is
+ * still stopped.
  */
 const isRegistrableSuffix = (rpId: string, hostname: string): boolean => {
     if (rpId === hostname) return true
@@ -167,29 +130,17 @@ const isRegistrableSuffix = (rpId: string, hostname: string): boolean => {
 }
 
 /**
- * Resolves the WebAuthn RP ID (bare effective domain, e.g. `webauthn.io`,
- * no scheme) used for `SHA256(rpId)` in `authenticatorData` AND as the
- * `rpId` field passed to every `KeystoreSigner` method.
+ * The bare effective domain (e.g. `webauthn.io`) used for `SHA256(rpId)` in
+ * `authenticatorData` and passed to every `KeystoreSigner` method.
  *
- * This deliberately does NOT reuse `origin` (the full scheme-qualified
- * origin) for the signer calls: mobile's HD derivation
- * (`CredentialProviderViewController.swift:161`, `dP256.genDomainSpecificKeyPair`)
- * always hashes a bare RP ID domain (e.g. `identity.relyingPartyIdentifier`
- * is never scheme-qualified) — passing a scheme-qualified origin into the
- * signer here would derive a *different* keypair than mobile does for the
- * same site, silently breaking cross-device credential parity, this task's
- * whole point. When the RP doesn't set `rp.id`/`rpId` explicitly, this falls
- * back to the origin's hostname (or the raw string, if it doesn't parse as a
- * URL — e.g. a caller that already passed a bare domain as `origin`, which
- * the parity-vector test and fakes in this package's tests do for brevity).
+ * Deliberately not `origin`: mobile's HD derivation always hashes a bare RP
+ * ID, so feeding a scheme-qualified origin to the signer would derive a
+ * different keypair for the same site and silently break cross-device parity.
  *
- * When the RP DOES set an explicit `rp.id`/`rpId`, it's validated against
- * `origin` (see {@link isRegistrableSuffix}) and rejected with
- * {@link SecurityError} if it names a domain the caller doesn't control —
- * per WebAuthn §5.1.3. A real OS-mediated authenticator (mobile's Credential
- * Provider) never has to make this check itself; a browser extension
- * intercepting page-level `navigator.credentials` calls does, since nothing
- * else here stops a page from asserting an `rp.id` it doesn't own.
+ * An explicit RP-supplied `rp.id` is validated against `origin` and rejected
+ * with {@link SecurityError} per WebAuthn §5.1.3. Mobile's OS-mediated
+ * authenticator never needs this check; an extension intercepting page-level
+ * `navigator.credentials` does.
  */
 export const resolveRpId = (
     rpIdFromOptions: string | undefined,
@@ -197,9 +148,8 @@ export const resolveRpId = (
 ): string => {
     const hostname = extractHostname(origin)
     if (!rpIdFromOptions) return hostname
-    // WebAuthn RP IDs are case-insensitive domains; new URL().hostname is
-    // already lowercased, so normalize the RP-supplied value before comparing
-    // (and drop a fully-qualified trailing dot) — otherwise a legit RP passing
+    // `URL().hostname` is already lowercased, so normalize the RP-supplied
+    // value too (and drop a trailing dot) — otherwise a legit RP passing
     // `rp.id: 'Example.com'` would fail-closed to a SecurityError.
     const normalizedRpId = rpIdFromOptions.toLowerCase().replace(/\.$/, '')
     if (!isRegistrableSuffix(normalizedRpId, hostname)) {
@@ -231,12 +181,9 @@ export class NotAllowedError extends Error {
 const dp256 = new DeterministicP256()
 
 /**
- * Fixed P-256 SubjectPublicKeyInfo (X.509) DER prefix, up to and including
- * the BIT STRING header (`03 42 00`) — identical constant to
- * `packages/migrate/src/migrate/passkeys/deriveLegacyPasskeyCredential.ts`'s
- * `P256_SPKI_PREFIX`. A full uncompressed-point SPKI is this 26-byte prefix,
- * followed by the `0x04` uncompressed-point indicator and the 64-byte
- * `X || Y` coordinates (91 bytes total).
+ * P-256 SPKI (X.509) DER prefix through the BIT STRING header. Duplicated in
+ * `migrate/passkeys/deriveLegacyPasskeyCredential.ts` — keep in sync. Full
+ * SPKI = this 26-byte prefix + `0x04` + 64-byte `X || Y` = 91 bytes.
  */
 const P256_SPKI_PREFIX = Uint8Array.from([
     0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02,
@@ -245,11 +192,9 @@ const P256_SPKI_PREFIX = Uint8Array.from([
 ])
 
 /**
- * Wraps a P-256 public key in X.509/SPKI DER — the exact bytes CryptoKit's
- * `derRepresentation` produces. Accepts either the raw 64-byte `X || Y` form
- * or the 65-byte `0x04`-prefixed form (normalized via
- * `splitP256PublicKey`, rather than assuming the `KeystoreSigner` always
- * hands back exactly 64 bytes).
+ * Produces the exact bytes CryptoKit's `derRepresentation` does. Accepts the
+ * raw 64-byte `X || Y` or 65-byte `0x04`-prefixed form, since the
+ * `KeystoreSigner` isn't guaranteed to hand back exactly 64 bytes.
  */
 export const p256XYToSpkiDer = (publicKeyXY: Uint8Array): Uint8Array => {
     const { x, y } = splitP256PublicKey(publicKeyXY)
@@ -264,41 +209,18 @@ export const p256XYToSpkiDer = (publicKeyXY: Uint8Array): Uint8Array => {
 }
 
 /**
- * Derives `credentialId = SHA256(publicKey)`.
- *
- * FINDING — which form of the public key gets hashed: mobile's *current*
- * (non-legacy) passkey registration path is
- * `CredentialProviderViewController.swift:164-165`:
- *
- * ```swift
- * let publicKey = privateKey.publicKey.derRepresentation   // SPKI DER, 91 bytes
- * let credentialId = WebAuthn.credentialId(publicKey: publicKey)
- * ```
- *
- * `WebAuthn.credentialId` (`WebAuthn.swift:58-60`) just hashes whatever
- * `Data` it's handed — it's the caller here that fixes the form to SPKI DER,
- * not the raw 64-byte point or the 65-byte `0x04`-prefixed point. This also
- * matches the default `credentialIdBasis: 'spki-der'` in
- * `packages/migrate/src/migrate/passkeys/deriveLegacyPasskeyCredential.ts`
- * (Android's legacy basis, and now the shared live-registration default).
- * `'raw-point'` there is the iOS-*legacy*-app basis, superseded by this
- * unified Credential Provider — this authenticator matches the live path so
- * a credential registered by the extension can be asserted by mobile (and
- * vice versa) without a credentialId mismatch.
- *
- * So: this hashes the 91-byte SPKI DER encoding of the raw 64-byte
- * `publicKeyXY`, NOT the 64 or 65-byte raw point forms.
+ * Hashes the 91-byte SPKI DER encoding, NOT the 64- or 65-byte raw point
+ * forms. Mobile's live registration path hashes `derRepresentation`, and
+ * `deriveLegacyPasskeyCredential`'s default `credentialIdBasis: 'spki-der'`
+ * agrees; matching it is what lets a credential registered by the extension
+ * be asserted by mobile without a credentialId mismatch.
  */
 export const deriveCredentialId = (publicKeyXY: Uint8Array): Uint8Array =>
     sha256(p256XYToSpkiDer(publicKeyXY))
 
 /**
- * Derives the dp256 derivation-input userHandle string: UTF-8 decode of the
- * raw `user.id` bytes (falling back to base64url if not valid UTF-8), then
- * lowercased. Mirrors `identity.userHandleString.lowercased()` in
- * `CredentialProviderViewController.swift:158,162` and
- * `ASPasskeyCredentialIdentity.userHandleString` (`String(data:encoding:.utf8)
- * ?? base64URLEncodedString()`, `CredentialProviderViewController.swift:456-457`).
+ * Mirrors iOS `ASPasskeyCredentialIdentity.userHandleString.lowercased()`
+ * (`String(data:encoding:.utf8) ?? base64URLEncodedString()`).
  */
 const toDerivationUserHandle = (userId: Uint8Array): string => {
     let decoded: string
@@ -311,11 +233,8 @@ const toDerivationUserHandle = (userId: Uint8Array): string => {
 }
 
 /**
- * Builds `clientDataJSON`: `{type, challenge, origin, crossOrigin: false}`.
- * Object-literal key insertion order is `type, challenge, origin,
- * crossOrigin` and `JSON.stringify` preserves it (string keys, no numeric
- * coercion) — this is the stable key order relying parties are written
- * against.
+ * Key order is load-bearing: `JSON.stringify` preserves insertion order for
+ * string keys, and relying parties are written against this exact order.
  */
 export const buildClientDataJSON = (
     type: 'webauthn.create' | 'webauthn.get',
@@ -334,15 +253,7 @@ export const buildClientDataJSON = (
 const idsMatch = (a: Uint8Array, b: Uint8Array): boolean =>
     bytesToB64url(a) === bytesToB64url(b)
 
-/**
- * Handles `navigator.credentials.create()`. Rejects an `rp.id` that isn't
- * the caller's own domain or a registrable parent of it with
- * {@link SecurityError} (see {@link resolveRpId}). Honors
- * `excludeCredentials` (throws {@link InvalidStateError} if this origin
- * already has one of the named credentials), derives a fresh
- * domain-specific P-256 keypair via `signer`, and assembles the
- * `none`-format attestation.
- */
+/** Handles `navigator.credentials.create()`, with `none`-format attestation. */
 export const createCredential = async (
     options: PublicKeyCredentialCreationOptions,
     signer: KeystoreSigner,
@@ -402,15 +313,11 @@ export const createCredential = async (
 }
 
 /**
- * Handles `navigator.credentials.get()`. Rejects an `rpId` that isn't the
- * caller's own domain or a registrable parent of it with
- * {@link SecurityError} (see {@link resolveRpId}). Resolves the credential
- * to assert with from `allowCredentials ∩ listP256Credentials(rpId)` — or,
- * when `allowCredentials` is empty/absent (a discoverable-credential
- * request), the first credential this RP ID has. (Presenting a picker
- * across multiple discoverable credentials is a UI concern for a later
- * task, not this crypto core.) Signs `authenticatorData ‖
- * SHA256(clientDataJSON)` and DER-encodes the result.
+ * Handles `navigator.credentials.get()`, signing
+ * `authenticatorData ‖ SHA256(clientDataJSON)`.
+ *
+ * A discoverable request (no `allowCredentials`) takes the RP's first
+ * credential — picking among several is a UI concern, not this crypto core's.
  */
 export const assertCredential = async (
     options: PublicKeyCredentialRequestOptions,
@@ -451,9 +358,8 @@ export const assertCredential = async (
         clientDataJSON,
         authenticatorData: authData,
         signature,
-        // `resolved.userHandle` is base64url text (see KeystoreSigner doc
-        // above) — decode back to raw bytes for the response, matching what
-        // `serializeCredential` re-encodes.
+        // base64url text per the KeystoreSigner doc — decode to raw bytes so
+        // `serializeCredential` re-encodes the RP's original `user.id`.
         userHandle: b64urlToBytes(resolved.userHandle),
     }
     return serializeCredential({

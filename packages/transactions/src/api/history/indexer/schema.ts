@@ -13,11 +13,9 @@
 import { z } from 'zod'
 
 /**
- * uint64-bearing fields (amounts, asset ids, rounds, timestamps) as they come
- * back from the indexer. `parsePrecisionSafeJson` deliberately surfaces
- * values above 2^53-1 as decimal *strings* rather than rounding them (real
- * fnet assets have a `total` around 1e16), so `string` must stay in this
- * union — narrowing it back to `number | bigint` would silently corrupt
+ * `string` must stay in this union: `parsePrecisionSafeJson` surfaces values
+ * above 2^53-1 as decimal strings rather than rounding them (real fnet assets
+ * have a `total` around 1e16), so narrowing to `number | bigint` would corrupt
  * exactly the values precision-safe parsing exists to protect.
  */
 const amountish = z.union([z.number(), z.string(), z.bigint()])
@@ -33,12 +31,10 @@ const assetTransferLegSchema = z.object({
     'asset-id': amountish,
     amount: amountish,
     receiver: z.string(),
-    // (asnd) clawback's effective sender — the address actually debited.
-    // Nested `sender`, NOT a top-level `asset-sender` (no such field exists;
-    // confirmed against algosdk's TransactionAssetTransfer model and live
-    // mainnet clawbacks). Must match the key that `computeBalanceImpacts`
-    // reads, or clawbacks silently debit the clawback admin instead of the
-    // account actually drained.
+    // (asnd) The address actually debited by a clawback. A NESTED `sender`,
+    // not a top-level `asset-sender` — no such field exists. Must match what
+    // `computeBalanceImpacts` reads, or clawbacks silently debit the admin
+    // instead of the drained account.
     sender: z.string().optional(),
     'close-to': z.string().optional(),
     'close-amount': amountish.optional(),
@@ -48,23 +44,15 @@ const applicationLegSchema = z.object({
     'application-id': amountish.optional(),
 })
 
-// Fields shared by every transaction node, top-level or inner. `id` is
-// deliberately NOT included here — see indexerTransactionNodeSchema and
-// indexerTransactionSchema below, which each add it with different
-// requiredness — so the difference is visible at the two definition sites
-// rather than smuggled through a shared default.
+// `id` is deliberately excluded: the node and top-level schemas below each add
+// it with different requiredness, so the difference stays visible at both
+// definition sites rather than smuggled through a shared default.
 const sharedTransactionFields = {
-    // Deliberately a bare `z.string()`, NOT the Pera backend's
-    // `z.nativeEnum(TransactionTypes)` (see
-    // `transactionHistoryItemResponseSchema.tx_type` in `../schema`).
-    // The app has purpose-built generic fallbacks for transaction
-    // types it doesn't specialize for (see the cast onto
-    // `tx_type` in `./transformers.ts`) — constraining this to the
-    // known enum would make an unrecognized type fail validation and
-    // get silently dropped as an "unparseable row," hiding a
-    // transaction the UI could have rendered generically. That is
-    // exactly the failure this task exists to prevent, just moved
-    // from routing into validation. Do not tighten this again.
+    // Deliberately a bare `z.string()`, NOT `z.nativeEnum(TransactionTypes)`.
+    // The app has generic fallbacks for unspecialized transaction types, so
+    // constraining this would make an unrecognized type fail validation and be
+    // dropped as an unparseable row — hiding a transaction the UI could have
+    // rendered. Do not tighten this again.
     'tx-type': z.string(),
     sender: z.string(),
     fee: amountish,

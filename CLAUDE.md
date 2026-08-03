@@ -189,6 +189,42 @@ Asset-specific wrappers in `@perawallet/wallet-core-assets`:
 - **Never** use `any` — use `unknown` with type guards or define proper types
 - Named exports only — no default exports
 
+## Comments (CRITICAL)
+
+**The code says what. Comments say why — and only when the why isn't obvious.** Default to no comment. Most code needs none.
+
+Write a comment only when one of these is true:
+
+- **Non-obvious rationale** — why this approach over the obvious one, a constraint from an external system, a deliberate ordering
+- **A trap** — a workaround, a footgun, something that looks wrong but is right, something that will break if changed
+- **Units, ranges, encodings** that the type can't express (base units vs display units, microAlgos, seconds vs ms)
+
+Delete or don't write:
+
+- Restatements of the code (`// Set the loading state`, `// Map over accounts`)
+- JSDoc that repeats the signature — `@param address The address`, `@returns The result`
+- Banner/section dividers (`// ===== Types =====`), narration of a file's structure
+- "This hook does X" on a hook already named `useX`
+- Change log or process narration (`// Added for PERA-1234`, `// Previously this used…`) — that's what git is for
+- Commented-out code
+
+Sizing: one line is the norm. Three is a lot. Past that, either the code needs restructuring or the explanation belongs in `docs/`.
+
+```typescript
+// Bad — restates the code, pads with structure
+/**
+ * Resolves the account balance.
+ * This function takes an account and returns its balance.
+ * @param account The account to resolve the balance for
+ * @returns The balance as a Decimal
+ */
+
+// Good — the why the reader can't derive
+// Indexer returns base units as strings; wrap before any arithmetic to avoid 2^53 loss.
+```
+
+Keep JSDoc on exported package APIs where it earns its place (units, constraints, gotchas) — drop the ceremony that doesn't.
+
 ## Import Order
 
 ```typescript

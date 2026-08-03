@@ -15,14 +15,7 @@ import { formatNumber } from '@perawallet/wallet-core-shared'
 
 import { type MinimalAsset, type PeraAsset, PeraAssetType } from './models'
 
-/**
- * Converts an amount from base units to display units for a given asset.
- * Uses the same logic as `baseUnitsToDisplayUnits` from `@perawallet/wallet-core-blockchain`.
- *
- * @param value - The amount in base units (smallest indivisible unit)
- * @param asset - The asset definition containing decimal places
- * @returns The amount in display units as a Decimal
- */
+/** Base units -> display units. Asset-aware wrapper over `baseUnitsToDisplayUnits`. */
 export const toWholeUnits = (
     value: Decimal | number | bigint,
     asset: PeraAsset,
@@ -30,14 +23,7 @@ export const toWholeUnits = (
     return new Decimal(value.toString()).div(Decimal.pow(10, asset.decimals))
 }
 
-/**
- * Converts an amount from display units to base units for a given asset.
- * Uses the same logic as `displayUnitsToBaseUnits` from `@perawallet/wallet-core-blockchain`.
- *
- * @param value - The amount in display units (human-readable)
- * @param asset - The asset definition containing decimal places
- * @returns The amount in base units as a Decimal
- */
+/** Display units -> base units. Asset-aware wrapper over `displayUnitsToBaseUnits`. */
 export const toDecimalUnits = (
     value: Decimal | number | bigint,
     asset: PeraAsset,
@@ -45,37 +31,19 @@ export const toDecimalUnits = (
     return new Decimal(value.toString()).mul(Decimal.pow(10, asset.decimals))
 }
 
-/**
- * Checks whether an asset is a pure NFT per ARC-3 spec.
- * A pure NFT has exactly 1 total supply and 0 decimals.
- *
- * @param asset - The asset to check
- * @returns true if the asset is a pure (non-fractional) NFT
- */
+/** Pure (non-fractional) NFT per ARC-3: 1 total supply, 0 decimals. */
 export const isPureNft = (asset: PeraAsset): boolean => {
     return asset.totalSupply.eq(1) && asset.decimals === 0
 }
 
-/**
- * Checks whether an asset is classified as a collectible/NFT.
- * Classification is backend-driven via the `type` field in Pera metadata.
- *
- * @param asset - The asset to check
- * @returns true if the asset is a collectible
- */
+/** Backend-driven classification, via the `type` field in Pera metadata. */
 export const isCollectible = (asset: PeraAsset): boolean => {
     return asset.peraMetadata?.type === PeraAssetType.collectible
 }
 
 /**
- * Formats a collectible amount for display.
- * Pure NFTs (totalSupply=1, decimals=0) return an empty string since
- * the quantity is implicit. Fractional NFTs return the amount with an
- * "x" prefix (e.g., "x0.5").
- *
- * @param amount - The amount in display units
- * @param asset - The asset to format for
- * @returns Formatted amount string, or empty string for pure NFTs
+ * Pure NFTs format to an empty string — their quantity is implicit.
+ * Fractional NFTs get an "x" prefix, e.g. "x0.5".
  */
 export const formatCollectibleAmount = (
     amount: Decimal,
@@ -87,14 +55,7 @@ export const formatCollectibleAmount = (
     return `x${amount.toString()}`
 }
 
-/**
- * Formats an asset amount from base units into a human-readable string
- * with the asset's unit name appended.
- *
- * @param amount - The amount in base units
- * @param asset - The asset definition (needs decimals and unitName)
- * @returns Formatted string, e.g. "1,234.56 ALGO"
- */
+/** Base units in, e.g. "1,234.56 ALGO" out. */
 export const formatAssetAmount = (
     amount: Decimal | string,
     asset: Pick<MinimalAsset, 'decimals' | 'unitName'>,

@@ -22,26 +22,21 @@ export const migrateDeviceIdentifiers = (
 ): void => {
     const device = useDeviceStore.getState()
 
-    // This step is idempotent by necessity: a step-version bump replays it for
-    // users who already migrated.
+    // Idempotent by necessity: a step-version bump replays it for users who
+    // already migrated.
     //
-    // Keying the "leave the live id alone" decision on id INEQUALITY would be
-    // wrong, because a different non-null id has two very different causes:
-    //   1. we already wrote the migrated id and registration's recreate-
-    //      fallback replaced it after a 404 — retrying is pointless, and
-    //   2. registration minted an id before this step ever ran, so the
-    //      migrated id was never tried at all.
-    // Case 2 is routine, not exotic: `pera_7_migration` defaults to false, so a
-    // user outside a staged rollout registers first and migrates on a later
-    // launch; dismissing a failed run un-gates the registrar the same way.
-    // Treating case 2 like case 1 would discard a live migrated id — and its
-    // device-keyed server state, e.g. Discover favourites — permanently,
-    // causing the orphaning this ticket exists to measure.
+    // Keying "leave the live id alone" on id INEQUALITY would be wrong, because
+    // a different non-null id has two causes: the migrated id was written and
+    // then replaced by registration's 404 recreate-fallback (retrying is
+    // pointless), or registration minted an id before this step ever ran (the
+    // migrated id was never tried). The second is routine — `pera_7_migration`
+    // defaults off, so users outside a staged rollout register first — and
+    // treating it like the first would permanently discard a live migrated id
+    // along with its device-keyed server state.
     //
-    // The origin flag distinguishes them: only skip when we know a migrated id
-    // was already replaced. Otherwise write it and let the next PUT either
-    // resolve (favourites restored) or 404 into recreate — no worse off than
-    // not trying, and the 404 path reports the loss via telemetry.
+    // The origin flag distinguishes them: skip only when we know the migrated
+    // id was already replaced. Otherwise write it and let the next PUT resolve
+    // or 404 into recreate, which reports the loss via telemetry.
     const applyMigratedDeviceId = (network: Network, migratedId: string) => {
         const currentId = device.deviceIDs.get(network)
         const origin = device.deviceIdOrigins[network]

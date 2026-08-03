@@ -10,34 +10,14 @@
  limitations under the License
  */
 
-// Integration coverage for the WalletConnect v1 algo_signTxn dispatch
-// and validation layer. Pair flow is covered by `walletconnect-pair.test.tsx`;
-// this file picks up where pairing leaves off:
+// `algo_signTxn` dispatch and validation, picking up where
+// `walletconnect-pair.test.tsx` leaves off: a fired request runs
+// `handleSignTransaction`'s session / payload / ARC-0001 checks, and a throw
+// lands as `connector.rejectRequest` plus a store connectionError.
 //
-//   established session  ─►  connector.fire('algo_signTxn', ...)
-//                                   │
-//                                   ▼
-//                            useWalletConnectHandlers.handleSignTransaction
-//                                   │
-//                                   ├─►  validates session exists
-//                                   ├─►  validates payload shape
-//                                   ├─►  ARC-0001 param check
-//                                   │
-//                                   ├──── on validation throw ─►
-//                                   │     connector.rejectRequest
-//                                   │     useWalletConnectStore.connectionError
-//                                   │
-//                                   └──── on success ─►
-//                                         signing pipeline (covered by
-//                                         send-algo flow tests; the full
-//                                         msgpack signing path with real
-//                                         Algorand transactions is a
-//                                         separate Phase 4 effort).
-//
-// What this file covers: the rejection paths that don't require real
-// msgpack-encoded txns — they're the ones that catch most production
-// regressions (dApp sends bad data, session expires mid-flight, etc.)
-// and reach `connector.rejectRequest` reliably.
+// Covers the rejection paths only — those need no real msgpack txns and catch
+// most production regressions (bad dApp data, a session expiring mid-flight).
+// The success path's signing is covered by the send-algo flow tests.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React from 'react'
@@ -71,9 +51,7 @@ import { TransactionListScreen } from '@modules/signing/screens'
 
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
-// ---------------------------------------------------------------------------
 // Shared fixtures for the external-transaction tests
-// ---------------------------------------------------------------------------
 
 const senderA = new Address(new Uint8Array(32).fill(1))
 const senderB = new Address(new Uint8Array(32).fill(2))
@@ -446,22 +424,15 @@ describe('Flow: WalletConnect v1 algo_signTxn dispatch + validation', () => {
     it(
         'shows the Other signer pill for the external transaction in the signing list',
         async () => {
-            // Two-transaction request where only index 0 belongs to the
-            // wallet. Index 1 has a different sender and is not in `txs`,
-            // so `signableIndices: [0]` marks it as external. The signing
-            // pipeline renders every `groupContext` transaction but stamps
-            // `isExternal: true` on the slot the wallet won't sign. The
-            // transactions are ungrouped here (no `group` byte set); the
-            // atomic-group-expansion path of `createTransactionListItems`
-            // is covered by unit tests in classification.spec.ts.
+            // Only index 0 belongs to the wallet, so `signableIndices: [0]`
+            // marks index 1 external. The pipeline renders every `groupContext`
+            // transaction but stamps `isExternal` on the slot it won't sign.
+            // Ungrouped here — atomic-group expansion is covered by
+            // classification.spec.ts.
             //
-            // NOTE: navigation to the detail screen is omitted here.
-            // `renderWithNavigation` mounts the test navigator which registers
-            // the stack, but navigating to `TransactionDetails` from an item
-            // press requires the item to be tappable in the jsdom environment
-            // (the pill tap opens a bottom sheet, not navigation). The
-            // list-level assertion is sufficient to cover Task 7 (isExternal
-            // wired through TransactionListScreen) end-to-end.
+            // The list-level assertion is where this stops: reaching the detail
+            // screen needs a tappable item, and under jsdom the pill tap opens
+            // a bottom sheet rather than navigating.
             const tx0 = makeTx0()
             const tx1 = makeTx1()
 

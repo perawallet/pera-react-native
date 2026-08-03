@@ -27,10 +27,6 @@ import type { TransactionListItem } from '../utils/classification'
 import type { FeeAdjustment } from '../pipeline/sources'
 import type { MachineSnapshot } from './types'
 
-// =============================================================================
-// Empty defaults
-// =============================================================================
-
 export const EMPTY_TRANSACTIONS: PeraDisplayableTransaction[] = []
 export const EMPTY_LIST_ITEMS: TransactionListItem[] = []
 export const EMPTY_WARNINGS: TransactionWarning[] = []
@@ -41,9 +37,7 @@ export const EMPTY_FEE_ADJUSTMENTS: FeeAdjustment[] = Object.freeze(
 ) as FeeAdjustment[]
 export const ZERO_FEE = new Decimal(0)
 
-// =============================================================================
 // Snapshot helpers — typed against machine context shape
-// =============================================================================
 
 export const deriveStage = (snapshot: MachineSnapshot): PipelineStage => {
     if (snapshot.matches('completed')) return 'completed'

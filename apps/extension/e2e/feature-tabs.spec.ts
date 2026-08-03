@@ -10,11 +10,9 @@
  limitations under the License
  */
 
-// M5 milestone smoke: the native feature tabs (Swap, Fund) plus the Staking
-// menu route and the Developer Settings row, newly enabled on web. Reuses the
-// wallet-smoke.spec.ts fixture shape: fresh profile, serial, onboard once in
-// beforeAll. Network access is not assumed — every assertion accepts the
-// networkless terminal state where one exists.
+// Smoke test for the Swap and Fund tabs, the Staking route, and the Developer
+// Settings row on web. Network access is not assumed — every assertion accepts
+// the networkless terminal state where one exists.
 import {
     expect,
     test,
@@ -39,19 +37,18 @@ let page: Page
 let pageErrors: Error[]
 const PASSWORD = 'e2e-feature-tabs-password-1'
 
-// Module-eval crashes in the extension bundle otherwise surface as bare
-// selector timeouts with no indication of the real cause (see onboarding.spec.ts).
+// Without this, module-eval crashes in the bundle surface as bare selector
+// timeouts with no sign of the real cause.
 const trackPageErrors = (targetPage: Page): Error[] => {
     const errors: Error[] = []
     targetPage.on('pageerror', error => errors.push(error))
     return errors
 }
 
-// The web ChromeAgeGateService resolves {status:'unknown', capability:'manual'},
-// so the FIRST focus of any age-gated screen offers the self-declaration sheet.
-// The declared result persists in the age-gate store, so only one test pays
-// this cost — but which test runs first isn't guaranteed if the suite is ever
-// re-sliced, so every gated entry point calls this helper.
+// Web's age-gate resolves to 'unknown'/'manual', so the first focus of a gated
+// screen offers the self-declaration sheet. The result persists, so only one
+// test pays the cost — but call it at every gated entry point, since slice
+// order isn't guaranteed.
 const passAgeGateIfOffered = async (targetPage: Page): Promise<void> => {
     const declaration = targetPage.getByTestId('age-gate-declaration')
     const offered = await declaration
@@ -80,7 +77,6 @@ test.beforeAll(async () => {
     }
     extensionId = new URL(serviceWorker.url()).host
 
-    // Onboard exactly as onboarding.spec.ts / wallet-smoke.spec.ts.
     page = await context.newPage()
     pageErrors = trackPageErrors(page)
     await page.goto(`chrome-extension://${extensionId}/expanded.html`)
@@ -113,15 +109,10 @@ test.afterAll(async () => {
     await context.close()
 })
 
-// Swap: tab renders, the age gate self-declaration works, the one-time
-// introduction sheet shows for a fresh wallet, and dismissing it lands on the
-// real SwapForm — proving the whole swap screen graph booted on web with no
-// eval-time crash. SwapForm.tsx only renders 'swap-button' once a quote
-// resolves (selectedQuote truthy), which needs a typed pay amount AND a
-// live network round-trip — neither holds for a freshly onboarded,
-// unfunded, possibly networkless account. 'swap-pay-input' (the pay-amount
-// field) is unconditional, so it's the real proof the form mounted; accept
-// 'swap-button' too in case a quote does resolve.
+// Reaching the real SwapForm proves the swap graph booted with no eval crash.
+// 'swap-button' only renders once a quote resolves, which needs a typed amount
+// AND a network round-trip — so 'swap-pay-input', which is unconditional, is
+// the real proof. Accept 'swap-button' too in case a quote does resolve.
 test('swap tab passes the age gate and renders the swap form', async () => {
     await dismissPinPromptIfPresent(page)
     await clickThroughPinPrompt(page, page.getByTestId('tab_swap_button'))
@@ -143,22 +134,16 @@ test('swap tab passes the age gate and renders the swap form', async () => {
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
 
-// Fund: the onramp screen reaches one of its two terminal states — the real
-// form (mainnet: 'History' header tab from onramp.tabs.history, rendered
-// through the react-native-pager-view web shim) or the testnet placeholder
-// (onramp.testnet.title). Either proves the onramp graph booted on web.
+// Either terminal state — the real mainnet form or the testnet placeholder —
+// proves the onramp graph booted on web.
 test('fund tab renders the onramp form or the mainnet-only placeholder', async () => {
     await dismissPinPromptIfPresent(page)
     await clickThroughPinPrompt(page, page.getByTestId('tab_fund_button'))
     await passAgeGateIfOffered(page)
 
-    // useOnrampScreen.tsx's one-time welcome sheet effect runs unconditionally
-    // (before the mainnet/testnet branch is even chosen), so it opens over
-    // BOTH terminal states on a fresh wallet. Playwright's toBeVisible doesn't
-    // account for a modal covering the element underneath, so leaving this
-    // sheet open wouldn't fail the assertion below — but it WOULD leave a
-    // full-screen overlay intercepting every subsequent test's clicks (the
-    // sheet stays mounted past this test). Dismiss it like the swap intro.
+    // The one-time welcome sheet opens over both terminal states. It wouldn't
+    // fail the assertion below (toBeVisible ignores a covering modal), but it
+    // stays mounted and intercepts every later test's clicks.
     const introStart = page.getByTestId('onramp-intro-start-button')
     const introOffered = await introStart
         .waitFor({ state: 'visible', timeout: 5000 })

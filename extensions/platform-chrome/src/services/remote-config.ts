@@ -73,18 +73,12 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
         }
         try {
             const value = getValue(this.remoteConfig, key)
-            // Only trust a genuinely fetched value — mirrors
-            // extensions/platform-react-native/src/services/firebase.ts,
-            // which seeds every key via defaultConfig so getValue never
-            // throws even pre-fetch; treating that seeded value as "real"
-            // would let a stale default silently override the caller's
-            // fallback. A non-remote source falls through to the caller's
-            // `fallback`, not the bundled default: e.g.
-            // useIsPeraCardEnabled calls
-            // getBooleanValue('enable_pera_card', isDebug || isStaging) to
-            // override the bundled `false` with `true` in dev/staging —
-            // before the first successful fetch, getSource() is 'default',
-            // and falling back to the bundled default would hide Pera Card.
+            // Only a genuinely fetched value counts. Every key is seeded via
+            // defaultConfig so getValue never throws pre-fetch, but treating
+            // that seed as real would let a bundled default silently override
+            // the caller's fallback — e.g. `enable_pera_card` is bundled
+            // `false`, so a dev/staging caller passing `true` would still see
+            // Pera Card hidden until the first successful fetch.
             return value.getSource() === 'remote'
                 ? value.asBoolean()
                 : (fallback ?? false)

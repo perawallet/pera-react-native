@@ -47,24 +47,12 @@ import {
     isArc60Request,
 } from '../models'
 
-// =============================================================================
-// Signer type resolution
-// =============================================================================
-
 /**
- * Determines the signing strategy type from the AUTH account — the account
- * whose key (or multisig template) actually authorizes the signature after
- * {@link resolveSigningAccount} applied the rekey/cosign rules:
- * - multisig: the auth account is a multisig (covers a multisig sender that
- *   self-resolves, a multisig rekeyed to another multisig, and any sender
- *   rekeyed on-chain to a Pera-held multisig)
- * - hardware: the auth account is a hardware wallet
- * - quantum: the auth account is a post-quantum (Falcon) account
- * - localKey: the auth account has local signing keys (Algo25 / HDWallet)
- *
- * Routing on the auth account also carries the externally-rekeyed-multisig
- * edge (a multisig whose on-chain auth is a standard/Ledger account we hold):
- * the auth key signs, instead of failing with NoLocalParticipantsError.
+ * Routes on the AUTH account — whatever actually authorizes the signature once
+ * {@link resolveSigningAccount} has applied the rekey/cosign rules, not the
+ * sender. That also covers the externally-rekeyed multisig (one whose on-chain
+ * auth is a standard/Ledger account we hold): the auth key signs, rather than
+ * failing with NoLocalParticipantsError.
  */
 const determineSignerType = (
     signerAccount: WalletAccount,
@@ -91,17 +79,7 @@ const determineSignerType = (
     )
 }
 
-// =============================================================================
-// Group signer type map
-// =============================================================================
-
-/**
- * Resolves the signing type for every unique signer address in the request.
- * Iterates all signable groups and determines the signer type per address,
- * enabling the machine to dispatch each group to the correct actor.
- *
- * Rekey vs. multisig-cosign handling is delegated to {@link resolveSigningAccount}.
- */
+/** Rekey and multisig-cosign handling live in {@link resolveSigningAccount}. */
 export const buildGroupSignerTypeMap = (
     groups: SignableGroup[],
     allAccounts: WalletAccount[],
@@ -132,33 +110,15 @@ export const buildGroupSignerTypeMap = (
     return map
 }
 
-// =============================================================================
-// SignableGroup construction
-// =============================================================================
-
 /**
- * Constructs {@link SourceMetadata} from a {@link SignRequest}.
+ * Dispatches on the tagged fields (`sourceType`, `transport`), NOT on whether an
+ * `approve` callback happens to be present, so the selector stays predictable
+ * as new caller shapes appear.
  *
- * - Local requests with `transport: 'algod'` get a minimal metadata object;
- *   the transport layer submits the signed group directly to the network.
- * - Local requests with `transport: 'callback'` (e.g. swap) keep
- *   `type: 'local'` but carry `callbacks`, so the transport selector picks
- *   the callback transport and the caller receives the signed bytes.
- * - External sources (WalletConnect, webview, deeplink) always wire the
- *   request's approve/reject/error callbacks into the {@link SourceCallbacks}
- *   shape so the transport layer can notify the originator.
- *
- * Dispatch here is on the tagged fields (`sourceType`, `transport`) — not on
- * the runtime presence of an `approve` callback — so the selector stays
- * predictable as new caller shapes are added.
- *
- * Callback delivery is carrier-aware: a quantum-signed group's `signed`
- * array may contain `QuantumSignedTransaction` (pqsig byte carrier) entries
- * alongside plain `PeraSignedTransaction`s, and both flow through to the
- * request's `approve` callback unchanged. The dApp receives node-ready pqsig
- * bytes verbatim (via the carrier-aware `encodeSignedTransaction`); whether
- * its own node accepts a Falcon signature is network-gated, not a wallet
- * concern (cf. PQ-019/PQ-021).
+ * Delivery is carrier-aware: a quantum group's `signed` array may mix
+ * `QuantumSignedTransaction` pqsig carriers with plain ones, and both reach the
+ * request's `approve` unchanged. Whether the dApp's node accepts a Falcon
+ * signature is network-gated, not a wallet concern.
  */
 const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     const sourceType = request.sourceType ?? 'local'
@@ -253,20 +213,12 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
 }
 
 /**
- * Builds an array of signable groups from a sign request.
+ * Groups transactions by sender so each can be signed by the right account,
+ * preserving positions in `originalIndices` for reassembly afterwards.
  *
- * For transaction requests, transactions are grouped by sender address so that
- * each group can be signed independently by the correct account. Original
- * positions are preserved in `originalIndices` to allow correct reassembly
- * after signing (see transportActor.mergeSigningResults).
- *
- * Transactions whose effective signer is not in `allAccounts` are silently
- * skipped. For local sources this is a no-op (the sender is always known);
- * for external sources it handles dApps that send mixed groups containing
- * contract-signed transactions alongside user-signed ones.
- *
- * For arbitrary-data requests, a single group is produced using the first
- * item's signer as the group's signerAddress.
+ * Transactions whose effective signer isn't in `allAccounts` are silently
+ * skipped — a no-op for local sources, and how external ones handle a dApp
+ * sending contract-signed transactions mixed in with user-signed ones.
  */
 const buildSignableGroups = (
     request: SignRequest,
@@ -275,18 +227,14 @@ const buildSignableGroups = (
     const source = buildSourceMetadata(request)
 
     if (isTransactionRequest(request)) {
-        // Validate atomic-group integrity over the full payload. External
-        // sources that filter `txs` down to the wallet's signable subset
-        // (WalletConnect) supply the original array via `groupContext`.
-        // Internal sources where `txs` is already the full group leave
-        // `groupContext` unset and we fall back to `txs`.
+        // Group integrity is checked over the full payload: sources that filter
+        // `txs` supply the original via `groupContext`, others fall back to
+        // `txs`.
         //
-        // Multisig co-sign is the exception: the co-signer's device only holds
-        // the signable subset of the proposed group (a swap's backend
-        // pre-signed pool/fee slots never reach them), so the full-group hash
-        // can't match. The dedicated cosign validator skips the recompute —
-        // contiguity is still enforced, and full-group integrity is verified on
-        // the submitter and by algod at submission.
+        // Multisig co-sign is the exception — the co-signer only holds the
+        // signable subset, so the full-group hash can't match. Its validator
+        // skips the recompute; contiguity is still enforced, and full-group
+        // integrity is verified on the submitter and by algod.
         const txsToValidate = request.groupContext ?? request.txs
         if (request.sourceType === 'multisig-cosign') {
             validateCosignSubsetIntegrity(txsToValidate)
@@ -377,16 +325,7 @@ const buildSignableGroups = (
     )
 }
 
-// =============================================================================
-// Context factories
-// =============================================================================
-
-/**
- * Extracts the external dependencies from {@link SigningMachineInput} into
- * a {@link SigningMachineDeps} object stored in the machine context.
- * Keeps dependency wiring in one place so context factories stay focused on
- * domain logic.
- */
+/** Keeps dependency wiring out of the context factories. */
 const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     signTransactions: input.signTransactions,
     signQuantumTransactions: input.signQuantumTransactions,
@@ -399,12 +338,9 @@ const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
 })
 
 /**
- * Resolves the initial machine context from the input.
- * Throws if the signer account cannot be found or signing is not possible.
- *
- * Only the primary signerAddress is stored in context. Signing actors resolve
- * the full WalletAccount from allAccounts at signing time, enabling per-group
- * account lookup for multi-signer requests.
+ * Throws if the signer can't be found or can't sign. Only the primary
+ * signerAddress is stored — actors resolve the full account at signing time, so
+ * multi-signer requests can look up per group.
  */
 export const resolveInitialContext = (
     input: SigningMachineInput,

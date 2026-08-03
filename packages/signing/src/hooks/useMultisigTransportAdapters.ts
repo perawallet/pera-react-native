@@ -109,16 +109,12 @@ export const useMultisigTransportAdapters =
             [deviceId],
         )
 
-        // Index multisig accounts by address for O(1) lookup. Recomputed
-        // when the accounts list changes; stable identity otherwise so the
-        // returned `getMsigMetadata` doesn't churn the transport selector.
+        // Stable identity between accounts-list changes, so `getMsigMetadata`
+        // doesn't churn the transport selector.
         //
-        // `version` is fixed to 1 because the local MultiSigDetails model
-        // doesn't carry it — pera creates multisig accounts at v1 (see
-        // `useNameMultisigScreen.ts` calling `generateMultisigAddress(1, ...)`).
-        // Algorand's multisig spec has only ever had version 1; if that
-        // changes upstream, plumb the version through the model and read
-        // it here instead of hardcoding.
+        // `version` is hardcoded because MultiSigDetails doesn't carry it and
+        // Algorand's multisig spec has only ever had version 1. If that changes
+        // upstream, plumb the version through the model instead.
         const msigByAddress = useMemo(() => {
             const map = new Map<string, MsigMetadata>()
             for (const a of allAccounts) {
@@ -151,19 +147,14 @@ export const useMultisigTransportAdapters =
                     )
                 }
 
-                // Mirrors Android: propose carries only the proposer's signature;
-                // any additional local-key participants are added incrementally
-                // via cosign calls. Keeps the wire pattern identical to what the
-                // backend has been tested with and isolates per-signer failures
-                // (a flaky cosign won't fail the whole flow — the propose has
-                // already succeeded).
+                // Mirrors Android: propose carries only the proposer's
+                // signature, additional participants cosign incrementally. Keeps
+                // the wire pattern the backend was tested against and isolates
+                // per-signer failures from the already-succeeded propose.
                 const [proposer, ...cosigners] = signers
-                // Raw msgpack bytes WITHOUT the "TX" domain-separation prefix.
-                // The backend re-applies the prefix when verifying signatures,
-                // so the wire payload must be the unprefixed transaction.
-                // Mirrors the hardware-wallet flow in useSigningActorLifecycle
-                // (Ledger likewise gets raw bytes because it adds the prefix
-                // on-device).
+                // No "TX" domain-separation prefix — the backend re-applies it
+                // when verifying, so the wire payload must be unprefixed. Same
+                // as Ledger, which adds the prefix on-device.
                 const rawTransactionsBase64 = signedData.signed.map(stx =>
                     encodeToBase64(encodeTransactionRaw(stx.txn)),
                 )
@@ -171,10 +162,9 @@ export const useMultisigTransportAdapters =
                 const proposeParams: ProposeSignRequest = {
                     joint_account_address: multisigAddress,
                     proposer_address: proposer.address,
-                    // `'sync'` for WC / webview / deeplink handoffs — tells
-                    // the backend "wallet will deliver; don't broadcast
-                    // yourself". `'async'` for in-app Send / inbox-driven
-                    // flows where the backend (eventually) broadcasts.
+                    // `'sync'` tells the backend "the wallet delivers, don't
+                    // broadcast" (external handoffs); `'async'` lets it broadcast
+                    // (in-app Send / inbox flows).
                     type,
                     raw_transaction_lists: [rawTransactionsBase64],
                     responses: buildResponses([proposer]),
@@ -186,12 +176,9 @@ export const useMultisigTransportAdapters =
                 )
                 const signRequestId = proposeResponse.id
 
-                // Best-effort: each cosign is awaited but its failure doesn't
-                // bubble. The propose succeeded; the user's other accounts can
-                // still re-cosign later from the inbox if a transient backend
-                // error eats their signature here. We keep the latest
-                // successful response so the cache stays in sync with the
-                // most-up-to-date signer state without needing a GET refetch.
+                // Best-effort: the propose already succeeded, and a swallowed
+                // cosign can be retried from the inbox. Keeping the latest
+                // successful response keeps the cache current without a GET.
                 let latestResponse: typeof proposeResponse = proposeResponse
                 for (const cosigner of cosigners) {
                     try {
@@ -202,25 +189,18 @@ export const useMultisigTransportAdapters =
                         )
                         latestResponse = cosignResponse
                     } catch {
-                        // Best-effort: failure doesn't bubble; user can re-cosign from inbox
+                        // Retryable from the inbox, so don't bubble.
                     }
                 }
 
-                // Pre-populate the detail query cache so
-                // PendingSignaturesBottomSheet renders immediately when the
-                // post-Send listener opens it. The GET `/with-signatures/`
-                // endpoint is unreliable on some environments, so an
-                // invalidation alone can leave the sheet stuck on its
-                // loading spinner.
+                // Seeded rather than invalidated: the GET `/with-signatures/`
+                // endpoint is unreliable on some environments and leaves the
+                // sheet stuck on its spinner.
                 //
-                // Defensively persist `proposer_address` from the request we
-                // just sent — the response schema declares it
-                // `.nullable().optional()` and some backend deployments
-                // return null in the echo. The proposer address is what
-                // gates the "Cancel transaction" button in
-                // PendingSignaturesContent (via canCancel /
-                // useMultisigSignRequestDecline), so losing it here would
-                // strip the user's ability to cancel their own proposal.
+                // `proposer_address` is backfilled from the request because the
+                // response declares it optional and some deployments echo null.
+                // It gates the "Cancel transaction" button, so losing it strips
+                // the user's ability to cancel their own proposal.
                 queryClient.setQueryData(
                     getSignRequestDetailQueryKey(network, signRequestId),
                     {
@@ -241,11 +221,9 @@ export const useMultisigTransportAdapters =
 
         const addSignatures = useCallback<AddSignaturesFn>(
             async ({ signRequestId, signers }) => {
-                // Deferred-propose first-sig: the signRequestId is a local
-                // draft id (no backend record exists yet). Bootstrap the
-                // real propose using this single signer's signature, then
-                // hand the real id back to the transport so the sheet
-                // swaps from draft → real.
+                // The signRequestId here is a local draft — no backend record
+                // exists yet. Bootstrap the real propose from this signature and
+                // hand the real id back so the sheet swaps draft -> real.
                 if (isDraftSignRequestId(signRequestId)) {
                     const draft = useDraftSignRequestStore
                         .getState()
@@ -272,8 +250,7 @@ export const useMultisigTransportAdapters =
                         network,
                         proposeParams,
                     )
-                    // See the normal propose path's setQueryData above for
-                    // why we backfill `proposer_address` from the request.
+                    // Backfilled for the reason given on the propose path above.
                     queryClient.setQueryData(
                         getSignRequestDetailQueryKey(
                             network,
@@ -286,10 +263,9 @@ export const useMultisigTransportAdapters =
                                 proposer.address,
                         },
                     )
-                    // The draft is deleted by `useMultisigProposeListener`
-                    // atomically with `openSheet(realId)` so the next render
-                    // observes both updates together (no draft-deleted →
-                    // real-not-set flicker).
+                    // `useMultisigProposeListener` deletes the draft atomically
+                    // with `openSheet(realId)`, so no draft-deleted-but-real-not-
+                    // set flicker.
                     return {
                         status: proposeResponse.status,
                         resolvedSignRequestId: proposeResponse.id,
@@ -302,23 +278,12 @@ export const useMultisigTransportAdapters =
                     signRequestId,
                     responses,
                 )
-                // Pre-populate the detail query cache with the cosign
-                // response so the PendingSignaturesBottomSheet renders the
-                // updated signer state immediately. The GET refetch endpoint
-                // (`/with-signatures/`) is unreliable on some environments,
-                // so relying on `invalidateQueries` alone leaves the sheet
-                // stuck on the loading spinner. Cache shape matches: both
-                // `proposeSignRequestResponseSchema` and
-                // `signRequestDetailResponseSchema` alias the same
-                // `signRequestResponseSchema`.
+                // Seeded rather than invalidated, same as the propose path.
+                // Shapes match — both schemas alias `signRequestResponseSchema`.
                 //
-                // Preserve `proposer_address` from whatever's already in the
-                // cache when the cosign response itself omits it (the
-                // backend's echo of `proposer_address` is optional per the
-                // schema, and some endpoints don't include it on
-                // addSignature). Without this, every cosign after the
-                // initial propose would wipe out the proposer pointer and
-                // strip the proposer's Cancel button.
+                // `proposer_address` falls back to the cached value because
+                // addSignature doesn't always echo it; without this every cosign
+                // would wipe the pointer and strip the proposer's Cancel button.
                 const cacheKey = getSignRequestDetailQueryKey(
                     network,
                     signRequestId,

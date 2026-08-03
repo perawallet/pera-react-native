@@ -74,47 +74,25 @@ const accumulate = (
     address: string,
     deltas: Map<string, bigint>,
 ): void => {
-    // Fees are always ALGO and are always paid by the transaction's own
-    // sender. Every node in this tree — top-level or inner, at any depth —
-    // is charged independently via its OWN `sender` field through the
-    // recursion below; this does NOT depend on inner fees being zero.
-    // Verified against live mainnet/fnet data: inner transactions frequently
-    // report a nonzero fee (an app often pays its own inner-transaction fee
-    // from its own account rather than relying on fee pooling from the outer
-    // call — observed values up to 20000 microAlgos on mainnet).
+    // Every node in the tree is charged independently via its OWN `sender`.
+    // This does not assume inner fees are zero — they frequently aren't, since
+    // apps often pay their own inner fees rather than relying on pooling.
     //
-    // This reproduces the ledger unconditionally, even if an inner
-    // transaction's sender happens to equal an ancestor's sender (possible
-    // when an account is rekeyed to the app that fans out) — NOT merely
-    // because senders differed in every transaction sampled while verifying
-    // this (that would be a defeatable sampling argument). The real
-    // invariant is structural: fee pooling is already resolved by the time
-    // the indexer reports a transaction, so each node's `fee` field IS that
-    // node's own actual deduction. Per-node attribution therefore has
-    // nothing left to double-count regardless of who the senders are.
+    // Per-node attribution can't double-count even when an inner sender equals
+    // an ancestor's: fee pooling is already resolved by the time the indexer
+    // reports a transaction, so each node's `fee` IS its own deduction.
     if (transaction.sender === address) {
         add(deltas, ALGO_ASSET_KEY, -toBigInt(transaction.fee))
     }
 
-    // Real indexer transactions also carry `sender-rewards`,
-    // `receiver-rewards` and `close-rewards`. They are deliberately not
-    // modeled here and not part of `IndexerTransactionLike`.
+    // `sender-rewards` / `receiver-rewards` / `close-rewards` are deliberately
+    // not modeled. They are NOT always zero — betanet's early rounds carry real
+    // nonzero rewards — so omitting them is safe only for a UI-gating reason:
+    // the sole read site consults `balanceImpacts` only for `appl`
+    // transactions, and rewards were already 0 everywhere `appl` exists.
     //
-    // These are NOT always 0 — betanet's early history (rounds ~357-2.68M)
-    // has real nonzero rewards (148/1000 sampled transactions nonzero;
-    // sender-rewards up to ~1,588,752,226,856 microAlgo observed at round
-    // 602775). Omitting them is safe for a narrower, UI-GATING reason, not a
-    // protocol one: `balanceImpacts` has exactly one non-test read site
-    // today (apps/mobile's useTransactionAmounts.ts), and it only reads this
-    // field when `transaction.txType === 'appl'`. On every network checked
-    // (betanet, fnet, near-tip mainnet), participation rewards were already
-    // 0 by the time `appl` transactions exist at all — on betanet
-    // specifically, the first `appl` appears around round 8.1M, long after
-    // the reward-bearing era ended (confirmed 0 nonzero across 1000+
-    // transactions sampled at that round). This argument breaks if a future
-    // consumer ever reads `balanceImpacts` for a non-`appl` transaction (or
-    // for a network/round where rewards were still active) — re-check this
-    // reasoning before relying on it in that case.
+    // Re-check this before reading `balanceImpacts` for any non-`appl`
+    // transaction, or for a round where rewards were still active.
     const payment = transaction['payment-transaction']
     if (payment) {
         const closeTo = payment['close-remainder-to']

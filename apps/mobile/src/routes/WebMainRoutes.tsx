@@ -10,25 +10,16 @@
  limitations under the License
  */
 
-// Web sibling of MainRoutes (routes/index.tsx): same container/theme/refs,
-// web-capable subset of the root routes. Onboarding/migration gating lives in
-// the web shell state machine (useWebAppShell), not here.
+// Web sibling of MainRoutes: the web-capable subset of the root routes.
+// Onboarding and migration gating live in useWebAppShell, not here, which is
+// why both are absent below along with the native-only stacks.
 //
-// Omissions vs native (each deliberate):
-// - MigrationSplash: no legacy web data to migrate.
-// - Onboarding: the shell state machine (useWebAppShell) handles this branch.
-// - Multisig/rekey stacks/BannersCarouselModal:
-//   native-only or off-capability (see routes/capabilities.web.ts).
-// - statusBarStyle: native-only, dropped.
+// Search and Messages navigate in-place inside the popup's own navigator, NOT
+// via createExpandedRedirect — their entry screens are web-safe, and the deep
+// leaf screens are off-capability and unreachable here.
 //
-// Wired in-place (user-feedback #7): Search (portfolio ellipsis menu) and
-// Messages (notifications bell) navigate inside the popup's own navigator,
-// like Settings/Contacts — NOT via createExpandedRedirect. Their entry
-// screens render web-safe; deep leaf screens (claim/multisig detail) are
-// off-capability and unreachable in the funded-account-free web shell.
-//
-// Two NavigationContainers never mount simultaneously (onboarding vs main are
-// exclusive shell states), so sharing `navigationRef` across both is safe.
+// Sharing `navigationRef` across both containers is safe: onboarding and main
+// are exclusive shell states, so they never mount simultaneously.
 import React, { useMemo } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
@@ -70,16 +61,13 @@ import { type RootStackParamList } from './types'
 
 const RootStack = createAppStackNavigator<RootStackParamList>()
 
-// Blur-fragile flows deep-link out of the popup (design spec): the popup
-// mounts a redirect stand-in that immediately opens the expanded tab instead
-// of the real stack navigator.
+// Blur-fragile flows deep-link out of the popup: it mounts a redirect stand-in
+// that opens the expanded tab instead of the real stack navigator.
 //
-// Exception — AddAccount navigates in-place on every surface (product
-// decision): opening "Add account" from the portfolio menu into a brand-new
-// browser tab broke the in-extension flow entirely, so it runs inside the
-// popup's own navigator like any other screen. Backup stays redirected: it
-// renders the secret recovery phrase, where a focus-steal that tears down the
-// popup mid-flow is a real data-loss/security risk, not just an annoyance.
+// AddAccount is the exception and runs in-place on every surface — opening it
+// in a new tab severed the in-extension flow. Backup stays redirected: it
+// renders the recovery phrase, where a focus-steal mid-flow is a data-loss
+// risk, not just an annoyance.
 const isPopup = getSurface() === 'popup'
 const AddAccountComponent = AddAccountStackNavigator
 const BackupComponent = isPopup

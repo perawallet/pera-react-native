@@ -10,21 +10,13 @@
  limitations under the License
  */
 
-// Integration coverage for the NFT gallery filter logic at the hook
-// boundary:
+// The NFT gallery filter at the hook boundary: balances + asset metadata out of
+// the DB, filtered through `isCollectible` into `useAccountNfts.collectibles`.
 //
-//   selected account → useAccountBalancesQuery (DB-backed)
-//                    → useAssetsQuery (DB-backed metadata)
-//                    → filter via isCollectible(asset)
-//                    → useAccountNfts.collectibles[]
-//
-// `view-nft.test.tsx` covers the detail screen end-to-end. This file
-// asserts the gallery hook only surfaces collectibles, filters
-// fungibles, and routes selections via navigation. The corresponding
-// AccountNfts component delegates filtering to this hook, so locking
-// the hook contract here covers the gallery's core integration value
-// without depending on the FlatList / SVG empty-state code paths that
-// don't render usefully under jsdom.
+// AccountNfts delegates its filtering to this hook, so locking the hook
+// contract covers the gallery without depending on FlatList/SVG paths that
+// don't render usefully under jsdom. `view-nft.test.tsx` covers the detail
+// screen.
 
 import {
     afterAll,

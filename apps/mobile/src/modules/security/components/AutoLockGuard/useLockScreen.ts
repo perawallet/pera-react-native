@@ -75,18 +75,15 @@ export const useLockScreen = ({
         return () => clearInterval(interval)
     }, [lockoutEndTime, isLockedOut, setLockoutEndTime])
 
-    // Biometric auth must NOT bypass the PIN lockout: a lock activation that
-    // happens mid-lockout consumes its (skipped) prompt, and after the
-    // lockout expires we still don't auto-prompt — the user enters their PIN
-    // explicitly.
+    // Biometrics must NOT bypass the PIN lockout: a lock activation mid-lockout
+    // consumes its (skipped) prompt, and the user still enters their PIN
+    // explicitly once the lockout expires.
     //
     // Collaborators are read through a ref so the effect depends only on
-    // `isLocked`. Cold start mounts this hook with `isLocked=false` and the
-    // async checkPinEnabled() flips it true later — an effect keyed on
-    // collaborator identities fired once at mount (burning the attempt while
-    // unlocked) and again on the flip, cancelling the in-flight OS prompt
-    // and discarding its success, which stranded the user on the PIN pad
-    // with biometrics never offered. Same failure class as PERA-4466.
+    // `isLocked`. Keying on their identities instead fired once at mount
+    // (burning the attempt while still unlocked) and again when the async
+    // checkPinEnabled flipped `isLocked`, cancelling the in-flight OS prompt and
+    // stranding the user on the PIN pad.
     const hasPromptedForLockRef = useRef(false)
     const promptRef = useRef({
         checkBiometricsEnabled,

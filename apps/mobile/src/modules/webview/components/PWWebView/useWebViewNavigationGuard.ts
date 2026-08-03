@@ -71,40 +71,27 @@ const isPeraUniversalLink = (url: string): boolean =>
     url.startsWith(`${PERAWALLET_UNIVERSAL_LINK_HOST}/`)
 
 /**
- * Decides whether the WebView should follow a navigation. A dApp running in
- * Pera's own browser sometimes fires a custom-scheme deep link to hand off to
- * a wallet — e.g. during a sign request the @perawallet/connect SDK navigates
- * to a WalletConnect wake link to foreground the app. With
- * react-native-webview's default `originWhitelist`, that navigation escapes to
- * the OS, which shows the "OPEN WITH" app chooser. We ARE the wallet, so that
- * prompt is always redundant.
+ * Decides whether the WebView follows a navigation. A dApp in Pera's own browser
+ * sometimes fires a custom-scheme link to hand off to a wallet — under the
+ * default `originWhitelist` that escapes to the OS "OPEN WITH" chooser, which is
+ * always redundant here since we ARE the wallet.
  *
  * Routing rules:
- * - Pera universal links (`https://perawallet.app/qr/…` applinks) are deeplinks
- *   dressed as https — route them in-app when they parse. Scoped strictly to
- *   the perawallet.app origin: the applink parser keys off a permissive `/app/`
- *   substring, so running every https navigation through it would hijack
- *   ordinary dApp routes like `https://dapp.com/app/swap`.
- * - Social-media links (Twitter/X, Telegram, Discord invites) open in the
- *   native app when it's installed — parity with pera-ios's
- *   SocialMediaDeeplinkRouter. Without the app they fall through and load like
- *   any other web navigation. Installed-app checks are pre-warmed on mount
- *   because `Linking.canOpenURL` is async while this guard answers
- *   synchronously.
- * - Other standard web navigations load in the WebView untouched.
- * - Any custom-scheme URL Pera recognises as a deeplink is routed in-app.
- * - Value-bearing deeplinks (transfers, keyreg, account import, WC pairing —
- *   whether custom-scheme or perawallet.app universal links) only route when
- *   the firing page is the trusted Discover origin; from any other origin
- *   they are blocked outright. OS/QR-sourced deeplinks enter through a
- *   different path and are unaffected.
- * - WalletConnect wake/focus links carry no actionable URI (no bridge param) so
- *   they don't parse as a deeplink — they're swallowed to keep them off the OS
- *   chooser.
- * - Everything else non-http(s) is refused rather than handed to the WebView,
- *   which can't load a foreign scheme. `mailto:`/`tel:`/`sms:` are opened via
- *   `Linking` first, because PWWebView sets `originWhitelist={['*']}` so
- *   react-native-webview's own openURL fallback no longer runs.
+ * - Pera universal links are deeplinks dressed as https, routed in-app when they
+ *   parse. Scoped strictly to the perawallet.app origin: the applink parser keys
+ *   off a permissive `/app/` substring, so running every https navigation
+ *   through it would hijack dApp routes like `https://dapp.com/app/swap`.
+ * - Social-media links open the native app when installed, matching pera-ios.
+ *   The installed-app checks are pre-warmed on mount, because `canOpenURL` is
+ *   async while this guard answers synchronously.
+ * - Value-bearing deeplinks (transfers, keyreg, import, WC pairing) route only
+ *   from the trusted Discover origin, and are blocked outright elsewhere.
+ *   OS/QR-sourced deeplinks come through a different path and are unaffected.
+ * - WC wake links carry no actionable URI, so they don't parse as deeplinks and
+ *   are swallowed to keep them off the OS chooser.
+ * - Other non-http(s) is refused rather than handed to a WebView that can't load
+ *   a foreign scheme. `mailto:`/`tel:`/`sms:` go through `Linking` first, since
+ *   `originWhitelist={['*']}` disables react-native-webview's own fallback.
  */
 export const useWebViewNavigationGuard = ({
     isTrustedOrigin,
@@ -166,13 +153,10 @@ export const useWebViewNavigationGuard = ({
                 return false
             }
 
-            // A host WebView with no controls of its own (the Discover tab)
-            // must not navigate itself to a third-party site: it has no
-            // back/close affordance, so the user is stranded there until the
-            // app is force-killed (PERA-4742). Hand those off to the in-app
-            // browser, which brings its own chrome, and leave the host page in
-            // place to return to. Evaluated at each web-load point below, so
-            // deeplink routing still wins.
+            // A host WebView with no controls of its own has no back or close
+            // affordance, so navigating it to a third-party site strands the
+            // user until force-kill. Hand off to the in-app browser, which
+            // brings its own chrome, and leave the host page to return to.
             const isExternalToHost =
                 externalNavigation !== undefined &&
                 request.isTopFrame !== false &&
@@ -186,12 +170,10 @@ export const useWebViewNavigationGuard = ({
                 return true
             }
 
-            // iOS reports subframe navigations here; Android hardcodes
-            // isTopFrame true (it discards the WebResourceRequest), so this can
-            // only ever tighten the gate. `isTrustedOrigin` is derived from the
-            // TOP frame, so without this a cross-origin iframe on Discover
-            // inherits Discover's trust — the same forgery the bridge already
-            // defends against with its per-mount token.
+            // `isTrustedOrigin` derives from the TOP frame, so without this a
+            // cross-origin iframe on Discover inherits Discover's trust. Only
+            // iOS reports subframes (Android hardcodes true), so this can only
+            // tighten the gate.
             const isTopFrameNavigation = request.isTopFrame !== false
             const isTrusted = isTrustedOrigin && isTopFrameNavigation
 
@@ -224,11 +206,10 @@ export const useWebViewNavigationGuard = ({
                 return true
             }
 
-            // `originWhitelist={['*']}` means react-native-webview no longer
-            // Linking.openURL's these itself, and the WebView cannot load a
-            // foreign scheme (Android raises ERR_UNKNOWN_URL_SCHEME and swaps
-            // the page for the error view). Hand the everyday OS schemes over
-            // explicitly, then refuse the navigation either way. WC wake links
+            // `originWhitelist={['*']}` disables react-native-webview's own
+            // openURL fallback, and the WebView can't load a foreign scheme
+            // (Android swaps the page for its error view). So hand the everyday
+            // OS schemes over explicitly, then refuse either way. WC wake links
             // are deliberately absent — we ARE the wallet.
             if (isOsHandledScheme(url)) {
                 void Linking.openURL(url).catch(() => {

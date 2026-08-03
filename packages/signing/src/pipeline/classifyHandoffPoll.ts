@@ -23,11 +23,8 @@ import {
 import type { RejectReason } from './types'
 
 /**
- * Structural shape of the `with-signatures` detail consumed by the
- * classifier. Mirrors a subset of `HandoffPollDetail` from
- * `@perawallet/wallet-core-multisig` — defined here as a structural type to
- * keep the type dependency one-way (multisig → signing), since the
- * resolver hook lives in multisig.
+ * Mirrors a subset of multisig's `HandoffPollDetail`, redeclared structurally to
+ * keep the type dependency one-way (multisig -> signing).
  */
 export type HandoffPollDetail = {
     id?: string
@@ -43,11 +40,7 @@ export type HandoffPollDetail = {
     }>
 }
 
-/**
- * Localized strings delivered to the dApp. Built by the resolver hook from
- * i18n so the classification / delivery functions stay plain and
- * unit-testable.
- */
+/** Built by the resolver hook so these functions stay plain and unit-testable. */
 export type ResolverMessages = {
     declined: string
     expired: string
@@ -63,11 +56,7 @@ export type HandoffErrorReason =
     | { kind: 'assembly-failed'; detail: string }
     | { kind: 'backend-failed'; displayReason: string | null }
 
-/**
- * Outcome of classifying one `with-signatures` poll. `keep-polling` means
- * the request has not reached a deliverable terminal state yet; the other
- * variants are terminal and must be delivered to the dApp exactly once.
- */
+/** Every variant but `keep-polling` is terminal, delivered exactly once. */
 export type HandoffPollOutcome =
     | { kind: 'keep-polling' }
     | { kind: 'ready'; assembledBytes: Uint8Array[] }
@@ -81,10 +70,8 @@ export type TerminalHandoffOutcome = Exclude<
 >
 
 /**
- * The subset of a handoff the classifier needs to assemble + trust-anchor the
- * poll. Narrower than {@link PendingWalletConnectHandoff} (no callbacks /
- * deviceId) so non-WC consumers — the shared-account swap resolver — can reuse
- * the classification + assembly logic without fabricating WC-only fields.
+ * Narrower than {@link PendingWalletConnectHandoff} so non-WC consumers can
+ * reuse the classification logic without fabricating WC-only fields.
  */
 export type HandoffAssemblyContext = {
     multisigAddress: string
@@ -93,14 +80,9 @@ export type HandoffAssemblyContext = {
 }
 
 /**
- * Pure classification of a single `with-signatures` poll result.
- *
- * Returns `keep-polling` for non-terminal statuses, and — importantly —
- * also for a `ready` / `confirmed` request whose signature payloads have
- * not all been serialized yet: the backend can flip status before every
- * signature lands in the response, so the next poll catches up. Terminal
- * variants carry everything delivery needs; `ready` carries the assembled
- * composite multisig signed-transaction bytes.
+ * `keep-polling` covers non-terminal statuses AND a `ready`/`confirmed` request
+ * whose signature payloads haven't all serialized yet — the backend can flip
+ * status before every signature lands, so the next poll catches up.
  */
 export const classifyHandoffPoll = (
     detail: HandoffPollDetail,
@@ -155,11 +137,9 @@ const classifyReadyPoll = (
         return { kind: 'error', reason: { kind: 'no-transactions' } }
     }
 
-    // Trust-anchor check: the bytes the backend hands back must be exactly
-    // the bytes the wallet proposed (= what the user reviewed and the
-    // proposer signed). Refuse to assemble anything else — a compromised
-    // backend must not be able to substitute transactions. Signature-level
-    // verification inside the assembler backs this up per participant.
+    // Trust anchor: the returned bytes must be exactly what the wallet proposed
+    // — what the user reviewed and the proposer signed — so a compromised
+    // backend can't substitute transactions.
     const polledRawTransactions = lists.flatMap(list => list.raw_transactions)
     if (
         !rawTransactionsMatch(
@@ -239,16 +219,11 @@ type ResolveHandoffOutcomeArgs = {
 }
 
 /**
- * Delivers a terminal handoff outcome to the dApp and clears the registry
- * entry. Invoked once per resolved handoff by `useWalletConnectHandoffResolver`.
+ * Delivers a terminal outcome and clears the registry entry, once per handoff.
  *
- *  - `ready`: hand the assembled signed bytes to `approveSignedBytes`, then
- *    best-effort `markConfirmed` (a failure there is non-fatal — the dApp
- *    already has the bytes — but logged). If delivery itself fails, fall
- *    through to `error` so the dApp sees a rejection.
- *  - `soft-reject`: a clean `reject({ kind: 'softReject', error })`, no
- *    in-app connection-error banner.
- *  - `error`: `error` — the connection-error banner is appropriate.
+ * On `ready`, `markConfirmed` is best-effort — the dApp already has the bytes —
+ * but a failure to deliver falls through to `error` so it sees a rejection.
+ * `soft-reject` deliberately raises no connection-error banner.
  */
 export const resolveHandoffOutcome = async ({
     outcome,
@@ -351,10 +326,8 @@ const notifySoftReject = async (
 }
 
 /**
- * Logs a terminal handoff failure. An assembly mismatch in particular is a
- * signature / crypto fault worth surfacing rather than only handing to the
- * dApp. `cause` is the raw underlying error when there is one (e.g. a
- * dropped WC session on delivery); it is logged but never sent to the dApp.
+ * An assembly mismatch is a crypto fault worth surfacing, not just handing to
+ * the dApp. `cause` is logged but never sent onward.
  */
 const logTerminalError = (
     handoff: PendingWalletConnectHandoff,

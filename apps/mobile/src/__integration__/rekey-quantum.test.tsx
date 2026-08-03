@@ -10,20 +10,13 @@
  limitations under the License
  */
 
-// Integration coverage for quantum accounts inside the rekey-to-standard flow:
+// Quantum accounts in the rekey-to-standard flow: rekey-IN lists a quantum
+// account as a selectable target (the migration path onto post-quantum keys),
+// and rekey-OUT opens the QuantumDowngradeWarningSheet before any signing.
 //
-//   1. Rekey-IN:  a quantum account is listed as a selectable TARGET when
-//      rekeying a standard account (the migration path onto post-quantum keys).
-//   2. Rekey-OUT: rekeying FROM a quantum account TO a standard account is a
-//      quantum downgrade — `useRekeyConfirmScreen` opens the
-//      `QuantumDowngradeWarningSheet` via `requestBottomSheet` BEFORE any
-//      signing happens.
-//
-// KNOWN GAP (PQ-006 / PERA-4488): `useLocalKeyTransactionSigner.ts` rejects
-// quantum accounts, so a rekey-out can never actually be signed/submitted
-// today. That gap sits AFTER the downgrade warning sheet in the confirm flow,
-// so it does not block this coverage — this suite intentionally stops at
-// asserting the sheet appears and does not confirm past it.
+// Stops at asserting the sheet appears: rekey-out can't actually be signed
+// today (useLocalKeyTransactionSigner rejects quantum accounts), but that gap
+// sits after the sheet in the confirm flow.
 
 import {
     afterAll,

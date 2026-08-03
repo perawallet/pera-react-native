@@ -27,11 +27,9 @@ import {
     algorandSafeQueryParse,
 } from '@perawallet/wallet-core-blockchain'
 
-// =============================================================================
 // Custom storage: round-trip safe serialization for bigint and Map
 // Uses algorandSafeQuerySerialize/Parse to handle PeraTransaction bigint fields
 // (fee, amount, assetId, etc.)
-// =============================================================================
 
 type PartializedState = { pendingSignRequests: SignRequest[] }
 

@@ -11,35 +11,15 @@
  */
 
 /**
- * Lightweight tracer for ad-hoc latency profiling (cold start, a slow screen
- * transition, an expensive effect, etc.). Records named marks against a
- * monotonic clock, logs each mark immediately through the shared `logger` (so
- * a crash mid-flow still leaves a partial timeline), and can print a
- * consolidated, ordered table on demand.
+ * Ad-hoc latency profiling. Marks are logged immediately, so a crash mid-flow
+ * still leaves a partial timeline, and `dump()` prints the ordered table.
  *
- * It is **passive on import** — pulling it in via the barrel costs nothing and
- * emits no output. It only does work once you call `mark`/`track`/`dump`.
+ * Passive on import — importing via the barrel costs nothing and emits nothing
+ * until you call `mark`/`track`/`dump`. Every line is prefixed `[TRACE]` so it
+ * greps out of Metro or logcat. Disable with `globalThis.__PERA_TRACER__ = false`.
  *
- * Every line is prefixed `⏱️ [TRACE]` so it is greppable from Metro or logcat:
- *
- *   adb logcat | grep TRACE              # Android
- *   npx react-native log-ios | grep TRACE
- *
- * Usage:
- *
- *   import { tracer } from '@perawallet/wallet-core-shared'
- *
- *   tracer.reset()                       // re-anchor t0 for an ad-hoc session
- *   tracer.mark('step-a')
- *   await tracer.track('fetch', () => fetchThing())
- *   tracer.mark('step-b', { count })
- *   tracer.dump()                        // print the ordered table
- *
- * Disable globally with `globalThis.__PERA_TRACER__ = false`.
- *
- * Note: `mark` is one-shot per label (first call wins) so it is safe to call
- * from a render body. Call `reset()` to start a fresh session and re-allow a
- * label.
+ * `mark` is one-shot per label (first call wins), so it's safe from a render
+ * body; `reset()` re-anchors t0 and re-allows a label.
  */
 
 import { logger } from './logging'
@@ -101,11 +81,7 @@ const reset = (): void => {
     seen = new Set<string>()
 }
 
-/**
- * Record a one-shot mark. Duplicate labels are ignored (first wins) so this is
- * safe to call from a render body or an effect that may run more than once.
- * Call `reset()` to start a fresh session.
- */
+/** Duplicate labels are ignored, so this is safe from a render body. */
 const mark = (label: string, meta?: Record<string, unknown>): void => {
     if (!ENABLED) return
     if (seen.has(label)) return
@@ -117,11 +93,7 @@ const mark = (label: string, meta?: Record<string, unknown>): void => {
     logLine(m)
 }
 
-/**
- * Time an async step. Marks `${label}` on resolution with the measured
- * duration in meta, and `${label}:error` on rejection. The error is re-thrown
- * so control flow is unchanged.
- */
+/** Marks `${label}:error` on rejection, then re-throws — control flow is unchanged. */
 const track = async <T>(
     label: string,
     fn: () => Promise<T>,
@@ -182,10 +154,8 @@ const scheduleDump = (ms: number, reason = `auto after ${ms}ms`): void => {
 }
 
 /**
- * Subscribe to a TanStack `QueryCache` (passed untyped to avoid a dependency)
- * and log how long each query takes from first fetch to settle, for `windowMs`
- * after the call. Useful for profiling a data-heavy screen's query fan-out.
- * Auto-unsubscribes when the window closes.
+ * Logs each query's first-fetch-to-settle time for `windowMs`, then
+ * auto-unsubscribes. The cache is passed untyped to avoid a dependency.
  */
 const instrumentQueryCache = (
     cache: {

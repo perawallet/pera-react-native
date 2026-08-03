@@ -38,21 +38,16 @@ import type { KeyregDeeplink } from '../types'
 export type KeyregDeeplinkHandler = (data: KeyregDeeplink) => Promise<void>
 
 /**
- * Cap the algokit createTransaction call. It internally fetches
- * `algod.suggestedParams()` to compute firstValid/lastValid rounds, which
- * can hang indefinitely if algod is unreachable. Without a bound the
- * dispatcher's `await` never resolves and the QR scanner Modal stays open
- * with no visible feedback.
+ * `createTransaction` fetches `suggestedParams()` internally, which hangs
+ * indefinitely on an unreachable algod — leaving the dispatcher's `await`
+ * pending and the QR scanner open with no feedback.
  */
 const KEYREG_BUILD_TIMEOUT_MS = 12_000
 
 /**
- * Native pera QR generators emit unpadded base64 (a 32-byte key encodes to
- * 43 chars; standard base64 would pad to 44). `base64-js.toByteArray` —
- * what `decodeFromBase64` calls under the hood — requires the input length
- * to be a multiple of 4, so unpadded keys throw "Invalid string. Length
- * must be a multiple of 4". Re-pad before decoding so URL-safe and
- * unpadded forms both work.
+ * Native QR generators emit unpadded base64 (a 32-byte key is 43 chars, not
+ * 44), which `base64-js` rejects — it needs a length divisible by 4. Re-pad so
+ * URL-safe and unpadded forms both decode.
  */
 const decodeKeyregBase64 = (key: string): Uint8Array => {
     const padLen = (4 - (key.length % 4)) % 4
@@ -60,21 +55,13 @@ const decodeKeyregBase64 = (key: string): Uint8Array => {
 }
 
 /**
- * Builds a key-registration transaction from the deeplink payload (online
- * or offline) and submits it through the signing pipeline. SignRequestView
- * already renders a keyreg summary screen (see
- * packages/blockchain/src/utils/transactions.ts → keyregTransaction display
- * mapping) so the user reviews then signs without a separate UI here.
- *
- * Online keyreg requires every participation key field to be present —
- * partial deeplinks are rejected rather than producing a malformed txn.
+ * SignRequestView already renders a keyreg summary, so there's no separate
+ * review UI here. Online keyreg needs every participation key field — a partial
+ * deeplink is rejected rather than producing a malformed txn.
  */
 /**
- * Preflight: returns a reason string the deeplink error sheet should
- * surface if the user can't sign for `senderAddress`, or null if they can.
- * Mirrors what the signing pipeline's resolveInitialContext checks but at
- * the deeplink layer so we never queue a doomed sign request that lands
- * the user on a useless review/error sheet.
+ * Mirrors the pipeline's `resolveInitialContext` checks at the deeplink layer,
+ * so a doomed request never gets queued into a useless review sheet.
  */
 const checkSigningEligibility = (
     senderAddress: string,
@@ -144,11 +131,10 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 const noteBytes = note
                     ? new TextEncoder().encode(note)
                     : undefined
-                // `BigInt()` throws on a malformed fee (non-numeric, decimal);
-                // keep the coercion inside the try so a bad deeplink routes to
-                // the error sheet instead of throwing uncaught out of the
-                // handler. An out-of-range fee is caught at review time by the
-                // signing pipeline's high-fee warning (see detectHighGroupFee).
+                // `BigInt()` throws on a malformed fee, so keep the coercion
+                // inside the try — a bad deeplink should reach the error sheet,
+                // not throw out of the handler. An out-of-range fee is caught at
+                // review time by the high-fee warning.
                 const dAppFee = data.fee ? BigInt(data.fee) : undefined
                 const staticFee =
                     dAppFee !== undefined ? microAlgo(dAppFee) : undefined
@@ -200,14 +186,11 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                     )
                 }
 
-                // Algokit's createTransaction returns a Transaction whose
-                // sender is an `Address` instance (and several fields are
-                // typed objects). The signing pipeline / display layer is
-                // built around the shape produced by `decodeTransaction(bytes)`
-                // — sender becomes a plain string, byte fields are
-                // Uint8Array — so a raw algokit txn crashes with
-                // `Buffer.from(...) received type object`. Encode then
-                // decode to normalize.
+                // Encode-then-decode to normalize: algokit returns a sender as
+                // an `Address` instance, but the pipeline is built around
+                // `decodeTransaction(bytes)`'s shape (plain string sender,
+                // Uint8Array byte fields) and otherwise crashes with
+                // `Buffer.from(...) received type object`.
                 const normalizedTx = decodeTransaction(encodeTransaction(tx))
                 // Floors a quantum sender's fee to the PQ minimum (mirrors
                 // the WC/webview enqueue path); a non-quantum sender is a
@@ -215,12 +198,9 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 const { transactions, adjustments } = await assignFeeToGroup({
                     transactions: [normalizedTx],
                 })
-                // sourceType MUST be 'deeplink' (not 'local') so
-                // SigningOverlays' interactive-source filter picks the
-                // request up and shows the review sheet. 'local' is
-                // headless — the originating screen owns its own
-                // confirmation UI and the request would silently auto-sign
-                // (or silently fail if no signer is available).
+                // MUST be 'deeplink', not 'local': only an interactive source
+                // gets the review sheet. 'local' is headless and would silently
+                // auto-sign, or silently fail with no signer.
                 addSignRequest({
                     id: generateOrderedUniqueId(),
                     type: 'transactions',

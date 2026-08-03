@@ -10,25 +10,15 @@
  limitations under the License
  */
 
-// In-memory React-Navigation stand-in for integration tests.
+// In-memory React-Navigation stand-in for integration tests: the production
+// native-stack navigator needs layout APIs that don't run under jsdom, and the
+// unit-test mock only ever renders the initial screen — useless for flow tests
+// that navigate.
 //
-// The production native-stack navigator depends on layout APIs (`view.measure`,
-// `getFrameSize`, etc.) that don't run under jsdom + react-native-web. The
-// global unit-test mock at `apps/mobile/vitest.setup.ts` substitutes a Navigator
-// that just renders the initial screen — fine for single-screen unit tests but
-// useless for flow tests that need `navigate(name) → assert next screen` etc.
-//
-// This file implements the smallest navigator that:
-//   - Maintains a stack of routes via React state
-//   - Exposes `navigate` / `push` / `replace` / `goBack` / `pop` / `popToTop`
-//     that actually mutate the stack and re-render
-//   - Re-exports `useNavigation` / `useRoute` / `useFocusEffect` etc. with the
-//     same surface as `@react-navigation/native`
-//   - Provides `createNativeStackNavigator()` returning a `Navigator` + `Screen`
-//     pair compatible with the production layout
-//
-// Wired into the integration project via `vi.mock` calls in
-// `apps/mobile/vitest.integration-setup.ts`.
+// This keeps a real route stack in React state behind the same
+// `useNavigation`/`useRoute`/`createNativeStackNavigator` surface, so
+// `navigate(name)` actually re-renders. Wired in by
+// vitest.integration-setup.ts.
 
 import React, {
     createContext,
@@ -40,7 +30,6 @@ import React, {
 } from 'react'
 import { type Optional } from '@perawallet/wallet-core-shared'
 
-// ---------------------------------------------------------------------------
 // Types
 
 type RouteState = {
@@ -79,7 +68,6 @@ type ScreenConfig = {
     initialParams?: Record<string, unknown>
 }
 
-// ---------------------------------------------------------------------------
 // Contexts
 
 type StackController = {
@@ -100,7 +88,6 @@ let activeController: StackController | null = null
 let routeKeySeq = 0
 const newRouteKey = (): string => `route-${++routeKeySeq}`
 
-// ---------------------------------------------------------------------------
 // Navigation hook
 
 const noopApi: NavigationApi = {
@@ -273,7 +260,6 @@ export const useNavigationState = <T,>(selector?: (state: unknown) => T): T => {
     return (selector ? selector(state) : state) as T
 }
 
-// ---------------------------------------------------------------------------
 // Container + Independent tree
 
 export const NavigationContainer: React.FC<{
@@ -332,7 +318,6 @@ export const DefaultTheme = {
 
 export const DarkTheme = { ...DefaultTheme, dark: true }
 
-// ---------------------------------------------------------------------------
 // Native stack — the bit that hosts screens
 
 type NavigatorProps = {
@@ -466,7 +451,6 @@ export const createNativeStackNavigator = () => {
 
 export const createNavigatorFactory = createNativeStackNavigator
 
-// ---------------------------------------------------------------------------
 // Test helpers
 
 /**

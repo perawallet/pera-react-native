@@ -56,16 +56,12 @@ const SENSITIVE_KEY_FRAGMENTS = [
     'signature',
 ] as const
 
-// Keys redacted only on a whole-key (exact) match. These carry raw transaction
-// or signing payloads — the base64 blob in WalletConnect `algo_signTxn`
-// (`txn`), the ARC-0001 signed-txn field (`stxn`), signed/raw/unsigned
-// transaction bytes, and the `algo_signData` auth challenge
-// (`authenticatorData`) — and must be scrubbed. Exact (not substring) match is
-// deliberate: a substring would also wipe the diagnostic siblings engineers
-// rely on (`txnGroup`, `txns`, `txnBytes`). `walletTxn` is intentionally NOT
-// listed — it's a wrapper object whose inner `txn` is already redacted by the
-// recursive walk, which preserves its signer siblings. Entries must be
-// lowercase (compared against `lower`).
+// Whole-key (exact) matches only, for keys carrying raw transaction or signing
+// payloads. Exact rather than substring is deliberate: a substring would also
+// wipe the diagnostic siblings engineers rely on (`txnGroup`, `txns`,
+// `txnBytes`). `walletTxn` is deliberately absent — it's a wrapper whose inner
+// `txn` the recursive walk already redacts, preserving its signer siblings.
+// Entries must be lowercase.
 const SENSITIVE_EXACT_KEYS = [
     'txn',
     'stxn',
@@ -99,14 +95,9 @@ const SENSITIVE_QUERY_REGEX = new RegExp(
     'gi',
 )
 
-// Some payloads (Pera Web QR deeplinks, structured logs that have been
-// pre-stringified by the caller) reach the logger as raw JSON. The query
-// regex above only matches URL-style `?key=value` syntax, so a JSON-shaped
-// string containing a sensitive field would pass through untouched. Match
-// any `"…sensitive…":"value"` pair so the value is scrubbed regardless of
-// the surrounding format.
-// Fragment keys match as a substring of the JSON key; exact keys (`txn`) match
-// the whole key only, so `"txnGroup"`/`"txns"` values are preserved.
+// Some payloads reach the logger as raw JSON, which the URL-style query regex
+// above wouldn't touch. Fragment keys match as a substring of the JSON key;
+// exact keys match the whole key only, so `"txnGroup"`/`"txns"` survive.
 const SENSITIVE_JSON_REGEX = new RegExp(
     `("(?:[^"]*(?:${SENSITIVE_KEY_FRAGMENTS.join(
         '|',
@@ -114,12 +105,7 @@ const SENSITIVE_JSON_REGEX = new RegExp(
     'gi',
 )
 
-/**
- * Strip values for any query/hash parameter or JSON field whose name
- * matches a known sensitive fragment (mnemonic, passphrase, seed,
- * encryptionKey, …). Idempotent on plain strings without query/JSON
- * syntax.
- */
+/** Idempotent on plain strings with no query or JSON syntax. */
 export const redactSensitiveUrl = (input: string): string => {
     let out = input
     if (out.includes('=')) {
@@ -138,21 +124,13 @@ const MAX_REDACT_DEPTH = 8
 const TRUNCATED = '[…]'
 
 /**
- * Recursively redact sensitive entries from a structured value:
- *  - any object property whose key contains a sensitive fragment is replaced
- *    with `[REDACTED]`
- *  - any string value is passed through `redactSensitiveUrl` so a stray URL
- *    in a non-sensitive key (e.g. `{ url }`) still gets its mnemonic/passphrase
- *    query params scrubbed
- *  - arrays and nested objects are walked; non-string primitives pass through
- *  - `Error` instances are passed through verbatim — `formatContextValue`
- *    handles their structured shape downstream
- *  - circular references and depth > MAX_REDACT_DEPTH are short-circuited to
- *    avoid stack overflow / DoS
+ * Every string value also goes through `redactSensitiveUrl`, so a stray URL
+ * under a non-sensitive key still gets its query params scrubbed. `Error`s pass
+ * through verbatim for `formatContextValue` downstream, and cycles or depth past
+ * MAX_REDACT_DEPTH short-circuit.
  *
- * Used automatically by the logger on every context, so callers don't need to
- * remember to pre-sanitize. Cheap on small contexts; for a hot path with very
- * large objects, callers may still want to redact upstream.
+ * Applied automatically to every logger context, so callers needn't pre-sanitize
+ * — though a hot path with very large objects may still want to.
  */
 const redactSensitiveValue = (
     value: unknown,
@@ -324,13 +302,10 @@ class Logger {
     }
 
     /**
-     * `console.error` is intercepted by RN's LogBox in dev mode. With multiple
-     * `ReactNativeHost`s registered (Expo dev client + the app host) LogBox
-     * occasionally crashes with "Cannot read property 'log' of undefined"
-     * inside `LogBoxData.addLog`. The crash bubbles out of `console.error` and
-     * masks the actual error we're trying to log. Wrap the call so the
-     * downstream `reportError` (Sentry / etc.) still fires, and fall back to
-     * `console.log` so the message is at least visible in the dev console.
+     * RN's LogBox intercepts `console.error` in dev, and with multiple
+     * `ReactNativeHost`s registered it occasionally throws from inside
+     * `LogBoxData.addLog` — masking the very error being logged. Wrapping keeps
+     * `reportError` firing and falls back to `console.log`.
      */
     private safeConsoleError(message: string, args: unknown[]) {
         try {

@@ -13,13 +13,9 @@
 import type { Nullable, Optional } from '../utils/types'
 
 /**
- * Executes a coalesced batch of keys for a given partition. Implementations
- * are free to do whatever they want — fan out to a bulk HTTP endpoint, query
- * a local index, etc. — provided they return a Map of per-key results so the
- * queue can resolve each waiter with its own value.
- *
- * Keys absent from the returned Map cause their waiters to resolve with
- * `undefined`. This lets the executor omit "not found" entries naturally.
+ * Must return a Map of per-key results so the queue can resolve each waiter
+ * individually. An absent key resolves its waiters with `undefined`, so an
+ * executor can omit "not found" entries naturally.
  */
 export type BatchExecutor<TKey, TResult, TPartition> = (
     keys: TKey[],
@@ -38,44 +34,25 @@ type Bucket<TKey, TResult, TPartition> = Map<
 >
 
 /**
- * Time-windowed batch queue.
+ * Groups keys enqueued within `delayMs` of each other into one dispatch. The
+ * first enqueue starts the timer; when it fires the filled bucket is swapped
+ * aside for its executor to run (one call per partition) while new enqueues
+ * accumulate in a fresh bucket, which schedules the next round once the
+ * previous settles.
  *
- * Keys enqueued within `delayMs` of each other are grouped into a single
- * batch and dispatched together. The model is intentionally simple:
+ * A key enqueued twice in one window dedups to a single fetch with multiple
+ * waiters. Across adjacent windows it's two fetches, by design — raise
+ * `delayMs` for longer dedup.
  *
- *   1. There's a `current` bucket that accumulates keys.
- *   2. The first enqueue starts a timer for `delayMs`.
- *   3. While the timer is running, more enqueues land in `current`.
- *   4. When the timer fires, we swap: the filled bucket is taken aside
- *      to be processed, and `current` becomes a fresh empty bucket.
- *   5. The taken bucket's executor runs (one call per partition).
- *      Any new enqueues that arrive during the executor's HTTP call
- *      land in the fresh `current` bucket.
- *   6. After the previous batch settles, if `current` has anything in it,
- *      a new timer is scheduled for the next round.
- *
- * Same key enqueued multiple times within the same window: dedup'd in the
- * bucket (one entry, multiple waiters, all resolve from the single fetch).
- * Same key enqueued in adjacent windows: two separate fetches — by design.
- * If you want longer-window dedup, raise `delayMs`.
- *
- * The queue is generic over `TKey`, `TResult` and `TPartition`. Partitions
- * are useful when the underlying API is segmented (e.g. NFD lookups are
- * per-network, so the partition is the network — different networks fire
- * separate executor calls in the same flush). For un-partitioned use,
- * leave `TPartition` defaulted to `void` and pass `undefined`.
+ * Partitions suit a segmented API: NFD lookups are per-network, so different
+ * networks fire separate executor calls in the same flush. Leave `TPartition`
+ * defaulted for un-partitioned use.
  */
 export class BatchQueue<TKey, TResult, TPartition = void> {
     private current: Bucket<TKey, TResult, TPartition> = new Map()
     private timer: Nullable<ReturnType<typeof setTimeout>> = null
 
-    /**
-     * @param executor  How to fetch a batch. Receives the keys for one
-     *                  partition and returns a Map of per-key results.
-     * @param delayMs   How long to wait after the first enqueue before
-     *                  flushing. Larger = more coalescing, more latency.
-     *                  Defaults to 0 (next macrotask).
-     */
+    /** Larger `delayMs` means more coalescing and more latency. */
     constructor(
         private readonly executor: BatchExecutor<TKey, TResult, TPartition>,
         private readonly delayMs: number = 0,

@@ -10,25 +10,13 @@
  limitations under the License
  */
 
-// Edge-case integration coverage for network failures across the
-// flows already covered by the happy-path tests:
+// Failure paths for flows whose happy paths live in their own flow tests:
+// send ALGO on a 5xx (toast, no success screen), opt-in on a 5xx (mutation
+// rejects, DB unchanged), and swap quote on a 503 (mutation goes to error).
 //
-//   send ALGO  ─►  algod /v2/transactions returns 5xx  → toast, no
-//                                                        success screen
-//
-//   opt-in     ─►  algod /v2/transactions returns 5xx  → mutation
-//                                                        rejects, DB
-//                                                        unchanged
-//
-//   swap quote ─►  /v2/dex-swap/quotes/ returns 503    → mutation
-//                                                        transitions to
-//                                                        error state
-//
-// These map onto the user-visible failure modes the support team sees
-// most often: "tx didn't go through", "asset opt-in failed", "swap
-// price never appeared". The happy paths are covered by their flow
-// tests; this file locks the failure paths separately so a regression
-// in error handling stays loud.
+// These are the three failures support sees most: "tx didn't go through",
+// "opt-in failed", "swap price never appeared". Kept separate so an
+// error-handling regression stays loud.
 
 import {
     afterAll,

@@ -25,28 +25,15 @@ import { SignedTransaction } from 'algosdk'
 import type { AnalyzedSignableGroup, SigningResult } from '../types'
 
 /**
- * Get local participants for a multisig account, ordered by their position
- * in the multisig's `participantAddresses` (NOT wallet order).
- *
- * Stable participant-list order matters because `signers[0]` is used as the
- * proposer when calling the propose endpoint — wallet-dependent ordering
- * would make different devices pick different proposers for the same
- * multisig, which is undesirable. Mirrors Android's
+ * Ordered by position in `participantAddresses`, NOT wallet order: `signers[0]`
+ * becomes the proposer, so wallet-dependent ordering would make different
+ * devices pick different proposers for the same multisig. Mirrors Android's
  * `GetJointAccountProposerAddressUseCase`.
  *
- * Multisig participant slots are validated against the participant's original
- * pubkey at multisig creation; rekey of the participant address has no effect
- * on its multisig slot. So the participant must hold its OWN signing
- * capability (local key or hardware device) — rekey indirection is
- * intentionally NOT followed here. Hardware participants are included; the
- * strategy selector routes them to `hardwareStrategy`, which prompts the
- * connected Ledger device during signing.
- *
- * @param account - The multisig account
- * @param allAccounts - All accounts in the wallet
- * @returns Local accounts that are participants and can sign with their own
- *          keys (or via their backing hardware device), in participant-list
- *          order
+ * Slots are validated against the participant's pubkey at multisig creation,
+ * so rekeying a participant doesn't affect its slot — rekey indirection is
+ * deliberately NOT followed. Hardware participants are included; the strategy
+ * selector routes them to `hardwareStrategy`.
  */
 export const getLocalParticipants = (
     account: WalletAccount,
@@ -74,18 +61,12 @@ export const getLocalParticipants = (
 }
 
 /**
- * Subset of {@link getLocalParticipants} for the propose (Send) flow.
+ * Skips hardware participants so a Ledger prompt never auto-fires during Send
+ * — those defer to the per-row Sign button in `PendingSignaturesContent`.
  *
- * Prefers local-key (Algo25 / HD) participants and skips hardware-wallet
- * participants so a Ledger device prompt never auto-fires during Send.
- * Hardware participants are deferred to the per-row Sign button in
- * `PendingSignaturesContent`, which the proposer can tap explicitly after
- * the propose call completes.
- *
- * Falls back to the full local-participant set (which may include hardware)
- * when the user has no local-key participant — the propose endpoint
- * requires at least one signature to create the backend record, so a
- * hardware-only proposer still needs the Ledger prompt to bootstrap.
+ * Falls back to the full set when there is no local-key participant: propose
+ * needs at least one signature to create the backend record, so a
+ * hardware-only proposer must still bootstrap via the Ledger prompt.
  */
 export const getProposeParticipants = (
     account: WalletAccount,
@@ -97,19 +78,11 @@ export const getProposeParticipants = (
 }
 
 /**
- * True if the propose call for this multisig should be deferred until the
- * user explicitly taps Sign on a hardware participant in the pending
- * signatures sheet — i.e. the user holds at least one hardware participant
- * and zero local-key participants in this multisig.
+ * True when the user holds only hardware participants. `multisigSignerActor`
+ * then emits a synthetic deferred SigningResult instead of running the
+ * strategy, which would fire parallel Ledger prompts during Send and fail —
+ * one Ledger can't serve multiple connections at once.
  *
- * When true, `multisigSignerActor` short-circuits and emits a synthetic
- * deferred SigningResult instead of running the strategy (which would
- * otherwise fire parallel Ledger prompts during Send and fail because a
- * single Ledger device can't serve multiple connections in parallel).
- *
- * Returns false for any non-multisig account or for multisigs where the
- * user has any local-key participant (in which case the local-key sigs
- * bootstrap the propose silently and the sheet opens behind the scenes).
  * Resolves a single rekey hop, mirroring `canMeetThresholdLocally`.
  */
 export const shouldDeferPropose = (
@@ -131,11 +104,10 @@ export const shouldDeferPropose = (
 }
 
 /**
- * Produces an empty-signers `SigningResult` that signals the propose
- * transport to skip the backend propose call and create a local draft
- * instead. The unsigned transactions are carried in `signedData.signed[].txn`
- * so the transport can encode the raw bytes for the draft without needing
- * the original group passed through.
+ * Empty signers signal the propose transport to create a local draft instead
+ * of calling the backend. Unsigned transactions ride along in
+ * `signedData.signed[].txn` so the transport can encode the draft's raw bytes
+ * without the original group being threaded through.
  */
 export const buildDeferredProposeSigningResult = (
     group: AnalyzedSignableGroup,
@@ -159,10 +131,7 @@ export const buildDeferredProposeSigningResult = (
     }
 }
 
-/**
- * True iff a multisig has enough local participants to meet threshold.
- * Resolves a single rekey hop.
- */
+/** Resolves a single rekey hop. */
 export const canMeetThresholdLocally = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
@@ -180,13 +149,7 @@ export const canMeetThresholdLocally = (
     return localParticipants.length >= target.multisigDetails.threshold
 }
 
-/**
- * Get the number of additional signatures needed for a multisig transaction.
- *
- * @param account - The multisig account
- * @param existingSignatures - Number of existing signatures
- * @returns Number of additional signatures needed, or 0 if threshold met
- */
+/** 0 once threshold is met. */
 export const getSignaturesNeeded = (
     account: WalletAccount,
     existingSignatures: number,

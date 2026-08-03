@@ -18,10 +18,6 @@ import {
     FeeDelegationResponseMismatchError,
 } from '../../errors'
 
-// -----------------------------------------------------------------------------
-// Mocks
-// -----------------------------------------------------------------------------
-
 const {
     addSignRequestMock,
     submitAndAutoRefreshMock,
@@ -96,10 +92,6 @@ vi.mock('../../api', () => ({
 }))
 
 import { useFeeDelegation } from '../useFeeDelegation'
-
-// -----------------------------------------------------------------------------
-// Helpers
-// -----------------------------------------------------------------------------
 
 const ACCOUNT = 'TESTADDRESS'
 const ASSET_ID = 31566704n

@@ -13,170 +13,108 @@
 import { type Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-/**
- * Enumeration of all possible Algorand transaction types.
- *
- * These map directly to the transaction types returned by the API.
- * Each type represents a different kind of operation on the Algorand blockchain.
- */
+/** Maps directly to the transaction types returned by the API. */
 export const TransactionTypes = {
-    /** Standard payment transaction (ALGO transfer) */
+    /** Standard payment (ALGO transfer) */
     PAY: 'pay',
-    /** Asset transfer transaction (ASA transfer) */
+    /** Asset transfer (ASA) */
     AXFER: 'axfer',
-    /** Asset configuration (create/modify/destroy asset) */
+    /** Asset create/modify/destroy */
     ACFG: 'acfg',
-    /** Asset freeze transaction */
     AFRZ: 'afrz',
-    /** Application call (smart contract interaction) */
+    /** Smart contract interaction */
     APPL: 'appl',
-    /** Key registration (participation in consensus) */
+    /** Consensus participation */
     KEYREG: 'keyreg',
-    /** Heartbeat transaction (node heartbeat) */
     HB: 'hb',
 } as const
 
 export type TransactionType =
     (typeof TransactionTypes)[keyof typeof TransactionTypes]
 
-/**
- * Represents the swap group details for a DEX swap transaction.
- *
- * When a user performs a swap (e.g., on Tinyman or Pact), multiple transactions
- * are grouped together. This object contains the aggregate details.
- */
+/** Aggregate details for a DEX swap, whose transactions are grouped. */
 export interface TransactionSwapGroupDetail {
-    /** The asset ID being swapped from (input asset). Decimal string — uint64 ids must never live in a JS number. */
+    /** Decimal string — uint64 ids must never live in a JS number. */
     assetInId: Nullable<string>
-    /** The ticker symbol/unit name of the input asset (e.g., "ALGO", "USDC") */
     assetInUnitName: string
-    /** The asset ID being swapped to (output asset). Decimal string. */
+    /** Decimal string. */
     assetOutId: Nullable<string>
-    /** The ticker symbol/unit name of the output asset */
     assetOutUnitName: string
-    /** The amount of input asset being swapped, in base units */
+    /** Base units. */
     amountIn: Decimal
-    /** The amount of output asset received, in base units */
+    /** Base units. */
     amountOut: Decimal
 }
 
-/**
- * Represents an asset summary within a transaction.
- *
- * This provides basic information about an asset involved in the transaction.
- */
 export interface TransactionAssetSummary {
-    /** The asset ID (ASA ID). Decimal string — uint64 ids must never live in a JS number. */
+    /** Decimal string — uint64 ids must never live in a JS number. */
     assetId: string
-    /** The display name of the asset (e.g., "USD Coin") */
     name: string
-    /** The unit name/ticker symbol (e.g., "USDC") */
     unitName: string
-    /** Number of decimal places for the asset (0-19) */
+    /** 0-19. */
     decimals: number
 }
 
 /**
- * Represents the net balance impact of a transaction on a single asset for the
- * requesting account.
- *
- * The Pera API nets these across the top-level transaction and all of its inner
- * transactions, so a single application call can yield several impacts (e.g. an
- * asset sent and ALGO received). ALGO is represented with `assetId` "0" and its
- * impact includes the transaction fee when the account is the sender.
+ * The Pera API nets these across the top-level transaction and all inner
+ * transactions, so one application call can yield several impacts (e.g. an
+ * asset sent and ALGO received). ALGO's impact includes the fee when the
+ * account is the sender.
  */
 export interface TransactionBalanceImpact {
-    /** The impacted asset ID. Decimal string; "0" for ALGO. */
+    /** Decimal string; "0" for ALGO. */
     assetId: string
-    /** The unit name/ticker symbol of the asset (e.g., "ALGO", "USDC") */
     unitName: string
-    /** Number of decimal places for the asset (0-19) */
+    /** 0-19. */
     fractionDecimals: number
-    /** Signed net amount in base units. Negative = sent, positive = received. */
+    /** Signed, base units. Negative = sent, positive = received. */
     amount: Decimal
 }
 
-/**
- * Represents the interpreted meaning of a transaction.
- *
- * The Pera API enriches transaction data by interpreting what the transaction
- * actually represents (e.g., "Received 100 USDC from 0x123...").
- */
+/** The Pera API's own reading of a transaction, e.g. "Received 100 USDC". */
 export interface TransactionInterpretedMeaning {
-    /** Human-readable title describing the transaction */
     title: string
-    /** Human-readable description with details */
     description: string
 }
 
-/**
- * Represents a single transaction item in the history.
- *
- * This is the core data structure containing all details about one transaction.
- */
 export interface TransactionHistoryItem {
-    /** The unique transaction ID (TXID) */
     id: string
-    /** The type of transaction (pay, axfer, appl, etc.) */
     txType: TransactionType
-    /** The sender's Algorand address */
     sender: string
-    /** The receiver's Algorand address (may be null for certain transaction types) */
+    /** Null for transaction types that have no receiver. */
     receiver: Nullable<string>
-    /** The block round number when this transaction was confirmed */
     confirmedRound: number
-    /** Unix timestamp (in seconds) when the transaction was confirmed */
+    /** Unix seconds. */
     roundTime: number
-    /** Details about a swap transaction group (only present for DEX swaps) */
+    /** Only present for DEX swaps. */
     swapGroupDetail: Nullable<TransactionSwapGroupDetail>
-    /** Human-readable interpretation of what this transaction represents */
     interpretedMeaning: Nullable<TransactionInterpretedMeaning>
-    /** Transaction fee paid in microAlgos */
+    /** microAlgos. */
     fee: Decimal
-    /** Group ID for atomic transactions */
+    /** Set for atomic groups. */
     groupId: Nullable<string>
-    /** The amount transferred in base units */
+    /** Base units. */
     amount: Nullable<Decimal>
-    /** The close remainder to address */
     closeTo: Nullable<string>
-    /** Asset details for asset-related transactions */
     asset: Nullable<TransactionAssetSummary>
-    /** Application ID for application call transactions (smart contracts) */
     applicationId: Nullable<string>
-    /** Number of inner transactions if this is an application call */
     innerTransactionCount: Nullable<number>
-    /**
-     * Net per-asset balance impact on the requesting account, aggregated across
-     * this transaction and its inner transactions. Empty when the API returns
-     * none. Used to surface the balance impact of application calls in the list.
-     */
+    /** Empty when the API returns none. */
     balanceImpacts: TransactionBalanceImpact[]
 }
 
-/**
- * Represents the current pagination state.
- */
 export interface TransactionPaginationState {
-    /** Whether there are more pages to fetch (forward pagination) */
     hasNextPage: boolean
-    /** Whether there are previous pages to fetch (backward pagination) */
     hasPreviousPage: boolean
-    /** The URL for the next page (if hasNextPage is true) */
     nextUrl: Nullable<string>
-    /** The URL for the previous page (if hasPreviousPage is true) */
     previousUrl: Nullable<string>
-    /** Total number of transactions fetched in this response */
+    /** Transactions in this response, not across all pages. */
     totalFetched: number
 }
 
-/**
- * Result object returned by the paginated fetch functions.
- */
 export interface TransactionHistoryResult {
-    /** The array of transactions for the current page */
     transactions: TransactionHistoryItem[]
-    /** The current pagination state */
     pagination: TransactionPaginationState
-    /** The current blockchain round when this data was fetched */
+    /** Chain round at fetch time. */
     currentRound: number
 }

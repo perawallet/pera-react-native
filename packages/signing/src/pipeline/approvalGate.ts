@@ -11,21 +11,14 @@
  */
 
 /**
- * The approval gate decouples the signing machine from any "user is
- * looking at a review screen" concept. The machine still has a pause
- * state (`awaiting_user`) but it is now a generic external sync point —
- * the lifecycle hook waits on the gate, the gate is the only thing that
- * decides whether the wait is instantaneous (headless internal flow) or
- * blocks on a UI interaction (external source rendered by the
- * `SigningOverlays` drivers).
+ * Decouples the signing machine from any "user is looking at a review screen"
+ * concept: `awaiting_user` is a generic external sync point, and the gate is
+ * the only thing deciding whether that wait is instantaneous (headless) or
+ * blocks on a UI interaction.
  *
- * The actor lifecycle owns registration: `createActorForRequest`
- * registers the gate synchronously when the request's `sourceType` is
- * in `INTERACTIVE_SOURCES`, before the actor can reach `awaiting_user`.
- *
- * Registration is process-wide and keyed by request id (string) — this
- * matches both the actor ref map and the React-Native signing store, so
- * the gate, the machine, and the store all agree on identity.
+ * The actor lifecycle owns registration, done synchronously before the actor
+ * can reach `awaiting_user`. Keyed process-wide by request id, matching the
+ * actor ref map and the signing store, so all three agree on identity.
  */
 
 type ApprovalResult = 'approved' | 'rejected' | 'cancelled'
@@ -55,14 +48,9 @@ const register = (requestId: string): void => {
 }
 
 /**
- * Resolve a registered gate with `'approved'`. No-op if no gate is
- * registered (the caller is presumed to have already decided that this
- * request is headless).
- *
- * The map entry stays so a subsequent `waitFor` (e.g. when the actor
- * finishes validating *after* the user has already confirmed) still
- * returns the prior result. Cleanup is owned by `unregister`, called
- * from the lifecycle's terminal handler.
+ * No-op when nothing is registered — the request is headless. The map entry
+ * stays so a later `waitFor` (the actor finishing validation AFTER the user
+ * confirmed) still sees the result; `unregister` owns cleanup.
  */
 const approve = (requestId: string): void => {
     const gate = gates.get(requestId)
@@ -71,10 +59,9 @@ const approve = (requestId: string): void => {
 }
 
 /**
- * Resolve a registered gate with `'rejected'`. No-op when no gate is
- * registered. Like `approve`, the map entry persists until `unregister`
- * — otherwise a Cancel tap during the (async) validating phase would be
- * silently discarded by the time the actor reaches `awaiting_user`.
+ * Like `approve`, the entry persists until `unregister` — otherwise a Cancel tap
+ * during the async validating phase is silently discarded by the time the actor
+ * reaches `awaiting_user`.
  */
 const reject = (requestId: string): void => {
     const gate = gates.get(requestId)
@@ -83,15 +70,9 @@ const reject = (requestId: string): void => {
 }
 
 /**
- * Wait for the gate to resolve. The lifecycle awaits this every time the
- * machine pauses at `awaiting_user`, regardless of source:
- *
- * - Registered + pending → returns the gate's promise; resolves when the
- *   user confirms or cancels.
- * - Registered + already resolved → returns the resolved promise
- *   immediately (microtask) with the prior result.
- * - Not registered → returns `Promise.resolve('approved')` — the headless
- *   fast-path for sources outside `INTERACTIVE_SOURCES`.
+ * Awaited every time the machine pauses at `awaiting_user`, whatever the source.
+ * An unregistered gate resolves `'approved'` immediately — the headless
+ * fast-path for sources outside `INTERACTIVE_SOURCES`.
  */
 const waitFor = (requestId: string): Promise<ApprovalResult> => {
     const gate = gates.get(requestId)
@@ -102,12 +83,9 @@ const waitFor = (requestId: string): Promise<ApprovalResult> => {
 const isRegistered = (requestId: string): boolean => gates.has(requestId)
 
 /**
- * Drop a registered gate. If the deferred is still pending, resolves it
- * with `'cancelled'` so any awaiting `.then` chain runs and releases its
- * closure (otherwise the awaiting subscriber leaks a reference to the
- * actor for the lifetime of the JS context).
- *
- * Called from the lifecycle's terminal handler and `stopActor` path.
+ * Resolves a still-pending deferred with `'cancelled'` so the awaiting `.then`
+ * runs and releases its closure — otherwise the subscriber leaks a reference to
+ * the actor for the lifetime of the JS context.
  */
 const unregister = (requestId: string): void => {
     const gate = gates.get(requestId)

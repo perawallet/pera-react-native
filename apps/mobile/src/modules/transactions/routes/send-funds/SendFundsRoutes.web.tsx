@@ -10,30 +10,14 @@
  limitations under the License
  */
 
-// Web replacement for SendFundsRoutes — same root cause and fix as
-// ReceiveFundsRoutes.web.tsx. The native version nests a
-// `@react-navigation/stack` (JS "Stack") navigator, whose web output
-// (CardStack -> MaybeScreenContainer -> Card -> CardContent) relies on a
-// chain of `flex: 1` Views resolving a real pixel height via CSS. Nested
-// inside PWBottomSheet.web.tsx's Modal (itself nested in
-// NavigationIndependentTree, with no real window resize to re-trigger
-// layout), one link in that chain — CardStack's own `MaybeScreenContainer`
-// wrapper — can collapse to `height: 0` (a plain, unstyled View whose only
-// child is `position: absolute`, so it has no in-flow content to size
-// against). CardContent's `{flex: 1, overflow: 'hidden'}` then clips
-// everything below it. AssetSelectionScreen (the initial route whenever the
-// sheet is opened without a pre-selected asset, e.g. the home tab's Send
-// button — AccountOverview/useAccountOverview.tsx's openSendFunds) renders a
-// FlashList-backed AccountAssetSelectionList, structurally the same shape as
-// ReceiveFundsRoutes' AccountSelectionScreen (also a FlashList picker), which
-// is exactly the screen that went blank pre-fix there.
+// Web replacement for SendFundsRoutes, same fix as ReceiveFundsRoutes.web.tsx:
+// a nested `@react-navigation/stack` navigator needs a `flex: 1` chain to
+// resolve a real pixel height, and inside PWBottomSheet.web's Modal one link
+// collapses to `height: 0` — CardContent's `overflow: hidden` then clips
+// everything below it.
 //
-// `@react-navigation/native-stack` doesn't hit this: its web screens
-// (react-native-screens' ScreenStack.web.js /Screen.web.js) are plain Views
-// with no CardContent-style measure-then-clip step, matching WebMainRoutes
-// (routes/WebMainRoutes.tsx) and the already-fixed ReceiveFundsRoutes.web.tsx.
-// Swapping just this one nested sheet navigator to native-stack sidesteps the
-// collapse instead of patching react-navigation/stack's internals.
+// native-stack's web screens are plain Views with no measure-then-clip step, so
+// swapping just this navigator sidesteps the collapse.
 import {
     createNativeStackNavigator,
     type NativeStackHeaderProps,

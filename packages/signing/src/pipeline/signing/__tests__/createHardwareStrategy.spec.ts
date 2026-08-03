@@ -743,10 +743,6 @@ describe('createHardwareStrategy', () => {
         })
     })
 
-    // =========================================================================
-    // ARC-60 hardware signing
-    // =========================================================================
-
     // Build valid ARC-60 fixtures whose signer address equals the hardware
     // account address so connectAndVerify + SIWA signer-match both pass.
     const ARC60_DOMAIN = 'arc60.io'

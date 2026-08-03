@@ -23,10 +23,6 @@ import type {
 } from '../../pipeline/types'
 import type { TransactionSignRequest } from '../../models'
 
-// =============================================================================
-// Fixtures
-// =============================================================================
-
 const MOCK_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
@@ -98,9 +94,7 @@ const makeInput = (
     ...overrides,
 })
 
-// =============================================================================
 // Mocked machine (actors replaced for isolation)
-// =============================================================================
 
 const mockedMachine = signingMachine.provide({
     actors: {
@@ -118,10 +112,6 @@ const mockedMachine = signingMachine.provide({
         ),
     },
 })
-
-// =============================================================================
-// Tests
-// =============================================================================
 
 describe('signingMachine', () => {
     beforeEach(() => {

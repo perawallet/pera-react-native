@@ -13,24 +13,19 @@
 import { z } from 'zod'
 
 /**
- * uint64 identifier field (asset id, app id) in an API response.
+ * Response-side uint64 id (asset id, app id), normalized to a decimal string.
  *
- * JSON parses numbers as IEEE-754 doubles, so an id above 2^53 - 1 would be
- * rounded before any transformer can run. The query client's
- * `parsePrecisionSafeJson` surfaces such ids as decimal strings; this schema
- * accepts both the common number form and the big-id string form and
- * normalizes to a string — ids must never live in a JS `number`.
- *
- * Output: decimal string.
+ * JSON parses numbers as IEEE-754 doubles, so an id above 2^53 - 1 rounds
+ * before any transformer runs. `parsePrecisionSafeJson` surfaces those as
+ * strings, hence the union — ids must never live in a JS `number`.
  */
 export const uint64IdSchema = z
     .union([z.number().int().nonnegative(), z.string().regex(/^\d+$/)])
     .transform(value => String(value))
 
 /**
- * uint64 identifier field in a *request* whose wire format requires a JSON
- * number. `.int()` (zod 4) restricts to safe integers, so an id that
- * cannot be represented exactly fails validation instead of being sent
- * rounded — see also `uint64IdToNumber` for building such payloads.
+ * Request-side, where the wire format demands a JSON number. `.int()` restricts
+ * to safe integers, so an inexact id fails validation instead of being sent
+ * rounded. See `uint64IdToNumber` for building such payloads.
  */
 export const uint64IdNumberSchema = z.number().int().nonnegative()

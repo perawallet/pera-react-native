@@ -24,35 +24,25 @@ import './vitest.setup'
 
 import { useBottomSheetStore } from './src/modules/bottom-sheet'
 
-// The bottom-sheet store is a module-scoped zustand singleton — requests
-// opened in one test will still be present when the next test starts.
-// Reset it after each integration test so flows that count requests, or
-// assert sheet visibility from a known clean slate, aren't poisoned by
-// the previous case.
+// The bottom-sheet store is a module-scoped singleton, so requests opened in one
+// test survive into the next unless reset.
 afterEach(() => {
     useBottomSheetStore.getState().resetState()
 })
 
-// jsdom installs its own `Uint8Array` constructor on `globalThis`. Node's
-// `Buffer` extends node's `Uint8Array`, which is a *different* constructor
-// — `buffer instanceof globalThis.Uint8Array` is false under jsdom, so any
-// crypto code that hands a Buffer to a check like `@noble/hashes`'s
-// `isBytes()` (used by `xhd-wallet-api`'s key derivation) throws
-// "expected Uint8Array, got type=object". Aliasing the global to node's
-// `Uint8Array` realigns the two so HD-wallet derivation works end-to-end
-// in flow tests. Production code never hits this — it runs on
-// react-native, where `Buffer` and `Uint8Array` already share a realm.
+// jsdom installs its own `Uint8Array`, but node's `Buffer` extends node's — a
+// different constructor — so `buffer instanceof globalThis.Uint8Array` is false
+// and any `isBytes()` check (e.g. in xhd-wallet-api's derivation) throws.
+// Aliasing the global realigns them. Production never hits this: on
+// react-native the two already share a realm.
 ;(globalThis as { Uint8Array: typeof Uint8Array }).Uint8Array =
     Object.getPrototypeOf(Buffer.prototype).constructor as typeof Uint8Array
 
-// ...but opt OUT of the heavyweight @perawallet/wallet-core-* package mocks.
-// Integration tests exercise the real domain code end-to-end; the network
-// layer is the only thing we mock (via MSW).
+// ...but opt OUT of the wallet-core-* mocks: integration tests run the real
+// domain code, and MSW is the only thing standing in.
 //
-// Add a new package here when an integration test needs the real
-// implementation. Keep `@perawallet/wallet-extension-*` mocks intact —
-// platform-driver / provider hit MMKV, biometrics, secure storage etc. that
-// only work on a real device.
+// Keep the `wallet-extension-*` mocks — those hit MMKV, biometrics and secure
+// storage, which only work on a real device.
 vi.unmock('@perawallet/wallet-core-shared')
 vi.unmock('@perawallet/wallet-core-currencies')
 vi.unmock('@perawallet/wallet-core-assets')
@@ -65,11 +55,9 @@ vi.unmock('@perawallet/wallet-core-settings')
 vi.unmock('@perawallet/wallet-core-contacts')
 vi.unmock('@perawallet/wallet-core-staking')
 
-// Onboarding flows render the welcome screen, which gates on Terms & Conditions
-// acceptance (PERA-4468). Pre-accept the default `terms_version` so the blocking
-// sheet doesn't pop over unrelated onboarding flow tests. The literals mirror
-// ACCEPTED_TERMS_VERSION_KEY and the default terms version without pulling app
-// modules into the harness.
+// Pre-accept the default terms version so its blocking sheet doesn't pop over
+// unrelated onboarding tests. The literals mirror the app's constants without
+// pulling app modules into the harness.
 beforeEach(async () => {
     const { useSettingsStore } =
         await import('@perawallet/wallet-core-settings')
@@ -86,16 +74,11 @@ vi.unmock('@perawallet/wallet-core-accounts')
 vi.unmock('@perawallet/wallet-core-blockchain')
 vi.unmock('@perawallet/wallet-core-age-gate')
 
-// The send/swap pipelines spawn a fire-and-forget background task
-// (`submitAndAutoRefreshCore`) that awaits chain confirmation *after*
-// submission has already returned. Flow tests only assert the submit + screen
-// transition; the real algod confirmation poll never resolves against the MSW
-// mocks and fires a late `logger.warn` after the test has finished. During
-// worker teardown that surfaces as `EnvironmentTeardownError: Closing rpc
-// while "onUserConsoleLog" was pending` and fails the whole run on CI. Resolve
-// confirmation immediately so the background task completes silently — no flow
-// test wires an onConfirmed handler, so this only removes the teardown race.
-// `submitAndAutoRefresh` is the sole production importer of this export.
+// The send/swap pipelines fire a background task that awaits chain confirmation
+// after submission returns. Against MSW that poll never resolves, so it logs
+// late — and during worker teardown that surfaces as `EnvironmentTeardownError`
+// and fails the run. Resolving immediately removes the race; no flow test wires
+// an onConfirmed handler, so nothing else changes.
 vi.mock('@algorandfoundation/algokit-utils', async () => {
     const actual = await vi.importActual<
         typeof import('@algorandfoundation/algokit-utils')
@@ -106,11 +89,9 @@ vi.mock('@algorandfoundation/algokit-utils', async () => {
     }
 })
 
-// Replace the unit-test navigator stubs with a real-ish stack-based test
-// navigator (apps/mobile/src/test-utils/test-navigator.tsx). The unit mocks
-// just render the initial screen; the test navigator maintains a stack and
-// implements navigate / push / replace / goBack so flow tests can traverse
-// screens. The bottom-tabs surface is rare in flow tests; keep the stub.
+// The unit-test navigator stubs only render the initial screen, so swap in the
+// stack-based test navigator that flow tests can actually traverse. Bottom-tabs
+// is rare in flow tests, so its stub stays.
 vi.mock('@react-navigation/native', async () => {
     const nav = await import('./src/test-utils/test-navigator')
     return nav
@@ -130,13 +111,10 @@ vi.mock('@react-navigation/stack', async () => {
     }
 })
 
-// SVGs used by onboarding screens. svgr emits real React SVG components,
-// but rendering them under jsdom triggers `InvalidCharacterError` on
-// attributes whose value is a long data URL (jsdom tries to use it as an
-// XML Name). vitest.setup.ts mocks the unit-tests' SVGs the same way; this
-// list extends coverage to integration flows. The factory is duplicated
-// per-call because `vi.mock` is hoisted to the top of the module — any
-// reference to a top-level binding at hoist time is undefined.
+// svgr emits real React SVG components, but jsdom throws `InvalidCharacterError`
+// on attributes holding a long data URL — it treats the value as an XML Name.
+// The factory is duplicated per call because `vi.mock` is hoisted, so any
+// top-level binding is undefined at that point.
 vi.mock('@assets/images/key.svg', () => {
     const React = require('react')
     return {
@@ -189,13 +167,10 @@ vi.mock('@assets/icons/accounts/light/ledger-account.svg', () => {
     }
 })
 
-// `expo-modules-core` references the React-Native `__DEV__` global at
-// module-load time (in `setUpJsLogger.fx.ts`). Under jsdom this is
-// undefined, so any expo-* package that transitively imports
-// expo-modules-core crashes during import. Defining the global here
-// fixes the parse-time failure; deeper expo-modules-core surfaces
-// (e.g. `globalThis.expo.EventEmitter`) still need their consumer
-// packages (expo-video, expo-audio, ...) to be mocked individually.
+// `expo-modules-core` reads `__DEV__` at module-load time, which is undefined
+// under jsdom, so any expo-* package importing it crashes. This fixes the
+// parse-time failure only — deeper surfaces like `globalThis.expo.EventEmitter`
+// still need their consumer packages mocked individually.
 ;(globalThis as { __DEV__?: boolean }).__DEV__ = false
 
 // expo-screen-capture's surface is intentionally stubbed (rather than
@@ -223,11 +198,9 @@ vi.mock('lottie-react-native', () => {
     }
 })
 
-// expo-video / expo-audio / expo-image transitively reach
-// expo-modules-core's native `EventEmitter`/`SharedRef` surface, which
-// only resolves under a real React-Native runtime. NFT detail screens
-// use these via the MediaCarousel; replace the parts the screens read
-// with no-op stubs.
+// These reach expo-modules-core's native `EventEmitter`/`SharedRef`, which only
+// resolves under a real React-Native runtime. NFT detail screens use them via
+// MediaCarousel, so stub the parts those screens read.
 vi.mock('expo-video', () => {
     const React = require('react')
     return {
@@ -304,14 +277,10 @@ vi.mock('react-native-pager-view', () => {
     }
 })
 
-// PWSlideToConfirm drives its confirm via a react-native-gesture-handler pan
-// gesture + reanimated worklet — neither of which can be fired under jsdom
-// (the gesture-handler mock makes `onEnd` a no-op). The slide's gesture
-// mechanics are unit-tested in PWSlideToConfirm.spec; for integration flows we
-// only need to *trigger* confirmation. Replace it with a plain tappable element
-// that keeps the same `testID` and calls `onConfirm` on click (no-op while
-// loading/disabled), so signing-review tests can
-// `fireEvent.click(getByTestId('signing-confirm-slide'))`.
+// PWSlideToConfirm confirms via a gesture-handler pan and a reanimated worklet,
+// neither of which fires under jsdom — the gesture mock makes `onEnd` a no-op.
+// Flow tests only need to TRIGGER confirmation, so this keeps the same testID
+// and calls `onConfirm` on click. The gesture mechanics have their own spec.
 vi.mock('@components/core/PWSlideToConfirm', () => {
     const React = require('react')
     return {

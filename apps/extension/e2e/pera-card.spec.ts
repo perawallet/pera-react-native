@@ -10,18 +10,8 @@
  limitations under the License
  */
 
-// M10 milestone smoke: the FIRST bundle containing the PeraCardStackNavigator
-// screen graph on web (routeCapabilities.peraCard flipped on in Task 3,
-// route registered in WebMainRoutes in Task 2). useIsPeraCardEnabled() reads
-// remote-config `enable_pera_card`, whose fallback (isDebug || isStaging) is
-// unreliable in this headless/networkless bundle — the remote-config
-// OVERRIDE is seeded directly into chrome.storage.local before the page
-// ever loads so useRemoteConfig().getBooleanValue() picks it up on first
-// render (packages/remote-config/src/hooks/useRemoteConfig.ts checks
-// configOverrides before falling through to the service). Reuses the
-// gift-cards.spec.ts / feature-tabs.spec.ts fixture shape: fresh profile,
-// serial, onboard once in beforeAll. Card flow is NOT age-gated (unlike
-// Discover/Swap/Onramp/Staking in tab-screens.web.tsx), so no age-gate
+// Smoke test for the PeraCardStackNavigator screen graph on web. The card flow
+// is NOT age-gated, unlike Discover/Swap/Onramp/Staking, so no age-gate
 // helper is needed here.
 import {
     expect,
@@ -47,17 +37,15 @@ let page: Page
 let pageErrors: Error[]
 const PASSWORD = 'e2e-pera-card-password-1'
 
-// Module-eval crashes in the extension bundle otherwise surface as bare
-// selector timeouts with no indication of the real cause (see onboarding.spec.ts).
+// Without this, module-eval crashes in the bundle surface as bare selector
+// timeouts with no sign of the real cause.
 const trackPageErrors = (targetPage: Page): Error[] => {
     const errors: Error[] = []
     targetPage.on('pageerror', error => errors.push(error))
     return errors
 }
 
-// Opens the account switcher and taps the Pera Card activate row, landing on
-// PeraCardIntro (AccountSelection.tsx's openAccountMenu -> 'pera-card-activate'
-// -> navigation.navigate('PeraCard', { screen: 'PeraCardIntro' })).
+// Account switcher -> Pera Card activate row -> PeraCardIntro.
 const openPeraCardIntro = async (targetPage: Page): Promise<void> => {
     await clickThroughPinPrompt(
         targetPage,
@@ -69,18 +57,13 @@ const openPeraCardIntro = async (targetPage: Page): Promise<void> => {
     )
 }
 
-// 'PeraCard' is a top-level RootStack.Screen sibling of 'TabBar'
-// (WebMainRoutes.tsx), so it fully replaces the Home tab (and its
-// account_selection_button entry point) while focused. NavigationHeader
-// renders a 'navigation_back_button' whenever navigation.canGoBack() is true
-// (NavigationHeader.tsx) — which chains up through parent navigators, so it
-// works both to pop within the nested PeraCardStackNavigator and, from its
-// initial route, to pop the RootStack back to TabBar. Two clicks return from
-// any card screen at most one level into the stack (CardSignIn) to Home.
-// Native-stack keeps popped-from screens mounted underneath during the
-// transition, so multiple 'navigation_back_button' nodes can coexist in the
-// DOM at once — scope to the visible one (Playwright's :visible extension)
-// instead of the plain testID locator to avoid a strict-mode collision.
+// 'PeraCard' is a RootStack sibling of 'TabBar', so it replaces the Home tab
+// entirely while focused. The back button chains up through parent navigators,
+// so two clicks return to Home from one level into the card stack.
+//
+// Native-stack keeps popped-from screens mounted during the transition, so
+// several back buttons can coexist in the DOM — scope to the visible one or
+// Playwright's strict mode fails.
 const goBackToHome = async (targetPage: Page): Promise<void> => {
     const backButton = targetPage.locator(
         '[data-testid="navigation_back_button"]:visible',
@@ -103,19 +86,9 @@ test.beforeAll(async () => {
     }
     extensionId = new URL(serviceWorker.url()).host
 
-    // Force enable_pera_card on before anything renders. useIsPeraCardEnabled()
-    // (apps/mobile/src/hooks/useIsPeraCardEnabled.ts) falls back to
-    // isDebug || isStaging when remote config hasn't resolved — unreliable in
-    // a headless/networkless bundle. useRemoteConfig().getBooleanValue()
-    // (packages/remote-config/src/hooks/useRemoteConfig.ts) checks
-    // configOverrides BEFORE calling through to the service, so seeding the
-    // override here guarantees the flag reads true on first render. Envelope
-    // shape verified against packages/remote-config/src/store/store.ts:
-    // STORE_NAME = 'remote-config-store', persist version = 1, partialize ->
-    // { configOverrides }. Key literal verified against
-    // extensions/platform-chrome/src/services/key-value-storage.ts:
-    // KV_PREFIX = 'kv:' + store name, value JSON.stringify'd — same shape
-    // onboarding.spec.ts asserts for 'kv:settings-store'.
+    // Seed the remote-config OVERRIDE, which getBooleanValue checks before
+    // calling the service — so the flag reads true on first render. The
+    // `isDebug || isStaging` fallback is unreliable in a networkless bundle.
     await serviceWorker.evaluate(async () => {
         await chrome.storage.local.set({
             'kv:remote-config-store': JSON.stringify({
@@ -125,15 +98,9 @@ test.beforeAll(async () => {
         })
     })
 
-    // Pre-dismiss the PromptContainer PIN-security nudge (modules/prompts):
-    // it fires LONG_PROMPT_DISPLAY_DELAY (3s, wall-clock from account
-    // creation, not from anything this test controls) after the account
-    // exists, and can land mid-flow as a full-screen backdrop that swallows
-    // the account-menu sheet this file's tests depend on. Seeding
-    // security_pin_setup_prompt (constants/user-preferences.ts) true —
-    // same trick as the remote-config override above — makes
-    // usePromptContainer's `!pref` check false on first render, so the
-    // prompt never mounts at all instead of racing it reactively.
+    // Seed the PIN-security nudge as dismissed so it never mounts — it fires
+    // on a wall-clock delay and lands mid-flow as a backdrop that swallows the
+    // account-menu sheet these tests depend on.
     await serviceWorker.evaluate(async () => {
         await chrome.storage.local.set({
             'kv:settings-store': JSON.stringify({
@@ -143,7 +110,6 @@ test.beforeAll(async () => {
         })
     })
 
-    // Onboard exactly as onboarding.spec.ts / wallet-smoke.spec.ts.
     page = await context.newPage()
     pageErrors = trackPageErrors(page)
     await page.goto(`chrome-extension://${extensionId}/expanded.html`)
@@ -176,19 +142,9 @@ test.afterAll(async () => {
     await context.close()
 })
 
-// Activation entry -> intro: AccountScreen.tsx renders AccountSelection with
-// showPeraCardActivation, whose account_selection_button opens the account
-// switcher sheet (AccountMenuContent -> AccountMenu -> useAccountMenu). With
-// a single, non-activated fresh account and the remote-config override on,
-// useAccountMenu inserts a { kind: 'pera-card', activated: false } row,
-// rendered by PeraCardAccountItem as PeraCardActivateRow
-// (pera_card_activate_button) — its visibility alone proves the override
-// took effect and the entry point is wired. Tapping it resolves the sheet
-// with 'pera-card-activate', which navigates to PeraCard/PeraCardIntro —
-// asserting the intro screen's create-account CTA
-// (pera_card_intro_create_button, PeraCardIntroScreen.tsx) proves the route
-// registered AND the whole card screen graph (PeraCardStackNavigator) booted
-// on web with no eval-time crash.
+// The activate row's visibility alone proves the remote-config override took
+// effect and the entry point is wired; reaching the intro screen's CTA proves
+// the route registered and the whole card graph booted with no eval crash.
 test('activation entry renders and navigates to the intro screen', async () => {
     await dismissPinPromptIfPresent(page)
     await clickThroughPinPrompt(
@@ -210,12 +166,8 @@ test('activation entry renders and navigates to the intro screen', async () => {
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
 
-// Intro -> sign-in: PeraCardIntroScreen's "already have an account" CTA
-// (pera_card_intro_login_button) calls handleAlreadyHaveAccount, which
-// navigates to PeraCard/CardSignIn (usePeraCardIntroScreen.ts). Asserting
-// CardSignInScreen's root (testID='card-sign-in') plus its email/password
-// inputs proves the nested navigator advanced to a second screen with no
-// eval crash. Networkless: the form is never submitted against Baanx.
+// Proves the nested navigator advances to a second screen with no eval crash.
+// Networkless — the form is never submitted against Baanx.
 test('intro advances to the sign-in screen', async () => {
     await clickThroughPinPrompt(
         page,
@@ -230,17 +182,9 @@ test('intro advances to the sign-in screen', async () => {
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
 
-// Learn-more opens a browser tab, not a dead tap: PeraCardIntroScreen's
-// "Learn more" link (pera_card_intro_learn_more) calls handleLearnMore,
-// which — since routeCapabilities.inAppWebView is false on web
-// (capabilities.web.ts) — calls Linking.openURL(config.peraCardLearnMoreUrl)
-// instead of pushing the in-app webview sheet. react-native-web's Linking
-// (node_modules/react-native-web/dist/exports/Linking/index.js) implements
-// openURL as `window.open(url, '_blank', 'noopener')`, so a real new page
-// must appear; this is the regression guard for Task 1's web-awareness on
-// the card's most-reachable external link. Test 2 left the app on
-// CardSignIn — pop back to Home via the nested + root stack back buttons,
-// then re-enter through the same account-switcher entry point test 1 used.
+// With `inAppWebView` false on web, Learn more goes through Linking.openURL,
+// which RNW implements as window.open — so a real new page must appear.
+// Test 2 left the app on CardSignIn, hence the pop back to Home first.
 test('learn more opens a new browser tab, not a dead tap', async () => {
     await goBackToHome(page)
     await openPeraCardIntro(page)
@@ -260,10 +204,8 @@ test('learn more opens a new browser tab, not a dead tap', async () => {
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })
 
-// No-pageerror sweep: the whole Pera Card graph (activation entry, intro,
-// sign-in, learn-more) must never have thrown an uncaught error across this
-// entire serial run — the definitive signal that the newly-enabled screen
-// graph didn't eval-crash on boot or navigation.
+// The definitive signal that the card graph never eval-crashed on boot or
+// navigation anywhere in this serial run.
 test('no uncaught errors across the pera card flow', () => {
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
 })

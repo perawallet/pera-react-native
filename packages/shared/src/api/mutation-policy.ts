@@ -14,20 +14,16 @@ import { onlineManager } from '@tanstack/react-query'
 import { NoConnectionError } from '../errors/network-validation'
 
 /**
- * OFF-004: default options for every `useMutation`, and the single source of
- * truth for the app's mutation policy. Consumed by `QueryProvider` and mirrored
- * by package-level test wrappers (packages cannot import from `apps/mobile`).
+ * Single source of truth for the app's mutation policy. Mirrored by
+ * package-level test wrappers, since packages can't import from `apps/mobile`.
  *
- * - `networkMode: 'always'` — the mutationFn always runs, even offline, so the
- *   transport rejects immediately instead of TanStack *pausing* the mutation
- *   (`mutateAsync` never settling) and silently auto-resuming when connectivity
- *   returns. Pause-and-auto-resume is forbidden for anything that moves money or
- *   applies optimistic UI. We deliberately do NOT wire `resumePausedMutations`:
- *   the policy is fail-fast, not queue-and-replay.
- * - `throwOnError: false` — failures surface as `mutation.error` state (the same
- *   contract as queries) instead of re-throwing during render, which would crash
- *   any consumer mounted outside an error boundary. User-facing surfacing stays
- *   at the call site.
+ * - `networkMode: 'always'` — the mutationFn runs even offline so the transport
+ *   rejects immediately, instead of TanStack *pausing* the mutation
+ *   (`mutateAsync` never settling) and silently auto-resuming later. Forbidden
+ *   for anything that moves money. `resumePausedMutations` is deliberately not
+ *   wired: fail-fast, not queue-and-replay.
+ * - `throwOnError: false` — failures surface as `mutation.error` rather than
+ *   re-throwing during render and crashing consumers outside an error boundary.
  */
 export const mutationDefaults = {
     throwOnError: false,
@@ -35,10 +31,9 @@ export const mutationDefaults = {
 } as const
 
 /**
- * Money-flow hardening: throw before signing starts if the device is offline,
- * rather than letting a partially-built transaction reach a transport that will
- * reject. `onlineManager.isOnline` is a METHOD — reading it as a property is
- * always truthy and the guard never fires.
+ * Fails before signing starts, rather than letting a partially-built
+ * transaction reach a transport that will reject it. Note `isOnline` is a
+ * METHOD — read as a property it's always truthy and the guard never fires.
  */
 export const assertOnline = (): void => {
     if (!onlineManager.isOnline()) {

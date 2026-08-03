@@ -10,23 +10,16 @@
  limitations under the License
  */
 
-// Shared ISOLATED-world relay body for every MAIN/ISOLATED content-script
-// bridge pair (Discover iframe, Bidali): owns the chrome.runtime Port to
-// the hosting extension page and relays both ways.
-// Page → host: CustomEvent channel handshaken with the pair's MAIN-world
-// script (first handshake wins, same anti-forgery rule as
-// relay-isolated.ts). Host → page: window.postMessage on the shared window —
-// ISOLATED and MAIN worlds share DOM events, so the page's existing
-// listeners receive native-shaped envelopes unchanged. Inert without the
-// extension-stamped token param.
+// Shared ISOLATED-world relay body for every MAIN/ISOLATED bridge pair
+// (Discover, Bidali). Page -> host goes over a handshaken CustomEvent channel
+// (first handshake wins, same anti-forgery rule as relay-isolated.ts); host ->
+// page uses window.postMessage, since the two worlds share DOM events and the
+// page's existing listeners then see native-shaped envelopes unchanged. Inert
+// without the extension-stamped token param.
 //
-// The Port name is namespaced per-token
-// (`${WEBVIEW_BRIDGE_PORT_PREFIX}${token}`), so the Discover and Bidali
-// pairs sharing this relay body can't collide as long as tokens are unique,
-// and the two script pairs are declared on disjoint origins in
-// manifest.json (`*.perawallet.app` vs `*.bidali.com`), so their
-// handshake/ready events — scoped to a single document via window
-// CustomEvents — never cross paths either.
+// The Port name is namespaced per-token, so pairs sharing this body can't
+// collide; their handshake events can't cross either, since the pairs are
+// declared on disjoint origins in manifest.json.
 import type { DiscoverChannelHandshake } from '@perawallet/wallet-extension-platform-chrome'
 import {
     WEBVIEW_BRIDGE_PORT_PREFIX,

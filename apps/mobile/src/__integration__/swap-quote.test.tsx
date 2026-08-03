@@ -10,24 +10,12 @@
  limitations under the License
  */
 
-// Integration coverage for the Tinyman/Pera swap quote pipeline:
+// The swap quote pipeline: `useCreateQuotesMutation` ensures the providers
+// query, then POSTs to /v2/dex-swap/quotes/ for SwapQuote[].
 //
-//   useCreateQuotesMutation
-//        │
-//        ├─► useQueryClient.ensureQueryData(swap-providers)
-//        │       └─► fetchProviders → GET /v1/dex-swap/providers/
-//        │
-//        └─► createQuotes(data, network, providers)
-//                └─► POST /v2/dex-swap/quotes/
-//                       returns SwapQuote[] with provider, slippage,
-//                       amountIn/Out (+ withSlippage variants),
-//                       priceImpact, peraFee details
-//
-// The full SwapScreen drives this through a complex form (top-pairs,
-// asset-selectors, provider sheet, configuration sheet, debounce
-// effects). This file stays at the hook boundary so the assertion is
-// on the network → schema → domain-shape pipeline, not on the form
-// keystroke flow. SwapScreen end-to-end is a separate target.
+// Stays at the hook boundary so the assertion is on network -> schema ->
+// domain shape, not on SwapScreen's form and debounce flow, which is a
+// separate target.
 
 import {
     afterAll,

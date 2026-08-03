@@ -225,17 +225,13 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         requestPermissions,
     ])
 
-    // Proactively warn when the Bluetooth adapter is unusable. Unlike the
-    // connect/verify screens — which pre-flight `isSupported()` and surface a
-    // typed error — `TransportBLE.listen` silently waits for the radio to
-    // power on, so a scan with Bluetooth off would otherwise leave the user on
-    // a blank "Looking for devices" screen with no feedback.
+    // `TransportBLE.listen` silently waits for the radio to power on, so
+    // without this a scan with Bluetooth off strands the user on a blank
+    // "Looking for devices" screen.
     //
-    // Mirrors iOS, which shows BOTH an in-app banner and the OS power alert:
-    // we keep the red toast for every actionable state, and additionally
-    // surface the OS "turn on Bluetooth" prompt when the radio is simply off
-    // (not for unauthorized/unsupported, which the prompt can't resolve).
-    // Both fire once per state transition.
+    // Mirrors iOS in showing both an in-app warning and the OS power alert —
+    // the latter only when the radio is simply off, since the prompt can't
+    // resolve unauthorized/unsupported. Both fire once per state transition.
     useEffect(() => {
         // An explicit USB-only choice never warns about BLE state — that
         // state is irrelevant to a USB pairing attempt.
@@ -282,16 +278,12 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         [navigation, stopScan],
     )
 
-    // Called directly from a click (the initial "Search for Ledger" CTA on
-    // web). Calls `startScan()` synchronously within that same click so the
-    // browser's device-picker prompt is invoked inside genuine user
-    // activation — see the ref comment above for why this can't go through
-    // the effect instead.
+    // Calls `startScan()` synchronously inside the click so the device-picker
+    // prompt runs under genuine user activation — see the ref comment above for
+    // why the effect can't do this.
     //
-    // In the popup surface specifically, the picker dialog isn't reliably
-    // shown at all (Chrome can auto-close the popup or silently resolve the
-    // request empty) — hand off to the full expanded tab instead of
-    // attempting the scan in-place.
+    // The popup surface hands off to the expanded tab instead: Chrome can
+    // auto-close the popup or silently resolve the picker empty.
     const handleStartScan = useCallback(() => {
         if (isPopupSurface) {
             void openLedgerExpandedTab(isUsbOnly ? 'usb' : 'ble')

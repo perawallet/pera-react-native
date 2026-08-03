@@ -93,10 +93,8 @@ type WebviewMessage = {
 }
 
 /**
- * Type identifiers we expose to dApps over the webview bridge. The Pera SDK
- * currently accepts the legacy names (`HdKey`, `LedgerBle`, `NoAuth`,
- * `Rekeyed`, `RekeyedAuth`, `Joint`); the webapp side is being updated to the
- * names below in lockstep with this change.
+ * The SDK still accepts the legacy names (`HdKey`, `LedgerBle`, `NoAuth`, …);
+ * the webapp is moving to these in lockstep.
  */
 type WebviewAccountType =
     | 'Algo25'
@@ -107,14 +105,11 @@ type WebviewAccountType =
     | 'RekeyedSignable'
     | 'RekeyedUnsignable'
 
-// At most one page-initiated WC connect per origin per window, so a hostile
-// page can't storm the approval sheet with fresh pairing URIs (PERA-4666). The
-// sheet itself is always shown for accepted connects.
-//
-// Same duration as the peraConnectJS window (injected-scripts.ts) but not the
-// same mechanism: that one de-dups an identical URI, this one rate-limits the
-// origin regardless of URI — a WC pairing URI is single-use, so spam arrives as
-// a stream of *fresh* URIs that a pure de-dup would wave through.
+// One page-initiated WC connect per origin per window, so a hostile page can't
+// storm the approval sheet. Rate-limits the ORIGIN regardless of URI, unlike
+// peraConnectJS's same-duration window which de-dups an identical URI — a
+// pairing URI is single-use, so spam arrives as fresh URIs a de-dup waves
+// through.
 const WC_CONNECT_THROTTLE_WINDOW_MS = 2000
 
 const BASE_WEBVIEW_TYPE: Record<
@@ -132,11 +127,9 @@ const BASE_WEBVIEW_TYPE: Record<
 }
 
 /**
- * Maps an account onto the type identifier we hand to the webapp. Only
- * invoked on `signingAccounts`, which has already filtered out non-signing
- * accounts — `Unsignable` and `RekeyedUnsignable` won't actually be emitted
- * in practice, but the full mapping is kept here so the bridge remains
- * self-contained should the upstream filter ever loosen.
+ * Only invoked on already-filtered `signingAccounts`, so `Unsignable` and
+ * `RekeyedUnsignable` never emit in practice — mapped anyway so the bridge stays
+ * self-contained if that filter loosens.
  */
 const toWebviewAccountType = (
     account: WalletAccount,
@@ -285,11 +278,9 @@ export const usePeraWebviewInterface = (
                         return
                     }
                     const rawUrl = message.params!.url
-                    // https-only until product confirms a broader allow-list
-                    // (mailto:/tel:). canOpenURL stays as the secondary check,
-                    // and is a no-op on web (react-native-web always resolves
-                    // true), so this gate is the only one on that platform.
-                    // Bare domains are normalized to https:// first.
+                    // https-only until product confirms a broader allow-list.
+                    // canOpenURL is a no-op on web (always resolves true), so
+                    // this gate is the only one there.
                     const url = toValidatedBrowserUrl(rawUrl)
                     if (!url) {
                         sendErrorToWebview(
@@ -440,16 +431,11 @@ export const usePeraWebviewInterface = (
                     webview,
                 },
                 () => {
-                    // Match Android's `GetAuthorizedAddressesInfoWebMessages`:
-                    // 1. `useSigningAccounts` drops Watch / Rekeyed-no-auth so
-                    //    the user can't pick a non-funding-eligible account.
-                    // 2. Send raw `account.name` (empty string when none). The
-                    //    webapp owns the truncated-address fallback; sending
-                    //    the truncated address as both name AND address (via
-                    //    getAccountDisplayName) made the webapp render the
-                    //    same string twice in its list rows.
-                    // Ordering is the consumer's responsibility — Pera Connect
-                    // sorts on its side based on its own UX needs.
+                    // Matches Android's `GetAuthorizedAddressesInfoWebMessages`.
+                    // Send the RAW `account.name`, empty when unset: the webapp
+                    // owns the truncated-address fallback, and sending that as
+                    // both name and address made its rows render the same string
+                    // twice. Ordering is the consumer's responsibility.
                     const payload = signingAccounts.map(account => ({
                         name: account.name ?? '',
                         address: account.address,
@@ -528,13 +514,11 @@ export const usePeraWebviewInterface = (
                             opts,
                         })
 
-                        // enqueueSignRequest is async (PQ-017 may fetch
-                        // suggested params for a quantum signer), but this
-                        // handler stays synchronous: `requireSecure` expects a
-                        // void-returning callback, resolveArc0001's throw must
-                        // surface synchronously into the catch below, and the
-                        // enqueue handles its own failures via respondWithError
-                        // — so fire-and-forget is safe.
+                        // Fire-and-forget despite `enqueueSignRequest` being
+                        // async: `requireSecure` wants a void callback,
+                        // `resolveArc0001`'s throw must reach the catch below
+                        // synchronously, and the enqueue handles its own
+                        // failures via respondWithError.
                         void enqueueSignRequest(resolved, {
                             sourceType: 'webview',
                             transportId: message.id,
@@ -565,11 +549,9 @@ export const usePeraWebviewInterface = (
                                 ),
                         })
                     } catch (e) {
-                        // Log every relayed rejection here at the transport
-                        // boundary (parity with the WalletConnect transport's
-                        // surfaceError) so real-world dApp failures — e.g.
-                        // algosdk v3's strict decode rejections (PERA-4503) —
-                        // are observable regardless of which resolve path threw.
+                        // Logged at the transport boundary, like the
+                        // WalletConnect transport, so real-world dApp failures
+                        // stay observable whichever resolve path threw.
                         logger.warn('ARC-0001 sign request rejected', {
                             code: (e as { code?: number }).code,
                             message: (e as Error).message,
@@ -822,14 +804,11 @@ export const usePeraWebviewInterface = (
         [deviceID, webview],
     )
 
-    // PERA-4564: The Discover web app reads the device id once (via
-    // getSettings) when it loads and only fetches the user's server-side
-    // favorites while it holds a non-null id. If the migrated device id lands
-    // *after* that first query — store hydration, migration finishing, or
-    // device re-registration — getSettings already returned null and the web
-    // app never retries. Push the id to the live web app whenever it changes
-    // so its device-id listener refires the favorites fetch. Skip the initial
-    // mount: getSettings already carries the mount-time value.
+    // Discover reads the device id once at load and only fetches server-side
+    // favorites while it holds a non-null one — so an id arriving later (store
+    // hydration, migration, re-registration) is never picked up, since it never
+    // retries. Pushing changes refires its favorites fetch. The initial mount is
+    // skipped, since getSettings already carried that value.
     const previousDeviceIDRef = useRef<string | null | undefined>(undefined)
     useEffect(() => {
         const previous = previousDeviceIDRef.current
@@ -911,13 +890,11 @@ export const usePeraWebviewInterface = (
             }
             lastWcConnectByOriginRef.current.set(throttleKey, now)
 
-            // Always surface the connection approval sheet — as if the user
-            // had scanned the QR themselves. The bridge never auto-approves a
-            // WC session (which would expose account addresses with no UI),
-            // regardless of origin trust.
-            // Bounded like the deeplink path: wait for this pairing's
-            // session_request / connection error and answer the page with a
-            // readable error instead of staying silent forever.
+            // Always surfaces the approval sheet, as if the user scanned the QR
+            // — the bridge never auto-approves a session regardless of origin
+            // trust, since that would expose addresses with no UI. Bounded like
+            // the deeplink path so the page gets a readable error rather than
+            // silence.
             void (async () => {
                 let pairingClientId: string
                 try {

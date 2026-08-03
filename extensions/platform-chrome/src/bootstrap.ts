@@ -10,16 +10,13 @@
  limitations under the License
  */
 
-// Minimal bootstrap-only entry for App.web.tsx's static (pre-hydration)
-// import path — mirrors extensions/keystore-chrome/src/bootstrap.ts. Exports
-// only getSurface, hydratePlatform, and installOffscreenStorageShim: no
-// ChromeDatabaseService (drizzle-orm), no hardware-wallet registry, none of
-// the other platformServices dependencies the full index eagerly
-// constructs. The full index (getPlatformServices, DatabaseHost, etc.) stays
-// available to the dynamically-imported graph (AppShell.web, runOffscreenApp).
+// Pre-hydration entry for App.web.tsx's static import path, mirroring
+// keystore-chrome/src/bootstrap.ts: none of the platformServices deps the full
+// index eagerly constructs (ChromeDatabaseService, hardware-wallet registry).
+// The full index stays available to the dynamically-imported graph.
 //
-// See index.ts for why this reference is here: this file is a separate root
-// pulled into consumer tsc programs (apps/mobile) independently of index.ts.
+// The reference below is duplicated from index.ts because this is a separate
+// root, pulled into consumer tsc programs independently of it.
 /// <reference types="chrome" />
 export { getSurface, type ExtensionSurface } from './surface'
 export { hydratePlatform } from './key-value-singleton'

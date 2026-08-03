@@ -50,15 +50,7 @@ import {
 import { useSigningRequest } from './useSigningRequest'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-// =============================================================================
-// Result type alias
-// =============================================================================
-
 export type UseSigningPipelineResult = SigningPipeline
-
-// =============================================================================
-// Shared display-data computation
-// =============================================================================
 
 /**
  * Pure transform: a transaction request + the wallet's accounts → everything
@@ -239,10 +231,8 @@ export const useSigningPipeline = (
 
     const accounts = useAllAccounts()
 
-    // -------------------------------------------------------------------------
     // Display data — computed from the request's transaction payload.
     // Uses the same logic as useSigningRequestAnalysis for zero-regression.
-    // -------------------------------------------------------------------------
 
     const txRequest =
         currentRequest?.type === 'transactions' && 'txs' in currentRequest
@@ -268,9 +258,7 @@ export const useSigningPipeline = (
         }
     }, [txRequest])
 
-    // -------------------------------------------------------------------------
     // Machine state — derived from actor subscription
-    // -------------------------------------------------------------------------
 
     const [stage, setStage] = useState<PipelineStage>('idle')
     const [error, setError] = useState<Nullable<Error>>(null)
@@ -416,10 +404,6 @@ export const useSigningPipeline = (
         }
     }, [currentActorRef])
 
-    // -------------------------------------------------------------------------
-    // Controls
-    // -------------------------------------------------------------------------
-
     const next = useCallback(() => {
         if (!currentRequest) return
         // A retryable failure leaves the actor parked in `failed`, where
@@ -456,10 +440,6 @@ export const useSigningPipeline = (
             type: 'ACKNOWLEDGE_HARDWARE_ERROR',
         })
     }, [currentActorRef])
-
-    // -------------------------------------------------------------------------
-    // Derived flags
-    // -------------------------------------------------------------------------
 
     const isLoading = stage === 'signing' || stage === 'transporting'
     const isRetryable = stage === 'failed' && isRetryableError(error)

@@ -404,7 +404,6 @@ export const WithKeyStore = (_provider: any, options: any) => {
     }
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
 
 const replaceUint8Array = (_key: string, value: unknown): unknown => {

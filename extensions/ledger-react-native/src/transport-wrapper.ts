@@ -57,19 +57,16 @@ export const createLedgerTransportWrapper = (
 
     async signTransaction(accountIndex, txnBytes) {
         try {
-            // Re-prime the device onto this exact account index immediately
-            // before every sign, unconditionally — never cached/skipped. The
-            // Algorand Ledger app only re-derives its signing HD path from an
-            // APDU that explicitly carries P1_FIRST_ACCOUNT_ID; AlgorandApp.sign
-            // silently omits that (sends plain P1_FIRST instead) for account 0,
-            // so without this the device would keep signing with whatever
-            // account a PRIOR getAddress/sign call — ours or, if the connection
-            // was ever handed off, another host's entirely — last left it on.
-            // getAddressAndPubKey has no such special case: it always sends the
-            // account-index prefix, so it reliably re-asserts the right account.
-            // Doing this on every call rather than caching "already primed" is
-            // deliberate: a cache only reflects calls we made, not the device's
-            // actual state, which can move for reasons outside our visibility.
+            // Re-prime the device onto this account index before EVERY sign,
+            // never cached. The Algorand app only re-derives its signing path
+            // from an APDU carrying P1_FIRST_ACCOUNT_ID, which
+            // `AlgorandApp.sign` omits for account 0 — so without this the
+            // device keeps signing with whatever account a prior call (possibly
+            // another host's) left it on. `getAddressAndPubKey` always sends the
+            // prefix, so it reliably re-asserts.
+            //
+            // Not cached because a cache reflects only our own calls, not the
+            // device state, which can move outside our visibility.
             await algorandApp.getAddressAndPubKey(accountIndex, false)
 
             // AlgorandApp.sign decodes a string message as UTF-8, so the

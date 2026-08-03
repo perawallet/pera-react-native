@@ -62,17 +62,13 @@ type SendClaimParams = BaseSendParams & {
     sendMode: 'claimArc59' | 'rejectArc59'
     shouldClaimAlgo: boolean
     /**
-     * Claimed amount in base units. When provided on a `claimArc59` send, the
-     * flow optimistically credits it to the sender's local holdings right
-     * after submission. Callers that don't know the amount can omit it and
-     * rely on the post-confirmation refresh instead.
+     * Base units. When set on a `claimArc59` send, the flow credits it locally
+     * right after submission. Omit to rely on the post-confirmation refresh.
      */
     amount?: Decimal
     /**
-     * The receiver's ARC-59 inbox account address. When present, the claim/
-     * reject group is built with explicit resource references instead of a
-     * live simulate. When absent, the builders fall back to simulate-based
-     * resource population.
+     * When present, the claim/reject group uses explicit resource references
+     * instead of a live simulate.
      */
     inboxAddress?: Nullable<string>
 }
@@ -84,10 +80,8 @@ type UseTransactionSendFlowParams = {
 }
 
 /**
- * Source metadata for the in-app Send-funds flow. Exported so the signing
- * completion-sheet driver can recognize send-funds among the other
- * `sourceType: 'local'` internal flows (swap, opt-in/out) and surface the
- * "transaction processing" sheet only for it.
+ * Exported so the completion-sheet driver can tell send-funds apart from the
+ * other `sourceType: 'local'` flows and show the processing sheet only for it.
  */
 export const SEND_TRANSACTION_SOURCE = {
     name: 'send-transaction',
@@ -111,15 +105,12 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
     const fetchSuggestedMinFee = useFetchSuggestedMinFee()
 
     /**
-     * Express send has two distinct signers, each with its own PQ-aware
-     * rate: the funding/transfer legs are signed by the sender, the opt-in
-     * is signed by the receiver. `resolveMinFeeForSender` resolves the
-     * effective signer (auth account) per address — a rekeyed party pays
-     * according to its auth account's type — and owns the
-     * `max(suggestedMinFee, configMinTxnFee)` congestion guard. AlgoKit's
-     * auto-sizing is only overridden with `staticFee` when the resolved fee
-     * exceeds the network's suggested minimum, so a non-quantum party is
-     * built exactly as before.
+     * Express send has two signers with independent PQ-aware rates: the sender
+     * signs the funding/transfer legs, the receiver the opt-in.
+     * `resolveMinFeeForSender` resolves the effective signer per address, so a
+     * rekeyed party pays its auth account's rate, and owns the congestion guard.
+     * `staticFee` only overrides AlgoKit's auto-sizing when the resolved fee
+     * exceeds the suggested minimum, so a non-quantum party is unchanged.
      */
     const buildExpressTxs = useCallback(
         async (params: {
@@ -207,14 +198,11 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
     )
 
     /**
-     * `resolveMinFeeForSender` resolves the effective signer (auth account)
-     * for `params.sender`, so a sender rekeyed to a quantum auth pays the PQ
-     * rate even though `params.sender` still identifies the rekeyed
-     * account. The `max(suggestedMinFee, configMinTxnFee)` congestion guard
-     * also lives there. AlgoKit's auto-sizing is only overridden with
-     * `staticFee` when the resolved fee exceeds the network's suggested
-     * minimum, so a non-quantum sender (incl. close-account sends) is built
-     * exactly as before.
+     * `resolveMinFeeForSender` resolves the effective signer, so a sender
+     * rekeyed to a quantum auth pays the PQ rate even though `params.sender`
+     * still names the rekeyed account. `staticFee` only overrides AlgoKit's
+     * auto-sizing when the resolved fee exceeds the suggested minimum, so a
+     * non-quantum sender is unchanged.
      */
     const buildNormalTxs = useCallback(
         async (params: SendTransactionParams): Promise<PeraTransaction[]> => {
@@ -366,13 +354,9 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     source: SEND_TRANSACTION_SOURCE,
                 })
 
-                // Optimistically credit the claimed amount (and make sure the
-                // asset's metadata is persisted) so the asset list shows the
-                // new balance immediately instead of waiting for confirmation
-                // + refresh. The next account sync replaces the credit with
-                // chain truth, so a failed claim self-corrects within a poll
-                // tick. Mirrors useAssetOptInMutation's optimistic holding
-                // insert.
+                // Credit optimistically so the asset list updates without
+                // waiting for confirmation. The next sync replaces it with chain
+                // truth, so a failed claim self-corrects within a poll tick.
                 if (params.amount) {
                     try {
                         await addToAssetHolding({
