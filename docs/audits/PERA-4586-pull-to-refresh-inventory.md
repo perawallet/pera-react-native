@@ -19,15 +19,19 @@ Local/derived lists — settings menus, pickers, address books, in-memory signin
 | Surface                                                   | Container                                            | Refresh source                                                                            |
 | --------------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | Account overview tab (portfolio value, chart, asset list) | `AccountAssetList` → `SearchableList` → `PWFlatList` | `useSyncRefresh([address])` in `useAccountOverview`                                       |
-| Account history tab                                       | `SectionList` in `AccountHistory.tsx`                | `useSyncRefresh([address])`, composed with the query's `isRefetching`                     |
+| Account history tab                                       | `SectionList` in `AccountHistory.tsx`                | `useSyncRefresh([address])`                                                               |
 | Account NFTs tab                                          | `PWFlatList` in `AccountNfts.tsx`                    | `useSyncRefresh([address])`                                                               |
-| Asset detail (header + transactions)                      | `SectionList` in `AssetTransactionList.tsx`          | `useSyncRefresh([address])`, composed with `isRefetching`                                 |
+| Asset detail (header + transactions)                      | `SectionList` in `AssetTransactionList.tsx`          | `useSyncRefresh([address])`                                                               |
 | Inbox                                                     | `PWFlatList`                                         | existing `useInboxQuery` `isRefetching`/`refetch`, now via `PWRefreshControl`             |
 | Notifications                                             | `PWFlatList`                                         | existing `useNotificationsListQuery` `isRefetching`/`refetch`, now via `PWRefreshControl` |
 
 All six go through `PWRefreshControl`, so all six behave identically offline: the pull does not dispatch a doomed request, it pulses the offline banner and resolves.
 
 The four account-scoped surfaces route through the sync service rather than a query `refetch()`. Their queries are DB-first (`staleTime: Infinity`, `networkMode: 'always'`, reading SQLite), so a bare `refetch()` re-reads the same local rows — the gesture would have spun and changed nothing. Inbox and Notifications are pure-network backend queries, so their own `refetch` is the correct path there.
+
+On those four, the spinner is driven solely by the sync refresh, never by the query's `isRefetching`. Composing the two looks tempting and is wrong: the periodic sync tick invalidates transaction queries whenever a fetch succeeds, an invalidated active infinite query refetches, and the pull spinner would then appear with no gesture behind it — every tick, on a network where the should-refresh probe short-circuits.
+
+`useSyncRefresh` dedupes by network + addresses in a module-level map, so a pull on one account tab joins the refresh another tab already started instead of duplicating the indexer fetch, and a pull after an account switch is never swallowed by a guard the previous account still holds.
 
 ## Excluded, with reasons
 
