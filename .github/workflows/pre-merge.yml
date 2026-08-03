@@ -554,3 +554,49 @@ jobs:
             --log-opts="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" \
             --redact \
             --verbose
+
+  ci-lint:
+    name: CI Lint
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          set -euo pipefail
+          tarball="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "${tarball}" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/${tarball}"
+          echo "${ACTIONLINT_SHA256}  ${tarball}" | sha256sum --check --strict
+          tar -xz -C /usr/local/bin -f "${tarball}" actionlint
+          rm "${tarball}"
+
+      # Also shellchecks every `run:` block, since shellcheck ships with the image.
+      - name: Lint workflows
+        run: actionlint
+
+      # error severity only, for now. The five pre-existing warnings are real, but
+      # two are in tools/generate-config.sh on the production config path and want
+      # their own change with a test rather than a drive-by fix.
+      - name: Lint shell scripts
+        run: |
+          set -euo pipefail
+          git ls-files -z '*.sh' | xargs -0 shellcheck --severity=error
+
+      # These cover tools/jira-sync.sh and tools/previous-release-tag.sh, which
+      # only ever run unattended and write to a live tracker.
+      - name: Shell script tests
+        run: |
+          set -euo pipefail
+          for suite in tools/__tests__/*.test.sh; do
+            echo "── ${suite}"
+            bash "${suite}"
+          done

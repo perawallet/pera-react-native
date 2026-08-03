@@ -1,0 +1,54 @@
+name: Jira Drift
+
+# Every stage of the ticket sync exits 0 by design, so that ticket bookkeeping can
+# never break a push, a merge or a release. The cost of that choice is silence: a
+# rotated token or a missing Bitrise secret would just stop moving tickets, with
+# nothing to notice. This is the check that notices.
+#
+# The job fails when drift is found — a red scheduled run is the notification, and
+# needs no webhook. Swap the last step for `continue-on-error: true` to make it
+# report-only.
+
+on:
+  schedule:
+    # Mondays 08:00 UTC, so a week of drift is on someone's desk at standup.
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+    inputs:
+      grace_hours:
+        description: "Hours a ticket may sit on main before it counts as stalled"
+        required: false
+        default: "48"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: Report Jira drift
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history: the report needs commit dates per ticket over the
+          # lookback window.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Report drift
+        id: report
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          DRIFT_GRACE_HOURS: ${{ inputs.grace_hours || '48' }}
+        run: ./tools/jira-drift.sh
+
+      - name: Fail when tickets are out of sync
+        if: steps.report.outputs.drift != '0'
+        run: |
+          echo "::error::${{ steps.report.outputs.drift }} ticket(s) are out of sync — see the run summary"
+          exit 1
