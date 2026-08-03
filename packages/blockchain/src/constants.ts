@@ -10,26 +10,11 @@
  limitations under the License
  */
 
-/**
- * Base minimum balance for any account, in µAlgo (0.1 ALGO).
- *
- * Fallback only — do not read directly at runtime; use `useMinimumFeeConfig`,
- * which sources the value from remote config.
- */
+/** µAlgo. Fallback only — at runtime use `useMinimumFeeConfig` (remote config). */
 export const FALLBACK_BASE_ACCOUNT_MBR = 100_000n
 
-/**
- * Additional minimum balance per opted-in asset, in µAlgo (0.1 ALGO).
- *
- * Fallback only — do not read directly at runtime; use `useMinimumFeeConfig`,
- * which sources the value from remote config.
- */
+/** Per opted-in asset, µAlgo. Fallback only — see `useMinimumFeeConfig`. */
 export const FALLBACK_ASSET_MBR = 100_000n
 
-/**
- * Minimum transaction fee, in µAlgo (0.001 ALGO).
- *
- * Fallback only — do not read directly at runtime; use `useMinimumFeeConfig`,
- * which sources the value from remote config.
- */
+/** µAlgo. Fallback only — see `useMinimumFeeConfig`. */
 export const FALLBACK_MIN_TXN_FEE = 1000n

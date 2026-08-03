@@ -86,6 +86,20 @@ const closeAlgo = {
     },
 } as unknown as PeraDisplayableTransaction
 
+const mint = (
+    unitName: string,
+    total: bigint,
+    assetId = 0n,
+): PeraDisplayableTransaction =>
+    ({
+        sender: USER,
+        fee: 1000n,
+        assetConfigTransaction: {
+            assetId,
+            params: { name: `${unitName} asset`, unitName, total, decimals: 0 },
+        },
+    }) as unknown as PeraDisplayableTransaction
+
 const mockTransactions = (
     transactions: PeraDisplayableTransaction[],
     isSimulating = false,
@@ -177,6 +191,33 @@ describe('useBalanceImpactSummary', () => {
         const algo = result.current.spend[0]
         expect(algo.assetId).toBe('0')
         expect(algo.isFullBalance).toBe(true)
+    })
+
+    it('surfaces every asset a multi-mint group creates as a receive row', () => {
+        mockTransactions([mint('MINT1', 1n), mint('MINT2', 5n)])
+
+        const { result } = renderHook(() => useBalanceImpactSummary())
+
+        expect(result.current.hasImpact).toBe(true)
+        expect(result.current.spend).toHaveLength(0)
+        expect(
+            result.current.receive.map(item => [
+                item.asset.unitName,
+                item.amount.toString(),
+                item.isNewAsset,
+            ]),
+        ).toEqual([
+            ['MINT2', '5', true],
+            ['MINT1', '1', true],
+        ])
+    })
+
+    it('ignores a reconfigure of an existing asset', () => {
+        mockTransactions([mint('MINT1', 1n, 31_566_704n)])
+
+        const { result } = renderHook(() => useBalanceImpactSummary())
+
+        expect(result.current.hasImpact).toBe(false)
     })
 
     it('reports no impact when nothing touches the user’s accounts', () => {

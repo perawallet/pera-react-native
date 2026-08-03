@@ -50,6 +50,7 @@ import { useLinkConsentMutation } from '../useLinkConsentMutation'
 import { useConnectFundingSourceMutation } from '../useConnectFundingSourceMutation'
 import { useCardStore } from '../../store'
 import { OnboardingStep } from '../../models'
+import { OnboardingNotVerifiedError } from '../../api/errors'
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -216,6 +217,44 @@ describe('onboarding mutation hooks', () => {
         )
     })
 
+    // Baanx refuses registration steps until the identity check is far enough
+    // along. It reports PENDING from the moment a Veriff session is created,
+    // so this refusal is the only trustworthy signal: it has to reach the
+    // screen as a typed error, and it must invalidate the cached KYC record.
+    const NOT_VERIFIED_FAILURE = {
+        response: { status: 400 },
+        data: { message: 'User is not verified' },
+    }
+
+    it('useSubmitPersonalDetailsMutation types a not-verified refusal and refreshes the onboarding record', async () => {
+        api.submitPersonalDetails.mockRejectedValue(NOT_VERIFIED_FAILURE)
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+        const { result } = renderHook(
+            () => useSubmitPersonalDetailsMutation(),
+            { wrapper },
+        )
+
+        result.current.mutate({
+            onboardingId: 'ob_1',
+            firstName: 'Jane',
+            lastName: 'Doe',
+            dateOfBirth: '2000-01-01',
+            countryOfNationality: 'GB',
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(OnboardingNotVerifiedError)
+        expect(invalidateSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                queryKey: expect.arrayContaining(['onboarding-details']),
+            }),
+        )
+        // The step must not advance on a refusal.
+        expect(useCardStore.getState().onboardingStep).not.toBe(
+            OnboardingStep.Address,
+        )
+    })
+
     const address = {
         onboardingId: 'ob_1',
         addressLine1: '23 Werrington Bridge Rd',
@@ -223,6 +262,25 @@ describe('onboarding mutation hooks', () => {
         zip: 'PE6 7PP',
         isSameMailingAddress: true,
     }
+
+    it('useSubmitAddressMutation types a not-verified refusal and refreshes the onboarding record', async () => {
+        api.submitAddress.mockRejectedValue(NOT_VERIFIED_FAILURE)
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
+        const { result } = renderHook(() => useSubmitAddressMutation(), {
+            wrapper,
+        })
+
+        result.current.mutate(address)
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(result.current.error).toBeInstanceOf(OnboardingNotVerifiedError)
+        expect(invalidateSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+                queryKey: expect.arrayContaining(['onboarding-details']),
+            }),
+        )
+        expect(session.setCardSession).not.toHaveBeenCalled()
+    })
 
     it('useSubmitAddressMutation exchanges the registration token for the OAuth pair and completes onboarding', async () => {
         api.submitAddress.mockResolvedValue({

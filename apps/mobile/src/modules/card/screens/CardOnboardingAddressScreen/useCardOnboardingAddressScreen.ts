@@ -18,8 +18,10 @@ import {
     addressSchema,
     getCardApiError,
     isDuplicateError,
+    OnboardingNotVerifiedError,
     useCardStore,
     useLinkConsentMutation,
+    useOnboardingKycGate,
     useRegistrationSettingsQuery,
     useSubmitAddressMutation,
     useSubmitConsentMutation,
@@ -71,6 +73,13 @@ export type UseCardOnboardingAddressScreenResult = {
     handleTogglePlatformTerms: () => void
     handleOpenCardTerms: () => void
     handleOpenPlatformTerms: () => void
+    /**
+     * The record's identity check isn't far enough along for Baanx to accept
+     * this step, so the form is replaced by the "finish verifying" view.
+     */
+    isKycRequired: boolean
+    /** Sends the user back to the identity-verification step. */
+    handleVerifyIdentity: () => void
     handleConfirm: () => void
 }
 
@@ -83,9 +92,27 @@ export const useCardOnboardingAddressScreen =
             titleKey: 'peraCard.address.error_title',
             bodyKey: 'peraCard.address.error_body',
         })
+        // Baanx's own wording for this is "User is not verified", which reads
+        // as an account problem rather than an unfinished step, so this toast
+        // always uses our copy.
+        const showKycError = useCardErrorToast({
+            titleKey: 'peraCard.kyc_required.title',
+            bodyKey: 'peraCard.kyc_required.body',
+            shouldUseBackendMessage: false,
+        })
         const { request } = useBottomSheet()
         const { pushWebView } = useWebView()
         const onboardingId = useCardStore(state => state.onboardingId)
+        // Baanx refuses this step on an unverified record just like the
+        // personal-details step, so it shares the same gate.
+        const { isKycRequired, markServerRefused } = useOnboardingKycGate({
+            onboardingId,
+        })
+
+        const handleVerifyIdentity = useCallback(() => {
+            navigation.navigate('CardOnboardingVerification')
+        }, [navigation])
+
         const residenceCountryIso = useCardStore(state => state.countryIso)
         const setCountryIso = useCardStore(state => state.setCountryIso)
         // Marketing/SMS consents are captured on the Set-Password screen; read
@@ -311,6 +338,14 @@ export const useCardOnboardingAddressScreen =
                 // Connect Funds is now the live step.
                 navigation.navigate('CardOnboardingStatus')
             } catch (error) {
+                // Checked before getCardApiError: the typed error carries no
+                // body, so it would otherwise fall through to the generic
+                // toast and the signal would be lost.
+                if (error instanceof OnboardingNotVerifiedError) {
+                    markServerRefused()
+                    await showKycError(error)
+                    return
+                }
                 // A duplicate means Baanx already completed this registration
                 // on an earlier attempt whose response was lost — so the
                 // session token that only the address response carries was
@@ -365,6 +400,8 @@ export const useCardOnboardingAddressScreen =
             handleTogglePlatformTerms,
             handleOpenCardTerms,
             handleOpenPlatformTerms,
+            isKycRequired,
+            handleVerifyIdentity,
             handleConfirm,
         }
     }

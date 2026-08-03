@@ -18,10 +18,6 @@ import {
     FeeDelegationResponseMismatchError,
 } from '../../errors'
 
-// -----------------------------------------------------------------------------
-// Mocks
-// -----------------------------------------------------------------------------
-
 const {
     addSignRequestMock,
     submitAndAutoRefreshMock,
@@ -97,10 +93,6 @@ vi.mock('../../api', () => ({
 
 import { useFeeDelegation } from '../useFeeDelegation'
 
-// -----------------------------------------------------------------------------
-// Helpers
-// -----------------------------------------------------------------------------
-
 const ACCOUNT = 'TESTADDRESS'
 const ASSET_ID = 31566704n
 
@@ -116,7 +108,7 @@ const baseParams = {
     transactions: [
         { id: 'optin', sender: { toString: () => ACCOUNT } },
     ] as never[],
-    includeMbr: true,
+    includeAssetOptInMbr: true,
     optInAssetIds: [ASSET_ID],
     sourceMetadata: { name: 'test-flow', description: 'Test flow' },
 }
@@ -238,7 +230,7 @@ describe('fee-delegation/useFeeDelegation', () => {
             {
                 txnGroup: [{ txn: toBase64('optin') }],
                 account: ACCOUNT,
-                includeMbr: true,
+                includeAssetOptInMbr: true,
                 optInAssetIds: [ASSET_ID.toString()],
             },
             'valid-token',

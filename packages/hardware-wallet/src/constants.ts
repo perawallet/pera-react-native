@@ -17,19 +17,15 @@
 export const DEFAULT_MAX_ACCOUNT_SCAN_GAP = 2
 
 /**
- * With an on-chain probe, stop after this many consecutive indices with no
- * on-chain presence. Chosen to match HD discovery's current account gap
- * limit (`ACCOUNT_GAP_LIMIT` in `packages/accounts/src/account-discovery.ts`
- * — a private constant, so the two are NOT mechanically linked) so a Ledger
- * migrator's funded accounts are found as deep as an HD import would look.
+ * With an on-chain probe, stop after this many consecutive empty indices.
+ * Matches HD discovery's `ACCOUNT_GAP_LIMIT` (private, so NOT mechanically
+ * linked) so a Ledger migrator's accounts surface as deep as an HD import's.
  */
 export const DEFAULT_ONCHAIN_ACCOUNT_SCAN_GAP = 5
 
 /**
- * Hard ceiling on the highest derivation index a probed scan will visit,
- * regardless of how many funded accounts keep resetting the gap. Every
- * extra index costs one silent `getAddress` device call plus one network
- * lookup, so this bounds worst-case scan time on a device with dozens of
- * funded accounts; "Find another account" continues past it on demand.
+ * Ceiling regardless of how many funded accounts keep resetting the gap —
+ * every extra index costs a device call plus a network lookup. "Find another
+ * account" continues past it on demand.
  */
 export const DEFAULT_MAX_ACCOUNT_SCAN_INDEX = 32

@@ -10,19 +10,16 @@
  limitations under the License
  */
 
-// Dedicated worker hosting sqlite-wasm over OPFS. Uses the SyncAccessHandle
-// pool VFS (installOpfsSAHPoolVfs): no COOP/COEP/SharedArrayBuffer needed,
-// but sync access handles only exist inside dedicated workers — which is why
-// the offscreen document spawns this worker instead of opening the DB itself.
-// Result semantics mirror the proven drizzle sqlite-proxy callbacks in
-// extensions/platform-react-native/src/services/database.ts and
-// packages/database/src/test-utils/memory-database.ts:
-//   run  -> rows: []
-//   else -> rows: array of row VALUE arrays (rowMode 'array').
+// Dedicated worker hosting sqlite-wasm over OPFS. The SyncAccessHandle pool VFS
+// needs no COOP/COEP/SharedArrayBuffer, but sync access handles only exist
+// inside dedicated workers — which is why the offscreen document spawns this
+// rather than opening the DB itself.
 //
-// IMPORTANT: This module is bundled as ESM and MUST be instantiated with
-// `new Worker(url, { type: 'module' })` — the offscreen bootstrap depends
-// on module semantics for top-level await and import resolution.
+// Result semantics match the drizzle sqlite-proxy callbacks elsewhere: `run`
+// returns no rows, everything else an array of row VALUE arrays.
+//
+// MUST be instantiated with `new Worker(url, { type: 'module' })` — the
+// bootstrap depends on module semantics for top-level await.
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm'
 
 type WorkerRequest =

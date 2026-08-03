@@ -62,11 +62,7 @@ import {
 import { validateArc60AuthRequest } from '../../utils/arc60'
 import { isLedgerError } from '../../utils/classifyLedgerErrorKind'
 
-/**
- * Factory for the `rejectWith` callback of the shared `withTimeout` helper,
- * so Ledger call sites reject with a typed `LedgerConnectionError` rather
- * than the generic `Error` the shared utility would otherwise produce.
- */
+/** So Ledger timeouts reject typed rather than as a generic `Error`. */
 const ledgerTimeoutReason =
     (operation: string) =>
     (_op: string, ms: number): Error =>
@@ -121,18 +117,13 @@ const validateAndExtract = (
 }
 
 /**
- * Connect to the hardware device and verify it is ready.
+ * A transport arriving after the timeout race is disconnected as soon as it
+ * resolves, so no open BLE link leaks — Android won't reap an orphaned one until
+ * the OS times it out, which blocks the next reconnect.
  *
- * If `connect` rejects via the timeout race, a late-arriving transport is
- * disconnected as soon as it resolves so we don't leak an open BLE link
- * (Android in particular won't reap an orphaned link until the OS times it
- * out, which can block the next reconnect attempt).
- *
- * Threat-model note on the address re-fetch: this matches native iOS by
- * verifying the on-device address at connect time. It does NOT re-verify
- * before each subsequent transaction — for multi-tx sessions the device is
- * trusted to remain on the same account between signs. Tightening this to a
- * per-tx check is a future hardening.
+ * The address is verified at connect time only, matching native iOS: a multi-tx
+ * session trusts the device to stay on the same account. A per-tx check is
+ * future hardening.
  */
 const connectAndVerify = async (
     transportProvider: HardwareWalletTransportProvider,
@@ -255,11 +246,7 @@ const signTransactions = async (
     return signed
 }
 
-/**
- * Classify a raw error into a typed error that the UI presets understand.
- * Returns the classified value rather than throwing, so the caller can pass
- * the same value to both `onError` and `throw`.
- */
+/** Returns rather than throws, so the caller can pass it to `onError` and `throw`. */
 const toClassifiedError = (error: unknown): Error => {
     if (
         error instanceof CannotSignError ||
@@ -287,13 +274,8 @@ type SignArc60OnHardwareWalletOptions = Omit<
 >
 
 /**
- * Connect to the hardware device, verify the on-device address matches the
- * account's expected address, sign the given transactions sequentially, then
- * disconnect. Returns a parallel array where indices listed in `indicesToSign`
- * are signed and all other entries are unsigned placeholders (`{ txn }` only).
- *
- * Used by the XState-based signing pipeline's hardware strategy. Local-key
- * accounts sign through `useLocalKeyTransactionSigner` and never reach here.
+ * Signs sequentially, returning a parallel array where everything outside
+ * `indicesToSign` is an unsigned `{ txn }` placeholder.
  */
 const signTransactionsOnHardwareWallet = async (
     hwAccount: HardwareWalletAccount,
@@ -355,11 +337,7 @@ const signTransactionsOnHardwareWallet = async (
     }
 }
 
-/**
- * Connect to the hardware device, verify address, gate on minimum app version,
- * run host-side ARC-60 validation, then forward the sign request to the device.
- * Returns the raw Ed25519 signature bytes.
- */
+/** Gates on minimum app version and host-side ARC-60 validation before signing. */
 const signArc60OnHardwareWallet = async (
     hwAccount: HardwareWalletAccount,
     stdSigData: Arc60StdSigData,
@@ -409,11 +387,8 @@ const signArc60OnHardwareWallet = async (
             throw new LedgerAppOutdatedError()
         }
 
-        // Shared host-side validation (scope / domain / SIWA / signer). Reads
-        // a fresh snapshot rather than subscribing — this is a plain async
-        // function, not a component/hook render, so the `useAccountsStore()`
-        // hook form can't be called here (see useUpdateAccount for the same
-        // pattern).
+        // Reads a fresh snapshot rather than subscribing: this is a plain async
+        // function, so the `useAccountsStore()` hook form can't be called.
         const accounts = useAccountsStore.getState().accounts
         validateArc60AuthRequest(stdSigData, metadata, accounts)
 
@@ -509,13 +484,9 @@ export const createHardwareStrategy = (
                 },
             )
 
-            // Surface per-transaction base64 signatures on the signer so the
-            // multisig cosign transport can post them to the backend's
-            // `responses[].signatures` (mirrors createLocalKeyStrategy and
-            // createMultisigStrategy.extractSignatures). Without this, Ledger
-            // cosigns produce request bodies with `signatures: [[]]` and the
-            // backend rejects them with "Lengths of transaction list and
-            // signature list should be equal."
+            // The multisig cosign transport posts these as
+            // `responses[].signatures`. Without them, Ledger cosigns send
+            // `signatures: [[]]` and the backend rejects the length mismatch.
             const signerInfo: SignerInfo = {
                 address: account.address,
                 signatures: signed.map(stx =>

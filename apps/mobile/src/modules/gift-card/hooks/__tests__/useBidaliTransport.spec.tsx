@@ -18,10 +18,6 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import { useBidaliTransport } from '../useBidaliTransport'
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
 const mockAddSignRequest = vi.fn()
 const mockAddPayment = vi.fn()
 const mockAddAssetTransfer = vi.fn()
@@ -108,10 +104,6 @@ Object.assign(patchedBigInt, originalBigInt)
 // eslint-disable-next-line no-global-assign
 globalThis.BigInt = patchedBigInt as unknown as typeof BigInt
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const VALID_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
@@ -131,10 +123,6 @@ const bidaliRPC = (method: string, params?: Record<string, unknown>) => ({
     params,
     id: 'bidali-1234',
 })
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('useBidaliTransport', () => {
     beforeEach(() => {

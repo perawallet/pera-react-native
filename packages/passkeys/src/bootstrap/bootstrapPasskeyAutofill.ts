@@ -12,6 +12,7 @@
 
 import {
     fetchSecret,
+    MasterKeyNotFoundError,
     readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
@@ -40,12 +41,9 @@ const HD_ROOT_KEY_TYPES = new Set<string>([
 ])
 
 /**
- * iOS reports a disabled AutoFill credential store as
- * `ASCredentialIdentityStoreError.storeDisabled` — domain
- * `ASCredentialIdentityStoreErrorDomain`, code 1. This is the expected state
- * when the user hasn't enabled Pera as their AutoFill provider, not a fault.
- * Note the distinct `ReactNativePasskeyAutofill` domain code 1 ("App Group is
- * not configured") is a real bug and intentionally does NOT match here.
+ * `storeDisabled` is the expected state when the user hasn't enabled Pera as
+ * their AutoFill provider, not a fault. The distinct `ReactNativePasskeyAutofill`
+ * code 1 ("App Group is not configured") IS a real bug, so it must not match.
  */
 const isStoreDisabledError = (err: unknown): boolean =>
     err instanceof Error &&
@@ -54,25 +52,12 @@ const isStoreDisabledError = (err: unknown): boolean =>
 let activeBootstrap: Promise<void> | null = null
 
 /**
- * Bootstraps the native passkey autofill subsystem.
+ * Bootstraps the native passkey autofill subsystem. Idempotent, and overlapping
+ * calls coalesce into the first outstanding run.
  *
- * Steps (idempotent):
- *  1. Fetch the master key (keychain-backed; no biometric prompt if already
- *     created during hydrateKeystore).
- *  2. Push the master key bytes to the native side.
- *  3. Find the HD root key by reading the keystore's MMKV namespace directly
- *     (the same source the native module uses) and push its id — plus, on
- *     builds that support it, its derived bytes — to the native side.
- *  4. Configure Android intent actions (no-op on iOS).
- *  5. Refresh the iOS Autofill identity store (no-op on Android).
- *
- * Reads from MMKV rather than the reactive keystore store on purpose: the
- * reactive store is hydrated asynchronously (and only via `commit` during a
- * session), so it can be empty when this runs at cold start. MMKV is the
+ * Reads MMKV rather than the reactive keystore store on purpose: that store
+ * hydrates asynchronously, so it can be empty at cold start. MMKV is the
  * synchronous, always-current source of persisted keys.
- *
- * Safe to call multiple times — overlapping calls coalesce into the first
- * outstanding run.
  */
 export const bootstrapPasskeyAutofill = (
     options: BootstrapPasskeyAutofillOptions,
@@ -92,13 +77,27 @@ const runBootstrap = async (
 
     let masterKey: Buffer | null = null
     try {
-        masterKey = await readMasterKey()
+        try {
+            masterKey = await readMasterKey()
+        } catch (err) {
+            // A missing master key means the user hasn't created or restored a
+            // wallet yet — there is no credential to publish, and the bootstrap
+            // re-runs on the next launch. That's a precondition, not a fault,
+            // so it stays off the crash reporter. Scoped to this call: the same
+            // error from anywhere downstream is unexpected and still reported.
+            if (err instanceof MasterKeyNotFoundError) {
+                logger.warn(
+                    'No master key yet; skipping passkey autofill bootstrap',
+                    { step: 'bootstrapPasskeyAutofill' },
+                )
+                return
+            }
+            throw err
+        }
 
-        // Push the master key to the native side as raw bytes — the upstream
-        // bridge takes a `Uint8Array`, so a non-zeroable hex string is never
-        // materialized in the JS heap. Copy the (craftzdog) Buffer polyfill into
-        // a genuine Uint8Array so Expo's typed-array bridge marshals it to Swift
-        // Data / Kotlin ByteArray; wipe the copy after.
+        // Raw bytes, so no non-zeroable hex string is ever materialized in the
+        // JS heap. The Buffer polyfill is copied into a genuine Uint8Array so
+        // Expo's bridge marshals it to Swift Data / Kotlin ByteArray.
         const masterKeyBytes = Uint8Array.from(masterKey)
         try {
             await service
@@ -121,14 +120,9 @@ const runBootstrap = async (
                 logger.error(err as Error, { step: 'configureIntentActions' }),
             )
 
-        // Refreshing the iOS AutoFill identity store only makes sense when
-        // Pera is the active credential provider. When the user hasn't enabled
-        // it (the default), the store is disabled and iOS rejects with
-        // ASCredentialIdentityStoreError.storeDisabled — a benign, expected
-        // state, not a fault. Gating on isProviderActive() keeps that from
-        // surfacing as an error toast on every launch/foreground, and skips an
-        // unnecessary native round-trip. (No-op on Android, where
-        // isProviderActive resolves false.)
+        // Only meaningful when Pera is the active credential provider —
+        // otherwise iOS rejects with `storeDisabled`, a benign expected state
+        // that would otherwise surface as an error toast on every foreground.
         const providerActive = await service
             .isProviderActive()
             .catch(() => false)
@@ -162,10 +156,8 @@ const runBootstrap = async (
 }
 
 /**
- * Locates the HD root key in the keystore MMKV namespace, hands its id to the
- * native side, and (on supported builds) pushes its derived private bytes.
- * Decrypts every entry's metadata to find the seed — mirrors `hydrateKeystore`
- * but scoped to the single key the autofill subsystem needs.
+ * Decrypts every entry's metadata to find the seed — `hydrateKeystore` scoped to
+ * the single key the autofill subsystem needs.
  */
 const configureHdRootKey = async (
     service: PasskeyAutofillService,
@@ -213,18 +205,14 @@ const configureHdRootKey = async (
                 logger.error(err as Error, { step: 'setHdRootKeyId' }),
             )
 
-        // Only build the derived private-key hex string when the native side
-        // actually implements setDerivedMainKey. On current iOS/Android builds
-        // it doesn't, so this skips materializing a non-zeroable secret string
-        // for a call that would no-op anyway. Lights up automatically on builds
-        // that add native support.
+        // Current builds don't implement setDerivedMainKey, so skip
+        // materializing a non-zeroable secret string for a call that would no-op.
+        // Lights up automatically once native support lands.
         if (hdRootSecret.privateKey && service.supportsDerivedMainKey) {
             const pk = hdRootSecret.privateKey
-            // Read the hex off a Buffer *view* over the secret's existing bytes
-            // rather than `Buffer.from(pk)`, which would allocate a second copy
-            // of the private key that nothing zeroes (the finally below only
-            // wipes the original). The view shares the original's backing
-            // store, so that single wipe covers it.
+            // A Buffer *view*, not `Buffer.from(pk)` — that would allocate a
+            // second copy of the private key that nothing zeroes. The view
+            // shares the backing store, so the wipe below covers it.
             const derived =
                 pk instanceof Uint8Array
                     ? Buffer.from(pk.buffer, pk.byteOffset, pk.byteLength)

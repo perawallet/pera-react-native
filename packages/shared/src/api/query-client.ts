@@ -183,17 +183,12 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             )
         }
 
-        // No Pera deployment for this network (betanet, custom). Refuse HERE,
-        // before ky is invoked at all, rather than inside a `beforeRequest`
-        // hook: ky builds the `Request` synchronously in its constructor,
-        // BEFORE running beforeRequest, so a hookless client with no `prefix`
-        // would first hit `new Request('v1/assets/')` and a spec-compliant
-        // implementation (undici, and the direction Expo's fetch is heading)
-        // throws a bare `TypeError: Failed to parse URL` from there. That
-        // TypeError lands in the catch below and gets normalized into a
-        // generic PeraNetworkError('unknown') — exactly the outcome the typed
-        // error exists to avoid. Throwing on this side of the call also means
-        // no socket opens and no consumer needs its own guard.
+        // Refuse before ky is invoked, not in a `beforeRequest` hook: ky
+        // builds the `Request` in its constructor, so a prefix-less client hits
+        // `new Request('v1/assets/')` first and a spec-compliant fetch throws a
+        // bare `TypeError: Failed to parse URL`. That would normalize into a
+        // generic PeraNetworkError('unknown') — the exact outcome this typed
+        // error exists to avoid.
         if (
             requestConfig.backend === 'pera' &&
             networksWithoutPeraBackend.has(requestConfig.network)
@@ -383,22 +378,14 @@ const buildClientsFor = (network: Network): BackendInstances => {
 
 let clientsInitialized = false
 
-// Builds every network's clients on first use — NEVER at module import
-// time. Importing this module must not require getNetworkConfig() to
-// resolve to a real object: several consuming packages' tests mock it as a
-// bare `vi.fn()` with no default return, and an eager build at import time
-// crashed those suites during collection (packages/card's lsig.spec.ts
-// imports bytesToHex/decodeFromBase64 from this package and got no
-// further).
+// On first use, NEVER at import time: importing this module must not require
+// getNetworkConfig() to resolve, since consuming packages' tests mock it as a
+// bare `vi.fn()` and an eager build crashes their collection.
 //
-// Shared by every call site that touches `clients` — the request path in
-// createFetchClient above and updateBackendHeaders below (and, from a later
-// change, updateNodeEndpoints) — so a lazily-populated map can never be
-// silently incomplete: whichever call site runs first builds EVERY member of
-// the Networks union, never just the one it needed. Do not replace this with a
-// per-network build-on-miss — that would silently skip networks nothing
-// has requested yet when updateBackendHeaders (or updateNodeEndpoints) runs
-// before any request has.
+// Builds EVERY member of the Networks union, not just the one needed. Do not
+// replace with a per-network build-on-miss: updateBackendHeaders /
+// updateNodeEndpoints can run before any request has, and would then silently
+// skip the networks nothing had requested yet.
 const ensureClientsBuilt = (): void => {
     if (clientsInitialized) return
     clientsInitialized = true

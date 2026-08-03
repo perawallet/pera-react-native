@@ -16,11 +16,12 @@ import {
     CardStatus,
     FundingType,
     useCardDetailsMutation,
-    useCardStatusQuery,
+    useCardIssuance,
     useCardStore,
     useConnectFundingSourceMutation,
     useIsCardUnfreezing,
     useSetCardPinMutation,
+    type CardIssuanceState,
 } from '@perawallet/wallet-core-card'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -29,7 +30,11 @@ import { useWebView } from '@modules/webview'
 import { useNetworkStatus } from '@modules/network'
 import { routeCapabilities } from '@routes/capabilities'
 import { useRequirePinVerification } from '@modules/security'
-import { useCardErrorToast, useCardFundingSourcePicker } from '../../hooks'
+import {
+    useCardErrorToast,
+    useCardFundingSourcePicker,
+    useOpenCardSupport,
+} from '../../hooks'
 // Imported directly (not via the hooks barrel) to avoid an import cycle: the
 // flow orchestrator pulls in report sheet components that import from that barrel.
 import { useReportSuspiciousFlow } from '../../hooks/useReportSuspiciousFlow'
@@ -90,6 +95,14 @@ type UsePeraCardDetailsResult = {
      * one). Funding TYPE is per-card, so its selector only makes sense once
      * a card exists — the funding source picker itself has no such gate. */
     hasCard: boolean
+    /** Where the Baanx card is on its way to existing (drives the dimmed
+     * visual, the issuance notice, and hiding the card-only affordances
+     * until it reaches READY). */
+    issuanceState: CardIssuanceState
+    /** Fires a fresh order after a failed attempt (ORDER_FAILED notice). */
+    onRetryOrder: () => void
+    /** Opens support for the terminal VERIFICATION_REJECTED notice. */
+    onContactSupport: () => void
     /** Localised Auto/Manual funding label for the Funding Type row. */
     fundingTypeLabel: string
     /** Opens the Select Funding Type sheet. */
@@ -135,15 +148,23 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         : t('peraCard.setup_status.funding_type_manual_title')
 
     const { hasInternet } = useNetworkStatus()
-    const statusQuery = useCardStatusQuery()
-    const card = statusQuery.data
+    // Owns the KYC-wait / auto-order / provisioning-poll lifecycle, and
+    // re-exposes the card status it already observes so this hook doesn't
+    // mount a second observer of the same query. Coordinates with the
+    // dashboard shell's instance through the shared caches.
+    const {
+        state: issuanceState,
+        retryOrder: onRetryOrder,
+        card,
+        isStatusPaused,
+    } = useCardIssuance()
     const isFrozen = card?.status === CardStatus.Frozen
     // Freeze/unfreeze only applies to a live card; a BLOCKED card can't toggle.
     const canToggleFreeze = card?.status !== CardStatus.Blocked
     // Offline whenever the device has no connectivity, or the status query is
     // sitting paused waiting for it to return (fail-fast mutations reject
     // instead, but the query can still be mid-pause on mount).
-    const isOffline = !hasInternet || statusQuery.fetchStatus === 'paused'
+    const isOffline = !hasInternet || isStatusPaused
 
     // iOS provisions to Apple Wallet, Android to Google Pay — show one row.
     const walletPlatform = Platform.OS === 'ios' ? 'apple' : 'google'
@@ -410,6 +431,9 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         })
     }, [request])
 
+    // Rejected KYC is terminal, so the notice's only action is support.
+    const onContactSupport = useOpenCardSupport()
+
     const { start: onReportSuspicious } = useReportSuspiciousFlow()
 
     return {
@@ -423,6 +447,9 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         fundingAddress,
         onChangeFunding,
         hasCard: card != null,
+        issuanceState,
+        onRetryOrder,
+        onContactSupport,
         fundingTypeLabel,
         onChangeFundingType,
         isOffline,

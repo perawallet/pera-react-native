@@ -63,22 +63,14 @@ const withTimeout = async <T>(
 const sleep = (ms: number): Promise<void> =>
     new Promise(resolve => setTimeout(resolve, ms))
 
-// The wire/host contract keeps `rows` uniform as unknown[][] (array of row
-// arrays) for every method. But drizzle-orm's sqlite-proxy session does NOT
-// treat the callback's `rows` uniformly: for method === 'get',
-// RemotePreparedQuery.mapGetResult (drizzle-orm/sqlite-proxy/session.js)
-// assigns `const row = rows` directly and returns `row` as-is — it expects
-// `rows` to already BE the single row (or undefined/null for "no match"),
-// not an array of rows. Passing the array-of-rows through unmodified would
-// make db.get() return `[[...]]` instead of `[...]`, and — worse — would
-// never resolve to undefined for a no-row result, since mapGetResult's
-// `if (!row) return void 0` check only fires on falsy values and `[]` is
-// truthy in JS. `rows[0]` is exactly `undefined` when the host found no
-// row, which is what mapGetResult's falsy check requires.
+// The wire contract keeps `rows` uniform, but drizzle's sqlite-proxy session
+// does not: for method 'get' it expects `rows` to already BE the single row.
+// Passing the array through would make db.get() return `[[...]]`, and worse,
+// never return undefined for no match — its falsy check can't see through a
+// truthy `[]`. `rows[0]` is exactly `undefined` when the host found nothing.
 //
-// drizzle-orm's own RemoteCallback type says `rows: any[]` unconditionally,
-// which doesn't reflect this get-vs-all/values split — the cast below is
-// bridging that upstream type inaccuracy, not widening our own types.
+// The cast bridges drizzle's own `rows: any[]`, which doesn't reflect this
+// get-vs-all split; it isn't widening our types.
 const toDrizzleRows = (
     rows: unknown[][],
     method: string,
@@ -183,18 +175,12 @@ export class ChromeDatabaseService implements DatabaseService {
         try {
             return await this.execOnce(name, sql, params, method)
         } catch (error) {
-            // Retry ONLY transport-level failures — no response, a timeout,
-            // or the host answering not-ready (still booting/recreating).
-            // A definitive exec-failed (a real SQL error) must NOT retry:
-            // the statement will fail identically the second time, so
-            // retrying only doubles latency before surfacing the same
-            // error.
+            // Transport-level failures only. A definitive SQL error will fail
+            // identically on retry, so retrying just doubles latency.
             //
-            // Timeout is genuinely ambiguous — the write may already have
-            // succeeded host-side before the response made it back — but
-            // every schema here uses idempotent upserts (packages/*/src/db/
-            // schema.ts), so retrying a timed-out write is acceptable. Only
-            // a *definitive* SQL error is excluded from retry.
+            // A timeout is ambiguous — the write may already have landed
+            // host-side — but every schema here upserts idempotently, so
+            // retrying one is safe.
             if (error instanceof DbExecFailedError) throw error
             await this.ensureHostAvailable()
             return this.execOnce(name, sql, params, method)

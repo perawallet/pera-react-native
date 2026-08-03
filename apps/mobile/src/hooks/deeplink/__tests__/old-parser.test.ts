@@ -136,6 +136,26 @@ describe('Deeplink Parser - Old Format', () => {
         })
     })
 
+    describe('Non-numeric asset id (ARC-90: assetid = 1*DIGIT)', () => {
+        it('rejects a non-numeric / negative asset id on an opt-in', () => {
+            expect(parseDeeplink('perawallet://?amount=0&asset=abc')).toBeNull()
+            expect(parseDeeplink('perawallet://?amount=0&asset=-1')).toBeNull()
+            expect(
+                parseDeeplink(
+                    `perawallet://asset/opt-in?asset=abc&account=${TEST_ADDRESS}`,
+                ),
+            ).toBeNull()
+        })
+
+        it('rejects a non-numeric asset id on a transfer', () => {
+            expect(
+                parseDeeplink(
+                    `perawallet://${TEST_ADDRESS}?amount=99999&asset=abc`,
+                ),
+            ).toBeNull()
+        })
+    })
+
     describe('Asset Inbox', () => {
         it('parses asset inbox', () => {
             // Coverage for old-parser.ts lines 101-107

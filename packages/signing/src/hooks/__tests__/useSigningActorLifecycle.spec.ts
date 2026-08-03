@@ -14,9 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
 
-// =============================================================================
 // Module mocks — mirror useSigningRequest.spec.ts conventions
-// =============================================================================
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -104,9 +102,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 vi.mock('../../machine/createSigningMachine')
 
-// =============================================================================
 // Imports (must follow vi.mock calls)
-// =============================================================================
 
 import {
     useSigningActorLifecycle,
@@ -117,10 +113,6 @@ import { approvalGate } from '../../pipeline/approvalGate'
 import { signingEventBus } from '../../pipeline/signingEventBus'
 import { createSigningMachine } from '../../machine/createSigningMachine'
 import type { SignRequest, TransactionSignRequest } from '../../models'
-
-// =============================================================================
-// Helpers
-// =============================================================================
 
 type MockActor = {
     id: string
@@ -206,10 +198,6 @@ const makeTxRequest = (
         txs: [{ sender: { toString: () => 'ADDR1' } } as never],
         ...overrides,
     }) as TransactionSignRequest
-
-// =============================================================================
-// Tests
-// =============================================================================
 
 describe('useSigningActorLifecycle', () => {
     beforeEach(() => {

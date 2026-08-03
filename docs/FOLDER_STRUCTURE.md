@@ -7,7 +7,9 @@ This guide helps you understand where different types of code belong and how the
 ```
 pera-react-native/
 ├── apps/mobile/      # React Native app (UI)
+├── apps/extension/   # Chrome MV3 browser extension (UI)
 ├── packages/         # Business logic packages
+├── extensions/       # Platform adapters (React Native, Chrome)
 ├── tools/            # Build scripts and utilities
 ├── docs/             # Documentation (you are here)
 └── specs/            # API specifications
@@ -23,7 +25,8 @@ apps/mobile/src/
 ├── providers/        # React context providers
 ├── routes/           # Navigation configuration
 ├── theme/            # Colors, typography, spacing
-└── platform/         # Native platform implementations
+├── i18n/             # Translations
+└── platform/         # Platform helpers (implementations live in extensions/)
 ```
 
 ## Component Folder Structure
@@ -84,6 +87,8 @@ packages/accounts/src/
 ├── hooks/            # React hooks for this domain
 ├── store/            # Zustand store
 ├── models/           # TypeScript types
+├── db/               # Local queries (when the domain persists)
+├── sync/             # Background sync (when the domain syncs)
 └── index.ts          # Public API exports
 ```
 
@@ -101,7 +106,7 @@ packages/accounts/src/
 | Mutation hook                   | `modules/[module]/hooks/use[Name]Mutation.ts`                         |
 | State management hook (Store)   | `modules/[module]/hooks/use[Name]Store.ts`                            |
 | Toast or navigation hook        | `apps/mobile/src/hooks/`                                              |
-| Secure storage implementation   | `apps/mobile/src/platform/`                                           |
+| Secure storage implementation   | `extensions/platform-react-native/` (or `platform-chrome/`)           |
 | Unit test                       | `__tests__/` folder next to the code                                  |
 
 ## Learn More

@@ -12,51 +12,33 @@
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-/**
- * Identifies the hardware wallet manufacturer.
- * Known values get autocomplete; arbitrary strings are allowed for future brands.
- */
+/** Known values get autocomplete; arbitrary strings allow future brands. */
 export type HardwareWalletManufacturer = 'ledger' | (string & {})
 
-/**
- * Identifies the wire transport used to reach a hardware wallet device.
- * Currently 'ble' (Bluetooth) and 'usb' (Android USB host / HID).
- */
+/** 'ble' (Bluetooth) or 'usb' (Android USB host / HID). */
 export type LedgerTransportType = 'ble' | 'usb'
 
-/**
- * A discovered hardware wallet device during scanning.
- */
 export type HardwareWalletDevice = {
-    /** Platform-specific device identifier */
+    /** Platform-specific. */
     id: string
-    /** User-visible device name (e.g. "Ledger Nano X") */
+    /** User-visible, e.g. "Ledger Nano X". */
     name: string
-    /** The manufacturer of this device */
     manufacturer: HardwareWalletManufacturer
-    /** The transport this device was discovered on */
     transportType: LedgerTransportType
-    /** Device model identifier (manufacturer-specific, e.g. "nanoX", "stax") */
+    /** Manufacturer-specific, e.g. "nanoX", "stax". */
     model: string
-    /** Signal strength in dBm, or null if unavailable */
+    /** Signal strength in dBm; null when unavailable. */
     rssi: Nullable<number>
 }
 
-/**
- * An Algorand account derived from a hardware wallet device.
- */
 export type HardwareWalletDerivedAccount = {
-    /** Algorand address derived from the public key */
     address: string
-    /** Raw 32-byte Ed25519 public key */
+    /** Raw 32-byte Ed25519 public key. */
     publicKey: Uint8Array
-    /** Sequential index on the device (0, 1, 2...) */
+    /** Sequential index on the device (0, 1, 2...). */
     accountIndex: number
 }
 
-/**
- * App version reported by a hardware wallet device application.
- */
 export type HardwareWalletAppVersion = {
     major: number
     minor: number
@@ -64,33 +46,27 @@ export type HardwareWalletAppVersion = {
 }
 
 /**
- * Arbitrary-data signing request forwarded to the device. Kept manufacturer-
- * and standard-agnostic so this package does not depend on the signing
- * package's ARC-60 types. The signing strategy maps an ARC-60 request onto
- * this shape; the transport derives the BIP-44 path from `accountIndex`.
+ * Kept manufacturer- and standard-agnostic so this package doesn't depend on
+ * the signing package's ARC-60 types.
  */
 export type HardwareWalletArbitrarySignRequest = {
-    /** Sequential index on the device (0, 1, 2...) — authoritative for the key. */
+    /** Authoritative for the key — the transport derives the BIP-44 path here. */
     accountIndex: number
-    /** Encoded payload to sign (e.g. base64 string). */
+    /** Encoded payload to sign. */
     data: string
-    /** 32-byte Ed25519 public key of the signer (informational to the device). */
+    /** Informational to the device. */
     signerPublicKey: Uint8Array
     /** Origin requesting the signature. */
     domain: string
-    /** Authenticator data; first 32 bytes = sha256(domain). */
+    /** First 32 bytes = sha256(domain). */
     authenticatorData: Uint8Array
-    /** Optional unique request id. */
     requestId?: string
     /** ARC-60 scope (1 = AUTH). */
     scope: number
-    /** Encoding of `data`. Currently only 'base64' is supported by the Algorand app. */
+    /** The Algorand app only supports 'base64'. */
     encoding: string
 }
 
-/**
- * Connection lifecycle states for UI feedback.
- */
 export type HardwareWalletConnectionStatus =
     | 'disconnected'
     | 'scanning'
@@ -100,18 +76,10 @@ export type HardwareWalletConnectionStatus =
     | 'ready'
 
 /**
- * Bluetooth adapter (radio) state, independent of any specific device.
- * Mirrors the platform BLE manager states (CoreBluetooth `CBManagerState`
- * on iOS, `BluetoothAdapter`/ble-plx `State` on Android) so the UI can warn
- * proactively when Bluetooth is unusable — e.g. show "Bluetooth is off"
- * before a scan silently finds nothing.
- *
- * - `poweredOn`    — ready to scan/connect
- * - `poweredOff`   — Bluetooth is turned off
- * - `unauthorized` — the app lacks Bluetooth permission (iOS)
- * - `unsupported`  — the device has no BLE hardware
- * - `resetting`    — the adapter is transitioning (transient)
- * - `unknown`      — not yet determined (transient, during init)
+ * Radio state, independent of any device. Mirrors the platform BLE manager
+ * states (iOS `CBManagerState`, Android ble-plx `State`) so the UI can warn
+ * before a scan silently finds nothing. `resetting` and `unknown` are
+ * transient.
  */
 export type HardwareWalletAdapterState =
     | 'poweredOn'
@@ -121,27 +89,17 @@ export type HardwareWalletAdapterState =
     | 'resetting'
     | 'unknown'
 
-/**
- * Platform-agnostic transport interface for communicating with a connected hardware wallet.
- * Implemented by manufacturer-specific extensions (e.g. Ledger BLE transport).
- */
+/** Implemented by manufacturer-specific extensions (e.g. Ledger BLE). */
 export type HardwareWalletTransport = {
-    /**
-     * Fetch the Algorand address at the given account index.
-     * @param accountIndex - Sequential index on the device (0, 1, 2...)
-     * @param verify - If true, display the address on the device for user verification
-     */
+    /** `verify` displays the address on the device for the user to confirm. */
     getAddress: (
         accountIndex: number,
         verify?: boolean,
     ) => Promise<HardwareWalletDerivedAccount>
 
     /**
-     * Sign a raw transaction on the hardware wallet device.
-     * The user must physically confirm on the device.
-     * @param accountIndex - Index of the signing key on the device
-     * @param txnBytes - Raw unsigned transaction bytes (msgpack-encoded)
-     * @returns Ed25519 signature bytes
+     * Blocks on physical confirmation. `txnBytes` is msgpack-encoded; resolves
+     * to the Ed25519 signature.
      */
     signTransaction: (
         accountIndex: number,
@@ -149,51 +107,35 @@ export type HardwareWalletTransport = {
     ) => Promise<Uint8Array>
 
     /**
-     * Sign arbitrary data on the device (ARC-60 AUTH scope). The user must
-     * physically confirm on the device. The device computes the signing
-     * payload itself from the provided fields.
-     * @returns Ed25519 signature bytes
+     * ARC-60 AUTH scope. Blocks on physical confirmation; the device computes
+     * the signing payload itself from the request fields.
      */
     signData: (
         request: HardwareWalletArbitrarySignRequest,
     ) => Promise<Uint8Array>
 
-    /** Read the version of the device's wallet application. */
     getAppVersion: () => Promise<HardwareWalletAppVersion>
 
-    /** Disconnect from the device and release resources. */
     disconnect: () => Promise<void>
 }
 
-/**
- * Platform-agnostic provider for scanning and connecting to hardware wallet devices.
- * Each (manufacturer, transportType) pair registers exactly one provider.
- */
+/** Each (manufacturer, transportType) pair registers exactly one provider. */
 export type HardwareWalletTransportProvider = {
-    /** Identifies which manufacturer this provider serves */
     manufacturer: HardwareWalletManufacturer
 
-    /** Identifies which wire transport this provider implements */
     transportType: LedgerTransportType
 
-    /**
-     * Start scanning for devices.
-     * @param onDevice - Called each time a new device is discovered
-     * @param onError - Called when a scan error occurs (e.g. Bluetooth disabled)
-     * @returns A stop function to cancel the scan
-     */
+    /** Returns a stop function. */
     scan: (
         onDevice: (device: HardwareWalletDevice) => void,
         onError?: (error: Error) => void,
     ) => () => void
 
     /**
-     * Connect to a specific device and open the transport.
-     * @param deviceId - The device identifier from a previous scan.
-     *   Note: on transports where IDs are not stable handles (e.g.
-     *   Android USB host, where descriptors are reassigned on replug
-     *   and lost on app restart), implementations may treat this as
-     *   advisory and connect to the currently attached device.
+     * `deviceId` comes from a previous scan, but is advisory where IDs aren't
+     * stable handles (Android USB reassigns descriptors on replug and loses
+     * them on app restart) — those implementations connect to whatever is
+     * currently attached.
      */
     connect: (deviceId: string) => Promise<HardwareWalletTransport>
 
@@ -201,26 +143,17 @@ export type HardwareWalletTransportProvider = {
     isSupported: () => Promise<boolean>
 
     /**
-     * Observe the Bluetooth adapter state (radio on/off, permission, etc.).
-     * Emits the current state immediately on subscribe, then on every change.
-     * Only meaningful for radio-based transports (BLE); transports without a
-     * radio (e.g. USB) leave this undefined.
-     *
-     * @param onChange - Called with the current adapter state and on changes
-     * @returns An unsubscribe function
+     * Emits immediately on subscribe, then on every change; returns an
+     * unsubscribe. Radio-based transports only — USB leaves this undefined.
      */
     observeBluetoothState?: (
         onChange: (state: HardwareWalletAdapterState) => void,
     ) => () => void
 
     /**
-     * Surface the OS-level "turn on Bluetooth" prompt (iOS CoreBluetooth power
-     * alert / Android system enable dialog). iOS can only inform + deep-link to
-     * Settings; Android can actually enable the radio on consent.
-     * Only meaningful for radio-based transports (BLE).
-     *
-     * @returns Resolves `true` when Bluetooth ends up enabled (Android) or the
-     *   prompt was surfaced (iOS); `false` when unavailable or declined.
+     * Surfaces the OS "turn on Bluetooth" prompt. Android can actually enable
+     * the radio on consent; iOS can only inform and deep-link to Settings, so
+     * `true` there means only that the prompt was surfaced.
      */
     requestBluetoothEnable?: () => Promise<boolean>
 }

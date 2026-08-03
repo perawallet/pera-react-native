@@ -11,7 +11,11 @@
  */
 
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import {
+    isConnectivityError,
+    logger,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { requestChallenge, attestDevice } from '../api/integrity'
 import { useAppIntegrityStore } from '../store'
 import type { AppIntegrityStatus, AttestPayload } from '../models'
@@ -91,7 +95,22 @@ export const registerAppIntegrity = async ({
         return { status: 'success' }
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        logger.error('App integrity registration failed', { error })
+        if (isConnectivityError(error)) {
+            // The handshake runs once at boot, so it races the network coming
+            // up; an offline device retries on the next launch and needs no
+            // attention. The status still goes to the store for the UI.
+            logger.warn('App integrity registration skipped: device offline', {
+                step: 'registerAppIntegrity',
+            })
+        } else {
+            // Report the error itself rather than a fixed string. A constant
+            // message collapses every distinct cause — native attestation
+            // failure, backend rejection, response-schema drift — into one
+            // untriageable crash-reporter issue with no stack.
+            logger.error(error instanceof Error ? error : message, {
+                step: 'registerAppIntegrity',
+            })
+        }
         store.setError(message)
         return { status: 'error', error: message }
     }

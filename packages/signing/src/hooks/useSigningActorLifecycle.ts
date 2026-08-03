@@ -36,22 +36,15 @@ import { isInteractiveSource } from '../pipeline/types'
 import type { SigningMachineDeps } from '../machine/context'
 import { type SignRequest } from '../models'
 
-// Process-wide registry of running signing-machine actors, keyed by
-// request id. Hoisted to module scope (rather than per-hook `useRef`) so
-// that simultaneously-mounted consumers of `useSigningActorLifecycle`
-// share a single Map: only the first hook instance whose effect runs for
-// a given request creates the actor, and all the others see the entry
-// already exists and bail. Without this, every consumer would race and
-// produce one parallel signing machine per mount.
+// Module scope, not a per-hook `useRef`, so every mounted consumer shares one
+// Map: the first effect to run for a request creates the actor and the rest
+// bail. Otherwise each mount would race and spawn its own signing machine.
 const actorRefsMap = new Map<string, AnyActorRef>()
 
-// Tiny pub-sub layered over the registry so React components can subscribe
-// via useSyncExternalStore and re-render when actors are added/removed. A
-// bare module Map isn't reactive — without this, hooks that read
-// `getActorRef(id)` during render would not pick up an actor that was
-// created in the SAME render cycle (lifecycle's queue effect adds it after
-// render completes), so subscribers like useSigningPipeline would forever
-// see `currentActorRef === null` for the very first request.
+// A bare module Map isn't reactive, so this pub-sub lets components subscribe
+// via useSyncExternalStore. Without it, an actor created after render (by the
+// queue effect) is never picked up, and the first request's subscribers see
+// `currentActorRef === null` forever.
 let actorRegistryVersion = 0
 const actorRegistryListeners = new Set<() => void>()
 const subscribeActorRegistry = (listener: () => void): (() => void) => {
@@ -70,19 +63,13 @@ const getActorRegistryVersion = (): number => actorRegistryVersion
 const awaitingApprovalSet = new Set<string>()
 
 /**
- * Applies the backgrounding policy (PERA-4637) to every running hardware
- * signing session: past the grace window the session is aborted into the
- * retryable `interrupted` state (the exchange's AbortController reaches
- * the BLE layer when the invoked actor stops); within it, the substate
- * backstop timers are re-armed so a timer that expired while suspended
- * can't fire stale on resume.
+ * Backgrounding policy for running hardware sessions: past the grace window,
+ * abort into the retryable `interrupted` state; within it, re-arm the substate
+ * timers so one that expired while suspended can't fire stale on resume.
  *
- * Exported (not a hook, no `react-native` import) so the app layer owns the
- * `AppState` subscription and feeds this in — keeping the signing logic
- * package free of react-native, which would otherwise force every dependent
- * (swaps, transactions, walletconnect, …) to parse react-native in its tests.
- * Operates on the module-global `actorRefsMap`, so a single app-level
- * subscription reaches whatever sessions are running.
+ * A plain export rather than a hook so the app layer owns the `AppState`
+ * subscription — keeping react-native out of this package, which would
+ * otherwise force every dependent to parse it in tests.
  */
 export const applyAppStateToHardwareSessions = (nextState: string): void => {
     const action = recordAppStateChange(nextState, Date.now())
@@ -107,11 +94,7 @@ export const applyAppStateToHardwareSessions = (nextState: string): void => {
 const startedSet = new Set<string>()
 const signingStartedSet = new Set<string>()
 
-/**
- * Test-only: stops every running actor and clears the module-level
- * registry. Call from `beforeEach` so leftover actors from one test never
- * leak into the next.
- */
+/** Test-only. Call from `beforeEach` so actors never leak between tests. */
 export const __resetSigningActorRegistryForTests = (): void => {
     for (const actor of actorRefsMap.values()) {
         actor.stop()
@@ -125,10 +108,6 @@ export const __resetSigningActorRegistryForTests = (): void => {
     signingEventBus.__resetForTests()
 }
 
-// =============================================================================
-// Helpers
-// =============================================================================
-
 /** Checks if the machine is in `failed` with a non-retryable error (terminal). */
 const isNonRetryableFailure = (
     snapshot: SnapshotFrom<typeof signingMachine>,
@@ -140,12 +119,9 @@ const isNonRetryableFailure = (
 }
 
 /**
- * Non-interactive callers (internal send/swap flows — anything whose
- * `sourceType` is not in `INTERACTIVE_SOURCES`) have no retry UI, so a
- * `failed` state is terminal for them regardless of the error's
- * retryable flag — otherwise the actor and request both leak, blocking
- * every subsequent request because the single-flight queue guard sees a
- * running actor.
+ * Non-interactive callers have no retry UI, so `failed` is terminal for them
+ * whatever the retryable flag says — otherwise the actor and request leak and
+ * the single-flight queue guard blocks everything after them.
  */
 const isNonInteractiveFailure = (
     snapshot: SnapshotFrom<typeof signingMachine>,
@@ -154,10 +130,6 @@ const isNonInteractiveFailure = (
     return !isInteractiveSource(snapshot.context.request.sourceType)
 }
 
-// =============================================================================
-// Types
-// =============================================================================
-
 type UseSigningActorLifecycleResult = {
     /** Returns the running actor ref for a request ID, if any */
     getActorRef: (requestId: string) => Optional<AnyActorRef>
@@ -165,18 +137,10 @@ type UseSigningActorLifecycleResult = {
     stopActor: (requestId: string) => void
 }
 
-// =============================================================================
-// Hook
-// =============================================================================
-
 /**
- * Manages XState actor lifecycle: creation, subscription, cleanup.
- * Actor refs are stored in a ref (not Zustand) since they are ephemeral
- * and non-serializable.
- *
- * A reactive effect watches `pendingSignRequests` and starts the next
- * actor when the queue is empty. This handles rehydration, new requests,
- * and queue advancement after completion — all from a single mechanism.
+ * Actor refs live in a ref rather than Zustand — they're ephemeral and
+ * non-serializable. One effect watching `pendingSignRequests` covers
+ * rehydration, new requests and queue advancement alike.
  */
 export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const pendingSignRequests = useSigningStore(
@@ -253,14 +217,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 return
             }
 
-            // Register the approval gate synchronously here, before the
-            // machine has a chance to reach `awaiting_user`. Co-locating
-            // registration with actor creation (rather than driving it
-            // from a sibling effect on `pendingSignRequests`) removes the
-            // cross-effect ordering dependency: an interactive request
-            // can never reach the pause state with no gate registered,
-            // so it can never be silently auto-approved by the headless
-            // fast-path. Headless sources skip registration entirely.
+            // Synchronous, and co-located with actor creation rather than in a
+            // sibling effect, so there's no ordering dependency: an interactive
+            // request can never reach `awaiting_user` ungated and be silently
+            // auto-approved by the headless fast-path.
             if (isInteractiveSource(request.sourceType)) {
                 approvalGate.register(request.id)
             }
@@ -325,17 +285,12 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     }
                 }
 
-                // Bridge the machine's external sync point to the approval
-                // gate. Headless flows resolve immediately (no gate was
-                // registered when the actor was created), interactive
-                // flows block on the gate until `signAndSendRequest` /
-                // `rejectRequest` (slide / dismiss) resolves it.
+                // Headless flows resolve immediately (no gate was registered);
+                // interactive ones block until the slide or dismiss resolves it.
                 //
-                // `'cancelled'` is emitted by `approvalGate.unregister` to
-                // release this `.then` chain when the actor is torn down
-                // for reasons unrelated to user input. The actor is on its
-                // way to (or already at) a terminal state in that case, so
-                // we just no-op.
+                // `'cancelled'` comes from `approvalGate.unregister` to release
+                // this chain when the actor is torn down for reasons unrelated
+                // to user input — it's already heading to a terminal state.
                 if (
                     snapshot.matches('awaiting_user') &&
                     !awaitingApprovalSet.has(actor.id)
@@ -362,22 +317,17 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
 
                 const req = snapshot.context.request
                 const isInteractive = isInteractiveSource(req.sourceType)
-                // Interactive failures stay in the queue so the signing sheet
-                // keeps rendering; the inline error view (driven by the
-                // signing event bus via useSigningEvent / useLastSigningEvent)
-                // takes over the sheet content until the user dismisses via
-                // removeSignRequest.
+                // Interactive failures stay queued so the sheet keeps rendering
+                // and the inline error view takes over until the user
+                // dismisses.
                 const keepForInlineError =
                     snapshot.matches('failed') && isInteractive
 
                 if (snapshot.matches('completed')) {
-                    // Publish the transport result regardless of source.
-                    // Headless flows that don't surface completion UI still
-                    // need a reliable hook for bus-driven listeners (e.g.
-                    // PendingSignatures auto-open, send-funds exit on
-                    // multisig propose). The `useSigningPipeline({ onEvent })`
-                    // path is unreliable here because the lifecycle's actor
-                    // lives in a non-reactive Map.
+                    // Published regardless of source: headless flows still need
+                    // a reliable hook for bus-driven listeners, and
+                    // `useSigningPipeline({ onEvent })` is unreliable here
+                    // because the actor lives in a non-reactive Map.
                     const { transportResult } = snapshot.context
                     if (transportResult) {
                         signingEventBus.publish({
@@ -416,12 +366,9 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     void (req as { reject?: () => Promise<void> }).reject?.()
                 }
 
-                // The lifecycle owns gate cleanup — `approve`/`reject` only
-                // resolve, they don't delete (otherwise a Cancel tap during
-                // the async validating phase would be lost). `unregister`
-                // both resolves any still-pending deferred with `'cancelled'`
-                // (releasing the awaiting `.then` closure) and removes the
-                // map entry.
+                // The lifecycle owns gate cleanup: `approve`/`reject` only
+                // resolve, never delete, or a Cancel tap during the async
+                // validating phase would be lost.
                 approvalGate.unregister(actor.id)
                 awaitingApprovalSet.delete(actor.id)
 
@@ -458,11 +405,9 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         signingEventBus.releaseRequest(requestId)
     }, [])
 
-    // Subscribe to registry changes so consumers (via getActorRef) re-render
-    // when the actor for the current request is created or torn down. Without
-    // this, hooks calling getActorRef during render would see the actor as
-    // null forever after the queue-effect-driven create — there'd be no
-    // re-render to pick the new entry up.
+    // Without this, a hook calling getActorRef during render would see null
+    // forever after the queue effect creates the actor — nothing would trigger
+    // the re-render that picks it up.
     useSyncExternalStore(
         subscribeActorRegistry,
         getActorRegistryVersion,

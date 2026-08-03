@@ -59,16 +59,10 @@ type UpsertAccountHoldingsParams = {
 }
 
 /**
- * Diffs incoming holdings against what's persisted and writes only the delta.
- * Returns `true` if anything was written (added/changed/removed), `false` if
- * the account's holdings were already up to date — letting the sync service
- * skip downstream work when nothing changed.
- *
- * Replaces the previous delete-all + per-row-insert loop, which for a large
- * account meant thousands of serialized round-trips through the single SQLite
- * connection on every sync tick. The diff means an unchanged account does zero
- * writes, and a changed one only writes the rows that actually changed —
- * batched into multi-row statements.
+ * Writes only the delta, returning whether anything changed so the sync service
+ * can skip downstream work. Diffing (rather than delete-all + per-row insert)
+ * means an unchanged account does zero writes — that loop cost thousands of
+ * serialized round-trips through the single SQLite connection every tick.
  */
 export async function refreshAccountHoldings({
     db = getDatabase(),
@@ -200,15 +194,10 @@ type AddToAssetHoldingParams = {
 }
 
 /**
- * Optimistically credit an asset holding: insert the row if the account
- * doesn't hold the asset yet, otherwise add to the persisted amount.
- *
- * Used by wallet-initiated flows (e.g. claiming from the ARC-59 inbox) to
- * surface the expected post-transaction balance immediately, before the
- * chain/indexer reflect it. The next account sync's full-diff refresh
- * replaces the row with chain truth, so an optimistic credit can never stick
- * around wrong. The read-modify-write is safe on the single serialized
- * SQLite connection.
+ * Surfaces the expected post-transaction balance before the chain reflects it.
+ * Can't stick around wrong: the next sync's full diff replaces the row with
+ * chain truth. The read-modify-write is safe on the single serialized
+ * connection.
  */
 export async function addToAssetHolding({
     db = getDatabase(),
@@ -367,14 +356,10 @@ export async function getAccountHoldings({
     }))
 }
 
-// ---------------------------------------------------------------------------
-// Home-screen reads: a lite portfolio-total aggregate and a sorted/paginated
-// holdings page. Both join on the indexed accountAddress (no `WHERE assetId IN
-// (…)` list) and let SQLite do the summing / sorting / windowing, so the JS
-// thread only ever materializes the rows actually on screen. ALGO participates
-// like any holding (stored in microalgos with 6 decimals), so there's no
-// synthetic-row union or per-row special-casing here.
-// ---------------------------------------------------------------------------
+// Home-screen reads. Both join on the indexed accountAddress and let SQLite do
+// the summing, sorting and windowing, so the JS thread only materializes rows
+// actually on screen. ALGO participates like any holding, so there's no
+// synthetic-row union or per-row special-casing.
 
 const join = (
     table:
@@ -389,30 +374,25 @@ const join = (
 
 export type AccountPortfolioTotals = {
     /**
-     * ALGO balance in display units (price-independent). Kept separate from the
-     * USD aggregate so the header can show the ALGO balance immediately, before
-     * the ALGO price syncs — ALGO's value in ALGO terms is just its amount.
+     * Display units, price-independent — separate from the USD aggregate so the
+     * header can render before the ALGO price syncs.
      */
     algoAmount: Decimal
     /** USD value of all non-ALGO holdings; rows without a price contribute 0. */
     nonAlgoUsdValue: Decimal
     /** Number of holdings rows (includes the ALGO holding). */
     holdingsCount: number
-    /**
-     * Held non-ALGO assets whose metadata hasn't synced yet. While > 0 the
-     * asset enrichment pass is still in flight, so the total is still settling
-     * — the header shows a spinner next to the balance.
-     */
+    /** While > 0 the enrichment pass is in flight and the total is settling. */
     missingMetadataCount: number
 }
 
 /**
- * Single-aggregate portfolio totals. Splits ALGO (summed as a raw, price-
- * independent amount) from the non-ALGO USD value so the header reflects the
- * native balance even before prices sync. The per-row value uses a portable
- * `10^decimals` scale (`CAST('1e' || decimals AS REAL)`) so it doesn't depend
- * on SQLite math functions (`pow`). Sums are REAL (double) — ample for a
- * displayed total — and wrapped back into Decimal for the app's money convention.
+ * Splits the raw ALGO amount from the non-ALGO USD value so the header can
+ * reflect the native balance before prices sync.
+ *
+ * Scales by `CAST('1e' || decimals AS REAL)` rather than `pow`, which SQLite
+ * doesn't always ship. Sums are REAL — ample for a displayed total — and
+ * wrapped back into Decimal for the app's money convention.
  */
 export async function getAccountPortfolioTotals({
     db = getDatabase(),
@@ -490,9 +470,9 @@ export type GetAccountHoldingsPageParams = {
 } & AccountHoldingsFilters
 
 /**
- * Shared holdings query: sorted (favorites first, then value/name with unsynced
- * NULLs last), filtered, searched and optionally windowed — all in SQL. Returns
- * the raw joined columns; callers decide how much of each row to materialize.
+ * Sorting (favorites first, then value/name with unsynced NULLs last),
+ * filtering, searching and windowing all happen in SQL. Returns raw columns;
+ * callers decide how much of each row to materialize.
  */
 async function queryHoldingRows({
     db = getDatabase(),
@@ -612,9 +592,8 @@ async function queryHoldingRows({
 }
 
 /**
- * One sorted/filtered/searched/windowed page of holdings, fully enriched: every
- * returned row materializes its `PeraAsset` (parsing metadata). Use where the
- * whole result is consumed at once (e.g. multi-account balance aggregates).
+ * Fully enriched — every row parses metadata into a `PeraAsset`. Use where the
+ * whole result is consumed at once.
  */
 export async function getAccountHoldingsPage(
     params: GetAccountHoldingsPageParams,
@@ -661,12 +640,10 @@ export type AccountHoldingsLiteRow = {
 }
 
 /**
- * Same sorted/filtered/searched/windowed read as {@link getAccountHoldingsPage}
- * but WITHOUT building a `PeraAsset` per row — it returns raw columns (notably
- * the unparsed `peraMetadataJson`). The held-assets list uses this so a re-read
- * of thousands of rows doesn't parse metadata and build objects for every row
- * on the JS thread (the burst that blanked the list during sync); the visible
- * rows build their `PeraAsset` lazily via {@link assetFromHoldingLiteRow}.
+ * {@link getAccountHoldingsPage} without building a `PeraAsset` per row. The
+ * held-assets list uses this so re-reading thousands of rows doesn't parse
+ * metadata for all of them on the JS thread — the burst that blanked the list
+ * during sync. Visible rows enrich lazily via {@link assetFromHoldingLiteRow}.
  */
 export async function getAccountHoldingsLite(
     params: GetAccountHoldingsPageParams,
@@ -689,10 +666,8 @@ export async function getAccountHoldingsLite(
 }
 
 /**
- * Builds the full `PeraAsset` for a single lite row (parsing its metadata).
- * Call only for rows you actually render or act on — the parse is cached by raw
- * JSON, so scrolling re-renders stay cheap. Returns null until the asset's node
- * metadata has synced.
+ * Call only for rows you actually render — the parse is cached by raw JSON, so
+ * scrolling re-renders stay cheap. Null until node metadata has synced.
  */
 export const assetFromHoldingLiteRow = (
     row: AccountHoldingsLiteRow,

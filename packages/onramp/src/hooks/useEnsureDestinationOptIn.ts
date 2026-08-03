@@ -135,7 +135,7 @@ export const useEnsureDestinationOptIn =
                 await submitWithFeeDelegation({
                     account: address,
                     transactions: transactions.map(t => t.txn),
-                    includeMbr: true,
+                    includeAssetOptInMbr: true,
                     optInAssetIds: [assetId],
                     sourceMetadata: SOURCE,
                 })

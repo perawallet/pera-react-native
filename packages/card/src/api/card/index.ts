@@ -19,3 +19,4 @@ export {
     type OrderCardParams,
     type CardLifecycleParams,
 } from './endpoints'
+export { CardOrderNotVerifiedError } from './errors'

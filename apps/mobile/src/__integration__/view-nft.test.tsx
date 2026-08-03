@@ -68,19 +68,12 @@ import {
 } from './__fixtures__/onboarding'
 import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
 
-// `useSingleAssetDetailsQuery` for the collectible detail screen always
-// passes `useDB: false`, so the screen reads asset metadata from the
-// REST surface every time. Mock the three endpoints it merges:
-// `/v1/assets/{id}`, `/v1/public/assets/{id}`, and indexer
-// `/v2/assets/{id}`. We supply minimal-but-valid bodies that pass the
-// zod schemas — the screen's render path covers what the merge
-// produces.
+// The detail screen passes `useDB: false`, so metadata comes from REST every
+// time — hence mocks for all three endpoints it merges, with minimal bodies
+// that satisfy the zod schemas.
 //
-// The send-NFT test mints a real algo25 key in the in-memory keystore
-// for the holder so the signing pipeline can sign the asset-transfer
-// (different from the view-only test, which uses a placeholder
-// `keyPairId`). The fixture address matches `ALGO25_TEST_ADDRESS`
-// regardless.
+// The send-NFT test mints a real algo25 key so the signing pipeline can sign
+// the transfer; the view-only test uses a placeholder `keyPairId`.
 const NFT_HOLDER_PLACEHOLDER: WalletAccount = {
     id: 'holder-1',
     type: AccountTypes.algo25,

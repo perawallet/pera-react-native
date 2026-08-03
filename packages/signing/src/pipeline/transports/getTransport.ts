@@ -35,11 +35,8 @@ import {
 } from './createMultisigCosignTransport'
 
 /**
- * Options for creating the transport selector.
- *
- * `algokit` and `encodeSignedTransactions` are always required (algod submission).
- * Multisig functions are optional — when omitted, selecting a multisig route
- * throws at transport-selection time rather than requiring callers to provide stubs.
+ * The multisig functions are optional: omitting them makes a multisig route
+ * throw at selection time, rather than forcing every caller to pass stubs.
  */
 export interface CreateTransportSelectorOptions {
     /** AlgorandClient for direct submission */
@@ -47,11 +44,8 @@ export interface CreateTransportSelectorOptions {
     /** Function to encode signed transactions */
     encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[]
     /**
-     * Network captured at actor creation. Transports that submit (algod) or
-     * hand signed bytes to an external caller (walletconnect / webview /
-     * deeplink) re-check the live network against this value at send time to
-     * avoid delivering signatures intended for a different chain if the user
-     * switched networks mid-flow.
+     * Captured at actor creation and re-checked at send time, so a mid-flow
+     * network switch can't deliver signatures intended for another chain.
      */
     network: Network
     /** Function to propose a multisig transaction (required only for multisig flows) */
@@ -59,35 +53,21 @@ export interface CreateTransportSelectorOptions {
     /** Function to add signatures to an existing request (required only for multisig flows) */
     addSignatures?: AddSignaturesFn
     /**
-     * Resolves multisig metadata for a given account address. Required by
-     * the propose transport for sync-flow handoffs so the resolver listener
-     * can assemble the composite multisig signed transaction. Optional for
-     * cosign-only configurations; the transport selector throws at
-     * selection time if a sync-flow handoff requires it but it's missing.
+     * Required for sync-flow handoffs, so the resolver can assemble the
+     * composite multisig transaction. Optional for cosign-only setups; the
+     * selector throws at selection time when a handoff needs it and it's absent.
      */
     getMsigMetadata?: GetMsigMetadataFn
-    /**
-     * Returns the persistent device id for `with-signatures` and
-     * `mark-confirmed` API calls in the sync-flow handoff. Optional;
-     * required only when the propose transport handles an external source.
-     */
+    /** Required only when the propose transport handles an external source. */
     getDeviceId?: GetDeviceIdFn
     /**
-     * Creates a local draft sign-request when the propose transport
-     * receives an empty signers array — the deferred-propose path for
-     * hardware-only proposers. Without this, the transport throws on
-     * empty signers (preserves legacy behavior for callers that don't
-     * opt into deferred propose).
+     * The deferred-propose path for hardware-only proposers. Without it, an
+     * empty signers array throws instead.
      */
     createDraftSignRequest?: CreateDraftSignRequestFn
 }
 
-/**
- * Creates a function that selects the appropriate transport based on
- * source type and account type.
- *
- * All transports are created lazily — only when their route is matched.
- */
+/** Transports are created lazily, only when their route is matched. */
 export const createTransportSelector = (
     options: CreateTransportSelectorOptions,
 ): ((source: SourceMetadata, account: WalletAccount) => DataTransport) => {
@@ -107,15 +87,10 @@ export const createTransportSelector = (
             )
         }
 
-        // Multisig account → propose a new sign-request to the backend,
-        // regardless of source. This covers:
-        //   - `'local'`: proposer's first send from an in-app screen.
-        //     `type: 'async'` — backend handles broadcast.
-        //   - `'walletconnect'` / `'webview'` / `'deeplink'`: sync-flow
-        //     handoff. `type: 'sync'` — wallet delivers the assembled
-        //     signed bytes to the dApp once threshold is met (via the
-        //     resolver listener). Hoisted above the external-callback
-        //     rule below so multisig wins over source type.
+        // A multisig account always proposes, whatever the source — `async` for
+        // in-app sends (backend broadcasts), `sync` for external handoffs (the
+        // wallet delivers once threshold is met). Hoisted above the
+        // external-callback rule below so multisig wins over source type.
         if (
             isMultisigAccount(account) &&
             (source.type === 'local' || isExternalCallbackSource(source.type))
@@ -150,11 +125,10 @@ export const createTransportSelector = (
             return createWalletConnectTransport(options.network)
         }
 
-        // Local + callback: hand the signed bytes back to the caller instead
-        // of submitting (e.g. swap, which submits its own assembled groups).
-        // Dispatch on the tagged `transport` field, not on the shape of
-        // `callbacks`, so the selector stays predictable as new caller
-        // shapes are added.
+        // Hands signed bytes back rather than submitting (swap assembles and
+        // submits its own groups). Dispatches on the tagged `transport` field,
+        // not the shape of `callbacks`, so it stays predictable as callers
+        // are added.
         if (source.transport === 'callback') {
             return createCallbackTransport()
         }

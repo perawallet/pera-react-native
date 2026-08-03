@@ -53,19 +53,14 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
         accountBalances,
     )
 
-    // Web-only: bidali-url.web.ts stamps this onto the URL for the content
-    // script to parse; native's bidali-url.ts ignores it (balances are
-    // embedded in the injected provider JS instead — see useBidaliTransport's
-    // computeBidaliBalances, the same selector reused here so both surfaces
-    // stay in sync). Frozen at mount (lazy useState initializer, never
-    // updated) rather than recomputed live: on web the `url` feeds the
-    // iframe's `src`, so a post-mount balance change (including the sync the
-    // user's own gift-card payment triggers) would otherwise change the url
-    // string and re-navigate the iframe mid/post-checkout, resetting
-    // Bidali's page and the paymentSent/paymentCancelled callbacks it
-    // assigned. By design, balances are stamped at mount and staleness is
-    // accepted within the session. Native is unaffected either way — its
-    // builder ignores this value, so freezing it is provably harmless there.
+    // Web stamps this onto the URL for the content script; native ignores it
+    // and embeds balances in the injected provider JS instead.
+    //
+    // Frozen at mount, not recomputed: on web the url feeds the iframe `src`,
+    // so a post-mount balance change (including the sync the user's own payment
+    // triggers) would re-navigate the iframe mid-checkout, resetting Bidali's
+    // page and the callbacks it assigned. Staleness within a session is
+    // accepted; native is unaffected since its builder ignores this.
     const [frozenBalances] = useState(() =>
         computeBidaliBalances(selectedAccount, accountBalances, network),
     )

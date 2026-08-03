@@ -30,10 +30,6 @@ import {
     MAX_TRANSACTION_SIGN_REQUESTS,
 } from '../constants'
 
-// =============================================================================
-// Types
-// =============================================================================
-
 type UseSigningRequestResult = {
     pendingSignRequests: SignRequest[]
     currentRequest: Optional<SignRequest>
@@ -46,10 +42,6 @@ type UseSigningRequestResult = {
     retryRequest: (request: SignRequest) => void
 }
 
-// =============================================================================
-// Hook
-// =============================================================================
-
 export const useSigningRequest = (): UseSigningRequestResult => {
     const scopedRequestId = useScopedSignRequestId()
     const pendingSignRequests = useSigningStore(
@@ -61,10 +53,6 @@ export const useSigningRequest = (): UseSigningRequestResult => {
     )
 
     const { getActorRef, stopActor } = useSigningActorLifecycle()
-
-    // -------------------------------------------------------------------------
-    // Public API
-    // -------------------------------------------------------------------------
 
     const addSignRequest = useCallback(
         (request: SignRequest) => {

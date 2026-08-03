@@ -34,10 +34,11 @@ export type UseAutoDrawSwitchResult = {
     /**
      * Turns auto-funding ON for an already-created card: registers the signed
      * AutoDraw LSig with AB, then submits the on-chain Killswitch
-     * `enable(card, asset)` via the Pera backend's fee-delegation endpoint —
-     * the sponsor covers the accounts-box MBR and the group's fees, so the
-     * funding account needs no ALGO of its own (skipped when the Killswitch
-     * app isn't configured yet, e.g. dev builds).
+     * `enable(card, asset)` via the Pera backend's fee-delegation endpoint.
+     * The sponsor covers the group's fees (inner call included) and tops the
+     * account up to min balance, so the funding account needs no ALGO of its
+     * own; the accounts-box MBR is funded by the Killswitch app itself.
+     * Skipped when the Killswitch app isn't configured yet (e.g. dev builds).
      */
     enableAutoDraw: (
         account: WalletAccount,
@@ -122,12 +123,15 @@ export const useAutoDrawSwitch = (): UseAutoDrawSwitchResult => {
                     cardAddress,
                     asset: assetId,
                 })
-                // Fee-delegated: the sponsor covers the accounts-box MBR and
-                // the group's fees, so the funding account needs no ALGO.
+                // Fee-delegated: the sponsor covers the group's fees (the
+                // backend simulates the group, so enable's inner getCardData
+                // call is priced in) and tops the account up to min balance,
+                // so the funding account needs no ALGO. The accounts-box MBR
+                // is funded by the Killswitch app account, not the sponsor.
                 await submitWithFeeDelegation({
                     account: account.address,
                     transactions: txns,
-                    includeMbr: true,
+                    includeAssetOptInMbr: true,
                     sourceMetadata: {
                         name: 'card-autodraw-enable',
                         description: 'Enable auto funding',

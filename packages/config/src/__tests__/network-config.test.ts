@@ -153,20 +153,13 @@ describe('network-config', () => {
     })
 
     test('betanet and custom carry no algod/indexer token, even with a real key configured', async () => {
-        // Their algod/indexer are public third-party endpoints (algonode.cloud)
-        // Pera does not control and that need no token — sending Pera's real
-        // algodApiKey/indexerApiKey (as mainnet/testnet correctly do) would
-        // leak that credential to hosts outside Pera's control. custom has no
-        // baked endpoint at all yet (its fields are hardcoded ''), so it must
-        // be immune to a real key exactly the same way.
+        // These endpoints are public third-party hosts Pera doesn't control,
+        // so sending Pera's real API keys would leak them.
         //
-        // `config.algodApiKey`/`indexerApiKey` are blank in this test
-        // environment (no key configured), so asserting against a bare
-        // `getNetworkConfig(betanet).algodToken === ''` would pass whether
-        // betanet's token is hardcoded empty (the fix) OR still wired to
-        // `config.algodApiKey` (the bug) — both would coincidentally read as
-        // `''` here. Mocking a non-empty key makes the two cases actually
-        // observably different, so this only passes for the real fix.
+        // The keys are blank in this environment, so a bare `=== ''` assertion
+        // would pass whether the token is hardcoded empty or still wired to
+        // `config.algodApiKey`. Mocking a non-empty key is what makes the two
+        // cases observably different.
         vi.resetModules()
         vi.doMock('../main', async importOriginal => {
             const actual = await importOriginal<typeof import('../main')>()

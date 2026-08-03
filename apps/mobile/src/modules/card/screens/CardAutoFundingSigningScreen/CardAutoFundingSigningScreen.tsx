@@ -65,7 +65,9 @@ export const CardAutoFundingSigningScreen = () => {
                 </PWText>
             </PWView>
             {!!error && (
-                <PWText style={styles.errorText}>{error.message}</PWText>
+                <PWText style={styles.errorText}>
+                    {t('peraCard.auto_funding_signing.error_body')}
+                </PWText>
             )}
         </PWScreen>
     )

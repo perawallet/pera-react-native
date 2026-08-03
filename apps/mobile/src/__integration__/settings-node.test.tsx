@@ -10,24 +10,12 @@
  limitations under the License
  */
 
-// Integration coverage for network/node selection:
+// Network selection through `useNetwork`: `setNetwork` updates the persisted
+// store, `networkConfig` re-derives algod/indexer URLs, and every consumer
+// re-keys against the new network on the next render.
 //
-//   useNetwork()
-//        ├─► returns current `network` (mainnet | testnet)
-//        ├─► `setNetwork(...)` updates the persisted Zustand store
-//        ├─► `networkConfig` derives algodUrl / indexerUrl from
-//        │   @perawallet/wallet-core-config based on `network`
-//        │
-//        ▼
-//   any consumer that reads `useNetwork().network` (DB queries, MSW
-//   patterns, asset price lookups) sees the new network on the next
-//   render and re-keys against it.
-//
-// The plan called this section "node selection" — at the time this
-// suite was written, "node" maps to the mainnet/testnet selector. A
-// custom-algod-URL feature would extend this same hook surface, so the
-// assertions here lock in the contract that hooks consume `useNetwork`
-// rather than hardcoding URLs.
+// The point is the contract that hooks consume `useNetwork` rather than
+// hardcoding URLs — a custom-algod-URL feature would extend this same surface.
 
 import {
     afterAll,

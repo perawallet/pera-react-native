@@ -47,6 +47,12 @@ describe('PWInput', () => {
         expect(onChangeText).toHaveBeenCalledWith('hello')
     })
 
+    // `isDisabled` is deliberately untested here: the suite mocks @rneui's
+    // Input with a plain <input> that wires onChange unconditionally
+    // (vitest.setup.ts), so neither `editable` nor the dim style is observable.
+    // The locked-field behaviour is covered where it has meaning: the
+    // personal-details screen spec asserts the isXLocked flags.
+
     describe('showVisibilityToggle', () => {
         it('wires the reveal toggle as a right icon only while focused', () => {
             render(

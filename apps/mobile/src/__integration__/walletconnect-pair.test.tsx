@@ -10,21 +10,13 @@
  limitations under the License
  */
 
-// Integration coverage for the WalletConnect v1 pairing flow:
+// WalletConnect v1 pairing: connect() -> session_request handler -> store ->
+// ConnectionView -> the user picks accounts -> approveSession.
 //
-//   dApp → @perawallet/walletconnect → useWalletConnect connect()
-//        → session_request handler → wallet store
-//        → WalletConnectProvider → ConnectionView (bottom sheet)
-//        → user picks accounts + taps Connect
-//        → approveSession on the underlying connector
-//
-// The only thing replaced here is the bottom-level `@perawallet/walletconnect`
-// transport — vitest's resolve.alias swaps it for
-// `walletconnect-client-stub.ts` across the whole integration project,
-// so consumers (including the real `@perawallet/wallet-core-walletconnect`
-// hooks) build against the stub. Everything else — the request store,
-// the provider, ConnectionView, the network gate — is the production
-// code path.
+// Only the bottom-level `@perawallet/walletconnect` transport is replaced (via
+// vitest resolve.alias, so even the real wallet-core-walletconnect hooks build
+// against the stub). The store, provider, ConnectionView and network gate are
+// all production code.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import React from 'react'

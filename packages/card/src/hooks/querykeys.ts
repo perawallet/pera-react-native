@@ -51,6 +51,7 @@ export const cardQueryKeys = {
 export const cardMutationKeys = {
     freeze: [MODULE_PREFIX, 'freeze'] as const,
     unfreeze: [MODULE_PREFIX, 'unfreeze'] as const,
+    order: [MODULE_PREFIX, 'order'] as const,
 }
 
 export const isCardQuery = (queryKey: QueryKey): boolean =>

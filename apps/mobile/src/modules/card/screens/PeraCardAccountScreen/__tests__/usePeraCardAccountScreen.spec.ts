@@ -39,6 +39,9 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             selector({
                 connectedFundingSourceAddress: mockState.connectedAddress,
             }),
+        // The shell mounts the issuance watcher for its side effects only;
+        // its own behavior is covered by the package hook's tests.
+        useCardIssuance: () => ({ state: 'READY', retryOrder: vi.fn() }),
     }
 })
 

@@ -20,22 +20,7 @@ import type {
 } from '../types'
 import { SourceError } from '../errors'
 
-/**
- * Create a source for locally-constructed data.
- * The builder function constructs the signable data from params and returns
- * the address of the account that should sign it.
- *
- * @example
- * const paymentSource = createLocalSource(async (params) => ({
- *   data: {
- *     type: 'transactions',
- *     transactions: [paymentTxn],
- *     rawTransactionsBase64: [encoded],
- *     indicesToSign: [0],
- *   },
- *   signerAddress: params.senderAddress,
- * }))
- */
+/** The builder returns the signable data plus the address that should sign it. */
 export const createLocalSource = <TParams>(
     builder: (
         params: TParams,

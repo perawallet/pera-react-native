@@ -109,9 +109,19 @@ pnpm lint:fix   # Auto-fix lint/type-aware issues
 pnpm format     # Auto-fix formatting
 ```
 
+## Comments
+
+Code says **what**. Comments say **why** — and only when the why isn't obvious. Default to none.
+
+**Worth a comment:** non-obvious rationale, a trap or workaround, units/encodings the type can't express.
+
+**Not worth a comment:** restating the code, JSDoc repeating the signature, section banners, "this hook does X" above `useX`, change-log narration, commented-out code.
+
+One line is the norm; three is a lot. Longer explanations belong in `docs/`.
+
 ## Key Principles
 
-1. **Self-documenting code** — minimize comments
+1. **Self-documenting code** — comment the why, not the what
 2. **No magic numbers** — use named constants
 3. **Theme-based styling** — always use `makeStyles` with theme tokens
 

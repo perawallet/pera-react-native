@@ -68,6 +68,10 @@ export type PWWebViewProps = {
     // single-page-app hosts (e.g. Bidali) where the WebView history-based
     // navigation the bar relies on never tracks in-app routing.
     showFooterBar?: boolean
+    // For a host WebView that renders no controls of its own: open navigations
+    // that leave `url`'s origin in the in-app browser (which has back/close)
+    // instead of loading them in place, where the user would be stranded.
+    openExternalLinksInBrowser?: boolean
     onClose?: () => void
     onBack?: () => void
     inBottomSheet?: boolean
@@ -89,6 +93,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         requestId,
         showControls = false,
         showFooterBar = true,
+        openExternalLinksInBrowser = false,
         onClose,
         onBack,
         customJavaScript,
@@ -106,6 +111,7 @@ export const PWWebView = (props: PWWebViewProps) => {
     const styles = useStyles({ bottomInset: footerBottomInset })
     const { theme } = useTheme()
     const removeWebView = useWebViewStore(state => state.removeWebView)
+    const pushWebView = useWebViewStore(state => state.pushWebView)
     const internalRef = useRef<WebView>(null)
     const webview = webviewRef ?? internalRef
     // Per-mount secret stamped onto bridge messages by the main-frame-only
@@ -188,10 +194,23 @@ export const PWWebView = (props: PWWebViewProps) => {
         onBack,
     )
 
+    const externalNavigation = useMemo(
+        () =>
+            openExternalLinksInBrowser
+                ? {
+                      hostUrl: loadableUrl,
+                      onExternalNavigation: (target: string) =>
+                          pushWebView({ url: target }),
+                  }
+                : undefined,
+        [openExternalLinksInBrowser, loadableUrl, pushWebView],
+    )
+
     const { onShouldStartLoadWithRequest } = useWebViewNavigationGuard({
         isTrustedOrigin: isSecure,
         pageUrl: currentUrl,
         webviewRef: webview,
+        externalNavigation,
     })
 
     const handleEvent = useCallback(

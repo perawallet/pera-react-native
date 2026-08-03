@@ -84,13 +84,23 @@ export const BalanceImpactRow = ({ item }: BalanceImpactRowProps) => {
                             sign={sign}
                             numberOfLines={1}
                         />
-                        <PreferredAmount
-                            sourceAmount={item.amount}
-                            sourceAssetId={item.assetId}
-                            usdPrice={item.usdPrice}
-                            variant='caption'
-                            style={styles.subtitle}
-                        />
+                        {item.isNewAsset ? (
+                            <PWText
+                                variant='caption'
+                                style={styles.subtitle}
+                                numberOfLines={1}
+                            >
+                                {t('signing.balance_impact.new_asset')}
+                            </PWText>
+                        ) : (
+                            <PreferredAmount
+                                sourceAmount={item.amount}
+                                sourceAssetId={item.assetId}
+                                usdPrice={item.usdPrice}
+                                variant='caption'
+                                style={styles.subtitle}
+                            />
+                        )}
                     </>
                 )}
             </PWView>

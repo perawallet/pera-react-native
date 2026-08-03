@@ -73,27 +73,14 @@ import { modelsv2, encodeMsgpack, decodeMsgpack } from 'algosdk'
 // through algosdk's `modelsv2` simulate types so the bytes round-trip through
 // the same codec the client uses.
 
-// ---------------------------------------------------------------------------
-// Navigation model
+// The claim flow hops through the Messages stack with
+// `push('Messages', { screen, params })`, but the test navigator is a single
+// FLAT stack that doesn't forward into a child navigator. So all four screens
+// are registered flat behind a tiny `Messages` dispatcher that flat-replaces
+// itself with `route.params.screen`, reproducing the nested forwarding.
 //
-// The inbound ARC-59 claim flow lives in the Messages stack:
-//   AssetTransferRequests → AssetClaimDetail → ClaimProcessing → ClaimSuccess
-// The screens hop with `push('Messages', { screen, params })` (a
-// nested-navigator action) plus a final `replace('ClaimSuccess', ...)`.
-//
-// The integration test navigator (src/test-utils/test-navigator.tsx) is a
-// single FLAT stack — it does not forward `{ screen, params }` into a child
-// navigator. So we register all four claim screens flat and add a tiny
-// `Messages` dispatcher that, on mount, flat-replaces itself with
-// `route.params.screen` carrying `route.params.params`. That faithfully
-// reproduces the nested-navigator forwarding (`push('Messages', { screen, … })`
-// lands on the named child screen with the right params).
-//
-// `PWSlideToConfirm` is mocked (vitest.setup.ts + vitest.integration-setup.ts)
-// as a <button> whose onClick === onConfirm, so the slide is driveable by its
-// testID (`arc59_claim_confirm_slide`); the pan gesture itself is never
-// simulated (the gesture-handler mock makes its handlers unreachable).
-// ---------------------------------------------------------------------------
+// `PWSlideToConfirm` is mocked as a <button> whose onClick is onConfirm — the
+// pan gesture itself is unreachable under the gesture-handler mock.
 
 const SENDER_ADDRESS =
     'CBLWUBRWCWNKZ2Y2Q5HFKN7XISNBVAN47422MZOKH5OGCZ3H5JYLTDPLOA'

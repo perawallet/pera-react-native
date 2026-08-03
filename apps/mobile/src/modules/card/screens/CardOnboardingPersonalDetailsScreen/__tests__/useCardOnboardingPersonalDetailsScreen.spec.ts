@@ -13,7 +13,10 @@
 import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { SupportedCountry } from '@perawallet/wallet-core-card'
+import {
+    OnboardingNotVerifiedError,
+    type SupportedCountry,
+} from '@perawallet/wallet-core-card'
 
 const mockMutateAsync = vi.fn()
 let mockOnboardingId: string | null = 'mock-onboarding-id'
@@ -27,6 +30,10 @@ type MockOnboardingDetails = {
     countryOfNationality: string | null
 }
 let mockOnboardingDetails: MockOnboardingDetails | undefined
+// The gate's own derivation is unit-tested in the card package
+// (useOnboardingKycGate.test.ts); here only the screen's wiring matters.
+let mockIsKycRequired = false
+const mockMarkServerRefused = vi.fn()
 
 vi.mock('@perawallet/wallet-core-card', async () => {
     const actual = await vi.importActual<
@@ -56,6 +63,10 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             isLoading: false,
             isError: false,
             refetch: vi.fn(),
+        }),
+        useOnboardingKycGate: () => ({
+            isKycRequired: mockIsKycRequired,
+            markServerRefused: mockMarkServerRefused,
         }),
         useCardStore: (
             selector: (state: {
@@ -124,6 +135,7 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         mockCountryIso = 'GB'
         mockSettings = { countries: [uk, france], usStates: [] }
         mockOnboardingDetails = undefined
+        mockIsKycRequired = false
         mockMutateAsync.mockResolvedValue(undefined)
     })
 
@@ -221,9 +233,9 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
         )
     })
 
-    it('leaves the form empty and editable for a fresh registration', () => {
+    it('leaves the form empty and editable for a registration with no profile data yet', () => {
         mockOnboardingDetails = {
-            verificationState: 'UNVERIFIED',
+            verificationState: 'PENDING',
             firstName: null,
             lastName: null,
             dateOfBirth: null,
@@ -270,6 +282,49 @@ describe('useCardOnboardingPersonalDetailsScreen', () => {
             countryOfNationality: 'GB',
         }
     }
+
+    describe('KYC gating', () => {
+        it('surfaces the gate and offers a route back to verification', () => {
+            mockIsKycRequired = true
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+
+            expect(result.current.isKycRequired).toBe(true)
+
+            act(() => {
+                result.current.handleVerifyIdentity()
+            })
+            expect(mockNavigate).toHaveBeenCalledWith(
+                'CardOnboardingVerification',
+            )
+        })
+
+        it('marks the gate refused and keeps the user here when the server rejects the submit', async () => {
+            prefillValidForm()
+            mockMutateAsync.mockRejectedValueOnce(
+                new OnboardingNotVerifiedError(),
+            )
+            const { result } = renderHook(() =>
+                useCardOnboardingPersonalDetailsScreen(),
+            )
+            await waitFor(() => expect(result.current.isValid).toBe(true))
+
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+
+            expect(mockMarkServerRefused).toHaveBeenCalledTimes(1)
+            expect(mockNavigate).not.toHaveBeenCalledWith(
+                'CardOnboardingAddress',
+            )
+            // Our copy, never Baanx's "User is not verified".
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.kyc_required.title',
+                'peraCard.kyc_required.body',
+            )
+        })
+    })
 
     it('submits the details and continues to the address step', async () => {
         prefillValidForm()

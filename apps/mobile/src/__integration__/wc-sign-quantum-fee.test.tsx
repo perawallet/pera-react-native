@@ -10,28 +10,15 @@
  limitations under the License
  */
 
-// End-to-end coverage for the PQ-017 quantum fee override (PERA-4490) across
-// the REAL WalletConnect v1 → ARC-0001 enqueue → interactive review → sign →
-// callback-delivery loop. Where `wc-sign.test.tsx` stops at the validation/
+// The quantum fee override across the whole WalletConnect -> ARC-0001 enqueue
+// -> review -> sign -> callback-delivery loop. `wc-sign.test.tsx` stops at the
 // rejection boundary and `sign-review-quantum-fee.test.tsx` mounts only the
-// review surface with a pre-built request, this file drives a dApp
-// `algo_signTxn` request through the same connector stub the app talks to and
-// asserts the fee-override behaviour end to end:
+// review surface, so this is the one that drives a real `algo_signTxn` through
+// the connector stub end to end.
 //
-//   dApp fires algo_signTxn (2-txn group: quantum-signed pay + external party)
-//        │
-//        ▼  useWalletConnectHandlers.handleSignTransaction
-//        │      resolveArc0001 → useEnqueueArc0001SignRequest
-//        │        (PQ-017: quantum signer ⇒ fee raised to PQ minimum + regroup)
-//        ▼
-//   SigningOverlays review sheet  ──► "Adjusted" marker + QuantumFeeExplainer
-//        │  slide-to-confirm
-//        ▼  quantum strategy signs → callback transport
-//   connector.approveRequest({ result: [pqsig-bytes, null] })
-//
-// Scenario (a) exercises the full quantum path; scenario (b) is the non-quantum
-// regression that proves an algo25 request stays byte-identical (no fee bump,
-// no regroup) so the override never touches ordinary dApp traffic.
+// Scenario (a) is the quantum path (fee raised to the PQ minimum, regrouped,
+// "Adjusted" marker shown); scenario (b) proves an algo25 request stays
+// byte-identical, so the override never touches ordinary dApp traffic.
 
 import {
     afterAll,

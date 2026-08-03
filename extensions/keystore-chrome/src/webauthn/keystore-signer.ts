@@ -132,21 +132,11 @@ export const createKeystoreSigner = (
     }) {
         const rootKeyId = await resolveRootKeyId(store)
 
-        // The core already lowercases `userHandle` into its
-        // derivation-input form before calling this method — see
-        // `toDerivationUserHandle` in `authenticator.ts`. We lowercase again
-        // here defensively before persisting it to `metadata.userHandle`:
-        // the keystore lib's *generation* path
-        // (`generate.js`'s `generateXHDFromParent`) lowercases
-        // `metadata.userHandle` before deriving the keypair, but its *sign*
-        // path (`sign.js`'s `signXHDDomainP256KeyData`) does NOT — it feeds
-        // `key.metadata.userHandle` to `dp256.genDomainSpecificKeyPair`
-        // verbatim. If the stored metadata weren't already lowercase, a
-        // future sign would re-derive a *different* keypair than the one
-        // whose public key we returned at registration. Storing it
-        // lowercased up front makes both paths agree (this call is
-        // idempotent since the input is already lowercase, but the
-        // defensiveness matters if that ever changes upstream).
+        // Redundant today (the core already lowercases), but load-bearing if
+        // that changes: the keystore lib lowercases `metadata.userHandle` on
+        // its GENERATION path but not its SIGN path, so non-lowercase stored
+        // metadata would re-derive a different keypair than the public key we
+        // returned at registration.
         const normalizedUserHandle = userHandle.toLowerCase()
 
         const keyId = await generateKey({
@@ -195,29 +185,13 @@ export const createKeystoreSigner = (
         const parentKey = await fetchSecret<KeyData>({ keyId: parentKeyId })
         if (!parentKey) throw new KeyNotFoundError(parentKeyId)
 
-        // FINDING: `sign.js`'s `signXHDDomainP256KeyData` hands `data` to
-        // `dp256.signWithDomainSpecificKeyPair`, which calls
-        // `@noble/curves`' `p256.sign(payload, privateKey)` with NO
-        // `{ prehash: true }` option — noble's default is `prehash: false`,
-        // meaning it treats `payload` as an ALREADY-hashed digest and signs
-        // it directly (truncated to the curve's bit length), rather than
-        // hashing it first. Verified empirically: signing a >32-byte message
-        // this way and checking with `p256.verify(sig, sha256(message), pub)`
-        // fails, while `p256.verify(sig, message, pub)` (no hash) succeeds —
-        // confirming the keystore's P-256 sign path is a *raw* ECDSA
-        // primitive over caller-supplied bytes, not a hash-and-sign API.
-        //
-        // The WebAuthn ES256 algorithm this port implements is "ECDSA using
-        // P-256 and SHA-256" — the signature MUST be computed over
-        // `SHA256(authenticatorData || clientDataHash)`, matching what
-        // mobile's CryptoKit `PrivateKey.signature(for:)` does automatically
-        // on the Swift side. Since the port's `signP256(keyId, data)`
-        // contract reads as "sign `data`" (full hash-then-ECDSA, the
-        // standard meaning of "sign" in every mainstream crypto API), and
-        // the underlying keystore primitive is raw/pre-hashed-input, this
-        // adapter must hash here to bridge the gap — otherwise every
-        // assertion this mints would fail verification against any
-        // standards-compliant relying party.
+        // The adapter must hash, because the two sides disagree on what
+        // "sign" means. The keystore's P-256 path is a RAW ECDSA primitive —
+        // noble's `p256.sign` defaults to `prehash: false`, so it signs the
+        // caller's bytes as an already-computed digest. WebAuthn ES256 requires
+        // the signature to be over `SHA256(authenticatorData || clientDataHash)`.
+        // Without hashing here, every assertion would fail verification against
+        // a standards-compliant relying party.
         const digest = sha256(data)
 
         // Raw 64-byte (r ‖ s) — the port's core DER-encodes, this adapter must not.

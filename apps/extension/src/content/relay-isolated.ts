@@ -29,18 +29,13 @@ const onRequest = (e: Event): void => {
     chrome.runtime.sendMessage(
         { scope: DAPP_RELAY_SCOPE, request },
         (response: unknown) => {
-            // The SW can be killed between receiving this request and
-            // responding (event page teardown mid-call). When that happens,
-            // Chrome invokes this callback with `lastError` set and
-            // `response === undefined` instead of ever delivering a real
-            // envelope. Dispatching `{ id, response: undefined }` in that
-            // case would resolve (and clear) MAIN's pending entry with a
-            // bogus "success", so the dapp gets an undefined result and the
-            // 120s MethodTimedOutError backstop in inject-main.ts never
-            // fires. Read (and discard) lastError to prevent an "unchecked
-            // runtime.lastError" console warning, then bail out without
-            // dispatching — MAIN's own timeout is what delivers the
-            // terminal error to the page in this case.
+            // A SW killed mid-call invokes this with `lastError` set and no
+            // response. Dispatching `{ id, response: undefined }` would resolve
+            // MAIN's pending entry with a bogus success, handing the dapp an
+            // undefined result and preventing the timeout backstop from ever
+            // firing. Read lastError (to silence the unchecked-lastError
+            // warning) and bail without dispatching — MAIN's own timeout
+            // delivers the terminal error.
             const lastError = chrome.runtime.lastError
             if (lastError || response === undefined) return
             if (!responseEventName) return
@@ -71,15 +66,11 @@ window.addEventListener(CHANNEL_HANDSHAKE_EVENT, (e: Event) => {
     window.addEventListener(requestEventName, onRequest)
 })
 
-// Announce readiness AFTER the handshake listener above is registered, so if
-// MAIN's handshake dispatch already happened (and was dropped because no
-// listener existed yet), MAIN can react to this event by re-dispatching it.
-// A page script forging CHANNEL_RELAY_READY_EVENT gains nothing: it only
-// causes MAIN to re-dispatch its own already-fixed, per-load channel names —
-// it cannot inject different ones, and the first-only guard above still
-// prevents any handshake (forged or real) from rebinding after the first.
-// Those channel names ARE observable by same-world page scripts (inject-main.ts
-// runs in the MAIN world, same JS realm as the page), but that's not a trust
-// boundary: authorization is enforced at the SW by checking `sender.origin`,
-// not by keeping the channel names secret.
+// After the listener is registered, so a handshake MAIN already dispatched (and
+// that was dropped for want of a listener) gets re-dispatched.
+//
+// Forging this event gains a page nothing: it only makes MAIN re-dispatch its
+// own fixed per-load channel names, and the first-only guard still blocks any
+// rebind. The names are observable to same-world page scripts anyway —
+// authorization is enforced at the SW via `sender.origin`, not by secrecy.
 window.dispatchEvent(new CustomEvent(CHANNEL_RELAY_READY_EVENT))

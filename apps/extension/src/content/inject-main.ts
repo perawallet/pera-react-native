@@ -71,17 +71,13 @@ const installProvider = (): void => {
     // protocol.
     dispatchHandshake()
 
-    // If the relay loads/registers after this dispatch (or was already
-    // waiting), it announces readiness here; re-send the same channel names
-    // so it isn't stuck with a dropped handshake. A page script forging this
-    // event only triggers a redundant re-dispatch of our own already-fixed
-    // names — it can't alter them, only trigger a repeat of the same
-    // dispatch. Note that a same-world page script CAN already observe
-    // those names (this script runs in the MAIN world, so window-dispatched
-    // CustomEvents are visible to page code), but that's not a security
-    // issue: the channel names are not a trust boundary. Authorization is
-    // enforced downstream at the SW by checking `sender.origin`, so knowing
-    // (or guessing) the channel names buys a page nothing.
+    // Re-send the same channel names if the relay registers after this
+    // dispatch, so it isn't stuck with a dropped handshake.
+    //
+    // Forging this event gains a page nothing: it can only trigger a redundant
+    // re-dispatch of our own fixed names, never alter them. Page code can
+    // already observe those names anyway — they're not a trust boundary, since
+    // authorization is enforced at the SW via `sender.origin`.
     window.addEventListener(CHANNEL_RELAY_READY_EVENT, dispatchHandshake)
 
     window.addEventListener(responseEventName, (e: Event) => {

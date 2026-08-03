@@ -94,23 +94,14 @@ export const hasSigningKeys = (account: WalletAccount): boolean => {
     return !!account.keyPairId
 }
 
-/**
- * True iff the wallet holds key material that produces a signature for
- * `account` directly: either its own key, or a Ledger device for hardware
- * accounts. Used by `getSignerFor` to test signing capability on a single
- * account without following rekeys.
- */
+/** Signing capability for a single account, without following rekeys. */
 const canSignDirectly = (account: WalletAccount): boolean =>
     hasSigningKeys(account) || isHardwareWalletAccount(account)
 
 /**
- * True iff `accounts` holds at least one of `participantAddresses` that can
- * sign with its own key (own keypair or hardware). Multisig signing is
- * propose-based, so one local signable participant is enough. A participant
- * counts only with its OWN key — slots bind to the participant's pubkey, so
- * rekey indirection is not followed and watch-only participants don't count.
- * Quantum participants don't count either: multisig slots verify Ed25519
- * signatures only, so a post-quantum key can never satisfy a slot.
+ * Multisig signing is propose-based, so one local signable participant is
+ * enough. Slots bind to the participant's own pubkey, so rekey indirection is
+ * not followed. Quantum participants never count — slots verify Ed25519 only.
  */
 export const canSignViaParticipants = (
     participantAddresses: string[],
@@ -125,22 +116,13 @@ export const canSignViaParticipants = (
         )
     })
 
-/**
- * True iff `multisig` has at least one participant in `accounts` that can
- * sign with its own key. Multisig signing is propose-based, so a single
- * local signable participant is enough.
- */
 const canSignViaMultisig = (
     multisig: MultiSigAccount,
     accounts: WalletAccount[],
 ): boolean =>
     canSignViaParticipants(multisig.multisigDetails.addresses, accounts)
 
-/**
- * Tagged resolution of the signer. Use `getSignerFor` / `canSignWith` when
- * you only need the happy path; use the tagged form to branch on *why*
- * signing isn't possible.
- */
+/** Use the tagged form to branch on *why* signing isn't possible. */
 export type SignerResolution =
     | { kind: 'ok'; signer: WalletAccount }
     | { kind: 'accountNotFound' }
@@ -190,12 +172,8 @@ export const resolveSignerForAccount = (
 }
 
 /**
- * Returns the auth account `address` is rekeyed to. Null when `address` is
- * not in the wallet, is not rekeyed, or its rekey target is not held locally.
- *
- * Use this for the immediate auth-addr relationship; for "who actually signs",
- * use `getSignerFor` which also accounts for multisig participant resolution
- * and signability.
+ * The immediate auth-addr relationship only. For "who actually signs", use
+ * `getSignerFor` — it also resolves multisig participation and signability.
  */
 export const getRekeyAccount = (
     address: string,
@@ -206,9 +184,7 @@ export const getRekeyAccount = (
     return accounts.find(a => a.address === account.rekeyAddress) ?? null
 }
 
-/**
- * Tagged resolution of the signer for `address`. Single-hop only.
- */
+/** Single-hop only. */
 export const resolveSignerFor = (
     address: string,
     accounts: WalletAccount[],
@@ -219,19 +195,9 @@ export const resolveSignerFor = (
 }
 
 /**
- * Returns the account that will produce signatures for `address` in this
- * wallet. Resolves a single rekey hop and multisig participation.
- *
- * - Address not in wallet → null
- * - Rekeyed, auth account locally signable → the auth account
- * - Rekeyed, auth account missing or not signable → null
- * - Multisig with at least one local signable participant → the multisig
- * - Standard/HD with its own key, or Hardware → the account itself
- * - Watch (not rekeyed) → null
- *
- * Single-hop only: cyclic and multi-hop auth chains are not followed.
- *
- * Use `resolveSignerFor` when the failure reason matters.
+ * The account that will produce signatures for `address`, or null. Single-hop
+ * only: cyclic and multi-hop auth chains are not followed. Use
+ * `resolveSignerFor` when the failure reason matters.
  */
 export const getSignerFor = (
     address: string,
@@ -241,50 +207,28 @@ export const getSignerFor = (
     return r.kind === 'ok' ? r.signer : null
 }
 
-/**
- * True when the wallet can produce signatures for `account`. Unlike
- * `getSignerFor`, this does not require `account` to be present in
- * `accounts` — pass the account in hand.
- */
+/** Unlike `getSignerFor`, `account` need not be present in `accounts`. */
 export const canSignWith = (
     account: WalletAccount,
     accounts: WalletAccount[],
 ): boolean => resolveSignerForAccount(account, accounts).kind === 'ok'
 
 /**
- * True iff the wallet can produce an arbitrary-data signature (algo_signData
- * / ARC-60) for `account`. The dApp verifies against the requested account's
- * own pubkey — there is no on-chain auth-addr lookup for off-chain data — so
- * we must sign with that account's own keypair. Rekey indirection is NOT
- * followed: a watch-rekeyed account cannot sign arbitrary data even when its
- * auth chain is locally held.
- *
- * Equivalent to `hasSigningKeys`: Algo25, HDWallet, and quantum accounts all
- * carry their own keyPairId. Hardware (no raw-byte opcode), multisig (no
- * signature shape), and watch accounts are naturally excluded.
+ * Off-chain data has no auth-addr lookup — the dApp verifies against the
+ * requested account's own pubkey — so rekey indirection is NOT followed: a
+ * watch-rekeyed account cannot sign arbitrary data even with a local auth chain.
  */
 export const canSignArbitraryData = (account: WalletAccount): boolean =>
     hasSigningKeys(account)
 
 /**
- * True iff the wallet can produce an ARC-60 signature for `account`, by
- * either of the two supported mechanisms:
- *
- * - a local key (Algo25 / HDWallet) signed via the KMS, or
- * - a Ledger device signed on-device via the hardware signing strategy.
- *
- * This is broader than {@link canSignArbitraryData} (which is local-key only)
- * because ARC-60 — unlike the legacy `algo_signData` path — also has an
- * on-device signing path. Watch and multisig accounts can do neither.
+ * Broader than {@link canSignArbitraryData} because ARC-60 — unlike the legacy
+ * `algo_signData` path — also has an on-device Ledger signing path.
  */
 export const canSignArc60 = (account: WalletAccount): boolean =>
     canSignArbitraryData(account) || isHardwareWalletAccount(account)
 
-/**
- * True iff `account` is rekeyed and the wallet can't sign for the auth
- * chain. Distinguishes the "rekeyed but stranded" display state from a pure
- * `isWatchAccount`.
- */
+/** The "rekeyed but stranded" display state, distinct from `isWatchAccount`. */
 export const isRekeyedUnsignable = (
     account: WalletAccount,
     accounts: WalletAccount[],
@@ -292,21 +236,15 @@ export const isRekeyedUnsignable = (
     !!account.rekeyAddress &&
     resolveSignerForAccount(account, accounts).kind !== 'ok'
 
-/**
- * True iff `account` is a multisig account this wallet cannot sign for —
- * either a multisig with no local signable participant, or one rekeyed to an
- * account it can't sign for. Mirrors `isRekeyedUnsignable`: distinguishes the
- * "multisig we can't sign for" display state from a signable multisig.
- */
+/** Display-state counterpart to `isRekeyedUnsignable`. */
 export const isMultisigUnsignable = (
     account: WalletAccount,
     accounts: WalletAccount[],
 ): boolean => isMultisigAccount(account) && !canSignWith(account, accounts)
 
 /**
- * True iff the user can initiate a rekey from `account`. Aliased to
- * `canSignWith` — the rekey txn itself must be signed by the current auth
- * chain — but exported under the intent-revealing name.
+ * Aliases `canSignWith` — the rekey txn itself must be signed by the current
+ * auth chain — under an intent-revealing name.
  */
 export const canInitiateRekey = (
     account: WalletAccount,
@@ -320,12 +258,7 @@ export type RekeyTransition = {
     to: WalletAccount['type']
 }
 
-/**
- * For a rekeyed account whose auth we can sign with, returns the types of the
- * rekeyed account and its immediate auth account, so the UI can render a
- * "Rekeyed (<from> to <to>)" label. Returns null when the account is not a
- * signable rekey, or when the auth account is not held locally.
- */
+/** Backs the UI's "Rekeyed (<from> to <to>)" label. */
 export const rekeyTransitionFor = (
     account: WalletAccount,
     accounts: WalletAccount[],
@@ -338,34 +271,21 @@ export const rekeyTransitionFor = (
 }
 
 /**
- * Source-account fields consulted for rekey-target eligibility: the source's
- * own address (rekeying to self is a no-op) and its current auth address
- * (re-rekeying to the existing auth is an equally pointless fee-burning
- * no-op). A full {@link WalletAccount} satisfies this shape.
+ * Rekeying to self or to the current auth are both fee-burning no-ops, so
+ * eligibility needs both fields. A full {@link WalletAccount} satisfies this.
  */
 type RekeySourceFields = Pick<BaseWalletAccount, 'address' | 'rekeyAddress'>
 
 /**
- * True when `target` may be chosen as the new auth address for a "rekey to
- * standard account" flow originating from `source`. Mirrors Android
- * `RekeyToStandardAccountSelectionPreviewUseCase.isAccountEligibleToRekey`:
- * the target must be a standard signing account (algo25 / HD wallet) or a
- * quantum account (the rekey-in migration path to post-quantum keys),
- * not the source itself, not the source's current auth, hold its own
- * signing keys, and not already be rekeyed away.
+ * Mirrors Android
+ * `RekeyToStandardAccountSelectionPreviewUseCase.isAccountEligibleToRekey`.
  *
- * Quantum targets are additionally gated on `isQuantumTargetEnabled` (the
- * quantum-accounts feature flag `useIsQuantumAccountsEnabled`). **This gate is
- * a hard functional limitation, not a rollout toggle — do not turn the flag on
- * for testers on the assumption that it only hides a working feature.**
- * Quantum signing is implemented locally (PQ-006), but no algod available today
- * accepts the `pqsig` field (mainnet, testnet and LocalNet all reject it — see
- * `docs/QUANTUM_PQ_INTEGRATION.md`). So rekeying to a quantum account is a
- * **one-way door that strands the funds**: once an account's auth-addr is a
- * quantum account, every transaction from it requires a `pqsig` and is
- * rejected at submit — *including the rekey-back transaction that would undo
- * it*. The account cannot be spent from or recovered until a `pqsig`-capable
- * algod ships.
+ * Quantum targets are gated on `isQuantumTargetEnabled`, and that gate is a
+ * hard functional limit rather than a rollout toggle. Signing works locally,
+ * but mainnet and testnet algod still reject the `pqsig` field, so on those
+ * networks the rekey is a one-way door that strands the funds: every later
+ * transaction needs a `pqsig`, *including the rekey-back that would undo it*.
+ * See `docs/QUANTUM_PQ_INTEGRATION.md`.
  */
 export const isEligibleRekeyTarget = (
     target: WalletAccount,
@@ -388,10 +308,8 @@ export const isEligibleRekeyTarget = (
 }
 
 /**
- * True when `account`'s effective signing authority is a quantum key — i.e.
- * following a single rekey hop lands on a quantum account. A broken auth chain
- * (the auth account is not held locally, so {@link resolveAuthAccount} throws)
- * is treated as non-quantum: we cannot assert protection we cannot resolve.
+ * A broken auth chain ({@link resolveAuthAccount} throws) counts as
+ * non-quantum: we cannot assert protection we cannot resolve.
  */
 const hasQuantumAuthority = (
     account: WalletAccount,
@@ -405,18 +323,12 @@ const hasQuantumAuthority = (
 }
 
 /**
- * True iff rekeying `source` to `target` removes quantum protection: `source`'s
- * effective signing authority is quantum, but `target`'s is not (Ed25519 —
- * standard / ledger / multisig).
- *
- * Both sides are compared by *effective* authority (resolved through one rekey
- * hop), not raw account type, because that is where the protection actually
- * lives:
- * - An Ed25519 account rekeyed to a quantum auth (the rekey-in migration) is
- *   quantum-protected and IS downgraded when rekeyed back to Ed25519, even
- *   though its own `type` is still `algo25`.
- * - A quantum-typed account already rekeyed away to Ed25519 has no quantum
- *   protection left, so rekeying it further is NOT a downgrade.
+ * Compares *effective* authority (one rekey hop), not raw account type,
+ * because that is where the protection lives:
+ * - An Ed25519 account rekeyed to a quantum auth IS downgraded when rekeyed
+ *   back to Ed25519, even though its own `type` is still `algo25`.
+ * - A quantum-typed account already rekeyed away to Ed25519 has no protection
+ *   left, so rekeying it further is NOT a downgrade.
  */
 export const isQuantumDowngrade = (
     source: WalletAccount,
@@ -427,12 +339,6 @@ export const isQuantumDowngrade = (
     return !hasQuantumAuthority(target, accounts)
 }
 
-/**
- * True when `target` may be chosen as the new auth address for a "rekey to
- * Ledger account" flow originating from `source`. The target must be a
- * hardware wallet account already imported in the wallet, not the source
- * itself, not the source's current auth, and not already rekeyed away.
- */
 export const isEligibleLedgerRekeyTarget = (
     target: WalletAccount,
     source: RekeySourceFields,
@@ -445,22 +351,9 @@ export const isEligibleLedgerRekeyTarget = (
 }
 
 /**
- * True when `target` may be chosen as the new auth address for a "rekey to
- * shared (multisig) account" flow originating from `source`. The target
- * must be a multisig account in the wallet, not the source itself, not the
- * source's current auth, and not already rekeyed away.
- *
- * Additionally requires the wallet to hold at least one participant that can
- * sign. Multisig signing is propose-based: a single local participant can
- * propose the transaction and the remaining signatures are collected from
- * co-signers. Holding zero signable participants would permanently lock the
- * source account — no one here could even propose. Holding fewer than
- * `threshold` is fine, so this only requires one.
- *
- * A participant counts only if it can sign with its OWN key
- * (`hasSigningKeys` or hardware) — multisig slots are bound to the
- * participant's own pubkey, so rekey indirection is not followed here.
- * Watch-only participants don't count.
+ * Requires one signable participant, not `threshold` of them: signing is
+ * propose-based, so one local participant can propose and the rest are
+ * collected from co-signers. Zero would permanently lock the source account.
  */
 export const isEligibleSharedRekeyTarget = (
     target: WalletAccount,
@@ -475,16 +368,10 @@ export const isEligibleSharedRekeyTarget = (
 }
 
 /**
- * Resolves the auth account that signs for `account` — a single rekey hop.
+ * Single hop, because rekey indirection is NOT transitive: if A is rekeyed to
+ * B and B to C, B still signs for A (A's auth-addr is literally B).
  *
- * On Algorand an account's `auth-addr` points at exactly one account, and
- * that account's own key is what signs. Rekey indirection is NOT transitive:
- * if A is rekeyed to B and B is rekeyed to C, B still signs for A (A's
- * auth-addr is literally B), and C signs for B. So this resolves one hop only.
- *
- * Returns the account itself when it is not rekeyed. Throws
- * `RekeyTargetNotFoundError` when the rekey target is not held in our local
- * view (the auth chain is broken from our perspective).
+ * Throws `RekeyTargetNotFoundError` when the rekey target isn't held locally.
  */
 export const resolveAuthAccount = (
     account: WalletAccount,
@@ -504,31 +391,19 @@ export const resolveAuthAccount = (
     return authAccount
 }
 
-/**
- * Either an on-chain address, an internal account id, or both.
- * Lookups should match by address first and fall back to id, so callers
- * holding either field can resolve the same account.
- */
+/** An on-chain address, an internal account id, or both. */
 export type AccountKey = {
     address?: string
     id?: string
 }
 
-/**
- * Predicate that matches an account by address (preferred) or id (fallback).
- * Falsy fields are skipped; if both fields on the key are empty the predicate
- * matches nothing.
- */
+/** Address takes precedence over id; an empty key matches nothing. */
 export const matchesAccountKey =
     (key: AccountKey) =>
     (account: { address?: string; id?: string }): boolean =>
         (!!key.address && account.address === key.address) ||
         (!!key.id && account.id === key.id)
 
-/**
- * Find a single account by address-or-id. Returns `undefined` when nothing
- * matches.
- */
 export const findAccountByKey = <T extends { address?: string; id?: string }>(
     accounts: readonly T[],
     key: AccountKey,
@@ -539,12 +414,9 @@ export type MnemonicAccountTypeResult =
     | { success: false; wordCount: number }
 
 /**
- * Auto-detects the import account type from the mnemonic's word count.
- *
- * NOTE: quantum mnemonics are ALSO 25 words — indistinguishable from algo25
- * by count. 25 words deliberately resolves to algo25 (the insertion order of
- * MNEMONIC_WORD_COUNT guarantees it); quantum import never goes through
- * auto-detection, only through its dedicated entrypoint (PQ-009).
+ * Quantum mnemonics are ALSO 25 words, so 25 deliberately resolves to algo25
+ * (guaranteed by MNEMONIC_WORD_COUNT's insertion order). Quantum import never
+ * goes through auto-detection, only its dedicated entrypoint (PQ-009).
  */
 export const resolveImportAccountType = (
     mnemonic: string,

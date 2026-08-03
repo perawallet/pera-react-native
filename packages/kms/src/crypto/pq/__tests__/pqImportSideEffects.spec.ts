@@ -13,18 +13,15 @@
 // @vitest-environment node
 import { describe, expect, test, vi } from 'vitest'
 
-// Regression guard for the on-device startup crash "Property '__filename'
-// doesn't exist": falcon-1024's CJS entry is Emscripten glue that reads
-// `__filename` at module scope, which Hermes/Metro never define. The WASM
-// provider is only ever *selected* off-device, but a static (or eagerly
-// evaluated) import anywhere in the pq barrel graph still evaluates that
-// glue on device at app startup. This mock throws on evaluation, simulating
-// the Hermes crash: if any module in the graph evaluates falcon-1024 at
-// import time, the dynamic import below rejects and this test fails.
-// Known blind spot: vi.mock intercepts ESM imports, not a bare CJS
-// `require('falcon-1024')` executed at module scope — that shape would load
-// the real CJS build (fine under node) and stay green here while still
-// crashing on device.
+// Guards the startup crash "Property '__filename' doesn't exist": falcon-1024's
+// CJS entry is Emscripten glue reading `__filename` at module scope, which
+// Hermes never defines. The WASM provider is only selected off-device, but an
+// eagerly evaluated import anywhere in the pq barrel still runs that glue on
+// device at startup. The mock throws on evaluation, so any import-time
+// evaluation fails this test.
+//
+// Blind spot: vi.mock intercepts ESM imports, not a bare CJS `require` at module
+// scope — that shape would stay green here and still crash on device.
 vi.mock('falcon-1024', () => {
     throw new Error(
         'falcon-1024 was evaluated at import time — on device this crashes ' +

@@ -806,6 +806,16 @@
             "coming_soon_body": "This feature isn't available just yet.",
             "reveal_card_details": "Reveal Card Details",
             "hide_card_details": "Hide Card Details",
+            "issuance_pending_title": "Verification in review",
+            "issuance_pending_body": "Your card will be issued automatically once your identity verification is approved.",
+            "issuance_issuing_title": "Your card is being issued",
+            "issuance_issuing_body": "This usually takes a couple of minutes.",
+            "issuance_rejected_title": "Verification unsuccessful",
+            "issuance_rejected_body": "We couldn't verify your identity, so a card can't be issued.",
+            "issuance_rejected_support": "Contact Support",
+            "issuance_failed_title": "We couldn't issue your card",
+            "issuance_failed_body": "Something went wrong while ordering your card.",
+            "issuance_retry": "Try Again",
             "funding_account": "Funding Account",
             "no_funding_account": "No account connected",
             "connect": "Connect",
@@ -1142,6 +1152,11 @@
             "error_body": "We couldn't start verification. Please try again.",
             "open_link_error_body": "We couldn't open the verification page. Please try again."
         },
+        "kyc_required": {
+            "title": "Finish verifying your identity",
+            "body": "Your identity check hasn't been completed yet. Verify your identity to continue your Pera Card application.",
+            "verify_button": "Verify your Account"
+        },
         "setup_status": {
             "title": "Finish setup and start spending on-chain",
             "documents_title": "Submit Your Documents",
@@ -1190,6 +1205,8 @@
         "auto_funding_signing": {
             "title": "Auto-signing Approval Request",
             "body": "This lets your card automatically draw funds when needed, so you won't have to approve every top-up yourself. You're signing a logic sig — a pre-authorized signature — that allows this automatic drawing from your connected account.",
+            "error_title": "Couldn't authorize Auto Funding",
+            "error_body": "Something went wrong authorizing Auto Funding. Try again, or cancel to continue with Manual funding (you can switch to Auto later from your card settings).",
             "cancel_button": "Cancel"
         },
         "connect_account": {
@@ -2280,7 +2297,8 @@
             "analyzing": "Analyzing transaction…",
             "unavailable": "Unable to preview balance impact — review the transaction details carefully before signing.",
             "entire_balance": "Entire {{unit}} balance",
-            "closes_balance": "Your full remaining balance is sent"
+            "closes_balance": "Your full remaining balance is sent",
+            "new_asset": "New asset created by this transaction"
         },
         "arbitrary_data_view": {
             "body": "Data Signing Request",

@@ -29,8 +29,12 @@ export const feeDelegationRequestSchema = z.object({
     txnGroup: z.array(feeDelegationWalletTransactionSchema),
     /** The wallet account the sponsorship is for. */
     account: z.string(),
-    /** When true the sponsor also funds the account's MBR shortfall. */
-    includeMbr: z.boolean(),
+    /**
+     * When true the sponsor also tops the account up to its minimum balance,
+     * including the increase from NEW asset opt-ins in `txnGroup`. Box and
+     * app-storage MBR are out of the backend's scope (hence the field name).
+     */
+    includeAssetOptInMbr: z.boolean(),
     /**
      * Asset ids of the opt-ins contained in `txnGroup`, as decimal strings —
      * uint64 asset ids can exceed Number.MAX_SAFE_INTEGER.

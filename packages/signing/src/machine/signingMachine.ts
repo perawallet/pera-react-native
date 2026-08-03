@@ -55,11 +55,7 @@ const getNextPendingSignerType = (
     return uniqueTypes.find(t => !context.completedSignerTypes.includes(t))
 }
 
-/**
- * Builds the analyzed groups for a specific signer type by zipping
- * signableGroups with their analyses and filtering by the type map.
- * Used by each signer state's `input` to avoid duplicating this logic.
- */
+/** Zips signableGroups with their analyses, filtered by the type map. */
 const getAnalyzedGroupsForSignerType = (
     context: SigningMachineContext,
     signerType: ResolvedSignerType,
@@ -75,17 +71,9 @@ const getAnalyzedGroupsForSignerType = (
 }
 
 /**
- * Core signing state machine.
- *
- * States:
- *   idle        → immediately transitions to validating or failed (synchronous context resolution)
- *   validating  → analyzes the signable group (fees, warnings, risk level)
- *   awaiting_user → waits for USER_APPROVED or USER_REJECTED
- *   signing     → routes to localKey or multisig signer actor
- *   transporting → delivers signed data to the appropriate destination
- *   completed   → terminal: signing and delivery succeeded
- *   rejected    → terminal: user cancelled
- *   failed      → terminal: an error occurred
+ * `idle` resolves context synchronously and transitions straight to `validating`
+ * or `failed`; from there `awaiting_user` -> `signing` -> `transporting`, ending
+ * in `completed`, `rejected` or `failed`.
  */
 export const signingMachine = setup({
     types: {
@@ -100,11 +88,9 @@ export const signingMachine = setup({
         multisigSignerActor,
         transportActor,
     },
-    // Machine-level ceiling for the `transporting` state so a hung transaction
-    // submit cannot pin the signing UI indefinitely. Sourced from config so the
-    // value stays tunable and never hardcoded; it is >= the transport request's
-    // own submit ceiling + margin, so the request-level abort normally fires
-    // first and this is the backstop.
+    // Ceiling on `transporting` so a hung submit can't pin the signing UI. Sits
+    // above the transport request's own ceiling plus margin, so the
+    // request-level abort normally fires first and this is only the backstop.
     delays: {
         SUBMIT_TIMEOUT: config.signingTransportTimeout,
     },
@@ -131,11 +117,7 @@ export const signingMachine = setup({
             isRetryableError(context.error) &&
             context.failedDuringState === 'transporting',
     },
-    /**
-     * Named actions keep the machine body readable (states describe *what* to do,
-     * actions describe *how* to update context). Each `event.output` access below
-     * is the XState v5 way of reading an invoked actor's resolved Promise value.
-     */
+    /** `event.output` is XState v5's way of reading an actor's resolved value. */
     actions: {
         // validating
         storeAnalyses: assign({
@@ -195,12 +177,9 @@ export const signingMachine = setup({
             },
             failedDuringState: () => 'signing' as const,
         }),
-        // Bump a domain-agnostic counter so the parent re-emits whenever an
-        // invoked signer child transitions. XState v5 parents stay silent on
-        // child-only sub-state changes; the signing UI subscribes to the parent
-        // snapshot and reads live signer state from `resolved.activeChild`, so
-        // we only need to nudge the parent to re-broadcast — no signer-specific
-        // data is copied up.
+        // XState v5 parents stay silent on child-only sub-state changes, so this
+        // counter nudges a re-broadcast. No data is copied up — the UI reads live
+        // signer state from `resolved.activeChild`.
         bumpSignerSnapshotTick: assign({
             signerSnapshotTick: ({ context }) => context.signerSnapshotTick + 1,
         }),
@@ -239,12 +218,9 @@ export const signingMachine = setup({
                 toError((event as unknown as { error: unknown }).error),
             failedDuringState: () => 'transporting' as const,
         }),
-        // Fired by the `transporting` state's `after` timeout. Unlike
-        // `setTransportingError` there is no `event.error` on an `after`
-        // transition, so we synthesize a RETRYABLE transport error: a
-        // `network_unavailable` AlgodError (retryable in AlgodError's map).
-        // This makes `isRetryableError` / `canRetryTransporting` return true so
-        // the `failed`-state RETRY routes back to `transporting`.
+        // An `after` transition carries no `event.error`, so synthesize a
+        // retryable `network_unavailable` AlgodError — that's what makes the
+        // `failed` state's RETRY route back to `transporting`.
         setTransportTimeoutError: assign({
             error: () =>
                 new AlgodError(

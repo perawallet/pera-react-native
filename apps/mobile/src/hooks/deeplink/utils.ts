@@ -48,6 +48,16 @@ export const parseQueryParams = (url: string): Record<string, string> => {
 }
 
 /**
+ * ARC-90: assetid = 1*DIGIT. Asset IDs are uint64, so a valid id is
+ * digits-only — this rejects negatives and non-numerics at the parse
+ * boundary rather than letting them fail later at BigInt(assetId), past
+ * the account picker and confirm sheet. Matches the ARC-90 path-form rule
+ * and both native apps (android toLongOrNull, iOS Int64).
+ */
+export const isValidAssetId = (assetId: string): boolean =>
+    /^\d+$/.test(assetId)
+
+/**
  * Decode base64-encoded parameter
  */
 export const decodeBase64Param = (param: string): string => {

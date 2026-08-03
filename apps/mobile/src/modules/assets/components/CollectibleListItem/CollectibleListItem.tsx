@@ -41,6 +41,7 @@ const CollectibleListItemBase = ({
 
     return (
         <PWListItemLayout
+            testID={`collectible_row_${item.assetId}`}
             style={[styles.container, style]}
             onPress={onPress}
             left={

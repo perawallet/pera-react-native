@@ -54,6 +54,7 @@ export {
     isConflictError,
     isInvalidInputError,
     isDuplicateError,
+    isNotVerifiedError,
 } from './api/errors'
 export type { CardApiError } from './api/errors'
 
@@ -64,3 +65,5 @@ export {
     CardIntegrityAttestationRequiredError,
     CardUserUnavailableError,
 } from './api/card-creation'
+export { CardOrderNotVerifiedError } from './api/card'
+export { OnboardingNotVerifiedError } from './api/errors'

@@ -29,11 +29,9 @@ import { renderHook, act } from '@testing-library/react'
 import { useImportAccount } from '@perawallet/wallet-core-accounts'
 import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 
-// ---------------------------------------------------------------------------
 // Hoisted mocks — mirror the shape used by useDeepLink.test.ts so the
 // dispatcher's hooks (navigation, bottom sheet, signing, walletconnect, …)
 // resolve to inspectable spies.
-// ---------------------------------------------------------------------------
 
 const {
     mockNavigate,
@@ -296,11 +294,9 @@ vi.mock('react-native', () => ({
     },
 }))
 
-// ---------------------------------------------------------------------------
 // Test fixtures derived from /Users/williambeaumont/Documents/deeplinks.csv.
 // Keep this table flat + parameterised; adding a new deeplink shape is a
 // single row.
-// ---------------------------------------------------------------------------
 
 import { useDeepLink } from '../../useDeepLink'
 

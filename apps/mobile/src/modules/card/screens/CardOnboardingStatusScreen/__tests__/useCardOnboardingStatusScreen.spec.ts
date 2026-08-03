@@ -93,7 +93,12 @@ let mockHasPollTimedOut = false
 let mockIsStateUnknown = false
 let mockIsLoading = false
 const mockRestartPolling = vi.fn()
-vi.mock('@modules/card/hooks', () => ({
+vi.mock('@modules/card/hooks', async () => ({
+    // Real support hook (over the mocked webview + capabilities) so the
+    // in-app-vs-browser assertions below keep testing real behavior.
+    ...(await vi.importActual<
+        typeof import('../../../hooks/useOpenCardSupport')
+    >('../../../hooks/useOpenCardSupport')),
     useCardOnboardingLogout: () => ({ handleLogout: mockLogout }),
     useCardFundingSourcePicker: () => ({
         pickFundingSource: mockPickFundingSource,
@@ -370,6 +375,8 @@ describe('useCardOnboardingStatusScreen', () => {
     })
 
     it('continues to personal details and advances the stored step', () => {
+        // PENDING is the only state under which the CTA renders at all.
+        mockVerificationState = 'PENDING'
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
@@ -383,6 +390,27 @@ describe('useCardOnboardingStatusScreen', () => {
             'CardOnboardingPersonalDetails',
         )
     })
+
+    it.each([
+        ['unfetched', null],
+        ['unverified', 'UNVERIFIED'],
+    ])(
+        'refuses to enter details on a %s record: routes to verification without persisting the step',
+        (_label, state) => {
+            mockVerificationState = state
+            const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+            act(() => {
+                result.current.handleEnterDetails()
+            })
+
+            // Persisting a step Baanx will refuse is its own latent bug.
+            expect(mockSetOnboardingStep).not.toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith(
+                'CardOnboardingVerification',
+            )
+        },
+    )
 
     it('marks registration complete only at the Completed step', () => {
         mockOnboardingStep = OnboardingStep.Address

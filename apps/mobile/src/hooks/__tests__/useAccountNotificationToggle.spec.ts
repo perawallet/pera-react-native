@@ -14,7 +14,7 @@ import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { onlineManager } from '@tanstack/react-query'
-import { NoConnectionError } from '@perawallet/wallet-core-shared'
+import { assertOnline, NoConnectionError } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mocks = vi.hoisted(() => ({
@@ -187,19 +187,45 @@ describe('useAccountNotificationToggle', () => {
         expect(stored).toBe(false)
     })
 
-    // Fire-and-fail regime: networkMode 'always' means the mutationFn runs
-    // and rejects offline instead of pausing.
-    it('shows the localized offline copy when the failure is connectivity', async () => {
+    // PERA-4863: registration runs under networkMode 'always', so offline the
+    // request still fires and we rely on the transport to reject it — prompt on
+    // iOS, but not on Android in airplane mode, which left the rollback below
+    // stranded and the persisted store diverged from the backend. `assertOnline`
+    // must therefore fail BEFORE registerDevice is reached, not after.
+    //
+    // The guard is driven through its mock rather than `onlineManager`: the
+    // mobile unit setup stubs the whole of `@perawallet/wallet-core-shared`,
+    // so the real `assertOnline` never runs here. Its own online/offline
+    // semantics are covered in packages/shared's mutation-policy tests; what
+    // this asserts is the hook's ordering and rollback around it.
+    it('rejects offline without reaching the device registration', async () => {
+        let stored = true
+        mocks.setAccountEnabled.mockImplementation(
+            (_address: string, enabled: boolean) => {
+                stored = enabled
+            },
+        )
         onlineManager.setOnline(false)
-        mocks.registerDevice.mockRejectedValue(new NoConnectionError())
+        // `Once`, not a persistent implementation: the mock is module-global
+        // and `vi.clearAllMocks()` clears calls but NOT implementations, so a
+        // sticky throw here would fail every later test in this file.
+        vi.mocked(assertOnline).mockImplementationOnce(() => {
+            throw new NoConnectionError()
+        })
 
         const { result } = renderHook(() => useAccountNotificationToggle())
 
+        let outcome: boolean | undefined
         await act(async () => {
-            await result.current.toggleAccountNotification('ADDR1', true)
+            outcome = await result.current.toggleAccountNotification(
+                'ADDR1',
+                false,
+            )
         })
 
-        expect(mocks.registerDevice).toHaveBeenCalledTimes(1)
+        expect(outcome).toBe(false)
+        expect(mocks.registerDevice).not.toHaveBeenCalled()
+        expect(stored).toBe(true)
         expect(mocks.showToast).toHaveBeenCalledWith(
             {
                 title: 'errors.network.no_connection.title',

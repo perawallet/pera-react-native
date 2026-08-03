@@ -12,18 +12,15 @@
 
 import { ChromeKeyValueStorageService } from './services/key-value-storage'
 
-// Split out of resources.ts so the pre-hydration ./bootstrap subpath can
-// import hydratePlatform without dragging in ChromeDatabaseService
-// (drizzle-orm) and the hardware-wallet registry that resources.ts's
-// `platformServices` object eagerly constructs. resources.ts imports this
-// same singleton for `platformServices.keyValueStorage`, so hydrate() and
-// every later sync read/write operate on the one shared instance.
+// Split out of resources.ts so the pre-hydration ./bootstrap subpath can import
+// hydratePlatform without dragging in ChromeDatabaseService and the
+// hardware-wallet registry. resources.ts imports this same singleton, so
+// hydrate() and every later sync read/write share one instance.
 export const keyValueStorage = new ChromeKeyValueStorageService()
 
 /**
- * Async platform bootstrap: hydrates the synchronous key-value cache from
- * chrome.storage.local. The web app shell MUST await this before its first
- * render — sync storage reads throw until it resolves.
+ * The web app shell MUST await this before its first render — synchronous
+ * storage reads throw until the cache is hydrated from chrome.storage.local.
  */
 export const hydratePlatform = async (): Promise<void> => {
     await keyValueStorage.hydrate()

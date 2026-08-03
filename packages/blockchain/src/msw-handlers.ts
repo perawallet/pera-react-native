@@ -10,32 +10,20 @@
  limitations under the License
  */
 
-// MSW handler factories for algod / indexer REST endpoints.
+// MSW handler factories for algod / indexer REST endpoints. The path globs match
+// both algonode hosts, so handlers needn't know which network a test runs on.
 //
-// algokit-utils makes HTTP calls under the hood (verified to be MSW-
-// interceptable in apps/mobile/src/__integration__/algokit-smoke.test.ts).
-// These factories cover the endpoints the app exercises most often. The
-// path globs (`*\/v2/...`) match both algonode hosts (mainnet vs testnet)
-// so handlers don't need to know which network the test runs against.
-//
-// algod and indexer share several path shapes (e.g. `/v2/accounts/{addr}`).
-// MSW resolves handlers in registration order — register the more specific
-// handler first if both are needed in the same test.
+// algod and indexer share several path shapes (e.g. `/v2/accounts/{addr}`), and
+// MSW resolves in registration order — register the more specific one first when
+// a test needs both.
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
 
-// algod and indexer responses are NOT validated by zod schemas in this
-// repo — algokit-utils owns the schema layer for those (it parses every
-// response into typed model classes via `decodeJson` + per-field codecs).
-// The shapes below mirror algokit's wire-format expectations; if algokit
-// is upgraded and the response shape drifts, the typed client will refuse
-// our mocked JSON at parse time — the same failure mode the reviewer
-// flagged for our Pera REST mocks. We keep the types local so this file
-// doesn't pull algokit's internal codec types into a public surface.
-
-// ---------------------------------------------------------------------------
-// algod
-// ---------------------------------------------------------------------------
+// These responses aren't zod-validated here — algokit-utils owns that schema
+// layer. The shapes below mirror its wire-format expectations, so an algokit
+// upgrade that drifts will have the typed client refuse this mocked JSON at
+// parse time. Kept local so algokit's internal codec types stay off our
+// public surface.
 
 /**
  * Shape of the algod `GET /v2/accounts/{address}` response. Exposed loosely
@@ -51,12 +39,9 @@ export type AlgodAccountInformationResponse = {
     round?: number
     status?: 'Offline' | 'Online' | 'NotParticipating'
     /**
-     * Chain-side rekey indicator. When present, it's the address that
-     * currently has signing authority for `address`. The wallet's
-     * `fetchAndPersistAccount` reads this and overwrites the local
-     * `account.rekeyAddress` so the wallet's rekey state stays in sync
-     * with the chain — tests covering rekeyed accounts MUST set this
-     * to the auth address or the wallet will silently un-rekey.
+     * `fetchAndPersistAccount` overwrites the local `account.rekeyAddress` from
+     * this, so a test covering rekeyed accounts MUST set it — otherwise the
+     * wallet silently un-rekeys.
      */
     'auth-addr'?: string
     assets?: Array<{
@@ -101,17 +86,8 @@ export type MockAlgodAccountInformationParams = {
 }
 
 /**
- * MSW factory for algod `GET /v2/accounts/{address}`. Merges `response` over
- * `DEFAULT_EMPTY_ACCOUNT`, so pass only the fields the test cares about
- * (`amount`, `min-balance`, `auth-addr`).
- *
- * @example Quantum account with a balance (compose with quantumAccountFixtures):
- * server.use(
- *     mockAlgodAccountInformation({
- *         address: QUANTUM_TEST_ADDRESS,
- *         response: { amount: 5_000_000, 'min-balance': 100_000 },
- *     }),
- * )
+ * Merges `response` over `DEFAULT_EMPTY_ACCOUNT`, so pass only the fields the
+ * test cares about.
  */
 export const mockAlgodAccountInformation = ({
     address,
@@ -215,14 +191,9 @@ export type MockAlgodPendingTransactionParams = {
 }
 
 /**
- * MSW factory for algod `GET /v2/transactions/pending/{txid}`, the endpoint
- * algosdk's `waitForConfirmation` polls.
- *
- * Defaults to 404 rather than a confirmed round, because the default's job is
- * to keep a fabricated test txid off the network, not to assert that it
- * confirmed. A confirmed round would resolve the wait and fire the
- * post-confirmation balance/transaction refresh, i.e. invent traffic the test
- * never asked for. Tests exercising confirmation pass an explicit `response`.
+ * What `waitForConfirmation` polls. Defaults to 404, not a confirmed round: its
+ * job is keeping a fabricated txid off the network, and confirming would resolve
+ * the wait and fire a refresh the test never asked for.
  */
 export const mockAlgodPendingTransaction = ({
     txId,
@@ -281,10 +252,6 @@ export const mockAlgodTealCompile = ({
     http.post('*/v2/teal/compile', () =>
         HttpResponse.json({ hash, result }, { status }),
     )
-
-// ---------------------------------------------------------------------------
-// indexer
-// ---------------------------------------------------------------------------
 
 export type IndexerAccountTransactionsResponse = {
     transactions: unknown[]
@@ -353,11 +320,9 @@ export const mockIndexerAsset = ({
         HttpResponse.json({ 'current-round': 1, asset: response }, { status }),
     )
 
-// Indexer's GET /v2/accounts (no path param) is the search endpoint
-// (`searchForAccounts`). The query string carries filters like `auth-addr`,
-// which `discoverRekeyedAccounts` uses to find addresses that have rekeyed
-// to a candidate. The path glob is distinct from `*/v2/accounts/{address}`
-// — MSW does no prefix matching, so the two handlers don't collide.
+// The indexer's search endpoint, whose query string carries filters like
+// `auth-addr`. Its path glob is distinct from `*/v2/accounts/{address}` and MSW
+// does no prefix matching, so the two handlers don't collide.
 export type IndexerSearchForAccountsResponse = {
     accounts: Array<{ address: string; [k: string]: unknown }>
     'current-round'?: number

@@ -10,17 +10,37 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { fetchUser } from '../api/user'
+import type { CardUser } from '../models'
 import { cardQueryKeys } from './querykeys'
 
+type CardUserRefetchInterval = UseQueryOptions<
+    Nullable<CardUser>,
+    Error,
+    Nullable<CardUser>,
+    ReturnType<typeof cardQueryKeys.user>
+>['refetchInterval']
+
+export type UseCardUserQueryOptions = {
+    enabled?: boolean
+    /**
+     * Poll interval in ms, `false`, or a function of the live query (lets
+     * pollers stop from the freshest data): used to watch the KYC state.
+     */
+    refetchInterval?: CardUserRefetchInterval
+}
+
 /** `data` is the `CardUser` (or `null`); read `data?.verificationState` to gate KYC. */
-export const useCardUserQuery = () => {
+export const useCardUserQuery = (options?: UseCardUserQueryOptions) => {
     const { network } = useNetwork()
 
     return useQuery({
         queryKey: cardQueryKeys.user(network),
         queryFn: ({ signal }) => fetchUser({ network, signal }),
+        enabled: options?.enabled ?? true,
+        refetchInterval: options?.refetchInterval,
     })
 }

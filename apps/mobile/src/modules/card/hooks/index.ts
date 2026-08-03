@@ -53,6 +53,7 @@ export {
     useAutoDrawSwitch,
     type UseAutoDrawSwitchResult,
 } from './useAutoDrawSwitch'
+export { useOpenCardSupport } from './useOpenCardSupport'
 // useReportSuspiciousFlow is intentionally NOT re-exported here: it is a flow
 // orchestrator that imports the report sheet components, and those components
 // import hooks from this barrel — routing it through here closes an import

@@ -17,7 +17,7 @@ While iterating: run only the individual test file(s) you're touching, and move 
 - **UI layer** (`apps/mobile`): Components, screens, navigation, styling, gestures
 - **Logic layer** (`packages/*`): Data fetching, Zustand stores, business rules, API clients, crypto
 - **State**: Zustand for client state, TanStack Query for server state
-- Key packages: `accounts`, `assets`, `blockchain`, `settings`, `shared`, `platform-integration`
+- **Platform layer** (`extensions/*`): storage, keystore, Ledger and device adapters, reached from packages via `getProvider()`
 
 ## Styling (CRITICAL)
 
@@ -26,23 +26,6 @@ While iterating: run only the individual test file(s) you're touching, and move 
 - Use theme tokens only (`theme.colors.*`, `theme.spacing.*`, `theme.borders.*`) — no hardcoded colors or values
 - No inline styles — all styles go in `styles.ts` next to the component
 - Export `useStyles` hook from `styles.ts`
-
-```typescript
-// styles.ts
-import { makeStyles } from '@rneui/themed'
-
-type StyleProps = { variant: 'primary' | 'secondary' }
-
-export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
-    container: {
-        backgroundColor:
-            variant === 'primary'
-                ? theme.colors.buttonPrimaryBg
-                : theme.colors.layerGrayLighter,
-        padding: theme.spacing.md,
-    },
-}))
-```
 
 ## Components (CRITICAL)
 
@@ -103,49 +86,11 @@ If creating a core component, update `apps/mobile/src/components/core/index.ts` 
 - **Complex logic MUST be extracted** from component body into a colocated `use[ComponentName]` hook
 - React Query is **REQUIRED** for all async requests; Zustand is **REQUIRED** for all local state
 - Cross-domain hooks: keep in origin domain, export via barrel, import via `@modules/[domain]`
-
-```typescript
-// Explicit return type pattern
-type UseAccountsQueryResult = {
-    accounts: Account[]
-    isLoading: boolean
-    isError: boolean
-    error: Error | null
-    refetch: () => void
-}
-
-export const useAccountsQuery = (): UseAccountsQueryResult => {
-    const query = useQuery({
-        queryKey: accountQueryKeys.all,
-        queryFn: fetchAccounts,
-    })
-    return {
-        accounts: query.data ?? [],
-        isLoading: query.isLoading,
-        isError: query.isError,
-        error: query.error,
-        refetch: query.refetch,
-    }
-}
-```
-
-## Zustand Stores
-
-- Location: `packages/[domain]/src/store/store.ts`
-- Use `create` with `persist` middleware; stores use `createJSONStorage(() => getProvider().keyValueStorage)` from `zustand/middleware` so the storage adapter resolves lazily through the platform provider
-- **Granular selectors** — never destructure from `useStore()` directly
-- Every store must include `resetState()` method (implements `BaseStoreState`)
-- Separate `State` and `Actions` types, combine as `Store = State & Actions`
+- Declare an explicit `Use[Name]QueryResult` return type; return safe defaults (`data ?? []`) rather than the raw query object
 
 ## Numbers & Precision (CRITICAL)
 
 All monetary/financial values (amounts, balances, prices, fees) use `Decimal` from `decimal.js` as the internal representation. **Never** use JS `number` for financial amounts — it loses precision beyond 2^53.
-
-### Import
-
-```typescript
-import { Decimal } from 'decimal.js'
-```
 
 Always use the **named import** (`{ Decimal }`), never the default import. Always construct with `new Decimal(...)`, never bare `Decimal(...)` without `new`.
 
@@ -161,18 +106,7 @@ Always use the **named import** (`{ Decimal }`), never the default import. Alway
 
 ### Conversion Utilities
 
-Canonical functions in `@perawallet/wallet-core-blockchain`:
-
-- `baseUnitsToDisplayUnits(amount, decimals)` → `Decimal` — e.g., microAlgos → ALGOs
-- `displayUnitsToBaseUnits(amount, decimals)` → `Decimal` — e.g., ALGOs → microAlgos
-- `toBigInt(decimal)` → `bigint` — for transaction building
-- `algosToMicroAlgosBigInt(algos)` → `bigint` — ALGO-specific shorthand
-- `microAlgosToAlgos(microAlgos)` → `Decimal` — ALGO-specific shorthand
-
-Asset-specific wrappers in `@perawallet/wallet-core-assets`:
-
-- `toWholeUnits(value, asset)` → `Decimal` — delegates to `baseUnitsToDisplayUnits`
-- `toDecimalUnits(value, asset)` → `Decimal` — delegates to `displayUnitsToBaseUnits`
+Canonical conversion helpers live in `@perawallet/wallet-core-blockchain` (`baseUnitsToDisplayUnits`, `displayUnitsToBaseUnits`, `toBigInt`, `microAlgosToAlgos`, `algosToMicroAlgosBigInt`), with asset-aware wrappers `toWholeUnits`/`toDecimalUnits` in `@perawallet/wallet-core-assets`.
 
 ### Rules
 
@@ -186,8 +120,43 @@ Asset-specific wrappers in `@perawallet/wallet-core-assets`:
 - `type` for props, unions, simple shapes; `interface` for data models that may be extended
 - Boolean props: prefix with `is`, `has`, `can`, `should` (`isLoading`, `hasError`)
 - Event handler props: `on` prefix (`onPress`); internal handlers: `handle` prefix (`handlePress`)
-- **Never** use `any` — use `unknown` with type guards or define proper types
 - Named exports only — no default exports
+
+## Comments (CRITICAL)
+
+**The code says what. Comments say why — and only when the why isn't obvious.** Default to no comment. Most code needs none.
+
+Write a comment only when one of these is true:
+
+- **Non-obvious rationale** — why this approach over the obvious one, a constraint from an external system, a deliberate ordering
+- **A trap** — a workaround, a footgun, something that looks wrong but is right, something that will break if changed
+- **Units, ranges, encodings** that the type can't express (base units vs display units, microAlgos, seconds vs ms)
+
+Delete or don't write:
+
+- Restatements of the code (`// Set the loading state`, `// Map over accounts`)
+- JSDoc that repeats the signature — `@param address The address`, `@returns The result`
+- Banner/section dividers (`// ===== Types =====`), narration of a file's structure
+- "This hook does X" on a hook already named `useX`
+- Change log or process narration (`// Added for PERA-1234`, `// Previously this used…`) — that's what git is for
+- Commented-out code
+
+Sizing: one line is the norm. Three is a lot. Past that, either the code needs restructuring or the explanation belongs in `docs/`.
+
+```typescript
+// Bad — restates the code, pads with structure
+/**
+ * Resolves the account balance.
+ * This function takes an account and returns its balance.
+ * @param account The account to resolve the balance for
+ * @returns The balance as a Decimal
+ */
+
+// Good — the why the reader can't derive
+// Indexer returns base units as strings; wrap before any arithmetic to avoid 2^53 loss.
+```
+
+Keep JSDoc on exported package APIs where it earns its place (units, constraints, gotchas) — drop the ceremony that doesn't.
 
 ## Import Order
 
@@ -239,13 +208,3 @@ Before reporting any task complete:
 2. `pnpm test` must pass (the full suite — this is the one point in a task where the full run belongs; use `pnpm test:unit` or a single-file run for everything before this)
 3. Tests written for any new code
 4. For major changes: `pnpm build` must pass
-
-## Skills
-
-Use these slash commands for guided workflows:
-
-- `/create-component` — Create a new component with correct structure
-- `/create-hook` — Create a new hook with correct naming and types
-- `/create-module` — Create a new feature module with screens and navigation
-- `/create-package` — Create a new business logic package
-- `/verify-work` — Run pre-completion verification checks

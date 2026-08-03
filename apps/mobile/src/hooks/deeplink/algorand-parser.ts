@@ -22,6 +22,7 @@ import {
     type DiscoverBrowserDeeplink,
 } from './types'
 import { parseAlgorandURI } from './arc90-parser'
+import { isValidAssetId } from './utils'
 // config and Networks removed because unused
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -42,24 +43,38 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
     if (parsed.type === 'payment' || parsed.type === 'noop') {
         const { address, params = {} } = parsed
 
-        if (!address || !isValidAlgorandAddress(address)) {
-            return null
-        }
-
         const amount = params.amount
         const assetId = params.asset
         const note = params.note
         const xnote = params.xnote
         const label = params.label
 
-        // Asset Opt-in: Amount is 0 and Asset ID is present
+        // A present-but-invalid address is corruption (e.g. a truncated QR),
+        // not an address-less opt-in — reject rather than silently prompting.
+        if (address && !isValidAlgorandAddress(address)) {
+            return null
+        }
+
+        // ARC-90: assetid = 1*DIGIT. Reject a present-but-non-numeric asset
+        // id here so it reads as unrecognized, rather than forming a valid
+        // opt-in/transfer that fails later at BigInt(assetId).
+        if (assetId && !isValidAssetId(assetId)) {
+            return null
+        }
+
+        // Address-less by design: an opt-in has no receiver, so this resolves
+        // before the address guard below.
         if (amount === '0' && assetId) {
             return {
                 type: DeeplinkType.ASSET_OPT_IN,
                 sourceUrl: url,
                 assetId: assetId,
-                address,
+                address: address || undefined,
             } as AssetOptInDeeplink
+        }
+
+        if (!address || !isValidAlgorandAddress(address)) {
+            return null
         }
 
         // Asset Transfer: Asset ID is present

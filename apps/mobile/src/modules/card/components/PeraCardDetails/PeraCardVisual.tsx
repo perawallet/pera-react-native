@@ -26,6 +26,8 @@ type PeraCardVisualProps = {
     secureImageUrl?: string
     /** Whether the card should be flipped open to the secure face. */
     isOpen?: boolean
+    /** Grays the card art out while the Baanx card doesn't exist yet. */
+    isDimmed?: boolean
     /** Called when the secure image has rendered (ends the reveal state). */
     onSecureImageLoad?: () => void
     /** Called when the secure image fails to load (expired URL, network). */
@@ -36,6 +38,7 @@ export const PeraCardVisual = ({
     maskedPan,
     secureImageUrl,
     isOpen,
+    isDimmed = false,
     onSecureImageLoad,
     onSecureImageError,
 }: PeraCardVisualProps) => {
@@ -48,7 +51,7 @@ export const PeraCardVisual = ({
     } = usePeraCardVisual({ secureImageUrl, isOpen, onSecureImageLoad })
 
     return (
-        <PWView style={styles.cardContainer}>
+        <PWView style={[styles.cardContainer, isDimmed && styles.disabled]}>
             {/* Front (masked) face — rotates away as the card flips open. */}
             <Animated.View style={[styles.cardFace, frontAnimatedStyle]}>
                 <PWImage

@@ -42,18 +42,11 @@ export const hardwareSigningMachine = setup({
     actors: {
         hardwareSignActor,
     },
-    // Per-substate backstop budgets, derived from the same Ledger ceilings the
-    // strategy's `withTimeout` calls use (never hardcoded ms):
-    // - `searching` covers connect + address-verify — two sequential awaits
-    //   each bounded by LEDGER_CONNECTION_TIMEOUT_MS — so its budget must
-    //   exceed twice that ceiling or a slow-but-legal cold-start connect times
-    //   the step out.
-    // - `awaiting_approval`/`signing` are bounded by the on-device
-    //   confirmation ceiling (LEDGER_CONFIRMATION_TIMEOUT_MS, 5 min): a single
-    //   slow approval fires NO activity events, so the budget must sit above
-    //   the strategy's own bound, which already fails the step via
-    //   STRATEGY_ERROR. Activity events (PROGRESS / GROUP_SIGNED / a repeated
-    //   AWAITING_APPROVAL) re-enter the substate and re-arm its timer.
+    // Derived from the strategy's own Ledger ceilings, never hardcoded ms.
+    // `searching` covers two sequential connect-bounded awaits, so its budget
+    // must exceed twice that ceiling or a legal cold-start times out.
+    // `awaiting_approval`/`signing` must sit above the confirmation ceiling,
+    // since a slow approval fires no activity events to re-arm the timer.
     delays: {
         SEARCHING_TIMEOUT:
             2 * LEDGER_CONNECTION_TIMEOUT_MS + BACKSTOP_MARGIN_MS,
@@ -154,18 +147,12 @@ export const hardwareSigningMachine = setup({
             },
             initial: 'searching',
             states: {
-                // Each substate arms its OWN backstop timer on entry. Because
-                // the timer lives on the substate and NOT on `active`, moving
-                // between steps re-arms it without re-invoking
-                // `hardwareSignActor` (the invoke is on `active`). Activity
-                // events (PROGRESS / GROUP_SIGNED / a repeated
-                // AWAITING_APPROVAL while already awaiting) are external
-                // self-transitions: they exit and re-enter the substate, which
-                // cancels and re-schedules its `after`. The budgets sit above
-                // the strategy's own `withTimeout` ceilings, so a legitimate
-                // slow step (cold-start connect, a user reading a multi-screen
-                // approval) is never raced by the machine — only a step whose
-                // promise hangs without settling reaches `error` this way.
+                // The timer lives on each substate, NOT on `active`, so moving
+                // between steps re-arms it without re-invoking the actor.
+                // Activity events are external self-transitions, so they exit
+                // and re-enter the substate and reschedule its `after`. Budgets
+                // sit above the strategy's own ceilings, so only a step whose
+                // promise never settles reaches `error` this way.
                 searching: {
                     on: {
                         AWAITING_APPROVAL: 'awaiting_approval',

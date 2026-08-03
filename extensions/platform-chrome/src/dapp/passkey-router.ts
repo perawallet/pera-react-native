@@ -10,16 +10,14 @@
  limitations under the License
  */
 
-// Service-worker side of the WebAuthn-interception relay: authenticates the
-// calling frame's origin off chrome.runtime.MessageSender (never the
-// request's own `origin` field, which is page-adjacent content-script state,
-// not browser-stamped at this boundary) and resolves the effective RP ID via
-// the same `resolveRpId` the authenticator core uses, so there is exactly
-// one registrable-suffix implementation in this codebase,
-// not two that could drift. A resolution failure (bad RP ID) collapses to a
-// decline rather than a distinct error: the content script then falls
-// through to the page's real `navigator.credentials`, which independently
-// rejects with its own spec-correct SecurityError.
+// Service-worker side of the WebAuthn-interception relay. Authenticates off
+// chrome.runtime.MessageSender, never the request's own `origin` field — that
+// is content-script state, not browser-stamped at this boundary — and resolves
+// the RP ID through the same `resolveRpId` the authenticator core uses, so the
+// registrable-suffix check exists once and can't drift.
+//
+// A bad RP ID collapses to a decline: the content script falls through to the
+// page's real `navigator.credentials`, which rejects with its own SecurityError.
 import { resolveRpId } from '@perawallet/wallet-core-passkeys/webauthn'
 import { type PasskeyApprovalOpener } from './passkey-opener'
 import {
@@ -111,22 +109,16 @@ export class PasskeyRouter {
         if (decision && 'credential' in decision) {
             return { credential: decision.credential }
         }
-        // `null` (approval window closed with no answer) and a TRUE user
-        // decline (usePasskeyApproval.decline() always sends the literal
-        // reason 'declined') both collapse to `{ decline: true }` — the
-        // content script falls through to native, which is the right
-        // outcome for "the user said no" or "they closed the window."
+        // A closed window and a true decline both collapse to
+        // `{ decline: true }`, falling through to native — the right outcome
+        // for "the user said no".
         //
-        // Any OTHER `{ error }` reason is usePasskeyApproval.approve()'s
-        // catch handler forwarding a real `Error.name` from the authenticator
-        // core (InvalidStateError, SecurityError,
-        // NotAllowedError, ...) — see its comment. That must NOT collapse to
-        // decline: falling through would let the native/OS authenticator
-        // mint a credential the RP never asked for (e.g. a duplicate past
-        // `excludeCredentials`), silently defeating the very check that
-        // produced the error. Pass it through as a distinct wire shape so
-        // webauthn-main.ts rejects the page's promise with the matching
-        // native DOMException instead.
+        // Any OTHER `{ error }` is a real `Error.name` from the authenticator
+        // core and must NOT collapse: falling through would let the OS
+        // authenticator mint a credential the RP never asked for (a duplicate
+        // past `excludeCredentials`), defeating the check that produced the
+        // error. Pass it through so webauthn-main.ts can reject with the
+        // matching DOMException.
         if (decision && 'error' in decision && decision.error !== 'declined') {
             return { error: decision.error }
         }

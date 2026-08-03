@@ -102,14 +102,10 @@ const rejectIfQuantumAccount = (
 }
 
 /**
- * Cancel-shaped signing outcomes beyond the swap flow's own wrapper: the
- * pipeline's headless-cancel error and an on-device Ledger reject. Matched
- * by error name (both classes pin `name` with a string literal, so the
- * match survives minification) instead of `instanceof` so this stays free
- * of value imports from the signing/ledger packages — the primary cancel
- * path is the request's `reject` callback, which already yields
- * SwapUserRejectedError; this is defense-in-depth for a cancel leaking
- * through the `error` callback.
+ * Cancel-shaped outcomes beyond the swap flow's own wrapper. Matched by name
+ * (both classes pin `name` to a literal, so it survives minification) rather
+ * than `instanceof`, keeping this free of value imports. Defense-in-depth: the
+ * primary cancel path is the request's `reject` callback.
  */
 const USER_REJECTION_ERROR_NAMES = new Set([
     'UserRejectedSigningError',
@@ -117,30 +113,20 @@ const USER_REJECTION_ERROR_NAMES = new Set([
 ])
 
 /**
- * True for every cancel-shaped signing outcome. Keeps `reportSwapFailure`
- * unreachable for user cancellations, so the swap backend never records
- * `failed/blockchain_error` for a reject the user performed on-device.
+ * Keeps `reportSwapFailure` unreachable for cancellations, so the backend never
+ * records `failed/blockchain_error` for an on-device reject.
  */
 export const isUserRejectionError = (error: unknown): boolean =>
     error instanceof SwapUserRejectedError ||
     (error instanceof Error && USER_REJECTION_ERROR_NAMES.has(error.name))
 
 /**
- * Hand a batch of unsigned transactions to the signing pipeline and wait for
- * the user-signed bytes to come back via the callback transport.
+ * A headless local callback request: `sourceType` stays `'local'` so the
+ * lifecycle auto-resumes past `awaiting_user` and skips the review sheet — the
+ * caller is responsible for having shown review UI on the preceding screen.
  *
- * This is a headless local callback request — the caller is responsible for
- * having shown a review UI on the preceding screen, so we leave the
- * `sourceType` as `'local'` (outside `INTERACTIVE_SOURCES`). The lifecycle
- * auto-resumes the machine at its `awaiting_user` pause, skipping the
- * standard review sheet.
- *
- * Rejections are surfaced as:
- * - {@link SwapUserRejectedError} when the user cancels — callers should
- *   treat this as a non-fatal cancellation and skip the backend failure
- *   report.
- * - The original Error when the pipeline reports a failure — callers
- *   should propagate this as a real signing error.
+ * Rejects with {@link SwapUserRejectedError} on cancel (non-fatal, skip the
+ * backend failure report) or the original error on a real signing failure.
  */
 type AddSignRequestFn = (request: TransactionSignRequest) => void
 
@@ -171,9 +157,9 @@ export const requestSwapSignatures = (
             sourceMetadata: source,
             approve: async signed => {
                 // The null-filter is defensive narrowing back to the swap
-                // module's plain-signature contract — this single
-                // full-group sign never pads null slots, but a stray null
-                // must still be dropped before resolving.
+                // module's plain-signature contract — this single full-group
+                // sign never pads null slots, but a stray null must still be
+                // dropped before resolving.
                 resolve(compactSignedResults(signed))
             },
             reject: async () => {
@@ -194,22 +180,14 @@ export type SwapProposedInfo = {
 }
 
 /**
- * Shared-account variant of {@link requestSwapSignatures}: hand the unsigned
- * transactions to the signing pipeline, which (for a multisig sender) signs
- * with the proposer's local key(s) and proposes a `sync` multisig sign-request
- * to the backend instead of submitting. Resolves once the backend record is
- * created — the swap then completes asynchronously via the cosign resolver, so
- * the proposer does NOT wait for co-signer signatures here.
+ * Shared-account variant of {@link requestSwapSignatures}: signs with the
+ * proposer's local keys and proposes a `sync` sign-request instead of
+ * submitting. Resolves once the backend record exists — the proposer does NOT
+ * wait here for co-signers, since the cosign resolver completes the swap.
  *
- * Rejects with {@link SwapUserRejectedError} on user cancel, or the original
- * error if the propose itself fails.
- *
- * Quantum accounts are excluded from multisig participation entirely
- * elsewhere in the app, so `signer` here should never be quantum in
- * practice — the guard below is defence in depth against that assumption
- * ever breaking silently (see {@link QUANTUM_SWAP_PROPOSE_BLOCKED_KEY}).
- * A multisig account can itself be rekeyed to a quantum auth account, so
- * this still must receive the resolved signer, not the raw multisig account.
+ * Takes the RESOLVED signer, not the raw multisig account: a multisig can
+ * itself be rekeyed to a quantum auth account, which the guard below must see
+ * (see {@link QUANTUM_SWAP_PROPOSE_BLOCKED_KEY}).
  */
 export const requestSwapProposal = (
     addSignRequest: AddSignRequestFn,
@@ -264,13 +242,9 @@ type UpdateSwapStatusFn = (params: {
 }) => Promise<unknown>
 
 /**
- * Report a swap as failed to the backend. Best-effort: if the report itself
- * fails, we log a warning and swallow the error — the caller has already
- * surfaced the underlying failure to the user, and retrying a status update
- * would only complicate the error path.
- *
- * Callers must NOT invoke this for user-initiated cancellations — only for
- * real blockchain or pipeline errors.
+ * Best-effort: a failed report is logged and swallowed, since the caller has
+ * already surfaced the real failure. NOT for user cancellations — only genuine
+ * blockchain or pipeline errors.
  */
 export const reportSwapFailure = async (
     updateSwapStatus: UpdateSwapStatusFn,

@@ -26,7 +26,8 @@ const STEP_LABEL_KEYS = {
 export const CardCreateSigningScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { steps, isProceeding, onProceed } = useCardCreateSigningScreen()
+    const { steps, isProceeding, isComplete, onProceed } =
+        useCardCreateSigningScreen()
 
     return (
         <PWScreen testID='card-create-signing'>
@@ -52,6 +53,7 @@ export const CardCreateSigningScreen = () => {
                             stepNumber={step.stepNumber}
                             label={t(STEP_LABEL_KEYS[step.id])}
                             status={step.status}
+                            isBusy={step.isBusy}
                             testID={`card-create-signing-step-${step.id}`}
                         />
                     ))}
@@ -62,6 +64,7 @@ export const CardCreateSigningScreen = () => {
                     title={t('peraCard.signing.proceed_button')}
                     onPress={onProceed}
                     isLoading={isProceeding}
+                    isDisabled={isComplete}
                     style={styles.proceedButton}
                     testID='card-create-signing-proceed'
                 />

@@ -17,6 +17,7 @@ import {
     decodeBase64Param,
     normalizeUrl,
     extractPath,
+    isValidAssetId,
 } from '../utils'
 
 describe('Deeplink Parser - Helper Functions', () => {
@@ -118,6 +119,21 @@ describe('Deeplink Parser - Helper Functions', () => {
             // Pass invalid type to trigger catch
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             expect(extractPath(null as any)).toBe('')
+        })
+    })
+
+    describe('isValidAssetId', () => {
+        it('accepts digits-only ids, including 0', () => {
+            expect(isValidAssetId('0')).toBe(true)
+            expect(isValidAssetId('31566704')).toBe(true)
+        })
+
+        it('rejects non-numeric, negative, and empty ids', () => {
+            expect(isValidAssetId('abc')).toBe(false)
+            expect(isValidAssetId('-1')).toBe(false)
+            expect(isValidAssetId('1.5')).toBe(false)
+            expect(isValidAssetId('12x')).toBe(false)
+            expect(isValidAssetId('')).toBe(false)
         })
     })
 })

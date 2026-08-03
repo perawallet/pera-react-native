@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-// Minimal bootstrap-only entry for App.web.tsx's static import path.
-// Exports only hydrateKeystoreStorage — no @algorandfoundation/keystore graph,
-// no xhd-wallet-api, no native-module-touching deps. The full keystore surface
-// (extension, store, vault) lives behind the dynamic AppShell import.
+// Bootstrap-only entry for App.web.tsx's static import path: no
+// @algorandfoundation/keystore graph, no xhd-wallet-api, no native-module deps.
+// The full keystore surface lives behind the dynamic AppShell import.
 //
-// See index.ts for why this reference is here: this file is a separate root
-// pulled into consumer tsc programs (apps/mobile) independently of index.ts.
+// The reference below is duplicated from index.ts because this is a separate
+// root, pulled into consumer tsc programs independently of it.
 /// <reference types="chrome" />
 export { hydrateKeystoreStorage } from './storage/chrome-storage'

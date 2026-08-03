@@ -90,18 +90,14 @@ export const QRCameraScanner = ({
         previewSizeRef.current = { width, height }
     }, [])
 
-    // Auto-focus the centre once the preview is streaming. On Android the v5
-    // pipeline doesn't reliably continuous-autofocus a QR held close to the
-    // lens, so codes stay blurry and fail to decode; iOS's native continuous AF
-    // handles this fine, so we scope the override to Android to avoid changing
-    // iOS focus behaviour. Since the reticle is centred, focus there:
-    // CameraRef.focusTo takes a view point (screen coordinates) and internally
-    // maps it to a metering point, so we pass the centre derived from the
-    // measured layout. 'continuous' keeps re-adapting as the user moves a code
-    // into frame, and autoResetAfter:null stops it reverting to whole-scene AF.
-    // No-ops before the layout is measured, and rejects on devices without
-    // focus metering — in both cases we fall back to native continuous AF plus
-    // the tap-to-focus gesture. See PERA-4402.
+    // Android-only: the v5 pipeline doesn't reliably continuous-autofocus a QR
+    // held close to the lens, so codes stay blurry. iOS's native AF handles it,
+    // hence the scoping. Focus the reticle's centre (focusTo takes screen
+    // coordinates); 'continuous' keeps re-adapting and autoResetAfter:null
+    // stops it reverting to whole-scene AF.
+    //
+    // No-ops before layout is measured and rejects without focus metering —
+    // both fall back to native AF plus tap-to-focus. See PERA-4402.
     const focusCenter = useCallback(() => {
         if (Platform.OS !== 'android') {
             return

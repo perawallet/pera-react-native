@@ -18,10 +18,6 @@ import {
 import type { Arc60Metadata, Arc60StdSigData } from '../pipeline/types'
 import { Arc60BadRequestError } from './arc60-errors'
 
-// =============================================================================
-// ARC-60 `algo_signData` wire validation
-// =============================================================================
-//
 // Single source of truth for the on-the-wire shape of an ARC-60 sign request,
 // shared by every transport that accepts one (WalletConnect bridge + the
 // in-app webview bridge). Keep the schema and limits here — do not re-declare
@@ -141,10 +137,6 @@ export const parseArc60WireRequest = (
         metadata,
     }
 }
-
-// =============================================================================
-// Origin binding
-// =============================================================================
 
 const hostFromMaybeUrl = (value: string): string => {
     const trimmed = value.trim().toLowerCase()

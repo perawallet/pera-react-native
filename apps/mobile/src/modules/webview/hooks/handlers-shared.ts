@@ -13,14 +13,14 @@
 import { logger, AppError, bytesToHex } from '@perawallet/wallet-core-shared'
 import type WebView from 'react-native-webview'
 
+import { toLoadableUrl } from '../components/PWWebView/toLoadableUrl'
+
 const MAX_ERROR_LENGTH = 200
 const GENERIC_ERROR_MESSAGE = 'An error occurred during signing'
 
 /**
- * Returns a message safe to send to a webview.
- * {@link AppError} subclasses carry curated messages designed for display;
- * generic Error instances may contain internal details (stack traces, paths)
- * that should not be exposed to untrusted web content.
+ * {@link AppError} subclasses carry curated, displayable messages; a generic
+ * Error may leak stack traces or paths to untrusted web content.
  */
 export const sanitizeErrorForWebview = (error: Error): string => {
     const message =
@@ -68,10 +68,8 @@ type SendError = (
 ) => void
 
 /**
- * Builds the platform requireSecure gate: blocks bridge ops arriving from an
- * untrusted main-frame origin, replying with a JSON-RPC Unauthorized error.
- * The platform files bind their own sendErrorToWebview (injectJavaScript on
- * native, port transport on web).
+ * Blocks bridge ops from an untrusted main-frame origin with a JSON-RPC
+ * Unauthorized. Platform files bind their own `sendErrorToWebview`.
  */
 export const createRequireSecure =
     (sendError: SendError) =>
@@ -110,13 +108,10 @@ export const isTrustedWebviewOrigin = (
 }
 
 /**
- * Per-load secret stamped onto every bridge message by the main-frame-only
- * injected script. `injectedJavaScript` runs only in the main frame, but
- * `window.ReactNativeWebView.postMessage` is reachable from every subframe —
- * so a cross-origin iframe or injected subresource could otherwise post a
- * forged JSON-RPC message straight to the bridge. The token defeats that: a
- * cross-origin frame can't read the main frame's token, so it can't stamp a
- * message the native side will accept.
+ * Per-load secret stamped on every bridge message. `injectedJavaScript` runs
+ * only in the main frame, but `postMessage` is reachable from every subframe —
+ * so without this a cross-origin iframe could forge a JSON-RPC message. It
+ * can't read the main frame's token, so it can't stamp an acceptable one.
  */
 export const generateBridgeToken = (): string => {
     const bytes = new Uint8Array(16)
@@ -133,11 +128,7 @@ export const generateBridgeToken = (): string => {
     return bytesToHex(bytes)
 }
 
-/**
- * True only if every message in the payload carries the expected bridge
- * token. Messages without it came from a subframe (or were forged) and must
- * be dropped. An empty/non-object payload is never valid.
- */
+/** A message without the token came from a subframe, or was forged. */
 export const hasValidBridgeToken = (data: unknown, token: string): boolean => {
     if (!token) return false
     const items = Array.isArray(data) ? data : [data]
@@ -158,6 +149,24 @@ export const isSafeBrowserUrl = (url: string): boolean => {
         return false
     }
     return parsed.protocol === 'https:'
+}
+
+/**
+ * Normalizes a host-app-supplied browser URL (bare domains like
+ * `perawallet.app` get an https:// prefix, per {@link toLoadableUrl}) before
+ * the https-only gate. Returns the normalized URL, or null when the input is
+ * not a string, is empty, is scheme-relative (`//host` — nothing legitimate
+ * produces it, so it stays rejected), or fails {@link isSafeBrowserUrl} after
+ * normalization (http:, javascript:, data:, file:, blob:, unparseable).
+ * Non-strings must be rejected before normalization: `https://` + a coerced
+ * number parses as an IPv4 host and would slip through the gate.
+ */
+export const toValidatedBrowserUrl = (raw: unknown): string | null => {
+    if (typeof raw !== 'string') return null
+    const trimmed = raw.trim()
+    if (!trimmed || trimmed.startsWith('//')) return null
+    const normalized = toLoadableUrl(trimmed)
+    return isSafeBrowserUrl(normalized) ? normalized : null
 }
 
 const RELATIVE_PATH_BASE = 'https://perawallet.invalid/'

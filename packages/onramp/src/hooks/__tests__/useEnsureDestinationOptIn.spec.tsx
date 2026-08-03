@@ -15,10 +15,6 @@ import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
-// -----------------------------------------------------------------------------
-// Mocks
-// -----------------------------------------------------------------------------
-
 const {
     optInMock,
     accountInformationMock,
@@ -70,10 +66,6 @@ vi.mock('@perawallet/wallet-core-fee-delegation', () => ({
 }))
 
 import { useEnsureDestinationOptIn } from '../useEnsureDestinationOptIn'
-
-// -----------------------------------------------------------------------------
-// Helpers
-// -----------------------------------------------------------------------------
 
 const ADDRESS = 'TESTADDRESS'
 const ASSET_ID = 31566704n
@@ -186,7 +178,7 @@ describe('onramp/useEnsureDestinationOptIn', () => {
         expect(submitWithFeeDelegationMock).toHaveBeenCalledWith({
             account: ADDRESS,
             transactions: [{ id: 'optin' }],
-            includeMbr: true,
+            includeAssetOptInMbr: true,
             optInAssetIds: [ASSET_ID],
             sourceMetadata: expect.objectContaining({
                 name: 'onramp-opt-in',

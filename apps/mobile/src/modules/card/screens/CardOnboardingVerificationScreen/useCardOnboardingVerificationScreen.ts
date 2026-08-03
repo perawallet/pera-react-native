@@ -19,10 +19,11 @@ import {
     useStartVerificationMutation,
     VerificationState,
 } from '@perawallet/wallet-core-card'
-import { config } from '@perawallet/wallet-core-config'
-import { useWebView } from '@modules/webview'
-import { routeCapabilities } from '@routes/capabilities'
-import { useCardErrorToast, useCardOnboardingLogout } from '@modules/card/hooks'
+import {
+    useCardErrorToast,
+    useCardOnboardingLogout,
+    useOpenCardSupport,
+} from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -46,7 +47,6 @@ export const useCardOnboardingVerificationScreen =
             titleKey: 'peraCard.verification.error_title',
             bodyKey: 'peraCard.verification.error_body',
         })
-        const { pushWebView } = useWebView()
         const { handleLogout } = useCardOnboardingLogout()
         const onboardingId = useCardStore(state => state.onboardingId)
         // Polling starts only once a Veriff session has been opened.
@@ -116,13 +116,7 @@ export const useCardOnboardingVerificationScreen =
             t,
         ])
 
-        const handleOpenSupport = useCallback(() => {
-            if (!routeCapabilities.inAppWebView) {
-                void Linking.openURL(config.supportBaseUrl)
-                return
-            }
-            pushWebView({ url: config.supportBaseUrl, id: 'card-support' })
-        }, [pushWebView])
+        const handleOpenSupport = useOpenCardSupport()
 
         // Veriff reported back (submitted/decided — including a state we don't
         // model): continue on the setup status checklist. Abandoning the

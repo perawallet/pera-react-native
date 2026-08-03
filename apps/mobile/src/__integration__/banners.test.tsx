@@ -10,21 +10,11 @@
  limitations under the License
  */
 
-// Integration coverage for the banners + spot-banners flows.
-//
-//   useBannersQuery        ──► GET  /v1/devices/{id}/banners/
-//   useSpotBannersQuery    ──► GET  /v1/devices/{id}/spot-banners/
-//   useDismissSpotBannerMutation
-//                          ──► PATCH /v1/devices/{id}/spot-banners/{id}/close/
-//   useVisibleBanners      ──► useBannersQuery + useBannersStore.dismissedBannerIds
-//
-// What we're proving end-to-end:
-//   • Server payload → mapper → domain `Banner` / `SpotBanner` shape.
-//   • Client-side dismissal hides a regular banner without a server call.
-//   • `auto_open_mode: 'force'` suppresses other banners AND overrides a
-//     prior client-side dismissal.
-//   • Spot-banner dismissal hits the close endpoint and optimistically
-//     removes the entry from the cache.
+// Banners and spot-banners, from server payload through mapper to domain shape.
+// Covers: client-side dismissal hiding a banner with no server call;
+// `auto_open_mode: 'force'` suppressing others AND overriding a prior local
+// dismissal; and spot-banner dismissal hitting the close endpoint with an
+// optimistic cache removal.
 
 import {
     afterAll,

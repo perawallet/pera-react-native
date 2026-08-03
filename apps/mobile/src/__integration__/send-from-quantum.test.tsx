@@ -10,21 +10,14 @@
  limitations under the License
  */
 
-// PQ-006/PERA-4653: quantum accounts no longer route through a dedicated
-// signing path. `useLocalKeyTransactionSigner` signs them like any other
-// local key — `getPQSigningInfo` resolves the account's key scheme and picks
-// which bytes to sign, and the result is an ordinary algosdk
-// `SignedTransaction` with its `pqsig` field populated instead of `sig`
-// (see `assemblePQSignedTransaction`). There is no separate carrier type to
-// gate on anymore.
+// Quantum accounts have no dedicated signing path since PQ-006/PERA-4653:
+// `useLocalKeyTransactionSigner` handles them like any other local key and
+// yields an ordinary `SignedTransaction` carrying `pqsig` instead of `sig`.
 //
-// The second test below drives a real quantum payment through the machine
-// over the callback transport (the same transport the send-funds flow uses)
-// and proves the pqsig-bearing `SignedTransaction` reaches the request's
-// `approve()` callback, and that NO algod `/v2/transactions` broadcast ever
-// happens — the local send self-submits via the callback transport, not
-// algod. Submission over the algod transport is covered separately by
-// `submit-quantum-broadcast.test.tsx` (PQ-019).
+// A local send self-submits through the callback transport rather than algod,
+// so this asserts the pqsig-bearing transaction reaches the request's `approve`
+// callback and that no algod broadcast ever happens. Submission over the algod
+// transport is covered by submit-quantum-broadcast.test.tsx (PQ-019).
 
 import {
     afterAll,

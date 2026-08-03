@@ -65,17 +65,14 @@ const trackPageErrors = (page: Page): Error[] => {
 
 const capture = async (page: Page, name: string): Promise<void> => {
     await page.evaluate(async () => document.fonts.ready)
-    // The RNW Modal used by PWBottomSheet.web.tsx fades in (animationType=
-    // 'fade'); capturing mid-fade washes out colors (a genuinely enabled
-    // dark button reads as light gray at 50% opacity). `animations:
-    // 'disabled'` finishes CSS transitions/animations before the screenshot.
-    // Static terms content also renders in an opaque-origin sandboxed iframe
-    // (PWStaticWebView.web.tsx — sandbox='' for bundled HTML) that loads
-    // independently of React paint. The parent page cannot read
-    // frame.contentDocument cross-origin (it's always null), so a
-    // page.evaluate poll on that never resolves; Playwright's frameLocator
-    // goes through CDP instead of page-context JS and isn't blocked by the
-    // opaque origin.
+    // The sheet's Modal fades in, and capturing mid-fade washes out colors —
+    // an enabled dark button reads as light gray at 50% opacity — so
+    // `animations: 'disabled'` finishes transitions first.
+    //
+    // Static terms render in an opaque-origin sandboxed iframe that loads
+    // independently of React paint. `frame.contentDocument` is always null
+    // cross-origin, so a page.evaluate poll never resolves; frameLocator goes
+    // through CDP instead and isn't blocked.
     const staticFrame = page.locator('iframe[title="static-content"]')
     if ((await staticFrame.count()) > 0) {
         await page

@@ -43,18 +43,13 @@ export const getRampHistory = async (
     return transformRampHistoryPage(parsed)
 }
 
-// Follows an absolute pagination URL (`next`/`previous` from a prior page).
+// Follows an absolute `next`/`previous` URL from a prior page.
 //
-// The API returns fully-qualified URLs
-// (`https://<host>/v1/ramp/history/...?offset=...`). `queryClient` is backed by
-// ky with a per-network `prefix`, and ky 2.x unconditionally concatenates
-// `prefix + input` — even when `input` is already absolute — which would yield
-// a doubled URL. To reuse the instrumented client (API-key headers, retry,
-// logging, MSW interception) we strip the absolute URL down to its
-// `pathname + search` and let `queryClient` re-apply the prefix for the
-// supplied `network`. `network` is required because the absolute host alone
-// does not reliably distinguish environments (mainnet/testnet share a host
-// family); the caller already holds the active network.
+// ky unconditionally concatenates `prefix + input`, even when input is already
+// absolute, so the URL is stripped to `pathname + search` and the prefix
+// re-applied — that keeps the instrumented client (API keys, retry, logging,
+// MSW). `network` is required because the host alone doesn't distinguish
+// environments; the caller already holds it.
 export const getRampHistoryByUrl = async (
     url: string,
     network: Network,

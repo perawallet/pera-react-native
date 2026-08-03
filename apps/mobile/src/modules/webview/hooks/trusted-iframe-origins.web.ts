@@ -10,19 +10,13 @@
  limitations under the License
  */
 
-// Maps a mounted iframe URL (PWWebView.web) to the origin set the bridge
-// host should trust its chrome.runtime port connections from. Two known
-// surfaces today:
-//   - Discover: single origin, config.discoverBaseUrl.
-//   - Bidali (gift cards): packages/config's per-network bidaliBaseUrl
-//     (`https://commerce.bidali.com/dapp` mainnet,
-//     `https://commerce.staging.bidali.com/dapp` testnet) 302-redirects to a
-//     `giftcards.`-prefixed twin host, query params preserved — verified live
-//     2026-07-18. The port the bridge host sees connects from that twin, not
-//     the configured commerce origin, so both must be trusted.
-// Anything else (unknown URL) gets an empty set — PWWebView.web treats that
-// as "do not create a bridge host at all" rather than a host nothing can
-// ever authenticate against.
+// Maps a mounted iframe URL to the origins the bridge host will accept port
+// connections from. Discover is a single origin; Bidali's configured commerce
+// host 302-redirects to a `giftcards.`-prefixed twin, and the port connects
+// from that twin, so both must be trusted.
+//
+// An unknown URL gets an empty set, which PWWebView.web treats as "create no
+// bridge host at all" rather than one nothing can authenticate against.
 import {
     config,
     getNetworkConfig,

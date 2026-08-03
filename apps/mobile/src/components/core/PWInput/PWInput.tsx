@@ -81,7 +81,17 @@ export type PWInputProps = {
     numberOfLines?: RNEInputProps['numberOfLines']
     adjustsFontSizeToFit?: boolean
     minimumFontScale?: number
+    /**
+     * Raw RN pass-through: blocks typing but leaves the field looking normal.
+     * Used for fields that only *look* like inputs (e.g. a picker trigger).
+     * For a genuinely locked value, prefer {@link PWInputProps.isDisabled}.
+     */
     editable?: boolean
+    /**
+     * Locked value: not typeable AND visually dimmed, so a read-only field
+     * doesn't read as editable. Wins over `editable`.
+     */
+    isDisabled?: boolean
 }
 
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(
@@ -103,6 +113,8 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             rightIcon,
             errorMessage,
             showErrorOnBlur = false,
+            editable,
+            isDisabled = false,
             ...props
         },
         ref,
@@ -216,7 +228,12 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                     styles.inputContainer,
                     inputContainerStyle,
                 ]}
-                inputStyle={[styles.input, inputStyle]}
+                editable={isDisabled ? false : editable}
+                inputStyle={[
+                    styles.input,
+                    isDisabled && styles.disabledInput,
+                    inputStyle,
+                ]}
                 labelStyle={labelStyle}
             />
         )

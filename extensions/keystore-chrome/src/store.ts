@@ -58,13 +58,7 @@ import { commit, fetchSecret } from './storage/state'
 import { storage } from './storage/chrome-storage'
 import type { AuthenticationOptions } from './types'
 
-/**
- * Type guard for {@link SeedData}.
- *
- * Accepts both the canonical `seed` type and the legacy `hd-seed` shape so
- * that callers transitioning to the new model continue to work without
- * changes.
- */
+/** Accepts the legacy `hd-seed` shape alongside the canonical `seed`. */
 function isSeedData(key: any): key is SeedData {
     return key?.type === 'seed' || key?.type === 'hd-seed'
 }
@@ -76,12 +70,7 @@ function isXHDRootKey(key: any): key is XHDRootKey {
     return key?.type === 'hd-root-key'
 }
 
-/**
- * Removes a key from the reactive store and persistent storage.
- * @param params - The removal parameters
- * @param params.store - The reactive store instance
- * @param params.keyId - The ID of the key to remove
- */
+/** Removes from both the reactive store and persistent storage. */
 export async function removeKey({
     store,
     keyId,
@@ -94,11 +83,7 @@ export async function removeKey({
     removeKeystoreKey({ store, keyId })
 }
 
-/**
- * Clears all keys from the reactive store and persistent storage.
- * @param params - The clear parameters
- * @param params.store - The reactive store instance
- */
+/** Clears both the reactive store and persistent storage. */
 export async function clear({
     store,
 }: {
@@ -108,16 +93,7 @@ export async function clear({
     storage.clearAll()
 }
 
-/**
- * Generates a new key pair, stores it, and updates the reactive store.
- * Supports various algorithm types via options.
- * @param options - The generation parameters
- * @param options.store - The reactive store instance
- * @param options.algorithm - The algorithm to use for generation
- * @param options.extractable - Whether the private key can be exported
- * @param options.keyUsages - Intended usages for the key
- * @returns The generated KeyId
- */
+/** Generates, persists, and updates the reactive store. */
 export async function generateKey(options: {
     store: Store<KeyStoreState>
     type: KeyType
@@ -163,13 +139,10 @@ export async function generateKey(options: {
         // If it's a seed, it must be "hd-seed" and have format "raw"
         // (We already ensure this in importSeed/importKey)
 
-        // Map our internal types to keystore types if needed.
-        //
-        // NOTE: `ed25519` deliberately stays as `ed25519` so that the core
-        // keystore's `EdDSA` branch dispatches to `generateEd25519FromSeed`
-        // when a `seed`/`hd-seed` parent is provided. Mapping it to `ecc`
-        // (the previous behavior) routed it into the XHD/P256 path and
-        // caused: "XHD derived keys require a rootKeyId" for plain seeds.
+        // `ed25519` deliberately stays `ed25519` so the keystore's EdDSA branch
+        // dispatches to `generateEd25519FromSeed` for a seed parent. Mapping it
+        // to `ecc` routes it into the XHD/P256 path, which then fails with
+        // "XHD derived keys require a rootKeyId".
         const mappedType = type
 
         // If we are generating an XHD-derived P256 key, we need a root key.
@@ -338,14 +311,8 @@ export function parsePath(path: string): number[] {
 }
 
 /**
- * Derives a new key from an existing seed in the keystore.
- * @param params - The derivation parameters
- * @param params.store - The reactive store instance
- * @param params.seedId - The ID of the seed to derive from
- * @param params.path - The derivation path
- * @param params.options - Optional derivation settings
- * @returns The ID of the derived key
- * @todo: Move to keystore
+ * Derives a new key from an existing seed.
+ * @todo Move to keystore.
  */
 export async function deriveFromSeed({
     store,

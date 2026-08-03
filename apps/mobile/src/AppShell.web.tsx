@@ -76,25 +76,18 @@ const persister = createAsyncStoragePersister({
 
 updateQueryHeaders()
 
-// Authoritative theme-aware paint for the entire app area: below
-// ThemeProvider so it sees in-app theme overrides (useSettings().theme /
-// useIsDarkMode), not just the OS theme. Covers any gap individual screens
-// leave uncovered (e.g. the welcome/onboarding screen, or content shorter
-// than the popup/tab viewport) so nothing falls through to the unstyled
-// html/body grey. The build.mjs global CSS paints html/body as a pre-mount
-// fallback only; this View is what's authoritative once React has mounted.
+// Authoritative theme-aware paint for the whole app area. Sits below
+// ThemeProvider so it sees in-app theme overrides, not just the OS theme, and
+// covers gaps individual screens leave so nothing falls through to unstyled
+// html/body grey. build.mjs's global CSS is only the pre-mount fallback.
 //
-// `root` paints a distinct surface tone behind everything — visible only on
-// the wide "expanded" browser-tab surface, where `card` caps the actual app
-// content to a popup-like width and centers it (the whole UI was designed
-// for a 360px popup and looks broken stretched edge-to-edge across a full
-// desktop tab). In the popup/approval surfaces `card`'s cap never binds
-// (both are already narrower than it), so `card` fills `root` exactly and
-// the grey tone is never visible there — no surface check needed.
+// `card` caps content to a popup-like width and centers it — the UI was
+// designed for a 360px popup and looks broken stretched across a desktop tab.
+// The cap never binds on the popup/approval surfaces, so `root`'s tone is only
+// ever visible on the expanded one; no surface check needed.
 //
-// PWBottomSheet.web.tsx applies this same WEB_EXPANDED_CARD_MAX_WIDTH cap to
-// its own stage, since gorhom-on-web's Modal portals to document.body and
-// would otherwise bypass this card entirely.
+// PWBottomSheet.web applies the same cap to its own stage, since gorhom-on-web
+// portals to document.body and would otherwise bypass this card.
 const useAppShellRootStyles = makeStyles(theme => ({
     root: {
         flex: 1,

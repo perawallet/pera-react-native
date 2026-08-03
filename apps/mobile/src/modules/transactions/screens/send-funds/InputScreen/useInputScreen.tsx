@@ -20,6 +20,7 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendDestinationRouter } from '../useSendDestinationRouter'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -46,10 +47,36 @@ export const useInputScreen = () => {
         selectedAssetId,
         amount,
         pendingAmountBaseUnits,
+        destination,
         setAmount,
         setPendingAmountBaseUnits,
         setIsCloseAccount,
     } = useSendFunds()
+    const {
+        resolveDestination,
+        isResolvingDestination,
+        isReady: isDestinationReady,
+        isAssetUnavailable,
+    } = useSendDestinationRouter()
+
+    // A value-bearing deeplink prefills the receiver, so once the amount is
+    // confirmed we can route straight to the correct next screen instead of
+    // pushing the (now redundant) destination picker. Falls back to the picker
+    // if there's no prefill, or if the routing inputs aren't ready yet / the
+    // asset is unavailable (SelectDestination then resolves or shows the error).
+    const proceedToDestination = useCallback(() => {
+        if (destination && isDestinationReady && !isAssetUnavailable) {
+            resolveDestination(destination)
+        } else {
+            navigation.navigate('SelectDestination')
+        }
+    }, [
+        destination,
+        isDestinationReady,
+        isAssetUnavailable,
+        resolveDestination,
+        navigation,
+    ])
     const { request: requestBottomSheet } = useBottomSheet()
     const styles = useStyles()
 
@@ -257,11 +284,11 @@ export const useInputScreen = () => {
         setIsCloseAccount(true)
         setAmount(closeAmount)
         setValueAndRef(closeAmount.toString())
-        navigation.navigate('SelectDestination')
+        proceedToDestination()
     }, [
         totalBalance,
         params,
-        navigation,
+        proceedToDestination,
         setAmount,
         setIsCloseAccount,
         setValueAndRef,
@@ -270,8 +297,8 @@ export const useInputScreen = () => {
     const continuePastMbr = useCallback(() => {
         setAmount(maxAmount)
         setValueAndRef(maxAmount.toString())
-        navigation.navigate('SelectDestination')
-    }, [maxAmount, navigation, setAmount, setValueAndRef])
+        proceedToDestination()
+    }, [maxAmount, proceedToDestination, setAmount, setValueAndRef])
 
     const handleNext = useCallback(async () => {
         if (!value || new Decimal(value).lte(0)) {
@@ -326,12 +353,12 @@ export const useInputScreen = () => {
 
         setIsCloseAccount(false)
         setAmount(new Decimal(value ?? '0'))
-        navigation.navigate('SelectDestination')
+        proceedToDestination()
     }, [
         value,
         maxAmount,
         totalBalance,
-        navigation,
+        proceedToDestination,
         showToast,
         t,
         hasNoOptedInAssets,
@@ -402,6 +429,10 @@ export const useInputScreen = () => {
         setMax,
         handleNext,
         handleKey,
+        // True while a deeplink-prefilled external receiver's opt-in status is
+        // being resolved on-chain after the user confirms the amount — the
+        // screen shows a spinner until the router navigates onward.
+        isResolvingDestination,
         isCollectible: isCollectibleAsset,
         //exposed for testing only
         setCryptoValue: setValueAndRef,

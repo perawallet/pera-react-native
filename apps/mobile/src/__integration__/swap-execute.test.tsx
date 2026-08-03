@@ -10,30 +10,13 @@
  limitations under the License
  */
 
-// Integration coverage for the swap execution kickoff:
+// The two wallet <-> Pera-API boundaries that bookend a swap:
+// `usePrepareTransactionsMutation` (POST prepare-transactions, returning the
+// opt-in/swap/fee groups plus swap_id_str) and `useUpdateSwapStatusMutation`
+// (PATCH the outcome back so the backend can mark the swap).
 //
-//   user has a quote   ─►  usePrepareTransactionsMutation
-//                                │
-//                                └─► POST /v2/dex-swap/prepare-transactions/
-//                                       returns transaction_groups
-//                                       (opt-in / swap / fee), each with
-//                                       base64-encoded txns to sign,
-//                                       plus swap_id_str
-//
-//   user signs groups  ─►  signing pipeline (covered by send-algo /
-//                                send-asa flow tests, and
-//                                useSigningRequest unit tests)
-//
-//   txns submitted     ─►  useUpdateSwapStatusMutation
-//                                │
-//                                └─► PATCH /v2/dex-swap/swaps/:id/
-//                                       wallet reports outcome (success
-//                                       or reason for failure) so the
-//                                       backend can mark the swap.
-//
-// This file covers the two wallet ↔ Pera-API boundaries that bookend a
-// swap. Actual on-chain msgpack signing of the prepared groups reuses
-// the same pipeline as `send-algo.test.tsx` and isn't re-tested here.
+// The signing in between reuses send-algo.test.tsx's pipeline and isn't
+// re-tested here.
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import React from 'react'

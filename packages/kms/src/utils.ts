@@ -22,10 +22,8 @@ import {
 import { KeyManagementError } from './errors'
 
 /**
- * Pera-domain extras (acl, timestamps) round-trip through a seed entry's
- * `metadata.pera`. The keystore reserves top-level metadata keys for its
- * own use (`parentKeyId`, `path`, `account`, `scheme`, etc.), so we keep
- * Pera-specific fields in a sub-object.
+ * Nested under `metadata.pera` because the keystore reserves top-level metadata
+ * keys (`parentKeyId`, `path`, `account`, `scheme`, …) for its own use.
  */
 export type SeedPeraMetadata = {
     acl?: AccessControl[]
@@ -40,12 +38,9 @@ export type SeedMetadata = {
 }
 
 /**
- * Builds the metadata payload for `keyStore.import({ type: 'seed', ... })`.
- * Caller supplies the scheme; Pera-domain extras are nested under `pera` so
- * they don't collide with keystore-defined fields. A bip39 seed's entropy is
- * never stored here — it lives in a separate `secret-key` child (see
- * {@link entropyChildMetadata}) so it can't leak through the seed's exported
- * metadata.
+ * A bip39 seed's entropy is never stored here — it lives in a separate
+ * `secret-key` child (see {@link entropyChildMetadata}) so it can't leak
+ * through the seed's exported metadata.
  */
 export const buildSeedMetadata = (params: {
     scheme: SeedScheme
@@ -65,12 +60,9 @@ export const buildSeedMetadata = (params: {
 }
 
 /**
- * Metadata stamped on the `secret-key` child that holds a bip39 seed's BIP39
- * entropy: `parentKeyId` ties it to the seed and `entropyKey` marks it as the
- * entropy holder. Locating the child by this metadata (see
- * {@link entropyChildIdOf}) avoids depending on a derived id format. The
- * entropy is stored apart from the seed so it never rides along in the seed's
- * reactive snapshot or its `keyStore.export()` metadata.
+ * Marks the `secret-key` child holding a bip39 seed's entropy. Located by this
+ * metadata rather than a derived id format, and stored apart from the seed so it
+ * never rides along in the seed's snapshot or exported metadata.
  */
 export const entropyChildMetadata = (
     seedKeyId: string,
@@ -99,10 +91,8 @@ const seedMetadata = (key: Key): SeedMetadata =>
     (key.metadata ?? {}) as SeedMetadata
 
 /**
- * Returns the seed scheme of a key, or `null` if the key isn't a recognised
- * wallet-root seed. Use this for type dispatch on signing/mnemonic flows;
- * derived ed25519/hd-derived-ed25519 children, secret-key entries, etc.
- * return null and should not be treated as wallet roots.
+ * `null` for anything that isn't a recognised wallet root — derived children,
+ * secret-key entries — which must not be treated as one.
  */
 export const seedSchemeOf = (key: Key): SeedScheme | null => {
     if (key.type !== 'seed' && key.type !== 'hd-seed') return null
@@ -120,10 +110,8 @@ export const seedSchemeOf = (key: Key): SeedScheme | null => {
 export const isSeedKey = (key: Key): boolean => seedSchemeOf(key) !== null
 
 /**
- * Encoded Algorand address for an Algo25 seed entry. The seed's reactive
- * Key snapshot may carry the Ed25519 public key on `publicKey` (we set it
- * at commit time via the derived ed25519 child); when absent, returns ''.
- * For bip39 seeds there is no single address — returns ''.
+ * '' when the snapshot carries no `publicKey`, and for bip39 seeds, which have
+ * no single address.
  */
 export const algo25AddressOf = (key: Key): string => {
     if (seedSchemeOf(key) !== SeedScheme.Algo25) return ''

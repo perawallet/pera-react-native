@@ -52,10 +52,8 @@ export type UsePendingSignaturesContentResult = {
     status: SignRequestStatus | null
     bannerVariant: StatusBannerVariant
     /**
-     * Translation key for the failure banner's default message — used when the
-     * backend doesn't supply a `failReasonDisplay`. Status-specific so an
-     * expired request reads "Transaction canceled" rather than the generic
-     * "Transaction failed".
+     * Fallback when the backend supplies no `failReasonDisplay`. Status-specific
+     * so an expired request reads "canceled" rather than "failed".
      */
     failureBannerKey: string
     signedCount: number
@@ -71,30 +69,23 @@ export type UsePendingSignaturesContentResult = {
     isCancelling: boolean
     handleCancel: () => Promise<void>
     /**
-     * True when the sheet is rendering a locally-created draft sign-request
-     * (no backend record yet). The first per-row Sign tap bootstraps the
-     * real backend propose; until that resolves, other rows are blocked so
-     * we don't race two propose calls on the same draft.
+     * A locally-created draft with no backend record yet. The first per-row Sign
+     * bootstraps the real propose, and other rows block until it resolves so two
+     * proposes can't race on one draft.
      */
     isDraft: boolean
     /**
-     * True when a draft cosign is in flight and other per-row Sign buttons
-     * should render disabled. Mirrors the same race-prevention rule that
-     * {@link handleSignParticipant} enforces on tap — surfaced separately so
-     * the UI can grey out the non-signing rows.
+     * The same race-prevention rule {@link handleSignParticipant} enforces on
+     * tap, surfaced separately so the UI can grey out the other rows.
      */
     disableOtherSignersForDraft: boolean
 }
 
 /**
- * How long to keep treating a `failed` request as still-submitting before
- * committing to the failure banner. For an async (in-app) broadcast the
- * backend owns submission and can briefly report `failed` for a transaction
- * that actually landed on chain (a false-negative); we keep polling for this
- * window so a later `confirmed` supersedes it. At the 5s detail-poll interval
- * this is ~6 poll cycles. Mirrors the native apps, which never surface this
- * transient state (iOS polls the open sheet until `confirmed`; Android treats
- * threshold-met as success).
+ * How long a `failed` request keeps polling before the failure banner commits.
+ * The backend owns async submission and can briefly report `failed` for a
+ * transaction that actually landed, so a later `confirmed` supersedes it. The
+ * native apps never surface this transient state at all.
  */
 export const FAILED_RECOVERY_WINDOW_MS = 30_000
 
@@ -122,11 +113,9 @@ export const usePendingSignaturesContent =
         const { dismiss } = useBottomSheetResult<void>()
         const { request: requestBottomSheet } = useBottomSheet()
 
-        // Draft-mode: the sheet was opened with a locally-created sign-request
-        // id (no backend record exists yet). This happens when the user sent a
-        // multisig transaction from an account whose only local participants
-        // are hardware wallets — the propose call is deferred until the user
-        // taps Sign on a Ledger row, which bootstraps the backend record.
+        // Draft mode: no backend record exists yet. Happens when the only local
+        // participants are hardware wallets, so the propose is deferred until
+        // the user taps Sign on a Ledger row.
         const isDraft =
             signRequestId !== null && isDraftSignRequestId(signRequestId)
         const draft = useDraftSignRequestStore(state =>
@@ -158,11 +147,8 @@ export const usePendingSignaturesContent =
 
         const status = signRequest?.status ?? null
 
-        // Open a one-shot recovery window the first time a request reports
-        // `failed`, and close it (reset) whenever the status moves off
-        // `failed` — e.g. a later poll recovers to `confirmed`. The window is
-        // measured from the first `failed`, not reset per poll, because the
-        // dependency is the `status` string (stable across identical polls).
+        // Measured from the FIRST `failed`, not reset per poll — the dependency
+        // is the `status` string, which is stable across identical polls.
         useEffect(() => {
             if (status !== 'failed') {
                 setIsFailedRecoveryExpired(false)
@@ -212,12 +198,9 @@ export const usePendingSignaturesContent =
         }, [signRequest, status, accounts])
 
         /**
-         * Source of truth for `isSigning` is the signing store: once the
-         * actor finishes (success → backend addSignatures → next
-         * sign-request-detail poll observes the signed response; failure →
-         * the signing event bus publishes a 'failed' event for the inline
-         * error view), the entry drops from `pendingSignRequests` and
-         * `isSigning` flips back to false.
+         * The signing store is the source of truth: once the actor finishes,
+         * either way, the entry drops from `pendingSignRequests` and this flips
+         * back to false.
          */
         const inFlightCosignAddresses = useMemo(
             () =>
@@ -368,12 +351,8 @@ export const usePendingSignaturesContent =
     }
 
 /**
- * Builds a {@link MultisigSignRequest}-shaped object from a local draft so
- * the rest of `usePendingSignaturesContent` (and the components downstream)
- * can render the pending signatures sheet unchanged in draft mode. All
- * participants render as pending — no responses exist until the user taps
- * Sign on a Ledger row and the addSignatures adapter bootstraps the real
- * backend propose with that participant's signature.
+ * Lets the sheet render unchanged in draft mode. Every participant shows as
+ * pending — no responses exist until a Ledger row bootstraps the real propose.
  */
 const synthesizeDraftSignRequest = (
     draft: DraftSignRequest | undefined,

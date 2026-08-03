@@ -54,28 +54,21 @@ export const useHDWallet = () => {
         const metadata = buildSeedMetadata({ scheme: SeedScheme.Bip39 })
 
         try {
-            // The seed entry holds the 96-byte XHD root in `privateKey`.
+            // `extractable: true` is required: the 96-byte XHD root must stay
+            // re-exportable to reconstruct the BIP-39 mnemonic for
+            // non-custodial recovery. Derived child keys are minted
+            // `extractable: false`.
             //
-            // `extractable: true` is intentional and required: the root must
-            // stay re-exportable to reconstruct the BIP-39 mnemonic for
-            // non-custodial backup/recovery (executeWithMnemonic ->
-            // withExportedKey in useKMS/useKMSServices). Derived child keys
-            // are minted `extractable: false`.
+            // This flag is NOT the at-rest protection — entries persist as
+            // AES-256-GCM ciphertext under a master key in the OS keystore, and
+            // `keyStore.export` is gated by `checkAccess` and unreachable from
+            // dApp JS. Flipping it to `false` would break recovery without
+            // hardening storage.
             //
-            // The flag is NOT the at-rest protection. Every keystore entry is
-            // persisted as AES-256-GCM ciphertext; the symmetric master key
-            // lives in the OS keystore (iOS Keychain / Android Keystore), and
-            // `keyStore.export` is an internal API gated by `checkAccess` --
-            // it is never reachable from dApp/WebView JS. Flipping this to
-            // `false` would only break mnemonic recovery, not harden storage.
-            //
-            // Known hardening gaps tracked as separate work, not regressions
-            // of the above: (1) on iOS the passkey-autofill bootstrap mirrors
-            // the master key into App-Group UserDefaults so the AutoFill
-            // extension can read it, which weakens the at-rest guarantee on
-            // that platform (Android wraps the mirrored copy with a hardware
-            // Keystore key; iOS stores it unwrapped); (2) `checkAccess` is
-            // fail-open for a seed carrying no ACL entries.
+            // Known gaps, tracked separately: iOS mirrors the master key into
+            // App-Group UserDefaults unwrapped (Android wraps it with a
+            // hardware key), and `checkAccess` is fail-open for a seed with no
+            // ACL entries.
             const seed: Omit<Seed, 'id'> & { id: string } = {
                 id: keyId,
                 type: 'seed',
@@ -149,16 +142,10 @@ export const useHDWallet = () => {
                 derivationType === BIP32DerivationType.Khovratovich
                     ? 'standard'
                     : 'peikert',
-            // Stamp the full canonical metadata `signXHDEd25519` reads:
-            // `path / context / account / index / derivation`. The
-            // rn-keystore happens to set `account`, `context`, and
-            // `keyIndex` (NOT `index`) on its own and never sets
-            // `derivation`, so without this the signing path silently
-            // builds a BIP44 path with `undefined` keyIndex/derivation
-            // and the resulting signature fails dApp verification.
-            // `rn-keystore.deriveFromSeed` spreads our metadata into
-            // the persisted entry first, so every field survives
-            // alongside the keystore's own additions.
+            // Stamp the full metadata `signXHDEd25519` reads. rn-keystore sets
+            // `keyIndex` (NOT `index`) and never sets `derivation`, so without
+            // this the signing path silently builds a BIP44 path with
+            // undefined segments and the signature fails dApp verification.
             metadata: {
                 path,
                 context: KeyContext.Address,

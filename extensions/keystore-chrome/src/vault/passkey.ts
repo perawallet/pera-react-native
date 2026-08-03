@@ -67,11 +67,7 @@ const readPrfBlob = async (): Promise<WrappedMasterKeyPrfV1> => {
     return parsed
 }
 
-/**
- * Derive a 256-bit AES-GCM KEK from WebAuthn PRF output using HKDF-SHA-256.
- * The `hkdfSalt` is random per-enable and stored in the blob so unlock uses
- * the same salt.
- */
+/** `hkdfSalt` is random per-enable and stored in the blob, so unlock reuses it. */
 const deriveKekFromPrf = async (
     prfOutput: BufferSource,
     hkdfSalt: Uint8Array,
@@ -98,13 +94,8 @@ const deriveKekFromPrf = async (
 }
 
 /**
- * Requests a WebAuthn assertion scoped to `credentialIdBytes` (or any
- * resident credential if `null`) with the PRF extension evaluated against
- * `salt`, and returns the raw PRF output.
- *
- * Shared by the enable-time assertion and `unlockWithPasskey` so both paths
- * build the exact same request shape — this is what keeps them from drifting
- * apart and reintroducing a salt-mismatch class of bug.
+ * Shared by the enable-time assertion and `unlockWithPasskey` so both build the
+ * identical request shape — what keeps them from drifting into a salt mismatch.
  */
 const assertPrf = async (
     credentialIdBytes: Uint8Array | null,
@@ -140,10 +131,8 @@ const assertPrf = async (
 }
 
 /**
- * Returns true if the browser supports WebAuthn with the PRF extension.
- * Feature-detects conservatively: first checks the capability API (Chrome
- * 132+), otherwise falls back to checking PublicKeyCredential existence alone
- * and allows `enablePasskeyUnlock` to discover PRF support at runtime.
+ * Checks the capability API first, falling back to bare `PublicKeyCredential`
+ * existence and letting `enablePasskeyUnlock` discover PRF support at runtime.
  */
 export const isPasskeyUnlockSupported = async (): Promise<boolean> => {
     if (typeof PublicKeyCredential === 'undefined') return false
@@ -156,13 +145,10 @@ export const isPasskeyUnlockSupported = async (): Promise<boolean> => {
                     >
                 }
             ).getClientCapabilities()
-            // WebAuthn L3 namespaces extension capabilities under
-            // 'extension:prf' (verified empirically: Chromium 149 reports
-            // { "extension:prf": true, ... }). Fall back to the unprefixed
-            // legacy key for older/other implementations. An absent key
-            // means the client didn't report either way — stay optimistic
-            // rather than hide the feature, since enablePasskeyUnlock
-            // already fails safely at runtime if PRF isn't actually there.
+            // WebAuthn L3 namespaces this under 'extension:prf'; the unprefixed
+            // key covers older implementations. An absent key means the client
+            // didn't report either way — stay optimistic rather than hide the
+            // feature, since enablePasskeyUnlock fails safely at runtime.
             const prf = caps?.['extension:prf'] ?? caps?.prf
             return prf !== false
         } catch {
@@ -181,23 +167,18 @@ export const isPasskeyUnlockEnabled = async (): Promise<boolean> => {
 }
 
 /**
- * Verifies `password`, creates a passkey with the PRF extension, and wraps
- * the existing master key with a KEK derived from the PRF output.
+ * Establishes a SECOND KEK path for the same master key — password unlock stays
+ * valid and is the recovery path.
  *
- * This establishes a second KEK path for the same master key — password
- * unlock remains valid and is the recovery path.
+ * `create()` passes no eval input (no salt exists yet) so it only checks
+ * `prf.enabled`. The wrap's PRF output always comes from a follow-up `get()`
+ * against the freshly generated `prfEvalSalt`, never from create-time results:
+ * some browsers return those anyway, computed against no salt, and they'd wrap
+ * an unrecoverable blob.
  *
- * `create()` requests `extensions: { prf: {} }` with NO eval input (no salt
- * exists yet), so it only checks `prf.enabled`. The PRF output for the
- * initial wrap always comes from a follow-up `get()` assertion evaluated
- * against the freshly generated `prfEvalSalt` — never from create-time
- * results, which some browsers return even without an eval input but which
- * are computed against no salt and would wrap an unrecoverable blob.
- *
- * NOTE: If `prf.enabled` is false after create, we throw — but a credential
- * may still have been registered. There is no WebAuthn API to delete it; the
- * user must remove it from their authenticator manually. This is acceptable
- * because creation-with-PRF failing is an unusual path.
+ * NOTE: throwing on `prf.enabled === false` can leave a registered credential
+ * behind. WebAuthn offers no way to delete it, so the user must remove it from
+ * their authenticator — acceptable for such an unusual path.
  */
 export const enablePasskeyUnlock = async (password: string): Promise<void> => {
     // Verify the password first — throws InvalidPasswordError on wrong password.
@@ -305,11 +286,7 @@ export const enablePasskeyUnlock = async (password: string): Promise<void> => {
     }
 }
 
-/**
- * Uses the stored passkey to assert, derives the KEK from the PRF output,
- * unwraps the master key, and puts it into the session (same as
- * `unlockVault`).
- */
+/** Ends in the same session state as `unlockVault`. */
 export const unlockWithPasskey = async (): Promise<void> => {
     // Biometric/passkey auth must NOT bypass the password lockout — mirrors
     // useLockScreen.ts, which skips the biometric prompt entirely while

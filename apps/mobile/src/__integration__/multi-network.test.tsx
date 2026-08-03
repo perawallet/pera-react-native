@@ -54,18 +54,13 @@ import {
 
 import { server } from '@test-utils/msw-server'
 
-// Both non-mainnet/testnet networks are covered, because chain truth reaches
-// the client stack by two different routes and only one of them is exercised
-// by baked config:
+// Both betanet and custom are covered because chain truth reaches the client
+// stack two different ways: betanet's endpoints and genesis come from baked
+// config, while custom's config is deliberately EMPTY and the custom-network
+// store overlays every value at runtime.
 //
-//   betanet ─► endpoints and genesis come from packages/config/network-config
-//   custom  ─► config is deliberately EMPTY; the custom-network store overlays
-//              every value at runtime via resolveChainEndpoints
-//
-// The four routing assertions are identical for both, so they are parameterized
-// rather than duplicated. Dropping the custom row would leave the store→client
-// overlay — the new machinery in this rework — with no integration coverage;
-// dropping the betanet row would stop proving the baked path still works.
+// The assertions are identical, hence the parameterization. Dropping either row
+// loses coverage of one of those two paths.
 const BETANET_ALGOD = 'https://betanet-api.algonode.cloud'
 const BETANET_INDEXER = 'https://betanet-idx.algonode.cloud'
 // Read, never hardcoded: `backendUrl` comes from TESTNET_BACKEND_URL, which
@@ -209,16 +204,13 @@ describe.each(FIXTURES)(
         })
 
         it("reaches no Pera backend at all, rather than borrowing TestNet's", async () => {
-            // Inverted from the fallback era, when this asserted the request
-            // DID reach TestNet's backend. No MSW handler is registered on
-            // purpose: if a request escaped to any host, `requested` would
-            // record it and the second assertion fails.
+            // No MSW handler on purpose: an escaped request would show up in
+            // `requested` and fail the second assertion.
             //
-            // The exact class matters, and a bare `.rejects.toThrow()` would
-            // not pin it: this is the ONLY place real (unmocked) ky runs, so
-            // it is the only test that can tell the typed refusal apart from
-            // ky failing to parse a relative URL against an empty prefix —
-            // which surfaces as a plain TypeError, normalized into a generic
+            // The exact error class matters — this is the only place unmocked
+            // ky runs, so it's the only test that can tell the typed refusal
+            // apart from ky failing to parse a relative URL against an empty
+            // prefix, which normalizes into a generic
             // PeraNetworkError('unknown').
             await expect(
                 fetchAssets(['31566704'], network),
