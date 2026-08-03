@@ -120,12 +120,12 @@ describe('useAccountNotificationEnabledMutation', () => {
         expect(result.current.error).toBe(mockError)
     })
 
-    // PERA-XXXX: the toggle runs under networkMode 'always', so offline the
-    // mutationFn still runs. Without an explicit connectivity guard it relies
-    // on the native transport rejecting the request, which is prompt on iOS
-    // but not on Android (airplane mode) — leaving the optimistic-rollback in
-    // the toggle handler to never run and the persisted store to diverge from
-    // the backend. assertOnline() makes the failure fast and identical on both
+    // The toggle runs under networkMode 'always', so offline the mutationFn
+    // still runs. Without an explicit connectivity guard it relies on the
+    // native transport rejecting the request, which is prompt on iOS but not
+    // on Android (airplane mode) — leaving the optimistic-rollback in the
+    // toggle handler to never run and the persisted store to diverge from the
+    // backend. assertOnline() makes the failure fast and identical on both
     // platforms, mirroring the money-flow mutations.
     describe('offline', () => {
         afterEach(() => onlineManager.setOnline(true))
