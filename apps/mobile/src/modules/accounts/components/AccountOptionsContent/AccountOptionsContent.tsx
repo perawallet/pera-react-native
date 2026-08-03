@@ -110,6 +110,8 @@ export const AccountOptionsContent = ({
                 cancelLabel={t('account_options.backup_warning_cancel')}
                 confirmVariant='destructive'
                 buttonPaddingStyle='dense'
+                confirmTestID='remove_account_backup_continue_button'
+                cancelTestID='remove_account_backup_cancel_button'
                 onConfirm={handleConfirmBackupWarning}
                 onCancel={handleCancelRemove}
             />
@@ -132,6 +134,7 @@ export const AccountOptionsContent = ({
                 confirmVariant='destructive'
                 buttonPaddingStyle='dense'
                 confirmTestID='remove_account_confirm_button'
+                cancelTestID='remove_account_cancel_button'
                 onConfirm={handleConfirmRemove}
                 onCancel={handleCancelRemove}
             />
