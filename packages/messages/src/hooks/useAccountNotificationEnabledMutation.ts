@@ -13,6 +13,7 @@
 import { useMutation } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { assertOnline } from '@perawallet/wallet-core-shared'
 import { updateNotificationEnabled } from '../api/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -39,13 +40,22 @@ export const useAccountNotificationEnabledMutation = () => {
         }: {
             accountID: string
             status: boolean
-        }) =>
-            updateNotificationEnabled(
+        }) => {
+            // Fail fast offline instead of trusting the native transport to
+            // reject. Under networkMode 'always' the mutationFn runs even when
+            // offline; iOS rejects the request promptly but Android (airplane
+            // mode) does not, so the toggle handler's optimistic-rollback never
+            // ran and the persisted store diverged from the backend. Mirrors
+            // the money-flow mutations (opt-in, rekey, swaps-prepare).
+            assertOnline()
+
+            return updateNotificationEnabled(
                 network,
                 deviceID ?? '',
                 accountID,
                 status,
-            ),
+            )
+        },
         onSuccess: () => {
             // Reset both the primary (v3) and fallback (v1) badge sources so
             // the badge refreshes regardless of which one is currently active.

@@ -10,9 +10,19 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { renderHook, waitFor, act } from '@testing-library/react'
+import {
+    onlineManager,
+    QueryClient,
+    QueryClientProvider,
+} from '@tanstack/react-query'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
+import {
+    mutationDefaults,
+    NoConnectionError,
+} from '@perawallet/wallet-core-shared'
+import React from 'react'
 import { useAccountNotificationEnabledMutation } from '../useAccountNotificationEnabledMutation'
 import { updateNotificationEnabled } from '../../api/notifications'
 
@@ -108,5 +118,54 @@ describe('useAccountNotificationEnabledMutation', () => {
         })
 
         expect(result.current.error).toBe(mockError)
+    })
+
+    // PERA-XXXX: the toggle runs under networkMode 'always', so offline the
+    // mutationFn still runs. Without an explicit connectivity guard it relies
+    // on the native transport rejecting the request, which is prompt on iOS
+    // but not on Android (airplane mode) — leaving the optimistic-rollback in
+    // the toggle handler to never run and the persisted store to diverge from
+    // the backend. assertOnline() makes the failure fast and identical on both
+    // platforms, mirroring the money-flow mutations.
+    describe('offline', () => {
+        afterEach(() => onlineManager.setOnline(true))
+
+        it('rejects with NoConnectionError before calling the API when offline', async () => {
+            // Mirrors the app's root QueryClient policy: mutationDefaults
+            // (networkMode: 'always') makes the mutationFn run — and reject
+            // via assertOnline — offline instead of pausing. The shared
+            // createWrapper uses the default 'online' mode, which would pause
+            // the mutation and never invoke the guard.
+            const queryClient = new QueryClient({
+                defaultOptions: {
+                    queries: { retry: false },
+                    mutations: { ...mutationDefaults, retry: false },
+                },
+            })
+            const wrapper = ({ children }: { children: React.ReactNode }) =>
+                React.createElement(
+                    QueryClientProvider,
+                    { client: queryClient },
+                    children,
+                )
+
+            onlineManager.setOnline(false)
+
+            const { result } = renderHook(
+                () => useAccountNotificationEnabledMutation(),
+                { wrapper },
+            )
+
+            await act(async () => {
+                await expect(
+                    result.current.mutateAsync({
+                        accountID: 'test-account',
+                        status: false,
+                    }),
+                ).rejects.toBeInstanceOf(NoConnectionError)
+            })
+
+            expect(updateNotificationEnabled).not.toHaveBeenCalled()
+        })
     })
 })
