@@ -38,6 +38,8 @@ export const SLIDE_TO_CONFIRM_ANIMATION_DURATION = 250
 export const OFFLINE_RECONNECT_DISPLAY_MS = 3000
 // Duration of the offline banner's fade-in animation on mount.
 export const OFFLINE_BANNER_FADE_MS = 200
+// How long the banner stays emphasized after an action is blocked by being offline.
+export const OFFLINE_BANNER_EMPHASIS_MS = 1200
 
 export const SHORT_PROMPT_DISPLAY_DELAY = 300
 export const LONG_PROMPT_DISPLAY_DELAY = 3000
