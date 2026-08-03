@@ -42,6 +42,7 @@ import {
 import {
     decodeBase64Param,
     extractPath,
+    isValidAssetId,
     normalizeUrl,
     parseQueryParams,
 } from './utils'
@@ -136,6 +137,9 @@ export function parsePerawalletAppUri(
 
     if (cleanPath === 'asset-transfer') {
         if (!params.receiverAddress) return null
+        // An absent asset id defaults to ALGO below; a present one must be
+        // numeric (ARC-90 uint64) or the link is unrecognized.
+        if (params.assetId && !isValidAssetId(params.assetId)) return null
 
         const assetId = params.assetId || ALGO_ASSET_ID
 
@@ -205,7 +209,7 @@ export function parsePerawalletAppUri(
     }
 
     if (cleanPath === 'asset-opt-in') {
-        if (!params.assetId) return null
+        if (!params.assetId || !isValidAssetId(params.assetId)) return null
         return {
             type: DeeplinkType.ASSET_OPT_IN,
             sourceUrl: url,
@@ -215,7 +219,12 @@ export function parsePerawalletAppUri(
     }
 
     if (cleanPath === 'asset-detail') {
-        if (!params.address || !params.assetId) return null
+        if (
+            !params.address ||
+            !params.assetId ||
+            !isValidAssetId(params.assetId)
+        )
+            return null
         return {
             type: DeeplinkType.ASSET_DETAIL,
             sourceUrl: url,

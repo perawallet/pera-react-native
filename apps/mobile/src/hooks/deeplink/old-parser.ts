@@ -27,7 +27,12 @@ import {
     type StakingDeeplink,
     type HomeDeeplink,
 } from './types'
-import { decodeBase64Param, normalizeUrl, parseQueryParams } from './utils'
+import {
+    decodeBase64Param,
+    isValidAssetId,
+    normalizeUrl,
+    parseQueryParams,
+} from './utils'
 import { PERAWALLET_SCHEME } from './constants'
 import { ALGO_ASSET_ID, type Nullable } from '@perawallet/wallet-core-shared'
 
@@ -44,6 +49,12 @@ export const parsePerawalletUri = (
     }
 
     const params = parseQueryParams(normalizedUrl)
+
+    // ARC-90: assetid = 1*DIGIT. `asset` feeds every asset-bearing branch
+    // below; reject a present-but-non-numeric id once, here, so the link
+    // reads as unrecognized instead of forming an opt-in/transfer that
+    // fails later at BigInt(assetId).
+    if (params.asset && !isValidAssetId(params.asset)) return null
 
     const schemeEnd = normalizedUrl.indexOf('://') + 3
     const queryStart = normalizedUrl.indexOf('?')
