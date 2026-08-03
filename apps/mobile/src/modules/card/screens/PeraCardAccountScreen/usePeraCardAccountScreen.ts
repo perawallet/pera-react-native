@@ -55,8 +55,13 @@ export const usePeraCardAccountScreen = (): UsePeraCardAccountScreenResult => {
     }, [accounts, connectedAddress, t])
 
     // Picking a wallet account from the switcher returns to the wallet home.
+    // Names AccountDetails explicitly: a bare 'Home' resolves to this screen,
+    // since the card home lives in that stack too.
     const onSelectAccount = useCallback(() => {
-        navigation.navigate('TabBar', { screen: 'Home' })
+        navigation.navigate('TabBar', {
+            screen: 'Home',
+            params: { screen: 'AccountDetails' },
+        })
     }, [navigation])
 
     // TODO(card): wire the more/scan/inbox actions once their destinations exist.

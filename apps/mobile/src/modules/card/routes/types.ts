@@ -13,17 +13,42 @@
 import { type NavigatorScreenParams } from '@react-navigation/native'
 import { type CardOnboardingStackParamList } from './card-onboarding/types'
 
-export type PeraCardStackParamList = {
-    PeraCardIntro: undefined
-    CardSignIn: undefined
-    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
+/**
+ * The card dashboard is an account home, so it lives in the Home tab's account
+ * stack and keeps the bottom tab bar; its transaction screens follow it there
+ * the way `AssetDetails` sits behind a wallet account.
+ *
+ * Merged into `AccountStackParamsList`; registered by `AccountStackNavigator`.
+ */
+export type PeraCardAccountStackParamList = {
     PeraCardAccount: undefined
-    CardAddFunds: undefined
-    CardConfirmSwap: { sourceAssetId: string; amount: string }
-    CardWithdraw: undefined
     CardTransactions: undefined
     // The row's internal `id` (the list key) — NOT the model's external
     // `transactionId` field. The full object can't be passed: it holds Decimal
     // instances, which aren't serializable navigation state.
     CardTransactionDetail: { id: string }
+}
+
+/**
+ * The card money flows, registered on the root stack like `Staking` and
+ * `TransactionDetails`: they cover the tab bar, and reaching them doesn't mount
+ * `PeraCardStackNavigator` (intro, sign-in and the whole onboarding stack) just
+ * to show one screen.
+ *
+ * Merged into `RootStackParamList`.
+ */
+export type PeraCardFlowParamList = {
+    CardAddFunds: undefined
+    CardConfirmSwap: { sourceAssetId: string; amount: string }
+    CardWithdraw: undefined
+}
+
+/**
+ * The root-level card stack, entered before the user has a usable card:
+ * the marketing intro, sign-in, and the onboarding flow.
+ */
+export type PeraCardStackParamList = {
+    PeraCardIntro: undefined
+    CardSignIn: undefined
+    CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
 }

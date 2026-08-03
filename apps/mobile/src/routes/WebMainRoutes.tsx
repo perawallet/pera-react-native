@@ -22,7 +22,6 @@
 // are exclusive shell states, so they never mount simultaneously.
 import React, { useMemo } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
-import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
@@ -35,11 +34,10 @@ import { ContactsStackNavigator } from '@modules/contacts/routes'
 import { SettingsStackNavigator } from '@modules/settings/routes'
 import { SearchStackNavigator } from '@modules/search/routes'
 import { MessagesStackNavigator } from '@modules/messages/routes'
-import { PeraCardStackNavigator } from '@modules/card'
+import { PeraCardStackNavigator, peraCardFlowScreens } from '@modules/card'
 import { AddAccountStackNavigator } from '@modules/onboarding/routes'
 import { BackupStackNavigator } from '@modules/backup'
 import { ScanQRScreen } from '@modules/menu/screens/ScanQRScreen'
-import { NavigationHeader } from '@components/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
@@ -48,6 +46,7 @@ import { GroupTransactionListScreen } from '@modules/transactions/screens/GroupT
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
 import { withAgeGate } from '@components/AgeGated'
 import { fullScreenLayout } from '@layouts/index'
+import { headeredScreen } from './screen-options'
 import { getSurface } from '@perawallet/wallet-extension-platform-chrome'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
@@ -159,20 +158,25 @@ export const WebMainRoutes = (): React.JSX.Element => {
                         component={MessagesStackNavigator}
                     />
                     {routeCapabilities.peraCard && isPeraCardEnabled && (
-                        <RootStack.Screen
-                            name='PeraCard'
-                            component={PeraCardStackNavigator}
-                        />
+                        <>
+                            <RootStack.Screen
+                                name='PeraCard'
+                                component={PeraCardStackNavigator}
+                            />
+                            {peraCardFlowScreens.map(screen => (
+                                <RootStack.Screen
+                                    key={screen.name}
+                                    name={screen.name}
+                                    options={screen.options}
+                                    layout={fullScreenLayout}
+                                    component={screen.component}
+                                />
+                            ))}
+                        </>
                     )}
                     <RootStack.Screen
                         name='Staking'
-                        options={{
-                            headerShown: true,
-                            title: 'staking.title',
-                            header: (props: NativeStackHeaderProps) => (
-                                <NavigationHeader {...props} />
-                            ),
-                        }}
+                        options={headeredScreen('staking.title')}
                         layout={fullScreenLayout}
                         component={GatedStakingScreen}
                     />
@@ -189,25 +193,15 @@ export const WebMainRoutes = (): React.JSX.Element => {
                         name='GroupTransactionList'
                         layout={fullScreenLayout}
                         component={GroupTransactionListScreen}
-                        options={{
-                            headerShown: true,
-                            header: (props: NativeStackHeaderProps) => (
-                                <NavigationHeader {...props} />
-                            ),
-                            title: 'transactions.group.group_number',
-                        }}
+                        options={headeredScreen(
+                            'transactions.group.group_number',
+                        )}
                     />
                     <RootStack.Screen
                         name='TransactionDetails'
                         layout={fullScreenLayout}
                         component={TransactionDetailsScreen}
-                        options={{
-                            headerShown: true,
-                            header: (props: NativeStackHeaderProps) => (
-                                <NavigationHeader {...props} />
-                            ),
-                            title: 'signing.transactions.details',
-                        }}
+                        options={headeredScreen('signing.transactions.details')}
                     />
                 </RootStack.Navigator>
             </WalletConnectProvider>

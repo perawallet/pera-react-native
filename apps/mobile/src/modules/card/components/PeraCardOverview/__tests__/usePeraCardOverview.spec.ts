@@ -35,7 +35,17 @@ vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
         ...actual,
-        useNavigation: () => ({ navigate: mockNavigate }),
+        // The hook goes through useAppNavigation, which reads all of these
+        // off the navigation object at call time — stub them all so the mock
+        // doesn't silently hand out undefined.
+        useNavigation: () => ({
+            navigate: mockNavigate,
+            push: vi.fn(),
+            replace: vi.fn(),
+            goBack: vi.fn(),
+            canGoBack: vi.fn(() => true),
+            reset: vi.fn(),
+        }),
     }
 })
 

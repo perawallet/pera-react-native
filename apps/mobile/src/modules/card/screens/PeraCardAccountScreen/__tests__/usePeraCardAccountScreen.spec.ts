@@ -128,7 +128,10 @@ describe('usePeraCardAccountScreen', () => {
 
         result.current.onSelectAccount()
 
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'AccountDetails' },
+        })
     })
 
     it('header actions surface the coming-soon toast', () => {

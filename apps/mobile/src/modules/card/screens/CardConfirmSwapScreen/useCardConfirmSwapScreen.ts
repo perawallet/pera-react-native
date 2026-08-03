@@ -33,7 +33,7 @@ import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
 import { type Maybe } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { type PeraCardStackParamList } from '../../routes/types'
+import { type PeraCardFlowParamList } from '../../routes/types'
 import { useCardAddFundsSwap } from '../CardAddFundsScreen/useCardAddFundsSwap'
 
 const EMPTY_VALUE = '—'
@@ -58,9 +58,9 @@ type UseCardConfirmSwapScreenResult = {
 
 export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     const { params } =
-        useRoute<RouteProp<PeraCardStackParamList, 'CardConfirmSwap'>>()
+        useRoute<RouteProp<PeraCardFlowParamList, 'CardConfirmSwap'>>()
     const navigation =
-        useNavigation<NativeStackNavigationProp<PeraCardStackParamList>>()
+        useNavigation<NativeStackNavigationProp<PeraCardFlowParamList>>()
     const { network } = useNetwork()
     const { t } = useLanguage()
     const { successToast, errorToast } = useToast()

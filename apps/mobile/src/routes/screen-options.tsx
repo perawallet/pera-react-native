@@ -10,14 +10,20 @@
  limitations under the License
  */
 
-export { PeraCardStackNavigator } from './routes'
-export type { PeraCardStackParamList } from './routes'
-export type { CardOnboardingStackParamList } from './routes/card-onboarding'
+import {
+    type NativeStackHeaderProps,
+    type NativeStackNavigationOptions,
+} from '@react-navigation/native-stack'
+import { NavigationHeader } from '@components/NavigationHeader'
 
-// Card screens registered by navigators outside this module.
-export {
-    peraCardAccountScreens,
-    peraCardFlowScreens,
-} from './routes/screen-descriptors'
-export type { PeraCardAccountStackParamList } from './routes'
-export type { PeraCardFlowParamList } from './routes'
+/**
+ * Screen options for a root-level destination that shows the shared
+ * `NavigationHeader`. `title` is an i18n key; `NavigationHeader` translates it.
+ */
+export const headeredScreen = (
+    title: string,
+): NativeStackNavigationOptions => ({
+    headerShown: true,
+    title,
+    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />,
+})
