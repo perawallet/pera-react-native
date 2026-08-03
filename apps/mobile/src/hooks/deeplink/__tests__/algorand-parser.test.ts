@@ -166,6 +166,29 @@ describe('ARC-90 Algorand Parser', () => {
         })
     })
 
+    describe('Non-numeric asset id (ARC-90: assetid = 1*DIGIT)', () => {
+        it('rejects a non-numeric asset id on an opt-in', () => {
+            expect(
+                parseAlgorandUri('algorand://?amount=0&asset=abc'),
+            ).toBeNull()
+        })
+
+        it('rejects a negative asset id on an opt-in', () => {
+            expect(parseAlgorandUri('algorand://?amount=0&asset=-1')).toBeNull()
+        })
+
+        it('rejects a non-numeric asset id on a transfer', () => {
+            expect(
+                parseAlgorandUri(`algorand://${TEST_ADDRESS}?asset=abc`),
+            ).toBeNull()
+            expect(
+                parseAlgorandUri(
+                    `algorand://${TEST_ADDRESS}?amount=100&asset=-1`,
+                ),
+            ).toBeNull()
+        })
+    })
+
     describe('Keyreg', () => {
         it('parses keyreg transaction (ARC-26 votekd field)', () => {
             const result = parseAlgorandUri(

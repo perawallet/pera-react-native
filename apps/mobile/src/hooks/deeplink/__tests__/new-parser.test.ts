@@ -122,6 +122,45 @@ describe('Deeplink Parser - New Format', () => {
         })
     })
 
+    describe('Non-numeric asset id (ARC-90: assetid = 1*DIGIT)', () => {
+        // The app-scheme parser rejects at the boundary (returns null); the
+        // orchestrator then falls through to the old parser's safe HOME
+        // no-op rather than forming a broken ASSET_* deeplink — same as the
+        // other missing/invalid-param cases in this file.
+        it('rejects a non-numeric / negative asset id on an opt-in', () => {
+            expect(
+                parsePerawalletAppUri(
+                    'perawallet://app/asset-opt-in/?assetId=abc',
+                ),
+            ).toBeNull()
+            expect(
+                parsePerawalletAppUri(
+                    'perawallet://app/asset-opt-in/?assetId=-1',
+                ),
+            ).toBeNull()
+            expect(
+                parseDeeplink('perawallet://app/asset-opt-in/?assetId=abc')
+                    ?.type,
+            ).toBe(DeeplinkType.HOME)
+        })
+
+        it('rejects a non-numeric asset id on a transfer', () => {
+            expect(
+                parsePerawalletAppUri(
+                    `perawallet://app/asset-transfer/?assetId=abc&receiverAddress=${TEST_RECEIVER_ADDRESS}&amount=99999`,
+                ),
+            ).toBeNull()
+        })
+
+        it('rejects a non-numeric asset id on asset-detail', () => {
+            expect(
+                parsePerawalletAppUri(
+                    `perawallet://app/asset-detail/?address=${TEST_ADDRESS}&assetId=abc`,
+                ),
+            ).toBeNull()
+        })
+    })
+
     describe('Swap', () => {
         it('parses swap with asset IDs', () => {
             const result = parseDeeplink(

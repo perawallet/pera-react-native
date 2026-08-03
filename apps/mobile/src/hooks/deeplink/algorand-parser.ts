@@ -22,6 +22,7 @@ import {
     type DiscoverBrowserDeeplink,
 } from './types'
 import { parseAlgorandURI } from './arc90-parser'
+import { isValidAssetId } from './utils'
 // config and Networks removed because unused
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -51,6 +52,13 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
         // A present-but-invalid address is corruption (e.g. a truncated QR),
         // not an address-less opt-in — reject rather than silently prompting.
         if (address && !isValidAlgorandAddress(address)) {
+            return null
+        }
+
+        // ARC-90: assetid = 1*DIGIT. Reject a present-but-non-numeric asset
+        // id here so it reads as unrecognized, rather than forming a valid
+        // opt-in/transfer that fails later at BigInt(assetId).
+        if (assetId && !isValidAssetId(assetId)) {
             return null
         }
 
