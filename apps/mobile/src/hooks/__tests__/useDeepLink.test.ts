@@ -80,6 +80,19 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     decodeFromBase64: vi.fn((b64: string) =>
         Uint8Array.from(Buffer.from(b64, 'base64')),
     ),
+    ErrorCategory: {
+        NETWORK: 'network',
+        VALIDATION: 'validation',
+        ACCOUNTS: 'accounts',
+        ASSETS: 'assets',
+        BLOCKCHAIN: 'blockchain',
+        STORAGE: 'storage',
+        UNKNOWN: 'unknown',
+        KMS: 'kms',
+        WALLETCONNECT: 'walletconnect',
+        STAKING: 'staking',
+        TRANSACTIONS: 'transactions',
+    },
 }))
 
 // useDeepLink reads the device's biometric level to gate passkey deeplinks.

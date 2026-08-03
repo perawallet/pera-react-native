@@ -45,6 +45,14 @@ export enum ErrorCategory {
 export interface ErrorMetadata {
     severity: ErrorSeverity
     category: ErrorCategory
+    /**
+     * i18n key resolving to the user-facing **body** string. Declaring this is
+     * what makes an error user-facing; without it the error surfaces as
+     * `errors.general.*` and its `message` stays log-only. Resolved in the app
+     * layer — packages must never import i18n.
+     */
+    messageKey?: string
+    /** Interpolation values for `messageKey`; also attached to logs. */
     params?: Record<string, unknown>
     recoverable: boolean
     retryable: boolean

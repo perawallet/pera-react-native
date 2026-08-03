@@ -142,3 +142,25 @@ describe('KMS Error Classes', () => {
         })
     })
 })
+
+describe('kms error copy', () => {
+    test('KeyAccessError declares the kms key-access key', () => {
+        const error = new KeyAccessError()
+
+        expect(error.metadata.messageKey).toBe('errors.kms.key_access_error')
+    })
+
+    test('KeyNotFoundError param name matches the copy placeholder', () => {
+        const error = new KeyNotFoundError('wallet-1')
+
+        expect(error.metadata.messageKey).toBe('errors.kms.key_not_found')
+        expect(error.metadata.params).toEqual({ keyId: 'wallet-1' })
+    })
+
+    test('InvalidKeyError param name matches the copy placeholder', () => {
+        const error = new InvalidKeyError('wallet-1')
+
+        expect(error.metadata.messageKey).toBe('errors.kms.invalid_key')
+        expect(error.metadata.params).toEqual({ keyId: 'wallet-1' })
+    })
+})

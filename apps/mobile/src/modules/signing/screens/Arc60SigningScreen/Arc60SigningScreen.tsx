@@ -33,7 +33,7 @@ export const Arc60SigningScreen = () => {
         parsed,
         isPending,
         canConfirm,
-        error,
+        errorMessage,
         hasOriginMismatch,
         handleApprove,
         handleReject,
@@ -113,8 +113,8 @@ export const Arc60SigningScreen = () => {
                     onDetailsPress={handleDetailsPress}
                 />
             </PWView>
-            {!!error && (
-                <PWText style={styles.errorText}>{error.message}</PWText>
+            {!!errorMessage && (
+                <PWText style={styles.errorText}>{errorMessage}</PWText>
             )}
         </PWScreen>
     )

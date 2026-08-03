@@ -23,6 +23,7 @@ import { shareCsvFile } from '@utils/shareCsvFile'
 import { useToast } from '@hooks/useToast'
 import { TransactionFilter } from '../../TransactionsFilterContent/types'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { AppError } from '@perawallet/wallet-core-shared'
 
 const mockRequestBottomSheet = vi.fn()
 vi.mock('@modules/bottom-sheet', () => ({
@@ -34,10 +35,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn(),
-    useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
-}))
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...actual,
+        useNetwork: vi.fn(),
+        useNetworkStore: { getState: () => ({ network: 'mainnet' }) },
+    }
+})
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useTransactionHistoryQuery: vi.fn(),
@@ -50,6 +58,10 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@hooks/useErrorToast', () => ({
     useErrorToast: vi.fn(),
+}))
+
+vi.mock('@hooks/useAlgodErrorMessage', () => ({
+    useAlgodErrorMessage: () => ({ getMessage: vi.fn() }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -90,6 +102,7 @@ describe('useAccountHistory', () => {
     }
     const mockNetwork = { network: 'mainnet' }
     const mockShowToast = vi.fn()
+    const mockShowError = vi.fn()
     const mockExportCsv = vi.fn()
     const mockFetchNextPage = vi.fn()
     const mockRefetch = vi.fn()
@@ -104,7 +117,7 @@ describe('useAccountHistory', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any)
         vi.mocked(useErrorToast).mockReturnValue({
-            showError: mockShowToast,
+            showError: mockShowError,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
 
@@ -392,7 +405,7 @@ describe('useAccountHistory', () => {
             expect(shareCsvFile).toHaveBeenCalledWith('test.csv', 'data')
         })
 
-        it('shows error toast when share fails', async () => {
+        it('delegates to useErrorToast rather than rendering the raw error when share fails', async () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let successCallback: (result: any) => Promise<void> = async () => {}
             vi.mocked(useCsvExportMutation).mockImplementation(
@@ -407,23 +420,22 @@ describe('useAccountHistory', () => {
                 },
             )
 
-            vi.mocked(shareCsvFile).mockRejectedValueOnce(
-                new Error('Share cancelled'),
-            )
+            const shareError = new Error('Share cancelled')
+            vi.mocked(shareCsvFile).mockRejectedValueOnce(shareError)
 
             renderHook(() => useAccountHistory())
 
             await successCallback({ filename: 'f', csvContent: 'c' })
 
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'error',
-                    body: 'Error: Share cancelled',
-                }),
+            expect(mockShowError).toHaveBeenCalledWith(
+                shareError,
+                'errors.general.title',
             )
+            // The raw error must never be handed directly to showToast.
+            expect(mockShowToast).not.toHaveBeenCalled()
         })
 
-        it('shows error toast when export fails', () => {
+        it('delegates to useErrorToast rather than rendering the raw error when export fails', () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let errorCallback: (error: any) => void = () => {}
             vi.mocked(useCsvExportMutation).mockImplementation(
@@ -440,14 +452,15 @@ describe('useAccountHistory', () => {
 
             renderHook(() => useAccountHistory())
 
-            errorCallback(new Error('API Down'))
+            const exportError = new AppError('raw internal detail', {})
+            errorCallback(exportError)
 
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    type: 'error',
-                    body: 'API Down',
-                }),
+            expect(mockShowError).toHaveBeenCalledWith(
+                exportError,
+                'errors.general.title',
             )
+            // The raw error must never be handed directly to showToast.
+            expect(mockShowToast).not.toHaveBeenCalled()
         })
     })
 

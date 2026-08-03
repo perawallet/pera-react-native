@@ -32,6 +32,7 @@ export class KeyManagementError extends AppError {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.KMS,
                 retryable: false,
+                messageKey: 'errors.kms.generic',
                 ...metadata,
             },
             originalError,
@@ -44,7 +45,9 @@ export class KeyManagementError extends AppError {
  */
 export class KeyAccessError extends KeyManagementError {
     constructor(originalError?: Error) {
-        super('Failed to access the signing key', originalError)
+        super('Failed to access the signing key', originalError, {
+            messageKey: 'errors.kms.key_access_error',
+        })
     }
 }
 
@@ -55,6 +58,7 @@ export class KeyNotFoundError extends KeyManagementError {
     constructor(keyId: string) {
         super('The specified key was not found.', undefined, {
             severity: ErrorSeverity.CRITICAL,
+            messageKey: 'errors.kms.key_not_found',
             params: { keyId },
         })
     }
@@ -67,6 +71,7 @@ export class InvalidKeyError extends KeyManagementError {
     constructor(keyId: string) {
         super('The specified key is invalid.', undefined, {
             severity: ErrorSeverity.CRITICAL,
+            messageKey: 'errors.kms.invalid_key',
             params: { keyId },
         })
     }

@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useToast } from '@hooks/useToast'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useTransactionHistoryQuery,
@@ -160,7 +160,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     }, [refetch])
 
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
 
     const { exportCsv, isLoading: isExportingCsv } = useCsvExportMutation({
         network,
@@ -169,21 +169,12 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
                 try {
                     await shareCsvFile(result.filename, result.csvContent)
                 } catch (error) {
-                    // guardrails-ignore-next-line no-error-toast-in-catch reason: csv share path stringifies the raw error directly into the body; predates useErrorToast
-                    showToast({
-                        title: t('errors.general.title'),
-                        body: `${error}`,
-                        type: 'error',
-                    })
+                    showError(error, t('errors.general.title'))
                 }
             })()
         },
         onError: error => {
-            showToast({
-                title: t('errors.general.title'),
-                body: error?.message || t('errors.general.body'),
-                type: 'error',
-            })
+            showError(error, t('errors.general.title'))
         },
     })
 

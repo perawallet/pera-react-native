@@ -252,3 +252,34 @@ describe('isRetryableError', () => {
         expect(isRetryableError(error)).toBe(true)
     })
 })
+
+describe('AppError messageKey', () => {
+    test('preserves messageKey and params on the instance', () => {
+        const error = new AppError('log-only text', {
+            category: ErrorCategory.VALIDATION,
+            messageKey: 'errors.validation.invalid_address',
+            params: { address: 'ABC' },
+        })
+
+        expect(error.metadata.messageKey).toBe(
+            'errors.validation.invalid_address',
+        )
+        expect(error.metadata.params).toEqual({ address: 'ABC' })
+    })
+
+    test('leaves messageKey undefined when not declared', () => {
+        const error = new AppError('log-only text', {})
+
+        expect(error.metadata.messageKey).toBeUndefined()
+    })
+
+    test('includes messageKey in the serialized form', () => {
+        const error = new AppError('log-only text', {
+            messageKey: 'errors.validation.generic',
+        })
+
+        expect(error.toJSON().metadata.messageKey).toBe(
+            'errors.validation.generic',
+        )
+    })
+})
