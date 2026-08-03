@@ -75,7 +75,10 @@ export const AccountMenu = (props: AccountMenuProps) => {
 
             const acct = item.account
             return (
-                <PWTouchableOpacity onPress={() => handleTap(acct)}>
+                <PWTouchableOpacity
+                    onPress={() => handleTap(acct)}
+                    testID={`account_switcher_row_${acct.address}`}
+                >
                     <AccountWithBalance
                         account={acct}
                         isHighlighted={acct.address === selectedAccountAddress}
