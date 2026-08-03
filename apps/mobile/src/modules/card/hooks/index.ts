@@ -41,6 +41,7 @@ export {
     type UseCardFundingSourcePickerResult,
     type UseCardFundingSourcePickerParams,
 } from './useCardFundingSourcePicker'
+export { useIsCardAutoFundingActive } from './useIsCardAutoFundingActive'
 export {
     useEscrowCardCreation,
     type UseEscrowCardCreationResult,

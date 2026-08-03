@@ -15,14 +15,13 @@ import { Decimal } from 'decimal.js'
 import {
     AUTO_FUNDING_PER_TX_LIMIT_USD,
     DEFAULT_CARD_CURRENCY,
-    FundingType,
     useCardExternalWalletsQuery,
     useCardInternalWalletsQuery,
     useCardStore,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useCardComingSoonToast } from '../../hooks'
+import { useCardComingSoonToast, useIsCardAutoFundingActive } from '../../hooks'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -59,11 +58,10 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     // Reaches both the Home tab's card screens and the root-stack money flows,
     // so it needs the app-wide navigation type rather than one param list.
     const navigation = useAppNavigation()
-    const selectedFundingType = useCardStore(state => state.selectedFundingType)
     const connectedAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
     )
-    const isAutoFunding = selectedFundingType === FundingType.Auto
+    const isAutoFunding = useIsCardAutoFundingActive()
     const { transactions, isLoading } = useCardTransactionsQuery()
 
     const transactionSections = useMemo(

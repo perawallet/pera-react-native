@@ -14,6 +14,7 @@ import { describe, test, expect } from 'vitest'
 import {
     canSignArbitraryData,
     canSignArc60,
+    canSignProgram,
     canSignViaParticipants,
     canSignWith,
     findAccountByKey,
@@ -487,6 +488,21 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
         expect(canSignArc60(hardware)).toBe(true)
         expect(canSignArc60(watch)).toBe(false)
         expect(canSignArc60(multisig)).toBe(false)
+    })
+
+    test('canSignProgram excludes hardware, which has no program-signing path', () => {
+        expect(canSignProgram(localKey)).toBe(true)
+        expect(canSignProgram(hardware)).toBe(false)
+        expect(canSignProgram(watch)).toBe(false)
+        expect(canSignProgram(multisig)).toBe(false)
+    })
+
+    // Guards the reason canSignProgram checks the account type rather than
+    // relying on hardware accounts happening to carry no keyPairId: the field
+    // is optional on the base type, so nothing stops one appearing.
+    test('canSignProgram stays false for hardware even with a keyPairId', () => {
+        expect(canSignProgram({ ...hardware, keyPairId: 'pk1' })).toBe(false)
+        expect(canSignArc60({ ...hardware, keyPairId: 'pk1' })).toBe(true)
     })
 })
 

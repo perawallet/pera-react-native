@@ -228,6 +228,17 @@ export const canSignArbitraryData = (account: WalletAccount): boolean =>
 export const canSignArc60 = (account: WalletAccount): boolean =>
     canSignArbitraryData(account) || isHardwareWalletAccount(account)
 
+/**
+ * Whether `account` can sign a LogicSig *program* (delegated LSig / dLSig),
+ * which requires the raw private key. Hardware wallets are excluded by design,
+ * not merely because they carry no `keyPairId`: their firmware signs
+ * transactions and ARC-60 payloads only, and will never sign a program. That
+ * makes this a permanent limitation, unlike {@link canSignArc60}, which Ledger
+ * does satisfy.
+ */
+export const canSignProgram = (account: WalletAccount): boolean =>
+    !isHardwareWalletAccount(account) && hasSigningKeys(account)
+
 /** The "rekeyed but stranded" display state, distinct from `isWatchAccount`. */
 export const isRekeyedUnsignable = (
     account: WalletAccount,
