@@ -163,6 +163,23 @@ describe('compileAutoDrawProgram', () => {
 })
 
 describe('verifyAutoDrawProgram', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        getNetworkConfig.mockReturnValue({ cardAutoDrawProgram: '' })
+    })
+
+    it('reads the pin from the network config when none is passed', () => {
+        const program = new Uint8Array([1, 2, 3, 4])
+        getNetworkConfig.mockReturnValue({
+            cardAutoDrawProgram: encodeToBase64(program),
+        })
+
+        expect(() => verifyAutoDrawProgram(program, 'testnet')).not.toThrow()
+        expect(() =>
+            verifyAutoDrawProgram(new Uint8Array([9, 9, 9]), 'testnet'),
+        ).toThrow(AutoDrawProgramUnverifiedError)
+    })
+
     it('accepts a program whose bytes match the pinned value', () => {
         const program = new Uint8Array([1, 2, 3, 4])
         const pins = { testnet: encodeToBase64(program) }

@@ -171,6 +171,10 @@ export const configSchema = z
         testnetCardW3CardAppId: z.string(),
         mainnetCardKillswitchAppId: z.string(),
         testnetCardKillswitchAppId: z.string(),
+        // Base64 of the compiled AutoDraw program, pinned per network beside the
+        // app ids it is derived from. Build-time only — never remote config.
+        mainnetCardAutoDrawProgram: z.string(),
+        testnetCardAutoDrawProgram: z.string(),
         mainnetCardUsdcAssetId: z.string(),
         testnetCardUsdcAssetId: z.string(),
 
@@ -375,6 +379,9 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     testnetCardW3CardAppId: '',
     mainnetCardKillswitchAppId: '',
     testnetCardKillswitchAppId: '',
+    // Empty until the program is pinned per network; an empty pin fails closed.
+    mainnetCardAutoDrawProgram: '',
+    testnetCardAutoDrawProgram: '',
     mainnetCardUsdcAssetId: '31566704',
     testnetCardUsdcAssetId: '10458941',
 
@@ -486,6 +493,8 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     testnetCardW3CardAppId: 'TESTNET_CARD_W3CARD_APP_ID',
     mainnetCardKillswitchAppId: 'MAINNET_CARD_KILLSWITCH_APP_ID',
     testnetCardKillswitchAppId: 'TESTNET_CARD_KILLSWITCH_APP_ID',
+    mainnetCardAutoDrawProgram: 'MAINNET_CARD_AUTODRAW_PROGRAM',
+    testnetCardAutoDrawProgram: 'TESTNET_CARD_AUTODRAW_PROGRAM',
     mainnetCardUsdcAssetId: 'MAINNET_CARD_USDC_ASSET_ID',
     testnetCardUsdcAssetId: 'TESTNET_CARD_USDC_ASSET_ID',
 

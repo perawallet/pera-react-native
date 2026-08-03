@@ -99,19 +99,6 @@ export const renderAutoDrawTeal = ({
         .replaceAll(TMPL_GENESIS_HASH, genesisHashHex)
 }
 
-/**
- * Base64 of the compiled AutoDraw program pinned per network. The compile
- * output is deterministic (fixed template + app IDs + genesis hash), so the
- * bytes algod returns MUST equal the value pinned here.
- *
- * EMPTY until the compiled artifacts are generated per network and committed:
- * render the template for the network, compile once, base64 the result, and
- * drop the string in here. Until a network is pinned, {@link verifyAutoDrawProgram}
- * fails closed for it — the wallet refuses to sign rather than trust an
- * unverified algod-returned program. (PERA-4712, PROVIDE BEFORE LAUNCH)
- */
-export const EXPECTED_AUTODRAW_PROGRAMS: Partial<Record<Network, string>> = {}
-
 /** Thrown when algod's compiled AutoDraw program doesn't match the pinned bytes. */
 export class AutoDrawProgramUnverifiedError extends Error {
     constructor(network: Network) {
@@ -123,18 +110,23 @@ export class AutoDrawProgramUnverifiedError extends Error {
 }
 
 /**
- * Fails closed unless the compiled program exactly matches the pinned bytes for
- * the network. Runs in EVERY environment — staging/testnet builds sign real
- * user keys too, so there is no production-only escape hatch (unlike
- * `verifyDelegationProgram`). An unpinned network has no expected value, so
- * this always rejects until a program is pinned above. (PERA-4712)
+ * Fails closed unless the compiled program exactly matches the pin for the
+ * network. Runs in EVERY environment — staging/testnet builds sign real user
+ * keys too, so there is no production-only escape hatch (unlike
+ * `verifyDelegationProgram`). The pin lives in the network config beside the app
+ * IDs it is derived from (`cardAutoDrawProgram`); an unpinned network has an
+ * empty value and so always rejects. (PERA-4712)
  */
 export const verifyAutoDrawProgram = (
     program: Uint8Array,
     network: Network,
-    expected: Partial<Record<Network, string>> = EXPECTED_AUTODRAW_PROGRAMS,
+    expected?: Partial<Record<Network, string>>,
 ): void => {
-    if (encodeToBase64(program) !== expected[network]) {
+    const pinned = expected
+        ? expected[network]
+        : getNetworkConfig(network).cardAutoDrawProgram
+
+    if (!pinned || encodeToBase64(program) !== pinned) {
         throw new AutoDrawProgramUnverifiedError(network)
     }
 }
