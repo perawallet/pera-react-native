@@ -21,6 +21,7 @@ import { useBottomSheet } from '@modules/bottom-sheet'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
 import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
 import { useReceiveFunds } from '@modules/transactions/hooks'
+import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { trackEvent, HomeEvent, AccountDetailsEvent } from '@analytics'
 import { AccountOptionsContent } from '../AccountOptionsContent'
 import { type UseAccountOverviewModalResult } from './AccountOverviewModalContext'
@@ -37,6 +38,8 @@ export type UseAccountOverviewResult = {
     scrollingEnabled: boolean
     onScrollEnabledChange: (enabled: boolean) => void
     isLoading: boolean
+    isRefreshing: boolean
+    handleRefresh: () => void
     contextValue: UseAccountOverviewModalResult
 }
 
@@ -124,6 +127,16 @@ export const useAccountOverview = ({
     }, [hasCompletedInitialLoad, isBalancesPending])
     const isLoading = !hasCompletedInitialLoad
 
+    // The summary/holdings queries read SQLite with `staleTime: Infinity`, so a
+    // pull has to go through the sync service to pull fresh chain state.
+    const refreshAddresses = useMemo(
+        () => (account?.address ? [account.address] : []),
+        [account?.address],
+    )
+    const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
+        addresses: refreshAddresses,
+    })
+
     const contextValue = useMemo<UseAccountOverviewModalResult>(
         () => ({
             account,
@@ -142,6 +155,8 @@ export const useAccountOverview = ({
         scrollingEnabled,
         onScrollEnabledChange: setScrollingEnabled,
         isLoading,
+        isRefreshing,
+        handleRefresh,
         contextValue,
     }
 }

@@ -21,6 +21,8 @@ const {
     mockBalancesPending,
     mockHistoryPending,
     mockRequestBottomSheet,
+    mockRefreshAccounts,
+    mockInvalidateQueries,
 } = vi.hoisted(() => ({
     mockSetSelectedAccount: vi.fn(),
     mockSetCanSelectAccount: vi.fn(),
@@ -30,6 +32,19 @@ const {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (_req: any) => Promise.resolve(undefined) as Promise<unknown>,
     ),
+    mockRefreshAccounts: vi.fn(() => Promise.resolve()),
+    mockInvalidateQueries: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-background', () => ({
+    getSyncService: () => ({
+        refreshAccounts: mockRefreshAccounts,
+        invalidateQueries: mockInvalidateQueries,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -76,6 +91,14 @@ vi.mock('@modules/transactions/hooks', () => ({
 
 const mockAccount = { address: 'test-address' } as WalletAccount
 
+const createDeferred = () => {
+    let resolve: () => void = () => {}
+    const promise = new Promise<void>(res => {
+        resolve = () => res()
+    })
+    return { promise, resolve }
+}
+
 const renderUseAccountOverview = (
     onSwipeEnabledChange?: (enabled: boolean) => void,
 ) =>
@@ -89,6 +112,40 @@ describe('useAccountOverview', () => {
         mockBalancesPending.value = false
         mockHistoryPending.value = false
         mockRequestBottomSheet.mockResolvedValue(undefined)
+        mockRefreshAccounts.mockResolvedValue(undefined)
+    })
+
+    it('refreshes the viewed account through the sync service when handleRefresh is called', async () => {
+        const { result } = renderUseAccountOverview()
+
+        await act(async () => {
+            result.current.handleRefresh()
+        })
+
+        expect(mockRefreshAccounts).toHaveBeenCalledWith(
+            ['test-address'],
+            'mainnet',
+        )
+        expect(mockInvalidateQueries).toHaveBeenCalledTimes(1)
+    })
+
+    it('reports isRefreshing while the sync refresh is in flight', async () => {
+        const deferred = createDeferred()
+        mockRefreshAccounts.mockReturnValue(deferred.promise)
+        const { result } = renderUseAccountOverview()
+
+        expect(result.current.isRefreshing).toBe(false)
+
+        act(() => {
+            result.current.handleRefresh()
+        })
+        expect(result.current.isRefreshing).toBe(true)
+
+        await act(async () => {
+            deferred.resolve()
+            await deferred.promise
+        })
+        expect(result.current.isRefreshing).toBe(false)
     })
 
     it('requests the send funds bottom sheet when openSendFunds is called', () => {

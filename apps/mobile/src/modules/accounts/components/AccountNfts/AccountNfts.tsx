@@ -15,6 +15,7 @@ import {
     PWButton,
     PWFlatList,
     PWIcon,
+    PWRefreshControl,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -85,6 +86,7 @@ export const AccountNfts = () => {
         collectibles,
         collectibleCount,
         isPending,
+        isRefreshing,
         hasAccount,
         canOptIn,
         galleryLayout,
@@ -92,6 +94,7 @@ export const AccountNfts = () => {
         setSearchFilter,
         setGalleryLayout,
         handlePress,
+        handleRefresh,
         openManageSheet,
         openAddNftSheet,
         flatListRef,
@@ -227,6 +230,12 @@ export const AccountNfts = () => {
                         keyExtractor={keyExtractor}
                         automaticallyAdjustKeyboardInsets
                         contentContainerStyle={styles.contentContainer}
+                        refreshControl={
+                            <PWRefreshControl
+                                isRefreshing={isRefreshing}
+                                onRefresh={handleRefresh}
+                            />
+                        }
                         ListEmptyComponent={
                             <EmptyView
                                 title={t('account_details.nfts.nomatch_title')}

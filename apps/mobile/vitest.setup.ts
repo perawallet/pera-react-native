@@ -719,6 +719,9 @@ vi.mock('@components/core', () => {
                 : null,
         PWPinCircles: createMockComponent('PWPinCircles'),
         PWRadioButton: createMockComponent('PWRadioButton'),
+        // Lists pass this as the `refreshControl` prop, never as a child; the
+        // pull gesture has no jsdom equivalent, so render nothing.
+        PWRefreshControl: () => null,
         PWRoundIcon: vi.fn(({ icon, size, testID, ...props }: any) =>
             React.createElement('div', {
                 ...props,

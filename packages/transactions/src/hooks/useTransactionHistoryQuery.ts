@@ -81,6 +81,13 @@ export type UseTransactionHistoryQueryResult = {
      * queries. See `getQueryRenderState` in `@perawallet/wallet-core-shared`.
      */
     isPaused: boolean
+    /**
+     * Whether a refetch of already-loaded pages is in flight. For this DB-first
+     * query that means re-reading SQLite, not pulling fresh chain state — a
+     * pull-to-refresh surface should compose this with the sync service's own
+     * in-flight flag rather than treat it as the whole refresh.
+     */
+    isRefetching: boolean
     /** The error if one occurred */
     error: Nullable<Error>
     /** Whether there are more pages to fetch */
@@ -311,6 +318,7 @@ export const useTransactionHistoryQuery = (
         isFetchingNextPage: query.isFetchingNextPage,
         isError: query.isError,
         isPaused: query.isPaused,
+        isRefetching: query.isRefetching,
         error: query.error,
         hasNextPage: query.hasNextPage ?? false,
         fetchNextPage: () => void query.fetchNextPage(),

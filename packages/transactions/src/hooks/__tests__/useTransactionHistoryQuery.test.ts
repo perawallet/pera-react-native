@@ -584,4 +584,32 @@ describe('useTransactionHistoryQuery', () => {
 
         expect(result.current.transactions).toBe(firstIdentity)
     })
+
+    test('reports isRefetching while a refetch of the first page is in flight', async () => {
+        const { result } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.isRefetching).toBe(false)
+
+        let releaseDbRead: () => void = () => {}
+        mockGetTransactionHistory.mockImplementation(
+            () =>
+                new Promise(resolve => {
+                    releaseDbRead = () => resolve([mockTransaction])
+                }),
+        )
+
+        result.current.refetch()
+        await waitFor(() => expect(result.current.isRefetching).toBe(true))
+
+        releaseDbRead()
+        await waitFor(() => expect(result.current.isRefetching).toBe(false))
+    })
 })
