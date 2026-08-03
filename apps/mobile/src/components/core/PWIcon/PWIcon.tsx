@@ -101,12 +101,29 @@ export const PWIcon = ({
     }
     const resolvedStyle = [rigidSizeStyle, style]
 
+    // Every icon is a react-native-svg subtree of real Android Views, and
+    // TalkBack's node walk is quadratic over such a subtree with a node-info
+    // allocation per visit (ReactAccessibilityDelegate.getTalkbackDescription ->
+    // isSpeakingNode -> hasNonActionableSpeakingDescendants). That walk was the
+    // app's top ANR. A decorative icon offers a screen reader nothing — the
+    // name belongs on the control wrapping it — so keep it out of the tree:
+    // 'no-hide-descendants' is the exact flag isSpeakingNode bails on.
+    const isDecorative =
+        rest.accessibilityLabel === undefined && onPress === undefined
+    const decorativeAccessibilityProps = isDecorative
+        ? ({
+              accessibilityElementsHidden: true,
+              importantForAccessibility: 'no-hide-descendants',
+          } as const)
+        : undefined
+
     return (
         <IconComponent
             width={resolvedSize}
             height={resolvedSize}
             color={resolvedColor}
             onPress={onPress ? handlePress : undefined}
+            {...decorativeAccessibilityProps}
             {...restProps}
             style={resolvedStyle}
         />
