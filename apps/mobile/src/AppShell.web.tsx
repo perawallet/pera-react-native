@@ -187,7 +187,7 @@ const OnboardingTabPrompt = (): React.JSX.Element => {
 }
 
 const ShellRouter = (): React.JSX.Element => {
-    const { shellState } = useWebAppShell()
+    const { shellState, fcmToken } = useWebAppShell()
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
 
@@ -230,7 +230,7 @@ const ShellRouter = (): React.JSX.Element => {
         case 'main': {
             // WebMainRoutes mounts its own BottomSheetManager inside its
             // NavigationContainer (native parity) — do not add another here.
-            return <WebMainRoutes />
+            return <WebMainRoutes fcmToken={fcmToken} />
         }
         case 'error': {
             return (

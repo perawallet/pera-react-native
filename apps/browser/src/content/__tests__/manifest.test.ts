@@ -26,6 +26,8 @@ const manifestPath = path.resolve(process.cwd(), 'manifest.json')
 
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as {
     content_scripts: ContentScriptEntry[]
+    permissions: string[]
+    host_permissions: string[]
 }
 
 const discoverBidaliEntries = manifest.content_scripts.filter(entry =>
@@ -107,5 +109,20 @@ describe('manifest.json secure-origin posture', () => {
         for (const entry of pageFacing) {
             expect(entry.matches).toContain('https://*/*')
         }
+    })
+})
+
+describe('manifest.json push notification requirements', () => {
+    // Without `notifications`, pushManager.subscribe({ userVisibleOnly: true })
+    // throws NotAllowedError — and the FCM SDK hardcodes that flag, so dropping
+    // this permission silently kills token acquisition.
+    it('declares the notifications permission', () => {
+        expect(manifest.permissions).toContain('notifications')
+    })
+
+    it('allows the FCM token registration host', () => {
+        expect(manifest.host_permissions).toContain(
+            'https://fcmregistrations.googleapis.com/*',
+        )
     })
 })

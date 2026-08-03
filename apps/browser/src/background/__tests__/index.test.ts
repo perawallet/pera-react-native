@@ -45,6 +45,9 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     isWcPagePairMessage: vi.fn().mockReturnValue(false),
     ensureDeviceInstallationID: vi.fn(),
     startStorageProxyHost: vi.fn(),
+    // ../push calls this at module scope via installPushHandlers; returning
+    // null keeps it from reaching into the Firebase SDK during this suite.
+    getFirebaseApp: vi.fn().mockReturnValue(null),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({

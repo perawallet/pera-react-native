@@ -33,7 +33,7 @@ import {
 } from '@perawallet/wallet-core-background'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { queryClient } from '@providers/QueryProvider'
 
@@ -46,7 +46,10 @@ export type WebShellState =
     | 'dapp-request'
     | 'error'
 
-type UseWebAppShellResult = { shellState: WebShellState }
+type UseWebAppShellResult = {
+    shellState: WebShellState
+    fcmToken: Nullable<string>
+}
 
 export const useWebAppShell = (): UseWebAppShellResult => {
     const { isInitialized, isUnlocked } = useVaultLockState()
@@ -54,6 +57,7 @@ export const useWebAppShell = (): UseWebAppShellResult => {
     const hasAccounts = useHasAccounts()
     const [isBootstrapped, setIsBootstrapped] = useState(false)
     const [hasBootstrapError, setHasBootstrapError] = useState(false)
+    const [fcmToken, setFcmToken] = useState<Nullable<string>>(null)
     const bootstrapStarted = useRef(false)
     const platformInitStarted = useRef(false)
     // The toolbar popup (surface 'popup') can't receive a ?requestId query
@@ -97,10 +101,12 @@ export const useWebAppShell = (): UseWebAppShellResult => {
             hasApiKey: config.backendAPIKey.length > 0,
         })
         // Chrome's initialize() already Promise.allSettled's the three
-        // services, so a single failing one cannot take the others down.
-        // The catch is for the push-notification stub at the end of it.
+        // services, so a single failing one cannot take the others down. The
+        // push notification service runs last and resolves the FCM token;
+        // writing it to state is what eventually reaches the device store.
         void getProvider()
             .initialize()
+            .then(({ token }) => setFcmToken(token ?? null))
             .catch(error => {
                 logger.error('Web platform services init failed', { error })
             })
@@ -159,21 +165,24 @@ export const useWebAppShell = (): UseWebAppShellResult => {
         )
         return {
             shellState: requestId ? 'dapp-request' : 'approval-placeholder',
+            fcmToken,
         }
     }
     if (getSurface() === 'popup' && hasPendingApproval !== false) {
         // Overlaps the vault/bootstrap resolution below: both start out
         // 'resolving', so a popup with no pending approval isn't perceptibly
         // delayed by this check before falling through to the normal flow.
-        if (hasPendingApproval === null) return { shellState: 'resolving' }
-        return { shellState: 'dapp-request' }
+        if (hasPendingApproval === null)
+            return { shellState: 'resolving', fcmToken }
+        return { shellState: 'dapp-request', fcmToken }
     }
-    if (hasBootstrapError) return { shellState: 'error' }
+    if (hasBootstrapError) return { shellState: 'error', fcmToken }
     if (isInitialized === null || isUnlocked === null) {
-        return { shellState: 'resolving' }
+        return { shellState: 'resolving', fcmToken }
     }
-    if (!isInitialized) return { shellState: 'create-password' }
-    if (isUnlocked && !isBootstrapped) return { shellState: 'resolving' }
+    if (!isInitialized) return { shellState: 'create-password', fcmToken }
+    if (isUnlocked && !isBootstrapped)
+        return { shellState: 'resolving', fcmToken }
     // isInitialized && !isUnlocked never reaches here — VaultGate intercepts.
-    return { shellState: showOnboarding ? 'onboarding' : 'main' }
+    return { shellState: showOnboarding ? 'onboarding' : 'main', fcmToken }
 }

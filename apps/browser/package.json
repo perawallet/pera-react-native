@@ -30,7 +30,8 @@
         "@perawallet/wallet-extension-ledger-web-usb": "workspace:*",
         "@perawallet/wallet-extension-platform-chrome": "workspace:*",
         "@perawallet/wallet-extension-platform-driver": "workspace:*",
-        "@sqlite.org/sqlite-wasm": "catalog:"
+        "@sqlite.org/sqlite-wasm": "catalog:",
+        "firebase": "^12.16.0"
     },
     "devDependencies": {
         "@noble/hashes": "catalog:",

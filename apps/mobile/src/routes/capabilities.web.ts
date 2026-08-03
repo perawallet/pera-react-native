@@ -35,7 +35,7 @@ export const routeCapabilities: RouteCapabilities = {
     // only gates those two icon bars.
     qrScanner: false,
     deepLinkPaste: true, // paste a WC URI / perawallet:// link instead
-    pushNotificationSettings: false, // permanently off: no push on web
+    pushNotificationSettings: true, // FCM web push via the background SW
     walletConnectSettings: true, // WC v1 pairing + sessions on web
     passkeysAutofillSettings: true, // WebAuthn-interception credential provider + settings toggle
     storeRating: false, // permanently off: no store review flow

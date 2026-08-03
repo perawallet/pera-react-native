@@ -402,6 +402,9 @@ importers:
       '@sqlite.org/sqlite-wasm':
         specifier: 'catalog:'
         version: 3.53.0-build1
+      firebase:
+        specifier: ^12.16.0
+        version: 12.16.0
     devDependencies:
       '@noble/hashes':
         specifier: 'catalog:'
