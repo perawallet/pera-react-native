@@ -16,8 +16,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 type CardFundingAccountSectionProps = {
-    /** Connected funding-source address; the row offers Connect when absent. */
+    /** Connected funding-source address; the row offers Connect only when absent. */
     address: string | null
+    /** Fires from the Connect affordance; unreachable once an address is set. */
     onChange: () => void
     /** Funding TYPE only applies once a card exists — hides that row until then. */
     hasCard: boolean
@@ -67,21 +68,25 @@ export const CardFundingAccountSection = ({
                         </PWText>
                     )}
                 </PWView>
-                <PWTouchableOpacity
-                    onPress={onChange}
-                    hitSlop={8}
-                    testID='pera_card_change_funding_button'
-                >
-                    <PWText
-                        variant='body'
-                        weight={500}
-                        style={styles.changeLink}
+                {/* TODO(card): re-linking an already-connected funding account
+                    has no robust implementation yet, so only the first-time
+                    Connect is offered. Restore the Change link here once it
+                    does. */}
+                {address == null && (
+                    <PWTouchableOpacity
+                        onPress={onChange}
+                        hitSlop={8}
+                        testID='pera_card_change_funding_button'
                     >
-                        {address != null
-                            ? t('peraCard.account.change')
-                            : t('peraCard.account.connect')}
-                    </PWText>
-                </PWTouchableOpacity>
+                        <PWText
+                            variant='body'
+                            weight={500}
+                            style={styles.changeLink}
+                        >
+                            {t('peraCard.account.connect')}
+                        </PWText>
+                    </PWTouchableOpacity>
+                )}
             </PWView>
 
             {hasCard && (

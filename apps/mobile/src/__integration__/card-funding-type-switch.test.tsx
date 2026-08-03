@@ -191,6 +191,24 @@ describe('Flow: Card funding type switch', () => {
         ).toContain('connect')
     })
 
+    // Re-linking has no robust implementation yet, so a linked account offers
+    // no way to change it. The funding TYPE selector is unaffected.
+    it('offers no way to change the funding account once one is linked', async () => {
+        renderWithNavigation(PeraCardDetails, 'CardDetails')
+
+        // Awaiting the funding-type row first proves the section finished
+        // rendering, so the missing Change link below is a real absence.
+        expect(
+            await screen.findByTestId('pera_card_change_funding_type_button'),
+        ).toBeTruthy()
+        expect(
+            screen.getByTestId('pera_card_funding_account_row').textContent,
+        ).not.toContain('no_funding_account')
+        expect(
+            screen.queryByTestId('pera_card_change_funding_button'),
+        ).toBeNull()
+    })
+
     it('keeps the sheet open and skips the store write on failure', async () => {
         useCardStore.getState().setSelectedFundingType(FundingType.Manual)
         enableAutoDraw.mockRejectedValueOnce(new Error('chain down'))
