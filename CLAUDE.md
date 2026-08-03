@@ -17,6 +17,7 @@ While iterating: run only the individual test file(s) you're touching, and move 
 - **UI layer** (`apps/mobile`): Components, screens, navigation, styling, gestures
 - **Logic layer** (`packages/*`): Data fetching, Zustand stores, business rules, API clients, crypto
 - **State**: Zustand for client state, TanStack Query for server state
+- **Platform layer** (`extensions/*`): storage, keystore, Ledger and device adapters, reached from packages via `getProvider()`
 
 ## Styling (CRITICAL)
 

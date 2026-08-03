@@ -27,10 +27,11 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 
 ### Shared Components
 
-Use `PW` prefix for shared components in `src/components/`:
+Design-system components are `PW`-prefixed and live in `src/components/core/`.
+Import them from the barrel:
 
 ```typescript
-import PWButton from '@components/button/PWButton'
+import { PWButton } from '@components/core'
 ```
 
 ## Testing
