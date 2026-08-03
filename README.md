@@ -4,7 +4,7 @@ A concise guide to structure, setup, and daily commands.
 
 ## Prerequisites
 
-- Node.js >= 20 and pnpm 10.15+ (see packageManager in [`package.json`](package.json))
+- Node.js >= 22 and pnpm 10.28+ (see packageManager in [`package.json`](package.json))
 - iOS: Xcode 15+, CocoaPods via Bundler (Ruby), iOS Simulator
 - Android: Android Studio + SDKs, JDK 17, emulator or device
 - macOS: Watchman for fast reloads
@@ -115,24 +115,27 @@ Two things to watch:
 ```
 pera-react-native/
 ├── apps/
-│   └── mobile/              # React Native app (UI layer)
-├── packages/                # Headless business logic packages
+│   ├── mobile/              # React Native app (UI layer)
+│   └── extension/           # Chrome MV3 browser extension
+├── packages/                # Headless business logic (one per domain)
 │   ├── accounts/            # Account management and state
 │   ├── assets/              # Asset management
 │   ├── blockchain/          # Algorand-specific code (node/indexer)
 │   ├── config/              # Configuration and environment
-│   ├── contacts/            # Contact management
-│   ├── currencies/          # Currency formatting and preferences
+│   ├── database/            # Local persistence
 │   ├── devtools/            # Development tools
 │   │   └── tsconfig/        # Shared TypeScript configuration
 │   ├── kms/                 # Key Management System integration
-│   ├── platform-integration/# Platform abstraction layer
-│   ├── polling/             # Background polling logic
-│   ├── settings/            # User settings and preferences
 │   ├── shared/              # Common utilities, types, and models
-│   ├── swaps/               # Token swap functionality
+│   ├── signing/             # Signing pipeline
 │   ├── walletconnect/       # WalletConnect integration
-│   └── xhdwallet/           # HD wallet crypto helpers
+│   └── …                    # contacts, swaps, staking, card, nfd, …
+├── extensions/              # Platform adapters behind one interface
+│   ├── platform/            # The platform contract
+│   ├── platform-react-native/ # React Native implementation
+│   ├── platform-chrome/     # Chrome implementation
+│   ├── provider/            # `getProvider()` accessor used by packages
+│   └── …                    # ledger-*, keystore-chrome, passkey-autofill
 ├── tools/                   # Development and CI scripts
 ├── specs/                   # OpenAPI specifications
 └── docs/                    # Project documentation
@@ -154,7 +157,9 @@ See workspace definition in [`pnpm-workspace.yaml`](pnpm-workspace.yaml).
 pnpm build          # build all packages
 pnpm build:packages # build only workspace packages
 pnpm dev:packages   # watch mode for package development
-pnpm test           # run tests with coverage
+pnpm test           # run all tests (unit + integration)
+pnpm test:unit      # run unit tests only
+pnpm test:coverage  # run tests with coverage
 pnpm lint           # report lint/type-aware issues
 pnpm lint:fix       # auto-fix lint/type-aware issues
 pnpm lint:copyright # add/update necessary copyright headers
@@ -167,7 +172,7 @@ pnpm fallow         # report unused code, circular deps, duplication
 
 [fallow](https://github.com/fallow-rs/fallow) finds cross-module unused exports/files/types/dependencies, circular dependencies, and code duplication — gaps neither Oxlint nor `tsc` cover. Config lives in [`.fallowrc.jsonc`](.fallowrc.jsonc).
 
-It runs in CI as an **advisory, non-blocking** job (`Dead Code (advisory)` in [`pre-merge.yml`](.github/workflows/pre-merge.yml)) — findings appear in the job summary but never fail a PR. The plan is to triage the existing findings, then ratchet specific rules to blocking with a `--baseline` so only new findings fail. Removals should be done in reviewed PRs, not via `fallow fix`.
+It runs in CI as an **advisory, non-blocking** job (`Dead Code` in [`pre-merge.yml`](.github/workflows/pre-merge.yml)) — findings appear in the job summary but never fail a PR. The plan is to triage the existing findings, then ratchet specific rules to blocking with a `--baseline` so only new findings fail. Removals should be done in reviewed PRs, not via `fallow fix`.
 
 ## Documentation
 
@@ -178,6 +183,7 @@ It runs in CI as an **advisory, non-blocking** job (`Dead Code (advisory)` in [`
 - [Style Guide](docs/STYLE_GUIDE.md)
 - [Security Best Practices](docs/SECURITY.md)
 - [Performance Guidelines](docs/PERFORMANCE.md)
+- [Pera Card](docs/PERA_CARD.md)
 - [Contributing Guide](CONTRIBUTING.md)
 
 For app-specific notes, see [`apps/mobile/README.md`](apps/mobile/README.md).
