@@ -54,13 +54,11 @@ import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
 describe('useSettingsDeveloperAppIntegrity', () => {
     beforeEach(() => {
         registerMock.mockReset().mockResolvedValue({ status: 'success' })
-        verifyMock
-            .mockReset()
-            .mockResolvedValue({
-                ok: true,
-                deviceInstallationId: 'd1',
-                platform: 'ios',
-            })
+        verifyMock.mockReset().mockResolvedValue({
+            ok: true,
+            deviceInstallationId: 'd1',
+            platform: 'ios',
+        })
         useAppIntegrityStore.getState().resetState()
     })
 
