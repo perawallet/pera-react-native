@@ -40,7 +40,10 @@ export {
     type ExpandedFlow,
 } from './navigation'
 export { isTrustedExtensionPageSender } from './trusted-sender'
-export { ensureDeviceID, DEVICE_ID_STORAGE_KEY } from './device-id'
+export {
+    ensureDeviceInstallationID,
+    DEVICE_INSTALLATION_ID_STORAGE_KEY,
+} from './device-installation-id'
 export {
     WC_CONTROL_SCOPE,
     isWcControlMessage,

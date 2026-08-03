@@ -75,7 +75,7 @@ const mockPlatformServices = {
         async close() {},
     },
     deviceInfo: {
-        getDeviceID() {
+        getDeviceInstallationID() {
             return Promise.resolve('testID')
         },
         getDeviceModel() {

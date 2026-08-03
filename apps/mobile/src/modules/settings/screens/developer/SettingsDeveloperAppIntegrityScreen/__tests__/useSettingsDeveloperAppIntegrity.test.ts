@@ -56,7 +56,11 @@ describe('useSettingsDeveloperAppIntegrity', () => {
         registerMock.mockReset().mockResolvedValue({ status: 'success' })
         verifyMock
             .mockReset()
-            .mockResolvedValue({ ok: true, deviceId: 'd1', platform: 'ios' })
+            .mockResolvedValue({
+                ok: true,
+                deviceInstallationId: 'd1',
+                platform: 'ios',
+            })
         useAppIntegrityStore.getState().resetState()
     })
 
@@ -73,7 +77,7 @@ describe('useSettingsDeveloperAppIntegrity', () => {
             integrityToken: 'jwt',
             expiresAt: '2026-07-01',
             keyId: null,
-            deviceId: 'd1',
+            deviceInstallationId: 'd1',
         })
         const { result } = renderHook(() => useSettingsDeveloperAppIntegrity())
         await act(async () => {

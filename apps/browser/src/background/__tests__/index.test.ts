@@ -43,7 +43,7 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     // so a currently-green suite can still throw vitest's "no export
     // defined on mock" the moment a future test does that.
     isWcPagePairMessage: vi.fn().mockReturnValue(false),
-    ensureDeviceID: vi.fn(),
+    ensureDeviceInstallationID: vi.fn(),
     startStorageProxyHost: vi.fn(),
 }))
 

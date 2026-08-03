@@ -12,9 +12,12 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../test-utils/chrome'
-import { DEVICE_ID_STORAGE_KEY, ensureDeviceID } from '../device-id'
+import {
+    DEVICE_INSTALLATION_ID_STORAGE_KEY,
+    ensureDeviceInstallationID,
+} from '../device-installation-id'
 
-describe('ensureDeviceID', () => {
+describe('ensureDeviceInstallationID', () => {
     let fake: ChromeFake
 
     beforeEach(() => {
@@ -23,14 +26,14 @@ describe('ensureDeviceID', () => {
     })
 
     it('mints and persists a UUID on first run', async () => {
-        const id = await ensureDeviceID()
+        const id = await ensureDeviceInstallationID()
         expect(id).toMatch(/^[0-9a-f-]{36}$/)
-        expect(fake.data.get(DEVICE_ID_STORAGE_KEY)).toBe(id)
+        expect(fake.data.get(DEVICE_INSTALLATION_ID_STORAGE_KEY)).toBe(id)
     })
 
     it('returns the existing ID without re-minting', async () => {
-        fake.data.set(DEVICE_ID_STORAGE_KEY, 'existing-id')
-        expect(await ensureDeviceID()).toBe('existing-id')
+        fake.data.set(DEVICE_INSTALLATION_ID_STORAGE_KEY, 'existing-id')
+        expect(await ensureDeviceInstallationID()).toBe('existing-id')
     })
 
     it('adopts the persisted winner after a racing write', async () => {
@@ -39,19 +42,24 @@ describe('ensureDeviceID', () => {
         // that actually persisted, not the locally minted one.
         fake.chrome.storage.local.set = async items => {
             // Another context's write lands first…
-            fake.data.set(DEVICE_ID_STORAGE_KEY, 'other-context-id')
+            fake.data.set(
+                DEVICE_INSTALLATION_ID_STORAGE_KEY,
+                'other-context-id',
+            )
             // …then chrome.storage.local last-writer-wins would normally let
             // ours clobber it — model the case where OUR write is the one
             // that loses by dropping it.
             void items
         }
-        const id = await ensureDeviceID()
+        const id = await ensureDeviceInstallationID()
         expect(id).toBe('other-context-id')
     })
 
     it('throws when the device ID cannot be persisted', async () => {
         fake.chrome.storage.local.set = async () => {}
         fake.chrome.storage.local.get = async () => ({})
-        await expect(ensureDeviceID()).rejects.toThrow(/not persisted/)
+        await expect(ensureDeviceInstallationID()).rejects.toThrow(
+            /not persisted/,
+        )
     })
 })

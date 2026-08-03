@@ -48,7 +48,7 @@ describe('ChromeSecureEntryStorage', () => {
     it('hydrates existing keystore: entries and ignores foreign keys', async () => {
         fake.data.set('keystore:persisted', 'blob')
         fake.data.set('kv:app-state', 'not-ours')
-        fake.data.set('device:id', 'not-ours')
+        fake.data.set('device:installation-id', 'not-ours')
         await storage.hydrate()
         expect(storage.getAllKeys()).toEqual(['persisted'])
     })

@@ -46,7 +46,7 @@ describe('ChromeKeyValueStorageService', () => {
 
     it('hydrates existing kv: entries and ignores foreign keys', async () => {
         fake.data.set('kv:existing', 'value')
-        fake.data.set('device:id', 'not-kv')
+        fake.data.set('device:installation-id', 'not-kv')
         await service.hydrate()
         expect(service.getItem('existing')).toBe('value')
         expect(service.getAllKeys()).toEqual(['existing'])

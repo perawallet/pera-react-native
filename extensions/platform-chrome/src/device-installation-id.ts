@@ -10,12 +10,17 @@
  limitations under the License
  */
 
-// Root-level chrome.storage.local key (NOT under the kv: prefix) so device
+// Root-level chrome.storage.local key (NOT under the kv: prefix) so the
 // identity survives app-level "clear data" flows that wipe kv: entries.
-export const DEVICE_ID_STORAGE_KEY = 'device:id'
+export const DEVICE_INSTALLATION_ID_STORAGE_KEY = 'device:installation-id'
 
 /**
- * Returns the install's stable device ID, minting one if absent.
+ * Returns this install's stable identifier, minting one if absent. Also serves
+ * as the GA4 client id (see ChromeAnalyticsService).
+ *
+ * Not the backend device row id (`useDeviceID` in
+ * `@perawallet/wallet-core-device`), which is server-assigned, per-network, and
+ * recreated whenever the server stops recognising it.
  *
  * Cross-context safety: the background service worker calls this from
  * chrome.runtime.onInstalled, which fires before any UI surface can open on a
@@ -23,19 +28,25 @@ export const DEVICE_ID_STORAGE_KEY = 'device:id'
  * race (e.g. storage was cleared manually), each re-reads after writing and
  * adopts whatever value actually persisted, so all callers converge on one ID.
  */
-export const ensureDeviceID = async (): Promise<string> => {
-    const stored = await chrome.storage.local.get(DEVICE_ID_STORAGE_KEY)
-    const existing = stored[DEVICE_ID_STORAGE_KEY]
+export const ensureDeviceInstallationID = async (): Promise<string> => {
+    const stored = await chrome.storage.local.get(
+        DEVICE_INSTALLATION_ID_STORAGE_KEY,
+    )
+    const existing = stored[DEVICE_INSTALLATION_ID_STORAGE_KEY]
     if (typeof existing === 'string') return existing
 
     const minted = crypto.randomUUID()
-    await chrome.storage.local.set({ [DEVICE_ID_STORAGE_KEY]: minted })
+    await chrome.storage.local.set({
+        [DEVICE_INSTALLATION_ID_STORAGE_KEY]: minted,
+    })
 
-    const check = await chrome.storage.local.get(DEVICE_ID_STORAGE_KEY)
-    const winner = check[DEVICE_ID_STORAGE_KEY]
+    const check = await chrome.storage.local.get(
+        DEVICE_INSTALLATION_ID_STORAGE_KEY,
+    )
+    const winner = check[DEVICE_INSTALLATION_ID_STORAGE_KEY]
     if (typeof winner !== 'string') {
         throw new Error(
-            'device ID was not persisted — chrome.storage.local write failed',
+            'device installation ID was not persisted — chrome.storage.local write failed',
         )
     }
     return winner

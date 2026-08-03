@@ -12,10 +12,12 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const ensureDeviceIDMock = vi.hoisted(() =>
+const ensureDeviceInstallationIDMock = vi.hoisted(() =>
     vi.fn().mockResolvedValue('device-123'),
 )
-vi.mock('../../device-id', () => ({ ensureDeviceID: ensureDeviceIDMock }))
+vi.mock('../../device-installation-id', () => ({
+    ensureDeviceInstallationID: ensureDeviceInstallationIDMock,
+}))
 
 const configMock = vi.hoisted(() => ({
     config: {

@@ -77,19 +77,19 @@ describe('ChromeDeviceInfoService', () => {
     })
 
     it('generates a device ID once and persists it', async () => {
-        const first = await service.getDeviceID()
-        const second = await service.getDeviceID()
+        const first = await service.getDeviceInstallationID()
+        const second = await service.getDeviceInstallationID()
         expect(first).toBe(second)
-        expect(fake.data.get('device:id')).toBe(first)
+        expect(fake.data.get('device:installation-id')).toBe(first)
     })
 
-    it('collapses concurrent getDeviceID calls to a single generated ID', async () => {
+    it('collapses concurrent getDeviceInstallationID calls to a single generated ID', async () => {
         const [a, b] = await Promise.all([
-            service.getDeviceID(),
-            service.getDeviceID(),
+            service.getDeviceInstallationID(),
+            service.getDeviceInstallationID(),
         ])
         expect(a).toBe(b)
-        expect(fake.data.get('device:id')).toBe(a)
+        expect(fake.data.get('device:installation-id')).toBe(a)
     })
 
     it('is not a store build without an update_url', () => {

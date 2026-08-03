@@ -24,6 +24,6 @@ export const transformVerifyResponse = (
     response: VerifyApiResponse,
 ): IntegrityVerification => ({
     ok: response.ok,
-    deviceId: response.device_id,
+    deviceInstallationId: response.device_id,
     platform: response.platform,
 })

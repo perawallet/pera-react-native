@@ -28,14 +28,14 @@ import type {
 } from '../../models'
 
 export type RequestChallengeParams = {
-    deviceId: string
+    deviceInstallationId: string
     platform: IntegrityPlatform
     network: Network
     signal?: AbortSignal
 }
 
 export const requestChallenge = async ({
-    deviceId,
+    deviceInstallationId,
     platform,
     network,
     signal,
@@ -45,7 +45,7 @@ export const requestChallenge = async ({
         network,
         method: 'POST',
         url: '/api/v3/public/integrity/challenge',
-        data: { device_id: deviceId, platform },
+        data: { device_id: deviceInstallationId, platform },
         signal,
     })
     return challengeResponseSchema.parse(response.data).challenge
@@ -65,13 +65,13 @@ export const attestDevice = async ({
     const data =
         payload.platform === 'ios'
             ? {
-                  device_id: payload.deviceId,
+                  device_id: payload.deviceInstallationId,
                   platform: 'ios',
                   key_id: payload.keyId,
                   attestation: payload.attestation,
               }
             : {
-                  device_id: payload.deviceId,
+                  device_id: payload.deviceInstallationId,
                   platform: 'android',
                   attestation: payload.attestation,
               }

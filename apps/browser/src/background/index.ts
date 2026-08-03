@@ -18,7 +18,7 @@ import {
     DappPermissionStore,
     PasskeyRouter,
     WC_CONTROL_SCOPE,
-    ensureDeviceID,
+    ensureDeviceInstallationID,
     startStorageProxyHost,
     type DiscoverInfo,
 } from '@perawallet/wallet-extension-platform-chrome'
@@ -39,7 +39,7 @@ startStorageProxyHost()
 
 chrome.runtime.onInstalled.addListener(details => {
     console.info('[pera] extension installed:', details.reason)
-    void ensureDeviceID()
+    void ensureDeviceInstallationID()
 })
 
 // The service worker and the popup are bundled by different toolchains

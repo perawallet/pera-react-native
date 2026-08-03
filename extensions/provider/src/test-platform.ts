@@ -96,7 +96,7 @@ export const buildTestPlatform = (
     }
 
     const deviceInfo: DeviceInfoService = {
-        getDeviceID() {
+        getDeviceInstallationID() {
             return Promise.resolve('testID')
         },
         getDeviceModel() {

@@ -17,7 +17,7 @@ import {
     type DevicePlatform,
 } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
-import { ensureDeviceID } from '../device-id'
+import { ensureDeviceInstallationID } from '../device-installation-id'
 import { detectBrowser } from './browser'
 
 export class ChromeDeviceInfoService implements DeviceInfoService {
@@ -46,10 +46,10 @@ export class ChromeDeviceInfoService implements DeviceInfoService {
         return chrome.runtime.getManifest().version
     }
 
-    async getDeviceID(): Promise<string> {
+    async getDeviceInstallationID(): Promise<string> {
         // Collapses concurrent callers in this context to one storage
-        // round-trip; cross-context convergence lives in ensureDeviceID.
-        this.idPromise ??= ensureDeviceID()
+        // round-trip; cross-context convergence lives in ensureDeviceInstallationID.
+        this.idPromise ??= ensureDeviceInstallationID()
         return this.idPromise
     }
 

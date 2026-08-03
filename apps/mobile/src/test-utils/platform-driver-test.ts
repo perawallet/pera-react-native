@@ -104,7 +104,7 @@ const buildServices = (): PlatformServices => {
         getAppPackage: () => 'com.test.perawallet',
         getAppBuild: () => '1',
         getAppVersion: () => '0.0.0-test',
-        getDeviceID: async () => 'test-device-id',
+        getDeviceInstallationID: async () => 'test-device-id',
         getDeviceModel: () => 'TestDevice',
         getDevicePlatform: () => DevicePlatforms.web,
         getDeviceOSVersion: () => '0',

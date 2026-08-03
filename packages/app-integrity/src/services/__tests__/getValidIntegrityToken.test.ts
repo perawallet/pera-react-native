@@ -18,7 +18,7 @@ const registration = (expiresAt: string) => ({
     integrityToken: 'attestation-jwt',
     expiresAt,
     keyId: 'k1',
-    deviceId: 'd1',
+    deviceInstallationId: 'd1',
 })
 
 describe('getValidIntegrityToken', () => {
