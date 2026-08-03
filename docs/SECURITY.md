@@ -41,10 +41,27 @@ or who holds a copy of the old `vault:wrapped-master-key` blob together with the
 unaffected by a password change. The passkey (PRF) blob likewise keeps wrapping the unchanged key —
 correct for continuity, but it means that path is not invalidated either.
 
-The real remedy is a key rotation: generate a fresh master key, re-encrypt every `keystore:` entry
-under it, and invalidate the PRF blob. That is a distinct, more invasive operation than a password
-change and is not implemented. Until it is, advise a user who believes their key material is
-compromised to move funds to a newly generated wallet rather than to change their password.
+**Rotating the master key would not fix this either, so don't build it.** Re-wrapping under a fresh
+master key re-encrypts the _same plaintext_: the entries hold the actual private keys and seeds, and
+those values do not change. Work the cases through and the benefit disappears —
+
+- An attacker who read the master key out of `chrome.storage.session` also had the plaintext at that
+  moment (they needed the ciphertexts to use it, and both live in the same profile). They already
+  have the private keys; re-wrapping copies they've taken achieves nothing.
+- An attacker holding a stale storage dump plus the old password decrypts _their_ copy with _their_
+  blob. Nothing we do to ours touches theirs.
+- Rotation only helps if someone holds the master key but not the ciphertexts and expects to obtain
+  them later — which needs them to have read session storage but not local storage in the same
+  profile. That is not a realistic split.
+
+Key rotation is valuable when a wrapping key can leak while the data stays sealed. That does not
+apply here: the master key only ever exists in memory alongside the plaintext it protects, so a
+master-key compromise implies a plaintext compromise.
+
+The only real remedy is to change the private keys — generate a new wallet and move the funds. Advise
+that, not a password change and not rotation.
+
+## Supply Chain
 
 Review dependency updates carefully — supply chain attacks are real. The
 repo has several layers of automated defense:
