@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
+import { openExternalTab } from '@perawallet/wallet-extension-platform-chrome'
 
 type UseSystemNotificationPermissionResult = {
     isEnabled: boolean
@@ -72,7 +73,7 @@ export const useSystemNotificationPermission =
         }, [checkPermission])
 
         const openSettings = useCallback(() => {
-            void chrome.tabs.create({ url: CHROME_NOTIFICATION_SETTINGS_URL })
+            openExternalTab(CHROME_NOTIFICATION_SETTINGS_URL)
         }, [])
 
         return {

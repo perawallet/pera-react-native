@@ -13,6 +13,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 
+const openExternalTabMock = vi.hoisted(() => vi.fn())
+vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+    openExternalTab: openExternalTabMock,
+}))
+
 import { useSystemNotificationPermission } from '../useSystemNotificationPermission.web'
 
 const setPermission = (permission: string): void => {
@@ -22,13 +27,8 @@ const setPermission = (permission: string): void => {
     })
 }
 
-const tabsCreate = vi.fn()
-
 beforeEach(() => {
     vi.clearAllMocks()
-    ;(globalThis as unknown as { chrome: unknown }).chrome = {
-        tabs: { create: tabsCreate },
-    }
 })
 
 describe('useSystemNotificationPermission (web)', () => {
@@ -78,8 +78,8 @@ describe('useSystemNotificationPermission (web)', () => {
             result.current.openSettings()
         })
 
-        expect(tabsCreate).toHaveBeenCalledWith({
-            url: 'chrome://settings/content/notifications',
-        })
+        expect(openExternalTabMock).toHaveBeenCalledWith(
+            'chrome://settings/content/notifications',
+        )
     })
 })
