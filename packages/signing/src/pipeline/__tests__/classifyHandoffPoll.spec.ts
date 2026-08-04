@@ -337,13 +337,13 @@ describe('classifyHandoffPoll', () => {
 })
 
 describe('errorReasonToMessage', () => {
-    it('maps no-transactions to the generic message', async () => {
+    it('maps no-transactions to the generic message', () => {
         expect(
             errorReasonToMessage({ kind: 'no-transactions' }, messages),
         ).toBe('msg.no_transactions')
     })
 
-    it('maps assembly-failed to the interpolated message', async () => {
+    it('maps assembly-failed to the interpolated message', () => {
         expect(
             errorReasonToMessage(
                 { kind: 'assembly-failed', detail: 'bad subsig' },
@@ -352,7 +352,7 @@ describe('errorReasonToMessage', () => {
         ).toBe('msg.assembly_failed:bad subsig')
     })
 
-    it('prefers the backend display reason when present', async () => {
+    it('prefers the backend display reason when present', () => {
         expect(
             errorReasonToMessage(
                 { kind: 'backend-failed', displayReason: 'nope' },
@@ -361,7 +361,7 @@ describe('errorReasonToMessage', () => {
         ).toBe('nope')
     })
 
-    it('falls back to the generic failed message when the display reason is null', async () => {
+    it('falls back to the generic failed message when the display reason is null', () => {
         expect(
             errorReasonToMessage(
                 { kind: 'backend-failed', displayReason: null },

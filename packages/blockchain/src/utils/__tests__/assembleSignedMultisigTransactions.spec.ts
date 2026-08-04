@@ -18,6 +18,7 @@ import {
 } from 'algosdk'
 import nacl from 'tweetnacl'
 import {
+    VERIFY_BATCH_SIZE,
     assembleSignedMultisigTransactions,
     type ParticipantResponse,
 } from '../assembleSignedMultisigTransactions'
@@ -83,9 +84,13 @@ const buildResponse = (
 describe('assembleSignedMultisigTransactions', () => {
     test('yields to the event loop while verifying a group larger than one batch', async () => {
         // Identical transaction bytes repeated, so one real signature per
-        // participant stays valid for every index. 17 > the 16-per-turn batch,
-        // so verification must yield at least once.
-        const TX_COUNT = 17
+        // participant stays valid for every index. The budget is spent per
+        // verify — one per signing participant per transaction — so this is the
+        // smallest group that outgrows a single turn. Deliberately fewer than
+        // VERIFY_BATCH_SIZE transactions: a per-transaction budget would never
+        // yield here.
+        const SIGNER_COUNT = 2
+        const TX_COUNT = Math.floor(VERIFY_BATCH_SIZE / SIGNER_COUNT) + 1
         // A macrotask queued before the call: microtasks alone can never let it
         // run first, so observing it mid-flight proves the loop yielded rather
         // than blocking the thread for the whole group.

@@ -156,12 +156,18 @@ describe('useHandoffResolver', () => {
         expect(resolve).toHaveBeenCalledWith(outcome, item, detail)
     })
 
-    it('does not resolve while the outcome is non-terminal', () => {
+    it('does not resolve while the outcome is non-terminal', async () => {
         nextResults = [{ data: { id: 'req-1' } }]
         classify.mockReturnValue({ kind: 'keep-polling' })
 
         render()
 
+        // `resolve` is dispatched from a microtask after `classify` settles, so
+        // asserting synchronously here would pass for a terminal outcome too.
+        await waitFor(() => {
+            expect(classify).toHaveBeenCalledTimes(1)
+        })
+        await Promise.resolve()
         expect(resolve).not.toHaveBeenCalled()
     })
 
@@ -198,5 +204,60 @@ describe('useHandoffResolver', () => {
         // the await, so the re-render must not produce a second resolve.
         await Promise.resolve()
         expect(resolve).toHaveBeenCalledTimes(1)
+    })
+
+    // The claim is taken before classification, so both non-terminal exits have
+    // to hand it back — otherwise the `has(key)` guard short-circuits every
+    // later poll and the handoff never resolves at all.
+    it('resolves on a later poll after a keep-polling outcome handed the claim back', async () => {
+        const item = makeItem()
+        classify
+            .mockReturnValueOnce({ kind: 'keep-polling' })
+            .mockReturnValueOnce({ kind: 'ready', assembledBytes: [] })
+        mocks.useQueries
+            .mockImplementationOnce((arg: { queries: CapturedQuery[] }) => {
+                lastQueries = arg.queries
+                return [{ data: { id: 'req-1' } }]
+            })
+            .mockImplementationOnce((arg: { queries: CapturedQuery[] }) => {
+                lastQueries = arg.queries
+                return [{ data: { id: 'req-1' } }]
+            })
+
+        const { rerender } = render({ handoffs: [item] })
+        await waitFor(() => {
+            expect(classify).toHaveBeenCalledTimes(1)
+        })
+        rerender(baseArgs({ handoffs: [item] }))
+
+        await waitFor(() => {
+            expect(resolve).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    it('resolves on a later poll after classification threw', async () => {
+        const item = makeItem()
+        classify
+            .mockRejectedValueOnce(new Error('transient'))
+            .mockReturnValueOnce({ kind: 'ready', assembledBytes: [] })
+        mocks.useQueries
+            .mockImplementationOnce((arg: { queries: CapturedQuery[] }) => {
+                lastQueries = arg.queries
+                return [{ data: { id: 'req-1' } }]
+            })
+            .mockImplementationOnce((arg: { queries: CapturedQuery[] }) => {
+                lastQueries = arg.queries
+                return [{ data: { id: 'req-1' } }]
+            })
+
+        const { rerender } = render({ handoffs: [item] })
+        await waitFor(() => {
+            expect(classify).toHaveBeenCalledTimes(1)
+        })
+        rerender(baseArgs({ handoffs: [item] }))
+
+        await waitFor(() => {
+            expect(resolve).toHaveBeenCalledTimes(1)
+        })
     })
 })

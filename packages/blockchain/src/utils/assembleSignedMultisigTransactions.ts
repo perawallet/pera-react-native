@@ -36,9 +36,11 @@ const MAX_RAW_TXN_B64_BYTES = 64 * 1024
 const PUBLIC_KEY_BYTE_LENGTH = 32
 const SIGNATURE_BYTE_LENGTH = 64
 
-// Transactions verified per event-loop turn. Matches the signer batch size so
-// bulk multisig groups yield on the same cadence as bulk signing.
-const VERIFY_BATCH_SIZE = 16
+// Signature verifications per event-loop turn — NOT transactions. One
+// transaction costs one verify per signing participant, so budgeting per
+// transaction would still run `16 × participants` synchronous tweetnacl
+// verifies back to back and freeze the thread on any multi-signer group.
+export const VERIFY_BATCH_SIZE = 16
 
 /** `signatures[i]` matches `rawTransactions[i]`; null means "didn't sign". */
 export type ParticipantResponse = {
@@ -208,15 +210,12 @@ export const assembleSignedMultisigTransactions = async (
     }
 
     const signedList: Uint8Array[] = []
+    // Spent against VERIFY_BATCH_SIZE and reset on each yield. Mirrors
+    // `SIGN_BATCH_SIZE` + `deferToNextCycle` in `useLocalKeyTransactionSigner` /
+    // `useQuantumTransactionSigner`, but counted in verifies because that — not
+    // the transaction — is the unit of synchronous work here.
+    let verifiesSinceYield = 0
     for (let txIndex = 0; txIndex < rawTransactionsBase64.length; txIndex++) {
-        // Yield between chunks so a large group (transactions × participants)
-        // of pure-JS tweetnacl verifies can't block the JS thread for the whole
-        // run. Mirrors `SIGN_BATCH_SIZE` + `deferToNextCycle` in
-        // `useLocalKeyTransactionSigner` / `useQuantumTransactionSigner`.
-        if (txIndex > 0 && txIndex % VERIFY_BATCH_SIZE === 0) {
-            await deferToNextCycle()
-        }
-
         let rawTxBytes: Uint8Array
         try {
             rawTxBytes = decodeBoundedBase64(
@@ -252,6 +251,12 @@ export const assembleSignedMultisigTransactions = async (
                     reason: `Transaction ${txIndex}: signature from non-participant ${address}`,
                 }
             }
+            if (verifiesSinceYield === VERIFY_BATCH_SIZE) {
+                await deferToNextCycle()
+                verifiesSinceYield = 0
+            }
+            verifiesSinceYield++
+
             if (!nacl.sign.detached.verify(signedBytes, sig, pk)) {
                 return {
                     kind: 'error',
