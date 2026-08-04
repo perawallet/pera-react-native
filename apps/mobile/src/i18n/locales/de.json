@@ -2651,6 +2651,7 @@
         },
         "form": {
             "swap": "Swap",
+            "insufficient_balance": "Der Betrag übersteigt dein verfügbares Guthaben.",
             "no_balance_title": "Nichts zum Tauschen",
             "no_balance_body": "Dieses Konto hält kein {{unit}}.",
             "percentage_error_title": "Betrag konnte nicht berechnet werden",
