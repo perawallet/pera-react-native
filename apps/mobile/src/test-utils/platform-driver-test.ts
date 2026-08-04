@@ -170,7 +170,9 @@ export const WithPlatformExtension: PlatformExtensionFn = _provider => {
     const services = getServices()
     return {
         ...services,
-        initialize: async () => ({ unsubscribe: () => {} }),
+        initialize: async () => ({
+            notifications: Promise.resolve({ unsubscribe: () => {} }),
+        }),
     }
 }
 

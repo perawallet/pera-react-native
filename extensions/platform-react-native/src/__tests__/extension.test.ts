@@ -75,10 +75,12 @@ describe('WithReactNativePlatformExtension', () => {
                 )
 
                 const extension = WithReactNativePlatformExtension({})
-                const resultPromise = extension.initialize()
-                // Advance past the 8s notifications-init budget.
+                // initialize no longer waits on push registration, so it
+                // resolves before the budget elapses; the budget now bounds the
+                // notifications promise it handed back (PERA-4727).
+                const { notifications } = await extension.initialize()
                 await vi.advanceTimersByTimeAsync(8000)
-                const result = await resultPromise
+                const result = await notifications
 
                 expect(result.token).toBeUndefined()
                 expect(typeof result.unsubscribe).toBe('function')
@@ -94,7 +96,8 @@ describe('WithReactNativePlatformExtension', () => {
             )
 
             const extension = WithReactNativePlatformExtension({})
-            const result = await extension.initialize()
+            const { notifications } = await extension.initialize()
+            const result = await notifications
 
             expect(result.token).toBeUndefined()
             expect(typeof result.unsubscribe).toBe('function')
@@ -108,7 +111,8 @@ describe('WithReactNativePlatformExtension', () => {
             })
 
             const extension = WithReactNativePlatformExtension({})
-            const result = await extension.initialize()
+            const { notifications } = await extension.initialize()
+            const result = await notifications
 
             expect(result.token).toBe('abc')
             expect(result.unsubscribe).toBe(unsubscribe)

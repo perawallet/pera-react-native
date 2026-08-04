@@ -12,7 +12,7 @@
 
 import type {
     PlatformExtension,
-    PushNotificationInitResult,
+    PlatformInitResult,
 } from '@perawallet/wallet-extension-platform'
 import { logger, withTimeout } from '@perawallet/wallet-core-shared'
 
@@ -41,7 +41,7 @@ const NOTIFICATIONS_INIT_TIMEOUT_MS = 8000
 export const WithReactNativePlatformExtension = (
     _provider: unknown,
 ): ReactNativePlatformExtension => {
-    const initialize = async (): Promise<PushNotificationInitResult> => {
+    const initialize = async (): Promise<PlatformInitResult> => {
         const crashlyticsInit =
             platformServices.crashReporting.initializeCrashReporting()
         const remoteConfigInit =
@@ -63,31 +63,34 @@ export const WithReactNativePlatformExtension = (
             crashReporting: platformServices.crashReporting,
         })
 
-        // Push-notification init can hang (FCM/APNs registration) or reject
-        // offline. Bound it and degrade to a no-token result so cold-start
-        // bootstrap never stalls or fails on this branch.
-        try {
-            const notificationResults = await withTimeout(
-                platformServices.pushNotification.initializeNotifications(),
-                NOTIFICATIONS_INIT_TIMEOUT_MS,
-                'push notification initialization',
-            )
+        // Started, deliberately NOT awaited: FCM/APNs registration is bounded
+        // at NOTIFICATIONS_INIT_TIMEOUT_MS, and awaiting it here held the splash
+        // for that whole window on a slow or offline start (PERA-4727). Bootstrap
+        // only needs the services above; the token is consumed whenever it
+        // arrives. Resolves with no token rather than rejecting, so no caller
+        // has to guard it.
+        const notifications = withTimeout(
+            platformServices.pushNotification.initializeNotifications(),
+            NOTIFICATIONS_INIT_TIMEOUT_MS,
+            'push notification initialization',
+        )
+            .then(result => ({
+                token: result.token,
+                unsubscribe: result.unsubscribe,
+            }))
+            .catch((error: unknown) => {
+                logger.warn(
+                    'Push notification initialization timed out or failed; continuing without a token',
+                    { error },
+                )
 
-            return {
-                token: notificationResults.token,
-                unsubscribe: notificationResults.unsubscribe,
-            }
-        } catch (error) {
-            logger.warn(
-                'Push notification initialization timed out or failed; continuing without a token',
-                { error },
-            )
+                return {
+                    token: undefined,
+                    unsubscribe: () => {},
+                }
+            })
 
-            return {
-                token: undefined,
-                unsubscribe: () => {},
-            }
-        }
+        return { notifications }
     }
 
     return {
