@@ -11,18 +11,27 @@
  */
 
 import { useMemo } from 'react'
-import { RefreshControl } from 'react-native'
+import { RefreshControl, type RefreshControlProps } from 'react-native'
 import { useTheme } from '@rneui/themed'
 import { usePWRefreshControl } from './usePWRefreshControl'
 
 export type PWRefreshControlProps = {
     isRefreshing: boolean
     onRefresh: () => void
-}
+} & Omit<RefreshControlProps, 'refreshing' | 'onRefresh'>
 
+/**
+ * Forwarding the remaining props is load-bearing on Android: ScrollView renders
+ * a refresh control by *cloning* the element, passing the scroll view itself as
+ * `children` plus a layout `style`. Swallow those and the whole list vanishes
+ * from the tree — on a FlashList that surfaces as "LayoutManager is not
+ * initialized", not an empty screen. iOS renders the control as a plain
+ * sibling, so the failure is Android-only.
+ */
 export const PWRefreshControl = ({
     isRefreshing,
     onRefresh,
+    ...rest
 }: PWRefreshControlProps) => {
     const { theme } = useTheme()
     const { isRefreshing: refreshing, handleRefresh } = usePWRefreshControl({
@@ -33,6 +42,7 @@ export const PWRefreshControl = ({
 
     return (
         <RefreshControl
+            {...rest}
             refreshing={refreshing}
             onRefresh={handleRefresh}
             colors={colors}

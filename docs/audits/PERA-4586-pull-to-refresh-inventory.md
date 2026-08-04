@@ -67,6 +67,19 @@ On those four, the spinner is driven solely by the sync refresh, never by the qu
 | `useOnrampHistory.refetch`                | Not dead — consumed by the hook's own tab-activate effect, just not returned to the component.                                   |
 | `useSystemNotificationPermission.refetch` | Left as-is; local permission probe, not a data surface.                                                                          |
 
+## The Android contract a refresh-control wrapper must honour
+
+`PWRefreshControl` wraps RN's `RefreshControl`, and on Android that wrapper is load-bearing in a way iOS never reveals. `ScrollView` does not render the control as a sibling there — it **clones the element and passes the scroll view itself as `children`**, plus a layout `style` (`Libraries/Components/ScrollView/ScrollView.js`):
+
+```js
+return cloneElement(refreshControl, {style: ...},
+  <NativeScrollView ...>{contentContainer}</NativeScrollView>)
+```
+
+So any wrapper that does not spread its remaining props onto the underlying `RefreshControl` **deletes the entire list from the tree**. On a `SectionList` that shows up as an empty screen; on a FlashList it throws `LayoutManager is not initialized, layout info is unavailable`, because `StickyHeaders.compute()` asks for layout info that will now never exist. iOS renders the control as a plain child and is unaffected — which is why every historical report of this (PERA-4678, PERA-4681, PERA-4679) was Android-only.
+
+Verified on a physical Galaxy S22 / Android 16 with the New Architecture: a plain `<RefreshControl>` element and FlashList's own `onRefresh`/`refreshing` props both render correctly, and a wrapper that swallows `children` crashes the home screen. `PWRefreshControl.spec.tsx` guards the forwarding.
+
 ## Known limitations
 
 - **Account history, empty state.** `AccountHistory` renders its loading and empty states outside the `SectionList` on purpose (see the PERA-4676 comment in that file: an empty `SectionList` collapses to zero height inside the tab pager). There is no scrollable to pull from when history is empty, so refresh is unavailable in that state. `AssetTransactionList` uses `ListEmptyComponent`, so it does refresh from empty. Restructuring the history branch risks regressing PERA-4676 and was left out.
