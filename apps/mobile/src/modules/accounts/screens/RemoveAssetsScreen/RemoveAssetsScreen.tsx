@@ -56,7 +56,10 @@ export const RemoveAssetsScreen = () => {
 
     useNavigationHeader({
         right: isSelectAllVisible ? (
-            <PWTouchableOpacity onPress={handleToggleSelectAll}>
+            <PWTouchableOpacity
+                onPress={handleToggleSelectAll}
+                testID='remove_assets_select_all_button'
+            >
                 <PWText>
                     {isAllSelected
                         ? t('remove_assets.deselect_all')

@@ -81,11 +81,13 @@ vi.mock('@components/core', async () => {
 
 const mockHandleDeepLink = vi.fn()
 const mockIsValidDeepLink = vi.fn(() => true)
+const mockParseDeeplink = vi.fn(() => ({ type: 'HOME' }))
 
 vi.mock('@hooks/useDeepLink', () => ({
     useDeepLink: vi.fn(() => ({
         handleDeepLink: mockHandleDeepLink,
         isValidDeepLink: mockIsValidDeepLink,
+        parseDeeplink: mockParseDeeplink,
     })),
 }))
 

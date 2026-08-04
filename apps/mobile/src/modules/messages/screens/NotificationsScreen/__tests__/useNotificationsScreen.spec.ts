@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     shouldRevealNewest,
@@ -38,7 +38,10 @@ vi.mock('@modules/messages/hooks', () => ({
 const notification = (id: string): PeraNotification =>
     ({ id }) as unknown as PeraNotification
 
-const mockList = (notifications: PeraNotification[]) =>
+const mockList = (
+    notifications: PeraNotification[],
+    overrides: { isRefetching?: boolean; refetch?: () => void } = {},
+) =>
     vi.mocked(useNotificationsListQuery).mockReturnValue({
         data: notifications,
         isPending: false,
@@ -46,6 +49,7 @@ const mockList = (notifications: PeraNotification[]) =>
         isFetchingNextPage: false,
         isRefetching: false,
         refetch: vi.fn(),
+        ...overrides,
     } as unknown as ReturnType<typeof useNotificationsListQuery>)
 
 describe('useNotificationsScreen', () => {
@@ -93,6 +97,27 @@ describe('useNotificationsScreen', () => {
         unmount()
 
         expect(mockMarkAsRead).not.toHaveBeenCalled()
+    })
+
+    it('refetches the notifications list when refresh is triggered', () => {
+        const mockRefetch = vi.fn()
+        mockList([notification('42')], { refetch: mockRefetch })
+
+        const { result } = renderHook(() => useNotificationsScreen())
+
+        act(() => {
+            result.current.refetch()
+        })
+
+        expect(mockRefetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('surfaces the refetching state of the notifications query', () => {
+        mockList([notification('42')], { isRefetching: true })
+
+        const { result } = renderHook(() => useNotificationsScreen())
+
+        expect(result.current.isRefetching).toBe(true)
     })
 
     it('does not mark as read on unmount when the list is empty', () => {

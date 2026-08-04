@@ -150,7 +150,12 @@ workflows:
             set -e
 
             # Changelog is best-effort: never fail the release over it.
-            LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+            #
+            # Which tag to diff against is one rule shared with the delivered-
+            # ticket list, so it lives in a script rather than being spelled out
+            # here — see tools/release-range-start.sh for why alpha and rc need
+            # per-channel ranges and why a store release must not fall back.
+            LAST_TAG=$(./tools/release-range-start.sh "${BITRISE_GIT_TAG:-}" || echo "")
             if [ -n "$LAST_TAG" ]; then
               echo "Generating changelog since tag: $LAST_TAG"
               CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
@@ -1108,6 +1113,15 @@ workflows:
               if [ "$s" = "fail" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
             done
 
+            # generate_changelog.sh caps each section at 7 entries, so a busy
+            # nightly hides most of its own fixes behind "…and N more". The tag's
+            # GitHub release carries the full list — link it rather than widening
+            # the card. Literal \n: the payload below is JSON, not shell.
+            NOTES_LINK=""
+            if [ -n "${BITRISE_GIT_TAG:-}" ]; then
+              NOTES_LINK="\n\n<https://github.com/perawallet/pera-react-native/releases/tag/${BITRISE_GIT_TAG}|Full release notes>"
+            fi
+
             # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
             # and the release card silently never arrives. --retry covers
             # transient Slack hiccups (retries only transient failures).
@@ -1145,7 +1159,7 @@ workflows:
                       "type": "section",
                       "text": {
                         "type": "mrkdwn",
-                        "text": "*Changes since last build:*\n${CHANGELOG}"
+                        "text": "*Changes since last build:*\n${CHANGELOG}${NOTES_LINK}"
                       }
                     }
                   ]

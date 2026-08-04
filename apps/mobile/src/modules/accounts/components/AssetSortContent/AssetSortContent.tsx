@@ -43,6 +43,7 @@ export const AssetSortContent = (_: AssetSortContentProps = {}) => {
                             title={t('common.apply')}
                             onPress={handleDone}
                             paddingStyle='none'
+                            testID='asset_sort_apply_button'
                         />
                     }
                 />

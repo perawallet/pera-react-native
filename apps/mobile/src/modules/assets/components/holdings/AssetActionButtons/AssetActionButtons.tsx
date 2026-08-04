@@ -131,6 +131,7 @@ export const AssetActionButtons = ({
                     variant='primary'
                     onPress={handleCopyAddress}
                     style={styles.buttonTwo}
+                    testID='asset_detail_copy_address_button'
                 />
                 <RoundButton
                     title={t('asset_details.action_buttons.receive')}
@@ -138,6 +139,7 @@ export const AssetActionButtons = ({
                     variant='secondary'
                     onPress={openReceiveFunds}
                     style={styles.buttonTwo}
+                    testID='asset_detail_receive_button'
                 />
             </PWView>
         )
@@ -151,6 +153,7 @@ export const AssetActionButtons = ({
                 variant='primary'
                 onPress={handleSwap}
                 style={styles.buttonFour}
+                testID='asset_detail_swap_button'
             />
             <RoundButton
                 title={t('asset_details.action_buttons.buy')}
@@ -158,6 +161,7 @@ export const AssetActionButtons = ({
                 variant='secondary'
                 onPress={() => goToRootPage('Fund')}
                 style={styles.buttonFour}
+                testID='asset_detail_buy_button'
             />
             <RoundButton
                 title={t('asset_details.action_buttons.send')}
@@ -165,6 +169,7 @@ export const AssetActionButtons = ({
                 variant='secondary'
                 onPress={handleSend}
                 style={styles.buttonFour}
+                testID='asset_detail_send_button'
             />
             <RoundButton
                 title={t('asset_details.action_buttons.receive')}
@@ -172,6 +177,7 @@ export const AssetActionButtons = ({
                 variant='secondary'
                 onPress={openReceiveFunds}
                 style={styles.buttonFour}
+                testID='asset_detail_receive_button'
             />
         </PWView>
     )

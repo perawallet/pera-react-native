@@ -1,0 +1,110 @@
+name: Jira Sync
+
+# Keeps the PERA ticket's status in step with where the code actually is:
+#
+#   branch pushed        -> In Progress
+#   PR ready for review  -> In Code Review
+#   merged to main       -> In Code Review, assigned to QA
+#
+# The release half — nightly/rc/store shipped — lives in
+# .github/workflows/jira-release-sync.yml, driven by Bitrise's check run rather
+# than from bitrise.yml, so no Jira credential is copied into Bitrise.
+#
+# Ticket keys come from the branch name and the PR title, both of which carry
+# [PERA-####] by convention. Commits without a key (ci/docs/chore) simply no-op —
+# tools/jira-sync.sh exits 0 when it finds nothing, so ticket bookkeeping
+# can never fail a push or block a merge.
+
+on:
+  push:
+    # Only branches that name a ticket, so unrelated pushes don't start a runner.
+    # Both cases: these patterns are case-sensitive and lowercase branch names
+    # (fmota/pera-4745, pera-4603) are in active use alongside PERA-####.
+    branches:
+      - "PERA-*"
+      - "**/PERA-*"
+      - "pera-*"
+      - "**/pera-*"
+  # pull_request_target, not pull_request: this repo is public, and a pull_request
+  # run from a fork gets no secrets, so the sync would silently never happen.
+  # Safe here because no PR code is ever checked out or executed — the checkout
+  # below is the base ref, and the PR title/branch reach the script through env,
+  # never interpolated into a shell command.
+  pull_request_target:
+    types: [opened, ready_for_review, closed]
+
+permissions:
+  contents: read
+
+env:
+  JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+  JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+  JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+  # The board filter that bounds every stage lives in tools/lib/jira-api.sh, so
+  # the sync, the release sync and the drift report cannot disagree about it.
+
+jobs:
+  in-progress:
+    name: Branch pushed → In Progress
+    # Only on branch creation. Firing on every push would drag a ticket back out
+    # of In Code Review each time a review fix lands on an open PR's branch.
+    if: github.event_name == 'push' && github.event.created
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Move ticket to In Progress
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: ./tools/jira-sync.sh "In Progress" "$BRANCH"
+
+  in-code-review:
+    name: PR ready → In Code Review
+    # Drafts stay In Progress; marking one ready is what signals review. Fork PRs
+    # are ignored: this repo is public, so anyone could otherwise move an
+    # arbitrary ticket just by naming it in a PR title.
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action == 'ready_for_review' ||
+        (github.event.action == 'opened' && github.event.pull_request.draft == false))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Move ticket to In Code Review
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: ./tools/jira-sync.sh "In Code Review" "$TITLE" "$BRANCH"
+
+  merged-to-main:
+    name: Merged to main → In Code Review + QA
+    # base.ref pins this to main, so PRs into feat/quantum or contacts/main
+    # don't hand tickets over to QA early. Same fork rule as above — one
+    # trust boundary for the whole file rather than a per-job exception.
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Assign to QA, hold In Code Review
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          # Eric Wollaeger (QA). Hardcoded rather than a repo variable so the
+          # handoff works without extra setup; the status is normally already
+          # In Code Review by now, so the reassignment is the real effect here.
+          JIRA_ASSIGNEE_ACCOUNT_ID: "712020:06861ebb-55de-49ac-af4f-d825a38c9d6c"
+        run: ./tools/jira-sync.sh "In Code Review" "$TITLE" "$BRANCH"

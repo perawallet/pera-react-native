@@ -1,0 +1,45 @@
+name: GitHub Release
+
+# Publishes a GitHub Release for a release tag pushed by a person — in practice
+# the stable vX.Y.Z cut, since nightly and rc tags are minted with GITHUB_TOKEN
+# and publish their own release from the minting job (GitHub does not trigger
+# workflows from GITHUB_TOKEN events, so this `push` trigger never sees them).
+#
+# workflow_dispatch doubles as a backfill: the repo has 50+ release tags and no
+# releases, so any of them can be published after the fact by tag name.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v7.0.0-alpha.38)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history + tags: the notes range is derived from the previous tag
+          # on the same channel.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: ./tools/publish-github-release.sh "$TAG"

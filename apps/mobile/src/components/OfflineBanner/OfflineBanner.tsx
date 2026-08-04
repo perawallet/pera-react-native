@@ -14,25 +14,45 @@ import { useEffect } from 'react'
 import Animated, {
     useAnimatedStyle,
     useSharedValue,
+    withSequence,
     withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWText, PWView } from '@components/core'
-import { OFFLINE_BANNER_FADE_MS } from '@constants/ui'
+import {
+    OFFLINE_BANNER_EMPHASIS_PULSE_MS,
+    OFFLINE_BANNER_EMPHASIS_SCALE,
+    OFFLINE_BANNER_FADE_MS,
+} from '@constants/ui'
 import { useOfflineBanner } from './useOfflineBanner'
 import { useStyles } from './styles'
 
 export const OfflineBanner = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { isVisible, mode, label } = useOfflineBanner()
+    const { isVisible, mode, label, isEmphasized } = useOfflineBanner()
     const opacity = useSharedValue(0)
+    const scale = useSharedValue(1)
 
     useEffect(() => {
         opacity.value = withTiming(1, { duration: OFFLINE_BANNER_FADE_MS })
     }, [opacity])
 
-    const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
+    useEffect(() => {
+        if (!isEmphasized) return
+
+        scale.value = withSequence(
+            withTiming(OFFLINE_BANNER_EMPHASIS_SCALE, {
+                duration: OFFLINE_BANNER_EMPHASIS_PULSE_MS,
+            }),
+            withTiming(1, { duration: OFFLINE_BANNER_EMPHASIS_PULSE_MS }),
+        )
+    }, [isEmphasized, scale])
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        opacity: opacity.value,
+        transform: [{ scale: scale.value }],
+    }))
 
     if (!isVisible) return null
 

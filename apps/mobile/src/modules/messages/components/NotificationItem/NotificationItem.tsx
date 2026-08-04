@@ -65,6 +65,7 @@ export const NotificationItem = ({ item, onPress }: NotificationItemProps) => {
         <PWTouchableOpacity
             onPress={() => onPress(item)}
             style={styles.container}
+            testID={`notification_row_${item.id}`}
         >
             <PWView style={styles.unreadIndicatorWrapper}>
                 <UnreadIndicator isUnread={item.isUnread ?? false} />

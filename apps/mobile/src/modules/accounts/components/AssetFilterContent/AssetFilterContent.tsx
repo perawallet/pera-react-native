@@ -48,6 +48,7 @@ export const AssetFilterContent = (_: AssetFilterContentProps = {}) => {
                             title={t('common.apply')}
                             onPress={handleDone}
                             paddingStyle='none'
+                            testID='asset_filter_apply_button'
                         />
                     }
                 />

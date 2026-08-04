@@ -114,18 +114,11 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const dispatchDetached = (
         run: Promise<unknown>,
         parsedType: string,
-        url: string,
     ): void => {
         void run.catch(error => {
             logger.error(error as Error, { type: parsedType })
             showError({
                 variant: 'generic',
-                // Same rule as the outer catch: never hand the error sheet a
-                // PERA_WEB_IMPORT url, which carries the encryption key.
-                sourceUrl:
-                    parsedType === DeeplinkType.PERA_WEB_IMPORT
-                        ? undefined
-                        : url,
                 parsedType,
                 error,
             })
@@ -240,7 +233,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         mnemonic: parsedData.mnemonic,
                         source,
                         replaceCurrentScreen,
-                        sourceUrl: parsedData.sourceUrl,
                     })
                     break
                 }
@@ -270,7 +262,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                         })
                         showError({
                             variant: 'walletconnect',
-                            sourceUrl: parsedData.sourceUrl,
                             parsedType: 'WALLET_CONNECT',
                             error,
                         })
@@ -294,7 +285,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     if (outcome.type === 'timeout') {
                         showError({
                             variant: 'walletconnect',
-                            sourceUrl: parsedData.sourceUrl,
                             parsedType: 'WALLET_CONNECT',
                             error: 'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
                         })
@@ -319,7 +309,6 @@ export const useDeepLink = (): UseDeepLinkResult => {
                             address: parsedData.address,
                         }),
                         parsedData.type,
-                        url,
                     )
                     break
                 }
@@ -578,19 +567,14 @@ export const useDeepLink = (): UseDeepLinkResult => {
 
             onSuccess?.()
         } catch (error) {
-            // Don't log the raw `url` here: for Pera Web QR deeplinks it is
-            // the JSON-encoded backup envelope containing the 32-byte
-            // secretbox `encryptionKey`. The logger's JSON-aware redactor
-            // scrubs it on the way out, but we err on the side of not
-            // shipping the cipher key to the crash reporter at all. For
-            // the same reason, only forward `sourceUrl` to the error sheet
-            // when the parsed deeplink isn't PERA_WEB_IMPORT.
+            // Don't log the raw `url` here: a PERA_WEB_IMPORT payload carries
+            // the 32-byte secretbox `encryptionKey` and a RECOVER_ADDRESS
+            // payload carries a mnemonic. Log only the parsed type. The error
+            // sheet likewise never receives the url — `showError` has no field
+            // that could carry it.
             logger.error(error as Error, { type: parsedData.type })
-            const isPeraWebImport =
-                parsedData.type === DeeplinkType.PERA_WEB_IMPORT
             showError({
                 variant: 'generic',
-                sourceUrl: isPeraWebImport ? undefined : url,
                 parsedType: String(parsedData.type),
                 error,
             })

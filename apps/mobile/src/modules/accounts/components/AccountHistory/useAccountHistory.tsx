@@ -17,6 +17,7 @@ import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import {
     useTransactionHistoryQuery,
     useCsvExportMutation,
@@ -67,6 +68,8 @@ export type UseAccountHistoryResult = {
     handleLoadMore: () => void
     /** Function to refresh the list */
     handleRefresh: () => void
+    /** Whether a refresh is in flight */
+    isRefreshing: boolean
     /** Whether data is empty */
     isEmpty: boolean
     /** Function to export transaction history to CSV */
@@ -135,7 +138,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         error,
         hasNextPage,
         fetchNextPage,
-        refetch,
     } = useTransactionHistoryQuery({
         accountAddress: account?.address ?? '',
         network,
@@ -155,9 +157,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-    const handleRefresh = useCallback(() => {
-        refetch()
-    }, [refetch])
+    const refreshAddresses = useMemo(
+        () => (account?.address ? [account.address] : []),
+        [account?.address],
+    )
+    const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
+        addresses: refreshAddresses,
+    })
 
     const { t } = useLanguage()
     const { showToast } = useToast()
@@ -228,6 +234,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         hasNextPage,
         handleLoadMore,
         handleRefresh,
+        isRefreshing,
         isEmpty,
         handleExportCsv,
         isExportingCsv,

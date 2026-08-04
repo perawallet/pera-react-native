@@ -49,6 +49,7 @@ export const AsaInboxItem = ({ item, onPress }: AsaInboxItemProps) => {
         <InboxItemShell
             item={item}
             onPress={onPress}
+            testID='asa_inbox_item'
             icon={icon}
             title={t('messages.inbox.asa_requests', {
                 count: item.data.requestCount,

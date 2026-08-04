@@ -12,7 +12,7 @@ catalog:
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.22
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
-  "@lottiefiles/dotlottie-react": 0.19.11
+  "@lottiefiles/dotlottie-react": 0.19.12
   "@babel/runtime": ^7.29.2
   "@expo/app-integrity": ~57.0.0
   "@joe-p/react-native-falcon": 0.1.0
@@ -113,20 +113,22 @@ minimumReleaseAgeExclude:
   - expo-*
   - '@expo/*'
   - babel-preset-expo
-  # Security patches for GHSA-mh99-v99m-4gvg / GHSA-pm4m-ph32-ghv5 published
-  # 2026-07-23, inside the 7-day window. Same maintainers as the prior
-  # releases (juliangruber+isaacs / vitaly), no install scripts.
+  # Security patches for GHSA-mh99-v99m-4gvg / GHSA-pm4m-ph32-ghv5 (2026-07-23)
+  # and brace-expansion GHSA-rgw5-rvv9-x895 (2026-07-30), inside the 7-day
+  # window. Same maintainers as the prior releases (juliangruber+isaacs /
+  # vitaly), no consumer-run install scripts.
   - brace-expansion
   - js-yaml
 
 # GHSA-mh99-v99m-4gvg (brace-expansion OOM DoS) marks every release <=5.0.7
-# vulnerable and 5.0.8 is the only patched version. The 1.x/2.x lines that
-# minimatch@3/@9 consumers (eslint, glob, @expo/cli) default-import have no
-# patched release yet, and 5.0.8 can't be substituted in — it only ships a
-# named `expand` export, so a v1/v2 override breaks minimatch at runtime.
-# The 3.x-5.x resolutions ARE pinned to 5.0.8 via overrides below. Drop this
-# ignore once upstream ships patched 1.x/2.x releases and bump the @1/@2
-# overrides instead.
+# vulnerable; GHSA-rgw5-rvv9-x895 then marks <5.0.9 vulnerable (unbounded
+# intermediate arrays, bypassing the CVE-2026-14257 mitigation), so 5.0.9 is
+# the current patched version. The 1.x/2.x lines that minimatch@3/@9 consumers
+# (eslint, glob, @expo/cli) default-import have no patched release yet, and
+# 5.0.9 can't be substituted in — it only ships a named `expand` export, so a
+# v1/v2 override breaks minimatch at runtime. The 3.x-5.x resolutions ARE
+# pinned to 5.0.9 via overrides below. Drop this ignore once upstream ships
+# patched 1.x/2.x releases and bump the @1/@2 overrides instead.
 auditConfig:
   ignoreGhsas:
     - GHSA-mh99-v99m-4gvg
@@ -169,13 +171,14 @@ overrides:
   bn.js@4: 4.12.3
   brace-expansion@1: 1.1.16
   brace-expansion@2: 2.1.2
-  brace-expansion@3: 5.0.8
-  brace-expansion@4: 5.0.8
-  brace-expansion@5: 5.0.8
+  brace-expansion@3: 5.0.9
+  brace-expansion@4: 5.0.9
+  brace-expansion@5: 5.0.9
   esbuild@<0.25.0: ">=0.25.0"
   # GHSA-g7r4-m6w7-qqqr (arbitrary file read via the dev server on Windows).
   esbuild@>=0.27.3 <0.28.1: ">=0.28.1"
-  fast-uri@<4.1.1: ">=4.1.1"
+  # GHSA-7p8r-x3mc-p8w7 (host confusion via backslash authority introducer).
+  fast-uri@<4.1.2: ">=4.1.2"
   flatted@3: 3.4.2
   glob@>=10.2.0 <10.5.0: '>=10.5.0'
   happy-dom@<20.0.0: '>=20.0.0'
@@ -190,7 +193,8 @@ overrides:
   picomatch@2: 2.3.2
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
-  postcss@<8.5.18: '>=8.5.18'
+  # GHSA-fxqj-rqcc-2cmp (arbitrary .map file read via sourceMappingURL when `from` is unset).
+  postcss@<8.5.23: '>=8.5.23'
   protobufjs@7: 7.6.5
   react: 19.2.3
   react-dom: 19.2.3

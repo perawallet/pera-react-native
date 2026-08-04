@@ -128,7 +128,11 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
             )
             return signature
         },
-        [signDataWithKey],
+        // `accounts` backs the rekey-signer cross-check in
+        // validateArc60AuthRequest; without it the callback would validate
+        // against the account list as of first render and fail open on a
+        // rekey revoked after mount.
+        [signDataWithKey, accounts],
     )
 
     return { signArc60 }

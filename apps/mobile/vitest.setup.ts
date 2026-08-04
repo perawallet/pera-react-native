@@ -719,6 +719,9 @@ vi.mock('@components/core', () => {
                 : null,
         PWPinCircles: createMockComponent('PWPinCircles'),
         PWRadioButton: createMockComponent('PWRadioButton'),
+        // This barrel mock is exhaustive, so an omitted entry makes the element
+        // type undefined and any render referencing it throws.
+        PWRefreshControl: () => null,
         PWRoundIcon: vi.fn(({ icon, size, testID, ...props }: any) =>
             React.createElement('div', {
                 ...props,
