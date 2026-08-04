@@ -28,11 +28,16 @@ import {
 import type { Arc60Metadata, Arc60StdSigData } from '../../pipeline/types'
 
 const mockSignDataWithKey = vi.fn()
+// Stable reference across renders — production's `signDataWithKey` is an
+// unstable body function today, which happens to mask a stale-closure in the
+// signer's dep array. Pinning it here means only the `accounts` dep can force
+// a callback rebuild, so the dep-array test actually guards the fix.
+const mockStableSignData = (...args: any[]) => mockSignDataWithKey(...args)
 
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     ...(await importOriginal<object>()),
     useKMS: () => ({
-        signDataWithKey: (...args: any[]) => mockSignDataWithKey(...args),
+        signDataWithKey: mockStableSignData,
     }),
 }))
 
@@ -46,8 +51,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     )
     return {
         ...actual,
-        useAccountsStore: (selector: any) =>
-            selector({ accounts: mockAccounts }),
+        // Override the hook the signer actually calls. Stubbing `useAccountsStore`
+        // does nothing here: the real `useAllAccounts` binds to its own
+        // module-local store import, not this barrel export.
+        useAllAccounts: () => mockAccounts,
     }
 })
 
@@ -386,5 +393,45 @@ describe('useLocalKeyArc60Signer', () => {
                 )
             }),
         ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
+    })
+
+    test('re-reads the account list on rerender (rekey revoked after mount fails closed)', async () => {
+        const rekeyed = {
+            ...algo25Account,
+            address: 'ORIG_ADDR',
+            rekeyAddress: 'AUTH_ADDR',
+        } as unknown as WalletAccount
+
+        // SIWA names ORIG_ADDR but the dApp asks AUTH_ADDR to sign, so the
+        // rekey cross-check must confirm AUTH_ADDR is ORIG_ADDR's authority.
+        const origSiwa = new TextEncoder().encode(
+            buildSiwa({ account_address: 'ORIG_ADDR' }),
+        )
+        const sigData: Arc60StdSigData = {
+            ...validStdSigData,
+            data: encodeToBase64(origSiwa),
+            signer: 'AUTH_ADDR',
+        }
+
+        mockAccounts = [rekeyed]
+        const { result, rerender } = renderHook(() => useLocalKeyArc60Signer())
+
+        // Rekey is current — the cross-check passes and the account signs.
+        await act(async () => {
+            await result.current.signArc60(rekeyed, sigData, validMetadata)
+        })
+        expect(mockSignDataWithKey).toHaveBeenCalledTimes(1)
+
+        // Rekey revoked after mount. A stale closure would still see AUTH_ADDR
+        // as the authority and sign; the fresh list must reject it.
+        mockAccounts = [{ ...rekeyed, rekeyAddress: undefined }]
+        rerender()
+
+        await expect(
+            act(async () => {
+                await result.current.signArc60(rekeyed, sigData, validMetadata)
+            }),
+        ).rejects.toBeInstanceOf(Arc60InvalidSignerError)
+        expect(mockSignDataWithKey).toHaveBeenCalledTimes(1)
     })
 })
