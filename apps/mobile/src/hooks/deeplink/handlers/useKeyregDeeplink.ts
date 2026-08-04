@@ -98,7 +98,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             if (!isValidAlgorandAddress(data.senderAddress)) {
                 showError({
                     variant: 'keyreg',
-                    sourceUrl: data.sourceUrl,
                     parsedType: 'KEYREG',
                     error: 'Invalid sender address',
                 })
@@ -116,7 +115,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
             if (ineligible) {
                 showError({
                     variant: 'keyreg-unknown-account',
-                    sourceUrl: data.sourceUrl,
                     parsedType: 'KEYREG',
                     error: ineligible.reason,
                 })
@@ -163,7 +161,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                     ) {
                         showError({
                             variant: 'keyreg',
-                            sourceUrl: data.sourceUrl,
                             parsedType: 'KEYREG',
                             error: 'Missing required participation key fields',
                         })
@@ -220,7 +217,6 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 logger.error('[deeplink/keyreg] failed', { error })
                 showError({
                     variant: 'keyreg',
-                    sourceUrl: data.sourceUrl,
                     parsedType: 'KEYREG',
                     error,
                 })
