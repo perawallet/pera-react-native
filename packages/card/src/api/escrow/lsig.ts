@@ -10,12 +10,12 @@
  limitations under the License
  */
 
+import { sha256 } from '@noble/hashes/sha2.js'
 import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {
     bytesToHex,
     decodeFromBase64,
-    encodeToBase64,
     type Network,
 } from '@perawallet/wallet-core-shared'
 import { CardEscrowNotConfiguredError } from '../transport'
@@ -99,23 +99,26 @@ export const renderAutoDrawTeal = ({
         .replaceAll(TMPL_GENESIS_HASH, genesisHashHex)
 }
 
-/** Thrown when algod's compiled AutoDraw program doesn't match the pinned bytes. */
+/** Thrown when algod's compiled AutoDraw program doesn't match the pinned hash. */
 export class AutoDrawProgramUnverifiedError extends Error {
     constructor(network: Network) {
-        super(
-            `AutoDraw program for ${network} does not match the pinned program`,
-        )
+        super(`AutoDraw program for ${network} does not match the pinned hash`)
         this.name = 'AutoDrawProgramUnverifiedError'
     }
 }
 
 /**
- * Fails closed unless the compiled program exactly matches the pin for the
- * network. Runs in EVERY environment — staging/testnet builds sign real user
+ * Fails closed unless the SHA-256 of the compiled program matches the pin for
+ * the network. Runs in EVERY environment — staging/testnet builds sign real user
  * keys too, so there is no production-only escape hatch (unlike
  * `verifyDelegationProgram`). The pin lives in the network config beside the app
- * IDs it is derived from (`cardAutoDrawProgram`); an unpinned network has an
- * empty value and so always rejects. (PERA-4712)
+ * IDs it is derived from (`cardAutoDrawProgramHash`); an unpinned network has an
+ * empty value and so always rejects.
+ *
+ * A digest rather than the program bytes: it verifies just as strictly, is 64
+ * chars instead of kilobytes, and avoids shipping a second copy of an artifact
+ * the app already carries as `AUTODRAW_TEAL_TEMPLATE` and could drift from.
+ * (PERA-4712)
  */
 export const verifyAutoDrawProgram = (
     program: Uint8Array,
@@ -124,9 +127,14 @@ export const verifyAutoDrawProgram = (
 ): void => {
     const pinned = expected
         ? expected[network]
-        : getNetworkConfig(network).cardAutoDrawProgram
+        : getNetworkConfig(network).cardAutoDrawProgramHash
 
-    if (!pinned || encodeToBase64(program) !== pinned) {
+    // Hex is case-insensitive; normalize so a pin pasted in upper case still
+    // verifies instead of silently disabling AutoDraw.
+    if (
+        !pinned ||
+        bytesToHex(sha256(program)) !== pinned.trim().toLowerCase()
+    ) {
         throw new AutoDrawProgramUnverifiedError(network)
     }
 }

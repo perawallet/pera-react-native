@@ -39,14 +39,15 @@ type PeraServices = {
     cardW3CardAppId: string
     cardKillswitchAppId: string
     /**
-     * Base64 of the compiled AutoDraw program, pinned per network. Lives beside
-     * the app IDs because it is derived from them — the compile is deterministic
-     * over (template, app IDs, genesis hash), so rotating either app ID
-     * invalidates this pin and both must move together. Build-time only, never
-     * remote config: a remotely-settable expected value would let whoever
-     * controls it approve any program the wallet is asked to sign.
+     * Lowercase hex SHA-256 of the compiled AutoDraw program, pinned per
+     * network. Lives beside the app IDs because it is derived from them — the
+     * compile is deterministic over (template, app IDs, genesis hash), so
+     * rotating either app ID invalidates this pin and both must move together.
+     * Build-time only, never remote config: a remotely-settable expected value
+     * would let whoever controls it approve any program the wallet is asked to
+     * sign.
      */
-    cardAutoDrawProgram: string
+    cardAutoDrawProgramHash: string
     cardUsdcAssetId: string
 }
 
@@ -143,7 +144,7 @@ const EMPTY_PERA_SERVICES = {
     cardEscrowAuthToken: '',
     cardW3CardAppId: '',
     cardKillswitchAppId: '',
-    cardAutoDrawProgram: '',
+    cardAutoDrawProgramHash: '',
     cardUsdcAssetId: '',
 } satisfies PeraServices
 
@@ -165,7 +166,7 @@ const peraServicesByNetwork: Record<Network, PeraServices> = {
         cardEscrowAuthToken: config.mainnetCardEscrowAuthToken,
         cardW3CardAppId: config.mainnetCardW3CardAppId,
         cardKillswitchAppId: config.mainnetCardKillswitchAppId,
-        cardAutoDrawProgram: config.mainnetCardAutoDrawProgram,
+        cardAutoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
         cardUsdcAssetId: config.mainnetCardUsdcAssetId,
     },
     [Networks.testnet]: {
@@ -179,7 +180,7 @@ const peraServicesByNetwork: Record<Network, PeraServices> = {
         cardEscrowAuthToken: config.testnetCardEscrowAuthToken,
         cardW3CardAppId: config.testnetCardW3CardAppId,
         cardKillswitchAppId: config.testnetCardKillswitchAppId,
-        cardAutoDrawProgram: config.testnetCardAutoDrawProgram,
+        cardAutoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
         cardUsdcAssetId: config.testnetCardUsdcAssetId,
     },
     // No Pera deployment. Empty, never borrowed: createPeraClient turns an

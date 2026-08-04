@@ -59,7 +59,7 @@ describe('network-config', () => {
             cardEscrowAuthToken: config.mainnetCardEscrowAuthToken,
             cardW3CardAppId: config.mainnetCardW3CardAppId,
             cardKillswitchAppId: config.mainnetCardKillswitchAppId,
-            cardAutoDrawProgram: config.mainnetCardAutoDrawProgram,
+            cardAutoDrawProgramHash: config.mainnetCardAutoDrawProgramHash,
             cardUsdcAssetId: config.mainnetCardUsdcAssetId,
         })
     })
@@ -89,7 +89,7 @@ describe('network-config', () => {
             cardEscrowAuthToken: config.testnetCardEscrowAuthToken,
             cardW3CardAppId: config.testnetCardW3CardAppId,
             cardKillswitchAppId: config.testnetCardKillswitchAppId,
-            cardAutoDrawProgram: config.testnetCardAutoDrawProgram,
+            cardAutoDrawProgramHash: config.testnetCardAutoDrawProgramHash,
             cardUsdcAssetId: config.testnetCardUsdcAssetId,
         })
     })

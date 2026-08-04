@@ -36,7 +36,10 @@ import {
     verifyAutoDrawProgram,
     AutoDrawProgramUnverifiedError,
 } from '../lsig'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { sha256 } from '@noble/hashes/sha2.js'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
+
+const pinFor = (program: Uint8Array) => bytesToHex(sha256(program))
 
 const TESTNET_GENESIS = 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='
 
@@ -165,13 +168,13 @@ describe('compileAutoDrawProgram', () => {
 describe('verifyAutoDrawProgram', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        getNetworkConfig.mockReturnValue({ cardAutoDrawProgram: '' })
+        getNetworkConfig.mockReturnValue({ cardAutoDrawProgramHash: '' })
     })
 
     it('reads the pin from the network config when none is passed', () => {
         const program = new Uint8Array([1, 2, 3, 4])
         getNetworkConfig.mockReturnValue({
-            cardAutoDrawProgram: encodeToBase64(program),
+            cardAutoDrawProgramHash: pinFor(program),
         })
 
         expect(() => verifyAutoDrawProgram(program, 'testnet')).not.toThrow()
@@ -180,19 +183,39 @@ describe('verifyAutoDrawProgram', () => {
         ).toThrow(AutoDrawProgramUnverifiedError)
     })
 
-    it('accepts a program whose bytes match the pinned value', () => {
+    it('accepts a program whose hash matches the pinned value', () => {
         const program = new Uint8Array([1, 2, 3, 4])
-        const pins = { testnet: encodeToBase64(program) }
+        const pins = { testnet: pinFor(program) }
         expect(() =>
             verifyAutoDrawProgram(program, 'testnet', pins),
         ).not.toThrow()
     })
 
-    it('rejects a program whose bytes differ from the pinned value', () => {
-        const pins = { testnet: encodeToBase64(new Uint8Array([1, 2, 3, 4])) }
+    it('rejects a program whose hash differs from the pinned value', () => {
+        const pins = { testnet: pinFor(new Uint8Array([1, 2, 3, 4])) }
         expect(() =>
             verifyAutoDrawProgram(new Uint8Array([9, 9, 9]), 'testnet', pins),
         ).toThrow(AutoDrawProgramUnverifiedError)
+    })
+
+    // The pin is copied in by hand from a build step, so tolerate the casing
+    // and whitespace that survives a copy-paste rather than failing closed on it.
+    it('accepts an upper-case, padded pin', () => {
+        const program = new Uint8Array([1, 2, 3, 4])
+        const pins = { testnet: `  ${pinFor(program).toUpperCase()}  ` }
+        expect(() =>
+            verifyAutoDrawProgram(program, 'testnet', pins),
+        ).not.toThrow()
+    })
+
+    // The old pin was base64 of the program itself; a stale value must fail
+    // rather than accidentally comparing equal to anything.
+    it('rejects a legacy base64-program pin', () => {
+        const program = new Uint8Array([1, 2, 3, 4])
+        const pins = { testnet: 'AQIDBA==' }
+        expect(() => verifyAutoDrawProgram(program, 'testnet', pins)).toThrow(
+            AutoDrawProgramUnverifiedError,
+        )
     })
 
     it('rejects when the network is unpinned (fail closed)', () => {
