@@ -1586,6 +1586,7 @@
                 "title": "Select your backup file",
                 "body": "To restore your wallet, select or paste your backup file.",
                 "pick_file_button": "Select your backup file",
+                "pick_file_button_new_tab": "Open a new tab to select your backup file",
                 "paste_button": "Paste backup file text",
                 "continue": "Next",
                 "pasted_name": "Pasted backup",
@@ -3417,9 +3418,6 @@
             "placeholder": "Approval surface — coming in M4."
         },
         "expanded": {
-            "onboarding_title": "Set up in a full tab",
-            "onboarding_body": "Wallet setup opens in a full browser tab so you can back up your recovery phrase safely.",
-            "onboarding_cta": "Continue in a new tab",
             "redirecting": "Continuing in a new tab…"
         },
         "reauth": {

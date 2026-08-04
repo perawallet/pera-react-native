@@ -136,15 +136,15 @@ test('data wipe then relaunch re-enters onboarding on both surfaces (no white sc
     )
     await expanded.close()
 
-    // --- Phase 4: relaunch popup.html → "opens in a new tab" prompt ---
+    // --- Phase 4: relaunch popup.html → real onboarding stack ---
     const popup = await context.newPage()
     const popupErrors = trackPageErrors(popup)
     await popup.goto(`chrome-extension://${extensionId}/popup.html`)
-    // The popup is too small for blur-fragile onboarding, so it shows the
-    // OnboardingTabPrompt CTA that opens the expanded tab.
-    await expect(popup.getByTestId('open-onboarding-tab')).toBeVisible({
-        timeout: 20_000,
-    })
+    // Onboarding runs in place on the popup surface too — same welcome screen
+    // as the expanded tab above, not a hand-off CTA.
+    await expect(
+        popup.getByTestId('onboarding_create_wallet_button'),
+    ).toBeVisible({ timeout: 20_000 })
     expect(popupErrors, 'popup relaunch threw an uncaught error').toEqual([])
     await popup.close()
 })

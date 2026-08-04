@@ -12,8 +12,12 @@
 
 import { useCallback } from 'react'
 import { consumeInitialExpandedFlow } from '@perawallet/wallet-extension-platform-chrome'
+import { useIsOnboarding } from '@modules/onboarding/hooks'
 
 export type ExpandedFlowScreen = 'AddAccount' | 'BackupWallet' | 'ScanQR'
+
+/** Screens the onboarding stack can be deep-linked into from the popup. */
+export type OnboardingFlowScreen = 'LedgerScan' | 'AsbImportBackup'
 
 /**
  * Parses the one-shot `?flow=` deep-link param the popup passed to
@@ -47,5 +51,49 @@ export const useExpandedFlowNavigation = (
                 screen: 'LedgerScan',
                 params: { transportType: 'ble' },
             })
+        } else if (flow === 'asb-import') {
+            navigate('AddAccount', { screen: 'AsbImportBackup' })
         }
     }, [navigate])
+
+/**
+ * Onboarding-stack counterpart of `useExpandedFlowNavigation`, for a hand-off
+ * that happens *before* the first account exists — the shell is in its
+ * 'onboarding' state, so the main root stack (and its 'AddAccount' route)
+ * isn't mounted and the mapping above can't apply. Same one-shot
+ * `consumeInitialExpandedFlow` source: the two shell states are exclusive, so
+ * only one of these ever consumes the param.
+ *
+ * `add-account`/`backup-wallet`/`scan` are deliberately unhandled — they only
+ * exist in the main shell and are unreachable with no account.
+ */
+export const useOnboardingExpandedFlowNavigation = (
+    navigate: (screen: OnboardingFlowScreen, params?: object) => void,
+): (() => void) => {
+    const { setIsOnboarding } = useIsOnboarding()
+
+    return useCallback((): void => {
+        const flow = consumeInitialExpandedFlow()
+        if (
+            flow !== 'ledger-usb' &&
+            flow !== 'ledger-ble' &&
+            flow !== 'asb-import'
+        ) {
+            return
+        }
+
+        // The store is per-realm in-memory, so this fresh tab starts with
+        // isOnboarding false and `useShowOnboarding` holding the stack open
+        // only via `noAccounts`. Importing the account would then flip the
+        // shell to 'main' and unmount this stack mid-flow.
+        setIsOnboarding(true)
+
+        if (flow === 'asb-import') {
+            navigate('AsbImportBackup')
+        } else {
+            navigate('LedgerScan', {
+                transportType: flow === 'ledger-usb' ? 'usb' : 'ble',
+            })
+        }
+    }, [navigate, setIsOnboarding])
+}

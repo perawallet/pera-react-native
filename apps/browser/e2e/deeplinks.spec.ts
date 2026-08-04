@@ -44,7 +44,9 @@ test.afterAll(async () => {
     await context.close()
 })
 
-test('popup deep-links onboarding to the expanded tab', async () => {
+// Deliberately stops at the welcome screen instead of onboarding to
+// completion: the next test needs the vault initialized but no account yet.
+test('popup runs onboarding in place, without popping out to a tab', async () => {
     const popup = await context.newPage()
     await popup.goto(`chrome-extension://${extensionId}/popup.html`)
 
@@ -52,19 +54,15 @@ test('popup deep-links onboarding to the expanded tab', async () => {
     await popup.getByTestId('create-password-confirm-input').fill(PASSWORD)
     await popup.getByTestId('create-password-submit').click()
 
-    // Popup must NOT show the onboarding stack — only the tab CTA.
-    await expect(popup.getByTestId('open-onboarding-tab')).toBeVisible({
-        timeout: 20_000,
-    })
+    // The real OnboardingStackNavigator, not a hand-off CTA. Only the Ledger
+    // scan and ASB file-pick steps pop out, and neither is on this screen.
+    await expect(
+        popup.getByTestId('onboarding_create_wallet_button'),
+    ).toBeVisible({ timeout: 20_000 })
+    await expect(
+        popup.getByTestId('onboarding_import_account_button'),
+    ).toBeVisible()
 
-    const [expandedPage] = await Promise.all([
-        context.waitForEvent('page'),
-        popup.getByTestId('open-onboarding-tab').click(),
-    ])
-    expect(expandedPage.url()).toBe(
-        `chrome-extension://${extensionId}/expanded.html`,
-    )
-    await expandedPage.close()
     await popup.close()
 })
 

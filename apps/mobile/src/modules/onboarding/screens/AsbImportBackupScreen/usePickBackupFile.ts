@@ -24,8 +24,17 @@ export type UsePickBackupFileResult = {
      * resolves its name and text contents. Resolves `null` when the user
      * dismisses the picker without choosing a file; rejects with the
      * original error for any other failure so the caller can surface it.
+     *
+     * When `isPopupHandoff` is true this never picks anything: it opens the
+     * expanded tab and resolves `null`.
      */
     pickFile: () => Promise<PickedBackupFile | null>
+    /**
+     * True only in the browser extension's toolbar popup, where `pickFile`
+     * hands off to the expanded tab instead of picking. Callers use it to
+     * label the affordance accordingly.
+     */
+    isPopupHandoff: boolean
 }
 
 const isCancelError = (e: unknown): boolean => {
@@ -59,5 +68,5 @@ export const usePickBackupFile = (): UsePickBackupFileResult => {
         }
     }, [])
 
-    return { pickFile }
+    return { pickFile, isPopupHandoff: false }
 }

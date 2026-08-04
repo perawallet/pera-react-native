@@ -28,7 +28,11 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { NotifierWrapper } from 'react-native-notifier'
-import { NavigationContainer } from '@react-navigation/native'
+import {
+    NavigationContainer,
+    useNavigationContainerRef,
+    type ParamListBase,
+} from '@react-navigation/native'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import {
     algorandSafeQuerySerialize,
@@ -55,11 +59,8 @@ import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { getTheme, getNavigationTheme } from '@theme/theme'
 import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
-import {
-    getSurface,
-    openExpandedTab,
-} from '@perawallet/wallet-extension-platform-chrome'
 import { WebMainRoutes } from '@routes/WebMainRoutes.web'
+import { useOnboardingExpandedFlowNavigation } from '@routes/useExpandedFlowNavigation.web'
 import { DappRequestRoutes } from '@modules/dapp'
 import { TestnetIndicator } from '@components/TestnetIndicator'
 import { OfflineBanner } from '@components/OfflineBanner'
@@ -140,56 +141,20 @@ const ApprovalPlaceholder = (): React.JSX.Element => {
     )
 }
 
-const useOnboardingTabPromptStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        alignItems: 'center' as const,
-        justifyContent: 'center' as const,
-        padding: theme.spacing.lg,
-    },
-    title: {
-        textAlign: 'center' as const,
-        marginBottom: theme.spacing.sm,
-    },
-    body: {
-        textAlign: 'center' as const,
-        marginBottom: theme.spacing.lg,
-    },
-}))
-
-// Blur-fragile onboarding must not run in the 360x600 popup (design spec):
-// the popup shows a CTA that opens the full tab instead of the real stack.
-const OnboardingTabPrompt = (): React.JSX.Element => {
-    const styles = useOnboardingTabPromptStyles()
-    const { t } = useLanguage()
-
-    return (
-        <PWView style={styles.container}>
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t('vault.expanded.onboarding_title')}
-            </PWText>
-            <PWText style={styles.body}>
-                {t('vault.expanded.onboarding_body')}
-            </PWText>
-            <PWButton
-                variant='primary'
-                title={t('vault.expanded.onboarding_cta')}
-                testID='open-onboarding-tab'
-                onPress={() => {
-                    void openExpandedTab()
-                }}
-            />
-        </PWView>
-    )
-}
-
 const ShellRouter = (): React.JSX.Element => {
     const { shellState, fcmToken } = useWebAppShell()
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
+    // Its own ref rather than the shared `routes/navigationRef`: that one is
+    // read by global handlers (deep links, notification taps) that only know
+    // main-shell routes, and binding it here would turn their isReady()===false
+    // no-op during onboarding into a navigate at a route that doesn't exist.
+    const onboardingNavigationRef = useNavigationContainerRef<ParamListBase>()
+    const handleOnboardingReady = useOnboardingExpandedFlowNavigation(
+        (screen, params) => {
+            onboardingNavigationRef.navigate(screen, params)
+        },
+    )
 
     switch (shellState) {
         case 'resolving': {
@@ -212,15 +177,14 @@ const ShellRouter = (): React.JSX.Element => {
             )
         }
         case 'onboarding': {
-            if (getSurface() === 'popup') {
-                return <OnboardingTabPrompt />
-            }
             return (
                 // Theme the container so React Navigation's DefaultTheme grey
                 // background (rgb(242,242,242)) doesn't paint the onboarding
                 // scene — same fix as WebMainRoutes and the sheet flows.
                 <NavigationContainer
+                    ref={onboardingNavigationRef}
                     theme={getNavigationTheme(isDarkMode ? 'dark' : 'light')}
+                    onReady={handleOnboardingReady}
                 >
                     <OnboardingStackNavigator />
                     <BottomSheetManager />
