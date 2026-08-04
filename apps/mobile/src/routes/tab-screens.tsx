@@ -46,6 +46,9 @@ export type TabScreenDescriptor = {
 
 export const tabScreens: TabScreenDescriptor[] = [
     {
+        // No `initialParams`: the tab bar re-dispatches navigate(name, params)
+        // on every press, and only params identity keeps that a no-op instead
+        // of re-navigating the stack to its last nested target.
         name: 'Home',
         component: AccountStackNavigator as React.ComponentType,
         event: TabbarEvent.Home,

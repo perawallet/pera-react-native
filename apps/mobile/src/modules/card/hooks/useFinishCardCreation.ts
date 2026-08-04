@@ -61,7 +61,12 @@ export const useFinishCardCreation = (): UseFinishCardCreationResult => {
             }
 
             schedule(() => {
-                navigation.navigate('PeraCard', { screen: 'PeraCardAccount' })
+                // Popping the root back to the tab bar also dismisses the
+                // onboarding stack this runs from.
+                navigation.navigate('TabBar', {
+                    screen: 'Home',
+                    params: { screen: 'PeraCardAccount' },
+                })
             }, SUCCESS_DISPLAY_MS)
         },
         [queryClient, infoToast, successToast, t, schedule, navigation],

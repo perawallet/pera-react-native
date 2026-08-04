@@ -19,16 +19,14 @@ import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
 import { PeraCardIntroScreen } from '../screens/PeraCardIntroScreen'
 import { CardSignInScreen } from '../screens/CardSignInScreen'
-import { PeraCardAccountScreen } from '../screens/PeraCardAccountScreen'
-import { CardAddFundsScreen } from '../screens/CardAddFundsScreen'
-import { CardConfirmSwapScreen } from '../screens/CardConfirmSwapScreen'
-import { CardWithdrawScreen } from '../screens/CardWithdrawScreen'
-import { CardTransactionsScreen } from '../screens/CardTransactionsScreen'
-import { CardTransactionDetailScreen } from '../screens/CardTransactionDetailScreen'
 import { CardOnboardingStackNavigator } from './card-onboarding'
 import { type PeraCardStackParamList } from './types'
 
-export type { PeraCardStackParamList } from './types'
+export type {
+    PeraCardStackParamList,
+    PeraCardAccountStackParamList,
+    PeraCardFlowParamList,
+} from './types'
 
 const PeraCardStack = createNativeStackNavigator<PeraCardStackParamList>()
 
@@ -59,36 +57,6 @@ export const PeraCardStackNavigator = () => {
                 name='CardOnboarding'
                 options={{ headerShown: false }}
                 component={CardOnboardingStackNavigator}
-            />
-            <PeraCardStack.Screen
-                name='PeraCardAccount'
-                options={{ headerShown: false }}
-                component={PeraCardAccountScreen}
-            />
-            <PeraCardStack.Screen
-                name='CardAddFunds'
-                options={{ title: 'peraCard.add_funds.navigation_title' }}
-                component={CardAddFundsScreen}
-            />
-            <PeraCardStack.Screen
-                name='CardConfirmSwap'
-                options={{ title: 'peraCard.confirm_swap.navigation_title' }}
-                component={CardConfirmSwapScreen}
-            />
-            <PeraCardStack.Screen
-                name='CardWithdraw'
-                options={{ title: 'peraCard.withdraw.navigation_title' }}
-                component={CardWithdrawScreen}
-            />
-            <PeraCardStack.Screen
-                name='CardTransactions'
-                options={{ title: 'peraCard.transactions.navigation_title' }}
-                component={CardTransactionsScreen}
-            />
-            <PeraCardStack.Screen
-                name='CardTransactionDetail'
-                options={{ title: '' }}
-                component={CardTransactionDetailScreen}
             />
         </PeraCardStack.Navigator>
     )

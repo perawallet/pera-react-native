@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCardTransactionsQuery } from '@perawallet/wallet-core-card'
 import { useCardComingSoonToast } from '../../hooks'
-import { type PeraCardStackParamList } from '../../routes/types'
+import { type PeraCardAccountStackParamList } from '../../routes/types'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -35,7 +35,9 @@ type UseCardTransactionsResult = {
 
 export const useCardTransactions = (): UseCardTransactionsResult => {
     const navigation =
-        useNavigation<NativeStackNavigationProp<PeraCardStackParamList>>()
+        useNavigation<
+            NativeStackNavigationProp<PeraCardAccountStackParamList>
+        >()
     const {
         transactions,
         isLoading,

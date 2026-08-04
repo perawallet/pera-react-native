@@ -188,6 +188,13 @@ import { usePeraCardDetails } from '../usePeraCardDetails'
 const walletAccount = (address: string): WalletAccount =>
     ({ address, type: 'algo25', keyPairId: `key-${address}` }) as WalletAccount
 
+const ledgerAccount = (address: string): WalletAccount =>
+    ({
+        address,
+        type: 'hardware',
+        hardwareDetails: { manufacturer: 'ledger' },
+    }) as unknown as WalletAccount
+
 // Shared secure-view response the reveal tests resolve the token request with.
 const SECURE_VIEW = { token: 'tok', imageUrl: 'https://secure/card.png' }
 
@@ -680,11 +687,27 @@ describe('usePeraCardDetails', () => {
     describe('funding type', () => {
         it('labels the funding type from the stored preference', () => {
             mocks.selectedFundingType = FundingType.Auto
+            mocks.fundingAddress = 'LINKED_ADDR'
+            mocks.accounts = [walletAccount('LINKED_ADDR')]
 
             const { result } = renderHook(() => usePeraCardDetails())
 
             expect(result.current.fundingTypeLabel).toBe(
                 'peraCard.setup_status.funding_type_auto_title',
+            )
+        })
+
+        // A Ledger can't sign the AutoDraw LSig, so a stored AUTO is stale and
+        // the row must not claim Auto is on.
+        it('labels Manual when the connected account is a Ledger despite a stored AUTO', () => {
+            mocks.selectedFundingType = FundingType.Auto
+            mocks.fundingAddress = 'LEDGER_ADDR'
+            mocks.accounts = [ledgerAccount('LEDGER_ADDR')]
+
+            const { result } = renderHook(() => usePeraCardDetails())
+
+            expect(result.current.fundingTypeLabel).toBe(
+                'peraCard.setup_status.funding_type_manual_title',
             )
         })
 
@@ -726,6 +749,10 @@ describe('usePeraCardDetails', () => {
             expect(mocks.cancelDelegation).not.toHaveBeenCalled()
         })
 
+        // Guards the restore path, not a path the UI can reach today: the
+        // Change link is hidden, so the only entry point is Connect, which
+        // needs no linked account while Auto needs one. Keep this green so the
+        // guard still holds when the link comes back.
         it('blocks changing the account while Auto funding is on', async () => {
             // The AutoDraw authorization (AB LSig + Killswitch box) is
             // per-account, so repointing under Auto would strand the old
@@ -733,6 +760,7 @@ describe('usePeraCardDetails', () => {
             // unified onto the AB flow: switch to Manual → change → re-Auto.
             mocks.selectedFundingType = FundingType.Auto
             mocks.fundingAddress = 'OLD_ADDR'
+            mocks.accounts = [walletAccount('OLD_ADDR')]
 
             const { result } = renderHook(() => usePeraCardDetails())
             await act(async () => {
