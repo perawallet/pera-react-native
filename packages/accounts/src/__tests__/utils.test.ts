@@ -505,9 +505,9 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
         expect(canSignArc60({ ...hardware, keyPairId: 'pk1' })).toBe(true)
     })
 
-    // A delegated LSig authorizes spending, so it is checked against the
-    // sender's auth-addr. This is the deliberate divergence from
-    // canSignArbitraryData, which ignores rekeys.
+    // A delegated LSig is checked against the sender's auth-addr, so only the
+    // auth account could usefully sign it. Refused until the signer resolves
+    // that; canSignArbitraryData ignores rekeys (no auth-addr off-chain).
     test('canSignProgram excludes rekeyed accounts, unlike canSignArbitraryData', () => {
         const rekeyed = { ...localKey, rekeyAddress: 'AUTH' }
         expect(canSignProgram(rekeyed)).toBe(false)

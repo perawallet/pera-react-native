@@ -231,16 +231,19 @@ export const canSignArc60 = (account: WalletAccount): boolean =>
 /**
  * Whether `account` can produce a *usable* delegated LogicSig (LSig / dLSig).
  *
- * Two exclusions, both deliberate:
- * - Hardware wallets, not merely because they carry no `keyPairId`: their
- *   firmware signs transactions and ARC-60 payloads only, and will never sign a
- *   program. A permanent limitation, unlike {@link canSignArc60}, which Ledger
+ * Two exclusions:
+ * - Hardware wallets — permanent. Not merely because they carry no
+ *   `keyPairId`: their firmware signs transactions and ARC-60 payloads only,
+ *   and will never sign a program. Unlike {@link canSignArc60}, which Ledger
  *   does satisfy.
- * - Rekeyed accounts. Their key can still produce the signature, but a
- *   delegated LSig authorizes spending, and on-chain authorization follows the
- *   sender's auth-addr — so the delegation would be rejected. This is where
- *   this predicate has to diverge from {@link canSignArbitraryData}, which
- *   deliberately ignores rekeys because off-chain data has no auth-addr lookup.
+ * - Rekeyed accounts — deferred, not impossible. A delegated LSig authorizes
+ *   spending, so the chain verifies it against the sender's auth-addr: the
+ *   delegation is signable, but only by the auth account. Supporting that
+ *   needs auth-account resolution in `useProgramSigner` (which signs with the
+ *   sender's own key today) plus on-chain rekey verification in the AB and
+ *   Pera backends — until then a rekeyed sender must be refused, whereas
+ *   {@link canSignArbitraryData} deliberately ignores rekeys because
+ *   off-chain data has no auth-addr lookup.
  */
 export const canSignProgram = (account: WalletAccount): boolean =>
     !isHardwareWalletAccount(account) &&

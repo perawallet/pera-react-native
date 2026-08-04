@@ -17,7 +17,7 @@ import {
     useUpdateCardFundingDelegationMutation,
 } from '@perawallet/wallet-core-card'
 import {
-    canSignArbitraryData,
+    canSignProgram,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -44,8 +44,7 @@ export const useCardFundingDelegation = (): UseCardFundingDelegationResult => {
     const { mutateAsync: updateDelegationAsync } = updateDelegation
 
     const canDelegate = useCallback(
-        (account: WalletAccount) =>
-            canSignArbitraryData(account) && account.keyPairId != null,
+        (account: WalletAccount) => canSignProgram(account),
         [],
     )
 
