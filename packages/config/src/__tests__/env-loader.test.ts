@@ -316,6 +316,8 @@ describe('env-loader', () => {
             testnetCardW3CardAppId: '2001',
             mainnetCardKillswitchAppId: '1002',
             testnetCardKillswitchAppId: '2002',
+            mainnetCardAutoDrawProgramHash: '',
+            testnetCardAutoDrawProgramHash: '',
             mainnetCardUsdcAssetId: '31566704',
             testnetCardUsdcAssetId: '10458941',
             termsOfServiceUrl: 'https://terms.example.com',
