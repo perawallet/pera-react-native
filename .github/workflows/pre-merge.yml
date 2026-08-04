@@ -411,12 +411,12 @@ jobs:
         with:
           persist-credentials: false
 
-      # The bundle pulls in workspace packages (see the `...extension` filter in
+      # The bundle pulls in workspace packages (see the `...browser` filter in
       # `Build packages`), so this cannot key off `apps/browser/**` alone — a
       # `packages/**` change breaks the bundle just as easily. Fails safe by
       # inverting the test: skip ONLY when every changed path provably cannot
       # reach the extension build graph (apps/mobile and docs are not in it —
-      # verified: mobile is absent from `turbo run build --filter=...extension`
+      # verified: mobile is absent from `turbo run build --filter=...browser`
       # and nothing under extensions/ imports it). Anything else, including a
       # path this list has never seen, runs the job.
       - name: Detect changes affecting the extension
