@@ -126,6 +126,11 @@ const parsePeraWebJsonQr = (
  * the QR encodes a JSON document `{"version":1,"mnemonic":"word1 word2 ..."}`
  * directly (no scheme). Lifts the mnemonic out so the RECOVER_ADDRESS
  * dispatch path can handle it.
+ *
+ * `sourceUrl` is deliberately dropped (set to '') — the raw payload IS the
+ * mnemonic, so echoing it back risks a downstream logger / error sheet
+ * leaking the secret. Mirrors parsePeraWebJsonQr, whose payload is the
+ * encryption key.
  */
 const parseLegacyMnemonicJson = (
     trimmed: string,
@@ -141,7 +146,7 @@ const parseLegacyMnemonicJson = (
         }
         return {
             type: DeeplinkType.RECOVER_ADDRESS,
-            sourceUrl: trimmed,
+            sourceUrl: '',
             mnemonic: parsed.mnemonic,
         }
     } catch {

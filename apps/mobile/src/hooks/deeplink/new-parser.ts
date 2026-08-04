@@ -190,7 +190,9 @@ export function parsePerawalletAppUri(
         if (!params.mnemonic) return null
         return {
             type: DeeplinkType.RECOVER_ADDRESS,
-            sourceUrl: url,
+            // `url` embeds `?mnemonic=` — dropped so the secret never rides
+            // on the parsed deeplink. Mirrors parseLegacyMnemonicJson.
+            sourceUrl: '',
             mnemonic: params.mnemonic,
         } as RecoverAddressDeeplink
     }
