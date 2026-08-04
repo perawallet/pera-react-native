@@ -75,7 +75,7 @@ export const QRScannerContent = ({
 }: QRScannerContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { handleDeepLink, isValidDeepLink } = useDeepLink()
+    const { handleDeepLink, isValidDeepLink, parseDeeplink } = useDeepLink()
 
     // Synchronous guard against double-fire, same reasoning as the native
     // hook: a result can arrive while a previous one is still dispatching.
@@ -117,9 +117,14 @@ export const QRScannerContent = ({
                         onRestart()
                     },
                     () => {
+                        // Log only the parsed type, never the raw scanned /
+                        // pasted string: a RECOVER_ADDRESS payload is a
+                        // mnemonic. The logger's redactor would scrub it, but
+                        // we don't hand the secret to logging in the first
+                        // place.
                         logger.debug(
                             'QRScannerView.web: Deep link handled successfully',
-                            { value },
+                            { type: parseDeeplink(value)?.type },
                         )
                         onSuccess(value, () => {
                             handlingRef.current = false
@@ -143,6 +148,7 @@ export const QRScannerContent = ({
         [
             handleDeepLink,
             isValidDeepLink,
+            parseDeeplink,
             onSuccess,
             onRestart,
             skipDeepLinkHandler,

@@ -26,7 +26,6 @@ type Variant =
 
 export type ShowDeeplinkErrorParams = {
     variant: Variant
-    sourceUrl?: string
     parsedType?: string
     error?: unknown
 }

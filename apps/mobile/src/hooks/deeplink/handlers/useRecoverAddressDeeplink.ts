@@ -24,8 +24,6 @@ export type RecoverAddressDeeplinkHandler = (params: {
     mnemonic: string
     source: LinkSource
     replaceCurrentScreen: boolean
-    /** Forwarded into the error sheet's debug payload when present. */
-    sourceUrl?: string
 }) => Promise<void>
 
 /**
@@ -49,7 +47,7 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
     const showError = useDeeplinkErrorHandler()
 
     return useCallback(
-        ({ mnemonic, source, replaceCurrentScreen, sourceUrl }) => {
+        ({ mnemonic, source, replaceCurrentScreen }) => {
             if (source !== 'qr') return Promise.resolve()
 
             const normalized = normalizeMnemonic(mnemonic)
@@ -57,7 +55,6 @@ export const useRecoverAddressDeeplink = (): RecoverAddressDeeplinkHandler => {
             if (!resolved.success) {
                 showError({
                     variant: 'recover',
-                    sourceUrl,
                     parsedType: 'RECOVER_ADDRESS',
                     error: 'Invalid mnemonic length (need 24 or 25 words)',
                 })

@@ -50,7 +50,7 @@ export const useQRScannerView = ({
     const [scanningEnabled, setScanningEnabled] = useState(true)
     const [permissionDenied, setPermissionDenied] = useState(false)
 
-    const { handleDeepLink, isValidDeepLink } = useDeepLink()
+    const { handleDeepLink, isValidDeepLink, parseDeeplink } = useDeepLink()
 
     // Synchronous guard against double-fire. The barcode scanner's
     // `onBarcodeScanned` is invoked from the native camera frame loop and
@@ -117,9 +117,13 @@ export const useQRScannerView = ({
                         onClose?.()
                     },
                     () => {
+                        // Log only the parsed type, never the raw scanned
+                        // string: a RECOVER_ADDRESS payload is a mnemonic. The
+                        // logger's redactor would scrub it, but we don't hand
+                        // the secret to logging in the first place.
                         logger.debug(
                             'QRScannerView: Deep link handled successfully',
-                            { url },
+                            { type: parseDeeplink(url)?.type },
                         )
                         onSuccess(url, () => {
                             handlingRef.current = false
@@ -143,6 +147,7 @@ export const useQRScannerView = ({
         [
             isValidDeepLink,
             handleDeepLink,
+            parseDeeplink,
             skipDeepLinkHandler,
             onSuccess,
             onClose,

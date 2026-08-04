@@ -205,4 +205,21 @@ describe('Deeplink Parser - Edge Cases', () => {
             expect(parseDeeplink('not json at all')).toBeNull()
         })
     })
+
+    describe('legacy recover-account (mnemonic JSON QR)', () => {
+        it('extracts the mnemonic but never echoes the payload into sourceUrl', () => {
+            const mnemonic = new Array(25).fill('word').join(' ')
+            const qr = JSON.stringify({ version: 1, mnemonic })
+
+            const result = parseDeeplink(qr)
+
+            expect(result?.type).toBe(DeeplinkType.RECOVER_ADDRESS)
+            if (result?.type === DeeplinkType.RECOVER_ADDRESS) {
+                expect(result.mnemonic).toBe(mnemonic)
+                // The raw payload IS the secret — it must not survive on the
+                // parsed deeplink where a logger / error sheet could read it.
+                expect(result.sourceUrl).toBe('')
+            }
+        })
+    })
 })

@@ -58,6 +58,7 @@ vi.mock('@hooks/useDeepLink', () => ({
     useDeepLink: vi.fn(() => ({
         handleDeepLink: vi.fn(),
         isValidDeepLink: vi.fn(() => true),
+        parseDeeplink: vi.fn(() => ({ type: 'HOME' })),
     })),
 }))
 
