@@ -82,7 +82,7 @@ describe('useErrorToast', () => {
         )
     })
 
-    it('uses fallback title and the AppError message for AppError instances', () => {
+    it('uses fallback title and the localized generic body for an AppError without a messageKey', () => {
         const appError = new TestAppError('Insufficient ALGO balance to opt in')
         const { result } = renderHook(() => useErrorToast())
 
@@ -93,14 +93,14 @@ describe('useErrorToast', () => {
         expect(mockShowToast).toHaveBeenCalledWith(
             {
                 title: 'Could not add asset',
-                body: 'Insufficient ALGO balance to opt in',
+                body: 'errors.general.body',
                 type: 'error',
             },
             undefined,
         )
     })
 
-    it('falls back to generic title when no fallback is provided for AppError', () => {
+    it('falls back to generic title and body when no fallback is provided for AppError', () => {
         const appError = new TestAppError('boom')
         const { result } = renderHook(() => useErrorToast())
 
@@ -111,7 +111,7 @@ describe('useErrorToast', () => {
         expect(mockShowToast).toHaveBeenCalledWith(
             {
                 title: 'errors.general.title',
-                body: 'boom',
+                body: 'errors.general.body',
                 type: 'error',
             },
             undefined,
@@ -192,7 +192,7 @@ describe('useErrorToast', () => {
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({
                 title: 'Failed',
-                body: 'user-facing copy\n\nDebug: user-facing copy',
+                body: 'errors.general.body\n\nDebug: user-facing copy',
                 type: 'error',
             }),
             undefined,

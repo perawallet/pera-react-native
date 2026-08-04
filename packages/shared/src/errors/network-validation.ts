@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { AppError, ErrorCategory, ErrorSeverity } from './base'
+import {
+    AppError,
+    ErrorCategory,
+    type ErrorMetadata,
+    ErrorSeverity,
+} from './base'
 
 /**
  * Network-related errors (connectivity, timeouts, etc.)
@@ -74,7 +79,13 @@ export class NoConnectionError extends NetworkError {
 export class ValidationError extends AppError {
     public readonly field?: string
 
-    constructor(message: string, field?: string, originalError?: Error) {
+    constructor(
+        message: string,
+        /** The invalid field's NAME (e.g. 'mnemonic'), never its value — this reaches logs via `AppError.toJSON`. */
+        field?: string,
+        originalError?: Error,
+        metadata?: Partial<ErrorMetadata>,
+    ) {
         super(
             message,
             {
@@ -82,7 +93,11 @@ export class ValidationError extends AppError {
                 category: ErrorCategory.VALIDATION,
                 recoverable: true,
                 retryable: false,
-                params: field ? { field } : undefined,
+                messageKey: 'errors.validation.generic',
+                ...metadata,
+                // After the spread on purpose: an absent `metadata.params` must
+                // fall back to the field name, not overwrite it with undefined.
+                params: metadata?.params ?? (field ? { field } : undefined),
             },
             originalError,
         )
@@ -95,8 +110,10 @@ export class ValidationError extends AppError {
  */
 export class InvalidAddressError extends ValidationError {
     constructor(address: string) {
-        super(`Address ${address} is invalid`, 'address')
-        this.metadata.params = { address }
+        super(`Address ${address} is invalid`, 'address', undefined, {
+            messageKey: 'errors.validation.invalid_address',
+            params: { address },
+        })
     }
 }
 
@@ -105,8 +122,10 @@ export class InvalidAddressError extends ValidationError {
  */
 export class InvalidAmountError extends ValidationError {
     constructor(amount: string) {
-        super(`Amount ${amount} is invalid`, 'amount')
-        this.metadata.params = { amount }
+        super(`Amount ${amount} is invalid`, 'amount', undefined, {
+            messageKey: 'errors.validation.invalid_amount',
+            params: { amount },
+        })
     }
 }
 
@@ -115,7 +134,9 @@ export class InvalidAmountError extends ValidationError {
  */
 export class InvalidMnemonicError extends ValidationError {
     constructor() {
-        super(`The Mnemonic provided is invalid`, 'mnemonic')
+        super('The Mnemonic provided is invalid', 'mnemonic', undefined, {
+            messageKey: 'errors.validation.invalid_mnemonic',
+        })
     }
 }
 
@@ -124,6 +145,9 @@ export class InvalidMnemonicError extends ValidationError {
  */
 export class RequiredFieldError extends ValidationError {
     constructor(field: string) {
-        super(`${field} is required`, field)
+        super(`${field} is required`, field, undefined, {
+            messageKey: 'errors.validation.required_field',
+            params: { field },
+        })
     }
 }

@@ -620,14 +620,13 @@
             "title": "An error occurred processing this account",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
             "generic": "An error occurred processing this account.",
-            "no_hd_wallet": "Could not find the Universal Wallet for address {{address}}.",
-            "key_access_error": "Failed to access the signing key."
+            "no_hd_wallet": "Could not find the Universal Wallet for this account."
         },
         "blockchain": {
             "generic": "Something went wrong accessing the blockchain.",
-            "transaction": "Failed to process the transaction: {{cause}}",
-            "invalid_transaction": "Invalid transaction: {{cause}}",
-            "signing": "Failed to sign the transaction: {{cause}}"
+            "transaction": "Something went wrong processing the transaction. Please try again and contact support if the issue persists.",
+            "invalid_transaction": "The transaction data appears to be invalid. Please try again and contact support if the issue persists.",
+            "signing": "Something went wrong signing the transaction. Please try again and contact support if the issue persists."
         },
         "algod": {
             "overspend": {
@@ -717,7 +716,7 @@
             "generic": "The data appears to be invalid.",
             "invalid_address": "The address appears to be invalid: {{address}}",
             "invalid_amount": "The amount appears to be invalid: {{amount}}",
-            "invalid_mnemonic": "The mnemonic appears to be invalid: {{mnemonic}}",
+            "invalid_mnemonic": "The recovery passphrase appears to be invalid.",
             "required_field": "A required field is missing: {{field}}"
         },
         "auth": {
@@ -735,9 +734,10 @@
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
         "kms": {
-            "key_not_found": "Could not find the key for wallet {{walletId}}.",
+            "key_not_found": "Could not find the signing key for this account.",
             "key_access_error": "Failed to access the signing key.",
-            "invalid_key": "The key for wallet {{walletId}} is invalid."
+            "invalid_key": "The signing key for this account is invalid.",
+            "generic": "Something went wrong accessing your signing key."
         },
         "unknown": "An unknown error occurred.",
         "walletconnect": {
@@ -1287,7 +1287,8 @@
             "title": "Set a Threshold",
             "description": "You need to set the minimum number of accounts required to confirm a transaction.",
             "number_of_accounts": "Number of accounts",
-            "required_signatures": "Threshold"
+            "required_signatures": "Threshold",
+            "exceeds_participants": "The threshold ({{threshold}}) cannot be higher than the number of participants ({{participantCount}})."
         },
         "before_you_create": {
             "title": "Before You Create a Shared Account",

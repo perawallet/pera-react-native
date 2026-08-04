@@ -32,6 +32,7 @@ export class BlockchainError extends AppError {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: false,
+                messageKey: 'errors.blockchain.generic',
                 ...metadata,
             },
             originalError,
@@ -46,11 +47,13 @@ export class TransactionError extends BlockchainError {
     public readonly txId?: string
 
     constructor(txId?: string, originalError?: Error) {
-        super('An error occurred processing the transaction', originalError)
+        super('An error occurred processing the transaction', originalError, {
+            messageKey: 'errors.blockchain.transaction',
+            // txId is diagnostic only — the copy shows neither it nor the raw
+            // cause, but both belong in the log payload.
+            params: { txId, cause: originalError?.message },
+        })
         this.txId = txId
-        if (txId) {
-            this.metadata.params = { txId, cause: originalError?.message }
-        }
     }
 }
 
@@ -60,10 +63,11 @@ export class TransactionError extends BlockchainError {
 export class SigningError extends BlockchainError {
     constructor(originalError?: Error) {
         super(
-            'An error occurred siging the transaction or data',
+            'An error occurred signing the transaction or data',
             originalError,
             {
                 severity: ErrorSeverity.CRITICAL,
+                messageKey: 'errors.blockchain.signing',
                 params: { cause: originalError?.message },
             },
         )
@@ -77,6 +81,7 @@ export class InvalidTransactionError extends BlockchainError {
     constructor(originalError?: Error) {
         super('The transaction data is invalid or corrupted', originalError, {
             severity: ErrorSeverity.CRITICAL,
+            messageKey: 'errors.blockchain.invalid_transaction',
             params: { cause: originalError?.message },
         })
     }

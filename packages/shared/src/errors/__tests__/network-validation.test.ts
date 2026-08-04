@@ -157,6 +157,20 @@ describe('ValidationError', () => {
         expect(error.metadata.params).toBeUndefined()
     })
 
+    test('falls back to field name when metadata explicitly sets params to undefined', () => {
+        const error = new ValidationError(
+            'Validation failed',
+            'someField',
+            undefined,
+            {
+                messageKey: 'errors.validation.generic',
+                params: undefined,
+            },
+        )
+
+        expect(error.metadata.params).toEqual({ field: 'someField' })
+    })
+
     test('has LOW severity', () => {
         const error = new ValidationError('Validation failed')
 
@@ -256,5 +270,48 @@ describe('RequiredFieldError', () => {
         const error = new RequiredFieldError('test')
 
         expect(error instanceof ValidationError).toBe(true)
+    })
+})
+
+describe('validation error copy', () => {
+    test('InvalidAddressError declares its key and address param', () => {
+        const error = new InvalidAddressError('ABC')
+
+        expect(error.metadata.messageKey).toBe(
+            'errors.validation.invalid_address',
+        )
+        expect(error.metadata.params).toEqual({ address: 'ABC' })
+    })
+
+    test('InvalidAmountError declares its key and amount param', () => {
+        const error = new InvalidAmountError('-1')
+
+        expect(error.metadata.messageKey).toBe(
+            'errors.validation.invalid_amount',
+        )
+        expect(error.metadata.params).toEqual({ amount: '-1' })
+    })
+
+    test('RequiredFieldError declares its key and field param', () => {
+        const error = new RequiredFieldError('recipient')
+
+        expect(error.metadata.messageKey).toBe(
+            'errors.validation.required_field',
+        )
+        expect(error.metadata.params).toEqual({ field: 'recipient' })
+    })
+
+    test('InvalidMnemonicError never carries the passphrase in params', () => {
+        const error = new InvalidMnemonicError()
+
+        expect(error.metadata.messageKey).toBe(
+            'errors.validation.invalid_mnemonic',
+        )
+        // `field: 'mnemonic'` is the literal field NAME — safe log context.
+        // What must never appear is a param holding the passphrase VALUE.
+        expect(error.metadata.params).toEqual({ field: 'mnemonic' })
+        expect(Object.keys(error.metadata.params ?? {})).not.toContain(
+            'mnemonic',
+        )
     })
 })

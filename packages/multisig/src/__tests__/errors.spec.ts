@@ -61,6 +61,36 @@ describe('ThresholdExceedsParticipantsError', () => {
     })
 })
 
+describe('multisig error copy', () => {
+    test('ParticipantIsMultisigError declares the existing body key', () => {
+        const error = new ParticipantIsMultisigError()
+
+        expect(error.metadata.messageKey).toBe(
+            'multisig.add_participant.cannot_add_multisig_error_body',
+        )
+    })
+
+    test('ParticipantIsWatchError declares the existing body key', () => {
+        const error = new ParticipantIsWatchError()
+
+        expect(error.metadata.messageKey).toBe(
+            'multisig.add_participant.cannot_add_watch_error_body',
+        )
+    })
+
+    test('ThresholdExceedsParticipantsError declares its key and both params', () => {
+        const error = new ThresholdExceedsParticipantsError(4, 3)
+
+        expect(error.metadata.messageKey).toBe(
+            'multisig.threshold.exceeds_participants',
+        )
+        expect(error.metadata.params).toEqual({
+            threshold: 4,
+            participantCount: 3,
+        })
+    })
+})
+
 describe('discriminated union via code', () => {
     test('callers can narrow by code', () => {
         const errors: MultisigValidationError[] = [
