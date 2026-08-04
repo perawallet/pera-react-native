@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useState } from 'react'
-import { Dialog, Text } from '@rneui/themed'
+import { Dialog } from '@rneui/themed'
 import {
     useWalletConnect,
     type WalletConnectConnection,
@@ -23,6 +23,7 @@ import {
     PWFlatList,
     PWIcon,
     PWScreen,
+    PWText,
     PWView,
 } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
@@ -130,7 +131,7 @@ export const SettingsWalletConnectScreen = () => {
                 <Dialog.Title
                     title={t('walletconnect.settings.delete_all_title')}
                 />
-                <Text>{t('walletconnect.settings.delete_all_body')}</Text>
+                <PWText>{t('walletconnect.settings.delete_all_body')}</PWText>
                 <Dialog.Actions>
                     <Dialog.Button
                         title={t('common.delete.label')}

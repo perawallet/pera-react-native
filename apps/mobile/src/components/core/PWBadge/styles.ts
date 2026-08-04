@@ -42,7 +42,12 @@ export const useStyles = makeStyles((theme, props: PWBadgeProps) => {
         container: {
             paddingHorizontal: isAlert ? 0 : theme.spacing.sm,
             minWidth: isAlert ? theme.spacing.xl : undefined,
-            height: theme.spacing.xl,
+            // RNEUI's Badge hardcodes `height: 18` under badgeStyle, and Yoga
+            // never grows a definite height from content — so it has to be
+            // cleared, not just raised by minHeight, for the pill to grow.
+            height: undefined,
+            minHeight: theme.spacing.xl,
+            paddingVertical: isAlert ? 0 : theme.spacing.xxs,
             backgroundColor,
             borderWidth: isAlert ? theme.borders.lg : theme.borders.none,
             borderColor: isAlert ? theme.colors.background : undefined,

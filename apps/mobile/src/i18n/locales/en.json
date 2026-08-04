@@ -2595,6 +2595,7 @@
             "delete_body": "Are you sure you want to delete this session?  This will remove your active session and disconnect you from the connected app.",
             "delete_all_title": "Delete All Sessions",
             "delete_all_body": "Are you sure you want to delete all sessions?  This will remove all your active sessions and disconnect you from all connected apps.",
+            "unknown_peer": "Unknown",
             "version": "This session is using WalletConnect V{{version}}",
             "connected_accounts": "Connected with",
             "permissions": "Advanced Permissions",
