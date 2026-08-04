@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Dialog, Image, useTheme } from '@rneui/themed'
+import { Dialog, useTheme } from '@rneui/themed'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 
@@ -18,6 +18,7 @@ import {
     PWBadge,
     PWButton,
     PWIcon,
+    PWImage,
     PWScreen,
     PWText,
     PWTouchableOpacity,
@@ -82,7 +83,7 @@ export const SettingsWalletConnectDetailsScreen = ({
         <PWScreen testID='wallet_connect_details_screen'>
             <PWView style={styles.container}>
                 {!!preferredIcon && (
-                    <Image
+                    <PWImage
                         source={{ uri: preferredIcon }}
                         style={styles.icon}
                     />
@@ -93,7 +94,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                         size='xl'
                     />
                 )}
-                <PWText variant='h4'>
+                <PWText variant='h3'>
                     {peerMeta?.name ?? t('walletconnect.settings.unknown_peer')}
                 </PWText>
                 {peerMeta?.url && (

@@ -58,6 +58,7 @@ const toUnifiedWalletConnectConnection = (
     connection: WalletConnectConnection,
     disconnect: (clientId: string, triggerDisconnect: boolean) => Promise<void>,
     onError: (error: unknown) => void,
+    unknownPeerLabel: string,
 ): UnifiedConnection => {
     const peerMeta = connection.session?.peerMeta
     const clientId = connection.clientId ?? ''
@@ -65,7 +66,7 @@ const toUnifiedWalletConnectConnection = (
     return {
         id: `walletconnect-${clientId}`,
         kind: 'walletconnect',
-        title: peerMeta?.name ?? 'Unknown',
+        title: peerMeta?.name ?? unknownPeerLabel,
         subtitle: peerMeta?.url ?? connection.bridge ?? '',
         iconUrl: peerMeta?.icons?.[0],
         connectedAt: connection.createdAt,
@@ -116,6 +117,7 @@ export const useConnectionsSettingsScreen =
                         connection,
                         disconnect,
                         handleRevokeError,
+                        t('walletconnect.settings.unknown_peer'),
                     ),
                 ),
                 ...sites.map(site =>
@@ -133,6 +135,7 @@ export const useConnectionsSettingsScreen =
             sites,
             revoke,
             handleRevokeError,
+            t,
         ])
 
         const confirmRevoke = useCallback(

@@ -42,10 +42,10 @@ export const useStyles = makeStyles((theme, props: PWBadgeProps) => {
         container: {
             paddingHorizontal: isAlert ? 0 : theme.spacing.sm,
             minWidth: isAlert ? theme.spacing.xl : undefined,
-            // minHeight, not height: the label scales with the OS font setting,
-            // so a fixed pill clipped it to the tops of the letters at large
-            // Dynamic Type. The badge sits at xl until the label outgrows it,
-            // leaving default-size rendering untouched.
+            // RNEUI's Badge hardcodes `height: 18` under badgeStyle, and Yoga
+            // never grows a definite height from content — so it has to be
+            // cleared, not just raised by minHeight, for the pill to grow.
+            height: undefined,
             minHeight: theme.spacing.xl,
             paddingVertical: isAlert ? 0 : theme.spacing.xxs,
             backgroundColor,

@@ -11,6 +11,7 @@
  */
 
 import { Badge, type BadgeProps } from '@rneui/themed'
+import { MAX_FONT_SIZE_MULTIPLIER } from '../constants'
 import { useStyles } from './styles'
 
 export type PWBadgeProps = {
@@ -21,6 +22,7 @@ export const PWBadge = ({
     variant = 'primary',
     badgeStyle,
     textStyle,
+    textProps,
     ...rest
 }: PWBadgeProps) => {
     const styles = useStyles({ variant })
@@ -28,6 +30,12 @@ export const PWBadge = ({
         <Badge
             badgeStyle={[styles.container, badgeStyle]}
             textStyle={[styles.text, textStyle]}
+            // RNEUI renders the label through a bare RN Text, so nothing bounds
+            // OS font scaling here the way PWText does for every other string.
+            textProps={{
+                maxFontSizeMultiplier: MAX_FONT_SIZE_MULTIPLIER,
+                ...textProps,
+            }}
             {...rest}
         ></Badge>
     )
