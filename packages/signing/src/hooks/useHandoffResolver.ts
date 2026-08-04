@@ -12,7 +12,7 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { useQueries, type QueryKey } from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
 import type {
     HandoffPollOutcome,
     TerminalHandoffOutcome,
@@ -44,8 +44,11 @@ export type UseHandoffResolverArgs<TItem, TRaw, TDetail> = {
     keyOf: (item: TItem) => string
     /** Build the poll for one handoff. */
     poll: (item: TItem) => HandoffPollDescriptor<TRaw, TDetail>
-    /** Pure classification of a poll result into a (terminal or not) outcome. */
-    classify: (detail: TDetail, item: TItem) => HandoffPollOutcome
+    /**
+     * Classify a poll result into a (terminal or not) outcome. Async because
+     * multisig classification verifies signatures, yielding between batches.
+     */
+    classify: (detail: TDetail, item: TItem) => Promise<HandoffPollOutcome>
     /**
      * Deliver / complete a terminal outcome exactly once. Receives the poll
      * `detail` too, for consumers that need a field the registry record does
@@ -96,9 +99,10 @@ export const useHandoffResolver = <TItem, TRaw, TDetail>({
         return handoffs.filter(item => networkOf(item) === activeNetwork)
     }, [handoffs, activeNetwork, networkOf])
 
-    // Sign-request ids already delivered a terminal outcome — guards against a
-    // late poll re-delivering before the registry-remove re-render lands.
-    // Pruned to the live set in the effect below.
+    // Sign-request ids that have delivered a terminal outcome, or are mid-
+    // classification and may still deliver one — guards against a late poll
+    // re-delivering before the registry-remove re-render lands. A non-terminal
+    // outcome hands its claim back. Pruned to the live set in the effect below.
     const resolvedRef = useRef<Set<string>>(new Set())
 
     // One poll query per handoff. `useQueries` handles the dynamic count;
@@ -144,13 +148,38 @@ export const useHandoffResolver = <TItem, TRaw, TDetail>({
             const detail = result.data as TDetail | undefined
             if (!detail) return
 
-            const outcome = classify(detail, item)
-            if (outcome.kind === 'keep-polling') return
-
-            // Claim synchronously so a re-render cannot re-deliver, then hand
-            // the terminal outcome to the consumer.
+            // Claim BEFORE awaiting classification, which yields to the JS
+            // thread while verifying bulk multisig signatures: releasing the
+            // guard only after the await would let two effect runs both pass
+            // the `has` check above and resolve the same handoff twice. Any
+            // non-terminal outcome hands the claim back below.
             resolvedRef.current.add(key)
-            void resolve(outcome, item, detail)
+            void (async () => {
+                let outcome: HandoffPollOutcome
+                try {
+                    outcome = await classify(detail, item)
+                } catch (error) {
+                    // Classification reports real failures as an `error`
+                    // outcome rather than throwing, so a rejection here is a
+                    // transient fault — unclaim so the next poll retries
+                    // instead of stranding the handoff as resolved. Logged
+                    // because the retry is silent otherwise: a fault that never
+                    // clears would poll forever with nothing to show for it.
+                    logger.warn('Handoff classification threw; will retry', {
+                        signRequestId: key,
+                        error,
+                    })
+                    resolvedRef.current.delete(key)
+                    return
+                }
+
+                if (outcome.kind === 'keep-polling') {
+                    resolvedRef.current.delete(key)
+                    return
+                }
+
+                await resolve(outcome, item, detail)
+            })()
         })
     }, [results, active, keyOf, classify, resolve])
 }

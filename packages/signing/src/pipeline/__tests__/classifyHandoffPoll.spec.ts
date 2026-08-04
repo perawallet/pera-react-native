@@ -112,26 +112,26 @@ describe('classifyHandoffPoll', () => {
         assembleMock.mockReset()
     })
 
-    it('keeps polling while status is pending', () => {
+    it('keeps polling while status is pending', async () => {
         expect(
-            classifyHandoffPoll(
+            await classifyHandoffPoll(
                 makeDetail({ status: 'pending' }),
                 makeHandoff(),
             ),
         ).toEqual({ kind: 'keep-polling' })
     })
 
-    it('keeps polling while status is submitting', () => {
+    it('keeps polling while status is submitting', async () => {
         expect(
-            classifyHandoffPoll(
+            await classifyHandoffPoll(
                 makeDetail({ status: 'submitting' }),
                 makeHandoff(),
             ),
         ).toEqual({ kind: 'keep-polling' })
     })
 
-    it('keeps polling when a signed participant has no signatures yet', () => {
-        const outcome = classifyHandoffPoll(
+    it('keeps polling when a signed participant has no signatures yet', async () => {
+        const outcome = await classifyHandoffPoll(
             makeDetail({
                 status: 'ready',
                 transaction_lists: [
@@ -154,39 +154,39 @@ describe('classifyHandoffPoll', () => {
         expect(assembleMock).not.toHaveBeenCalled()
     })
 
-    it('errors when a ready request carries no transaction lists', () => {
+    it('errors when a ready request carries no transaction lists', async () => {
         expect(
-            classifyHandoffPoll(
+            await classifyHandoffPoll(
                 makeDetail({ status: 'ready', transaction_lists: [] }),
                 makeHandoff(),
             ),
         ).toEqual({ kind: 'error', reason: { kind: 'no-transactions' } })
     })
 
-    it('returns ready with the assembled bytes when assembly succeeds', () => {
+    it('returns ready with the assembled bytes when assembly succeeds', async () => {
         const signedBytes = [new Uint8Array([1, 2, 3])]
         assembleMock.mockReturnValue({
             kind: 'success',
             signedTransactionsBytes: signedBytes,
         })
 
-        expect(classifyHandoffPoll(makeDetail(), makeHandoff())).toEqual({
+        expect(await classifyHandoffPoll(makeDetail(), makeHandoff())).toEqual({
             kind: 'ready',
             assembledBytes: signedBytes,
         })
     })
 
-    it('errors when assembly fails', () => {
+    it('errors when assembly fails', async () => {
         assembleMock.mockReturnValue({ kind: 'error', reason: 'bad subsig' })
 
-        expect(classifyHandoffPoll(makeDetail(), makeHandoff())).toEqual({
+        expect(await classifyHandoffPoll(makeDetail(), makeHandoff())).toEqual({
             kind: 'error',
             reason: { kind: 'assembly-failed', detail: 'bad subsig' },
         })
     })
 
-    it('refuses to assemble when the poll bytes differ from the proposed bytes', () => {
-        const outcome = classifyHandoffPoll(
+    it('refuses to assemble when the poll bytes differ from the proposed bytes', async () => {
+        const outcome = await classifyHandoffPoll(
             makeDetail({
                 transaction_lists: [
                     {
@@ -214,8 +214,8 @@ describe('classifyHandoffPoll', () => {
         expect(assembleMock).not.toHaveBeenCalled()
     })
 
-    it('refuses to assemble when the poll carries extra transactions', () => {
-        const outcome = classifyHandoffPoll(
+    it('refuses to assemble when the poll carries extra transactions', async () => {
+        const outcome = await classifyHandoffPoll(
             makeDetail({
                 transaction_lists: [
                     {
@@ -243,8 +243,8 @@ describe('classifyHandoffPoll', () => {
         expect(assembleMock).not.toHaveBeenCalled()
     })
 
-    it('refuses to assemble when the poll bytes are not decodable base64', () => {
-        const outcome = classifyHandoffPoll(
+    it('refuses to assemble when the poll bytes are not decodable base64', async () => {
+        const outcome = await classifyHandoffPoll(
             makeDetail({
                 transaction_lists: [
                     {
@@ -272,7 +272,7 @@ describe('classifyHandoffPoll', () => {
         expect(assembleMock).not.toHaveBeenCalled()
     })
 
-    it('classifies confirmed like ready', () => {
+    it('classifies confirmed like ready', async () => {
         const signedBytes = [new Uint8Array([9])]
         assembleMock.mockReturnValue({
             kind: 'success',
@@ -280,34 +280,34 @@ describe('classifyHandoffPoll', () => {
         })
 
         expect(
-            classifyHandoffPoll(
+            await classifyHandoffPoll(
                 makeDetail({ status: 'confirmed' }),
                 makeHandoff(),
             ),
         ).toEqual({ kind: 'ready', assembledBytes: signedBytes })
     })
 
-    it('soft-rejects on declined status', () => {
+    it('soft-rejects on declined status', async () => {
         expect(
-            classifyHandoffPoll(
+            await classifyHandoffPoll(
                 makeDetail({ status: 'declined' }),
                 makeHandoff(),
             ),
         ).toEqual({ kind: 'soft-reject', reason: 'declined' })
     })
 
-    it('soft-rejects on expired status', () => {
+    it('soft-rejects on expired status', async () => {
         expect(
-            classifyHandoffPoll(
+            await classifyHandoffPoll(
                 makeDetail({ status: 'expired' }),
                 makeHandoff(),
             ),
         ).toEqual({ kind: 'soft-reject', reason: 'expired' })
     })
 
-    it('errors on failed status, carrying the backend fail reason', () => {
+    it('errors on failed status, carrying the backend fail reason', async () => {
         expect(
-            classifyHandoffPoll(
+            await classifyHandoffPoll(
                 makeDetail({
                     status: 'failed',
                     fail_reason_display: 'insufficient funds',
@@ -323,9 +323,9 @@ describe('classifyHandoffPoll', () => {
         })
     })
 
-    it('errors on failed status with a null fail reason', () => {
+    it('errors on failed status with a null fail reason', async () => {
         expect(
-            classifyHandoffPoll(
+            await classifyHandoffPoll(
                 makeDetail({ status: 'failed', fail_reason_display: null }),
                 makeHandoff(),
             ),

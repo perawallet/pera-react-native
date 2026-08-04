@@ -18,6 +18,7 @@ import {
 } from 'algosdk'
 import nacl from 'tweetnacl'
 import {
+    VERIFY_BATCH_SIZE,
     assembleSignedMultisigTransactions,
     type ParticipantResponse,
 } from '../assembleSignedMultisigTransactions'
@@ -81,8 +82,42 @@ const buildResponse = (
 ): ParticipantResponse => ({ address, response, signatures })
 
 describe('assembleSignedMultisigTransactions', () => {
-    test('produces valid msgpack with msig (subsig/thr/v) and embedded txn', () => {
-        const result = assembleSignedMultisigTransactions({
+    test('yields to the event loop while verifying a group larger than one batch', async () => {
+        // Identical transaction bytes repeated, so one real signature per
+        // participant stays valid for every index. The budget is spent per
+        // verify — one per signing participant per transaction — so this is the
+        // smallest group that outgrows a single turn. Deliberately fewer than
+        // VERIFY_BATCH_SIZE transactions: a per-transaction budget would never
+        // yield here.
+        const SIGNER_COUNT = 2
+        const TX_COUNT = Math.floor(VERIFY_BATCH_SIZE / SIGNER_COUNT) + 1
+        // A macrotask queued before the call: microtasks alone can never let it
+        // run first, so observing it mid-flight proves the loop yielded rather
+        // than blocking the thread for the whole group.
+        let macrotaskRan = false
+        setTimeout(() => {
+            macrotaskRan = true
+        }, 0)
+
+        const result = await assembleSignedMultisigTransactions({
+            rawTransactionsBase64: Array(TX_COUNT).fill(FAKE_TX_B64),
+            participantAddresses: [ADDR_1, ADDR_2],
+            version: 1,
+            threshold: 2,
+            responses: [
+                buildResponse(ADDR_1, 'signed', Array(TX_COUNT).fill(SIG_1)),
+                buildResponse(ADDR_2, 'signed', Array(TX_COUNT).fill(SIG_2)),
+            ],
+        })
+
+        expect(macrotaskRan).toBe(true)
+        expect(result.kind).toBe('success')
+        if (result.kind !== 'success') return
+        expect(result.signedTransactionsBytes).toHaveLength(TX_COUNT)
+    })
+
+    test('produces valid msgpack with msig (subsig/thr/v) and embedded txn', async () => {
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2, ADDR_3],
             version: 1,
@@ -124,8 +159,8 @@ describe('assembleSignedMultisigTransactions', () => {
         expect(Array.from(subsigs[2].pk)).toEqual(Array.from(KP_3.publicKey))
     })
 
-    test('embeds raw transaction bytes verbatim (no decode + re-encode)', () => {
-        const result = assembleSignedMultisigTransactions({
+    test('embeds raw transaction bytes verbatim (no decode + re-encode)', async () => {
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -142,10 +177,10 @@ describe('assembleSignedMultisigTransactions', () => {
         expect(decoded.txn).toEqual({ x: 1n })
     })
 
-    test('rejects a signature paired with transaction bytes the participant never signed', () => {
+    test('rejects a signature paired with transaction bytes the participant never signed', async () => {
         // The swapped-transaction attack: SIG_1 is a real signature over
         // FAKE_TX_BYTES, but the backend supplies different raw bytes.
-        const result = assembleSignedMultisigTransactions({
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [OTHER_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -159,10 +194,10 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
-    test('rejects a well-formed signature from the wrong key', () => {
+    test('rejects a well-formed signature from the wrong key', async () => {
         // KP_2 signed the right bytes, but the backend attributes the
         // signature to ADDR_1.
-        const result = assembleSignedMultisigTransactions({
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -176,9 +211,9 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
-    test('rejects a signature from an address outside the participant set', () => {
+    test('rejects a signature from an address outside the participant set', async () => {
         const outsider = keyPairOf(0x42)
-        const result = assembleSignedMultisigTransactions({
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -196,8 +231,8 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
-    test('errors when threshold is not met', () => {
-        const result = assembleSignedMultisigTransactions({
+    test('errors when threshold is not met', async () => {
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2, ADDR_3],
             version: 1,
@@ -215,8 +250,8 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
-    test('treats all-zero signatures as missing (sanity filter)', () => {
-        const result = assembleSignedMultisigTransactions({
+    test('treats all-zero signatures as missing (sanity filter)', async () => {
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -233,8 +268,8 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
-    test('treats null per-txn signatures as missing', () => {
-        const result = assembleSignedMultisigTransactions({
+    test('treats null per-txn signatures as missing', async () => {
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64, FAKE_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -252,8 +287,8 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
-    test('treats malformed base64 signatures as missing', () => {
-        const result = assembleSignedMultisigTransactions({
+    test('treats malformed base64 signatures as missing', async () => {
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -270,8 +305,8 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
-    test('rejects invalid base64 raw transaction', () => {
-        const result = assembleSignedMultisigTransactions({
+    test('rejects invalid base64 raw transaction', async () => {
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: ['@@@'],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -285,8 +320,8 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
-    test('rejects an oversized raw transaction (defence-in-depth byte cap)', () => {
-        const result = assembleSignedMultisigTransactions({
+    test('rejects an oversized raw transaction (defence-in-depth byte cap)', async () => {
+        const result = await assembleSignedMultisigTransactions({
             // ~128 KB of base64 → ~96 KB decoded, over the 64 KB cap.
             rawTransactionsBase64: ['A'.repeat(128 * 1024)],
             participantAddresses: [ADDR_1, ADDR_2],
@@ -301,8 +336,8 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
-    test('produces empty list for empty input', () => {
-        const result = assembleSignedMultisigTransactions({
+    test('produces empty list for empty input', async () => {
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -313,8 +348,8 @@ describe('assembleSignedMultisigTransactions', () => {
         expect(result).toEqual({ kind: 'success', signedTransactionsBytes: [] })
     })
 
-    test('rejects invalid participant addresses', () => {
-        const result = assembleSignedMultisigTransactions({
+    test('rejects invalid participant addresses', async () => {
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64],
             participantAddresses: ['INVALID_ADDRESS'],
             version: 1,
@@ -328,8 +363,8 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
-    test('rejects invalid threshold (0 or > participants)', () => {
-        const result = assembleSignedMultisigTransactions({
+    test('rejects invalid threshold (0 or > participants)', async () => {
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -338,7 +373,7 @@ describe('assembleSignedMultisigTransactions', () => {
         })
         expect(result.kind).toBe('error')
 
-        const result2 = assembleSignedMultisigTransactions({
+        const result2 = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -356,13 +391,13 @@ describe('assembleSignedMultisigTransactions', () => {
 
     const KP_REKEYED = keyPairOf(0x09)
 
-    test('writes a sgnr field (the multisig auth address) when the sender is rekeyed to the multisig', () => {
+    test('writes a sgnr field (the multisig auth address) when the sender is rekeyed to the multisig', async () => {
         // Sender (a rekeyed account) differs from the signing multisig address,
         // so the signed txn must carry sgnr = the multisig address pubkey.
         const txBytes = txWithSender(KP_REKEYED.publicKey)
         const txB64 = toBase64(txBytes)
 
-        const result = assembleSignedMultisigTransactions({
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [txB64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -386,12 +421,12 @@ describe('assembleSignedMultisigTransactions', () => {
         )
     })
 
-    test('omits sgnr when the sender equals the multisig address (not rekeyed)', () => {
+    test('omits sgnr when the sender equals the multisig address (not rekeyed)', async () => {
         // Sender IS the multisig — a normal multisig spend, no auth indirection.
         const txBytes = txWithSender(KP_3.publicKey)
         const txB64 = toBase64(txBytes)
 
-        const result = assembleSignedMultisigTransactions({
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [txB64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
@@ -411,10 +446,10 @@ describe('assembleSignedMultisigTransactions', () => {
         expect(Object.keys(decoded).sort()).toEqual(['msig', 'txn'])
     })
 
-    test('handles multi-transaction lists (each tx gets its own signed bytes)', () => {
+    test('handles multi-transaction lists (each tx gets its own signed bytes)', async () => {
         const sig1ForOther = signTx(KP_1, OTHER_TX_BYTES)
         const sig2ForOther = signTx(KP_2, OTHER_TX_BYTES)
-        const result = assembleSignedMultisigTransactions({
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64, OTHER_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2],
             version: 1,
