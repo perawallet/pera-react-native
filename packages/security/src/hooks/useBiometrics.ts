@@ -79,7 +79,10 @@ export const useBiometrics = (): UseBiometricsResult => {
     const [isAvailable, setIsAvailable] = useState(false)
 
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
-        if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) return false
+        if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) {
+            setIsEnabled(false)
+            return false
+        }
 
         // Fail closed on OS-level revocation. The blob is the app's only record
         // that biometric unlock was opted into, so one that outlives its
@@ -88,19 +91,27 @@ export const useBiometrics = (): UseBiometricsResult => {
         // wallet without the in-app toggle ever being touched. Drop the blob
         // instead and require an explicit re-enable. The PIN record is a
         // separate secret, so this never costs the user access.
-        if (await biometricsService.checkBiometricsAvailable()) return true
+        //
+        // The signal is `isEnrolledAsync` underneath, i.e. a positive "no
+        // biometric is enrolled" — not an auth failure. A biometric that is
+        // merely locked out after too many attempts reports through
+        // `authenticate`, not here, so a lockout does not drop the blob.
+        if (await biometricsService.checkBiometricsAvailable()) {
+            setIsEnabled(true)
+            return true
+        }
 
         await removeSecret(BIOMETRIC_BLOB_KEY_ID)
         setIsEnabled(false)
         return false
-    }, [hasSecret, removeSecret, biometricsService])
+    }, [hasSecret, removeSecret, biometricsService, setIsEnabled])
 
     const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {
         return biometricsService.checkBiometricsAvailable()
     }, [biometricsService])
 
     useEffect(() => {
-        void checkBiometricsEnabled().then(setIsEnabled)
+        void checkBiometricsEnabled()
         void checkBiometricsAvailable().then(setIsAvailable)
     }, [checkBiometricsEnabled, checkBiometricsAvailable])
 
@@ -116,7 +127,7 @@ export const useBiometrics = (): UseBiometricsResult => {
             })
             setIsEnabled(true)
         },
-        [commitSecret],
+        [commitSecret, setIsEnabled],
     )
 
     const enableBiometrics = useCallback(
@@ -182,17 +193,17 @@ export const useBiometrics = (): UseBiometricsResult => {
     const disableBiometrics = useCallback(async () => {
         await removeSecret(BIOMETRIC_BLOB_KEY_ID)
         setIsEnabled(false)
-    }, [removeSecret])
+    }, [removeSecret, setIsEnabled])
 
     const authenticateWithBiometrics = useCallback(
         async (prompt?: BiometricsAuthenticatePrompt): Promise<boolean> => {
-            if (!(await checkBiometricsEnabled())) {
-                return false
-            }
-
             try {
+                if (!(await checkBiometricsEnabled())) return false
                 return await biometricsService.authenticate(prompt)
             } catch {
+                // Declared `Promise<boolean>` and callers branch on it rather
+                // than catching — the reconcile above reaches the keystore, so
+                // it has to be inside the guard too.
                 return false
             }
         },

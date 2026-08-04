@@ -145,10 +145,15 @@ describe('useBiometrics', () => {
     test('refreshBiometricsBinding does not re-arm a blob whose enrollment is gone', async () => {
         kmsMocks.pinBytes = new Uint8Array([10, 20, 30, 40])
         kmsMocks.biometricBytes = new Uint8Array([99])
-        mockCheckBiometricsAvailable.mockResolvedValue(false)
+        // Enrolled at mount, revoked afterwards: the blob must still be present
+        // when refresh runs, or a bare `hasSecret` guard would bail for the
+        // wrong reason and the test would pass without proving anything.
+        mockCheckBiometricsAvailable.mockResolvedValue(true)
 
         const { result } = await renderAndSettle()
+        expect(kmsMocks.biometricBytes).not.toBeNull()
 
+        mockCheckBiometricsAvailable.mockResolvedValue(false)
         await act(async () => {
             await result.current.refreshBiometricsBinding()
         })
