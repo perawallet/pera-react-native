@@ -44,18 +44,7 @@ const buildKeypair = () => {
     return { publicKey, privateKey }
 }
 
-/**
- * Decodes an encoded signed transaction with the PQ signature bytes blanked,
- * so two encodings can be compared on everything BUT which preimage was
- * signed (scheme, salt, public key, `sgnr`, and every transaction field).
- */
-const withoutPQSignature = (encoded: Uint8Array) => {
-    const decoded = decodeSignedTransaction(encoded)
-    return {
-        ...decoded,
-        pqsig: decoded.pqsig ? { ...decoded.pqsig, sig: undefined } : undefined,
-    }
-}
+const decode = (encoded: Uint8Array) => decodeSignedTransaction(encoded)
 
 describe('pq adapter', () => {
     it('derives a stable 58-character address', () => {
@@ -65,17 +54,14 @@ describe('pq adapter', () => {
         expect(deriveQuantumAddress(publicKey)).toBe(address)
     })
 
-    // The preimage contract, pinned against go-algorand — NOT against the
-    // interim `algosdk` fork. The node verifies a PQ signature over
-    // `HashRep(message)` directly (`FalconVerifier.Verify` ->
-    // `VerifyBytes(HashRep(message), sig)` in `crypto/falconWrapper.go`), and
-    // `HashRep` is the domain-prefixed msgpack encoding that `bytesToSign()`
-    // returns. The fork instead hands a raw signer `sha512_256(bytesToSign())`,
-    // which every `pqsig`-capable algod rejects with `falcon verify failed`;
-    // verified against algod 4.8.298720-master under consensus `future`, where
-    // signing `bytesToSign()` confirms on-chain and signing its digest does
-    // not. So the fork is the thing that diverges, and byte-parity with the
-    // fork is deliberately no longer asserted.
+    // The preimage contract, pinned against go-algorand rather than against
+    // whatever the interim `algosdk` build happens to do. The node verifies a
+    // PQ signature over `HashRep(message)` directly (`FalconVerifier.Verify`
+    // -> `VerifyBytes(HashRep(message), sig)` in `crypto/falconWrapper.go`),
+    // and `HashRep` is the domain-prefixed msgpack encoding that
+    // `bytesToSign()` returns. Verified against algod 4.8.298720-master under
+    // consensus `future`: signing `bytesToSign()` confirms on-chain, signing
+    // its SHA-512/256 digest does not.
     it('signs the domain-prefixed encoding itself, not a digest of it', () => {
         const { publicKey } = buildKeypair()
         const txn = makePaymentTxnWithSuggestedParamsFromObject({
@@ -90,7 +76,7 @@ describe('pq adapter', () => {
         expect(pqSigningDigest(txn)).not.toEqual(sha512_256(txn.bytesToSign()))
     })
 
-    it('assembles the same envelope as the fork PQ signer, signature aside', async () => {
+    it('assembles byte-identical output to the SDK PQ signer', async () => {
         const { publicKey, privateKey } = buildKeypair()
         const sender = deriveQuantumAddress(publicKey)
 
@@ -101,10 +87,12 @@ describe('pq adapter', () => {
             suggestedParams,
         })
 
-        // The fork still pins the ENVELOPE — scheme, salt, public key, field
-        // layout, `sgnr` — which is independent of which preimage got signed.
-        // Only `pqsig.sig` is excluded, since that is precisely where the fork
-        // and the node disagree (see the preimage test above).
+        // Full byte-parity, signature included: the SDK's raw signer is handed
+        // `bytesToSign()` verbatim, the same preimage `pqSigningDigest`
+        // returns, and this Falcon implementation is deterministic. If a
+        // future SDK build reintroduces a pre-hash, `pqsig.sig` diverges here
+        // and this fails — which is the regression worth catching, since no
+        // unit test can otherwise tell a wrong preimage from a right one.
         const { txnSigner } = addressWithSignersFromRawPQSigner({
             pqScheme: FALCON_1024_SCHEME,
             pqPublicKey: publicKey,
@@ -125,7 +113,7 @@ describe('pq adapter', () => {
             }),
         )
 
-        expect(withoutPQSignature(ours)).toEqual(withoutPQSignature(reference))
+        expect(decode(ours)).toEqual(decode(reference))
     })
 
     it('produces a decodable pqsig carrying the generic scheme/salt/key/sig quadruple', () => {
@@ -184,11 +172,10 @@ describe('pq adapter', () => {
         const decoded = decodeSignedTransaction(ours)
         expect(decoded.sgnr?.toString()).toBe(quantumAddress)
 
-        // Envelope-equality against the fork's own signer for the REKEYED case
-        // too, not just `sgnr`: `sgnr` alone would still pass if the rekeyed
+        // Full parity against the SDK's own signer for the REKEYED case too,
+        // not just `sgnr`: `sgnr` alone would still pass if the rekeyed
         // encoding diverged in any other field, and the rekey path is exactly
         // where an extra/missing `sgnr` changes the bytes a node verifies.
-        // Signature bytes excluded — see the preimage test above.
         const { txnSigner } = addressWithSignersFromRawPQSigner({
             pqScheme: FALCON_1024_SCHEME,
             pqPublicKey: publicKey,
@@ -197,6 +184,6 @@ describe('pq adapter', () => {
         })
         const [reference] = await txnSigner([txn], [0])
 
-        expect(withoutPQSignature(ours)).toEqual(withoutPQSignature(reference))
+        expect(decode(ours)).toEqual(decode(reference))
     })
 })

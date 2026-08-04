@@ -2,16 +2,23 @@
 
 ## Purpose
 
-Pera's quantum (post-quantum, Falcon-1024) accounts use Joe Polny's interim PQ
-libraries — the `algosdk` beta fork and the WASM `falcon-1024` package —
-because official Algorand support for `pqsig` transactions and Falcon signing
-is not yet mainline. The Falcon libraries are confined behind one swap seam so
-they can be replaced with official Algorand code later via a one-module
-change. The algosdk fork is installed under the official `algosdk` package
-name via a pnpm catalog alias + global override in `pnpm-workspace.yaml`, so
-application code (including Seam B below) imports plain `algosdk`; its swap
-point is a workspace-config change described there (see the `SWAP-BACK:`
-comment and "Swap-back procedure" below), not a source-level import.
+Pera's quantum (post-quantum, Falcon-1024) accounts use interim PQ libraries —
+a prerelease `algosdk` and the WASM `falcon-1024` package — because official
+Algorand support for `pqsig` transactions and Falcon signing is not yet
+mainline. The Falcon libraries are confined behind one swap seam so they can
+be replaced with official Algorand code later via a one-module change.
+
+The `algosdk` prerelease is **not a private fork**: `@joe-p/algosdk` is a
+build of the `feat/pq` branch in the official `algorand/js-algorand-sdk`
+repo, published under a personal scope only because upstream hasn't released
+it. It tracks upstream PR #1102 (`feat/pq` → `main`, still draft), with PR
+#1115 (consensus v42) stacked on top. Its divergence from official `3.6.0` is
+~600 lines across 16 files. It is installed under the official `algosdk`
+package name via a pnpm catalog alias + global override in
+`pnpm-workspace.yaml`, so application code (including Seam B below) imports
+plain `algosdk`; its swap point is a workspace-config change described there
+(see the `SWAP-BACK:` comment and "Swap-back procedure" below), not a
+source-level import.
 
 ## Seam A — PQ crypto provider (`packages/kms/src/crypto/pq/`)
 
@@ -60,17 +67,19 @@ Key contracts:
   `HashRep` is exactly that domain-prefixed encoding. Falcon hashes
   internally, so pre-hashing changes the message and the node rejects the
   signature with `falcon verify failed`.
-  **The node is the authority here, not the interim `algosdk` fork.** The fork's
-  `addressWithSignersFromRawPQSigner` hands a raw signer
-  `sha512_256(txn.bytesToSign())`, which no `pqsig`-capable algod accepts —
-  so byte-parity with the fork is deliberately NOT asserted. This branch
-  previously signed the fork's preimage and a differential test pinned that
-  parity, which is exactly how a wrong preimage shipped silently: no node
-  verified `pqsig`, so nothing caught it. `quantumAdapter.spec.ts` now pins
-  the preimage against upstream and compares only the ENVELOPE
-  (scheme/salt/key/`sgnr`) against the fork. **Whatever signs on the other
-  side of this seam (KMS, hardware, etc.) must sign `pqSigningDigest(txn)`,
-  which is `txn.bytesToSign()` verbatim.**
+  **The node is the authority here, not the interim `algosdk` build.**
+  `3.7.0-beta.1` had `addressWithSignersFromRawPQSigner` hand a raw signer
+  `sha512_256(txn.bytesToSign())`, which no `pqsig`-capable algod accepts;
+  this branch briefly signed that preimage and a differential test pinned the
+  parity, which is exactly how a wrong preimage shipped silently — no node
+  verified `pqsig`, so nothing caught it. `3.7.0-beta.2` signs
+  `bytesToSign()` verbatim, so the SDK and the node now agree and
+  `quantumAdapter.spec.ts` asserts full byte-parity (signature included,
+  since this Falcon build is deterministic) rather than envelope-only. That
+  parity is the regression pin: if a later build reintroduces a pre-hash, it
+  fails. **Whatever signs on the other side of this seam (KMS, hardware,
+  etc.) must sign `pqSigningDigest(txn)`, which is `txn.bytesToSign()`
+  verbatim.**
 - Rekey (`sgnr`) is derived automatically by `assemblePQSignedTransaction`
   whenever the transaction's sender differs from the address the PQ key
   authorizes; no explicit sender override is threaded through today.
@@ -272,18 +281,19 @@ signature }`. `schemeId` selects the wire scheme (`PQSchemeId`); the address
   domain-prefixed msgpack encoding itself, NOT a digest of it. This is the one
   fact in this document with the highest cost if it drifts, and it did drift:
   until 2026-07-30 this seam signed `sha512_256(txn.bytesToSign())` (the
-  interim fork's convention) and a differential test pinned that parity, so
-  nothing caught it while no node verified `pqsig`. The first `pqsig`-capable
-  algod rejected every such signature with `falcon verify failed`. See Seam B's
+  convention of `algosdk` `3.7.0-beta.1`) and a differential test pinned that
+  parity, so nothing caught it while no node verified `pqsig`. The first
+  `pqsig`-capable algod rejected every such signature with `falcon verify
+failed`. `3.7.0-beta.2` corrected the SDK to sign `bytesToSign()`, which is
+  why byte-parity is now assertable again. See Seam B's
   "Key contracts" above for the upstream source that settles it. Whatever signs
   on the other side of Seam B (KMS, hardware, etc.) must sign
   `pqSigningDigest(txn)` exactly as returned.
 - **LocalNet verification** — `pnpm localnet:quantum-check` (shipped on this
   branch; documented in `README.md`) exercises derive → fund → sign →
-  assemble → submit → confirm against a real node. It checks the PQ **envelope**
-  (scheme/salt/key/`sgnr`) against algosdk's own PQ signer — not full byte
-  parity, since the fork signs a different preimage (see the preimage bullet
-  below) — and then broadcasts. Against `algorand/algod:master` under consensus
+  assemble → submit → confirm against a real node. It checks **full byte
+  parity** against algosdk's own PQ signer (see the preimage bullet below)
+  and then broadcasts. Against `algorand/algod:master` under consensus
   `future` it reports **PASS: confirmed in round N**; on a node without `pqsig`
   it reports **PENDING at exit 0** via the narrow `PQSIG_UNSUPPORTED` match.
   Any _other_ submission failure, and any accepted-but-unconfirmed

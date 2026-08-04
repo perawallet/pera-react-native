@@ -26,12 +26,13 @@ import type { PQSignature } from '../models'
  * merely redundant — it changes the message and the node rejects the
  * signature with `falcon verify failed`.
  *
- * The node is the authority here, not the interim `algosdk` fork: the fork's
- * `pq-signer.ts` hands a raw signer `sha512_256(bytesToSign())`, which no
- * `pqsig`-capable algod accepts. Verified against algod 4.8.298720-master
- * (consensus `future`, which enables `EnablePQSchemeFalcon1024` via v42):
- * signing this preimage confirms on-chain, and signing its SHA-512/256 digest
- * does not. Pinned by `__tests__/quantumAdapter.spec.ts`.
+ * The node is the authority here, not the interim `algosdk` build — which has
+ * shipped the digest as the preimage before, and no `pqsig`-capable algod
+ * accepts that. Verified against algod 4.8.298720-master (consensus `future`,
+ * which enables `EnablePQSchemeFalcon1024` via v42): signing this preimage
+ * confirms on-chain, and signing its SHA-512/256 digest does not. Pinned by
+ * `__tests__/quantumAdapter.spec.ts`, which asserts byte-parity with the
+ * SDK's own signer so a reintroduced pre-hash fails the build.
  */
 export const pqSigningDigest = (txn: Transaction): Uint8Array =>
     txn.bytesToSign()
