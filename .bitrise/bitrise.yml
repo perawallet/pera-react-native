@@ -994,12 +994,13 @@ workflows:
             #!/usr/bin/env bash
             set -ex
             # Unlike the mobile build (which only needs `packages/*`), the
-            # extension also depends on workspace packages under
+            # browser extension also depends on workspace packages under
             # `extensions/*` (platform-chrome, keystore-chrome, ledger-web-*).
-            # `--filter=...extension` walks the real dependency graph instead
-            # of a path glob, so it picks up both.
+            # `--filter=...browser` walks the real dependency graph instead
+            # of a path glob, so it picks up both. `browser` is the package
+            # name in apps/browser/package.json — not the directory.
             export APP_ENV="${ENVIRONMENT:-development}"
-            pnpm exec turbo run build --filter=...extension
+            pnpm exec turbo run build --filter=...browser
     - script@1:
         title: Bundle extension (Web)
         inputs:
