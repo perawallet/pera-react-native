@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { useQRScannerView } from '../useQRScannerView'
 
 const mockHandleDeepLink = vi.fn()
@@ -92,5 +92,66 @@ describe('useQRScannerView', () => {
         result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
         result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
         expect(onSuccess).toHaveBeenCalledTimes(1)
+    })
+
+    // The camera stills as soon as a code is accepted, so without this flag a
+    // multi-second WalletConnect pairing looks like a hang (PERA-4748).
+    describe('isHandling', () => {
+        const renderScanner = (onSuccess = vi.fn()) =>
+            renderHook(() =>
+                useQRScannerView({
+                    isVisible: true,
+                    onSuccess,
+                    skipDeepLinkHandler: false,
+                }),
+            )
+
+        it('is false before a scan', () => {
+            const { result } = renderScanner()
+            expect(result.current.isHandling).toBe(false)
+        })
+
+        it('is true while the deeplink is in flight', () => {
+            const { result } = renderScanner()
+            act(() => {
+                result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
+            })
+            expect(result.current.isHandling).toBe(true)
+        })
+
+        it.each([
+            ['failure', 3],
+            ['success', 4],
+            ['rejection', 5],
+        ])(
+            'clears on %s so the frame is never left dimmed',
+            (_label, argIndex) => {
+                const { result } = renderScanner()
+                act(() => {
+                    result.current.onBarcodeScanned([
+                        { rawValue: VALID_ADDRESS },
+                    ])
+                })
+                const callback = mockHandleDeepLink.mock.calls[0]?.[
+                    argIndex
+                ] as () => void
+                act(() => callback())
+                expect(result.current.isHandling).toBe(false)
+            },
+        )
+
+        it('stays false on the skipDeepLinkHandler path, which is synchronous', () => {
+            const { result } = renderHook(() =>
+                useQRScannerView({
+                    isVisible: true,
+                    onSuccess: vi.fn(),
+                    skipDeepLinkHandler: true,
+                }),
+            )
+            act(() => {
+                result.current.onBarcodeScanned([{ rawValue: VALID_ADDRESS }])
+            })
+            expect(result.current.isHandling).toBe(false)
+        })
     })
 })
