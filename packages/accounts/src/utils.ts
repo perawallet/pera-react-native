@@ -231,11 +231,16 @@ export const canSignArc60 = (account: WalletAccount): boolean =>
 /**
  * Whether `account` can produce a *usable* delegated LogicSig (LSig / dLSig).
  *
- * Two exclusions:
+ * Three exclusions:
  * - Hardware wallets — permanent. Not merely because they carry no
  *   `keyPairId`: their firmware signs transactions and ARC-60 payloads only,
  *   and will never sign a program. Unlike {@link canSignArc60}, which Ledger
  *   does satisfy.
+ * - Multisig — permanent for a *delegated* LSig, which carries a single
+ *   `sigkey`: `encodeDelegatedLsigAccount` emits one signature, so a threshold
+ *   account can never be represented. Stated explicitly rather than relying on
+ *   `hasSigningKeys`, because `keyPairId` is optional on `BaseWalletAccount`
+ *   and a multisig account is only key-less by convention.
  * - Rekeyed accounts — deferred, not impossible. A delegated LSig authorizes
  *   spending, so the chain verifies it against the sender's auth-addr: the
  *   delegation is signable, but only by the auth account. Supporting that
@@ -247,6 +252,7 @@ export const canSignArc60 = (account: WalletAccount): boolean =>
  */
 export const canSignProgram = (account: WalletAccount): boolean =>
     !isHardwareWalletAccount(account) &&
+    !isMultisigAccount(account) &&
     !isRekeyedAccount(account) &&
     hasSigningKeys(account)
 

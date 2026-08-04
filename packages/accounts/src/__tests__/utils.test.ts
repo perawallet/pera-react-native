@@ -498,11 +498,14 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
     })
 
     // Guards the reason canSignProgram checks the account type rather than
-    // relying on hardware accounts happening to carry no keyPairId: the field
-    // is optional on the base type, so nothing stops one appearing.
-    test('canSignProgram stays false for hardware even with a keyPairId', () => {
+    // relying on hardware and multisig accounts happening to carry no
+    // keyPairId: the field is optional on the base type, so nothing stops one
+    // appearing. A delegated LSig carries a single sigkey, so multisig can
+    // never be represented regardless of what keys it holds.
+    test('canSignProgram stays false for hardware and multisig even with a keyPairId', () => {
         expect(canSignProgram({ ...hardware, keyPairId: 'pk1' })).toBe(false)
         expect(canSignArc60({ ...hardware, keyPairId: 'pk1' })).toBe(true)
+        expect(canSignProgram({ ...multisig, keyPairId: 'pk1' })).toBe(false)
     })
 
     // A delegated LSig is checked against the sender's auth-addr, so only the
