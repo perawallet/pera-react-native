@@ -19,7 +19,7 @@ import {
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { parseDeeplink } from '@hooks/deeplink/parser'
 
-const mockErrorToast = vi.fn()
+const mockShowToast = vi.fn()
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     isValidAlgorandAddress: vi.fn(),
@@ -30,11 +30,7 @@ vi.mock('@hooks/deeplink/parser', () => ({
 }))
 
 vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        errorToast: mockErrorToast,
-        showToast: vi.fn(),
-        showError: vi.fn(),
-    }),
+    useToast: () => ({ showToast: mockShowToast }),
 }))
 
 describe('extractAddressFromScannedUrl', () => {
@@ -85,6 +81,20 @@ describe('extractAddressFromScannedUrl', () => {
         ).toBeNull()
     })
 
+    it('extracts senderAddress from a keyreg deeplink', () => {
+        const senderAddress = 'SENDER_ADDRESS_789'
+        vi.mocked(parseDeeplink).mockReturnValue({
+            type: 'KEYREG',
+            senderAddress,
+            keyregType: 'online',
+            sourceUrl: 'algorand://...',
+        } as ReturnType<typeof parseDeeplink>)
+
+        expect(extractAddressFromScannedUrl('algorand://...')).toBe(
+            senderAddress,
+        )
+    })
+
     it('returns null when deeplink has no address fields', () => {
         vi.mocked(parseDeeplink).mockReturnValue({
             type: 'HOME',
@@ -105,8 +115,21 @@ describe('useScannedAddress', () => {
     it('toasts and returns null when the QR carries no address', () => {
         const { result } = renderHook(() => useScannedAddress())
 
-        expect(result.current('wc:topic@2')).toBeNull()
-        expect(mockErrorToast).toHaveBeenCalledTimes(1)
+        expect(result.current('perawallet://home')).toBeNull()
+        expect(mockShowToast).toHaveBeenCalledTimes(1)
+    })
+
+    // Without the delay the toast animates in while the scanner's native Modal
+    // is still sliding out, so it plays behind it.
+    it('delays the toast so it lands after the scanner Modal has closed', () => {
+        const { result } = renderHook(() => useScannedAddress())
+
+        result.current('perawallet://home')
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error' }),
+            { delayLength: 'short' },
+        )
     })
 
     it('returns the address and stays quiet when one is found', () => {
@@ -115,6 +138,6 @@ describe('useScannedAddress', () => {
         const { result } = renderHook(() => useScannedAddress())
 
         expect(result.current(address)).toBe(address)
-        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(mockShowToast).not.toHaveBeenCalled()
     })
 })

@@ -77,13 +77,8 @@ describe('AddressEntryField', () => {
         expect(onScanned).toHaveBeenCalledWith(address)
     })
 
-    // The hook toasts through the global Notifier, which renders behind the
-    // scanner's Modal — so the dismiss has to land first (PERA-4746).
-    it('dismisses the scanner before resolving, so the error is visible', () => {
-        mockResolveScannedAddress.mockImplementation(() => {
-            expect(scannerProps.current?.isVisible).toBe(false)
-            return null
-        })
+    it('leaves the field alone when the QR carries no address', () => {
+        mockResolveScannedAddress.mockReturnValue(null)
         const onChangeText = vi.fn()
         render(
             <AddressEntryField
@@ -92,7 +87,7 @@ describe('AddressEntryField', () => {
             />,
         )
 
-        act(() => scannerProps.current?.onSuccess('wc:topic@2'))
+        act(() => scannerProps.current?.onSuccess('perawallet://home'))
 
         expect(mockResolveScannedAddress).toHaveBeenCalledTimes(1)
         expect(onChangeText).not.toHaveBeenCalled()

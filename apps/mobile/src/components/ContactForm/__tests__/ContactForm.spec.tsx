@@ -12,8 +12,21 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { useForm } from 'react-hook-form'
-import { fireEvent, render, screen } from '@test-utils/render'
+import { act, fireEvent, render, screen } from '@test-utils/render'
 import { ContactForm } from '../ContactForm'
+
+const { mockResolveScannedAddress, scannerProps } = vi.hoisted(() => ({
+    mockResolveScannedAddress: vi.fn(),
+    // Captures the props the form passes down, so a scan can be driven without
+    // mounting the real scanner.
+    scannerProps: { current: null } as {
+        current: null | { isVisible: boolean; onSuccess: (url: string) => void }
+    },
+}))
+
+vi.mock('@hooks/useScannedAddress', () => ({
+    useScannedAddress: () => mockResolveScannedAddress,
+}))
 
 // QRScannerView is now always mounted (isVisible toggles it, it's never
 // conditionally rendered) — vitest resolves the bare specifier to the
@@ -21,7 +34,13 @@ import { ContactForm } from '../ContactForm'
 // lightweight render tree doesn't set up. This spec only cares about
 // ContactForm's own input behavior, not scanner internals.
 vi.mock('@components/QRScannerView', () => ({
-    QRScannerView: () => null,
+    QRScannerView: (props: {
+        isVisible: boolean
+        onSuccess: (url: string) => void
+    }) => {
+        scannerProps.current = props
+        return null
+    },
     scannerNotifier: { current: null },
 }))
 
@@ -169,5 +188,37 @@ describe('ContactForm', () => {
             target: { value: 'PASTED_ADDRESS' },
         })
         expect(onAddressInputChange).toHaveBeenCalledWith('PASTED_ADDRESS')
+    })
+
+    it('forwards a scanned address to onAddressInputChange', () => {
+        const address = 'A'.repeat(58)
+        mockResolveScannedAddress.mockReturnValue(address)
+        const onAddressInputChange = vi.fn()
+        render(
+            <Harness
+                {...baseProps}
+                onAddressInputChange={onAddressInputChange}
+            />,
+        )
+
+        act(() => scannerProps.current?.onSuccess(address))
+
+        expect(onAddressInputChange).toHaveBeenCalledWith(address)
+    })
+
+    it('leaves the address alone when the scanned QR carries no address', () => {
+        mockResolveScannedAddress.mockReturnValue(null)
+        const onAddressInputChange = vi.fn()
+        render(
+            <Harness
+                {...baseProps}
+                onAddressInputChange={onAddressInputChange}
+            />,
+        )
+
+        act(() => scannerProps.current?.onSuccess('perawallet://home'))
+
+        expect(mockResolveScannedAddress).toHaveBeenCalledTimes(1)
+        expect(onAddressInputChange).not.toHaveBeenCalled()
     })
 })

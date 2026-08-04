@@ -34,8 +34,6 @@ export const AddressEntryField = ({
     const resolveScannedAddress = useScannedAddress()
 
     const addressScanned = (url: string) => {
-        // Dismiss first: the error toast routes to the global Notifier, which
-        // renders behind this Modal's native window while it is open.
         setScannerVisible(false)
 
         const address = resolveScannedAddress(url)

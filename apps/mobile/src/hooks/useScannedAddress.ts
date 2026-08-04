@@ -31,6 +31,11 @@ export const extractAddressFromScannedUrl = (url: string): Nullable<string> => {
     if ('address' in parsed && parsed.address) {
         return parsed.address
     }
+    // Keyreg carries its account as `senderAddress`; without this a QR that
+    // does hold an address would be reported as holding none.
+    if ('senderAddress' in parsed && parsed.senderAddress) {
+        return parsed.senderAddress
+    }
 
     return null
 }
@@ -40,34 +45,41 @@ export const extractAddressFromScannedUrl = (url: string): Nullable<string> => {
  * code carries none.
  *
  * Shared by every address-field scanner (AddressEntryField, ContactForm) so the
- * wrong-context message is worded once. Both used to drop the result silently:
- * a valid deeplink with no address — a WalletConnect QR is the common one —
- * closed the scanner and left the field empty with nothing said, so a
- * wrong-context scan looked identical to one that never registered (PERA-4746).
+ * wrong-context message is worded once.
  *
- * Callers MUST dismiss the scanner before calling this. `errorToast` routes to
- * the global Notifier, which renders in the root tree and is therefore hidden
- * behind the scanner's native Modal while it is open — the same trap the
- * WalletConnect errors avoid by using `scannerNotifier`. Dismissing first
- * mirrors `useImportAccountScreen`, the scanner this message is meant to match.
+ * The addressless-but-parseable set this exists for is WalletConnect v1,
+ * liquid-auth (`fido:`/`liquid:`), Pera web import and the legacy mnemonic JSON
+ * payloads. Note a WalletConnect *v2* URI never reaches here: the parser only
+ * accepts a `wc:` URI carrying `bridge=`, so a v2 pairing code fails
+ * `isValidDeepLink` and the scanner rejects it upstream (PERA-4746).
+ *
+ * Callers must dismiss the scanner too, but the toast does not depend on doing
+ * so first: it routes to the global Notifier, which renders in the root tree and
+ * is hidden behind the scanner's native Modal. The `short` delay is what keeps
+ * it out from under the Modal — long enough for the dismiss animation to finish,
+ * rather than racing it on the next macrotask.
  */
 export const useScannedAddress = (): ((url: string) => Nullable<string>) => {
     const { t } = useLanguage()
-    const { errorToast } = useToast()
+    const { showToast } = useToast()
 
     return useCallback(
         (url: string) => {
             const address = extractAddressFromScannedUrl(url)
 
             if (!address) {
-                errorToast(
-                    t('address_entry.invalid_qr_title'),
-                    t('address_entry.invalid_qr_body'),
+                showToast(
+                    {
+                        title: t('address_entry.invalid_qr_title'),
+                        body: t('address_entry.invalid_qr_body'),
+                        type: 'error',
+                    },
+                    { delayLength: 'short' },
                 )
             }
 
             return address
         },
-        [errorToast, t],
+        [showToast, t],
     )
 }

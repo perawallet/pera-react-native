@@ -80,8 +80,6 @@ export const ContactForm = <T extends FieldValues>({
 
     const handleScan = useCallback(
         (url: string) => {
-            // Dismiss first: the error toast routes to the global Notifier,
-            // which renders behind this Modal's native window while it is open.
             setScannerVisible(false)
             const scanned = resolveScannedAddress(url)
             if (scanned) {
