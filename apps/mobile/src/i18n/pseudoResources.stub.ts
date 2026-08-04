@@ -10,20 +10,10 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import type { PseudoResources } from '@modules/locale-tour/types'
 
-import { launchGalleryEntry } from './launchGalleryEntry'
+// Nothing here imports ./pseudolocale, which is what keeps the accent tables
+// and the generated bundle out of the graph entirely.
+const NO_RESOURCES: PseudoResources = Object.freeze({})
 
-import type { GalleryEntry } from './types'
-
-type UseGalleryLauncherResult = {
-    launch: (entry: GalleryEntry) => void
-}
-
-export const useGalleryLauncher = (): UseGalleryLauncherResult => {
-    const launch = useCallback((entry: GalleryEntry) => {
-        launchGalleryEntry(entry)
-    }, [])
-
-    return { launch }
-}
+export const getPseudoResources = (): PseudoResources => NO_RESOURCES

@@ -10,20 +10,12 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import type { OverflowProbe } from '../types'
 
-import { launchGalleryEntry } from './launchGalleryEntry'
+// One frozen module-level object, returned as-is on every call. PWText renders
+// on every screen many times over, so this must allocate nothing per render:
+// no refs, no effects, and no fresh object or closures. Both handlers being
+// absent is what makes React attach no listeners at all.
+const NO_PROBE: OverflowProbe = Object.freeze({})
 
-import type { GalleryEntry } from './types'
-
-type UseGalleryLauncherResult = {
-    launch: (entry: GalleryEntry) => void
-}
-
-export const useGalleryLauncher = (): UseGalleryLauncherResult => {
-    const launch = useCallback((entry: GalleryEntry) => {
-        launchGalleryEntry(entry)
-    }, [])
-
-    return { launch }
-}
+export const useOverflowProbe = (): OverflowProbe => NO_PROBE

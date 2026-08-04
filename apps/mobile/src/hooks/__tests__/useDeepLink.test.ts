@@ -318,6 +318,17 @@ vi.mock('@modules/gift-card/components/BidaliContent', () => ({
     BidaliContent: vi.fn(),
 }))
 
+const { mockRunTourStep } = vi.hoisted(() => ({
+    mockRunTourStep: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@modules/locale-tour/registry', () => ({
+    getLocaleTourRunner: () => ({
+        runTourStep: mockRunTourStep,
+        runTour: vi.fn().mockResolvedValue(undefined),
+    }),
+}))
+
 const { mockSetPendingAmountBaseUnits } = vi.hoisted(() => ({
     mockSetPendingAmountBaseUnits: vi.fn(),
 }))
@@ -1635,6 +1646,30 @@ describe('useDeepLink', () => {
         })
 
         expect(mockOnError).toHaveBeenCalled()
+    })
+
+    describe('the locale-tour deeplink', () => {
+        it('dispatches to runTourStep', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: 'DEV_LOCALE_TOUR',
+                locale: 'en-XA',
+                step: 'scr-home',
+            })
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/dev/locale-tour?locale=en-XA&step=scr-home',
+                    false,
+                    'deeplink',
+                )
+            })
+
+            expect(mockRunTourStep).toHaveBeenCalledWith({
+                stepId: 'scr-home',
+                locale: 'en-XA',
+            })
+        })
     })
 })
 

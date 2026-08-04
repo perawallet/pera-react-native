@@ -10,20 +10,12 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-
-import { launchGalleryEntry } from './launchGalleryEntry'
-
-import type { GalleryEntry } from './types'
-
-type UseGalleryLauncherResult = {
-    launch: (entry: GalleryEntry) => void
-}
-
-export const useGalleryLauncher = (): UseGalleryLauncherResult => {
-    const launch = useCallback((entry: GalleryEntry) => {
-        launchGalleryEntry(entry)
-    }, [])
-
-    return { launch }
-}
+/**
+ * Registers nothing, so `getLocaleTourRunner()` stays `undefined` and the
+ * deeplink handler no-ops. Nothing else imports the tour driver, so this empty
+ * module is what actually keeps runTour/runTourStep/steps — and the gallery
+ * catalog traversal they perform — out of non-dev bundles.
+ *
+ * Intentionally has no exports: App.tsx imports it for effect only.
+ */
+export {}

@@ -34,6 +34,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 })
 
 import { parseDeeplink } from '../parser'
+import { parseDevLocaleTourUri } from '../dev-locale-tour-parser'
 
 import { DeeplinkType } from '../types'
 
@@ -221,5 +222,103 @@ describe('Deeplink Parser - Edge Cases', () => {
                 expect(result.sourceUrl).toBe('')
             }
         })
+    })
+})
+
+// metro.config.js resolves this parser to a stub outside dev bundles, so there
+// is no runtime gate left to assert here — vitest always loads the real module
+// (it resolves through tsconfig paths, not Metro). See stubs.spec.ts.
+describe('Deeplink Parser - dev locale tour', () => {
+    it('parses a per-step locale-tour deeplink', () => {
+        const parsed = parseDeeplink(
+            'perawallet://app/dev/locale-tour?locale=en-XA&step=scr-home',
+        )
+
+        expect(parsed?.type).toBe('DEV_LOCALE_TOUR')
+        if (parsed?.type === 'DEV_LOCALE_TOUR') {
+            expect(parsed.locale).toBe('en-XA')
+            expect(parsed.step).toBe('scr-home')
+        }
+    })
+
+    it('rejects a missing or empty step at the parse boundary', () => {
+        // The dev-locale-tour parser itself rejects at the boundary (returns
+        // null) — the strict assertion. `parseDeeplink` then falls through
+        // to the old parser's safe HOME no-op rather than forming a
+        // half-parsed DEV_LOCALE_TOUR deeplink, same as every other
+        // missing/invalid-param case on this `perawallet://app/...` scheme
+        // (see new-parser.test.ts's non-numeric-asset-id tests).
+        expect(
+            parseDevLocaleTourUri(
+                'perawallet://app/dev/locale-tour?locale=en-XA',
+            ),
+        ).toBeNull()
+        expect(
+            parseDevLocaleTourUri(
+                'perawallet://app/dev/locale-tour?locale=en-XA&step=',
+            ),
+        ).toBeNull()
+        expect(
+            parseDeeplink('perawallet://app/dev/locale-tour?locale=en-XA')
+                ?.type,
+        ).toBe(DeeplinkType.HOME)
+    })
+
+    it('rejects a locale that is not a registered i18next resource', () => {
+        // 'de' isn't in SUPPORTED_LOCALES today (i18n/locales.ts — only
+        // 'en' and the dev pseudolocale are) — an unrecognized locale is
+        // unrecognized input, not a partially-parsed deeplink.
+        expect(
+            parseDevLocaleTourUri(
+                'perawallet://app/dev/locale-tour?locale=de&step=scr-home',
+            ),
+        ).toBeNull()
+        expect(
+            parseDevLocaleTourUri(
+                'perawallet://app/dev/locale-tour?step=scr-home',
+            ),
+        ).toBeNull()
+        expect(
+            parseDeeplink(
+                'perawallet://app/dev/locale-tour?locale=de&step=scr-home',
+            )?.type,
+        ).toBe(DeeplinkType.HOME)
+    })
+
+    it('parses a run-all locale-tour deeplink', () => {
+        const parsed = parseDeeplink(
+            'perawallet://app/dev/locale-tour?locale=en-XA&run=all',
+        )
+
+        expect(parsed?.type).toBe('DEV_LOCALE_TOUR')
+        if (parsed?.type === 'DEV_LOCALE_TOUR') {
+            expect(parsed.locale).toBe('en-XA')
+            expect(parsed.run).toBe('all')
+            expect(parsed.step).toBeUndefined()
+        }
+    })
+
+    it('still parses the existing per-step form alongside the new run-all form', () => {
+        const parsed = parseDeeplink(
+            'perawallet://app/dev/locale-tour?locale=en-XA&step=scr-home',
+        )
+
+        expect(parsed?.type).toBe('DEV_LOCALE_TOUR')
+        if (parsed?.type === 'DEV_LOCALE_TOUR') {
+            expect(parsed.step).toBe('scr-home')
+            expect(parsed.run).toBeUndefined()
+        }
+    })
+
+    it('rejects a URL with neither step nor run as unrecognized input', () => {
+        expect(
+            parseDevLocaleTourUri(
+                'perawallet://app/dev/locale-tour?locale=en-XA',
+            ),
+        ).toBeNull()
+        expect(
+            parseDeeplink('perawallet://app/dev/locale-tour?locale=en-XA')
+                ?.type,
+        ).toBe(DeeplinkType.HOME)
     })
 })

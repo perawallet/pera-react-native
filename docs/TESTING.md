@@ -213,3 +213,70 @@ Tests import via the test-only sub-export `@perawallet/wallet-core-<domain>/test
 ### Fixtures
 
 Fixture data (named scenarios like `USD_EUR_GBP`, `JPY_ONLY`) lives in `apps/mobile/src/__integration__/__fixtures__/<domain>.ts`. Name fixtures after the shape they describe, not the test that uses them — the same fixture should be reusable across tests.
+
+## Locale Tour (i18n screenshot QA)
+
+A dev-build-only tool for visually checking translated/pseudolocalized text
+across the app's screens, sheets, and dialogs — not a Vitest suite, and not
+run in CI. It walks the gallery catalogs (`apps/mobile/src/modules/settings/screens/developer/gallery-catalog/`)
+in a chosen locale and screenshots each surface. There is no dev-menu button
+for it anymore; this section is the only place it's documented.
+
+```sh
+pnpm --filter mobile locale-tour --locale en-XA --out ./locale-shots
+```
+
+**The tour only exists in a dev bundle, and nothing about that is a runtime
+check.** `apps/mobile/metro.config.js` resolves the tour's modules — driver,
+deeplink parser, deeplink dispatcher, PWText overflow probe, pseudolocale
+bundle — to no-op stubs unless `NODE_ENV === 'development'`, which Expo CLI
+sets for `expo start` and only for `expo start`. So a normal `pnpm --filter
+mobile start` gives you a working tour with no extra flag, and there is no way
+to get one out of a release build: the code has no importer there and is never
+bundled. Metro prints which way it went at startup
+(`[metro] locale tour: enabled|stubbed`). If the driver reports the deeplink
+was unrecognized, that line is the first thing to check — a `--no-dev` or
+otherwise non-dev bundle stubs the parser, and the tour URL then resolves to a
+harmless HOME.
+
+**Hard precondition:** a booted iOS Simulator, Metro reachable, and the dev
+client already **connected to Metro and past the splash screen**. This is an
+Expo dev client — a cold launch lands on the dev-client launcher, which eats
+the tour's deeplink instead of forwarding it to the app. The script checks
+this precondition and fails with a remediation command rather than hanging;
+it does not launch or connect the app for you.
+
+**One OS prompt per run, not per step:** `xcrun simctl openurl` raises an
+"Open in Pera?" confirmation dialog on iOS every time it's called, so the
+driver fires a single `run=all` deeplink and lets the app self-advance
+through every surface, rather than one deeplink per surface. The script
+tries to auto-dismiss that one dialog via `osascript` keystrokes, which
+requires a **macOS Accessibility grant** for the terminal running it (System
+Settings > Privacy & Security > Accessibility). Without that grant, tap
+"Open" on the Simulator by hand when prompted — the capture loop keeps
+waiting for it.
+
+**What the output does and does not prove:** `report.md` (written to
+`--out`) reconciles BEGIN against captured/errored/missing steps and lists
+any overflow findings, and that reconciliation is trustworthy — it's
+computed from markers the app itself emits. What it does **not** prove is
+that every PNG shows the surface it's filed under: there is no return
+channel from the driver back to the app confirming a screenshot landed
+before the app moved on, only a fixed on-screen hold (`CAPTURE_HOLD_MS` in
+`runTour.ts`) sized to outlast the simulator's own screenshot latency.
+Spot-check a sample of the PNGs by hand. The overflow JSON is not subject to
+this risk — the app writes it in-process, before the screenshot is taken.
+
+**The first 2-3 captures of every run are worse than a spot-check risk —
+they are reliably wrong.** Step markers arrive from Metro in a burst right
+after the "Open in Pera?" dialog is dismissed, and the driver's screenshot
+loop (170-340ms per shot) can't keep up with the app's fastest early steps,
+so `scr-tab-home.png`, `scr-tab-discover.png`, and similar early captures
+typically show Swap-tab content instead — a driver-side backlog, not an app
+bug, that reproduces on every run. Disregard the first 2-3 captures, or
+re-check one surface on its own with the per-step deeplink form
+(`perawallet://app/dev/locale-tour?locale=<tag>&step=<id>`), which isn't
+subject to the backlog. This is a known limitation, not something planned to
+be fixed: the real fix would need an inbound ack channel from driver back to
+app, which was rejected on security grounds (no inbound listeners in the
+app).

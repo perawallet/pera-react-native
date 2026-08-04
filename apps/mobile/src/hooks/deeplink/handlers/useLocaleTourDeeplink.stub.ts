@@ -10,20 +10,13 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import type { LocaleTourDeeplinkHandler } from '@modules/locale-tour/types'
 
-import { launchGalleryEntry } from './launchGalleryEntry'
+// This file contains no `import('@modules/locale-tour')`, and that absence is
+// the whole mechanism: Metro bundles a dynamic import as a real graph edge, so
+// the tour driver (and with it every screen the gallery catalog can launch) is
+// excluded by having no importer at all rather than by an unreachable branch.
+const noopHandler: LocaleTourDeeplinkHandler = async () => {}
 
-import type { GalleryEntry } from './types'
-
-type UseGalleryLauncherResult = {
-    launch: (entry: GalleryEntry) => void
-}
-
-export const useGalleryLauncher = (): UseGalleryLauncherResult => {
-    const launch = useCallback((entry: GalleryEntry) => {
-        launchGalleryEntry(entry)
-    }, [])
-
-    return { launch }
-}
+export const useLocaleTourDeeplink = (): LocaleTourDeeplinkHandler =>
+    noopHandler

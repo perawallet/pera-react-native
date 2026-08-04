@@ -10,20 +10,15 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-import { launchGalleryEntry } from './launchGalleryEntry'
+import type { AnyParsedDeeplink, DevLocaleTourDeeplink } from './types'
 
-import type { GalleryEntry } from './types'
+// Returning null here is what makes `perawallet://app/dev/locale-tour?...`
+// fall through to the ordinary `perawallet://app/...` parser and resolve to a
+// harmless HOME, exactly as it would for any other unrecognized path.
+export const parseDevLocaleTourUri = (): Nullable<DevLocaleTourDeeplink> => null
 
-type UseGalleryLauncherResult = {
-    launch: (entry: GalleryEntry) => void
-}
-
-export const useGalleryLauncher = (): UseGalleryLauncherResult => {
-    const launch = useCallback((entry: GalleryEntry) => {
-        launchGalleryEntry(entry)
-    }, [])
-
-    return { launch }
-}
+export const isDevLocaleTourDeeplink = (
+    _parsed: AnyParsedDeeplink,
+): _parsed is DevLocaleTourDeeplink => false
