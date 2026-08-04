@@ -35,6 +35,7 @@ export const calculateSwapAmountRequestSchema = z.object({
     asset_out_id: uint64IdNumberSchema,
     amount_input: z.string().nullable().optional(),
     percentage: z.string().nullable().optional(),
+    device: z.string().nullable().optional(),
 })
 
 export const calculateSwapAmountResponseSchema = z.object({
