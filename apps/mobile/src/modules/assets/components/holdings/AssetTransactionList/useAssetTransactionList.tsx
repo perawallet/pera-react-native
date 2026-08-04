@@ -37,6 +37,7 @@ import type { TransactionSection } from '../../../../accounts/components/Account
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
+import { useSyncRefresh } from '@hooks/useSyncRefresh'
 
 type UseAssetTransactionListParams = {
     account: WalletAccount
@@ -53,6 +54,7 @@ export type UseAssetTransactionListResult = {
     isEmpty: boolean
     handleLoadMore: () => void
     handleRefresh: () => void
+    isRefreshing: boolean
     handleExportCsv: () => void
     isExportingCsv: boolean
     isCsvExportVisible: boolean
@@ -91,7 +93,6 @@ export const useAssetTransactionList = ({
         error,
         hasNextPage,
         fetchNextPage,
-        refetch,
     } = useTransactionHistoryQuery({
         accountAddress: account.address,
         network,
@@ -112,9 +113,10 @@ export const useAssetTransactionList = ({
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-    const handleRefresh = useCallback(() => {
-        refetch()
-    }, [refetch])
+    const refreshAddresses = useMemo(() => [account.address], [account.address])
+    const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
+        addresses: refreshAddresses,
+    })
 
     const { showError } = useErrorToast()
 
@@ -195,6 +197,7 @@ export const useAssetTransactionList = ({
         isEmpty,
         handleLoadMore,
         handleRefresh,
+        isRefreshing,
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,

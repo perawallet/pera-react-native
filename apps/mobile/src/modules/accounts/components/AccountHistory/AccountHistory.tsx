@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { PWView } from '@components/core'
+import { PWRefreshControl, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -35,7 +35,9 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         isLoading,
         isFetchingNextPage,
         isEmpty,
+        isRefreshing,
         handleLoadMore,
+        handleRefresh,
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,
@@ -137,6 +139,12 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                 keyboardDismissMode='on-drag'
                 ListHeaderComponent={titleBar}
                 ListFooterComponent={renderFooter}
+                refreshControl={
+                    <PWRefreshControl
+                        isRefreshing={isRefreshing}
+                        onRefresh={handleRefresh}
+                    />
+                }
             />
         </PWView>
     )

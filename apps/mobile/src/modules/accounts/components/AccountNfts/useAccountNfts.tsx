@@ -29,6 +29,7 @@ import {
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { type CollectibleDisplayItem } from '@modules/assets/types/collectible'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
+import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
 import { NftFilterContent } from '../NftFilterContent'
@@ -39,6 +40,7 @@ type UseAccountNftsResult = {
     collectibles: CollectibleDisplayItem[]
     collectibleCount: number
     isPending: boolean
+    isRefreshing: boolean
     hasAccount: boolean
     canOptIn: boolean
     galleryLayout: GalleryLayout
@@ -53,6 +55,7 @@ type UseAccountNftsResult = {
     setShowOptedIn: (value: boolean) => void
     setShowWatchAccounts: (value: boolean) => void
     handlePress: (item: CollectibleDisplayItem) => void
+    handleRefresh: () => void
     openManageSheet: () => Promise<void>
     openAddNftSheet: () => void
     flatListRef: React.MutableRefObject<React.ComponentRef<
@@ -191,6 +194,14 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         account ? [account] : [],
     )
 
+    const refreshAddresses = useMemo(
+        () => (account?.address ? [account.address] : []),
+        [account?.address],
+    )
+    const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
+        addresses: refreshAddresses,
+    })
+
     const balanceData = useMemo(
         () => (account ? accountBalances.get(account.address) : undefined),
         [accountBalances, account],
@@ -298,6 +309,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         collectibles,
         collectibleCount: collectibles.length,
         isPending,
+        isRefreshing,
         hasAccount: account !== null,
         canOptIn,
         galleryLayout,
@@ -312,6 +324,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         setShowOptedIn,
         setShowWatchAccounts,
         handlePress,
+        handleRefresh,
         openManageSheet,
         openAddNftSheet,
         flatListRef,

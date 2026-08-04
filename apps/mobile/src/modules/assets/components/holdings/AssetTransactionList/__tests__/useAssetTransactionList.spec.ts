@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAssetTransactionList } from '../useAssetTransactionList'
+import { getSyncService } from '@perawallet/wallet-core-background'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useCsvExportMutation,
@@ -38,6 +39,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 vi.mock('@perawallet/wallet-core-transactions', () => ({
     useTransactionHistoryQuery: vi.fn(),
     useCsvExportMutation: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-background', () => ({
+    getSyncService: vi.fn(),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -99,11 +104,18 @@ describe('useAssetTransactionList', () => {
     const mockShowToast = vi.fn()
     const mockExportCsv = vi.fn()
     const mockFetchNextPage = vi.fn()
-    const mockRefetch = vi.fn()
+    const mockRefreshAccounts = vi.fn()
+    const mockInvalidateQueries = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
         mockNavigate.mockReset()
+        mockRefreshAccounts.mockResolvedValue(undefined)
+        vi.mocked(getSyncService).mockReturnValue({
+            refreshAccounts: mockRefreshAccounts,
+            invalidateQueries: mockInvalidateQueries,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useNetwork).mockReturnValue(mockNetwork as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -121,7 +133,6 @@ describe('useAssetTransactionList', () => {
             error: null,
             hasNextPage: false,
             fetchNextPage: mockFetchNextPage,
-            refetch: mockRefetch,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
 
@@ -459,14 +470,7 @@ describe('useAssetTransactionList', () => {
     })
 
     describe('refresh', () => {
-        it('calls refetch when handleRefresh is called', () => {
-            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
-                transactions: [],
-                isLoading: false,
-                refetch: mockRefetch,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any)
-
+        it('refreshes the holding account through the sync service', async () => {
             const { result } = renderHook(() =>
                 useAssetTransactionList({
                     account: mockAccount,
@@ -474,9 +478,41 @@ describe('useAssetTransactionList', () => {
                 }),
             )
 
-            result.current.handleRefresh()
+            await act(async () => {
+                result.current.handleRefresh()
+            })
 
-            expect(mockRefetch).toHaveBeenCalled()
+            expect(mockRefreshAccounts).toHaveBeenCalledWith(
+                [mockAccount.address],
+                'mainnet',
+            )
+        })
+
+        it('reports isRefreshing while the sync refresh is in flight', async () => {
+            let releaseRefresh: () => void = () => {}
+            mockRefreshAccounts.mockReturnValue(
+                new Promise<void>(resolve => {
+                    releaseRefresh = resolve
+                }),
+            )
+
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+            expect(result.current.isRefreshing).toBe(false)
+
+            act(() => {
+                result.current.handleRefresh()
+            })
+            expect(result.current.isRefreshing).toBe(true)
+
+            await act(async () => {
+                releaseRefresh()
+            })
+            expect(result.current.isRefreshing).toBe(false)
         })
     })
 

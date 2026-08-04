@@ -14,7 +14,7 @@ import { AccountOverviewHeader } from './AccountOverviewHeader'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { useAccountOverview } from './useAccountOverview'
-import { PWView } from '@components/core'
+import { PWRefreshControl, PWView } from '@components/core'
 import { AccountAssetList } from '../AccountAssetList'
 import { AccountOverviewModalContext } from './AccountOverviewModalContext'
 
@@ -30,7 +30,13 @@ export const AccountOverview = ({
     onSwipeEnabledChange,
 }: AccountOverviewProps) => {
     const styles = useStyles()
-    const { scrollingEnabled, isLoading, contextValue } = useAccountOverview({
+    const {
+        scrollingEnabled,
+        isLoading,
+        isRefreshing,
+        handleRefresh,
+        contextValue,
+    } = useAccountOverview({
         account,
         onSwipeEnabledChange,
     })
@@ -42,6 +48,12 @@ export const AccountOverview = ({
                     account={account}
                     scrollEnabled={scrollingEnabled}
                     isLoading={isLoading}
+                    refreshControl={
+                        <PWRefreshControl
+                            isRefreshing={isRefreshing}
+                            onRefresh={handleRefresh}
+                        />
+                    }
                     header={
                         <AccountOverviewHeader
                             account={account}
