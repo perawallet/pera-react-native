@@ -67,7 +67,10 @@ export const SelectDestinationScreen = () => {
             scroll='never'
             horizontalPadding='none'
         >
-            <AddressSearchView onSelected={handleSelected} />
+            <AddressSearchView
+                onSelected={handleSelected}
+                showClipboardPaste
+            />
         </PWScreen>
     )
 }

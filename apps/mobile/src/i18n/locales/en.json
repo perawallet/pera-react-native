@@ -167,6 +167,7 @@
     },
     "address_entry": {
         "scan_qr": "Scan QR Code",
+        "paste_from_clipboard": "Paste From Clipboard",
         "invalid_qr_title": "Invalid QR Code",
         "invalid_qr_body": "This QR code doesn't contain a wallet address",
         "address": "Address",

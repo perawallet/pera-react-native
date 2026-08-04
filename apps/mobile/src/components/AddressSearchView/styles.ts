@@ -71,5 +71,23 @@ export const useStyles = makeStyles(theme => {
             paddingVertical: theme.spacing.xl,
             alignItems: 'center',
         },
+        pasteRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.lg,
+            // Nothing between PWScreen (horizontalPadding='none') and the list
+            // insets a row, so the row owns its own gutter.
+            paddingHorizontal: theme.spacing.xl,
+            paddingVertical: theme.spacing.lg,
+        },
+        pasteRowText: {
+            // The address wraps rather than truncates, so the text column has to
+            // shrink instead of pushing the icon off the row.
+            flex: 1,
+            gap: theme.spacing.xs,
+        },
+        pasteRowLabel: {
+            color: theme.colors.textGray,
+        },
     }
 })
