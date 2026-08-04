@@ -81,8 +81,32 @@ export const storage = {
 // is meaningless; the encrypt/decrypt funcs just pass through.
 const TEST_MASTER_KEY = Buffer.alloc(32)
 export const readMasterKey = async (): Promise<Buffer> => TEST_MASTER_KEY
-export const encryptData = (_key: Buffer, data: string): string => data
-export const decryptData = (_key: Buffer, payload: string): string => payload
+
+// Real encryption binds ciphertext to its storage key as GCM AAD (see
+// extensions/keystore-chrome/src/storage/crypto.ts) — a payload encrypted
+// under one keyId must not decrypt under another. A plain passthrough here
+// couldn't have caught the production bug where decryptData was called
+// without its keyId, so this fakes that binding with a prefix instead of
+// real crypto: encryptData tags the payload with its keyId, decryptData
+// rejects a mismatched one.
+export const encryptData = (
+    _key: Buffer,
+    data: string,
+    keyId: string,
+): string => `${keyId}:${data}`
+export const decryptData = (
+    _key: Buffer,
+    payload: string,
+    keyId: string,
+): string => {
+    const prefix = `${keyId}:`
+    if (!payload.startsWith(prefix)) {
+        throw new Error(
+            `Test keystore: decryptData keyId mismatch (expected payload encrypted under "${keyId}")`,
+        )
+    }
+    return payload.slice(prefix.length)
+}
 export const encode = (key: KeyData): string =>
     JSON.stringify(key, replaceUint8Array)
 export const decode = (data: string): KeyData =>

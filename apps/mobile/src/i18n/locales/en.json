@@ -3425,8 +3425,10 @@
         "reauth": {
             "title": "Confirm it's you",
             "confirm_button": "Confirm",
+            "use_passkey": "Use Passkey",
             "passkey_description": "This site requires you to verify your identity before signing in with your passkey.",
-            "confirm_description": "Enter your password to confirm this action."
+            "confirm_description": "Verify your identity to confirm this action.",
+            "passkey_error": "Passkey verification failed. Use your password instead."
         }
     },
     "migration": {

@@ -15,6 +15,8 @@ import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
+        // Bounds the scrolling body against the fixed-height sheet.
+        flex: 1,
         paddingHorizontal: theme.spacing.xl,
     },
     body: {

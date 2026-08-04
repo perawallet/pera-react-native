@@ -230,6 +230,49 @@ describe('provider singleton', () => {
             expect(Array.from(masterKey)).toEqual([0, 0, 0, 0, 0, 0, 0, 0])
         })
 
+        // The web keystore binds each ciphertext to its storage key as GCM AAD,
+        // so hydration must pass that key through. When it didn't, every bound
+        // entry failed its ghash tag, got skipped, and the wallet reported its
+        // own seed as "The specified key was not found."
+        test('passes each entry storage key through as the AAD argument', async () => {
+            keystoreMocks.storageGetAllKeys.mockReturnValue([
+                'seed-1',
+                'seed-2',
+            ])
+            keystoreMocks.storageGetString.mockImplementation(
+                (id: string) => `cipher-for-${id}`,
+            )
+            keystoreMocks.readMasterKey.mockResolvedValue(Buffer.from([1]))
+            // Stands in for AES-GCM with AAD: the wrong key id fails the tag.
+            keystoreMocks.decryptData.mockImplementation(
+                (_key: Buffer, payload: string, keyId?: string) => {
+                    if (payload !== `cipher-for-${keyId}`) {
+                        throw new Error('aes/gcm: invalid ghash tag')
+                    }
+                    return `decrypted:${keyId}`
+                },
+            )
+            keystoreMocks.decode.mockImplementation((plaintext: string) => ({
+                id: plaintext.replace('decrypted:', ''),
+                type: 'algo25',
+                algorithm: 'EdDSA',
+            }))
+
+            await hydrateKeystore()
+
+            expect(keystoreMocks.decryptData).toHaveBeenCalledWith(
+                expect.anything(),
+                'cipher-for-seed-1',
+                'seed-1',
+            )
+            // Both entries survive hydration rather than being skipped.
+            const arg = keystoreMocks.initializeKeyStore.mock.calls[0][0]
+            expect(arg.keys.map((k: { id: string }) => k.id)).toEqual([
+                'seed-1',
+                'seed-2',
+            ])
+        })
+
         test('skips entries that fail to decode and continues with the rest', async () => {
             const consoleError = vi
                 .spyOn(console, 'error')

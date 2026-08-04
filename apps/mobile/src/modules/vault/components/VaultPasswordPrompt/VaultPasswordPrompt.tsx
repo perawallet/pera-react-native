@@ -41,6 +41,10 @@ export const VaultPasswordPrompt = ({
         lockoutSeconds,
         canSubmit,
         handleSubmit,
+        canUsePasskey,
+        isPasskeyPending,
+        hasPasskeyError,
+        handlePasskeyVerify,
     } = useVaultPasswordPrompt({ onVerified: () => resolve(true) })
 
     return (
@@ -79,6 +83,15 @@ export const VaultPasswordPrompt = ({
                     {t('vault.unlock.error_invalid_password')}
                 </PWText>
             )}
+            {hasPasskeyError && (
+                <PWText
+                    testID='vault-reauth-passkey-error'
+                    variant='body'
+                    style={styles.errorText}
+                >
+                    {t('vault.reauth.passkey_error')}
+                </PWText>
+            )}
             {lockoutSeconds > 0 && (
                 <PWText
                     testID='vault-reauth-lockout'
@@ -89,6 +102,17 @@ export const VaultPasswordPrompt = ({
                         time: formatTime(lockoutSeconds),
                     })}
                 </PWText>
+            )}
+            {canUsePasskey && (
+                <PWButton
+                    testID='vault-reauth-passkey'
+                    variant='secondary'
+                    title={t('vault.reauth.use_passkey')}
+                    isDisabled={
+                        isPasskeyPending || isSubmitting || lockoutSeconds > 0
+                    }
+                    onPress={() => void handlePasskeyVerify()}
+                />
             )}
             <PWView style={styles.buttonRow}>
                 <PWButton

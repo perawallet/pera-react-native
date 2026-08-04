@@ -286,8 +286,13 @@ export const enablePasskeyUnlock = async (password: string): Promise<void> => {
     }
 }
 
-/** Ends in the same session state as `unlockVault`. */
-export const unlockWithPasskey = async (): Promise<void> => {
+/**
+ * Honours the lockout, reads and validates the PRF blob, runs the assertion,
+ * and unwraps the master key. Shared by `unlockWithPasskey` and `verifyPasskey`
+ * so the two cannot drift on which failures count as corruption versus a bad
+ * assertion. The caller owns zeroing the returned key.
+ */
+const unwrapMasterKeyWithPasskey = async (): Promise<Uint8Array> => {
     // Biometric/passkey auth must NOT bypass the password lockout — mirrors
     // useLockScreen.ts, which skips the biometric prompt entirely while
     // locked out.
@@ -309,9 +314,9 @@ export const unlockWithPasskey = async (): Promise<void> => {
         throw new VaultCorruptedError()
     }
 
-    // enablePasskeyUnlock (above) always writes a 32-byte prfEvalSalt, a
-    // 16-byte hkdfSalt, and a 12-byte iv — any other decoded length is
-    // corruption, not a bad assertion.
+    // enablePasskeyUnlock always writes a 32-byte prfEvalSalt, a 16-byte
+    // hkdfSalt, and a 12-byte iv — any other decoded length is corruption,
+    // not a bad assertion.
     if (
         prfEvalSaltBytes.length !== 32 ||
         hkdfSaltBytes.length !== 16 ||
@@ -323,9 +328,9 @@ export const unlockWithPasskey = async (): Promise<void> => {
     const credIdStored = await chrome.storage.local.get(PRF_CRED_ID_KEY)
     const credentialIdEncoded = credIdStored[PRF_CRED_ID_KEY]
 
-    // Fix: decode stored base64 → raw bytes for the allowCredentials descriptor.
-    // Previously this used TextEncoder which produced ASCII bytes of the string,
-    // matching no real credential and causing NotAllowedError on every attempt.
+    // Decode stored base64 → raw bytes for the allowCredentials descriptor.
+    // TextEncoder here would produce ASCII bytes of the string, matching no
+    // real credential and causing NotAllowedError on every attempt.
     const credentialIdBytes: Uint8Array | null =
         typeof credentialIdEncoded === 'string'
             ? base64.decode(credentialIdEncoded)
@@ -343,9 +348,8 @@ export const unlockWithPasskey = async (): Promise<void> => {
 
         const kek = await deriveKekFromPrf(prfOutput, hkdfSaltBytes)
 
-        let masterKey: Uint8Array
         try {
-            masterKey = new Uint8Array(
+            return new Uint8Array(
                 await crypto.subtle.decrypt(
                     { name: 'AES-GCM', iv: ivBytes as BufferSource },
                     kek,
@@ -353,22 +357,46 @@ export const unlockWithPasskey = async (): Promise<void> => {
                 ),
             )
         } catch {
-            // AES-GCM authentication tag failure — wrong PRF output (tampered or wrong key).
+            // AES-GCM tag failure — wrong PRF output (tampered or wrong key).
             throw new PasskeyUnlockError()
-        }
-
-        try {
-            await putSessionMasterKey(masterKey)
-            await armAutoLock()
-            await clearFailedAttempts()
-        } finally {
-            masterKey.fill(0)
         }
     } finally {
         // Zero PRF output bytes after KEK derivation.
         if (prfOutput !== null) {
             new Uint8Array(prfOutput).fill(0)
         }
+    }
+}
+
+/** Ends in the same session state as `unlockVault`. */
+export const unlockWithPasskey = async (): Promise<void> => {
+    const masterKey = await unwrapMasterKeyWithPasskey()
+    try {
+        await putSessionMasterKey(masterKey)
+        await armAutoLock()
+        await clearFailedAttempts()
+    } finally {
+        masterKey.fill(0)
+    }
+}
+
+/**
+ * Proves the user can satisfy the vault passkey without unlocking anything —
+ * the passkey counterpart to `verifyVaultPassword`.
+ *
+ * Deliberately does NOT arm auto-lock: reauthentication is user activity, but
+ * `useAutoLockActivity` owns that signal, and a verification must not silently
+ * extend the session as a side effect. Also does not record a failed attempt on
+ * a bad assertion — matching `unlockWithPasskey` — so this cannot become a new
+ * way to lock the user out. The lockout is still honoured before the
+ * authenticator is touched.
+ */
+export const verifyPasskey = async (): Promise<void> => {
+    const masterKey = await unwrapMasterKeyWithPasskey()
+    try {
+        await clearFailedAttempts()
+    } finally {
+        masterKey.fill(0)
     }
 }
 
