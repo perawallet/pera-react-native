@@ -30,3 +30,5 @@ export type {
     AssetOptInDeeplinkHandler,
     AssetOptInDeeplinkParams,
 } from './useAssetOptInDeeplink'
+export { useLocaleTourDeeplink } from './useLocaleTourDeeplink'
+export type { LocaleTourDeeplinkHandler } from '@modules/locale-tour/types'

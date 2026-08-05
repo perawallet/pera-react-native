@@ -18,6 +18,7 @@ import {
 } from './types'
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
+import { parseDevLocaleTourUri } from './dev-locale-tour-parser'
 import { normalizeUrl } from './utils'
 import { parseAlgorandUri } from './algorand-parser'
 import { parseWalletConnectUri } from './walletconnect-parser'
@@ -214,6 +215,11 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     }
 
     if (normalizedUrl.includes('/app/')) {
+        // Checked ahead of parsePerawalletAppUri: it owns the same
+        // `perawallet://app/...` scheme but not this `dev/` path.
+        const devLocaleTour = parseDevLocaleTourUri(url)
+        if (devLocaleTour) return devLocaleTour
+
         const result = parsePerawalletAppUri(url)
         if (result) return result
     }

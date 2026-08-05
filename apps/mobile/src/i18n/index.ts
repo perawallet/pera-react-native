@@ -12,19 +12,24 @@
 
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
-import en from './locales/en.json'
+import { BASE_LOCALE, TRANSLATION_BUNDLES } from './locales'
+import { getPseudoResources } from './pseudoResources'
 import 'intl-pluralrules'
 
 const resources = {
-    en: {
-        translation: en,
-    },
+    ...Object.fromEntries(
+        Object.entries(TRANSLATION_BUNDLES).map(([locale, bundle]) => [
+            locale,
+            { translation: bundle },
+        ]),
+    ),
+    ...getPseudoResources(),
 }
 
 void i18n.use(initReactI18next).init({
     resources,
-    lng: 'en', // default language
-    fallbackLng: 'en',
+    lng: BASE_LOCALE,
+    fallbackLng: BASE_LOCALE,
     interpolation: {
         escapeValue: false, // react already safes from xss
     },

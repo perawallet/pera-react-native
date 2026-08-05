@@ -25,7 +25,9 @@ import { config } from './main'
  *
  * Dev-only code that must be STRIPPED from release bundles still needs bare
  * `__DEV__`: Metro can dead-code-eliminate the inlined identifier, not this
- * runtime read.
+ * runtime read. For a whole module rather than a branch, prefer the resolver
+ * swap in apps/mobile/metro.config.js — it excludes the file from the graph
+ * outright instead of shipping it with no reachable caller.
  */
 export const isDebug = (globalThis as { __DEV__?: boolean }).__DEV__ === true
 

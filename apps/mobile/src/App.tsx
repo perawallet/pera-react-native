@@ -45,6 +45,11 @@ import { useAppBootstrap } from './useAppBootstrap'
 // safely call useBottomSheetStore.getState().requestByType(...) from the
 // moment the app boots.
 import '@modules/bottom-sheet/registrations'
+// Side-effect: hands the locale-tour driver to its registry so the deeplink
+// handler can reach it without importing it (modules/locale-tour/registry.ts
+// explains why that indirection exists). Resolves to a no-op stub in every
+// non-dev bundle, which is what keeps the driver out of release builds.
+import '@modules/locale-tour/register'
 import * as SplashScreen from 'expo-splash-screen'
 
 // TODO(card): remove once the Baanx transactions sandbox returns data. Dev-only
