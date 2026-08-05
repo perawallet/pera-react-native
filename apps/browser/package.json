@@ -13,6 +13,7 @@
     },
     "dependencies": {
         "@perawallet/wallet-core-accounts": "workspace:*",
+        "@perawallet/wallet-core-app-integrity": "workspace:*",
         "@perawallet/wallet-core-assets": "workspace:*",
         "@perawallet/wallet-core-background": "workspace:*",
         "@perawallet/wallet-core-blockchain": "workspace:*",

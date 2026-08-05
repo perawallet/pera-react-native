@@ -20,7 +20,7 @@ export const attestResponseSchema = z.object({
 export const verifyResponseSchema = z.object({
     ok: z.boolean(),
     device_id: z.string(),
-    platform: z.enum(['ios', 'android']),
+    platform: z.enum(['ios', 'android', 'web']),
 })
 
 export type AttestApiResponse = z.infer<typeof attestResponseSchema>
