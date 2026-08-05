@@ -33,6 +33,7 @@ module.exports = function (api) {
           "@layouts": "./src/layouts",
           "@routes": "./src/routes",
           "@hooks": "./src/hooks",
+          "@i18n": "./src/i18n",
           "@analytics": "./src/analytics",
           "@constants": "./src/constants",
           "@modules": "./src/modules",

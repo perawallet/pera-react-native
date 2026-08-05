@@ -34,7 +34,6 @@ import {
     formatCurrency,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 type UseAssetClaimDetailScreenResult = {
     request: Nullable<Arc59AssetRequest>
@@ -85,8 +84,6 @@ export const useAssetClaimDetailScreen =
             })
         }, [push, assetIndex, request, showToast, t])
 
-        const deviceInfo = usePeraProvider().deviceInfo
-
         const handleRejectPress = useCallback(async () => {
             if (!request) return
 
@@ -108,7 +105,7 @@ export const useAssetClaimDetailScreen =
                 ),
                 ALGO_ASSET.decimals,
                 ALGO_ASSET_NAME,
-                deviceInfo.getDeviceLocale(),
+                undefined,
                 false,
                 false,
                 DEFAULT_PRECISION,
@@ -142,15 +139,7 @@ export const useAssetClaimDetailScreen =
                         request.shouldUseFundsBeforeRejecting ?? false,
                 },
             })
-        }, [
-            push,
-            assetIndex,
-            request,
-            requestBottomSheet,
-            t,
-            deviceInfo,
-            errorToast,
-        ])
+        }, [push, assetIndex, request, requestBottomSheet, t, errorToast])
 
         const handleCopyAssetId = useCallback(() => {
             if (request.id) {

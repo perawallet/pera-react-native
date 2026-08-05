@@ -27,7 +27,13 @@ import {
     updateBackendHeaders,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import {
+    readRemoteConfigWithOverrides,
+    RemoteConfigKeys,
+    useRemoteConfigStore,
+} from '@perawallet/wallet-core-remote-config'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
+import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import {
     getProvider,
     hydrateKeystore,
@@ -37,6 +43,9 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { type Persister } from '@tanstack/react-query-persist-client'
 import { queryClient } from './providers/QueryProvider'
 import { runPasskeyAutofillBootstrap } from './bootstrap/passkey-autofill'
+import { getEffectiveSupportedLocales } from './i18n/effectiveLocales'
+import { resolveLocale } from './i18n/locales'
+import i18n from './i18n'
 
 export type UseAppBootstrapResult = {
     bootstrapped: boolean
@@ -51,6 +60,13 @@ export type UseAppBootstrapResult = {
 // enough that a foreground start always hides on the frame path instead.
 const SPLASH_HIDE_BACKSTOP_MS = 1000
 
+// Ceiling on the wait for settings rehydration. zustand's persist middleware
+// never fires `onFinishHydration` if rehydration rejects (corrupt persisted
+// JSON, storage read failure), and `hasHydrated()` stays false — so without
+// this the language branch, and with it the whole bootstrap gate and the
+// splash-hide, would hang forever with no recovery short of a reinstall.
+const SETTINGS_HYDRATION_TIMEOUT_MS = 2000
+
 const updateQueryHeaders = () => {
     const deviceInfo = getProvider().deviceInfo
     const headers = new Map<string, string>()
@@ -63,6 +79,71 @@ const updateQueryHeaders = () => {
     headers.set('Device-Model', deviceInfo.getDeviceModelId())
     headers.set('User-Agent', deviceInfo.getUserAgent())
     updateBackendHeaders(headers)
+}
+
+// Timing out leaves `language` at the store's default ('system'), which just
+// means a saved override is missed for this one launch — never a hang.
+const waitForSettingsHydration = (): Promise<void> => {
+    if (useSettingsStore.persist.hasHydrated()) return Promise.resolve()
+    return new Promise(resolve => {
+        let settled = false
+        const finish = () => {
+            if (settled) return
+            settled = true
+            resolve()
+        }
+        const unsubscribe = useSettingsStore.persist.onFinishHydration(() => {
+            unsubscribe()
+            finish()
+        })
+        setTimeout(() => {
+            unsubscribe()
+            finish()
+        }, SETTINGS_HYDRATION_TIMEOUT_MS)
+    })
+}
+
+const resolveEffectiveLocale = (): string => {
+    // Reads the same dev-override layer `useRemoteConfig()` applies, via the
+    // store's non-reactive getState — a flag flipped in the Feature Flags
+    // screen has to survive the next cold start, and bootstrap runs outside
+    // render so it can't call the hook.
+    const remoteConfig = readRemoteConfigWithOverrides(
+        getProvider().remoteConfig,
+        useRemoteConfigStore.getState().configOverrides,
+    )
+    const isLanguageSelectionEnabled = remoteConfig.getBooleanValue(
+        RemoteConfigKeys.enable_language_selection,
+        false,
+    )
+    const activeLocalesRaw = remoteConfig.getStringValue(
+        RemoteConfigKeys.active_locales,
+        '',
+    )
+    const effectiveSupportedLocales = getEffectiveSupportedLocales(
+        isLanguageSelectionEnabled,
+        activeLocalesRaw,
+    )
+    const { language } = useSettingsStore.getState()
+    const deviceLocales = getProvider().deviceInfo.getDeviceLocales()
+    return resolveLocale(language, deviceLocales, effectiveSupportedLocales)
+}
+
+// Runs after rehydration, behind the bootstrapped splash gate, so switching
+// language never causes a visible flash (design doc §4.4). Unlike
+// i18n/index.ts's import-time BASE_LOCALE default, Remote Config has
+// already been fetched by the time this runs (provider.initialize() above
+// awaits it) — so this is the one place real locale resolution happens, for
+// every user, not just ones with a saved override. A saved override that
+// falls outside the currently-effective set (Remote Config rolled back, or
+// that locale deactivated) correctly falls through resolveLocale's chain
+// back to en, via resolveEffectiveLocale re-validating it every run.
+const syncLanguagePreference = async (): Promise<void> => {
+    await waitForSettingsHydration()
+    const effectiveLocale = resolveEffectiveLocale()
+    if (effectiveLocale !== i18n.language) {
+        await i18n.changeLanguage(effectiveLocale)
+    }
 }
 
 export const useAppBootstrap = (): UseAppBootstrapResult => {
@@ -114,10 +195,17 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                     provider.database,
                 ).then(() => seedAlgoAsset(getDatabase()))
 
+                const languageBranch = syncLanguagePreference().catch(err =>
+                    logger.error('Language preference sync failed', {
+                        error: err,
+                    }),
+                )
+
                 await Promise.all([
                     keystoreBranch,
                     passkeyBranch,
                     databaseBranch,
+                    languageBranch,
                 ])
 
                 initializeSyncService({

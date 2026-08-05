@@ -47,6 +47,13 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 const mockErrorToast = vi.fn()
+const mockShowError = vi.fn()
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({
+        showError: mockShowError,
+    }),
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         successToast: vi.fn(),
@@ -154,7 +161,7 @@ describe('useCardAddAccount', () => {
                 params: { returnTo: RETURN_TO },
             }),
         )
-        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(mockShowError).not.toHaveBeenCalled()
     })
 
     it('shows an error toast when account creation throws', async () => {
@@ -164,7 +171,12 @@ describe('useCardAddAccount', () => {
 
         act(() => result.current.handleCreateAccount())
 
-        await waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        await waitFor(() =>
+            expect(mockShowError).toHaveBeenCalledWith(
+                expect.any(Error),
+                'onboarding.create_account.error_title',
+            ),
+        )
         expect(mockPush).not.toHaveBeenCalled()
     })
 })

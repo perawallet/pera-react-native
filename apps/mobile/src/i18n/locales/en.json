@@ -626,10 +626,7 @@
             "no_hd_wallet": "Could not find the Universal Wallet for this account."
         },
         "blockchain": {
-            "generic": "Something went wrong accessing the blockchain.",
-            "transaction": "Something went wrong processing the transaction. Please try again and contact support if the issue persists.",
-            "invalid_transaction": "The transaction data appears to be invalid. Please try again and contact support if the issue persists.",
-            "signing": "Something went wrong signing the transaction. Please try again and contact support if the issue persists."
+            "generic": "Something went wrong accessing the blockchain."
         },
         "algod": {
             "overspend": {
@@ -697,6 +694,9 @@
                 "body": "We didn't get a response in time. Please try again."
             }
         },
+        "pera_service": {
+            "unavailable": "Pera services aren't available on this network. Switch to MainNet to use this feature."
+        },
         "api": {
             "generic": {
                 "title": "Request failed",
@@ -722,16 +722,6 @@
             "invalid_mnemonic": "The recovery passphrase appears to be invalid.",
             "required_field": "A required field is missing: {{field}}"
         },
-        "auth": {
-            "generic": "Something went wrong with the authentication.",
-            "biometric_failed": "Something went wrong with the authentication.",
-            "pin_incorrect": "Something went wrong with the authentication."
-        },
-        "storage": {
-            "generic": "Couldn't access stored data.",
-            "read_failed": "Something went wrong reading from storage.",
-            "write_failed": "Something went wrong writing to storage."
-        },
         "transaction": {
             "title": "An error occurred processing this transaction",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
@@ -742,16 +732,19 @@
             "invalid_key": "The signing key for this account is invalid.",
             "generic": "Something went wrong accessing your signing key."
         },
-        "unknown": "An unknown error occurred.",
         "walletconnect": {
             "title": "An error occurred processing an app request",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
-            "unknown": "An unknown error occurred when signing.  Check the dapp for more information."
+            "unknown": "An unknown error occurred when signing.  Check the dapp for more information.",
+            "invalid_network_body": "You have received a request from an invalid network. Please switch your wallet to the correct network and try again.",
+            "sign_request_body": "You have received an invalid request to sign a transaction. Please check the app and try again.",
+            "permission_body": "You have received an unauthorized request from an app. Please check the app and try again.",
+            "invalid_session_body": "You have received an invalid session request from an app. Please check the app and try again.",
+            "connection_timeout_body": "Couldn't reach WalletConnect to deliver your signed transaction. Check your connection and try again.",
+            "session_request_expired_body": "This connection request has expired. Start a new connection from the dApp and try again."
         },
         "signing": {
-            "title": "An error occurred processing the signing request",
-            "transaction_limit_exceeded": "Too many transactions: {{count}} exceeds the maximum of {{max}}.",
-            "data_limit_exceeded": "Too many data items: {{count}} exceeds the maximum of {{max}}."
+            "title": "An error occurred processing the signing request"
         },
         "webview": {
             "invalid_method": "Invalid method {{method}}",
@@ -1308,7 +1301,6 @@
             "finish_button": "Finish Account Creation",
             "creating": "Creating shared account...",
             "error_title": "Failed to create account",
-            "error_message": "Something went wrong while creating the shared account: {{error}}",
             "error_name_taken": "An account with this name already exists.",
             "duplicate_account_title": "Account already added",
             "duplicate_account_body": "A shared account with these participants and threshold is already in your wallet."
@@ -1468,8 +1460,7 @@
         },
         "create_account": {
             "processing": "Setting up your wallet...",
-            "error_title": "Failed to create account",
-            "error_message": "Something went wrong. Details: {{error}}"
+            "error_title": "Failed to create account"
         },
         "main_screen": {
             "welcome": "Welcome to \n Pera Wallet",
@@ -1931,6 +1922,7 @@
         "connections": "Connections",
         "currency": "Currency",
         "theme": "Theme",
+        "language": "Language",
         "developer_settings": "Developer Settings",
         "node_settings": "Node Settings",
         "feature_flags": "Feature Flags",
@@ -2121,6 +2113,7 @@
             "app_preferences_section": "App Preferences",
             "currency_title": "Currency",
             "theme_title": "Theme",
+            "language_title": "Language",
             "support_section": "Support",
             "rate_title": "Rate Pera Wallet",
             "terms_title": "Terms and Services",
@@ -2138,6 +2131,9 @@
             "system_label": "System Default",
             "light_label": "Light",
             "dark_label": "Dark"
+        },
+        "language": {
+            "system_label": "System Default"
         },
         "rating": {
             "title": "Rate your experience",
@@ -2702,6 +2698,7 @@
         },
         "execution": {
             "error_title": "Swap Failed",
+            "error_body": "Something went wrong during the swap. Please try again.",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled",

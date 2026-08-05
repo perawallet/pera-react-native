@@ -67,6 +67,13 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
 })
 
 const mockShowToast = vi.fn()
+const mockShowError = vi.fn()
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({
+        showError: mockShowError,
+    }),
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         showToast: mockShowToast,
@@ -501,8 +508,9 @@ describe('useAddAccountScreen', () => {
             universalOption.onPress()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            expect.any(Error),
+            'onboarding.create_account.error_title',
         )
     })
 
@@ -576,8 +584,9 @@ describe('useAddAccountScreen', () => {
             algo25Option.onPress()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            expect.any(Error),
+            'onboarding.create_account.error_title',
         )
     })
 
@@ -691,8 +700,9 @@ describe('useAddAccountScreen', () => {
             quantumOption.onPress()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            expect.any(Error),
+            'onboarding.create_account.error_title',
         )
     })
 
@@ -810,8 +820,9 @@ describe('useAddAccountScreen', () => {
             addOption.onPress()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            expect.any(Error),
+            'onboarding.create_account.error_title',
         )
     })
 

@@ -16,7 +16,7 @@ import {
     type ShowNotificationParams,
     type NotifierRoot,
 } from 'react-native-notifier'
-import { resolveErrorCopy } from '../i18n/resolveErrorCopy'
+import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 import { useToast } from './useToast'
 import { useAlgodErrorMessage } from './useAlgodErrorMessage'
 import { useLanguage } from './useLanguage'

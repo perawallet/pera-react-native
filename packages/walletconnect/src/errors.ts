@@ -33,6 +33,7 @@ export class WalletConnectError extends AppError {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.WALLETCONNECT,
                 retryable: false,
+                messageKey: 'errors.walletconnect.body',
                 ...metadata,
             },
             originalError,
@@ -42,7 +43,9 @@ export class WalletConnectError extends AppError {
 
 export class WalletConnectInvalidSessionError extends WalletConnectError {
     constructor(message?: string, originalError?: Error) {
-        super(message ?? 'The session was missing or invalid.', originalError)
+        super(message ?? 'The session was missing or invalid.', originalError, {
+            messageKey: 'errors.walletconnect.invalid_session_body',
+        })
     }
 }
 
@@ -51,13 +54,16 @@ export class WalletConnectSignRequestError extends WalletConnectError {
         super(
             message ?? 'An error has occurred during the signing process.',
             originalError,
+            { messageKey: 'errors.walletconnect.sign_request_body' },
         )
     }
 }
 
 export class WalletConnectPermissionError extends WalletConnectError {
     constructor(message?: string, originalError?: Error) {
-        super(message ?? 'Permission denied', originalError)
+        super(message ?? 'Permission denied', originalError, {
+            messageKey: 'errors.walletconnect.permission_body',
+        })
     }
 }
 
@@ -67,6 +73,7 @@ export class WalletConnectInvalidNetworkError extends WalletConnectError {
             message ??
                 "The network doesn't match with the network your app is currently connected to.",
             originalError,
+            { messageKey: 'errors.walletconnect.invalid_network_body' },
         )
     }
 }
@@ -90,7 +97,10 @@ export class WalletConnectConnectionTimeoutError extends WalletConnectError {
             message ??
                 "Couldn't reach WalletConnect to deliver your signed transaction. Check your connection and try again.",
             originalError,
-            { retryable: true },
+            {
+                retryable: true,
+                messageKey: 'errors.walletconnect.connection_timeout_body',
+            },
         )
     }
 }
@@ -106,6 +116,9 @@ export class WalletConnectSessionRequestExpiredError extends WalletConnectError 
             message ??
                 'This connection request has expired. Start a new connection from the dApp and try again.',
             originalError,
+            {
+                messageKey: 'errors.walletconnect.session_request_expired_body',
+            },
         )
     }
 }

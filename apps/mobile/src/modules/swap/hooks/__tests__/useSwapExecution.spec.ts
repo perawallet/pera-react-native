@@ -627,14 +627,17 @@ describe('useSwapExecution', () => {
             )
         })
 
+        // Generic localized copy, not the pipeline's raw text — that goes to
+        // the log only (PERA-4795).
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'signing',
-            message: 'Pipeline boom',
+            message: 'swap.execution.error_body',
         })
         expect(result.current.status).toBe('error')
         expect(result.current.error?.phase).toBe('signing')
-        expect(result.current.error?.message).toBe('Pipeline boom')
+        expect(result.current.error?.message).toBe('swap.execution.error_body')
+        expect(result.current.error?.message).not.toContain('Pipeline boom')
 
         expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
             swapId: '12345',
@@ -669,12 +672,10 @@ describe('useSwapExecution', () => {
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'signing',
-            message: 'Quantum accounts are not supported in swap flows yet',
+            message: 'swap.execution.error_body',
         })
         expect(result.current.status).toBe('error')
-        expect(result.current.error?.message).toBe(
-            'Quantum accounts are not supported in swap flows yet',
-        )
+        expect(result.current.error?.message).toBe('swap.execution.error_body')
 
         // Not a user cancellation, so the backend must still be told.
         expect(mockUpdateSwapStatus).toHaveBeenCalledWith({

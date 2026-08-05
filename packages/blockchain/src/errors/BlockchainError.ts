@@ -18,7 +18,10 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 /**
- * Base blockchain error
+ * Base blockchain error.
+ *
+ * Never constructed directly — it exists as the base for {@link AlgodError},
+ * which is why its `errors.blockchain.generic` key must stay in en.json.
  */
 export class BlockchainError extends AppError {
     constructor(
@@ -37,52 +40,5 @@ export class BlockchainError extends AppError {
             },
             originalError,
         )
-    }
-}
-
-/**
- * Transaction-related error
- */
-export class TransactionError extends BlockchainError {
-    public readonly txId?: string
-
-    constructor(txId?: string, originalError?: Error) {
-        super('An error occurred processing the transaction', originalError, {
-            messageKey: 'errors.blockchain.transaction',
-            // txId is diagnostic only — the copy shows neither it nor the raw
-            // cause, but both belong in the log payload.
-            params: { txId, cause: originalError?.message },
-        })
-        this.txId = txId
-    }
-}
-
-/**
- * Transaction signing failed
- */
-export class SigningError extends BlockchainError {
-    constructor(originalError?: Error) {
-        super(
-            'An error occurred signing the transaction or data',
-            originalError,
-            {
-                severity: ErrorSeverity.CRITICAL,
-                messageKey: 'errors.blockchain.signing',
-                params: { cause: originalError?.message },
-            },
-        )
-    }
-}
-
-/**
- * Invalid transaction parameters
- */
-export class InvalidTransactionError extends BlockchainError {
-    constructor(originalError?: Error) {
-        super('The transaction data is invalid or corrupted', originalError, {
-            severity: ErrorSeverity.CRITICAL,
-            messageKey: 'errors.blockchain.invalid_transaction',
-            params: { cause: originalError?.message },
-        })
     }
 }
