@@ -206,5 +206,19 @@ describe('quotes transformers', () => {
             if (result.kind !== 'meld') throw new Error('expected meld quote')
             expect(result.lowKyc).toBe(false)
         })
+
+        it('maps a null lowKyc to null', () => {
+            const result = transformRampQuote(
+                buildMeldQuote({
+                    provider_response: {
+                        ...buildMeldQuote().provider_response,
+                        lowKyc: null,
+                    } as RampQuoteApiResponse['provider_response'],
+                }),
+            )
+
+            if (result.kind !== 'meld') throw new Error('expected meld quote')
+            expect(result.lowKyc).toBeNull()
+        })
     })
 })
