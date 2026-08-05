@@ -41,7 +41,18 @@ export const DeeplinkType = {
     HOME: 'HOME',
 } as const
 
-export type DeeplinkType = (typeof DeeplinkType)[keyof typeof DeeplinkType]
+/**
+ * The locale tour's discriminant, declared as a type with deliberately no
+ * runtime member above. Only the tour's own parser produces it and only the
+ * tour's own handler reads it, and metro.config.js swaps both for stubs
+ * outside dev builds — a `DeeplinkType` entry would keep the tag string alive
+ * in release bundles after every module that could act on it is gone.
+ */
+export type DevLocaleTourDeeplinkType = 'DEV_LOCALE_TOUR'
+
+export type DeeplinkType =
+    | (typeof DeeplinkType)[keyof typeof DeeplinkType]
+    | DevLocaleTourDeeplinkType
 
 export interface ParsedDeeplink {
     type: DeeplinkType
@@ -236,6 +247,23 @@ export interface LiquidAuthDeeplink extends ParsedDeeplink {
     url: string
 }
 
+/**
+ * `perawallet://app/dev/locale-tour?locale=<tag>&step=<id>` drives one
+ * screenshot-tour step; `?locale=<tag>&run=all` drives every step in the
+ * default tour scope behind a single deeplink (see runTour.ts — one OS
+ * confirmation dialog instead of 190). Exactly one of `step`/`run` is
+ * present; the parser rejects a URL with neither. Dev-only; see
+ * DevLocaleTourDeeplinkType above. Reuses the already-registered `perawallet`
+ * scheme (`pera://` is not registered as an OS URL scheme in
+ * app.config.builder.js).
+ */
+export interface DevLocaleTourDeeplink extends ParsedDeeplink {
+    type: DevLocaleTourDeeplinkType
+    locale: string
+    step?: string
+    run?: 'all'
+}
+
 export type AnyParsedDeeplink =
     | AddContactDeeplink
     | EditContactDeeplink
@@ -265,3 +293,4 @@ export type AnyParsedDeeplink =
     | PeraWebImportDeeplink
     | LiquidAuthDeeplink
     | HomeDeeplink
+    | DevLocaleTourDeeplink

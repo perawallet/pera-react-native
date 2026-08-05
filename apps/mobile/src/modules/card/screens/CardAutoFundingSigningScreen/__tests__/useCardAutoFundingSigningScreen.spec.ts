@@ -13,7 +13,10 @@
 import { renderHook, act } from '@test-utils/render'
 import { waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { FundingType } from '@perawallet/wallet-core-card'
+import {
+    AutoDrawProgramUnverifiedError,
+    FundingType,
+} from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const {
@@ -139,5 +142,25 @@ describe('useCardAutoFundingSigningScreen', () => {
 
         expect(mockEnableAutoDraw).not.toHaveBeenCalled()
         expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, true)
+    })
+
+    it('degrades to Manual funding when the AutoDraw program fails verification (PERA-4712)', async () => {
+        // An unverified program can never succeed on retry, so the generic
+        // "please try again" error toast would strand the user here.
+        mockEnableAutoDraw.mockRejectedValueOnce(
+            new AutoDrawProgramUnverifiedError('mainnet'),
+        )
+
+        const { result } = renderHook(() => useCardAutoFundingSigningScreen())
+
+        act(() => {
+            result.current.handleApprove()
+        })
+
+        await waitFor(() =>
+            expect(mockFinish).toHaveBeenCalledWith(FundingType.Manual, true),
+        )
+        expect(mockShowCardError).not.toHaveBeenCalled()
+        expect(result.current.error).toBeNull()
     })
 })

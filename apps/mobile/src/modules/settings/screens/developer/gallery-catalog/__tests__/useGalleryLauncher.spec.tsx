@@ -13,15 +13,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
-const navigate = vi.fn()
-const request = vi.fn()
-const requestByType = vi.fn()
-
-vi.mock('@react-navigation/native', () => ({
-    useNavigation: () => ({ navigate }),
+const { mockLaunchGalleryEntry } = vi.hoisted(() => ({
+    mockLaunchGalleryEntry: vi.fn(),
 }))
-vi.mock('@modules/bottom-sheet', () => ({
-    useBottomSheet: () => ({ request, requestByType }),
+
+vi.mock('../launchGalleryEntry', () => ({
+    launchGalleryEntry: mockLaunchGalleryEntry,
 }))
 
 import { useGalleryLauncher } from '../useGalleryLauncher'
@@ -31,37 +28,16 @@ import type { GalleryEntry } from '../types'
 describe('useGalleryLauncher', () => {
     beforeEach(() => vi.clearAllMocks())
 
-    it('navigates for a navigate entry', () => {
+    it('delegates the entry to launchGalleryEntry', () => {
         const { result } = renderHook(() => useGalleryLauncher())
         const entry: GalleryEntry = {
             id: 'scr-x',
             label: 'X',
             launch: { kind: 'navigate', target: { name: 'Search' } },
         }
+
         result.current.launch(entry)
-        expect(navigate).toHaveBeenCalledWith('Search', undefined)
-    })
 
-    it('routes a preview entry to GalleryPreview with the entry id', () => {
-        const { result } = renderHook(() => useGalleryLauncher())
-        result.current.launch({
-            id: 'comp-y',
-            label: 'Y',
-            launch: { kind: 'preview' },
-        })
-        expect(navigate).toHaveBeenCalledWith('GalleryPreview', {
-            entryId: 'comp-y',
-        })
-    })
-
-    it('runs an action entry', () => {
-        const run = vi.fn()
-        const { result } = renderHook(() => useGalleryLauncher())
-        result.current.launch({
-            id: 'tool-z',
-            label: 'Z',
-            launch: { kind: 'action', run },
-        })
-        expect(run).toHaveBeenCalledOnce()
+        expect(mockLaunchGalleryEntry).toHaveBeenCalledWith(entry)
     })
 })

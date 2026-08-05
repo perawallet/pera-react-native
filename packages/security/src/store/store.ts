@@ -28,6 +28,7 @@ const initialState = {
     autoLockStartedAt: null,
     lockRequestVersion: 0,
     isAppLockActive: false,
+    isBiometricsEnabled: false,
 }
 
 // `autoLockStartedAt` is persisted to unencrypted storage; a tampered/corrupt
@@ -71,6 +72,8 @@ export const useSecurityStore: UseBoundStore<
                 })),
             setAppLockActive: (active: boolean) =>
                 set({ isAppLockActive: active }),
+            setBiometricsEnabled: (enabled: boolean) =>
+                set({ isBiometricsEnabled: enabled }),
             resetState: () => set(initialState),
         }),
         {

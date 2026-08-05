@@ -84,10 +84,10 @@ export type HandoffAssemblyContext = {
  * whose signature payloads haven't all serialized yet — the backend can flip
  * status before every signature lands, so the next poll catches up.
  */
-export const classifyHandoffPoll = (
+export const classifyHandoffPoll = async (
     detail: HandoffPollDetail,
     handoff: HandoffAssemblyContext,
-): HandoffPollOutcome => {
+): Promise<HandoffPollOutcome> => {
     switch (detail.status) {
         case 'ready':
         case 'confirmed': {
@@ -115,10 +115,10 @@ export const classifyHandoffPoll = (
     }
 }
 
-const classifyReadyPoll = (
+const classifyReadyPoll = async (
     detail: HandoffPollDetail,
     handoff: HandoffAssemblyContext,
-): HandoffPollOutcome => {
+): Promise<HandoffPollOutcome> => {
     const lists = detail.transaction_lists
 
     // Race-condition guard: the backend can flip status to 'ready' before
@@ -160,7 +160,7 @@ const classifyReadyPoll = (
     // by list, then by position within the list.
     const assembledBytes: Uint8Array[] = []
     for (const list of lists) {
-        const result = assembleSignedMultisigTransactions({
+        const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: list.raw_transactions,
             participantAddresses: handoff.msigMetadata.addresses,
             version: handoff.msigMetadata.version,

@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { startGalleryTour } from '@routes/galleryTour'
-
 import type { GallerySection } from './types'
 
 type ToolHandlers = {
@@ -24,11 +22,6 @@ export const getToolSections = ({
     {
         title: 'Tools',
         items: [
-            {
-                id: 'tool-tour',
-                label: 'Run screenshot tour',
-                launch: { kind: 'action', run: startGalleryTour },
-            },
             {
                 id: 'tool-seed',
                 label: 'Seed mock data (contacts)',

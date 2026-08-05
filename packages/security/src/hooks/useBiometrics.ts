@@ -18,6 +18,7 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from '@perawallet/wallet-core-kms'
 import { BIOMETRIC_BLOB_KEY_ID, PIN_RECORD_KEY_ID } from '../constants'
+import { useSecurityStore } from '../store'
 
 /**
  * Why enabling biometrics failed, so callers can show targeted guidance
@@ -47,6 +48,11 @@ export type EnableBiometricsResult =
 type UseBiometricsResult = {
     isEnabled: boolean
     isAvailable: boolean
+    /**
+     * Reconciles, so NOT a pure read: when the blob exists but the OS reports no
+     * enrolled biometric, it deletes the blob and returns false. Callers get the
+     * post-reconciliation answer, and a subsequent call is consistent with it.
+     */
     checkBiometricsEnabled: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
     refreshBiometricsBinding: () => Promise<void>
@@ -64,19 +70,48 @@ export const useBiometrics = (): UseBiometricsResult => {
     const { commitSecret, withSecret, hasSecret, removeSecret } =
         useKMSService()
 
-    const [isEnabled, setIsEnabled] = useState(false)
+    // Shared, not per-hook: Settings, the lock screen and PIN edit all mount
+    // their own useBiometrics, and a reconcile that cleared a revoked blob used
+    // to update only the calling screen's copy — leaving the Settings toggle
+    // showing ON (PERA-4702). Granular selectors, per the store conventions.
+    const isEnabled = useSecurityStore(state => state.isBiometricsEnabled)
+    const setIsEnabled = useSecurityStore(state => state.setBiometricsEnabled)
     const [isAvailable, setIsAvailable] = useState(false)
 
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
-        return hasSecret(BIOMETRIC_BLOB_KEY_ID)
-    }, [hasSecret])
+        if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) {
+            setIsEnabled(false)
+            return false
+        }
+
+        // Fail closed on OS-level revocation. The blob is the app's only record
+        // that biometric unlock was opted into, so one that outlives its
+        // enrollment would silently re-arm unlock the moment the user enrolls a
+        // new biometric — a fingerprint added after the fact could open the
+        // wallet without the in-app toggle ever being touched. Drop the blob
+        // instead and require an explicit re-enable. The PIN record is a
+        // separate secret, so this never costs the user access.
+        //
+        // The signal is `isEnrolledAsync` underneath, i.e. a positive "no
+        // biometric is enrolled" — not an auth failure. A biometric that is
+        // merely locked out after too many attempts reports through
+        // `authenticate`, not here, so a lockout does not drop the blob.
+        if (await biometricsService.checkBiometricsAvailable()) {
+            setIsEnabled(true)
+            return true
+        }
+
+        await removeSecret(BIOMETRIC_BLOB_KEY_ID)
+        setIsEnabled(false)
+        return false
+    }, [hasSecret, removeSecret, biometricsService, setIsEnabled])
 
     const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {
         return biometricsService.checkBiometricsAvailable()
     }, [biometricsService])
 
     useEffect(() => {
-        void checkBiometricsEnabled().then(setIsEnabled)
+        void checkBiometricsEnabled()
         void checkBiometricsAvailable().then(setIsAvailable)
     }, [checkBiometricsEnabled, checkBiometricsAvailable])
 
@@ -92,7 +127,7 @@ export const useBiometrics = (): UseBiometricsResult => {
             })
             setIsEnabled(true)
         },
-        [commitSecret],
+        [commitSecret, setIsEnabled],
     )
 
     const enableBiometrics = useCallback(
@@ -147,26 +182,28 @@ export const useBiometrics = (): UseBiometricsResult => {
     // already enabled; never re-prompts the OS biometric sheet (we already
     // have the user authenticated via PIN at the call site).
     const refreshBiometricsBinding = useCallback(async (): Promise<void> => {
-        if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) return
+        // Goes through the reconciling check, not a bare `hasSecret`, so a PIN
+        // change cannot re-write a blob whose OS enrollment is already gone.
+        if (!(await checkBiometricsEnabled())) return
         await withSecret(PIN_RECORD_KEY_ID, async pinData => {
             await writeBiometricBlob(pinData)
         })
-    }, [hasSecret, withSecret, writeBiometricBlob])
+    }, [checkBiometricsEnabled, withSecret, writeBiometricBlob])
 
     const disableBiometrics = useCallback(async () => {
         await removeSecret(BIOMETRIC_BLOB_KEY_ID)
         setIsEnabled(false)
-    }, [removeSecret])
+    }, [removeSecret, setIsEnabled])
 
     const authenticateWithBiometrics = useCallback(
         async (prompt?: BiometricsAuthenticatePrompt): Promise<boolean> => {
-            if (!(await checkBiometricsEnabled())) {
-                return false
-            }
-
             try {
+                if (!(await checkBiometricsEnabled())) return false
                 return await biometricsService.authenticate(prompt)
             } catch {
+                // Declared `Promise<boolean>` and callers branch on it rather
+                // than catching — the reconcile above reaches the keystore, so
+                // it has to be inside the guard too.
                 return false
             }
         },

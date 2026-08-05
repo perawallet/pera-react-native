@@ -19,8 +19,11 @@ const MAX_ERROR_LENGTH = 200
 const GENERIC_ERROR_MESSAGE = 'An error occurred during signing'
 
 /**
- * {@link AppError} subclasses carry curated, displayable messages; a generic
- * Error may leak stack traces or paths to untrusted web content.
+ * This is a JSON-RPC protocol surface exposed to untrusted web content, and is
+ * deliberately NOT localized. {@link AppError#message} is a log-only string
+ * elsewhere in the app, but it is allowed here because it is still a curated,
+ * developer-written string; a generic Error's message may leak a stack trace
+ * or filesystem path instead.
  */
 export const sanitizeErrorForWebview = (error: Error): string => {
     const message =

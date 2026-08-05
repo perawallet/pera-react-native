@@ -11,20 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
-import {
-    AppError,
-    NoConnectionError,
-    getNetworkErrorMessageKeys,
-    isPeraNetworkError,
-    logger,
-    type Optional,
-} from '@perawallet/wallet-core-shared'
 import {
     type ShowNotificationParams,
     type NotifierRoot,
 } from 'react-native-notifier'
+import { resolveErrorCopy } from '../i18n/resolveErrorCopy'
 import { useToast } from './useToast'
 import { useAlgodErrorMessage } from './useAlgodErrorMessage'
 import { useLanguage } from './useLanguage'
@@ -42,22 +34,10 @@ type UseErrorToastResult = {
 /**
  * Centralized error → toast dispatcher.
  *
- * Routes by error type so each call site stays one line:
- *   - {@link PeraNetworkError} → localized network-taxonomy copy (must be
- *                                checked before {@link AppError} since it's
- *                                a subclass)
- *   - {@link AlgodError}       → localized `errors.algod.<code>` title + body
- *   - {@link NoConnectionError} → localized offline copy (must be checked
- *                                 before {@link AppError} since it's a
- *                                 subclass)
- *   - {@link AppError}         → fallback title + the error's user-facing message
- *   - any other Error          → run through the algod parser; if recognized,
- *                                use that translation; else generic fallback
- *   - non-Error                → generic fallback
- *
- * When `config.debugEnabled` is true, the raw error message is appended to the
- * body so developers can see the underlying detail without losing the
- * user-facing copy.
+ * Copy resolution lives in {@link resolveErrorCopy}; this hook only handles
+ * toast presentation. When `config.debugEnabled` is true, the raw error
+ * message is appended to the body so developers can see the underlying
+ * detail without losing the user-facing copy.
  */
 export const useErrorToast = (): UseErrorToastResult => {
     const { showToast } = useToast()
@@ -70,7 +50,12 @@ export const useErrorToast = (): UseErrorToastResult => {
             fallbackTitle?: string,
             options?: ToastOptions,
         ): void => {
-            const resolved = resolveMessage(error, fallbackTitle, t, getMessage)
+            const resolved = resolveErrorCopy(
+                error,
+                t,
+                fallbackTitle,
+                getMessage,
+            )
             const body = config.debugEnabled
                 ? appendDebug(resolved.body, error)
                 : resolved.body
@@ -81,65 +66,6 @@ export const useErrorToast = (): UseErrorToastResult => {
     )
 
     return { showError }
-}
-
-const resolveMessage = (
-    error: unknown,
-    fallbackTitle: Optional<string>,
-    t: (key: string) => string,
-    getMessage: (err: unknown) => { title: string; body: string },
-): { title: string; body: string } => {
-    if (isPeraNetworkError(error)) {
-        const { titleKey, bodyKey } = getNetworkErrorMessageKeys(error)
-        const title =
-            error.kind === 'unknown'
-                ? (fallbackTitle ?? t(titleKey))
-                : t(titleKey)
-        return { title, body: t(bodyKey) }
-    }
-
-    if (error instanceof AlgodError) {
-        return getMessage(error)
-    }
-
-    if (error instanceof NoConnectionError) {
-        const { titleKey, bodyKey } = getNetworkErrorMessageKeys(error)
-        return { title: t(titleKey), body: t(bodyKey) }
-    }
-
-    if (error instanceof AppError) {
-        return {
-            title: fallbackTitle ?? t('errors.general.title'),
-            body: error.message || t('errors.general.body'),
-        }
-    }
-
-    if (error instanceof Error) {
-        // Raw Errors from algokit/algosdk may carry an algod node message we
-        // can translate. If toAlgodError lands on `unknown_node_error` it
-        // means we couldn't recognize anything — fall back to the caller's
-        // generic title/body rather than the algod-flavored generic.
-        const algodError = toAlgodError(error)
-        if (algodError.code !== 'unknown_node_error') {
-            return getMessage(algodError)
-        }
-
-        logger.error('Unrecognized error shown as generic banner', {
-            message: error.message,
-        })
-        return {
-            title: fallbackTitle ?? t('errors.general.title'),
-            body: t('errors.general.body'),
-        }
-    }
-
-    logger.error('Unrecognized error shown as generic banner', {
-        message: String(error),
-    })
-    return {
-        title: fallbackTitle ?? t('errors.general.title'),
-        body: t('errors.general.body'),
-    }
 }
 
 const appendDebug = (body: string, error: unknown): string => {

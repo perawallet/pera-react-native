@@ -2280,10 +2280,38 @@ vi.mock('@react-native-clipboard/clipboard', () => ({
 
 // Mock @perawallet/wallet-core-shared
 vi.mock('@perawallet/wallet-core-shared', async () => {
+    // Mirrors packages/shared/src/errors/base.ts's metadata defaulting so
+    // tests can set `category`/`messageKey`/`params` and read them back.
     class AppError extends Error {
-        constructor(message: string) {
+        public readonly metadata: {
+            severity: string
+            category: string
+            messageKey?: string
+            params?: Record<string, unknown>
+            recoverable: boolean
+            retryable: boolean
+        }
+
+        constructor(
+            message: string,
+            metadata: Partial<{
+                severity: string
+                category: string
+                messageKey?: string
+                params?: Record<string, unknown>
+                recoverable: boolean
+                retryable: boolean
+            }> = {},
+        ) {
             super(message)
             this.name = 'AppError'
+            this.metadata = {
+                severity: 'medium',
+                category: 'unknown',
+                recoverable: true,
+                retryable: false,
+                ...metadata,
+            }
         }
     }
 
@@ -2516,17 +2544,34 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         isPeraServiceUnavailableError,
         isConnectivityError,
         getNetworkErrorMessageKeys,
-        ErrorSeverity: { LOW: 'low', MEDIUM: 'medium', HIGH: 'high' },
+        ErrorSeverity: {
+            LOW: 'low',
+            MEDIUM: 'medium',
+            HIGH: 'high',
+            CRITICAL: 'critical',
+        },
         ErrorCategory: {
-            WALLETCONNECT: 'walletconnect',
-            UI: 'ui',
             NETWORK: 'network',
+            VALIDATION: 'validation',
+            ACCOUNTS: 'accounts',
+            ASSETS: 'assets',
+            BLOCKCHAIN: 'blockchain',
+            STORAGE: 'storage',
+            UNKNOWN: 'unknown',
+            KMS: 'kms',
+            WALLETCONNECT: 'walletconnect',
+            STAKING: 'staking',
+            TRANSACTIONS: 'transactions',
         },
         useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
         registerStore: vi.fn(),
         clearAllStores: vi.fn(),
         resetStoreRegistry: vi.fn(),
         getStoreRegistry: vi.fn(() => []),
+        registerAccountCleanup: vi.fn(),
+        runAccountCleanups: vi.fn().mockResolvedValue(undefined),
+        resetAccountCleanupRegistry: vi.fn(),
+        getAccountCleanupRegistry: vi.fn(() => []),
         createPersistStorage: () => ({
             getItem: () => null,
             setItem: () => {},
@@ -2872,6 +2917,12 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             (account: any) =>
                 (!!account?.keyPairId && account?.type !== 'hardware') ||
                 account?.type === 'hardware',
+        ),
+        canSignProgram: vi.fn(
+            (account: any) =>
+                account?.type !== 'hardware' &&
+                !account?.rekeyAddress &&
+                !!account?.keyPairId,
         ),
         isRekeyedUnsignable: vi.fn(() => false),
         isMultisigUnsignable: vi.fn(() => false),

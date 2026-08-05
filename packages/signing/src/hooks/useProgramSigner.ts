@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { canSignArbitraryData } from '@perawallet/wallet-core-accounts'
+import { canSignProgram } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { concatBytes } from '@perawallet/wallet-core-shared'
@@ -37,9 +37,12 @@ export const useProgramSigner = () => {
             account: WalletAccount,
             program: Uint8Array,
         ): Promise<Uint8Array> => {
-            // Delegated LSigs are verified against this account's own pubkey,
-            // and hardware/watch accounts have no local raw-byte signing.
-            if (!canSignArbitraryData(account) || !account.keyPairId) {
+            // Delegated LSigs are verified against the sender's on-chain
+            // auth-addr: hardware/watch have no program-signing path, and a
+            // rekeyed account's own key would be rejected at draw time
+            // (signing via the auth account is deferred — see canSignProgram).
+            // The keyPairId re-check only narrows the type.
+            if (!canSignProgram(account) || !account.keyPairId) {
                 throw new ProgramSigningUnsupportedError(account.address)
             }
             const [sig] = await signDataWithKey(

@@ -11,6 +11,7 @@
  */
 
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
+import { runAccountCleanups } from '@perawallet/wallet-core-shared'
 import { deleteAssets, deleteAssetPrices } from '@perawallet/wallet-core-assets'
 import {
     getHeldAssetIdsByAccount,
@@ -32,9 +33,10 @@ export type CleanupRemovedAccountDataResult = {
 }
 
 /**
- * Removes an account's holdings and balance rows, then prunes any assets and
- * prices no remaining account holds or is opted into. Idempotent — safe for an
- * address with no data.
+ * Removes an account's holdings and balance rows, prunes any assets and prices
+ * no remaining account holds or is opted into, then runs any account-cleanup
+ * handlers other packages registered (e.g. transaction-row pruning).
+ * Idempotent — safe for an address with no data.
  */
 export async function cleanupRemovedAccountData({
     db = getDatabase(),
@@ -66,6 +68,12 @@ export async function cleanupRemovedAccountData({
         await deleteAssetPrices({ db, assetIds: orphans, network })
         prunedAssetIdsByNetwork[network] = orphans
     }
+
+    // Run cleanups other packages registered for this account (e.g. pruning
+    // transaction rows), which cannot be called directly from here without a
+    // package cycle. Best-effort — the registry logs and swallows handler
+    // failures so they never block the removal flow.
+    await runAccountCleanups({ db, accountAddress })
 
     const networksAffected = [...hadByNetwork.keys()]
 

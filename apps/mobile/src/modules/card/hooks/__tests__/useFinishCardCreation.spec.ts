@@ -92,8 +92,9 @@ describe('useFinishCardCreation', () => {
         expect(mockInvalidateCardQueries).toHaveBeenCalled()
         expect(mockSuccessToast).toHaveBeenCalled()
         expect(mockInfoToast).not.toHaveBeenCalled()
-        expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
-            screen: 'PeraCardAccount',
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'PeraCardAccount' },
         })
     })
 
@@ -104,8 +105,9 @@ describe('useFinishCardCreation', () => {
 
         expect(mockInfoToast).toHaveBeenCalled()
         expect(mockSuccessToast).not.toHaveBeenCalled()
-        expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
-            screen: 'PeraCardAccount',
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: { screen: 'PeraCardAccount' },
         })
     })
 })

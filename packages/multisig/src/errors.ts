@@ -13,6 +13,7 @@
 import {
     AppError,
     ErrorCategory,
+    type ErrorMetadata,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
 
@@ -24,12 +25,17 @@ export type MultisigValidationCode =
 export class MultisigValidationError extends AppError {
     public readonly code: MultisigValidationCode
 
-    constructor(code: MultisigValidationCode, message: string) {
+    constructor(
+        code: MultisigValidationCode,
+        message: string,
+        metadata?: Partial<ErrorMetadata>,
+    ) {
         super(message, {
             severity: ErrorSeverity.LOW,
             category: ErrorCategory.VALIDATION,
             recoverable: true,
             retryable: false,
+            ...metadata,
         })
         this.code = code
     }
@@ -40,6 +46,10 @@ export class ParticipantIsMultisigError extends MultisigValidationError {
         super(
             'participant_is_multisig',
             'Cannot add a shared account as a participant.',
+            {
+                messageKey:
+                    'multisig.add_participant.cannot_add_multisig_error_body',
+            },
         )
     }
 }
@@ -49,6 +59,10 @@ export class ParticipantIsWatchError extends MultisigValidationError {
         super(
             'participant_is_watch',
             'Cannot add a watch account as a participant.',
+            {
+                messageKey:
+                    'multisig.add_participant.cannot_add_watch_error_body',
+            },
         )
     }
 }
@@ -58,6 +72,10 @@ export class ThresholdExceedsParticipantsError extends MultisigValidationError {
         super(
             'threshold_exceeds_participants',
             `Threshold (${threshold}) cannot exceed participant count (${participantCount}).`,
+            {
+                messageKey: 'multisig.threshold.exceeds_participants',
+                params: { threshold, participantCount },
+            },
         )
     }
 }

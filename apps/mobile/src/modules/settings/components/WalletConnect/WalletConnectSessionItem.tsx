@@ -66,7 +66,8 @@ export const WalletConnectSessionItem = ({
                         numberOfLines={1}
                         style={styles.sessionName}
                     >
-                        {session.session?.peerMeta?.name ?? 'Unknown'}
+                        {session.session?.peerMeta?.name ??
+                            t('walletconnect.settings.unknown_peer')}
                     </PWText>
                     <PWBadge
                         variant='secondary'

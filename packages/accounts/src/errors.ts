@@ -32,6 +32,7 @@ export class AccountError extends AppError {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.ACCOUNTS,
                 retryable: false,
+                messageKey: 'errors.account.generic',
                 ...metadata,
             },
             originalError,
@@ -43,9 +44,10 @@ export class AccountError extends AppError {
  * Account has no HD wallet details
  */
 export class NoHDWalletError extends AccountError {
-    constructor(address: string) {
+    constructor(walletKeyId: string) {
         super('No Universal Wallet could be found', undefined, {
-            params: { address },
+            messageKey: 'errors.account.no_hd_wallet',
+            params: { walletKeyId },
         })
     }
 }

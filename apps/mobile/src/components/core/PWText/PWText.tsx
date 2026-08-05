@@ -26,6 +26,7 @@ import {
 } from '../constants'
 import { scaleLineHeight } from '@theme/scaling'
 import { getTestProps } from '@utils/test-id-helper'
+import { useOverflowProbe } from '@modules/locale-tour/hooks/useOverflowProbe'
 
 export type PWTextProps = {
     children?: React.ReactNode
@@ -73,6 +74,13 @@ export const PWText = ({
     const resolvedMinimumFontScale =
         minimumFontScale ??
         (adjustsFontSizeToFit ? DEFAULT_MINIMUM_FONT_SCALE : undefined)
+    const resolvedNumberOfLines = numberOfLines ?? (truncate ? 1 : undefined)
+
+    const overflowProbe = useOverflowProbe({
+        children,
+        testID,
+        numberOfLines: resolvedNumberOfLines,
+    })
 
     return (
         <RNEText
@@ -82,13 +90,15 @@ export const PWText = ({
                     lineHeight: scaledLineHeight,
                 },
             ]}
-            numberOfLines={numberOfLines ?? (truncate ? 1 : undefined)}
+            numberOfLines={resolvedNumberOfLines}
             ellipsizeMode={ellipsizeMode ?? (truncate ? 'tail' : undefined)}
             adjustsFontSizeToFit={adjustsFontSizeToFit}
             minimumFontScale={resolvedMinimumFontScale}
             maxFontSizeMultiplier={MAX_FONT_SIZE_MULTIPLIER}
             selectable={selectable}
             onPress={onPress}
+            onLayout={overflowProbe.onLayout}
+            onTextLayout={overflowProbe.onTextLayout}
             {...getTestProps(testID)}
             {...props}
         >

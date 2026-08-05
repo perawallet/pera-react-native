@@ -38,6 +38,9 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.md,
+            // Parent column is flex-start, so the row must stretch or it
+            // sizes to content and overflows once the label scales up.
+            alignSelf: 'stretch',
         },
         icon: {
             width: theme.spacing['3xl'],
@@ -52,6 +55,8 @@ export const useStyles = makeStyles(theme => {
         },
         version: {
             color: theme.colors.textGray,
+            // RN row children need this before they will wrap.
+            flexShrink: 1,
         },
         connectionContainer: {
             padding: theme.spacing.md,

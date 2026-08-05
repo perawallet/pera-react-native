@@ -49,6 +49,16 @@ export const useQRScannerView = ({
     const { hasPermission, requestPermission } = useCameraPermission()
     const [scanningEnabled, setScanningEnabled] = useState(true)
     const [permissionDenied, setPermissionDenied] = useState(false)
+    // Camera goes still the moment a code is accepted, and a WalletConnect
+    // pairing then spends seconds on the network before any of the callbacks
+    // below fire. Without this the frozen frame is the only feedback, so a slow
+    // connect is indistinguishable from a hang (PERA-4748).
+    //
+    // Set for every handled type, not just WalletConnect — the browser paths
+    // are also slow and ASSET_OPT_IN dispatches detached. Hence the neutral
+    // copy: most types resolve in a frame, so the overlay is a brief flash and
+    // must not claim to be "connecting" to anything.
+    const [isHandling, setIsHandling] = useState(false)
 
     const { handleDeepLink, isValidDeepLink, parseDeeplink } = useDeepLink()
 
@@ -71,6 +81,7 @@ export const useQRScannerView = ({
             handlingRef.current = false
             setScanningEnabled(true)
         }
+        setIsHandling(false)
     }, [isVisible])
 
     // Handlers passed down to QRCameraScanner, which wires them into the native
@@ -102,11 +113,13 @@ export const useQRScannerView = ({
                 // `replace` here would discard the screen the user was on,
                 // leaving destinations like Staking / AssetDetails with no
                 // back path.
+                setIsHandling(true)
                 void handleDeepLink(
                     url,
                     false,
                     'qr',
                     () => {
+                        setIsHandling(false)
                         // Dispatcher toasted the failure where a toast
                         // applies (capability-gated CARDS/SELL drop silently —
                         // toast follow-up tracked). Close the
@@ -117,6 +130,7 @@ export const useQRScannerView = ({
                         onClose?.()
                     },
                     () => {
+                        setIsHandling(false)
                         // Log only the parsed type, never the raw scanned
                         // string: a RECOVER_ADDRESS payload is a mnemonic. The
                         // logger's redactor would scrub it, but we don't hand
@@ -135,11 +149,13 @@ export const useQRScannerView = ({
                         // network). The provider already surfaced a toast on
                         // this Modal's own notifier, so keep the scanner open
                         // and re-arm it for another scan instead of closing.
+                        setIsHandling(false)
                         handlingRef.current = false
                         setScanningEnabled(true)
                     },
                 )
             } catch (error) {
+                setIsHandling(false)
                 handlingRef.current = false
                 logger.error('QRScannerView: QR scanner error:', { error })
             }
@@ -180,6 +196,7 @@ export const useQRScannerView = ({
         hasPermission,
         scanningEnabled,
         permissionDenied,
+        isHandling,
         device,
         onBarcodeScanned,
         onError,

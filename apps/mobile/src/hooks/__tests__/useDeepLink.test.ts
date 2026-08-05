@@ -80,6 +80,19 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     decodeFromBase64: vi.fn((b64: string) =>
         Uint8Array.from(Buffer.from(b64, 'base64')),
     ),
+    ErrorCategory: {
+        NETWORK: 'network',
+        VALIDATION: 'validation',
+        ACCOUNTS: 'accounts',
+        ASSETS: 'assets',
+        BLOCKCHAIN: 'blockchain',
+        STORAGE: 'storage',
+        UNKNOWN: 'unknown',
+        KMS: 'kms',
+        WALLETCONNECT: 'walletconnect',
+        STAKING: 'staking',
+        TRANSACTIONS: 'transactions',
+    },
 }))
 
 // useDeepLink reads the device's biometric level to gate passkey deeplinks.
@@ -303,6 +316,17 @@ vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
 
 vi.mock('@modules/gift-card/components/BidaliContent', () => ({
     BidaliContent: vi.fn(),
+}))
+
+const { mockRunTourStep } = vi.hoisted(() => ({
+    mockRunTourStep: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@modules/locale-tour/registry', () => ({
+    getLocaleTourRunner: () => ({
+        runTourStep: mockRunTourStep,
+        runTour: vi.fn().mockResolvedValue(undefined),
+    }),
 }))
 
 const { mockSetPendingAmountBaseUnits } = vi.hoisted(() => ({
@@ -1622,6 +1646,30 @@ describe('useDeepLink', () => {
         })
 
         expect(mockOnError).toHaveBeenCalled()
+    })
+
+    describe('the locale-tour deeplink', () => {
+        it('dispatches to runTourStep', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: 'DEV_LOCALE_TOUR',
+                locale: 'en-XA',
+                step: 'scr-home',
+            })
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/dev/locale-tour?locale=en-XA&step=scr-home',
+                    false,
+                    'deeplink',
+                )
+            })
+
+            expect(mockRunTourStep).toHaveBeenCalledWith({
+                stepId: 'scr-home',
+                locale: 'en-XA',
+            })
+        })
     })
 })
 

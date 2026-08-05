@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { DeeplinkType } from './types'
+import { DeeplinkType, type DevLocaleTourDeeplinkType } from './types'
 
 /**
  * Whether web content may fire a given deeplink at the app.
@@ -25,10 +25,20 @@ import { DeeplinkType } from './types'
  * can never be admitted by forgetting about this file. Default-deny, because
  * the failure mode of the opposite default is a phishing primitive
  * (PERA-4666).
+ *
+ * The locale tour is the one excluded key: its type has no runtime member to
+ * write here (see types.ts), and naming it as a bare string would put the tag
+ * back into release bundles that the resolver swap exists to keep it out of.
+ * `isOriginGatedDeeplinkType` reads an absent entry as gated, so excluding it
+ * is default-deny too — and a dev build can still load the Discover webview,
+ * where page content must never be able to drive in-app navigation.
  */
 export type DeeplinkPagePolicy = 'page-allowed' | 'origin-gated'
 
-export const DEEPLINK_PAGE_POLICY: Record<DeeplinkType, DeeplinkPagePolicy> = {
+export const DEEPLINK_PAGE_POLICY: Record<
+    Exclude<DeeplinkType, DevLocaleTourDeeplinkType>,
+    DeeplinkPagePolicy
+> = {
     // --- Pure navigation ------------------------------------------------
     [DeeplinkType.HOME]: 'page-allowed',
     [DeeplinkType.CARDS]: 'page-allowed',
@@ -75,9 +85,14 @@ export const DEEPLINK_PAGE_POLICY: Record<DeeplinkType, DeeplinkPagePolicy> = {
     [DeeplinkType.ASSET_INBOX]: 'origin-gated',
 }
 
+// Widened, not cast: lets the lookup below accept any DeeplinkType while the
+// map above stays exhaustive over everything it is required to classify.
+const POLICY_BY_TYPE: Partial<Record<DeeplinkType, DeeplinkPagePolicy>> =
+    DEEPLINK_PAGE_POLICY
+
 /**
  * True when only the trusted origin may fire this deeplink. Anything not
  * explicitly marked `page-allowed` is gated.
  */
 export const isOriginGatedDeeplinkType = (type: DeeplinkType): boolean =>
-    DEEPLINK_PAGE_POLICY[type] !== 'page-allowed'
+    POLICY_BY_TYPE[type] !== 'page-allowed'

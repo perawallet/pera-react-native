@@ -14,6 +14,7 @@ import { createElement, useCallback } from 'react'
 import { useCardStore } from '@perawallet/wallet-core-card'
 import {
     canSignArbitraryData,
+    canSignProgram,
     isAlgo25Account,
     isHardwareWalletAccount,
     isHDWalletAccount,
@@ -57,16 +58,13 @@ export const isSigningCapableFundingSource = (
 
 /**
  * Whether `account` can turn ON auto funding, i.e. sign the delegated AutoDraw
- * LSig program. This needs a local key — hardware (Ledger) accounts can't sign
- * an LSig program at all, a PERMANENT limitation, unlike the temporary ARC-60
- * creation restriction in {@link isSigningCapableFundingSource}. Keep this
- * distinct from the creation check: once ARC-60 lets Ledger create a card,
- * Auto must still be greyed out for it. Watch/rekeyed accounts also fail here
- * but are already excluded as funding sources, so in practice this screens
- * out Ledger.
+ * LSig program. Ledger can never do this — a PERMANENT limitation, unlike the
+ * temporary ARC-60 creation restriction in
+ * {@link isSigningCapableFundingSource}. Keep the two distinct: once ARC-60
+ * lets Ledger create a card, Auto must still be greyed out for it.
  */
 export const canAutoFund = (account: WalletAccount): boolean =>
-    canSignArbitraryData(account) && account.keyPairId != null
+    canSignProgram(account)
 
 export type UseCardFundingSourcePickerResult = {
     /**

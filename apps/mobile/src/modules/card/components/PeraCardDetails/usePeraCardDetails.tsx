@@ -14,7 +14,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Linking, Platform } from 'react-native'
 import {
     CardStatus,
-    FundingType,
     useCardDetailsMutation,
     useCardIssuance,
     useCardStore,
@@ -33,6 +32,7 @@ import { useRequirePinVerification } from '@modules/security'
 import {
     useCardErrorToast,
     useCardFundingSourcePicker,
+    useIsCardAutoFundingActive,
     useOpenCardSupport,
 } from '../../hooks'
 // Imported directly (not via the hooks barrel) to avoid an import cycle: the
@@ -141,8 +141,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     const fundingAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
     )
-    const selectedFundingType = useCardStore(state => state.selectedFundingType)
-    const isAutoFunding = selectedFundingType === FundingType.Auto
+    const isAutoFunding = useIsCardAutoFundingActive()
     const fundingTypeLabel = isAutoFunding
         ? t('peraCard.setup_status.funding_type_auto_title')
         : t('peraCard.setup_status.funding_type_manual_title')
@@ -370,6 +369,10 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     // safe path is: switch to Manual → change account → re-enable Auto.
     // TODO(card): unify change-funding onto useAutoDrawSwitch and lift this.
     const performChangeFunding = useCallback(async () => {
+        // Currently unreachable: the only entry point left is Connect, which
+        // renders only with no account linked, and Auto needs one. Kept for
+        // when the Change link returns — see the TODO in
+        // CardFundingAccountSection.
         if (isAutoFunding) {
             infoToast(
                 t('peraCard.account.funding_change_requires_manual_title'),

@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render, screen, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-    AddressEntryField,
-    extractAddressFromScannedUrl,
-} from '../AddressEntryField'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { parseDeeplink } from '@hooks/deeplink/parser'
+import { AddressEntryField } from '../AddressEntryField'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    isValidAlgorandAddress: vi.fn(),
+const { mockResolveScannedAddress, scannerProps } = vi.hoisted(() => ({
+    mockResolveScannedAddress: vi.fn(),
+    // Captures the props the field passes down, so a scan can be driven
+    // without mounting the real scanner.
+    scannerProps: { current: null } as {
+        current: null | { isVisible: boolean; onSuccess: (url: string) => void }
+    },
 }))
 
-vi.mock('@hooks/deeplink/parser', () => ({
-    parseDeeplink: vi.fn(),
+vi.mock('@hooks/useScannedAddress', () => ({
+    useScannedAddress: () => mockResolveScannedAddress,
 }))
 
 // QRScannerView is now always mounted (isVisible toggles it, it's never
@@ -33,11 +33,21 @@ vi.mock('@hooks/deeplink/parser', () => ({
 // lightweight render tree doesn't set up. This spec only cares about
 // AddressEntryField's own input/scan-icon behavior, not scanner internals.
 vi.mock('@components/QRScannerView', () => ({
-    QRScannerView: () => null,
+    QRScannerView: (props: {
+        isVisible: boolean
+        onSuccess: (url: string) => void
+    }) => {
+        scannerProps.current = props
+        return null
+    },
     scannerNotifier: { current: null },
 }))
 
 describe('AddressEntryField', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
     it('renders correctly', () => {
         render(<AddressEntryField />)
         expect(screen.getByRole('textbox')).toBeTruthy()
@@ -47,62 +57,39 @@ describe('AddressEntryField', () => {
         render(<AddressEntryField allowQRCode />)
         expect(screen.getByRole('textbox')).toBeTruthy()
     })
-})
 
-describe('extractAddressFromScannedUrl', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
-        vi.mocked(parseDeeplink).mockReturnValue(null)
-    })
-
-    it('returns raw address when it is a valid Algorand address', () => {
-        const rawAddress =
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
-
-        expect(extractAddressFromScannedUrl(rawAddress)).toBe(rawAddress)
-        expect(parseDeeplink).not.toHaveBeenCalled()
-    })
-
-    it('extracts address from algorand:// deeplink with address field', () => {
-        const address = 'EXTRACTED_ADDRESS_123'
-        vi.mocked(parseDeeplink).mockReturnValue({
-            type: 'ADDRESS_ACTIONS',
-            address,
-            sourceUrl: `algorand://${address}`,
-        } as ReturnType<typeof parseDeeplink>)
-
-        expect(extractAddressFromScannedUrl(`algorand://${address}`)).toBe(
-            address,
+    it('fills the field with a scanned address', () => {
+        const address = 'A'.repeat(58)
+        mockResolveScannedAddress.mockReturnValue(address)
+        const onChangeText = vi.fn()
+        const onScanned = vi.fn()
+        render(
+            <AddressEntryField
+                allowQRCode
+                onChangeText={onChangeText}
+                onScanned={onScanned}
+            />,
         )
+
+        act(() => scannerProps.current?.onSuccess(address))
+
+        expect(onChangeText).toHaveBeenCalledWith(address)
+        expect(onScanned).toHaveBeenCalledWith(address)
     })
 
-    it('extracts receiverAddress from transfer deeplink', () => {
-        const receiverAddress = 'RECEIVER_ADDRESS_456'
-        vi.mocked(parseDeeplink).mockReturnValue({
-            type: 'ALGO_TRANSFER',
-            receiverAddress,
-            sourceUrl: 'algorand://...',
-        } as ReturnType<typeof parseDeeplink>)
-
-        expect(extractAddressFromScannedUrl('algorand://...')).toBe(
-            receiverAddress,
+    it('leaves the field alone when the QR carries no address', () => {
+        mockResolveScannedAddress.mockReturnValue(null)
+        const onChangeText = vi.fn()
+        render(
+            <AddressEntryField
+                allowQRCode
+                onChangeText={onChangeText}
+            />,
         )
-    })
 
-    it('returns null for unsupported URL', () => {
-        expect(
-            extractAddressFromScannedUrl('https://random-site.com'),
-        ).toBeNull()
-    })
+        act(() => scannerProps.current?.onSuccess('perawallet://home'))
 
-    it('returns null when deeplink has no address fields', () => {
-        vi.mocked(parseDeeplink).mockReturnValue({
-            type: 'HOME',
-            sourceUrl: 'perawallet://home',
-        } as ReturnType<typeof parseDeeplink>)
-
-        expect(extractAddressFromScannedUrl('perawallet://home')).toBeNull()
+        expect(mockResolveScannedAddress).toHaveBeenCalledTimes(1)
+        expect(onChangeText).not.toHaveBeenCalled()
     })
 })

@@ -19,7 +19,7 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendEmail } from '@hooks/useSendEmail'
-import { type PeraCardStackParamList } from '../../routes/types'
+import { type PeraCardAccountStackParamList } from '../../routes/types'
 import { formatCardTransactionDateTime } from '../../utils/cardTransactions'
 
 type UseCardTransactionDetailScreenResult = {
@@ -36,7 +36,10 @@ export const useCardTransactionDetailScreen =
     (): UseCardTransactionDetailScreenResult => {
         const route =
             useRoute<
-                RouteProp<PeraCardStackParamList, 'CardTransactionDetail'>
+                RouteProp<
+                    PeraCardAccountStackParamList,
+                    'CardTransactionDetail'
+                >
             >()
         // Guarded: a params-less navigate should land on the not-found state,
         // not crash on the destructure.

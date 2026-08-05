@@ -46,6 +46,11 @@ export type UseAppBootstrapResult = {
     retryBootstrap: () => void
 }
 
+// Ceiling on how long the splash may stay up once bootstrap has finished, for
+// the case where no frames are being produced and the rAF pair never runs. Long
+// enough that a foreground start always hides on the frame path instead.
+const SPLASH_HIDE_BACKSTOP_MS = 1000
+
 const updateQueryHeaders = () => {
     const deviceInfo = getProvider().deviceInfo
     const headers = new Map<string, string>()
@@ -80,8 +85,16 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
         const runBootstrap = async () => {
             try {
-                const { token } = await provider.initialize()
-                setFcmToken(token ?? null)
+                // Awaits crash reporting, remote config, analytics and SSL
+                // pinning — which the calls below genuinely depend on — but not
+                // push registration. That is bounded at several seconds and used
+                // to hold the splash for the whole round trip on a slow or
+                // offline start (PERA-4727); nothing in bootstrap needs the
+                // token, so it lands whenever it lands.
+                const { notifications } = await provider.initialize()
+                void notifications.then(({ token }) =>
+                    setFcmToken(token ?? null),
+                )
 
                 // do startup hydration and setup in parallel to speed up time
                 // to interactive. Keystore/database failures must fail the whole
@@ -127,11 +140,29 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 logger.error('App bootstrap failed', { error: err })
                 setInitError(true)
             } finally {
-                // we defer the hiding so the initial layout can happen. Runs on
-                // both success and error paths so the native splash never sticks.
-                setTimeout(() => {
+                // Deferred so the initial layout lands before the native splash
+                // goes away. Two frames is what that actually needs; the
+                // previous flat 200ms charged every cold start the full delay
+                // however fast the first paint was (PERA-4727).
+                //
+                // The timer is a backstop, not a duplicate: rAF does not fire
+                // while the app is producing no frames, so a cold start that
+                // begins in the background — push-launched, or iOS prewarming —
+                // would otherwise sit on the splash until the user foregrounds
+                // it. `setTimeout` fires regardless, which is the one property
+                // the old code had and this must not lose. Whichever runs first
+                // wins; `hideSplash` is idempotent.
+                let splashHidden = false
+                const hideSplash = () => {
+                    if (splashHidden) return
+                    splashHidden = true
                     void SplashScreen.hideAsync()
-                }, 200)
+                }
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(hideSplash)
+                })
+                setTimeout(hideSplash, SPLASH_HIDE_BACKSTOP_MS)
             }
         }
 
