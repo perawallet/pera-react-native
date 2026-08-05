@@ -25,11 +25,11 @@ import {
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 import type { SigningStackParamList } from '@modules/signing/routes'
-import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
-import { resolveErrorCopy } from '../../../../i18n/resolveErrorCopy'
 
 type NavigationProp = StackNavigationProp<SigningStackParamList, 'Arc60Signing'>
 
