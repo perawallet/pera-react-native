@@ -36,6 +36,10 @@ export class PeraServiceUnavailableError extends AppError {
             category: ErrorCategory.NETWORK,
             retryable: false,
             recoverable: false,
+            messageKey: 'errors.pera_service.unavailable',
+            // Log context only — the copy deliberately says "this network"
+            // rather than naming it, since the network is an internal concept.
+            params: { network },
         })
         this.network = network
     }

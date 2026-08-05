@@ -697,6 +697,9 @@
                 "body": "We didn't get a response in time. Please try again."
             }
         },
+        "pera_service": {
+            "unavailable": "Pera services aren't available on this network. Switch to MainNet to use this feature."
+        },
         "api": {
             "generic": {
                 "title": "Request failed",
