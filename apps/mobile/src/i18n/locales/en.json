@@ -1314,7 +1314,6 @@
             "finish_button": "Finish Account Creation",
             "creating": "Creating shared account...",
             "error_title": "Failed to create account",
-            "error_message": "Something went wrong while creating the shared account: {{error}}",
             "error_name_taken": "An account with this name already exists.",
             "duplicate_account_title": "Account already added",
             "duplicate_account_body": "A shared account with these participants and threshold is already in your wallet."
@@ -1474,8 +1473,7 @@
         },
         "create_account": {
             "processing": "Setting up your wallet...",
-            "error_title": "Failed to create account",
-            "error_message": "Something went wrong. Details: {{error}}"
+            "error_title": "Failed to create account"
         },
         "main_screen": {
             "welcome": "Welcome to \n Pera Wallet",
@@ -2713,6 +2711,7 @@
         },
         "execution": {
             "error_title": "Swap Failed",
+            "error_body": "Something went wrong during the swap. Please try again.",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled",
