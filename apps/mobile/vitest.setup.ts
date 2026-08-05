@@ -52,6 +52,7 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             getAppVersion: () => '1.0.0',
             getBuildNumber: () => '1',
             getDeviceLocale: () => 'en-US',
+            getDeviceLocales: () => ['en-US'],
             getDeviceLanguage: () => 'en',
         },
         firebase: {
@@ -141,6 +142,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             getAppVersion: () => '1.0.0',
             getBuildNumber: () => '1',
             getDeviceLocale: () => 'en-US',
+            getDeviceLocales: () => ['en-US'],
             getDeviceLanguage: () => 'en',
             getUserAgent: () => 'PeraWallet/test',
         },
@@ -2491,6 +2493,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             (value: { toFixed: (p: number) => string }, precision = 2) =>
                 `${value.toFixed(precision)}%`,
         ),
+        // i18n/index.ts calls setActiveLocale at import time — any spec that
+        // transitively imports it needs this mock to include the export.
+        getActiveLocale: vi.fn(() => 'en'),
+        setActiveLocale: vi.fn(),
         generateUniqueId: vi.fn(() => 'mock-uuid'),
         generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
         encodeToBase64: (bytes: Uint8Array) =>

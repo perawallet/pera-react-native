@@ -69,6 +69,12 @@ export class ChromeDeviceInfoService implements DeviceInfoService {
         return navigator.language
     }
 
+    getDeviceLocales(): string[] {
+        // `navigator.languages` is not guaranteed present; `navigator.language`
+        // is, so degrade to a single-entry list rather than throwing.
+        return [...(navigator.languages ?? [navigator.language])]
+    }
+
     getDeviceCountry(): string {
         return navigator.language.split('-')[1] ?? ''
     }

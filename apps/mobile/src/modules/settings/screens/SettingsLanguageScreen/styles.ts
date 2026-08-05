@@ -10,23 +10,13 @@
  limitations under the License
  */
 
-export * from './addresses'
-export * from './algo'
-export * from './errors'
-export * from './arrays'
-export * from './dates'
-export * from './store-registry'
-export * from './account-cleanup-registry'
-export * from './decimal-config'
-export * from './enums'
-export * from './json'
-export * from './strings'
-export * from './bounds'
-export * from './logging'
-export * from './locale'
-export * from './tracer'
-export * from './objects'
-export * from './async'
-export * from './urls'
-export * from './uuid'
-export * from './types'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => {
+    return {
+        container: {
+            flexDirection: 'column',
+            gap: theme.spacing.md,
+        },
+    }
+})

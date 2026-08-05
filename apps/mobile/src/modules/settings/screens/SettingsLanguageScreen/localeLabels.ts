@@ -10,23 +10,15 @@
  limitations under the License
  */
 
-export * from './addresses'
-export * from './algo'
-export * from './errors'
-export * from './arrays'
-export * from './dates'
-export * from './store-registry'
-export * from './account-cleanup-registry'
-export * from './decimal-config'
-export * from './enums'
-export * from './json'
-export * from './strings'
-export * from './bounds'
-export * from './logging'
-export * from './locale'
-export * from './tracer'
-export * from './objects'
-export * from './async'
-export * from './urls'
-export * from './uuid'
-export * from './types'
+const LOCALE_LABELS: Readonly<Record<string, string>> = {
+    en: 'English',
+}
+
+/**
+ * Language names are shown in their own language, not translated into the
+ * active UI language — the standard convention for language pickers, and it
+ * sidesteps needing a translation to name a translation. Falls back to the
+ * raw tag for any locale without an entry (harmless today: only `en` ships).
+ */
+export const getLocaleLabel = (locale: string): string =>
+    LOCALE_LABELS[locale] ?? locale

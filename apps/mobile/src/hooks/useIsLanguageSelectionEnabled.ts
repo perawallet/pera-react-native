@@ -10,23 +10,20 @@
  limitations under the License
  */
 
-export * from './addresses'
-export * from './algo'
-export * from './errors'
-export * from './arrays'
-export * from './dates'
-export * from './store-registry'
-export * from './account-cleanup-registry'
-export * from './decimal-config'
-export * from './enums'
-export * from './json'
-export * from './strings'
-export * from './bounds'
-export * from './logging'
-export * from './locale'
-export * from './tracer'
-export * from './objects'
-export * from './async'
-export * from './urls'
-export * from './uuid'
-export * from './types'
+import {
+    RemoteConfigKeys,
+    useRemoteConfig,
+} from '@perawallet/wallet-core-remote-config'
+
+/**
+ * Language selection ships dark: the picker exists but stays hidden until
+ * Remote Config explicitly turns it on. Unlike Quantum Accounts, there's no
+ * dev/staging carve-out — nothing to test yet beyond `en`.
+ */
+export const useIsLanguageSelectionEnabled = (): boolean => {
+    const remoteConfig = useRemoteConfig()
+    return remoteConfig.getBooleanValue(
+        RemoteConfigKeys.enable_language_selection,
+        false,
+    )
+}

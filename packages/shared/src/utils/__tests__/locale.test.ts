@@ -10,23 +10,23 @@
  limitations under the License
  */
 
-export * from './addresses'
-export * from './algo'
-export * from './errors'
-export * from './arrays'
-export * from './dates'
-export * from './store-registry'
-export * from './account-cleanup-registry'
-export * from './decimal-config'
-export * from './enums'
-export * from './json'
-export * from './strings'
-export * from './bounds'
-export * from './logging'
-export * from './locale'
-export * from './tracer'
-export * from './objects'
-export * from './async'
-export * from './urls'
-export * from './uuid'
-export * from './types'
+import { describe, it, expect, afterEach } from 'vitest'
+import { getActiveLocale, setActiveLocale } from '../locale'
+
+describe('utils/locale', () => {
+    afterEach(() => {
+        setActiveLocale('en')
+    })
+
+    it('defaults to en before anything sets it', () => {
+        expect(getActiveLocale()).toBe('en')
+    })
+
+    it('returns whatever was last set', () => {
+        setActiveLocale('de')
+        expect(getActiveLocale()).toBe('de')
+
+        setActiveLocale('pt-BR')
+        expect(getActiveLocale()).toBe('pt-BR')
+    })
+})

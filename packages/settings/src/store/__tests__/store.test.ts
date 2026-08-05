@@ -129,6 +129,7 @@ describe('services/settings/store', () => {
             result.current.setTheme('dark')
             result.current.setPrivacyMode(true)
             result.current.setPreference('test', 'value')
+            result.current.setLanguage('de')
         })
 
         act(() => {
@@ -138,5 +139,63 @@ describe('services/settings/store', () => {
         expect(result.current.theme).toBe('system')
         expect(result.current.privacyMode).toBe(false)
         expect(result.current.preferences).toEqual({})
+        expect(result.current.language).toBe('system')
+    })
+
+    test('store initializes with language "system"', async () => {
+        const { useSettingsStore } = await import('../store')
+
+        const { result } = renderHook(() => useSettingsStore())
+
+        expect(result.current.language).toBe('system')
+    })
+
+    test('setLanguage updates language state', async () => {
+        const { useSettingsStore } = await import('../store')
+
+        const { result } = renderHook(() => useSettingsStore())
+
+        act(() => {
+            result.current.setLanguage('de')
+        })
+
+        expect(result.current.language).toBe('de')
+
+        act(() => {
+            result.current.setLanguage('system')
+        })
+
+        expect(result.current.language).toBe('system')
+    })
+})
+
+describe('services/settings/store - migrateSettingsState', () => {
+    test('injects language "system" for pre-v2 persisted state', async () => {
+        const { migrateSettingsState } = await import('../store')
+
+        const migrated = migrateSettingsState(
+            { theme: 'dark', privacyMode: true, preferences: { a: '1' } },
+            1,
+        )
+
+        expect(migrated).toEqual({
+            theme: 'dark',
+            privacyMode: true,
+            preferences: { a: '1' },
+            language: 'system',
+        })
+    })
+
+    test('passes through state already at v2 unchanged', async () => {
+        const { migrateSettingsState } = await import('../store')
+
+        const state = {
+            theme: 'light',
+            privacyMode: false,
+            preferences: {},
+            language: 'de',
+        }
+
+        expect(migrateSettingsState(state, 2)).toEqual(state)
     })
 })

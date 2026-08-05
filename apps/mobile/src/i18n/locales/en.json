@@ -1931,6 +1931,7 @@
         "connections": "Connections",
         "currency": "Currency",
         "theme": "Theme",
+        "language": "Language",
         "developer_settings": "Developer Settings",
         "node_settings": "Node Settings",
         "feature_flags": "Feature Flags",
@@ -2121,6 +2122,7 @@
             "app_preferences_section": "App Preferences",
             "currency_title": "Currency",
             "theme_title": "Theme",
+            "language_title": "Language",
             "support_section": "Support",
             "rate_title": "Rate Pera Wallet",
             "terms_title": "Terms and Services",
@@ -2138,6 +2140,9 @@
             "system_label": "System Default",
             "light_label": "Light",
             "dark_label": "Dark"
+        },
+        "language": {
+            "system_label": "System Default"
         },
         "rating": {
             "title": "Rate your experience",

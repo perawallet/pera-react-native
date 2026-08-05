@@ -15,13 +15,17 @@ import { useSettingsStore } from '../store'
 export const useSettings = () => {
     const theme = useSettingsStore(state => state.theme)
     const privacyMode = useSettingsStore(state => state.privacyMode)
+    const language = useSettingsStore(state => state.language)
     const setTheme = useSettingsStore(state => state.setTheme)
     const setPrivacyMode = useSettingsStore(state => state.setPrivacyMode)
+    const setLanguage = useSettingsStore(state => state.setLanguage)
 
     return {
         theme,
         privacyMode,
+        language,
         setTheme,
         setPrivacyMode,
+        setLanguage,
     }
 }

@@ -87,6 +87,9 @@ const mockPlatformServices = {
         getDeviceLocale() {
             return 'testLocale'
         },
+        getDeviceLocales() {
+            return ['testLocale']
+        },
         getAppVersion() {
             return 'testVersion'
         },

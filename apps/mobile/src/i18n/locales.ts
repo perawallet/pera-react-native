@@ -49,3 +49,49 @@ export const SUPPORTED_LOCALES: ReadonlySet<string> = new Set([
     ...Object.keys(TRANSLATION_BUNDLES),
     PSEUDO_LOCALE,
 ])
+
+/**
+ * Locales whose base language resolves to a different supported tag than
+ * itself. Today only Portuguese: we ship `pt-BR`, not bare `pt`, so a device
+ * reporting `pt-PT` (base `pt`) needs redirecting there rather than falling
+ * through to `en`.
+ */
+const LOCALE_ALIASES: Readonly<Record<string, string>> = {
+    pt: 'pt-BR',
+}
+
+const baseLanguage = (tag: string): string => tag.split('-')[0].toLowerCase()
+
+/**
+ * Picks the locale i18next should activate: an explicit user override first
+ * (validated against `supportedLocales`, since a stored preference could
+ * predate a locale being dropped), then the device's ordered locale list —
+ * exact tag, then base-language match, then the `pt` alias — falling back to
+ * `BASE_LOCALE`.
+ *
+ * `supportedLocales` is required on purpose. The only correct set to pass is
+ * `getEffectiveSupportedLocales(...)` — the Remote-Config-gated one. Defaulting
+ * it to the raw `SUPPORTED_LOCALES` registry would let a new call site silently
+ * bypass every gate just by omitting the argument.
+ */
+export const resolveLocale = (
+    override: string,
+    deviceLocales: readonly string[],
+    supportedLocales: ReadonlySet<string>,
+): string => {
+    if (override !== 'system' && supportedLocales.has(override)) {
+        return override
+    }
+
+    for (const tag of deviceLocales) {
+        if (supportedLocales.has(tag)) return tag
+
+        const base = baseLanguage(tag)
+        if (supportedLocales.has(base)) return base
+
+        const aliased = LOCALE_ALIASES[base]
+        if (aliased && supportedLocales.has(aliased)) return aliased
+    }
+
+    return BASE_LOCALE
+}
