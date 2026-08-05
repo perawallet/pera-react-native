@@ -83,7 +83,7 @@ export type MeldQuote = {
     paymentMethodType: string
     serviceProvider: string
     institutionName: Nullable<string>
-    lowKyc: boolean
+    lowKyc: Nullable<boolean>
 }
 
 export type RampQuote = XoQuote | MeldQuote

@@ -83,6 +83,6 @@ export const transformRampQuote = (item: RampQuoteApiResponse): RampQuote => {
         paymentMethodType: response.paymentMethodType,
         serviceProvider: response.serviceProvider,
         institutionName: response.institutionName,
-        lowKyc: response.lowKyc,
+        lowKyc: response.lowKyc ?? null,
     }
 }
