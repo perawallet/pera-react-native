@@ -20,7 +20,7 @@ import {
 import { logger } from '@perawallet/wallet-core-shared'
 import { navigationRef } from '@routes/navigationRef'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
+import { useErrorToast } from '@hooks/useErrorToast'
 import type { PostCreateReturnTarget } from '@modules/onboarding/routes/types'
 
 // Push (not navigate) a fresh AddAccount stack, one frame out so the sheet
@@ -59,7 +59,7 @@ export type UseCardAddAccountResult = {
 
 export const useCardAddAccount = (): UseCardAddAccountResult => {
     const { t } = useLanguage()
-    const { errorToast } = useToast()
+    const { showError } = useErrorToast()
     const { buildHdWalletAccount } = useCreateAccount()
     const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
     const { hasMultipleHDWallets } = useHDWalletGroups()
@@ -96,12 +96,7 @@ export const useCardAddAccount = (): UseCardAddAccountResult => {
                 logger.warn('[card] create account failed', {
                     error: `${error}`,
                 })
-                errorToast(
-                    t('onboarding.create_account.error_title'),
-                    t('onboarding.create_account.error_message', {
-                        error: `${error}`,
-                    }),
-                )
+                showError(error, t('onboarding.create_account.error_title'))
             }
         }
         void create()
@@ -110,7 +105,7 @@ export const useCardAddAccount = (): UseCardAddAccountResult => {
         hasHDWallet,
         buildNextHDAccount,
         buildHdWalletAccount,
-        errorToast,
+        showError,
         t,
     ])
 

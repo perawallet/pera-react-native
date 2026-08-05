@@ -26,7 +26,7 @@ import {
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { trackEvent, OnboardingEvent, AnalyticsMetadataKey } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { OnboardingStackParamList } from '../../routes'
 import {
@@ -48,7 +48,7 @@ export const useNameAccountScreen = () => {
     const { buildHdWalletAccount, saveAccount } = useCreateAccount()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { exitAccountFlow } = useExitAccountFlow()
     const { seedIdOf } = useKMS()
@@ -145,14 +145,7 @@ export const useNameAccountScreen = () => {
             // Pera Card Connect Funds picker); otherwise exit to Home as usual.
             exitAccountFlow(route.params?.returnTo)
         } catch (error) {
-            // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
-            showToast({
-                title: t('onboarding.create_account.error_title'),
-                body: t('onboarding.create_account.error_message', {
-                    error: `${error}`,
-                }),
-                type: 'error',
-            })
+            showError(error, t('onboarding.create_account.error_title'))
         } finally {
             setIsCreating(false)
         }

@@ -11,11 +11,11 @@
  */
 
 import { useMemo } from 'react'
-import { useLanguage } from '@hooks/useLanguage'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { config } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { resolveErrorCopy } from '../../../../i18n/resolveErrorCopy'
+import { useLanguage } from '@hooks/useLanguage'
+import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 
 export type UseWalletConnectErrorContentResult = {
     /** Fully resolved, ready-to-render body — never pass this through t() again. */

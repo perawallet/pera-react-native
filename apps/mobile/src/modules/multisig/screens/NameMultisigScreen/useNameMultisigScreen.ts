@@ -28,6 +28,7 @@ import { useDeviceID } from '@perawallet/wallet-core-device'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
 import {
     useShouldPlayConfetti,
@@ -72,6 +73,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { t } = useLanguage()
     const { errorToast } = useToast()
+    const { showError } = useErrorToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { exitAccountFlow } = useExitAccountFlow()
     const { network } = useNetwork()
@@ -168,12 +170,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
             allowProgrammaticNavigation()
             exitAccountFlow()
         } catch (error) {
-            errorToast(
-                t('multisig.name.error_title'),
-                t('multisig.name.error_message', {
-                    error: `${error}`,
-                }),
-            )
+            showError(error, t('multisig.name.error_title'))
         } finally {
             setIsCreating(false)
         }
@@ -194,6 +191,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         exitAccountFlow,
         allowProgrammaticNavigation,
         errorToast,
+        showError,
         t,
     ])
 

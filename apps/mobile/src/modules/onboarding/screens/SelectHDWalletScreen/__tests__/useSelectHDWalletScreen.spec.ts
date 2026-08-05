@@ -40,6 +40,13 @@ vi.mock('@react-navigation/native', async () => {
 })
 
 const mockShowToast = vi.fn()
+const mockShowError = vi.fn()
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({
+        showError: mockShowError,
+    }),
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         showToast: mockShowToast,
@@ -331,8 +338,9 @@ describe('useSelectHDWalletScreen', () => {
             result.current.handleCreateNewWallet()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            expect.any(Error),
+            'onboarding.create_account.error_title',
         )
     })
 
@@ -431,8 +439,9 @@ describe('useSelectHDWalletScreen', () => {
             const { result } = renderHook(() => useSelectHDWalletScreen())
 
             await waitFor(() =>
-                expect(mockShowToast).toHaveBeenCalledWith(
-                    expect.objectContaining({ type: 'error' }),
+                expect(mockShowError).toHaveBeenCalledWith(
+                    expect.any(Error),
+                    'onboarding.create_account.error_title',
                 ),
             )
             expect(result.current.isAutoSelecting).toBe(false)

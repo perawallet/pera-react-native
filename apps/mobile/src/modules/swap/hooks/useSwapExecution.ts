@@ -212,8 +212,10 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     )
                 validateSwapGroupAgainstQuote(signableDisplayable, quote)
             } catch (e) {
-                const message =
-                    e instanceof Error ? e.message : 'Swap validation failed'
+                // Raw text goes to the log, never to `message` — that string is
+                // rendered as the toast body in useSwapForm.
+                logger.warn('[swap] validation failed', { error: `${e}` })
+                const message = t('swap.execution.error_body')
                 setError({ phase: 'prepare', message })
                 setStatus('error')
                 void reportSwapFailure(
@@ -279,11 +281,14 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     return { kind: 'pending-cosign' }
                 } catch (e) {
                     const isRejection = isUserRejectionError(e)
+                    if (!isRejection) {
+                        logger.warn('[swap] propose failed', {
+                            error: `${e}`,
+                        })
+                    }
                     const message = isRejection
                         ? t('swap.execution.user_rejected')
-                        : e instanceof Error
-                          ? e.message
-                          : 'Failed to propose transactions'
+                        : t('swap.execution.error_body')
                     setError({ phase: 'signing', message })
                     setStatus('error')
                     if (isRejection) {
@@ -315,11 +320,12 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         : []
             } catch (e) {
                 const isRejection = isUserRejectionError(e)
+                if (!isRejection) {
+                    logger.warn('[swap] signing failed', { error: `${e}` })
+                }
                 const message = isRejection
                     ? t('swap.execution.user_rejected')
-                    : e instanceof Error
-                      ? e.message
-                      : 'Failed to sign transactions'
+                    : t('swap.execution.error_body')
                 setError({ phase: 'signing', message })
                 setStatus('error')
                 if (isRejection) {

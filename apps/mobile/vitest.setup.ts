@@ -2282,31 +2282,44 @@ vi.mock('@react-native-clipboard/clipboard', () => ({
 
 // Mock @perawallet/wallet-core-shared
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    // Mirrors packages/shared/src/errors/base.ts's metadata defaulting so
-    // tests can set `category`/`messageKey`/`params` and read them back.
+    // Real enum, not a hand-copied literal. It used to be duplicated here and in
+    // two deeplink specs, and nothing failed if a copy fell behind — a missing
+    // member just yields undefined, making TITLE_KEY_BY_CATEGORY[undefined]
+    // produce t(undefined) silently. base.ts has no runtime imports, so pulling
+    // it in by module path is side-effect free.
+    const { ErrorCategory } = await vi.importActual<
+        typeof import('../../packages/shared/src/errors/base')
+    >('../../packages/shared/src/errors/base')
+
+    // Mirrors packages/shared/src/errors/base.ts: the metadata defaulting, the
+    // third `originalError` argument, and the instance members consumers reach
+    // for (`timestamp`, `toJSON`, `isMinor`, `shouldReport`). `name` comes from
+    // `this.constructor.name` exactly as production does — subclass names are
+    // load-bearing, both for the integration tests that assert on them and for
+    // sanitizeErrorForWebview's relay allowlist.
+    type AppErrorMetadata = {
+        severity: string
+        category: string
+        messageKey?: string
+        params?: Record<string, unknown>
+        recoverable: boolean
+        retryable: boolean
+    }
+
     class AppError extends Error {
-        public readonly metadata: {
-            severity: string
-            category: string
-            messageKey?: string
-            params?: Record<string, unknown>
-            recoverable: boolean
-            retryable: boolean
-        }
+        public readonly metadata: AppErrorMetadata
+        public readonly originalError?: Error
+        public readonly timestamp: Date
 
         constructor(
             message: string,
-            metadata: Partial<{
-                severity: string
-                category: string
-                messageKey?: string
-                params?: Record<string, unknown>
-                recoverable: boolean
-                retryable: boolean
-            }> = {},
+            metadata: Partial<AppErrorMetadata> = {},
+            originalError?: Error,
         ) {
             super(message)
-            this.name = 'AppError'
+            this.name = this.constructor.name
+            this.originalError = originalError
+            this.timestamp = new Date()
             this.metadata = {
                 severity: 'medium',
                 category: 'unknown',
@@ -2315,20 +2328,73 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
                 ...metadata,
             }
         }
+
+        isMinor(): boolean {
+            return this.metadata.severity === 'low'
+        }
+
+        // HIGH or CRITICAL only — deliberately NOT `!isMinor()`, which would
+        // report every MEDIUM error.
+        shouldReport(): boolean {
+            return (
+                this.metadata.severity === 'high' ||
+                this.metadata.severity === 'critical'
+            )
+        }
+
+        toJSON(): Record<string, unknown> {
+            return {
+                name: this.name,
+                message: this.message,
+                metadata: this.metadata,
+                timestamp: this.timestamp,
+                stack: this.stack,
+                originalError: this.originalError?.message,
+            }
+        }
     }
 
     // Mirrors packages/shared/src/errors/network.ts — kept minimal but
     // faithful to the real `kind` taxonomy and key-mapping switch so tests
     // exercising PeraNetworkError get realistic behavior from the mock.
+    // severity/retryable mirror SEVERITY_BY_KIND / RETRYABLE_BY_KIND in the
+    // real module, so a test asserting retryability on a network error is
+    // asserting against production behaviour rather than fiction.
+    const RETRYABLE_BY_KIND: Record<string, boolean> = {
+        offline: true,
+        timeout: true,
+        server: true,
+        client: false,
+        unknown: false,
+    }
+    const SEVERITY_BY_KIND: Record<string, string> = {
+        offline: 'medium',
+        timeout: 'medium',
+        server: 'medium',
+        client: 'low',
+        unknown: 'medium',
+    }
+
     class PeraNetworkError extends AppError {
         public readonly kind: string
         public readonly status?: number
 
         constructor(
             kind: string,
-            { status }: { status?: number; originalError?: Error } = {},
+            {
+                status,
+                originalError,
+            }: { status?: number; originalError?: Error } = {},
         ) {
-            super(`[network:${kind}]`)
+            super(
+                `[network:${kind}]`,
+                {
+                    severity: SEVERITY_BY_KIND[kind] ?? 'medium',
+                    category: 'network',
+                    retryable: RETRYABLE_BY_KIND[kind] ?? false,
+                },
+                originalError,
+            )
             this.kind = kind
             this.status = status
         }
@@ -2340,8 +2406,14 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     // can reference it.
     class NoConnectionError extends AppError {
         constructor() {
-            super('No network connection found')
-            this.name = 'NoConnectionError'
+            // Real chain is NoConnectionError -> NetworkError -> AppError:
+            // NetworkError sets category network / retryable true, then
+            // NoConnectionError raises severity to HIGH.
+            super('No network connection found', {
+                severity: 'high',
+                category: 'network',
+                retryable: true,
+            })
         }
     }
 
@@ -2355,8 +2427,14 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         public readonly network: string
 
         constructor(network: string) {
-            super(`Pera services are not deployed for ${network}`)
-            this.name = 'PeraServiceUnavailableError'
+            super(`Pera services are not deployed for ${network}`, {
+                severity: 'low',
+                category: 'network',
+                retryable: false,
+                recoverable: false,
+                messageKey: 'errors.pera_service.unavailable',
+                params: { network },
+            })
             this.network = network
         }
     }
@@ -2556,19 +2634,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             HIGH: 'high',
             CRITICAL: 'critical',
         },
-        ErrorCategory: {
-            NETWORK: 'network',
-            VALIDATION: 'validation',
-            ACCOUNTS: 'accounts',
-            ASSETS: 'assets',
-            BLOCKCHAIN: 'blockchain',
-            STORAGE: 'storage',
-            UNKNOWN: 'unknown',
-            KMS: 'kms',
-            WALLETCONNECT: 'walletconnect',
-            STAKING: 'staking',
-            TRANSACTIONS: 'transactions',
-        },
+        ErrorCategory,
         useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
         registerStore: vi.fn(),
         clearAllStores: vi.fn(),
