@@ -41,9 +41,9 @@ describe('WEBVIEW_SAFE_ERROR_NAMES pinning', () => {
     // names match what the real classes produce. If a class is renamed, this
     // fails loudly here instead of silently dropping to generic copy in prod.
     it('pins the names the allowlist relies on', () => {
-        expect(
-            new Arc0001Error(Arc0001ErrorCode.InvalidInput, 'x').name,
-        ).toBe('Arc0001Error')
+        expect(new Arc0001Error(Arc0001ErrorCode.InvalidInput, 'x').name).toBe(
+            'Arc0001Error',
+        )
         expect(new UserCancelledError().name).toBe('UserCancelledError')
     })
 
@@ -95,7 +95,8 @@ describe('sanitizeErrorForWebview', () => {
     it('withholds wallet-held addresses interpolated by CannotSignError', () => {
         // Arc0001Error's docblock forbids sending held addresses to a remote
         // peer (PERA-4716); passing every AppError through violated that.
-        const address = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+        const address =
+            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
         const error = new CannotSignError(address, 'rekeyed elsewhere')
 
         expect(sanitizeErrorForWebview(error)).not.toContain(address)
@@ -103,7 +104,8 @@ describe('sanitizeErrorForWebview', () => {
     })
 
     it('withholds multisig participant addresses', () => {
-        const address = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
+        const address =
+            'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
 
         expect(
             sanitizeErrorForWebview(new NoLocalParticipantsError(address)),

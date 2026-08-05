@@ -117,8 +117,7 @@ export class WalletConnectSessionRequestExpiredError extends WalletConnectError 
                 'This connection request has expired. Start a new connection from the dApp and try again.',
             originalError,
             {
-                messageKey:
-                    'errors.walletconnect.session_request_expired_body',
+                messageKey: 'errors.walletconnect.session_request_expired_body',
             },
         )
     }
