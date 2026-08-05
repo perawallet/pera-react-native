@@ -626,10 +626,7 @@
             "no_hd_wallet": "Could not find the Universal Wallet for this account."
         },
         "blockchain": {
-            "generic": "Something went wrong accessing the blockchain.",
-            "transaction": "Something went wrong processing the transaction. Please try again and contact support if the issue persists.",
-            "invalid_transaction": "The transaction data appears to be invalid. Please try again and contact support if the issue persists.",
-            "signing": "Something went wrong signing the transaction. Please try again and contact support if the issue persists."
+            "generic": "Something went wrong accessing the blockchain."
         },
         "algod": {
             "overspend": {
