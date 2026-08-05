@@ -722,16 +722,6 @@
             "invalid_mnemonic": "The recovery passphrase appears to be invalid.",
             "required_field": "A required field is missing: {{field}}"
         },
-        "auth": {
-            "generic": "Something went wrong with the authentication.",
-            "biometric_failed": "Something went wrong with the authentication.",
-            "pin_incorrect": "Something went wrong with the authentication."
-        },
-        "storage": {
-            "generic": "Couldn't access stored data.",
-            "read_failed": "Something went wrong reading from storage.",
-            "write_failed": "Something went wrong writing to storage."
-        },
         "transaction": {
             "title": "An error occurred processing this transaction",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
@@ -742,7 +732,6 @@
             "invalid_key": "The signing key for this account is invalid.",
             "generic": "Something went wrong accessing your signing key."
         },
-        "unknown": "An unknown error occurred.",
         "walletconnect": {
             "title": "An error occurred processing an app request",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
@@ -755,9 +744,7 @@
             "session_request_expired_body": "This connection request has expired. Start a new connection from the dApp and try again."
         },
         "signing": {
-            "title": "An error occurred processing the signing request",
-            "transaction_limit_exceeded": "Too many transactions: {{count}} exceeds the maximum of {{max}}.",
-            "data_limit_exceeded": "Too many data items: {{count}} exceeds the maximum of {{max}}."
+            "title": "An error occurred processing the signing request"
         },
         "webview": {
             "invalid_method": "Invalid method {{method}}",

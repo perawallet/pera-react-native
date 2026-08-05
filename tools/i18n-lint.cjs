@@ -12,9 +12,6 @@ const REPO_ROOT = path.join(__dirname, '..')
 const WORKSPACE_ROOTS = ['apps', 'packages', 'extensions']
 
 const EXCLUDED_KEYS = [
-    // Declared as ThresholdExceedsParticipantsError's messageKey (packages/multisig/src/errors.ts);
-    // no call site constructs that error yet, so no literal t() call exists to satisfy the scan.
-    'multisig.threshold.exceeds_participants',
     'transactions.common.completed',
     'transactions.common.failed',
     'transactions.common.pending',
@@ -27,47 +24,6 @@ const EXCLUDED_KEYS = [
     'transactions.type.stpf',
     'transactions.type.hb',
     'transactions.type.unknown',
-]
-
-// Prefix patterns for keys that are excluded from the unused-key check.
-// These namespaces are resolved dynamically at runtime (template-literal keys
-// like t(`${prefix}.title`)), so the static literal-match scan below cannot see
-// them and would report false positives.
-const EXCLUDED_PREFIXES = [
-    // Error framework keys, resolved via the error class hierarchy.
-    'errors.account.',
-    'errors.blockchain.',
-    'errors.network.',
-    'errors.api.',
-    'errors.validation.',
-    'errors.auth.',
-    'errors.storage.',
-    'errors.kms.',
-    'errors.signing.',
-    'errors.unknown',
-    // Algod error codes: t(`errors.algod.${algodError.code}.title`) in useAlgodErrorMessage.ts
-    'errors.algod.',
-    // Ledger error kinds: t(`ledger.errors.${kind}`) / t(`ledger.errors.${kind}_title`)
-    'ledger.errors.',
-    // Ledger approval copy: LedgerAwaitingApprovalContent picks the namespace by
-    // operation and builds t(`${contentNs}.title`) / `.body` / `.body_noDevice`.
-    'ledger.signing.awaitingApproval.',
-    'ledger.signing.awaitingApprovalData.',
-    // ASB import error reasons: t(`onboarding.asb_import.backup.errors.${reason}`) and key.errors
-    'onboarding.asb_import.backup.errors.',
-    'onboarding.asb_import.key.errors.',
-    // Search section headers: t(`search.sections.${item.kind}`)
-    'search.sections.',
-    // Onramp status badge: t(`onramp.status.${status}`) in OnrampStatusBadge.
-    'onramp.status.',
-    // Country names: t(`countries.${code}`) for ISO 3166-1 alpha-2 codes,
-    // resolved dynamically from the ramp token's country code.
-    'countries.',
-    // Key-reg type: t(`transactions.key_reg.${keyRegType}`)
-    'transactions.key_reg.',
-    // Rekey screens build every key from i18nBaseKey/i18nPrefix props, e.g.
-    // t(`${i18nBaseKey}.expect_${index + 1}`) in RekeyIntroScreen.
-    'rekey.',
 ]
 
 // Path fragments excluded from the (advisory) hardcoded-string scan below.
@@ -250,6 +206,38 @@ function main() {
     const srcFiles = getWorkspaceSrcFiles(['.ts', '.tsx'])
     const allCode = srcFiles.map(f => fs.readFileSync(f, 'utf8')).join('\n')
 
+    // Bases of dynamically-built keys, DERIVED from the source rather than
+    // hand-listed. This replaces the old EXCLUDED_PREFIXES constant, which had
+    // to be maintained by hand, silently masked the drift Phase 1a uncovered,
+    // and carried three entries pointing at namespaces that did not exist.
+    //
+    // Two shapes produce a key no exact-match scan can see:
+    //  - a static head:   t(`errors.algod.${code}.title`)     -> 'errors.algod.'
+    //  - a variable head: t(`${i18nBaseKey}.expect_${index}`) -> the base
+    //    arrives as a literal elsewhere, e.g. i18nBaseKey='rekey.to_standard.intro'
+    //
+    // The second case is why any literal dot-path claims its descendants at dot
+    // boundaries. That also subsumes keysFor('errors.network.timeout'), which
+    // expands to `${base}.title` / `${base}.body`.
+    const templateHeads = [...allCode.matchAll(/`([a-z][\w.]*\.)\$\{/gi)].map(
+        match => match[1],
+    )
+    const literalPaths = new Set(
+        [...allCode.matchAll(/['"`]([a-z][\w]*(?:\.[\w]+)+)['"`]/gi)].map(
+            match => match[1],
+        ),
+    )
+
+    const isDynamicallyClaimed = key => {
+        if (templateHeads.some(head => key.startsWith(head))) return true
+        // Walk the key's ancestors: 'a.b.c' -> 'a.b', 'a'
+        const segments = key.split('.')
+        for (let i = segments.length - 1; i > 0; i--) {
+            if (literalPaths.has(segments.slice(0, i).join('.'))) return true
+        }
+        return false
+    }
+
     // i18next plural suffixes
     const PLURAL_SUFFIXES = ['_one', '_other', '_zero', '_two', '_few', '_many']
 
@@ -286,19 +274,12 @@ function main() {
             }
         }
 
-        const isExcludedByPrefix = EXCLUDED_PREFIXES.some(
-            prefix => key === prefix || key.startsWith(prefix),
-        )
-
         if (
             !isUsed &&
             !errorKeys.has(key) &&
             !EXCLUDED_KEYS.includes(key) &&
-            !isExcludedByPrefix
+            !isDynamicallyClaimed(key)
         ) {
-            // Also check if it's used as a translation call like t('key') or t("key") just in case
-            // Actually the above quote check covers most simple usages.
-            // Let's being conservative and just warn.
             warn(`Potentially unused key: ${key}`)
             unusedKeysCount++
         }
@@ -306,6 +287,38 @@ function main() {
 
     if (unusedKeysCount === 0) {
         log('No unused keys found.', colors.green)
+    }
+
+    // 2b. Error-key claiming check.
+    //
+    // Every `errors.*` key must be claimed by a real mechanism: a `messageKey`
+    // declaration on an error class, a `keysFor()` base, a literal t('errors…'),
+    // or a template head for the dynamically-built namespaces.
+    //
+    // The unused-key check above already blocks, but it honours EXCLUDED_KEYS
+    // and the i18n-keys.ts set as escape hatches. This one deliberately does
+    // not: error copy is the surface Phase 1a rewired, and suppressing a
+    // stranded error key is exactly the drift that effort exists to prevent.
+    // Adding an `errors.*` entry to EXCLUDED_KEYS will fail here.
+    log('\n--- Checking Error Keys Are Claimed ---', colors.blue)
+    let unclaimedErrorKeysCount = 0
+    baseKeys.forEach(key => {
+        if (!key.startsWith('errors.')) return
+
+        const isClaimed =
+            new RegExp(`['"\`]${key}['"\`]`).test(allCode) ||
+            isDynamicallyClaimed(key)
+
+        if (!isClaimed) {
+            warn(
+                `Unclaimed error key: ${key} — no messageKey, keysFor() base, or t() call resolves to it`,
+            )
+            unclaimedErrorKeysCount++
+        }
+    })
+
+    if (unclaimedErrorKeysCount === 0) {
+        log('All error keys are claimed.', colors.green)
     }
 
     // 3. Missing Keys Check (Keys used in code but missing in en.json)
@@ -411,12 +424,14 @@ function main() {
         (consistencyIssues ? 1 : 0) +
         errorKeysCount +
         unusedKeysCount +
+        unclaimedErrorKeysCount +
         missingKeysCount
 
     if (blockingIssues > 0) {
         error(
             `i18n lint failed with ${blockingIssues} blocking issue(s): ` +
                 `${unusedKeysCount} unused key(s), ${missingKeysCount} missing key(s), ` +
+                `${unclaimedErrorKeysCount} unclaimed error key(s), ` +
                 `${errorKeysCount} error-key coverage gap(s), ` +
                 `${consistencyIssues ? 'locale inconsistencies' : 'no locale inconsistencies'}. ` +
                 `See warnings above.`,
