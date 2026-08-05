@@ -14,9 +14,10 @@
 // account as a selectable target (the migration path onto post-quantum keys),
 // and rekey-OUT opens the QuantumDowngradeWarningSheet before any signing.
 //
-// Stops at asserting the sheet appears. Rekey-out CAN be signed since
-// PQ-006/PERA-4653, but the point here is that the warning gates the flow
-// before any signing — sign/submit coverage lives in send-from-quantum.test.tsx.
+// Rekey-out CAN be signed since PQ-006/PERA-4653, so the last test drives
+// past the sheet with a real Falcon key and a rejecting algod: no algod in
+// production accepts `pqsig`, which makes a failed submission the normal
+// rekey-out outcome there, and the CTA must recover from it.
 
 import {
     afterAll,
@@ -48,7 +49,11 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
+import {
+    useKMS,
+    type Algo25KeyResult,
+    type QuantumKeyResult,
+} from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
 import {
     mockAlgodAccountInformation,
@@ -66,7 +71,10 @@ import {
     ALGO25_TEST_MNEMONIC,
     HD_TEST_ADDRESS,
 } from './__fixtures__/onboarding'
-import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
+import {
+    QUANTUM_TEST_ADDRESS,
+    QUANTUM_TEST_MNEMONIC,
+} from './__fixtures__/quantum'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 
@@ -185,6 +193,34 @@ const seedRekeyOutAccounts = async (): Promise<{
     })
 
     return { quantumSource, target }
+}
+
+// Same rekey-OUT pair, but with a REAL Falcon key minted in the in-memory
+// keystore so the flow can be driven all the way through signing and submit.
+const seedSignableRekeyOutAccounts = async (): Promise<{
+    quantumSource: WalletAccount
+    target: WalletAccount
+}> => {
+    const { result: kms } = renderHook(() => useKMS())
+    let keyResult: QuantumKeyResult | null = null
+    await waitFor(async () => {
+        keyResult = await kms.current.createQuantumKey({
+            mnemonic: QUANTUM_TEST_MNEMONIC,
+        })
+        expect(keyResult).not.toBeNull()
+    })
+
+    const { quantumSource, target } = await seedRekeyOutAccounts()
+    const signableSource: WalletAccount = {
+        ...quantumSource,
+        keyPairId: keyResult!.signKeyId,
+    }
+    useAccountsStore.getState().setAccounts([signableSource, target])
+    useAccountsStore
+        .getState()
+        .setSelectedAccountAddress(signableSource.address)
+
+    return { quantumSource: signableSource, target }
 }
 
 describe('rekey quantum account (PQ-015)', () => {
@@ -346,6 +382,86 @@ describe('rekey quantum account (PQ-015)', () => {
             expect(
                 screen.queryByTestId('rekey-to-standard-success-screen'),
             ).toBeNull()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the downgrade is confirmed and algod rejects the submission, when the error toast surfaces, then the confirm CTA leaves its loading state so the user can retry',
+        async () => {
+            await enableQuantumFlag()
+            const { quantumSource, target } =
+                await seedSignableRekeyOutAccounts()
+
+            server.use(
+                http.post('*/v2/transactions', () =>
+                    HttpResponse.json(
+                        { message: 'TransactionPool.Remember: rejected' },
+                        { status: 400 },
+                    ),
+                ),
+            )
+
+            renderWithNavigation(
+                RekeyToStandardConfirmScreen,
+                'RekeyToStandardConfirm',
+                {
+                    initialParams: {
+                        sourceAddress: quantumSource.address,
+                        targetAddress: target.address,
+                    },
+                    additionalScreens: REKEY_SCREENS,
+                },
+            )
+
+            const cta = await screen.findByTestId(
+                'rekey-to-standard-confirm-cta',
+            )
+            await waitFor(() => {
+                expect((cta as HTMLButtonElement).disabled).toBe(false)
+            })
+            fireEvent.click(cta)
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId('quantum-downgrade-warning-sheet'),
+                ).toBeTruthy()
+            })
+            fireEvent.click(
+                screen.getByText('rekey.quantum_downgrade_warning.confirm'),
+            )
+
+            await waitFor(
+                () => {
+                    expect(Notifier.showNotification).toHaveBeenCalled()
+                },
+                { timeout: 25_000 },
+            )
+
+            await waitFor(() => {
+                expect(screen.queryByTestId('activity-indicator')).toBeNull()
+            })
+            expect((cta as HTMLButtonElement).disabled).toBe(false)
+
+            vi.mocked(Notifier.showNotification).mockClear()
+            fireEvent.click(cta)
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId('quantum-downgrade-warning-sheet'),
+                ).toBeTruthy()
+            })
+            fireEvent.click(
+                screen.getByText('rekey.quantum_downgrade_warning.confirm'),
+            )
+            await waitFor(
+                () => {
+                    expect(Notifier.showNotification).toHaveBeenCalled()
+                },
+                { timeout: 25_000 },
+            )
+            await waitFor(() => {
+                expect(screen.queryByTestId('activity-indicator')).toBeNull()
+            })
         },
         SLOW_TEST_TIMEOUT_MS,
     )
