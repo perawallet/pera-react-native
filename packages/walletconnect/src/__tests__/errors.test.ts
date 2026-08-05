@@ -11,7 +11,15 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { WalletConnectPermissionError } from '../errors'
+import {
+    WalletConnectConnectionTimeoutError,
+    WalletConnectError,
+    WalletConnectInvalidNetworkError,
+    WalletConnectInvalidSessionError,
+    WalletConnectPermissionError,
+    WalletConnectSessionRequestExpiredError,
+    WalletConnectSignRequestError,
+} from '../errors'
 
 describe('WalletConnectPermissionError', () => {
     it('should be instance of WalletConnectPermissionError', () => {
@@ -24,5 +32,45 @@ describe('WalletConnectPermissionError', () => {
         const originalError = new Error('Original error')
         const error = new WalletConnectPermissionError(undefined, originalError)
         expect(error.originalError).toBe(originalError)
+    })
+})
+
+describe('walletconnect error copy', () => {
+    it.each([
+        [
+            WalletConnectInvalidSessionError,
+            'errors.walletconnect.invalid_session_body',
+        ],
+        [
+            WalletConnectSignRequestError,
+            'errors.walletconnect.sign_request_body',
+        ],
+        [WalletConnectPermissionError, 'errors.walletconnect.permission_body'],
+        [
+            WalletConnectInvalidNetworkError,
+            'errors.walletconnect.invalid_network_body',
+        ],
+        [
+            WalletConnectConnectionTimeoutError,
+            'errors.walletconnect.connection_timeout_body',
+        ],
+        [
+            WalletConnectSessionRequestExpiredError,
+            'errors.walletconnect.session_request_expired_body',
+        ],
+    ])('$name declares its own key', (ErrorClass, expectedKey) => {
+        expect(new ErrorClass().metadata.messageKey).toBe(expectedKey)
+    })
+
+    it('falls back to walletconnect-specific copy, not errors.general', () => {
+        const error = new WalletConnectError('internal detail')
+
+        expect(error.metadata.messageKey).toBe('errors.walletconnect.body')
+    })
+
+    it('keeps the connection timeout retryable alongside its key', () => {
+        const error = new WalletConnectConnectionTimeoutError()
+
+        expect(error.metadata.retryable).toBe(true)
     })
 })

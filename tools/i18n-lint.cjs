@@ -4,12 +4,14 @@ const path = require('path')
 // Adjusted paths for root level execution targeting apps/mobile
 const LOCALES_DIR = path.join(__dirname, '../apps/mobile/src/i18n/locales')
 const SRC_DIR = path.join(__dirname, '../apps/mobile/src')
+const REPO_ROOT = path.join(__dirname, '..')
+
+// Workspace roots whose `<member>/src` trees can claim a key. `messageKey`
+// literals live in packages/*/src/errors.ts and extensions/*/src/errors.ts, so
+// scanning apps/mobile alone reports every messageKey-only key as unused.
+const WORKSPACE_ROOTS = ['apps', 'packages', 'extensions']
 
 const EXCLUDED_KEYS = [
-    'errors.walletconnect.invalid_network_body',
-    'errors.walletconnect.sign_request_body',
-    'errors.walletconnect.permission_body',
-    'errors.walletconnect.invalid_session_body',
     // Declared as ThresholdExceedsParticipantsError's messageKey (packages/multisig/src/errors.ts);
     // no call site constructs that error yet, so no literal t() call exists to satisfy the scan.
     'multisig.threshold.exceeds_participants',
@@ -94,6 +96,22 @@ function error(message) {
 
 function warn(message) {
     console.warn(`${colors.yellow}WARNING: ${message}${colors.reset}`)
+}
+
+// Every `<root>/<member>/src` tree in the workspace, one level deep to match
+// the pnpm-workspace.yaml globs.
+function getWorkspaceSrcFiles(exts) {
+    const results = []
+    WORKSPACE_ROOTS.forEach(root => {
+        const rootPath = path.join(REPO_ROOT, root)
+        if (!fs.existsSync(rootPath)) return
+        fs.readdirSync(rootPath).forEach(member => {
+            const srcPath = path.join(rootPath, member, 'src')
+            if (!fs.existsSync(srcPath)) return
+            results.push(...getFiles(srcPath, exts))
+        })
+    })
+    return results
 }
 
 function getFiles(dir, exts) {
@@ -229,7 +247,7 @@ function main() {
 
     // 2. Unused Keys Check
     log('\n--- Checking for Unused Keys ---', colors.blue)
-    const srcFiles = getFiles(SRC_DIR, ['.ts', '.tsx'])
+    const srcFiles = getWorkspaceSrcFiles(['.ts', '.tsx'])
     const allCode = srcFiles.map(f => fs.readFileSync(f, 'utf8')).join('\n')
 
     // i18next plural suffixes
@@ -327,6 +345,9 @@ function main() {
 
     // 4. Un-internationalized Strings Check
     log('\n--- Checking for Un-internationalized Strings ---', colors.blue)
+    // Mobile-only: this scan looks for JSX text and label/title props, which
+    // only exist in the app tree. packages/* hold no user-facing markup.
+    const mobileSrcFiles = getFiles(SRC_DIR, ['.ts', '.tsx'])
     let hardcodedStringsCount = 0
 
     // Regex patterns to look for potential issues
@@ -349,7 +370,7 @@ function main() {
         { name: 'Hardcoded label prop', regex: /label=['"]([^'"{}]*)['"]/g },
     ]
 
-    srcFiles.forEach(file => {
+    mobileSrcFiles.forEach(file => {
         const content = fs.readFileSync(file, 'utf8')
         const relativePath = path.relative(process.cwd(), file)
         const normalizedPath = relativePath.split(path.sep).join('/')

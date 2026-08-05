@@ -746,7 +746,13 @@
         "walletconnect": {
             "title": "An error occurred processing an app request",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
-            "unknown": "An unknown error occurred when signing.  Check the dapp for more information."
+            "unknown": "An unknown error occurred when signing.  Check the dapp for more information.",
+            "invalid_network_body": "You have received a request from an invalid network. Please switch your wallet to the correct network and try again.",
+            "sign_request_body": "You have received an invalid request to sign a transaction. Please check the app and try again.",
+            "permission_body": "You have received an unauthorized request from an app. Please check the app and try again.",
+            "invalid_session_body": "You have received an invalid session request from an app. Please check the app and try again.",
+            "connection_timeout_body": "Couldn't reach WalletConnect to deliver your signed transaction. Check your connection and try again.",
+            "session_request_expired_body": "This connection request has expired. Start a new connection from the dApp and try again."
         },
         "signing": {
             "title": "An error occurred processing the signing request",
