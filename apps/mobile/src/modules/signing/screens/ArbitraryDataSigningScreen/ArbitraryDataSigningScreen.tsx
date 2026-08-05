@@ -47,6 +47,7 @@ export const ArbitraryDataSigningScreen = () => {
                         variant='linkNeutral'
                         onPress={handleReject}
                         isDisabled={isPending}
+                        testID='arbitrary-data-reject-button'
                     />
                 </PWView>
             }
