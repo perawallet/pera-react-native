@@ -56,10 +56,10 @@ describe('i18n/effectiveLocales - getEffectiveSupportedLocales', () => {
     })
 
     it('defaults bundledLocales to the real, bundle-derived registry', () => {
-        // Today only `en` ships, so even a generous allowlist can't produce
-        // anything beyond `en` until a real bundle exists.
+        // `en` and `de` ship today; `fr`/`es` don't, so even a generous
+        // allowlist can't produce them until a real bundle exists for them.
         expect(getEffectiveSupportedLocales(true, 'de,fr,es')).toEqual(
-            new Set(['en']),
+            new Set(['en', 'de']),
         )
     })
 })

@@ -86,8 +86,8 @@ export const RemoteConfigDefaults: Record<
     enable_ssl_pinning_algod: false,
     // Dark-launched: the Settings language picker exists but stays hidden
     // until Remote Config explicitly turns it on. Off everywhere — no
-    // dev/staging carve-out — because there's nothing to pick yet beyond
-    // `en` (no real translation bundles ship in this PR).
+    // dev/staging carve-out — because the backend hasn't populated
+    // active_locales yet, regardless of which bundles the client ships.
     enable_language_selection: false,
     // CSV of locale tags the backend has finished internationalizing (e.g.
     // "es,de"). Only consulted when enable_language_selection is true —

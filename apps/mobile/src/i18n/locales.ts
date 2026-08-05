@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import de from './locales/de.json'
 import en from './locales/en.json'
 
 /**
@@ -28,6 +29,7 @@ export const TRANSLATION_BUNDLES: Readonly<
     Record<string, Record<string, unknown>>
 > = {
     en,
+    de,
 }
 
 export const BASE_LOCALE = 'en'
