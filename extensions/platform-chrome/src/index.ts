@@ -30,6 +30,9 @@ export {
     ChromeDeviceInfoService,
     ChromeKeyValueStorageService,
 } from './services'
+// The service worker's push handlers need the same Firebase app the UI
+// realms use; token acquisition and message receipt live in different realms.
+export { getFirebaseApp } from './services/firebase-app'
 export { getPlatformServices, hydratePlatform } from './resources'
 export { getSurface, type ExtensionSurface } from './surface'
 export {

@@ -101,7 +101,14 @@
   "_comment_externally_connectable": "Chrome's default when this key is absent already blocks web pages but ALLOWS other extensions. No onMessageExternal/onConnectExternal listener exists, so nothing is reachable today — declaring an empty allowlist makes the closed posture explicit and keeps a future listener from silently inheriting an open door.",
   "externally_connectable": { "ids": [] },
   "_comment_unlimitedStorage": "Lifts the 10MB chrome.storage.local cap and exempts our storage from quota-manager eviction. Both matter: the TanStack Query cache is persisted into chrome.storage.local (see AppShell.web.tsx), and the sqlite database lives in OPFS, which is evictable by default. Note that ChromeKeyValueStorageService.setItem is fire-and-forget, so a quota rejection would be silent — this permission is what keeps us away from that edge, not a guarantee. Growth is still unbounded; LRU/retention is a follow-up.",
-  "permissions": ["storage", "unlimitedStorage", "alarms", "offscreen"],
+  "_comment_notifications": "Load-bearing, not cosmetic: without it pushManager.subscribe({ userVisibleOnly: true }) throws NotAllowedError, and the FCM SDK hardcodes that flag — so removing this silently breaks token acquisition, not just display. It also auto-grants Notification.permission on extension pages, which is why there is no permission prompt to build.",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "alarms",
+    "offscreen",
+    "notifications"
+  ],
   "host_permissions": [
     "https://*.perawallet.app/*",
     "https://*.algonode.cloud/*",
@@ -109,6 +116,7 @@
     "https://*.bidali.com/*",
     "https://firebaseremoteconfig.googleapis.com/*",
     "https://firebaseinstallations.googleapis.com/*",
+    "https://fcmregistrations.googleapis.com/*",
     "https://www.google-analytics.com/*",
     "https://*.ingest.sentry.io/*"
   ],

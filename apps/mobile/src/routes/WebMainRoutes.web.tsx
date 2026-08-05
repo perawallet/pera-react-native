@@ -26,7 +26,9 @@ import { type NativeStackHeaderProps } from '@react-navigation/native-stack'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { useTokenListener } from '@modules/token'
+import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { screenListeners } from './listeners'
@@ -94,7 +96,13 @@ const handleOverlayError = (error: string | Error) => {
     logger.critical(error, { source: 'WebMainRoutesOverlaysErrorBoundary' })
 }
 
-export const WebMainRoutes = (): React.JSX.Element => {
+export type WebMainRoutesProps = {
+    fcmToken: Nullable<string>
+}
+
+export const WebMainRoutes = ({
+    fcmToken,
+}: WebMainRoutesProps): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()
     const isPeraCardEnabled = useIsPeraCardEnabled()
     const accounts = useAllAccounts()
@@ -103,6 +111,11 @@ export const WebMainRoutes = (): React.JSX.Element => {
         [accounts],
     )
     useDeviceRegistration(addresses)
+    // Native mounts both of these in RootComponent, which the web shell
+    // replaces — without them the extension registers devices with no push
+    // token and drops notification-tap deeplinks.
+    useTokenListener(fcmToken)
+    useNotificationDeeplinkListener()
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
 
     const handleReady = useExpandedFlowNavigation((screen, params) => {

@@ -16,6 +16,7 @@ export type ExpandedFlow =
     | 'scan'
     | 'ledger-usb'
     | 'ledger-ble'
+    | 'asb-import'
 
 const FLOWS: readonly string[] = [
     'add-account',
@@ -23,6 +24,7 @@ const FLOWS: readonly string[] = [
     'scan',
     'ledger-usb',
     'ledger-ble',
+    'asb-import',
 ]
 
 /**

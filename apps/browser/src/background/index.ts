@@ -25,6 +25,7 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { installConnectModalPairRoute } from './connect-modal-pair'
 import { ensureOffscreenDocument } from './offscreen'
+import { installPushHandlers } from './push'
 import { parseActiveNetwork, resolveAdvertisedGenesis } from './network'
 import {
     WC_HEARTBEAT_ALARM,
@@ -36,6 +37,11 @@ import {
 // messaging (get/set/remove + onChanged relay). Top-level registration so a
 // sleeping SW wakes with the listener in place.
 startStorageProxyHost()
+
+// Top-level, like the storage host above: constructing the SW messaging
+// instance is what registers the SDK's `push` listener, so deferring this into
+// an async init would let a worker woken by a push miss that very push.
+installPushHandlers()
 
 chrome.runtime.onInstalled.addListener(details => {
     console.info('[pera] extension installed:', details.reason)

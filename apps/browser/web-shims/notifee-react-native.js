@@ -14,11 +14,13 @@
 // NotifeeApiModule class at module-eval time (`new NotifeeApiModule({
 // nativeModuleName: 'NotifeeApiModule', ... })`), which reaches into the
 // legacy React Native NativeModules bridge immediately on import and throws
-// "__fbBatchedBridgeConfig is not set" in browser environments. Push
-// notification settings are capability-gated off on web
-// (routeCapabilities.pushNotificationSettings, see routes/capabilities.web.ts)
-// — useSystemNotificationPermission.ts is the only consumer, so this stub
-// only needs to satisfy its two call sites without crashing.
+// "__fbBatchedBridgeConfig is not set" in browser environments.
+//
+// Nothing on web reads these values any more: useSystemNotificationPermission
+// has a `.web.ts` twin that reports the browser's own Notification.permission,
+// because this stub's hardcoded DENIED would render the settings switch
+// permanently off once push shipped on web. The stub survives only so the
+// module-eval crash above stays impossible — do NOT treat DENIED as meaningful.
 
 export const AuthorizationStatus = {
     NOT_DETERMINED: -1,
