@@ -346,6 +346,8 @@ describe('env-loader', () => {
             undoRekeySupportUrl: 'https://undo-rekey-support.example.com',
             peraCardLearnMoreUrl: 'https://pera-card-learn-more.example.com',
             debugEnabled: false,
+            webIntegrityMintEnabled: false,
+            webIntegrityBearerEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,
             disableScreenCapturePrevention: false,
@@ -482,6 +484,38 @@ describe('env-loader', () => {
                 algodApiKey: 'new-algod-key',
                 debugEnabled: true,
                 defaultNetwork: 'mainnet',
+            })
+        })
+
+        describe('web integrity flags', () => {
+            test('coerces the mint and bearer flags from string env vars', () => {
+                process.env.WEB_INTEGRITY_MINT_ENABLED = 'true'
+                process.env.WEB_INTEGRITY_BEARER_ENABLED = 'false'
+
+                const overrides = loadEnvOverrides()
+
+                expect(overrides.webIntegrityMintEnabled).toBe(true)
+                expect(overrides.webIntegrityBearerEnabled).toBe(false)
+            })
+
+            test('maps both flags in overrideEnvironmentMap', () => {
+                expect(overrideEnvironmentMap.webIntegrityMintEnabled).toBe(
+                    'WEB_INTEGRITY_MINT_ENABLED',
+                )
+                expect(overrideEnvironmentMap.webIntegrityBearerEnabled).toBe(
+                    'WEB_INTEGRITY_BEARER_ENABLED',
+                )
+            })
+
+            test('both flags are off with no env override', () => {
+                const resolved = getConfigWithEnvOverrides({
+                    ...mockBaseConfig,
+                    webIntegrityMintEnabled: false,
+                    webIntegrityBearerEnabled: false,
+                })
+
+                expect(resolved.webIntegrityMintEnabled).toBe(false)
+                expect(resolved.webIntegrityBearerEnabled).toBe(false)
             })
         })
     })

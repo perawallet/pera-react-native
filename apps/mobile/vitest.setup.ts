@@ -2681,6 +2681,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         mutationDefaults: { throwOnError: false, networkMode: 'always' },
         assertOnline: vi.fn(),
         NoConnectionError,
+        setIntegrityTokenProvider: vi.fn(),
+        readIntegrityToken: vi.fn(() => null),
     }
 })
 

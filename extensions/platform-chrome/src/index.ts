@@ -48,6 +48,21 @@ export {
     DEVICE_INSTALLATION_ID_STORAGE_KEY,
 } from './device-installation-id'
 export {
+    INSTALL_KEY_DB_NAME,
+    clearInstallKey,
+    exportInstallPublicKey,
+    getOrCreateInstallKey,
+    signChallenge,
+} from './integrity/device-key'
+export {
+    INTEGRITY_TOKEN_SESSION_KEY,
+    clearSessionIntegrityToken,
+    getSessionIntegrityToken,
+    putSessionIntegrityToken,
+    type SessionIntegrityToken,
+} from './integrity/session-token'
+export { INTEGRITY_BACKOFF_SESSION_KEY } from './integrity/storage-keys'
+export {
     WC_CONTROL_SCOPE,
     isWcControlMessage,
     type WcControlMessage,
@@ -100,7 +115,10 @@ export {
     type SqlExecutor,
 } from './database/host'
 export { createWorkerExecutor } from './database/worker-executor'
-export { onLocalStorageKeyChanged } from './storage-events'
+export {
+    onLocalStorageKeyChanged,
+    onSessionStorageKeyChanged,
+} from './storage-events'
 export {
     STORAGE_PROXY_SCOPE,
     STORAGE_EVENT_SCOPE,

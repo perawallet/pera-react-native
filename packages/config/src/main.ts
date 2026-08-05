@@ -139,6 +139,8 @@ export const configSchema = z
         peraCardLearnMoreUrl: z.url(),
 
         debugEnabled: z.boolean(),
+        webIntegrityMintEnabled: z.boolean(),
+        webIntegrityBearerEnabled: z.boolean(),
         profilingEnabled: z.boolean(),
         pollingEnabled: z.boolean(),
 
@@ -353,6 +355,11 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     reactQueryPersistenceAge: 60 * ONE_DAY,
 
     debugEnabled: false,
+    // Step 1 of the web app-integrity rollout: minting runs, nothing consumes
+    // the token. Both off by default so a store build is unaffected until an
+    // env var opts in. See docs/superpowers/specs/2026-08-03-web-app-integrity-design.md
+    webIntegrityMintEnabled: false,
+    webIntegrityBearerEnabled: false,
     profilingEnabled: false,
     pollingEnabled: true,
     disableScreenCapturePrevention: false,
@@ -475,6 +482,8 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     dispenserUrl: 'DISPENSER_URL',
 
     debugEnabled: 'DEBUG_ENABLED',
+    webIntegrityMintEnabled: 'WEB_INTEGRITY_MINT_ENABLED',
+    webIntegrityBearerEnabled: 'WEB_INTEGRITY_BEARER_ENABLED',
     profilingEnabled: 'PROFILING_ENABLED',
     pollingEnabled: 'POLLING_ENABLED',
     disableScreenCapturePrevention: 'DISABLE_SCREEN_CAPTURE_PREVENTION',

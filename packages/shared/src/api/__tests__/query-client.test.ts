@@ -10,8 +10,22 @@
  limitations under the License
  */
 
-import { describe, it, test, expect, vi, beforeEach } from 'vitest'
-import { config, Networks } from '@perawallet/wallet-core-config'
+import {
+    describe,
+    it,
+    test,
+    expect,
+    vi,
+    beforeEach,
+    beforeAll,
+    afterEach,
+} from 'vitest'
+import {
+    config,
+    getNetworkConfig,
+    Networks,
+} from '@perawallet/wallet-core-config'
+import { setIntegrityTokenProvider } from '../integrity-token-provider'
 
 // Mock logger. Hoisted (like the ky mocks below) because vi.mock factories
 // are hoisted above all imports, so a plain `const` declared here (instead of
@@ -141,6 +155,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         backendAPIKey: 'test-api-key',
         algodApiKey: mockAlgodApiKey,
         indexerApiKey: mockIndexerApiKey,
+        webIntegrityBearerEnabled: false,
     },
     Networks: mockNetworks,
     // Mirrors the real per-network table: betanet/custom carry an EMPTY
@@ -207,6 +222,26 @@ const { mockKy, mockJson, mockText, mockStatus, capturedHooks } = vi.hoisted(
             return response
         })
 
+        // Each ky.create() call returns its OWN callable instance with its
+        // OWN `extend` spy — additive to the shared mockKy/mockKy.extend
+        // below, so a per-client question ("did algod's instance get
+        // extended, not just pera's?") is answerable, while every existing
+        // assertion against the shared singletons keeps working: invocation
+        // always delegates through to the shared `mockKy` (so
+        // `expect(mockKy).toHaveBeenCalledWith(...)` still sees it), and
+        // `.extend()` always also calls the shared `mockKy.extend` (so the
+        // `toHaveBeenCalledTimes`/hook-merge assertions on it stay accurate).
+        const makeClientInstance = () => {
+            const instance: any = vi.fn(async (path: string, options: any) =>
+                mockKy(path, options),
+            )
+            instance.extend = vi.fn((config: any) => {
+                mockKy.extend(config)
+                return instance
+            })
+            return instance
+        }
+
         mockKy.create = vi.fn((config: any) => {
             // Every client is built the same way now — including the `pera`
             // client of a network with no deployment, whose prefix is simply
@@ -216,7 +251,7 @@ const { mockKy, mockJson, mockText, mockStatus, capturedHooks } = vi.hoisted(
             if (config.hooks) {
                 Object.assign(capturedHooks, config.hooks)
             }
-            return mockKy
+            return makeClientInstance()
         })
 
         mockKy.extend = vi.fn((config: any) => {
@@ -253,6 +288,48 @@ vi.mock('ky', () => ({
     isNetworkError: (error: unknown) =>
         error instanceof Error && error.name === 'TypeError',
 }))
+
+// Shared with the `updateNodeEndpoints` and `integrity bearer header`
+// describe blocks below: reaches a client's `beforeRequest` hooks via the
+// config captured by the mocked `ky.create`, without exporting anything from
+// query-client.ts just for tests.
+type CapturedClientConfig = {
+    prefix: string
+    hooks: {
+        beforeRequest: Array<
+            (state: { request: { headers: Map<string, string> } }) => void
+        >
+    }
+}
+
+const findClientConfig = (prefix: string): CapturedClientConfig | undefined =>
+    mockKy.create.mock.calls.find(
+        ([clientConfig]: [CapturedClientConfig]) =>
+            clientConfig.prefix === prefix,
+    )?.[0]
+
+const readHeader = (
+    clientConfig: CapturedClientConfig,
+    headerName: string,
+): string | undefined => {
+    const request = { headers: new Map<string, string>() }
+    clientConfig.hooks.beforeRequest[0]({ request })
+    return request.headers.get(headerName)
+}
+
+// The instance actually returned for a given prefix's ky.create() call —
+// i.e. the per-client object `updateBackendHeaders` calls `.extend()` on.
+// Pairs with findClientConfig's index into `mockKy.create.mock.calls` to
+// read the matching `mockKy.create.mock.results` entry, so a test can assert
+// on WHICH client's `.extend` spy fired, not just how many times some spy
+// fired somewhere.
+const findClientInstance = (prefix: string): any => {
+    const index = mockKy.create.mock.calls.findIndex(
+        ([clientConfig]: [CapturedClientConfig]) =>
+            clientConfig.prefix === prefix,
+    )
+    return index === -1 ? undefined : mockKy.create.mock.results[index]?.value
+}
 
 describe('queryClient', () => {
     beforeEach(() => {
@@ -713,10 +790,9 @@ describe('queryClient', () => {
 
         updateBackendHeaders(new Map([['X-Custom-Header', 'custom-value']]))
 
-        // 4 networks × (algod + indexer + pera) — updateBackendHeaders must
-        // build before extending, not silently skip networks nothing has
-        // requested yet.
-        expect(mockKy.extend).toHaveBeenCalledTimes(12)
+        // 4 networks × pera only — algod/indexer are deliberately not
+        // extended so a Pera credential cannot reach a chain node.
+        expect(mockKy.extend).toHaveBeenCalledTimes(4)
     })
 
     it('does not re-append the request logger when extending clients', async () => {
@@ -753,34 +829,6 @@ describe('queryClient', () => {
     })
 
     describe('updateNodeEndpoints', () => {
-        type CapturedClientConfig = {
-            prefix: string
-            hooks: {
-                beforeRequest: Array<
-                    (state: {
-                        request: { headers: Map<string, string> }
-                    }) => void
-                >
-            }
-        }
-
-        const findClientConfig = (
-            prefix: string,
-        ): CapturedClientConfig | undefined =>
-            mockKy.create.mock.calls.find(
-                ([clientConfig]: [CapturedClientConfig]) =>
-                    clientConfig.prefix === prefix,
-            )?.[0]
-
-        const readHeader = (
-            clientConfig: CapturedClientConfig,
-            headerName: string,
-        ): string | undefined => {
-            const request = { headers: new Map<string, string>() }
-            clientConfig.hooks.beforeRequest[0]({ request })
-            return request.headers.get(headerName)
-        }
-
         it('rebuilds algod/indexer for the given network against the new endpoints and tokens, even when called before any request', async () => {
             vi.resetModules()
             mockKy.create.mockClear()
@@ -889,12 +937,12 @@ describe('queryClient', () => {
             // Only proves updateNodeEndpoints leaves `clients` in a shape
             // queryClient can still look up (right backend keys present,
             // nothing set to undefined) — NOT that the request actually used
-            // the new prefix/token. `mockKy.create` always returns the same
-            // `mockKy` singleton regardless of the `prefix` it was configured
-            // with, and the request function it returns never reads `prefix`
-            // either, so this call can't observe which endpoint was actually
-            // targeted. The two tests above cover the real endpoint/token
-            // values, via the captured `mockKy.create` config instead.
+            // the new prefix/token. Each `mockKy.create` call returns its own
+            // instance, but that instance's request function still never
+            // reads `prefix`, so this call can't observe which endpoint was
+            // actually targeted. The two tests above cover the real
+            // endpoint/token values, via the captured `mockKy.create` config
+            // instead.
             const { updateNodeEndpoints, queryClient } =
                 await import('../query-client')
             mockJson.mockResolvedValue({ version: '1.0' })
@@ -931,6 +979,133 @@ describe('queryClient', () => {
         // The mock request object should have headers set by setStandardHeaders
         // This is verified by the fact that the request completes successfully
         expect(mockKy).toHaveBeenCalled()
+    })
+
+    describe('integrity bearer header', () => {
+        // setStandardHeaders is module-private; reached the same way
+        // updateNodeEndpoints' tests reach a hook — via the config captured
+        // by the mocked ky.create for the Pera client, rather than exporting
+        // it just for tests.
+        let setStandardHeadersUnderTest: (state: {
+            request: { headers: Map<string, string> }
+        }) => void
+        // vi.resetModules() gives the re-imported query-client.ts a BRAND NEW
+        // mocked config/provider instance, distinct from this file's static
+        // top-level imports — mutating the stale top-level `config` would
+        // never reach a hook captured from the fresh module. These are
+        // re-imported in the SAME resetModules generation as query-client so
+        // they refer to the exact objects its closures read from.
+        let scopedConfig: typeof config
+        let scopedSetIntegrityTokenProvider: typeof setIntegrityTokenProvider
+
+        beforeAll(async () => {
+            vi.resetModules()
+            mockKy.create.mockClear()
+            const { queryClient } = await import('../query-client')
+            const configModule = await import('@perawallet/wallet-core-config')
+            const providerModule = await import('../integrity-token-provider')
+            scopedConfig = configModule.config
+            scopedSetIntegrityTokenProvider =
+                providerModule.setIntegrityTokenProvider
+            mockJson.mockResolvedValue({ status: 'ok' })
+
+            await queryClient({
+                backend: 'pera',
+                network: 'mainnet',
+                method: 'GET',
+                url: '/warm-up',
+            })
+
+            const peraConfig = findClientConfig(
+                backendUrlByNetwork.mainnet,
+            ) as CapturedClientConfig
+            setStandardHeadersUnderTest = peraConfig.hooks.beforeRequest[0]
+        })
+
+        afterEach(() => {
+            scopedSetIntegrityTokenProvider(() => null)
+        })
+
+        it('attaches the bearer token when the flag is on and a token exists', () => {
+            vi.mocked(scopedConfig).webIntegrityBearerEnabled = true
+            scopedSetIntegrityTokenProvider(() => 'jwt-value')
+
+            const headers = new Map<string, string>()
+            setStandardHeadersUnderTest({ request: { headers } })
+
+            expect(headers.get('Authorization')).toBe('Bearer jwt-value')
+        })
+
+        it('attaches nothing when the flag is off', () => {
+            vi.mocked(scopedConfig).webIntegrityBearerEnabled = false
+            scopedSetIntegrityTokenProvider(() => 'jwt-value')
+
+            const headers = new Map<string, string>()
+            setStandardHeadersUnderTest({ request: { headers } })
+
+            expect(headers.has('Authorization')).toBe(false)
+        })
+
+        it('attaches nothing when there is no token', () => {
+            vi.mocked(scopedConfig).webIntegrityBearerEnabled = true
+            scopedSetIntegrityTokenProvider(() => null)
+
+            const headers = new Map<string, string>()
+            setStandardHeadersUnderTest({ request: { headers } })
+
+            expect(headers.has('Authorization')).toBe(false)
+        })
+
+        it('attaches nothing when the flag is off and there is no token', () => {
+            vi.mocked(scopedConfig).webIntegrityBearerEnabled = false
+            scopedSetIntegrityTokenProvider(() => null)
+
+            const headers = new Map<string, string>()
+            setStandardHeadersUnderTest({ request: { headers } })
+
+            expect(headers.has('Authorization')).toBe(false)
+        })
+
+        // A build-time hook-config check can't catch this: createTokenHeaderClient
+        // never included setStandardHeaders in the first place, so a check
+        // against the config captured at ky.create() time would pass whether
+        // or not updateBackendHeaders' narrowing to `pera` were ever applied —
+        // it's structurally blind to the actual regression surface, which is
+        // which LIVE instance updateBackendHeaders calls `.extend()` on.
+        // Asserting on the per-client `.extend` spy instead is what actually
+        // fails if a future edit swaps the narrowing target (e.g. extends
+        // `algod` instead of `pera`, a plausible rename/copy-paste slip) —
+        // `toHaveBeenCalledTimes` alone can't tell WHICH client was extended.
+        it('extends only the pera instance, never algod or indexer, when updateBackendHeaders runs', async () => {
+            // Its own resetModules generation, separate from beforeAll's —
+            // needs its own fresh query-client so `findClientInstance` reads
+            // freshly captured create() calls/results for this test alone.
+            vi.resetModules()
+            mockKy.create.mockClear()
+            mockKy.extend.mockClear()
+            const { updateBackendHeaders } = await import('../query-client')
+
+            updateBackendHeaders(new Map([['X-Custom-Header', 'custom-value']]))
+
+            const {
+                algodUrl: algodUrlForMainnet,
+                indexerUrl: indexerUrlForMainnet,
+            } = getNetworkConfig('mainnet')
+            const peraUrlForMainnet = backendUrlByNetwork.mainnet
+
+            const peraInstance = findClientInstance(peraUrlForMainnet)
+            const algodInstance = findClientInstance(algodUrlForMainnet)
+            const indexerInstance = findClientInstance(indexerUrlForMainnet)
+            expect(peraInstance).toBeDefined()
+            expect(algodInstance).toBeDefined()
+            expect(indexerInstance).toBeDefined()
+
+            // A Pera credential must never reach a chain node — algod/indexer
+            // hosts can be third-party.
+            expect(peraInstance.extend).toHaveBeenCalled()
+            expect(algodInstance.extend).not.toHaveBeenCalled()
+            expect(indexerInstance.extend).not.toHaveBeenCalled()
+        })
     })
 
     it('returns undefined data for 200 with an empty body (no SyntaxError)', async () => {

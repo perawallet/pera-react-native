@@ -45,6 +45,13 @@ export type ChromeFake = {
     setCurrentTab: (tab: FakeTab | undefined) => void
     // ids removed via chrome.tabs.remove.
     removedTabIds: number[]
+    sessionData: Map<string, unknown>
+    // Every accessLevel the code under test asked for, in order. Real
+    // setAccessLevel is idempotent and throws on some older Chromium builds —
+    // tests assert the call happened exactly once.
+    accessLevels: string[]
+    alarms: Map<string, { periodInMinutes?: number; delayInMinutes?: number }>
+    fireAlarm: (name: string) => Promise<void>
 }
 
 const TEST_EXTENSION_ID = 'test-extension-id'
@@ -75,34 +82,67 @@ export const createChromeFake = (): ChromeFake => {
         listeners.forEach(listener => listener(changes, areaName))
     }
 
-    const local = {
+    // local and session differ only in their backing Map and the areaName
+    // they emit under — share one implementation so the two can't drift.
+    const createStorageArea = (
+        map: Map<string, unknown>,
+        areaName: string,
+    ) => ({
         get: async (
             keys?: null | string | string[],
         ): Promise<Record<string, unknown>> => {
-            if (keys == null) return Object.fromEntries(data)
+            if (keys == null) return Object.fromEntries(map)
             const wanted = typeof keys === 'string' ? [keys] : keys
             return Object.fromEntries(
                 wanted
-                    .filter(key => data.has(key))
-                    .map(key => [key, data.get(key)]),
+                    .filter(key => map.has(key))
+                    .map(key => [key, map.get(key)]),
             )
         },
         set: async (items: Record<string, unknown>): Promise<void> => {
             const changes: StorageChanges = {}
             for (const [key, value] of Object.entries(items)) {
-                changes[key] = { oldValue: data.get(key), newValue: value }
-                data.set(key, value)
+                changes[key] = { oldValue: map.get(key), newValue: value }
+                map.set(key, value)
             }
-            emit(changes)
+            emit(changes, areaName)
         },
         remove: async (keys: string | string[]): Promise<void> => {
             const changes: StorageChanges = {}
             for (const key of typeof keys === 'string' ? [keys] : keys) {
-                changes[key] = { oldValue: data.get(key) }
-                data.delete(key)
+                changes[key] = { oldValue: map.get(key) }
+                map.delete(key)
             }
-            emit(changes)
+            emit(changes, areaName)
         },
+    })
+
+    const local = createStorageArea(data, 'local')
+
+    const sessionData = new Map<string, unknown>()
+    const accessLevels: string[] = []
+
+    const session = {
+        ...createStorageArea(sessionData, 'session'),
+        setAccessLevel: async (options: {
+            accessLevel: string
+        }): Promise<void> => {
+            accessLevels.push(options.accessLevel)
+        },
+    }
+
+    const alarms = new Map<
+        string,
+        { periodInMinutes?: number; delayInMinutes?: number }
+    >()
+    const alarmListeners = new Set<(alarm: { name: string }) => void>()
+
+    const fireAlarm = async (name: string): Promise<void> => {
+        if (!alarms.has(name)) return
+        for (const listener of alarmListeners) listener({ name })
+        // Alarm handlers are async void by Chrome's contract; yield so their
+        // microtasks settle before the test asserts.
+        await Promise.resolve()
     }
 
     const fake = {
@@ -172,11 +212,46 @@ export const createChromeFake = (): ChromeFake => {
         },
         storage: {
             local,
+            session,
             onChanged: {
                 addListener: (listener: ChangeListener) =>
                     listeners.add(listener),
                 removeListener: (listener: ChangeListener) =>
                     listeners.delete(listener),
+            },
+        },
+        alarms: {
+            create: async (
+                name: string,
+                info: {
+                    periodInMinutes?: number
+                    delayInMinutes?: number
+                },
+            ): Promise<void> => {
+                alarms.set(name, info)
+            },
+            clear: async (name: string): Promise<boolean> =>
+                alarms.delete(name),
+            getAll: async (): Promise<
+                Array<{
+                    name: string
+                    periodInMinutes?: number
+                    delayInMinutes?: number
+                }>
+            > =>
+                [...alarms.entries()].map(([name, info]) => ({
+                    name,
+                    ...info,
+                })),
+            onAlarm: {
+                addListener: (listener: (alarm: { name: string }) => void) => {
+                    alarmListeners.add(listener)
+                },
+                removeListener: (
+                    listener: (alarm: { name: string }) => void,
+                ) => {
+                    alarmListeners.delete(listener)
+                },
             },
         },
         tabs: {
@@ -243,5 +318,9 @@ export const createChromeFake = (): ChromeFake => {
             currentTab = tab
         },
         removedTabIds,
+        sessionData,
+        accessLevels,
+        alarms,
+        fireAlarm,
     }
 }

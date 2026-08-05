@@ -12,7 +12,10 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../test-utils/chrome'
-import { onLocalStorageKeyChanged } from '../storage-events'
+import {
+    onLocalStorageKeyChanged,
+    onSessionStorageKeyChanged,
+} from '../storage-events'
 
 describe('onLocalStorageKeyChanged', () => {
     let fake: ChromeFake
@@ -48,6 +51,30 @@ describe('onLocalStorageKeyChanged', () => {
         const listener = vi.fn()
         const unsubscribe = onLocalStorageKeyChanged(['watched-key'], listener)
         unsubscribe()
+        fake.emitExternalChange('watched-key', 'new-value', 'local')
+        expect(listener).not.toHaveBeenCalled()
+    })
+})
+
+describe('onSessionStorageKeyChanged', () => {
+    let fake: ChromeFake
+
+    beforeEach(() => {
+        fake = createChromeFake()
+        globalThis.chrome = fake.chrome
+    })
+
+    it('fires the listener for a watched key changed in the session area', () => {
+        const listener = vi.fn()
+        onSessionStorageKeyChanged(['watched-key'], listener)
+        fake.emitExternalChange('watched-key', 'new-value', 'session')
+        expect(listener).toHaveBeenCalledTimes(1)
+        expect(listener).toHaveBeenCalledWith('watched-key')
+    })
+
+    it('ignores changes outside the session area', () => {
+        const listener = vi.fn()
+        onSessionStorageKeyChanged(['watched-key'], listener)
         fake.emitExternalChange('watched-key', 'new-value', 'local')
         expect(listener).not.toHaveBeenCalled()
     })

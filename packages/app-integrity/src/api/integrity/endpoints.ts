@@ -62,19 +62,33 @@ export const attestDevice = async ({
     network,
     signal,
 }: AttestDeviceParams): Promise<IntegrityRegistration> => {
-    const data =
-        payload.platform === 'ios'
-            ? {
-                  device_id: payload.deviceInstallationId,
-                  platform: 'ios',
-                  key_id: payload.keyId,
-                  attestation: payload.attestation,
-              }
-            : {
-                  device_id: payload.deviceInstallationId,
-                  platform: 'android',
-                  attestation: payload.attestation,
-              }
+    const data = ((): Record<string, string> => {
+        switch (payload.platform) {
+            case 'ios': {
+                return {
+                    device_id: payload.deviceInstallationId,
+                    platform: 'ios',
+                    key_id: payload.keyId,
+                    attestation: payload.attestation,
+                }
+            }
+            case 'android': {
+                return {
+                    device_id: payload.deviceInstallationId,
+                    platform: 'android',
+                    attestation: payload.attestation,
+                }
+            }
+            case 'web': {
+                return {
+                    device_id: payload.deviceInstallationId,
+                    platform: 'web',
+                    public_key: payload.publicKey,
+                    signature: payload.signature,
+                }
+            }
+        }
+    })()
     const response = await queryClient<unknown>({
         backend: 'pera',
         network,

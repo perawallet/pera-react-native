@@ -119,3 +119,61 @@ describe('integrity endpoints', () => {
         )
     })
 })
+
+describe('attestDevice web variant', () => {
+    beforeEach(() => queryClientMock.mockReset())
+
+    it('maps the web payload to snake_case', async () => {
+        queryClientMock.mockResolvedValue({
+            data: {
+                integrity_token: 'jwt-value',
+                expires_at: '2026-08-04T12:00:00.000Z',
+            },
+        })
+
+        const result = await attestDevice({
+            payload: {
+                deviceInstallationId: 'install-1',
+                platform: 'web',
+                publicKey: 'spki-base64',
+                signature: 'sig-base64',
+            },
+            network: 'mainnet',
+        })
+
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: '/api/v3/public/integrity/attest',
+                data: {
+                    device_id: 'install-1',
+                    platform: 'web',
+                    public_key: 'spki-base64',
+                    signature: 'sig-base64',
+                },
+            }),
+        )
+        expect(result).toEqual({
+            integrityToken: 'jwt-value',
+            expiresAt: '2026-08-04T12:00:00.000Z',
+        })
+    })
+
+    it('requests a challenge for the web platform', async () => {
+        queryClientMock.mockResolvedValue({
+            data: { challenge: 'challenge-value' },
+        })
+
+        const challenge = await requestChallenge({
+            deviceInstallationId: 'install-1',
+            platform: 'web',
+            network: 'mainnet',
+        })
+
+        expect(challenge).toBe('challenge-value')
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: { device_id: 'install-1', platform: 'web' },
+            }),
+        )
+    })
+})

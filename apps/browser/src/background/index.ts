@@ -24,6 +24,12 @@ import {
 } from '@perawallet/wallet-extension-platform-chrome'
 import { config } from '@perawallet/wallet-core-config'
 import { installConnectModalPairRoute } from './connect-modal-pair'
+import {
+    INTEGRITY_RENEW_ALARM,
+    ensureIntegrityToken,
+    handleIntegrityAlarm,
+    installIntegrityRenewal,
+} from './integrity'
 import { ensureOffscreenDocument } from './offscreen'
 import { installPushHandlers } from './push'
 import { parseActiveNetwork, resolveAdvertisedGenesis } from './network'
@@ -42,6 +48,11 @@ startStorageProxyHost()
 // instance is what registers the SDK's `push` listener, so deferring this into
 // an async init would let a worker woken by a push miss that very push.
 installPushHandlers()
+
+// Same top-level discipline: a worker woken by INTEGRITY_RENEW_ALARM must
+// already have its listener attached, and the token provider must be live
+// before the first outgoing request on this wake.
+installIntegrityRenewal()
 
 chrome.runtime.onInstalled.addListener(details => {
     console.info('[pera] extension installed:', details.reason)
@@ -95,6 +106,10 @@ chrome.alarms.onAlarm.addListener(alarm => {
             })
         return
     }
+    if (alarm.name === INTEGRITY_RENEW_ALARM) {
+        void handleIntegrityAlarm(alarm)
+        return
+    }
     void handleAutoLockAlarm(alarm)
 })
 
@@ -105,6 +120,11 @@ chrome.alarms.onAlarm.addListener(alarm => {
 void ensureOffscreenDocument().catch((error: unknown) => {
     console.error('[pera] startup ensure-offscreen failed:', error)
 })
+
+// Every SW wake re-checks the token, so a popup opening after an eviction
+// finds one already warm rather than racing a mint against the user's first
+// tap. ensureIntegrityToken never throws, so this needs no .catch.
+void ensureIntegrityToken()
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     const msg = message as { scope?: string; kind?: string }

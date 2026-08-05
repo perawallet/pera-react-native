@@ -348,6 +348,9 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../../packages/accounts
+      '@perawallet/wallet-core-app-integrity':
+        specifier: workspace:*
+        version: link:../../packages/app-integrity
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../../packages/assets
@@ -1403,6 +1406,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.43
+      fake-indexeddb:
+        specifier: ^6.2.5
+        version: 6.2.5
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -8559,6 +8565,10 @@ packages:
 
   exsolve@1.1.0:
     resolution: {integrity: sha512-D+42+T12DdIlJM3uepa55qGiL3sYdLBOxIl2ifQCzCHz4c7eiolaHsi3BIqEr7JxBzxv2pYZQX9kw16ziMcEmw==}
+
+  fake-indexeddb@6.2.5:
+    resolution: {integrity: sha512-CGnyrvbhPlWYMngksqrSSUT1BAVP49dZocrHuK0SvtR0D5TMs5wP0o3j7jexDJW01KSadjBp1M/71o/KR3nD1w==}
+    engines: {node: '>=18'}
 
   falcon-1024@0.2.0:
     resolution: {integrity: sha512-zKBiKGbAVmROFJNjy1iZ009V9wclL9lZkRAP7l7cfsHkZg14jyWgJk1XtAnmn2sxaKv2hsRTEVuTot/CSoQnSw==}
@@ -15813,6 +15823,8 @@ snapshots:
   exponential-backoff@3.1.3: {}
 
   exsolve@1.1.0: {}
+
+  fake-indexeddb@6.2.5: {}
 
   falcon-1024@0.2.0: {}
 

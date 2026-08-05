@@ -69,6 +69,7 @@ import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 import { useWebAppShell } from './useWebAppShell.web'
 import { updateQueryHeaders } from './bootstrap/query-headers'
 import { registerWcStoreRehydration } from './bootstrap/wcStoreRehydration.web'
+import { useIntegrityTokenSync } from './useIntegrityTokenSync.web'
 
 // Platform hydration is complete before AppShell mounts (App.web.tsx ensures
 // this), so getProvider() is safe to call at module scope here.
@@ -321,6 +322,7 @@ const AppShellContent = (): React.JSX.Element => {
     const provider = usePeraProvider()
     const isDarkMode = useIsDarkMode()
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
+    useIntegrityTokenSync()
 
     React.useEffect(() => {
         logger.setErrorReporter(
