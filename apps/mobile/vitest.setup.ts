@@ -2568,6 +2568,10 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         clearAllStores: vi.fn(),
         resetStoreRegistry: vi.fn(),
         getStoreRegistry: vi.fn(() => []),
+        registerAccountCleanup: vi.fn(),
+        runAccountCleanups: vi.fn().mockResolvedValue(undefined),
+        resetAccountCleanupRegistry: vi.fn(),
+        getAccountCleanupRegistry: vi.fn(() => []),
         createPersistStorage: () => ({
             getItem: () => null,
             setItem: () => {},

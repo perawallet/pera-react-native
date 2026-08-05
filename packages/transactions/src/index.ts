@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+// Side-effect import: registers the account-removal cleanup handler at module
+// scope so it is wired up whenever this package is loaded.
+import './register-account-cleanup'
+
 export const name = '@perawallet/wallet-core-transactions'
 
 export * from './models'
@@ -21,6 +25,7 @@ export {
     upsertTransactions,
     getTransactionHistory,
     getLatestTransactionRoundTime,
+    deleteTransactionsForAccount,
 } from './db'
 
 // Export API functions for advanced usage

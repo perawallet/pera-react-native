@@ -15,4 +15,5 @@ export {
     upsertTransactions,
     getTransactionHistory,
     getLatestTransactionRoundTime,
+    deleteTransactionsForAccount,
 } from './repository'
