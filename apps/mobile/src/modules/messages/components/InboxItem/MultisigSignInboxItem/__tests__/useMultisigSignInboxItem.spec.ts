@@ -29,7 +29,9 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 vi.mock('@perawallet/wallet-core-multisig', async importOriginal => {
     const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-multisig')>()
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-multisig')
+        >()
     return {
         ...actual,
         useSignRequestDetailQuery: (...args: unknown[]) =>
