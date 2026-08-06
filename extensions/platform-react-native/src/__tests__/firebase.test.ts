@@ -522,7 +522,9 @@ describe('RNFirebaseService', () => {
                     },
                 })
 
-                expect(listener).toHaveBeenCalledWith('pera://deeplink')
+                expect(listener).toHaveBeenCalledWith(
+                    expect.objectContaining({ url: 'pera://deeplink' }),
+                )
             })
 
             it('routes a foreground ACTION_PRESS tap to the notification-open listener', async () => {
@@ -545,7 +547,42 @@ describe('RNFirebaseService', () => {
                     },
                 })
 
-                expect(listener).toHaveBeenCalledWith('pera://action')
+                expect(listener).toHaveBeenCalledWith(
+                    expect.objectContaining({ url: 'pera://action' }),
+                )
+            })
+
+            it('forwards type and account_address for a multisig push that carries no deeplink url', async () => {
+                mockNotifee.requestPermission.mockResolvedValue({
+                    authorizationStatus: 1, //AUTHORIZED
+                })
+                const listener = vi.fn()
+                service.addNotificationOpenListener(listener)
+                await service.initializeNotifications()
+
+                const onForegroundEventCallback = (
+                    notifee.onForegroundEvent as any
+                ).mock.calls[0][0] as (event: any) => Promise<void>
+
+                await onForegroundEventCallback({
+                    type: 0, // EventType.PRESS
+                    detail: {
+                        notification: {
+                            data: {
+                                type: 'multisig-new-sign-request',
+                                account_address: 'MSIG_ADDR',
+                            },
+                        },
+                    },
+                })
+
+                // The sign-request push has no `url`; routing must still fire so
+                // the app can resolve it by type.
+                expect(listener).toHaveBeenCalledWith({
+                    url: undefined,
+                    type: 'multisig-new-sign-request',
+                    accountAddress: 'MSIG_ADDR',
+                })
             })
 
             it('should handle onForegroundEvent callback for unknown event type', async () => {

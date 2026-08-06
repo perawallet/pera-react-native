@@ -46,6 +46,7 @@ import notifee, {
 import {
     type CrashReportingService,
     type NotificationOpenListener,
+    type NotificationOpenPayload,
     type PushNotificationInitResult,
     type PushNotificationService,
     type PushTokenRefreshListener,
@@ -70,17 +71,23 @@ export const androidForegroundNotification = (
     smallIcon: NOTIFICATION_SMALL_ICON,
 })
 
+const asNonEmptyString = (value: unknown): string | undefined =>
+    typeof value === 'string' && value.length > 0 ? value : undefined
+
 /**
- * Pulls the deeplink URL out of a push payload. Both notifee and FCM expose
- * the dApp-supplied custom fields under `data`; we mirror the in-app
- * notification schema, which carries the deeplink in `url`.
+ * Pulls the actionable fields out of a push payload. Both notifee and FCM
+ * expose the dApp-supplied custom fields under `data`; we mirror the in-app
+ * notification schema (`url`, `type`, `account_address`). `type`/`accountAddress`
+ * are forwarded because some notifications (e.g. multisig sign requests) carry
+ * no sign-request `url` and can only be routed by type.
  */
-const extractDeeplinkUrl = (
+const extractNotificationPayload = (
     data: Record<string, unknown> | undefined,
-): string | undefined => {
-    const url = data?.url
-    return typeof url === 'string' && url.length > 0 ? url : undefined
-}
+): NotificationOpenPayload => ({
+    url: asNonEmptyString(data?.url),
+    type: asNonEmptyString(data?.type),
+    accountAddress: asNonEmptyString(data?.account_address),
+})
 
 export class RNFirebaseService
     implements
@@ -95,10 +102,10 @@ export class RNFirebaseService
     crashlytics: FirebaseCrashlyticsTypes.Module | null = null
 
     // Single listener (the app registers one at the root). A cold-start tap
-    // resolves during init, before the app mounts its listener, so the URL is
-    // buffered and replayed on the first registration.
+    // resolves during init, before the app mounts its listener, so the payload
+    // is buffered and replayed on the first registration.
     private notificationOpenListener: NotificationOpenListener | null = null
-    private pendingNotificationUrl: string | null = null
+    private pendingNotificationPayload: NotificationOpenPayload | null = null
 
     isSupported(): boolean {
         return true
@@ -107,14 +114,15 @@ export class RNFirebaseService
     private emitNotificationOpen(
         data: Record<string, unknown> | undefined,
     ): void {
-        const url = extractDeeplinkUrl(data)
-        if (!url) {
+        const payload = extractNotificationPayload(data)
+        // Nothing actionable — neither a deeplink URL nor a type to route by.
+        if (!payload.url && !payload.type) {
             return
         }
         if (this.notificationOpenListener) {
-            this.notificationOpenListener(url)
+            this.notificationOpenListener(payload)
         } else {
-            this.pendingNotificationUrl = url
+            this.pendingNotificationPayload = payload
         }
     }
 
@@ -122,9 +130,9 @@ export class RNFirebaseService
         listener: NotificationOpenListener,
     ): () => void {
         this.notificationOpenListener = listener
-        if (this.pendingNotificationUrl) {
-            listener(this.pendingNotificationUrl)
-            this.pendingNotificationUrl = null
+        if (this.pendingNotificationPayload) {
+            listener(this.pendingNotificationPayload)
+            this.pendingNotificationPayload = null
         }
         return () => {
             if (this.notificationOpenListener === listener) {
