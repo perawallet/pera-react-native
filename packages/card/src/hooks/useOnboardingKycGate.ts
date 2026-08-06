@@ -51,21 +51,26 @@ export const useOnboardingKycGate = ({
 }: UseOnboardingKycGateParams): UseOnboardingKycGateResult => {
     const { data: onboardingDetails, dataUpdatedAt } =
         useOnboardingDetailsQuery({ onboardingId })
-    const [refusedAt, setRefusedAt] = useState<Nullable<number>>(null)
+    // Snapshots the query's own dataUpdatedAt, not Date.now(): "newer" means
+    // the query refetched since the refusal, and a wall clock answers that only
+    // by coincidence — a refetch landing in the same millisecond as the refusal
+    // compares equal, and a genuinely VERIFIED record stays wrongly gated.
+    const [refusedUpdatedAt, setRefusedUpdatedAt] =
+        useState<Nullable<number>>(null)
 
     const kycState = onboardingDetails?.verificationState ?? null
     const isKycAccepted =
-        refusedAt === null
+        refusedUpdatedAt === null
             ? isKycSubmitted(kycState)
-            : isKycVerified(kycState) && dataUpdatedAt > refusedAt
+            : isKycVerified(kycState) && dataUpdatedAt !== refusedUpdatedAt
 
     const markServerRefused = useCallback(() => {
-        setRefusedAt(Date.now())
-    }, [])
+        setRefusedUpdatedAt(dataUpdatedAt)
+    }, [dataUpdatedAt])
 
     return {
         isKycRequired:
-            (onboardingDetails !== undefined || refusedAt !== null) &&
+            (onboardingDetails !== undefined || refusedUpdatedAt !== null) &&
             !isKycAccepted,
         markServerRefused,
     }
