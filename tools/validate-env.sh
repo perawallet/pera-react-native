@@ -123,10 +123,10 @@ case "$PROFILE" in
     ;;
 esac
 
-# Smoke builds reuse the ios/android profiles and only reach BrowserStack after
-# a full native build. Validate here so a missing credential costs seconds
-# rather than a finished archive.
-if [ "${SMOKE_BUILD:-}" = "true" ]; then
+# The smoke gate runs at the end of the staging workflows and only reaches
+# BrowserStack after a full native build and a store upload. Validate here so a
+# missing credential costs seconds rather than a finished archive.
+if [ "${RUN_SMOKE:-}" = "true" ]; then
   required_global+=(
     "BROWSERSTACK_USERNAME"
     "BROWSERSTACK_ACCESS_KEY"
