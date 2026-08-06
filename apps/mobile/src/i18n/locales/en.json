@@ -2651,6 +2651,7 @@
         },
         "form": {
             "swap": "Swap",
+            "insufficient_balance": "The amount exceeds your available balance.",
             "no_balance_title": "Nothing to swap",
             "no_balance_body": "This account holds no {{unit}}.",
             "percentage_error_title": "Couldn't calculate the amount",

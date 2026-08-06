@@ -80,10 +80,14 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
 
 let mockSelectedAccount: { address: string } = { address: 'TESTADDRESS123' }
 let mockPayBalance: Nullable<Decimal> = new Decimal('5000000')
+let mockIsPayBalanceFetched = true
+let mockIsPayBalanceError = false
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => mockSelectedAccount,
     useAccountAssetBalanceQuery: () => ({
         data: mockPayBalance ? { amount: mockPayBalance } : null,
+        isFetched: mockIsPayBalanceFetched,
+        isError: mockIsPayBalanceError,
     }),
     useAccountBalancesInvalidator: () => ({
         invalidate: vi.fn(),
@@ -200,6 +204,8 @@ describe('useSwapForm', () => {
         mockSlippage = null
         mockSelectedAccount = { address: 'TESTADDRESS123' }
         mockPayBalance = new Decimal('5000000')
+        mockIsPayBalanceFetched = true
+        mockIsPayBalanceError = false
         focusEffectCleanup = null
     })
 
@@ -528,5 +534,71 @@ describe('useSwapForm', () => {
         })
 
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+    })
+
+    describe('insufficient balance', () => {
+        it('flags an amount larger than the holding and blocks the swap', () => {
+            mockPayBalance = new Decimal(50)
+            const { result } = renderHook(() => useSwapForm())
+
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(1000))
+            })
+
+            expect(result.current.hasInsufficientBalance).toBe(true)
+            expect(result.current.canSwap).toBe(false)
+        })
+
+        it('allows an amount within the holding', () => {
+            mockPayBalance = new Decimal(50)
+            const { result } = renderHook(() => useSwapForm())
+
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(50))
+            })
+
+            expect(result.current.hasInsufficientBalance).toBe(false)
+        })
+
+        // The reported case: swapping an asset the account does not hold at all,
+        // where the balance query settles with no holding row.
+        it('treats a settled query with no holding as a zero balance', () => {
+            mockPayBalance = null
+            const { result } = renderHook(() => useSwapForm())
+
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(1))
+            })
+
+            expect(result.current.hasInsufficientBalance).toBe(true)
+        })
+
+        it('stays quiet until the balance query has settled', () => {
+            mockPayBalance = null
+            mockIsPayBalanceFetched = false
+            const { result } = renderHook(() => useSwapForm())
+
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(1))
+            })
+
+            expect(result.current.hasInsufficientBalance).toBe(false)
+        })
+
+        // `isFetched` is true after a failed fetch too, so without an explicit
+        // error check a dropped balance request reads as a zero holding and
+        // blocks the swap behind copy blaming the user's balance.
+        it('stays quiet when the balance query settled with an error', () => {
+            mockPayBalance = null
+            mockIsPayBalanceFetched = true
+            mockIsPayBalanceError = true
+            const { result } = renderHook(() => useSwapForm())
+
+            act(() => {
+                result.current.handlePayAmountChange(new Decimal(1))
+            })
+
+            expect(result.current.hasInsufficientBalance).toBe(false)
+        })
     })
 })
