@@ -53,3 +53,8 @@ opencode.json
 docs/ui-automation-test-ids.md
 docs/superpowers
 .claude/*.lock
+
+# Subagent-driven-development scratch workspace
+.superpowers/
+/apps/mobile/locale-shots-verify
+/apps/mobile/locale-shots-verify2

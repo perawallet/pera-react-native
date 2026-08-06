@@ -220,8 +220,10 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     )
                 validateSwapGroupAgainstQuote(signableDisplayable, quote)
             } catch (e) {
-                const message =
-                    e instanceof Error ? e.message : 'Swap validation failed'
+                // Raw text goes to the log, never to `message` — that string is
+                // rendered as the toast body in useSwapForm.
+                logger.warn('[swap] validation failed', { error: `${e}` })
+                const message = t('swap.execution.error_body')
                 setError({ phase: 'prepare', message })
                 setStatus('error')
                 void reportSwapFailure(
@@ -288,15 +290,19 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     return { kind: 'pending-cosign' }
                 } catch (e) {
                     const isRejection = isUserRejectionError(e)
+                    if (!isRejection) {
+                        logger.warn('[swap] propose failed', {
+                            error: `${e}`,
+                        })
+                    }
                     const message = isRejection
                         ? t('swap.execution.user_rejected')
-                        : // Guard rejections carry an i18n key, not English
-                          // prose — this branch is the display site.
+                        : // Guard rejections carry an i18n key of their own;
+                          // everything else gets the generic localized copy
+                          // rather than the raw error text (PERA-4795).
                           e instanceof QuantumSwapBlockedError
                           ? t(e.translationKey)
-                          : e instanceof Error
-                            ? e.message
-                            : 'Failed to propose transactions'
+                          : t('swap.execution.error_body')
                     setError({ phase: 'signing', message })
                     setStatus('error')
                     if (isRejection) {
@@ -333,15 +339,17 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         : []
             } catch (e) {
                 const isRejection = isUserRejectionError(e)
+                if (!isRejection) {
+                    logger.warn('[swap] signing failed', { error: `${e}` })
+                }
                 const message = isRejection
                     ? t('swap.execution.user_rejected')
-                    : // Guard rejections carry an i18n key, not English prose
-                      // — this branch is the display site.
+                    : // Guard rejections carry an i18n key of their own;
+                      // everything else gets the generic localized copy rather
+                      // than the raw error text (PERA-4795).
                       e instanceof QuantumSwapBlockedError
                       ? t(e.translationKey)
-                      : e instanceof Error
-                        ? e.message
-                        : 'Failed to sign transactions'
+                      : t('swap.execution.error_body')
                 setError({ phase: 'signing', message })
                 setStatus('error')
                 if (isRejection) {

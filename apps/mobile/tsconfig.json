@@ -18,6 +18,9 @@
       "@hooks/*": [
         "./src/hooks/*"
       ],
+      "@i18n/*": [
+        "./src/i18n/*"
+      ],
       "@analytics": [
         "./src/analytics"
       ],

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWSwitch, PWText, PWView } from '@components/core'
+import { PWInput, PWSwitch, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useFeatureFlagOverrides } from './useFeatureFlagOverrides'
 import { useLanguage } from '@hooks/useLanguage'
@@ -21,6 +21,8 @@ export const FeatureFlagOverrides = () => {
     const {
         configOverrides,
         booleanFlagKeys,
+        stringFlagKeys,
+        setStringOverride,
         expanded,
         toggleExpand,
         toggleOverride,
@@ -72,6 +74,38 @@ export const FeatureFlagOverrides = () => {
                             />
                         </PWView>
                     )}
+                </PWView>
+            ))}
+
+            {/* String-valued keys (e.g. active_locales) have no toggle form —
+                without a text field they'd be untestable on device. */}
+            {stringFlagKeys.map(key => (
+                <PWView
+                    key={key}
+                    style={styles.flagContainer}
+                >
+                    <PWView style={styles.textColumn}>
+                        <PWText
+                            variant='h4'
+                            style={styles.flagTitle}
+                        >
+                            {prettifyKey(key)}
+                        </PWText>
+                        <PWText
+                            variant='caption'
+                            style={styles.flagCaption}
+                        >
+                            {key}
+                        </PWText>
+                    </PWView>
+                    <PWInput
+                        testID={`feature_flag_string_input_${key}`}
+                        value={(configOverrides[key] as string) ?? ''}
+                        onChangeText={text => setStringOverride(key, text)}
+                        renderErrorMessage={false}
+                        autoCapitalize='none'
+                        autoCorrect={false}
+                    />
                 </PWView>
             ))}
         </PWView>

@@ -101,6 +101,13 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     },
 }))
 
+const mockShowError = vi.fn()
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({
+        showError: mockShowError,
+    }),
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         errorToast: mockErrorToast,
@@ -332,7 +339,10 @@ describe('useNameMultisigScreen', () => {
             await result.current.handleFinish()
         })
 
-        expect(mockErrorToast).toHaveBeenCalled()
+        expect(mockShowError).toHaveBeenCalledWith(
+            expect.any(Error),
+            'multisig.name.error_title',
+        )
         expect(mockExitAccountFlow).not.toHaveBeenCalled()
         expect(result.current.isCreating).toBe(false)
     })

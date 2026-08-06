@@ -654,14 +654,17 @@ describe('useSwapExecution', () => {
             )
         })
 
+        // Generic localized copy, not the pipeline's raw text — that goes to
+        // the log only (PERA-4795).
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'signing',
-            message: 'Pipeline boom',
+            message: 'swap.execution.error_body',
         })
         expect(result.current.status).toBe('error')
         expect(result.current.error?.phase).toBe('signing')
-        expect(result.current.error?.message).toBe('Pipeline boom')
+        expect(result.current.error?.message).toBe('swap.execution.error_body')
+        expect(result.current.error?.message).not.toContain('Pipeline boom')
 
         expect(mockUpdateSwapStatus).toHaveBeenCalledWith({
             swapId: '12345',
@@ -691,15 +694,18 @@ describe('useSwapExecution', () => {
         })
 
         // `t` is mocked to echo its key, so this pins the exact i18n key the
-        // user-facing message resolves through — the guard must NOT surface a
-        // hardcoded English sentence (`useSwapExecution` displays `e.message`
-        // verbatim for non-rejection failures).
+        // user-facing message resolves through — the guard carries its own key
+        // and must not collapse into the generic `swap.execution.error_body`
+        // every other non-rejection failure resolves to.
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'signing',
             message: 'swap.execution.quantum_fee_unsupported',
         })
         expect(result.current.status).toBe('error')
+        expect(result.current.error?.message).toBe(
+            'swap.execution.quantum_fee_unsupported',
+        )
 
         // The signing pipeline must never be invoked — the block happens
         // before the request is ever built, not inside its approve callback.

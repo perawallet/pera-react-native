@@ -14,6 +14,7 @@ import { toByteArray, fromByteArray } from 'base64-js'
 import { Decimal } from './decimal-config'
 import { logger } from './logging'
 import { isAlgoAssetName } from './algo'
+import { getActiveLocale } from './locale'
 
 export const encodeToBase64 = (bytes: Uint8Array) => {
     return fromByteArray(bytes)
@@ -123,7 +124,7 @@ const getDecimalFormatter = (locale: string): Intl.NumberFormat => {
 export const formatNumber = (
     amount: Decimal,
     precision: number,
-    locale: string = 'en-US',
+    locale: string = getActiveLocale(),
     minPrecision?: number,
 ) => {
     const decimal = amount.toFixed(Math.max(precision ?? 0, minPrecision ?? 0))
@@ -197,7 +198,7 @@ export const formatWithUnits = (
 
 export const formatRawNumberInput = (
     rawValue: string,
-    locale: string = 'en-US',
+    locale: string = getActiveLocale(),
 ) => {
     const formatter = getDecimalFormatter(locale)
     const decimalSeparator = formatter.format(1.1).charAt(1)
@@ -211,7 +212,7 @@ export const formatCurrency = (
     value: Decimal | string | number,
     precision: number,
     currency: string,
-    locale: string = 'en-US',
+    locale: string = getActiveLocale(),
     showSymbol: boolean = true,
     truncateToUnits: boolean = false,
     minPrecision?: number,
@@ -245,7 +246,7 @@ export const formatPercentage = (
 
 export const formatDatetime = (
     datetime?: string | Date,
-    locale: string = 'en-US',
+    locale: string = getActiveLocale(),
     style: 'short' | 'medium' | 'long' = 'long',
     part: 'both' | 'date' | 'time' = 'both',
 ) => {

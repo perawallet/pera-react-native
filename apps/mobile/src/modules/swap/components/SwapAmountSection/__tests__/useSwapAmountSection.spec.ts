@@ -30,14 +30,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    usePeraProvider: () => ({
-        deviceInfo: {
-            getDeviceLocale: () => 'en-US',
-        },
-    }),
-}))
-
 // fiat × 2 = asset units; asset ÷ 2 = fiat.
 const fiatToAsset = (fiat: Decimal | null) =>
     fiat ? fiat.mul(new Decimal(2)) : null

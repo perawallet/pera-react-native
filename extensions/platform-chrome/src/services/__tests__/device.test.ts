@@ -95,4 +95,25 @@ describe('ChromeDeviceInfoService', () => {
     it('is not a store build without an update_url', () => {
         expect(service.isStoreBuild()).toBe(false)
     })
+
+    it('returns every navigator language', () => {
+        vi.stubGlobal('navigator', {
+            userAgent: CHROME_UA,
+            language: 'en-US',
+            languages: ['en-US', 'en', 'fr'],
+        })
+        service = new ChromeDeviceInfoService()
+
+        expect(service.getDeviceLocales()).toEqual(['en-US', 'en', 'fr'])
+    })
+
+    it('falls back to the single navigator language when languages is absent', () => {
+        vi.stubGlobal('navigator', {
+            userAgent: CHROME_UA,
+            language: 'en-US',
+        })
+        service = new ChromeDeviceInfoService()
+
+        expect(service.getDeviceLocales()).toEqual(['en-US'])
+    })
 })
