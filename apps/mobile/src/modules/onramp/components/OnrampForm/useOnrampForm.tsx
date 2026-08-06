@@ -18,6 +18,7 @@ import {
     quoteDestinationAmount,
     type RampPair,
     type RampQuote,
+    type RampQuoteLimits,
 } from '@perawallet/wallet-core-onramp'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -38,7 +39,7 @@ type UseOnrampFormResult = {
     selectPaymentMethod: (paymentMethodId: string) => void
     isQuoting: boolean
     errorMessage: Nullable<string>
-    limits: Nullable<{ min: Decimal; max: Decimal }>
+    limits: Nullable<RampQuoteLimits>
     /** True when the effective selected quote is the highest-receive offer. */
     isBestOffer: boolean
     /** True when the selected pair is a Meld pair (provider/payment-method rows). */
@@ -95,6 +96,7 @@ export const useOnrampForm = (
         quotes,
         isQuoting,
         quotesError,
+        quoteLimits,
         selectedQuote,
         selectQuote,
         selectedPaymentMethodId,
@@ -111,13 +113,19 @@ export const useOnrampForm = (
         return quoteDestinationAmount(selectedQuote, sourceAmount)
     }, [selectedQuote, sourceAmount])
 
-    // Only XO quotes carry min/max source limits.
-    const limits = useMemo<Nullable<{ min: Decimal; max: Decimal }>>(
+    // XO quotes carry min/max in the quote itself; Meld limits only surface
+    // through a SourceAmountIsTooLow quote error (quoteLimits).
+    const xoLimits = useMemo<Nullable<{ min: Decimal; max: Decimal }>>(
         () =>
             selectedQuote?.kind === 'xo'
                 ? { min: selectedQuote.min.value, max: selectedQuote.max.value }
                 : null,
         [selectedQuote],
+    )
+
+    const limits = useMemo<Nullable<RampQuoteLimits>>(
+        () => xoLimits ?? quoteLimits,
+        [xoLimits, quoteLimits],
     )
 
     // XO inline limit validation, debounced so it doesn't flash mid-typing.
