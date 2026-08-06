@@ -137,6 +137,17 @@ updates:
       - dependency-name: react-native-nitro-modules
       - dependency-name: react-native-pager-view
       - dependency-name: react-native-keyboard-controller
+      # expo-image is the same lockstep case, but it bites at *launch* rather
+      # than at build: with EXPO_USE_PRECOMPILED_MODULES its XCFramework is
+      # downloaded prebuilt, so it is linked against whatever
+      # expo-modules-core existed when Expo published it — never against ours.
+      # 57.0.2 was built against the module-lifecycle API (didCreate,
+      # didStartListening, didStopListening, willDestroy) that core only gained
+      # in 57.0.9, so pairing it with the 57.0.7 core that expo@57.0.8 pins
+      # aborts in dyld before any JS runs. Nothing catches this: expo-image
+      # declares no dependency on expo-modules-core, and each artifact is
+      # fetched per-package. Pinned exactly, and moves only when the SDK does.
+      - dependency-name: expo-image
 
   # Pin GitHub Actions by SHA; Dependabot rewrites the SHA and updates the
   # trailing version comment so reviewers can see the human-readable bump.
