@@ -19,8 +19,8 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import { trackEvent, SwapEvent } from '@analytics'
+import { useLanguage } from '@hooks/useLanguage'
 
 type UseSwapAmountSectionParams = {
     variant: 'pay' | 'receive'
@@ -80,11 +80,11 @@ export const useSwapAmountSection = ({
     fiatToAsset,
     assetToFiat,
 }: UseSwapAmountSectionParams): UseSwapAmountSectionResult => {
-    const provider = usePeraProvider()
-    const deviceInfo = provider.deviceInfo
-
     const { data: assets } = useAssetsQuery([assetId])
     const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
+    // Passed explicitly rather than left to formatCurrency's getActiveLocale()
+    // default so a mid-session language switch actually invalidates the memo.
+    const { currentLanguage } = useLanguage()
 
     const isPay = variant === 'pay'
     const isFiatInput = isPay && isLocalCurrencyInput
@@ -119,7 +119,7 @@ export const useSwapAmountSection = ({
                 amount,
                 asset?.decimals ?? 0,
                 asset?.unitName ?? '',
-                deviceInfo.getDeviceLocale(),
+                currentLanguage,
                 false,
                 false,
                 0,
@@ -130,12 +130,12 @@ export const useSwapAmountSection = ({
             amount,
             asset?.decimals ?? 0,
             asset?.unitName ?? '',
-            deviceInfo.getDeviceLocale(),
+            currentLanguage,
             false,
             false,
             0,
         )
-    }, [isPay, isFiatInput, isFocused, rawText, amount, asset, deviceInfo])
+    }, [isPay, isFiatInput, isFocused, rawText, amount, asset, currentLanguage])
 
     const hasPositiveAmount = amount !== null && amount.greaterThan(0)
 

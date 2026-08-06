@@ -32,6 +32,7 @@ export interface DeviceInfoService {
     getDevicePlatform(): DevicePlatform
     getDeviceOSVersion(): string
     getDeviceLocale(): string
+    getDeviceLocales(): string[]
     getDeviceCountry(): string
     getDeviceModelId(): string
     getUserAgent(): string

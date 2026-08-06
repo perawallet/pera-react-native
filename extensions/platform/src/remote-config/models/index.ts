@@ -11,8 +11,6 @@
  */
 
 export const RemoteConfigKeys = {
-    disable_screen_capture_prevention: 'disable_screen_capture_prevention',
-    welcome_message: 'welcome_message',
     fee_warning_standard_fee: 'fee_warning_standard_fee',
     fee_warning_usd_threshold: 'fee_warning_usd_threshold',
     fee_min_txn_fee: 'fee_min_txn_fee',
@@ -32,6 +30,8 @@ export const RemoteConfigKeys = {
     enable_card_auto_funding: 'enable_card_auto_funding',
     enable_ssl_pinning_pera_api: 'enable_ssl_pinning_pera_api',
     enable_ssl_pinning_algod: 'enable_ssl_pinning_algod',
+    enable_language_selection: 'enable_language_selection',
+    active_locales: 'active_locales',
     terms_version: 'terms_version',
     network_reachability_url: 'network_reachability_url',
 } as const
@@ -43,8 +43,6 @@ export const RemoteConfigDefaults: Record<
     RemoteConfigKey,
     string | boolean | number
 > = {
-    disable_screen_capture_prevention: false,
-    welcome_message: 'Hello',
     fee_warning_standard_fee: 0.001,
     fee_warning_usd_threshold: 0.01,
     // Minimum transaction fee in µAlgo.
@@ -82,6 +80,18 @@ export const RemoteConfigDefaults: Record<
     // (Nodely) hosts — a separate kill switch so a node-side CA surprise can be
     // disabled without also dropping backend pinning, and vice versa.
     enable_ssl_pinning_algod: false,
+    // Dark-launched: the Settings language picker exists but stays hidden
+    // until Remote Config explicitly turns it on. Off everywhere — no
+    // dev/staging carve-out — because the backend hasn't populated
+    // active_locales yet, regardless of which bundles the client ships.
+    enable_language_selection: false,
+    // CSV of locale tags the backend has finished internationalizing (e.g.
+    // "es,de"). Only consulted when enable_language_selection is true —
+    // shipping a translation bundle (client-ready) and the backend
+    // supporting that language (server-ready) are independent signals, and
+    // this is where both have to agree before a locale becomes reachable.
+    // Empty until the backend team populates it per locale.
+    active_locales: '',
     // Bump to re-prompt every user for Terms & Conditions acceptance. The app
     // compares this against the last version the user accepted (stored on disk).
     terms_version: '1',

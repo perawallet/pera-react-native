@@ -20,15 +20,28 @@ import { useMemo } from 'react'
 export const useFeatureFlagOverrides = () => {
     const { configOverrides, setConfigOverride } = useRemoteConfigOverrides()
 
-    // This screen renders each flag as a boolean toggle, so only surface
-    // remote-config values that are actually booleans. String/number values
-    // (e.g. terms_version, thresholds) can't be toggled and are hidden here.
+    // Booleans get a toggle, strings a text field. Number-valued keys
+    // (e.g. thresholds) still have no editor and stay hidden.
     const booleanFlagKeys = useMemo(() => {
         const defaults = RemoteConfigDefaults as Record<string, unknown>
         return Object.keys(RemoteConfigKeys).filter(
             key => typeof defaults[key] === 'boolean',
         )
     }, [])
+
+    const stringFlagKeys = useMemo(() => {
+        const defaults = RemoteConfigDefaults as Record<string, unknown>
+        return Object.keys(RemoteConfigKeys).filter(
+            key => typeof defaults[key] === 'string',
+        )
+    }, [])
+
+    // An empty field means "no override", not "override with empty string" —
+    // otherwise clearing the box would gate every locale off rather than
+    // handing the key back to the real remote config value.
+    const setStringOverride = (key: string, value: string) => {
+        setConfigOverride(key, value === '' ? null : value)
+    }
 
     const expanded = useMemo(
         () => Object.keys(configOverrides),
@@ -60,6 +73,8 @@ export const useFeatureFlagOverrides = () => {
         configOverrides,
         setConfigOverride,
         booleanFlagKeys,
+        stringFlagKeys,
+        setStringOverride,
         expanded,
         toggleExpand,
         toggleOverride,

@@ -66,6 +66,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     WalletAccount: {} as unknown,
 }))
 
+const mockShowError = vi.fn()
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({
+        showError: mockShowError,
+    }),
+}))
+
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         showToast: mockShowToast,
@@ -231,8 +238,9 @@ describe('useNameAccountScreen', () => {
             await result.current.handleFinish()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            expect.any(Error),
+            'onboarding.create_account.error_title',
         )
         expect(mockExitAccountFlow).not.toHaveBeenCalled()
         expect(result.current.isCreating).toBe(false)

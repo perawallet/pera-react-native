@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { encodeToBase64, decodeFromBase64, toUrlSafeBase64 } from '../strings'
 import { hexToBytes, bytesToHex, utf8ByteLength } from '../strings'
@@ -26,6 +26,7 @@ import {
     formatTime,
 } from '../strings'
 import { logger } from '../logging'
+import { setActiveLocale } from '../locale'
 
 describe('utils/strings - dedupeSecondaryLabel', () => {
     test('hides the secondary when it equals the primary', () => {
@@ -485,5 +486,34 @@ describe('utils/strings - decodeLongString', () => {
     test('does not warn for safe-integer string values', () => {
         decodeLongString('123', 'someField')
         expect(logger.warn).not.toHaveBeenCalled()
+    })
+})
+
+describe('utils/strings - default locale', () => {
+    afterEach(() => {
+        setActiveLocale('en')
+    })
+
+    test('formatCurrency uses the active locale when none is passed', () => {
+        setActiveLocale('de')
+        expect(formatCurrency('1234', 2, 'USD')).toBe('$ 1.234,00')
+    })
+
+    test('formatDatetime uses the active locale when none is passed', () => {
+        setActiveLocale('en')
+        const enResult = formatDatetime(
+            '2024-01-15T00:00:00',
+            undefined,
+            'short',
+            'date',
+        )
+        setActiveLocale('de')
+        const deResult = formatDatetime(
+            '2024-01-15T00:00:00',
+            undefined,
+            'short',
+            'date',
+        )
+        expect(deResult).not.toBe(enResult)
     })
 })

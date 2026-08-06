@@ -109,6 +109,7 @@ const buildServices = (): PlatformServices => {
         getDevicePlatform: () => DevicePlatforms.web,
         getDeviceOSVersion: () => '0',
         getDeviceLocale: () => 'en-US',
+        getDeviceLocales: () => ['en-US'],
         getDeviceCountry: () => 'US',
         getDeviceModelId: () => 'test-model-id',
         getUserAgent: () => 'Pera/test',

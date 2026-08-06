@@ -60,4 +60,16 @@ describe('services/settings/useSettings', () => {
 
         expect(result.current.privacyMode).toBe(true)
     })
+
+    test('exposes language and setLanguage', () => {
+        const { result } = renderHook(() => useSettings())
+
+        expect(result.current.language).toBe('system')
+
+        act(() => {
+            result.current.setLanguage('de')
+        })
+
+        expect(result.current.language).toBe('de')
+    })
 })

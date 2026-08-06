@@ -12,39 +12,16 @@
 
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { RemoteConfigService } from '@perawallet/wallet-extension-platform'
+import { readRemoteConfigWithOverrides } from '../utils/readRemoteConfigWithOverrides'
 import { useRemoteConfigOverrides } from './useRemoteConfigOverrides'
 
 export const RemoteConfigServiceContainerKey = 'RemoteConfigService'
 
 export const useRemoteConfig = (): RemoteConfigService => {
-    const configOverrides = useRemoteConfigOverrides()
+    const { configOverrides } = useRemoteConfigOverrides()
 
-    const remoteConfigService = getProvider().remoteConfig
-
-    const wrapperService: RemoteConfigService = {
-        initializeRemoteConfig: () =>
-            remoteConfigService.initializeRemoteConfig(),
-        getStringValue: (key, fallback) => {
-            const override = configOverrides.configOverrides[key]
-            if (override !== undefined && typeof override === 'string') {
-                return override
-            }
-            return remoteConfigService.getStringValue(key, fallback)
-        },
-        getBooleanValue: (key, fallback) => {
-            const override = configOverrides.configOverrides[key]
-            if (override !== undefined && typeof override === 'boolean') {
-                return override
-            }
-            return remoteConfigService.getBooleanValue(key, fallback)
-        },
-        getNumberValue: (key, fallback) => {
-            const override = configOverrides.configOverrides[key]
-            if (override !== undefined && typeof override === 'number') {
-                return override
-            }
-            return remoteConfigService.getNumberValue(key, fallback)
-        },
-    }
-    return wrapperService
+    return readRemoteConfigWithOverrides(
+        getProvider().remoteConfig,
+        configOverrides,
+    )
 }

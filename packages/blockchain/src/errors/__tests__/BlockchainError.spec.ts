@@ -11,12 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import {
-    BlockchainError,
-    TransactionError,
-    SigningError,
-    InvalidTransactionError,
-} from '../BlockchainError'
+import { BlockchainError } from '../BlockchainError'
 
 describe('blockchain error copy', () => {
     test('BlockchainError defaults to the generic blockchain key', () => {
@@ -25,50 +20,14 @@ describe('blockchain error copy', () => {
         expect(error.metadata.messageKey).toBe('errors.blockchain.generic')
     })
 
-    test('TransactionError declares its key', () => {
-        const error = new TransactionError('TX1', new Error('node rejected'))
-
-        expect(error.metadata.messageKey).toBe('errors.blockchain.transaction')
-    })
-
-    test('TransactionError declares its key even without a txId', () => {
-        const error = new TransactionError(undefined, new Error('boom'))
-
-        expect(error.metadata.messageKey).toBe('errors.blockchain.transaction')
-    })
-
-    test('TransactionError still sets params when txId is undefined', () => {
-        // Regression guard: the old code only assigned params inside `if (txId)`,
-        // so params stayed undefined whenever txId was falsy — exactly the case
-        // where {{cause}} would have rendered literally in the old copy.
-        const error = new TransactionError(undefined, new Error('boom'))
-
-        expect(error.metadata.params).toEqual({
-            txId: undefined,
-            cause: 'boom',
+    test('subclass metadata overrides the base key', () => {
+        // AlgodError is the only real subclass and resolves its copy through
+        // getAlgodMessage instead; this guards the override path the base
+        // class exists to provide.
+        const error = new BlockchainError('internal detail', undefined, {
+            messageKey: 'errors.general.body',
         })
-    })
 
-    test('SigningError declares its key', () => {
-        const error = new SigningError(new Error('user cancelled'))
-
-        expect(error.metadata.messageKey).toBe('errors.blockchain.signing')
-    })
-
-    test('InvalidTransactionError declares its key', () => {
-        const error = new InvalidTransactionError(new Error('bad fee'))
-
-        expect(error.metadata.messageKey).toBe(
-            'errors.blockchain.invalid_transaction',
-        )
-    })
-
-    test('keeps cause in params for logging without showing it to users', () => {
-        // Guards against a future cleanup stripping `cause` as "unused" now that
-        // the copy no longer interpolates it — not a check of this task's
-        // messageKey wiring, since SigningError already set params this way.
-        const error = new SigningError(new Error('raw algod dump'))
-
-        expect(error.metadata.params).toEqual({ cause: 'raw algod dump' })
+        expect(error.metadata.messageKey).toBe('errors.general.body')
     })
 })

@@ -22,7 +22,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useModalState } from '@hooks/useModalState'
-import { useToast } from '@hooks/useToast'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { deferToNextCycle, type Nullable } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
@@ -46,7 +46,7 @@ export const useAddAccountScreen = () => {
     } = useCreateAccount()
     const { buildNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
     const { hasMultipleHDWallets } = useHDWalletGroups()
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
     // TODO(card): TEMP — a completed Baanx onboarding persists `isAuthenticated`,
@@ -98,14 +98,7 @@ export const useAddAccountScreen = () => {
                     }
                 } catch (error) {
                     if (!isMounted()) return
-                    // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
-                    showToast({
-                        title: t('onboarding.create_account.error_title'),
-                        body: t('onboarding.create_account.error_message', {
-                            error: `${error}`,
-                        }),
-                        type: 'error',
-                    })
+                    showError(error, t('onboarding.create_account.error_title'))
                 } finally {
                     if (isMounted()) closeCreatingAccount()
                 }
@@ -116,7 +109,7 @@ export const useAddAccountScreen = () => {
             openCreatingAccount,
             closeCreatingAccount,
             navigation,
-            showToast,
+            showError,
             t,
         ],
     )

@@ -13,6 +13,5 @@
 export * from './types'
 export * from './registry'
 export * from './constants'
-export * from './errors'
 export { discoverAccounts, type DiscoverAccountsOptions } from './discovery'
 export { verifyAddress } from './verify'

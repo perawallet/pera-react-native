@@ -12,7 +12,7 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { SettingsState, ThemeMode } from '../models'
+import type { SettingsState, ThemeMode, LanguagePreference } from '../models'
 import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -21,7 +21,25 @@ const STORE_NAME = 'settings-store'
 const initialState = {
     theme: 'system' as ThemeMode,
     privacyMode: false,
+    language: 'system' as LanguagePreference,
     preferences: {} as Record<string, string | boolean | number>,
+}
+
+/**
+ * v1 persisted state has no `language` field. Exported (rather than inlined
+ * in the persist options) so the migration itself is directly unit-testable.
+ */
+export const migrateSettingsState = (
+    persistedState: unknown,
+    version: number,
+): SettingsState => {
+    if (version < 2) {
+        return {
+            ...(persistedState as SettingsState),
+            language: 'system',
+        }
+    }
+    return persistedState as SettingsState
 }
 
 export const useSettingsStore: UseBoundStore<
@@ -32,6 +50,7 @@ export const useSettingsStore: UseBoundStore<
             ...initialState,
             setTheme: (theme: ThemeMode) => set({ theme }),
             setPrivacyMode: (privacyMode: boolean) => set({ privacyMode }),
+            setLanguage: (language: LanguagePreference) => set({ language }),
             setPreference: (key: string, value: string | boolean | number) => {
                 set({ preferences: { ...get().preferences, [key]: value } })
             },
@@ -55,10 +74,12 @@ export const useSettingsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
+            version: 2,
+            migrate: migrateSettingsState,
             partialize: state => ({
                 theme: state.theme,
                 privacyMode: state.privacyMode,
+                language: state.language,
                 preferences: state.preferences,
             }),
         },
