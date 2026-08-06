@@ -80,6 +80,58 @@ describe('useMultisigCreationStore', () => {
         expect(result.current.participants[0].address).toBe('ADDR1')
     })
 
+    it('lowers the threshold to match when a removal drops the participant count below it', () => {
+        const { result } = renderHook(() => useMultisigCreationStore())
+
+        act(() => {
+            result.current.addParticipant({ address: 'ADDR1' })
+            result.current.addParticipant({ address: 'ADDR2' })
+            result.current.addParticipant({ address: 'ADDR3' })
+            result.current.setThreshold(3)
+        })
+
+        act(() => {
+            result.current.removeParticipant(0)
+        })
+
+        expect(result.current.participants).toHaveLength(2)
+        expect(result.current.threshold).toBe(2)
+    })
+
+    it('leaves the threshold untouched when it still fits the remaining participants', () => {
+        const { result } = renderHook(() => useMultisigCreationStore())
+
+        act(() => {
+            result.current.addParticipant({ address: 'ADDR1' })
+            result.current.addParticipant({ address: 'ADDR2' })
+            result.current.addParticipant({ address: 'ADDR3' })
+            result.current.setThreshold(2)
+        })
+
+        act(() => {
+            result.current.removeParticipant(0)
+        })
+
+        expect(result.current.participants).toHaveLength(2)
+        expect(result.current.threshold).toBe(2)
+    })
+
+    it('never lets the threshold fall below 1 when the last participants are removed', () => {
+        const { result } = renderHook(() => useMultisigCreationStore())
+
+        act(() => {
+            result.current.addParticipant({ address: 'ADDR1' })
+            result.current.setThreshold(2)
+        })
+
+        act(() => {
+            result.current.removeParticipant(0)
+        })
+
+        expect(result.current.participants).toHaveLength(0)
+        expect(result.current.threshold).toBe(1)
+    })
+
     it('updates every row matching an address', () => {
         const { result } = renderHook(() => useMultisigCreationStore())
 
