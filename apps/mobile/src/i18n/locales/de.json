@@ -1487,7 +1487,9 @@
             "addresses_count": "{{count}} Adressen",
             "select_all": "Alle auswählen",
             "already_imported": "bereits importiert",
-            "finish_button": "Kontoerstellung abschließen"
+            "finish_button": "Kontoerstellung abschließen",
+            "all_imported_title": "Bereits in deinem Wallet",
+            "all_imported_body": "Alle Adressen, die dieses Wallet ableitet, sind bereits in Pera — einschließlich derer, die du nur beobachtest. Entferne eine Adresse, um sie mit ihrem privaten Schlüssel erneut hinzuzufügen."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed Konten gefunden",
@@ -2703,7 +2705,9 @@
             "success_body": "Swap von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
             "user_rejected": "Swap abgebrochen",
             "pending_cosign_title": "Swap-Anfrage gesendet",
-            "pending_cosign_body": "Dein Swap benötigt eine weitere Signatur. Er wird abgeschlossen, sobald der andere Signierer ihn in seinem Posteingang genehmigt."
+            "pending_cosign_body": "Dein Swap benötigt eine weitere Signatur. Er wird abgeschlossen, sobald der andere Signierer ihn in seinem Posteingang genehmigt.",
+            "quantum_fee_unsupported": "Quantum-Konten können noch nicht swappen. Die Swap-Gebühr wird von unseren Servern festgelegt und deckt die höhere Gebühr nicht ab, die eine Quantum-Signatur benötigt.",
+            "quantum_multisig_unsupported": "Quantum-Konten können nicht aus einem Gemeinschaftskonto swappen. Quantum-Schlüssel können nicht an der Multisignatur-Signierung teilnehmen."
         },
         "signing": {
             "source_name": "Swap",
