@@ -71,16 +71,10 @@ export const useStyles = makeStyles(theme => {
             paddingVertical: theme.spacing.xl,
             alignItems: 'center',
         },
-        // An elevated card rather than a flush row, matching native: the
-        // clipboard offer is an action distinct from the list beneath it.
-        // Nothing between PWScreen (horizontalPadding='none') and the list
-        // insets a row, so the gutter is margin here — padding would put the
-        // card edge under the screen edge.
         pasteRow: {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.lg,
-            marginHorizontal: theme.spacing.xl,
             marginBottom: theme.spacing.sm,
             padding: theme.spacing.lg,
             borderRadius: theme.borderRadius.md,
