@@ -167,6 +167,7 @@
     },
     "address_entry": {
         "scan_qr": "QR-Code scannen",
+        "paste_from_clipboard": "Aus Zwischenablage einfügen",
         "invalid_qr_title": "Ungültiger QR-Code",
         "invalid_qr_body": "Dieser QR-Code enthält keine Wallet-Adresse",
         "address": "Adresse",
