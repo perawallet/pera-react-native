@@ -56,3 +56,5 @@ docs/superpowers
 
 # Subagent-driven-development scratch workspace
 .superpowers/
+/apps/mobile/locale-shots-verify
+/apps/mobile/locale-shots-verify2

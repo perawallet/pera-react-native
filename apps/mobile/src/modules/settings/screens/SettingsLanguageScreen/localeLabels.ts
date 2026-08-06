@@ -12,13 +12,14 @@
 
 const LOCALE_LABELS: Readonly<Record<string, string>> = {
     en: 'English',
+    de: 'Deutsch',
 }
 
 /**
  * Language names are shown in their own language, not translated into the
  * active UI language — the standard convention for language pickers, and it
  * sidesteps needing a translation to name a translation. Falls back to the
- * raw tag for any locale without an entry (harmless today: only `en` ships).
+ * raw tag for any locale without an entry.
  */
 export const getLocaleLabel = (locale: string): string =>
     LOCALE_LABELS[locale] ?? locale

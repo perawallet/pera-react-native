@@ -14,8 +14,8 @@ import { describe, it, expect } from 'vitest'
 import { resolveLocale } from '../locales'
 
 // Exercises the full wave-one matrix (design doc §4.1) even though only `en`
-// has a real bundle today — resolveLocale takes the supported set as a
-// parameter for exactly this reason.
+// and `de` have real bundles today — resolveLocale takes the supported set
+// as a parameter for exactly this reason.
 const SIX_LOCALES = new Set(['en', 'es', 'de', 'fr', 'tr', 'pt-BR'])
 
 describe('i18n/locales - resolveLocale', () => {
