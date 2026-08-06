@@ -126,7 +126,7 @@ describe('RNFirebaseService', () => {
                     asBoolean: () => true,
                     asNumber: () => 42,
                 } as any)
-                const result = service.getStringValue('welcome_message')
+                const result = service.getStringValue('active_locales')
                 expect(result).toBe('mock-string-value')
             })
 
@@ -137,7 +137,7 @@ describe('RNFirebaseService', () => {
                     asNumber: () => 42,
                 } as any)
                 const result = service.getStringValue(
-                    'welcome_message',
+                    'active_locales',
                     'fallback',
                 )
                 expect(result).toBe('mock-string-value')
@@ -148,7 +148,7 @@ describe('RNFirebaseService', () => {
                     throw new Error('no value')
                 })
                 const result = service.getStringValue(
-                    'welcome_message',
+                    'active_locales',
                     'fallback',
                 )
                 expect(result).toBe('fallback')
@@ -158,7 +158,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getStringValue('welcome_message')
+                const result = service.getStringValue('active_locales')
                 expect(result).toBe('')
             })
         })
@@ -175,7 +175,7 @@ describe('RNFirebaseService', () => {
                     asNumber: () => 42,
                     getSource: () => 'remote',
                 } as any)
-                const result = service.getBooleanValue('welcome_message')
+                const result = service.getBooleanValue('enable_pera_card')
                 expect(result).toEqual(true)
             })
 
@@ -186,7 +186,10 @@ describe('RNFirebaseService', () => {
                     asNumber: () => 42,
                     getSource: () => 'remote',
                 } as any)
-                const result = service.getBooleanValue('welcome_message', false)
+                const result = service.getBooleanValue(
+                    'enable_pera_card',
+                    false,
+                )
                 expect(result).toEqual(true)
             })
 
@@ -194,7 +197,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getBooleanValue('welcome_message', true)
+                const result = service.getBooleanValue('enable_pera_card', true)
                 expect(result).toEqual(true)
             })
 
@@ -202,7 +205,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getBooleanValue('welcome_message')
+                const result = service.getBooleanValue('enable_pera_card')
                 expect(result).toEqual(false)
             })
 
@@ -251,7 +254,7 @@ describe('RNFirebaseService', () => {
                     asBoolean: () => true,
                     asNumber: () => 42,
                 } as any)
-                const result = service.getNumberValue('welcome_message')
+                const result = service.getNumberValue('fee_min_txn_fee')
                 expect(result).toEqual(42)
             })
 
@@ -261,7 +264,7 @@ describe('RNFirebaseService', () => {
                     asBoolean: () => true,
                     asNumber: () => 42,
                 } as any)
-                const result = service.getNumberValue('welcome_message', 100)
+                const result = service.getNumberValue('fee_min_txn_fee', 100)
                 expect(result).toEqual(42)
             })
 
@@ -269,7 +272,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getNumberValue('welcome_message', 100)
+                const result = service.getNumberValue('fee_min_txn_fee', 100)
                 expect(result).toEqual(100)
             })
 
@@ -277,7 +280,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getNumberValue('welcome_message')
+                const result = service.getNumberValue('fee_min_txn_fee')
                 expect(result).toEqual(0)
             })
         })

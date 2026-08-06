@@ -3263,11 +3263,9 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         logEvent: vi.fn(),
     })),
     RemoteConfigDefaults: {
-        welcome_message: 'Hello',
         pera_7_migration: false,
     },
     RemoteConfigKeys: {
-        welcome_message: 'welcome_message',
         fee_warning_standard_fee: 'fee_warning_standard_fee',
         fee_warning_usd_threshold: 'fee_warning_usd_threshold',
         staking_projects: 'staking_projects',

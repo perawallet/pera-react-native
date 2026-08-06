@@ -11,8 +11,6 @@
  */
 
 export const RemoteConfigKeys = {
-    disable_screen_capture_prevention: 'disable_screen_capture_prevention',
-    welcome_message: 'welcome_message',
     fee_warning_standard_fee: 'fee_warning_standard_fee',
     fee_warning_usd_threshold: 'fee_warning_usd_threshold',
     fee_min_txn_fee: 'fee_min_txn_fee',
@@ -45,8 +43,6 @@ export const RemoteConfigDefaults: Record<
     RemoteConfigKey,
     string | boolean | number
 > = {
-    disable_screen_capture_prevention: false,
-    welcome_message: 'Hello',
     fee_warning_standard_fee: 0.001,
     fee_warning_usd_threshold: 0.01,
     // Minimum transaction fee in µAlgo.
