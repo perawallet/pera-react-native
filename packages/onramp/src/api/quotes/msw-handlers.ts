@@ -45,3 +45,24 @@ export const mockCreateRampQuote = ({
         return HttpResponse.json(response, { status })
     })
 }
+
+export type MockCreateRampQuoteErrorParams = {
+    /** Pera error envelope (e.g. SourceAmountIsTooLow); not the quotes schema. */
+    response: Record<string, unknown>
+    status?: number
+}
+
+// Error twin of mockCreateRampQuote: serves a Pera API error body, which the
+// success-schema validation above would reject by design.
+export const mockCreateRampQuoteError = ({
+    response,
+    status = 400,
+}: MockCreateRampQuoteErrorParams): HttpHandler =>
+    http.post('*/v1/ramp/quotes/', async ({ request }) => {
+        const validated = await validateMockRequest(
+            createRampQuoteRequestSchema,
+            request,
+        )
+        if (!validated.ok) return validated.response
+        return HttpResponse.json(response, { status })
+    })

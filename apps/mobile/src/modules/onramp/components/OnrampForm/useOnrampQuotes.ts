@@ -18,7 +18,9 @@ import {
     toOnrampUserMessage,
     parseRampAmount,
     pickBestQuote,
+    resolveRampQuoteLimits,
     type RampQuote,
+    type RampQuoteLimits,
 } from '@perawallet/wallet-core-onramp'
 import {
     isConnectivityError,
@@ -39,6 +41,12 @@ type UseOnrampQuotesResult = {
     isQuoting: boolean
     /** Fetch-side error (no payment methods / request failure); null otherwise. */
     quotesError: Nullable<string>
+    /**
+     * Provider min/max parsed from a SourceAmountIsTooLow quote error. Sticky
+     * across later successes so the MIN/MAX pill stays usable; cleared on pair
+     * change.
+     */
+    quoteLimits: Nullable<RampQuoteLimits>
     /** Effective selected quote: the user's pick, else the auto-picked best. */
     selectedQuote: Nullable<RampQuote>
     selectQuote: (quoteId: string) => void
@@ -70,6 +78,8 @@ export const useOnrampQuotes = ({
         useState<Nullable<string>>(null)
     const [isQuoting, setIsQuoting] = useState(false)
     const [quotesError, setQuotesError] = useState<Nullable<string>>(null)
+    const [quoteLimits, setQuoteLimits] =
+        useState<Nullable<RampQuoteLimits>>(null)
 
     // React Query v5 mutateAsync is referentially stable, so it can sit in the
     // effect dependency list without retriggering it.
@@ -121,10 +131,16 @@ export const useOnrampQuotes = ({
                 } catch (error) {
                     if (requestId !== requestIdRef.current) return
                     setQuotes([])
+                    const limits = resolveRampQuoteLimits(error)
+                    setQuoteLimits(limits)
                     setQuotesError(
                         isConnectivityError(error)
                             ? t('errors.network.no_connection.body')
-                            : toOnrampUserMessage(error),
+                            : limits?.min
+                              ? t('onramp.form.amount_below_min', {
+                                    min: limits.min.toString(),
+                                })
+                              : toOnrampUserMessage(error),
                     )
                     setIsQuoting(false)
                 }
@@ -146,6 +162,7 @@ export const useOnrampQuotes = ({
         setQuotes([])
         setSelectedQuoteId(null)
         setQuotesError(null)
+        setQuoteLimits(null)
     }, [pairId, isMeld])
 
     // --- selection -------------------------------------------------------
@@ -181,6 +198,7 @@ export const useOnrampQuotes = ({
         quotes,
         isQuoting,
         quotesError,
+        quoteLimits,
         selectedQuote,
         selectQuote,
         selectedPaymentMethodId: selectedQuote?.paymentMethod.id ?? null,
