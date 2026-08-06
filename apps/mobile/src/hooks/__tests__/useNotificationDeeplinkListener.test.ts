@@ -14,16 +14,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useNotificationDeeplinkListener } from '../useNotificationDeeplinkListener'
 
+type NotificationOpenPayload = {
+    url?: string
+    type?: string
+    accountAddress?: string
+}
+
 const mocks = vi.hoisted(() => {
-    const state = { listener: null as ((url: string) => void) | null }
+    const state = {
+        listener: null as ((payload: NotificationOpenPayload) => void) | null,
+    }
     const unsubscribe = vi.fn()
     return {
         state,
         unsubscribe,
         handleDeepLink: vi.fn(),
         isValidDeepLink: vi.fn((_: string) => true),
+        handleMultisigNotification: vi.fn(),
         addNotificationOpenListener: vi.fn(
-            (listener: (url: string) => void) => {
+            (listener: (payload: NotificationOpenPayload) => void) => {
                 state.listener = listener
                 return unsubscribe
             },
@@ -46,6 +55,18 @@ vi.mock('../useDeepLink', () => ({
     }),
 }))
 
+vi.mock('@modules/messages/hooks', () => ({
+    getMultisigIntentKind: (type: string | undefined) =>
+        type === 'multisig-new-sign-request'
+            ? 'sign'
+            : type === 'multi-sig-import-account'
+              ? 'import'
+              : null,
+    useHandleMultisigNotification: () => ({
+        handleMultisigNotification: mocks.handleMultisigNotification,
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
@@ -55,6 +76,7 @@ describe('useNotificationDeeplinkListener', () => {
         mocks.state.listener = null
         mocks.unsubscribe.mockReset()
         mocks.handleDeepLink.mockReset()
+        mocks.handleMultisigNotification.mockReset()
         mocks.addNotificationOpenListener.mockClear()
         mocks.isValidDeepLink.mockReset().mockReturnValue(true)
     })
@@ -71,7 +93,7 @@ describe('useNotificationDeeplinkListener', () => {
     it('routes a tapped-notification deeplink through handleDeepLink', () => {
         renderHook(() => useNotificationDeeplinkListener())
 
-        act(() => mocks.state.listener?.('perawallet://app/cards'))
+        act(() => mocks.state.listener?.({ url: 'perawallet://app/cards' }))
 
         expect(mocks.handleDeepLink).toHaveBeenCalledWith(
             'perawallet://app/cards',
@@ -84,8 +106,47 @@ describe('useNotificationDeeplinkListener', () => {
         mocks.isValidDeepLink.mockReturnValue(false)
         renderHook(() => useNotificationDeeplinkListener())
 
-        act(() => mocks.state.listener?.('https://example.com/marketing'))
+        act(() =>
+            mocks.state.listener?.({ url: 'https://example.com/marketing' }),
+        )
 
+        expect(mocks.handleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('routes a multisig sign-request push through the multisig resolver, not handleDeepLink', () => {
+        renderHook(() => useNotificationDeeplinkListener())
+
+        act(() =>
+            mocks.state.listener?.({
+                type: 'multisig-new-sign-request',
+                accountAddress: 'MSIG_ADDR',
+                // Address-keyed URL the payload actually carries — must be
+                // ignored in favor of type-based routing.
+                url: 'perawallet://asset-inbox/?address=MSIG_ADDR',
+            }),
+        )
+
+        expect(mocks.handleMultisigNotification).toHaveBeenCalledWith(
+            'sign',
+            'MSIG_ADDR',
+        )
+        expect(mocks.handleDeepLink).not.toHaveBeenCalled()
+    })
+
+    it('routes a multisig import push through the multisig resolver', () => {
+        renderHook(() => useNotificationDeeplinkListener())
+
+        act(() =>
+            mocks.state.listener?.({
+                type: 'multi-sig-import-account',
+                accountAddress: 'MSIG_IMPORT_ADDR',
+            }),
+        )
+
+        expect(mocks.handleMultisigNotification).toHaveBeenCalledWith(
+            'import',
+            'MSIG_IMPORT_ADDR',
+        )
         expect(mocks.handleDeepLink).not.toHaveBeenCalled()
     })
 })
