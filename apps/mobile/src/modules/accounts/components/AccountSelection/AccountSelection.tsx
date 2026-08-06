@@ -135,7 +135,10 @@ export const AccountSelection = ({
                     })
                     return
                 }
-                navigation.navigate('PeraCard', { screen: 'PeraCardAccount' })
+                navigation.navigate('TabBar', {
+                    screen: 'Home',
+                    params: { screen: 'PeraCardAccount' },
+                })
                 return
             }
             case 'sort': {

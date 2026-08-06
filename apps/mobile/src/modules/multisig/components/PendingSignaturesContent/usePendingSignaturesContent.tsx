@@ -43,6 +43,7 @@ import {
     getStatusBannerVariant,
     type StatusBannerVariant,
 } from '../../utils/getStatusBannerVariant'
+import { selectCosignDispatchAddresses } from '../../utils/selectCosignDispatchAddresses'
 import { getSignedResponseCount } from '../../utils/signRequestStatus'
 import { splitLocalUnsignedSigners } from '../../utils/splitLocalUnsignedSigners'
 
@@ -258,12 +259,29 @@ export const usePendingSignaturesContent =
 
         const handleSign = useCallback(() => {
             if (!signRequest) return
-            if (localKeyUnsignedSigners.length === 0) return
+            // Skip signers already in flight and cap the batch at the
+            // signatures still needed — otherwise a repeated Sign (or a device
+            // holding more participants than the threshold needs) stacks
+            // surplus cosign sheets that then linger.
+            const toDispatch = selectCosignDispatchAddresses({
+                localKeySigners: localKeyUnsignedSigners,
+                inFlightAddresses: inFlightCosignAddresses,
+                threshold,
+                signedCount,
+            })
+            if (toDispatch.length === 0) return
             trackEvent(MultisigEvent.ConfirmTransaction)
-            for (const signer of localKeyUnsignedSigners) {
-                dispatchCosign(signer.address)
+            for (const address of toDispatch) {
+                dispatchCosign(address)
             }
-        }, [signRequest, localKeyUnsignedSigners, dispatchCosign])
+        }, [
+            signRequest,
+            localKeyUnsignedSigners,
+            inFlightCosignAddresses,
+            threshold,
+            signedCount,
+            dispatchCosign,
+        ])
 
         const handleSignParticipant = useCallback(
             (address: string) => {

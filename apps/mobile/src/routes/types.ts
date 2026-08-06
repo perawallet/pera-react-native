@@ -26,6 +26,7 @@ import { type MultisigStackParamList } from '@modules/multisig'
 import {
     type PeraCardStackParamList,
     type CardOnboardingStackParamList,
+    type PeraCardFlowParamList,
 } from '@modules/card'
 import type { BackupStackParamList } from '@modules/backup/routes/types'
 import { type SearchStackParamsList } from '@modules/search'
@@ -71,7 +72,7 @@ export type RootStackParamList = {
         historyTransaction?: TransactionHistoryItem
         groupId?: string
     }
-}
+} & PeraCardFlowParamList
 
 export type AppStackParamList = RootStackParamList &
     OnboardingStackParamList &

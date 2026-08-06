@@ -44,6 +44,23 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             marginTop: theme.spacing.xxl,
             marginBottom: theme.spacing.xl,
         },
+        handlingOverlay: {
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'absolute',
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            gap: theme.spacing.lg,
+            // Dims the stilled camera frame so the spinner reads as the app
+            // working rather than the preview having died.
+            backgroundColor: theme.colors.backdropModalBg,
+        },
+        handlingLabel: {
+            color: theme.colors.textWhite,
+            textAlign: 'center',
+        },
         icon: {
             marginTop: insets.top,
             marginLeft: theme.spacing.xl,

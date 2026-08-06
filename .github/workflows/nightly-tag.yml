@@ -39,16 +39,4 @@ jobs:
           persist-credentials: true
 
       - name: Mint and push nightly tag
-        id: mint
         run: ./tools/create-nightly-tag.sh
-
-      # Here rather than in a `push: tags` workflow: the tag above is pushed with
-      # GITHUB_TOKEN, and GitHub does not trigger workflows from GITHUB_TOKEN
-      # events. No output means the gate skipped tagging, so there is nothing to
-      # publish.
-      - name: Publish GitHub release
-        if: steps.mint.outputs.tag != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.mint.outputs.tag }}
-        run: ./tools/publish-github-release.sh "$TAG"

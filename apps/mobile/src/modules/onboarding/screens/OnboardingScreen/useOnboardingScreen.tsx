@@ -24,7 +24,7 @@ import { TermsAndConditionsSheet } from '../../components/TermsAndConditionsShee
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { trackEvent, OnboardingEvent } from '@analytics'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
-import { useToast } from '@hooks/useToast'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 
 type UseOnboardingScreenResult = {
@@ -45,7 +45,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
     } = useModalState()
     const { setIsOnboarding } = useIsOnboarding()
     const { buildHdWalletAccount } = useCreateAccount()
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
     const { needsAcceptance } = useTermsAcceptance()
@@ -118,14 +118,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
                     navigation.push('NameAccount', { account: newAccount })
                 } catch (error) {
                     if (!isMounted()) return
-                    // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
-                    showToast({
-                        title: t('onboarding.create_account.error_title'),
-                        body: t('onboarding.create_account.error_message', {
-                            error: `${error}`,
-                        }),
-                        type: 'error',
-                    })
+                    showError(error, t('onboarding.create_account.error_title'))
                     setIsOnboarding(false)
                     // Nothing was pushed; release so the user can retry.
                     isStartingRef.current = false
@@ -142,7 +135,7 @@ export const useOnboardingScreen = (): UseOnboardingScreenResult => {
         closeCreatingAccount,
         buildHdWalletAccount,
         navigation,
-        showToast,
+        showError,
         t,
     ])
 

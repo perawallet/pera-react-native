@@ -131,3 +131,44 @@ describe('useSettingsWalletConnectDetailsScreen', () => {
         expect(result.current.deleteModalState.isOpen).toBe(false)
     })
 })
+
+describe('useSettingsWalletConnectDetailsScreen — hostile peerMeta URL gating', () => {
+    const sessionWithUrl = (url: string) =>
+        ({
+            clientId: 'client-1',
+            session: { accounts: [], peerMeta: { name: 'Dapp', url } },
+        }) as never
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it.each([
+        'javascript:alert(document.cookie)',
+        'content://com.evil.provider/secret',
+        'http://insecure.example',
+    ])('does not open the WebView for %s', url => {
+        const { result } = renderHook(() =>
+            useSettingsWalletConnectDetailsScreen(sessionWithUrl(url)),
+        )
+
+        act(() => result.current.handleOpenLink())
+
+        expect(mocks.pushWebView).not.toHaveBeenCalled()
+    })
+
+    it('opens the WebView for a valid https peerMeta URL', () => {
+        const { result } = renderHook(() =>
+            useSettingsWalletConnectDetailsScreen(
+                sessionWithUrl('https://d.app'),
+            ),
+        )
+
+        act(() => result.current.handleOpenLink())
+
+        expect(mocks.pushWebView).toHaveBeenCalledWith({
+            id: expect.any(String),
+            url: 'https://d.app',
+        })
+    })
+})

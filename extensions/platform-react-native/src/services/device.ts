@@ -33,6 +33,7 @@ export class RNDeviceInfoStorageService implements DeviceInfoService {
     // while the app is running, so resolve it once and cache it on the
     // (singleton) service instance.
     private cachedDeviceLocale: string | undefined
+    private cachedDeviceLocales: string[] | undefined
 
     async getDeviceInstallationID(): Promise<string> {
         if (Platform.OS === 'ios') {
@@ -53,6 +54,12 @@ export class RNDeviceInfoStorageService implements DeviceInfoService {
                 locales.map(l => l.languageTag).at(0) ?? 'en-US'
         }
         return this.cachedDeviceLocale
+    }
+    getDeviceLocales(): string[] {
+        if (this.cachedDeviceLocales === undefined) {
+            this.cachedDeviceLocales = getLocales().map(l => l.languageTag)
+        }
+        return this.cachedDeviceLocales
     }
     getDeviceOSVersion(): string {
         return Device.osVersion ?? ''

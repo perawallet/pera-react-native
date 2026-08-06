@@ -14,7 +14,11 @@ import { renderHook, act } from '@testing-library/react'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 // Ensure i18n is initialised so t() resolves real strings in this unit env.
 import '../../../i18n'
-import { useNetworkStatusStore } from '@modules/network'
+import {
+    useNetworkStatusStore,
+    useOfflineFeedbackStore,
+} from '@modules/network'
+import { OFFLINE_BANNER_EMPHASIS_MS } from '@constants/ui'
 import { useOfflineBanner } from '../useOfflineBanner'
 
 // The `@modules/network` barrel also re-exports useNetworkStatusListener,
@@ -31,11 +35,13 @@ describe('useOfflineBanner', () => {
     beforeEach(() => {
         vi.useFakeTimers()
         useNetworkStatusStore.setState({ hasInternet: true })
+        useOfflineFeedbackStore.setState({ emphasisNonce: 0 })
     })
 
     afterEach(() => {
         vi.useRealTimers()
         useNetworkStatusStore.setState({ hasInternet: true })
+        useOfflineFeedbackStore.setState({ emphasisNonce: 0 })
     })
 
     it('is hidden when online and idle', () => {
@@ -91,6 +97,53 @@ describe('useOfflineBanner', () => {
         })
         expect(result.current.isVisible).toBe(true)
         expect(result.current.mode).toBe('offline')
+    })
+
+    it('is not emphasized on mount', () => {
+        const { result } = renderHook(() => useOfflineBanner())
+        expect(result.current.isEmphasized).toBe(false)
+    })
+
+    it('emphasizes when an offline action requests attention', () => {
+        const { result } = renderHook(() => useOfflineBanner())
+        act(() => {
+            useOfflineFeedbackStore.getState().emphasizeOfflineStatus()
+        })
+        expect(result.current.isEmphasized).toBe(true)
+    })
+
+    it('clears the emphasis after the emphasis window', () => {
+        const { result } = renderHook(() => useOfflineBanner())
+        act(() => {
+            useOfflineFeedbackStore.getState().emphasizeOfflineStatus()
+        })
+        act(() => {
+            vi.advanceTimersByTime(OFFLINE_BANNER_EMPHASIS_MS)
+        })
+        expect(result.current.isEmphasized).toBe(false)
+    })
+
+    it('restarts the emphasis window instead of stacking timers', () => {
+        const { result } = renderHook(() => useOfflineBanner())
+        act(() => {
+            useOfflineFeedbackStore.getState().emphasizeOfflineStatus()
+        })
+        act(() => {
+            vi.advanceTimersByTime(1000)
+        })
+        act(() => {
+            useOfflineFeedbackStore.getState().emphasizeOfflineStatus()
+        })
+        // The first window would have expired here; the restart keeps it on.
+        act(() => {
+            vi.advanceTimersByTime(400)
+        })
+        expect(result.current.isEmphasized).toBe(true)
+
+        act(() => {
+            vi.advanceTimersByTime(800)
+        })
+        expect(result.current.isEmphasized).toBe(false)
     })
 
     it('clears the reconnect timer on unmount', () => {

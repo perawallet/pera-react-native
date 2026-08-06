@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import {
     useProjectByUrlQuery,
     type PeraProject,
@@ -28,8 +28,10 @@ vi.mock('@perawallet/wallet-core-projects', async importOriginal => ({
     useProjectByUrlQuery: vi.fn(),
 }))
 
+const mocks = vi.hoisted(() => ({ pushWebView: vi.fn() }))
+
 vi.mock('@modules/webview/hooks', () => ({
-    useWebView: () => ({ pushWebView: vi.fn() }),
+    useWebView: () => ({ pushWebView: mocks.pushWebView }),
 }))
 
 const verifiedTinyman: PeraProject = {
@@ -80,5 +82,37 @@ describe('useSourceMetadataView — verified-badge gating (PERA-4715)', () => {
         )
 
         expect(result.current.verificationTier).toBe('suspicious')
+    })
+})
+
+describe('useSourceMetadataView — hostile peerMeta URL gating', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        stubProjectQuery({ url: '' } as PeraProject)
+    })
+
+    it.each([
+        'javascript:alert(document.cookie)',
+        'content://com.evil.provider/secret',
+        'http://insecure.example',
+    ])('does not open the WebView for %s', url => {
+        const { result } = renderHook(() => useSourceMetadataView({ url }))
+
+        act(() => result.current.handlePressUrl())
+
+        expect(mocks.pushWebView).not.toHaveBeenCalled()
+    })
+
+    it('opens the WebView for a valid https peerMeta URL', () => {
+        const { result } = renderHook(() =>
+            useSourceMetadataView({ url: 'https://tinyman.org' }),
+        )
+
+        act(() => result.current.handlePressUrl())
+
+        expect(mocks.pushWebView).toHaveBeenCalledWith({
+            id: expect.any(String),
+            url: 'https://tinyman.org',
+        })
     })
 })

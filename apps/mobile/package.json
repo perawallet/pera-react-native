@@ -14,6 +14,7 @@
     "verify:ios-identity": "node scripts/verify-ios-identity.mjs",
     "verify:android-identity": "node scripts/verify-android-identity.mjs",
     "generate:production-icons": "node scripts/generate-production-icons.mjs",
+    "locale-tour": "node scripts/locale-tour.mjs",
     "ios:fix-development-team": "node scripts/fix-development-team.js",
     "lint": "oxlint --config .oxlintrc.json .",
     "test": "bash ../../tools/rebuild-native.sh && vitest run",

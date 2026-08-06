@@ -14,9 +14,14 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useSettingsOptions } from '../useSettingsOptions'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(),
+}))
+
+vi.mock('@hooks/useIsLanguageSelectionEnabled', () => ({
+    useIsLanguageSelectionEnabled: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-config', () => ({
@@ -68,6 +73,7 @@ describe('useSettingsOptions', () => {
         ;(useLanguage as Mock).mockReturnValue({
             t: mockT,
         })
+        ;(useIsLanguageSelectionEnabled as Mock).mockReturnValue(false)
         Object.assign(mockCapabilities, {
             discoverTab: true,
             swapTab: true,
@@ -145,6 +151,44 @@ describe('useSettingsOptions', () => {
         renderHook(() => useSettingsOptions())
         expect(mockT).toHaveBeenCalledWith('settings.main.account_section')
         expect(mockT).toHaveBeenCalledWith('settings.main.security_title')
+    })
+
+    describe('language selection gating', () => {
+        it('omits the Language item when the flag is off', () => {
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            const appPreferences = settingsOptions.find(
+                section =>
+                    section.title === 'settings.main.app_preferences_section',
+            )
+            expect(appPreferences?.items.map(item => item.route)).toEqual([
+                'CurrencySettings',
+                'ThemeSettings',
+            ])
+        })
+
+        it('appends the Language item after Theme when the flag is on', () => {
+            ;(useIsLanguageSelectionEnabled as Mock).mockReturnValue(true)
+
+            const { result } = renderHook(() => useSettingsOptions())
+            const { settingsOptions } = result.current
+
+            const appPreferences = settingsOptions.find(
+                section =>
+                    section.title === 'settings.main.app_preferences_section',
+            )
+            expect(appPreferences?.items.map(item => item.route)).toEqual([
+                'CurrencySettings',
+                'ThemeSettings',
+                'LanguageSettings',
+            ])
+            expect(appPreferences?.items[2]).toEqual({
+                route: 'LanguageSettings',
+                icon: 'globe',
+                title: 'settings.main.language_title',
+            })
+        })
     })
 
     describe('capability gating', () => {

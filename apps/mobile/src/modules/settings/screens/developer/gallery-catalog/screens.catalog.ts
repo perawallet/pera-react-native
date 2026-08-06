@@ -707,7 +707,10 @@ export const getScreenSections = (): GallerySection[] => [
                     kind: 'navigate',
                     target: {
                         name: 'Multisig',
-                        params: { screen: 'EditParticipant' },
+                        params: {
+                            screen: 'EditParticipant',
+                            params: { index: 0, address: MOCK_ADDRESS },
+                        },
                     },
                 },
             },

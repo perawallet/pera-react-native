@@ -229,6 +229,53 @@ describe('services/security/store', () => {
         expect(persisted?.state).not.toHaveProperty('isAppLockActive')
     })
 
+    test('setBiometricsEnabled shares the flag across every consumer', async () => {
+        const { useSecurityStore } = await import('../store')
+
+        useSecurityStore.getState().resetState()
+
+        // Two independent subscribers stand in for Settings and the lock screen:
+        // a reconcile in one has to be visible to the other (PERA-4702).
+        const settings = renderHook(() =>
+            useSecurityStore(state => state.isBiometricsEnabled),
+        )
+        const lockScreen = renderHook(() =>
+            useSecurityStore(state => state.isBiometricsEnabled),
+        )
+
+        expect(settings.result.current).toBe(false)
+
+        act(() => {
+            useSecurityStore.getState().setBiometricsEnabled(true)
+        })
+        expect(settings.result.current).toBe(true)
+        expect(lockScreen.result.current).toBe(true)
+
+        act(() => {
+            useSecurityStore.getState().setBiometricsEnabled(false)
+        })
+        expect(settings.result.current).toBe(false)
+        expect(lockScreen.result.current).toBe(false)
+    })
+
+    test('isBiometricsEnabled is never persisted', async () => {
+        const { getProvider } =
+            await import('@perawallet/wallet-extension-provider')
+        const { useSecurityStore } = await import('../store')
+
+        act(() => {
+            useSecurityStore.getState().setBiometricsEnabled(true)
+        })
+
+        // The keystore is the source of truth; a persisted copy could outlive a
+        // revoked enrollment and re-arm the toggle on next launch.
+        const raw = getProvider().keyValueStorage.getItem(
+            'security-store',
+        ) as Nullable<string>
+        const persisted = raw ? JSON.parse(raw) : null
+        expect(persisted?.state).not.toHaveProperty('isBiometricsEnabled')
+    })
+
     test('resetState clears the transient overlay flag', async () => {
         const { useSecurityStore } = await import('../store')
 

@@ -78,9 +78,11 @@ export class ChromePushNotificationService implements PushNotificationService {
     ): () => void {
         // The service worker opens expanded.html?deeplink=… on click, so there
         // is no live channel to subscribe to — the URL is read once, at
-        // registration, from the surface that the click created.
+        // registration, from the surface that the click created. Only `url`
+        // survives that round trip, so type-routed taps (multisig) fall back
+        // to URL routing here.
         const url = new URLSearchParams(location.search).get('deeplink')
-        if (url) listener(url)
+        if (url) listener({ url })
         return noop
     }
 }

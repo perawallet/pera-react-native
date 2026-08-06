@@ -87,6 +87,7 @@ export const toUnifiedWalletConnectConnection = (
      * so this is wired on both platforms, not just web.
      */
     onError: (error: unknown) => void,
+    unknownPeerLabel: string,
 ): UnifiedConnection => {
     const peerMeta = connection.session?.peerMeta
     const clientId = connection.clientId ?? ''
@@ -94,7 +95,7 @@ export const toUnifiedWalletConnectConnection = (
     return {
         id: `walletconnect-${clientId}`,
         kind: 'walletconnect',
-        title: peerMeta?.name ?? 'Unknown',
+        title: peerMeta?.name ?? unknownPeerLabel,
         subtitle: peerMeta?.url ?? connection.bridge ?? '',
         iconUrl: peerMeta?.icons?.[0],
         connectedAt: connection.createdAt,

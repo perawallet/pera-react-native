@@ -15,8 +15,9 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useToast } from '@hooks/useToast'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import {
     useTransactionHistoryQuery,
     useCsvExportMutation,
@@ -67,6 +68,8 @@ export type UseAccountHistoryResult = {
     handleLoadMore: () => void
     /** Function to refresh the list */
     handleRefresh: () => void
+    /** Whether a refresh is in flight */
+    isRefreshing: boolean
     /** Whether data is empty */
     isEmpty: boolean
     /** Function to export transaction history to CSV */
@@ -135,7 +138,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         error,
         hasNextPage,
         fetchNextPage,
-        refetch,
     } = useTransactionHistoryQuery({
         accountAddress: account?.address ?? '',
         network,
@@ -155,12 +157,16 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-    const handleRefresh = useCallback(() => {
-        refetch()
-    }, [refetch])
+    const refreshAddresses = useMemo(
+        () => (account?.address ? [account.address] : []),
+        [account?.address],
+    )
+    const { isRefreshing, refresh: handleRefresh } = useSyncRefresh({
+        addresses: refreshAddresses,
+    })
 
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
 
     const { exportCsv, isLoading: isExportingCsv } = useCsvExportMutation({
         network,
@@ -169,21 +175,12 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
                 try {
                     await shareCsvFile(result.filename, result.csvContent)
                 } catch (error) {
-                    // guardrails-ignore-next-line no-error-toast-in-catch reason: csv share path stringifies the raw error directly into the body; predates useErrorToast
-                    showToast({
-                        title: t('errors.general.title'),
-                        body: `${error}`,
-                        type: 'error',
-                    })
+                    showError(error, t('errors.general.title'))
                 }
             })()
         },
         onError: error => {
-            showToast({
-                title: t('errors.general.title'),
-                body: error?.message || t('errors.general.body'),
-                type: 'error',
-            })
+            showError(error, t('errors.general.title'))
         },
     })
 
@@ -228,6 +225,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         hasNextPage,
         handleLoadMore,
         handleRefresh,
+        isRefreshing,
         isEmpty,
         handleExportCsv,
         isExportingCsv,

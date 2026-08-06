@@ -11,7 +11,11 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { FundingType, useCardStore } from '@perawallet/wallet-core-card'
+import {
+    AutoDrawProgramUnverifiedError,
+    FundingType,
+    useCardStore,
+} from '@perawallet/wallet-core-card'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
@@ -93,6 +97,18 @@ export const useCardAutoFundingSigningScreen =
                     await enableAutoDraw(connectedAccount, escrowCardAddress)
                     finish(FundingType.Auto, false)
                 } catch (err) {
+                    // An unverified AutoDraw program can never succeed on
+                    // retry, so "please try again" would strand the user on
+                    // this screen. Degrade to Manual with the same honest copy
+                    // the decline path uses (PERA-4712).
+                    if (err instanceof AutoDrawProgramUnverifiedError) {
+                        logger.error(
+                            'AutoDraw program failed verification — degrading to Manual funding',
+                            { error: err },
+                        )
+                        finish(FundingType.Manual, true)
+                        return
+                    }
                     const normalizedError =
                         err instanceof Error ? err : new Error(String(err))
                     // Declining the signing review is a normal user action, so

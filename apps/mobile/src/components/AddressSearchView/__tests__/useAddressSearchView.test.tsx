@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react'
+import React from 'react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
     useAddressSearchView,
@@ -42,6 +43,20 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
+}))
+
+const mockReadText = vi.fn(async () => '')
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({ readText: mockReadText, copyToClipboard: vi.fn() }),
+}))
+
+// The global mock stubs useFocusEffect to a no-op, which would never run the
+// clipboard read. Run the callback so the paste row is actually exercised.
+vi.mock('@react-navigation/native', () => ({
+    useFocusEffect: (callback: () => void | (() => void)) => {
+        React.useEffect(callback, [callback])
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -511,5 +526,93 @@ describe('useAddressSearchView', () => {
         })
 
         expect(result.current.isNfdLoading).toBe(true)
+    })
+
+    describe('paste from clipboard', () => {
+        it('offers the clipboard address as the first row when it is a valid address', async () => {
+            mockReadText.mockResolvedValue(
+                'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+            )
+            vi.mocked(isValidAlgorandAddress).mockImplementation(
+                addr =>
+                    addr ===
+                    'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+            )
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({ showClipboardPaste: true }),
+            )
+
+            await waitFor(() => {
+                expect(
+                    itemsOfType(result.current.matchingItems, 'paste'),
+                ).toHaveLength(1)
+            })
+            expect(result.current.matchingItems[0]).toEqual(
+                expect.objectContaining({
+                    type: 'paste',
+                    address:
+                        'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+                }),
+            )
+        })
+
+        it('ignores clipboard contents that are not an address', async () => {
+            mockReadText.mockResolvedValue('just some copied text')
+            vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({ showClipboardPaste: true }),
+            )
+
+            await waitFor(() => expect(mockReadText).toHaveBeenCalled())
+            expect(
+                itemsOfType(result.current.matchingItems, 'paste'),
+            ).toHaveLength(0)
+        })
+
+        // Opt-in so the multisig add-participant sheet does not read the
+        // clipboard (and trigger iOS's paste notice) just by mounting.
+        it('does not read the clipboard unless asked to', async () => {
+            mockReadText.mockResolvedValue(
+                'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+            )
+            vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+
+            const { result } = renderHook(() => useAddressSearchView())
+
+            expect(mockReadText).not.toHaveBeenCalled()
+            expect(
+                itemsOfType(result.current.matchingItems, 'paste'),
+            ).toHaveLength(0)
+        })
+
+        it('keeps offering the paste row while the user types', async () => {
+            mockReadText.mockResolvedValue(
+                'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+            )
+            vi.mocked(isValidAlgorandAddress).mockImplementation(
+                addr =>
+                    addr ===
+                    'PASTEDADDRESS7MED3SEKUENYGEANWZHE4XVZ7JRCHLMVKPXXE3YOBWHOEN',
+            )
+
+            const { result } = renderHook(() =>
+                useAddressSearchView({ showClipboardPaste: true }),
+            )
+            await waitFor(() => {
+                expect(
+                    itemsOfType(result.current.matchingItems, 'paste'),
+                ).toHaveLength(1)
+            })
+
+            act(() => {
+                result.current.setValue('ali')
+            })
+
+            expect(
+                itemsOfType(result.current.matchingItems, 'paste'),
+            ).toHaveLength(1)
+        })
     })
 })

@@ -33,7 +33,13 @@ import {
     renderAutoDrawTeal,
     resolveEscrowChainConfig,
     compileAutoDrawProgram,
+    verifyAutoDrawProgram,
+    AutoDrawProgramUnverifiedError,
 } from '../lsig'
+import { sha256 } from '@noble/hashes/sha2.js'
+import { bytesToHex } from '@perawallet/wallet-core-shared'
+
+const pinFor = (program: Uint8Array) => bytesToHex(sha256(program))
 
 const TESTNET_GENESIS = 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI='
 
@@ -126,7 +132,10 @@ describe('compileAutoDrawProgram', () => {
         appEnvironment.value = 'development'
     })
 
-    it('renders + compiles the template and decodes the base64 program', async () => {
+    // PERA-4712: algod is third-party; its compiled bytes are what gets signed,
+    // so an unpinned/attacker program ('BoEB' = `int 1`, approve-anything) must
+    // be rejected even though the substituted TEAL is compiled correctly.
+    it('compiles the substituted template but rejects an unpinned/int-1 program', async () => {
         getNetworkConfig.mockReturnValue({
             genesisHash: TESTNET_GENESIS,
             cardW3CardAppId: '111',
@@ -137,12 +146,81 @@ describe('compileAutoDrawProgram', () => {
         const compile = vi.fn().mockReturnValue({ do: doFn })
         getAlgorandClient.mockReturnValue({ client: { algod: { compile } } })
 
-        const program = await compileAutoDrawProgram({ network: 'testnet' })
+        await expect(
+            compileAutoDrawProgram({ network: 'testnet' }),
+        ).rejects.toBeInstanceOf(AutoDrawProgramUnverifiedError)
 
-        // Compiled the substituted TEAL (no placeholders reach algod).
+        // Still compiled the substituted TEAL (no placeholders reach algod).
         expect(compile).toHaveBeenCalledTimes(1)
         expect(compile.mock.calls[0][0]).not.toContain('TMPL_')
-        // 'BoEB' = base64 of [0x06, 0x81, 0x01].
-        expect([...program]).toEqual([0x06, 0x81, 0x01])
+    })
+
+    // Runs in `development` (beforeEach) — proving the guard has no
+    // production-only escape hatch.
+    it('rejects in non-production too (no env bypass)', () => {
+        const program = new Uint8Array([0x06, 0x81, 0x01])
+        expect(() => verifyAutoDrawProgram(program, 'testnet')).toThrow(
+            AutoDrawProgramUnverifiedError,
+        )
+    })
+})
+
+describe('verifyAutoDrawProgram', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        getNetworkConfig.mockReturnValue({ cardAutoDrawProgramHash: '' })
+    })
+
+    it('reads the pin from the network config when none is passed', () => {
+        const program = new Uint8Array([1, 2, 3, 4])
+        getNetworkConfig.mockReturnValue({
+            cardAutoDrawProgramHash: pinFor(program),
+        })
+
+        expect(() => verifyAutoDrawProgram(program, 'testnet')).not.toThrow()
+        expect(() =>
+            verifyAutoDrawProgram(new Uint8Array([9, 9, 9]), 'testnet'),
+        ).toThrow(AutoDrawProgramUnverifiedError)
+    })
+
+    it('accepts a program whose hash matches the pinned value', () => {
+        const program = new Uint8Array([1, 2, 3, 4])
+        const pins = { testnet: pinFor(program) }
+        expect(() =>
+            verifyAutoDrawProgram(program, 'testnet', pins),
+        ).not.toThrow()
+    })
+
+    it('rejects a program whose hash differs from the pinned value', () => {
+        const pins = { testnet: pinFor(new Uint8Array([1, 2, 3, 4])) }
+        expect(() =>
+            verifyAutoDrawProgram(new Uint8Array([9, 9, 9]), 'testnet', pins),
+        ).toThrow(AutoDrawProgramUnverifiedError)
+    })
+
+    // The pin is copied in by hand from a build step, so tolerate the casing
+    // and whitespace that survives a copy-paste rather than failing closed on it.
+    it('accepts an upper-case, padded pin', () => {
+        const program = new Uint8Array([1, 2, 3, 4])
+        const pins = { testnet: `  ${pinFor(program).toUpperCase()}  ` }
+        expect(() =>
+            verifyAutoDrawProgram(program, 'testnet', pins),
+        ).not.toThrow()
+    })
+
+    // The old pin was base64 of the program itself; a stale value must fail
+    // rather than accidentally comparing equal to anything.
+    it('rejects a legacy base64-program pin', () => {
+        const program = new Uint8Array([1, 2, 3, 4])
+        const pins = { testnet: 'AQIDBA==' }
+        expect(() => verifyAutoDrawProgram(program, 'testnet', pins)).toThrow(
+            AutoDrawProgramUnverifiedError,
+        )
+    })
+
+    it('rejects when the network is unpinned (fail closed)', () => {
+        expect(() =>
+            verifyAutoDrawProgram(new Uint8Array([1, 2, 3, 4]), 'testnet', {}),
+        ).toThrow(AutoDrawProgramUnverifiedError)
     })
 })

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger, AppError, bytesToHex } from '@perawallet/wallet-core-shared'
+import { logger, bytesToHex } from '@perawallet/wallet-core-shared'
 import type WebView from 'react-native-webview'
 
 import { toLoadableUrl } from '../components/PWWebView/toLoadableUrl'
@@ -19,12 +19,39 @@ const MAX_ERROR_LENGTH = 200
 const GENERIC_ERROR_MESSAGE = 'An error occurred during signing'
 
 /**
- * {@link AppError} subclasses carry curated, displayable messages; a generic
- * Error may leak stack traces or paths to untrusted web content.
+ * Errors whose `message` may be relayed verbatim to untrusted web content.
+ * Deny-by-default — anything not named here gets {@link GENERIC_ERROR_MESSAGE}.
+ *
+ * `instanceof AppError` was the previous test, and it is NOT a safety property:
+ * PipelineError subclasses wrap third-party text verbatim (`TransportError` and
+ * `SourceError` pass `err.message` straight through) and interpolate wallet-held
+ * addresses (`CannotSignError`, `NoLocalParticipantsError`) — the exact data
+ * `Arc0001Error`'s own docblock forbids sending to a remote peer (PERA-4716).
+ *
+ * The two entries earn their place: ARC-0001 requires a meaningful message
+ * alongside the numeric code, and those strings only echo the dApp's own request
+ * back at it; `UserCancelledError` is a fixed literal with no interpolation.
+ *
+ * Matched by name rather than `instanceof` deliberately. Importing the classes
+ * would pull the blockchain and signing packages into this module, which is
+ * loaded in a bare node environment by handlers.test.ts. A rename that breaks a
+ * name here fails CLOSED (generic copy, no leak) and is caught by
+ * sanitizeErrorForWebview.spec.ts, which pins each name to the real class.
+ */
+const WEBVIEW_SAFE_ERROR_NAMES: readonly string[] = [
+    'Arc0001Error',
+    'UserCancelledError',
+]
+
+/**
+ * This is a JSON-RPC protocol surface exposed to untrusted web content, and is
+ * deliberately NOT localized — a protocol response must not vary by user
+ * locale.
  */
 export const sanitizeErrorForWebview = (error: Error): string => {
-    const message =
-        error instanceof AppError ? error.message : GENERIC_ERROR_MESSAGE
+    const message = WEBVIEW_SAFE_ERROR_NAMES.includes(error.name)
+        ? error.message
+        : GENERIC_ERROR_MESSAGE
     return message.length > MAX_ERROR_LENGTH
         ? message.slice(0, MAX_ERROR_LENGTH)
         : message

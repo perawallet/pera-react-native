@@ -34,7 +34,7 @@ import { useNumberPadAmount } from '@components/NumberPad'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardSelectAssetContent } from '../../components/CardSelectAssetContent'
 import { useCardComingSoonToast } from '../../hooks'
-import { type PeraCardStackParamList } from '../../routes/types'
+import { type PeraCardFlowParamList } from '../../routes/types'
 import { USDC_DISPLAY_PRECISION } from '../../utils/usdc'
 import { useCardAddFundsSwap } from './useCardAddFundsSwap'
 
@@ -63,7 +63,7 @@ type UseCardAddFundsScreenResult = {
 export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
     const { network } = useNetwork()
     const navigation =
-        useNavigation<NativeStackNavigationProp<PeraCardStackParamList>>()
+        useNavigation<NativeStackNavigationProp<PeraCardFlowParamList>>()
     const { request: requestBottomSheet } = useBottomSheet()
 
     // TODO(card): use connectedFundingSourceAddress once the smart contract links

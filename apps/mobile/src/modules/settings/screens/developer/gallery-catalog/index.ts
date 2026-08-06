@@ -66,6 +66,13 @@ export const getCategory = (
 
 export { getPreviewEntry } from './registry'
 
+export { getScreenSections } from './screens.catalog'
+export { getSheetSections } from './sheets.catalog'
+export { getDialogSections } from './dialogs.catalog'
+export { getComponentSections } from './components.catalog'
+export { getSharedComponentSections } from './shared-components.catalog'
+export { getModuleComponentSections } from './module-components.catalog'
+
 export type {
     GalleryCategory,
     GalleryCategoryId,

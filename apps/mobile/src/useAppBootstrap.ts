@@ -27,7 +27,13 @@ import {
     updateBackendHeaders,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
+import {
+    readRemoteConfigWithOverrides,
+    RemoteConfigKeys,
+    useRemoteConfigStore,
+} from '@perawallet/wallet-core-remote-config'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
+import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import {
     getProvider,
     hydrateKeystore,
@@ -37,6 +43,9 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { type Persister } from '@tanstack/react-query-persist-client'
 import { queryClient } from './providers/QueryProvider'
 import { runPasskeyAutofillBootstrap } from './bootstrap/passkey-autofill'
+import { getEffectiveSupportedLocales } from './i18n/effectiveLocales'
+import { resolveLocale } from './i18n/locales'
+import i18n from './i18n'
 
 export type UseAppBootstrapResult = {
     bootstrapped: boolean
@@ -45,6 +54,18 @@ export type UseAppBootstrapResult = {
     initError: boolean
     retryBootstrap: () => void
 }
+
+// Ceiling on how long the splash may stay up once bootstrap has finished, for
+// the case where no frames are being produced and the rAF pair never runs. Long
+// enough that a foreground start always hides on the frame path instead.
+const SPLASH_HIDE_BACKSTOP_MS = 1000
+
+// Ceiling on the wait for settings rehydration. zustand's persist middleware
+// never fires `onFinishHydration` if rehydration rejects (corrupt persisted
+// JSON, storage read failure), and `hasHydrated()` stays false — so without
+// this the language branch, and with it the whole bootstrap gate and the
+// splash-hide, would hang forever with no recovery short of a reinstall.
+const SETTINGS_HYDRATION_TIMEOUT_MS = 2000
 
 const updateQueryHeaders = () => {
     const deviceInfo = getProvider().deviceInfo
@@ -58,6 +79,71 @@ const updateQueryHeaders = () => {
     headers.set('Device-Model', deviceInfo.getDeviceModelId())
     headers.set('User-Agent', deviceInfo.getUserAgent())
     updateBackendHeaders(headers)
+}
+
+// Timing out leaves `language` at the store's default ('system'), which just
+// means a saved override is missed for this one launch — never a hang.
+const waitForSettingsHydration = (): Promise<void> => {
+    if (useSettingsStore.persist.hasHydrated()) return Promise.resolve()
+    return new Promise(resolve => {
+        let settled = false
+        const finish = () => {
+            if (settled) return
+            settled = true
+            resolve()
+        }
+        const unsubscribe = useSettingsStore.persist.onFinishHydration(() => {
+            unsubscribe()
+            finish()
+        })
+        setTimeout(() => {
+            unsubscribe()
+            finish()
+        }, SETTINGS_HYDRATION_TIMEOUT_MS)
+    })
+}
+
+const resolveEffectiveLocale = (): string => {
+    // Reads the same dev-override layer `useRemoteConfig()` applies, via the
+    // store's non-reactive getState — a flag flipped in the Feature Flags
+    // screen has to survive the next cold start, and bootstrap runs outside
+    // render so it can't call the hook.
+    const remoteConfig = readRemoteConfigWithOverrides(
+        getProvider().remoteConfig,
+        useRemoteConfigStore.getState().configOverrides,
+    )
+    const isLanguageSelectionEnabled = remoteConfig.getBooleanValue(
+        RemoteConfigKeys.enable_language_selection,
+        false,
+    )
+    const activeLocalesRaw = remoteConfig.getStringValue(
+        RemoteConfigKeys.active_locales,
+        '',
+    )
+    const effectiveSupportedLocales = getEffectiveSupportedLocales(
+        isLanguageSelectionEnabled,
+        activeLocalesRaw,
+    )
+    const { language } = useSettingsStore.getState()
+    const deviceLocales = getProvider().deviceInfo.getDeviceLocales()
+    return resolveLocale(language, deviceLocales, effectiveSupportedLocales)
+}
+
+// Runs after rehydration, behind the bootstrapped splash gate, so switching
+// language never causes a visible flash (design doc §4.4). Unlike
+// i18n/index.ts's import-time BASE_LOCALE default, Remote Config has
+// already been fetched by the time this runs (provider.initialize() above
+// awaits it) — so this is the one place real locale resolution happens, for
+// every user, not just ones with a saved override. A saved override that
+// falls outside the currently-effective set (Remote Config rolled back, or
+// that locale deactivated) correctly falls through resolveLocale's chain
+// back to en, via resolveEffectiveLocale re-validating it every run.
+const syncLanguagePreference = async (): Promise<void> => {
+    await waitForSettingsHydration()
+    const effectiveLocale = resolveEffectiveLocale()
+    if (effectiveLocale !== i18n.language) {
+        await i18n.changeLanguage(effectiveLocale)
+    }
 }
 
 export const useAppBootstrap = (): UseAppBootstrapResult => {
@@ -80,8 +166,16 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
         const runBootstrap = async () => {
             try {
-                const { token } = await provider.initialize()
-                setFcmToken(token ?? null)
+                // Awaits crash reporting, remote config, analytics and SSL
+                // pinning — which the calls below genuinely depend on — but not
+                // push registration. That is bounded at several seconds and used
+                // to hold the splash for the whole round trip on a slow or
+                // offline start (PERA-4727); nothing in bootstrap needs the
+                // token, so it lands whenever it lands.
+                const { notifications } = await provider.initialize()
+                void notifications.then(({ token }) =>
+                    setFcmToken(token ?? null),
+                )
 
                 // do startup hydration and setup in parallel to speed up time
                 // to interactive. Keystore/database failures must fail the whole
@@ -101,10 +195,17 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                     provider.database,
                 ).then(() => seedAlgoAsset(getDatabase()))
 
+                const languageBranch = syncLanguagePreference().catch(err =>
+                    logger.error('Language preference sync failed', {
+                        error: err,
+                    }),
+                )
+
                 await Promise.all([
                     keystoreBranch,
                     passkeyBranch,
                     databaseBranch,
+                    languageBranch,
                 ])
 
                 initializeSyncService({
@@ -127,11 +228,29 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 logger.error('App bootstrap failed', { error: err })
                 setInitError(true)
             } finally {
-                // we defer the hiding so the initial layout can happen. Runs on
-                // both success and error paths so the native splash never sticks.
-                setTimeout(() => {
+                // Deferred so the initial layout lands before the native splash
+                // goes away. Two frames is what that actually needs; the
+                // previous flat 200ms charged every cold start the full delay
+                // however fast the first paint was (PERA-4727).
+                //
+                // The timer is a backstop, not a duplicate: rAF does not fire
+                // while the app is producing no frames, so a cold start that
+                // begins in the background — push-launched, or iOS prewarming —
+                // would otherwise sit on the splash until the user foregrounds
+                // it. `setTimeout` fires regardless, which is the one property
+                // the old code had and this must not lose. Whichever runs first
+                // wins; `hideSplash` is idempotent.
+                let splashHidden = false
+                const hideSplash = () => {
+                    if (splashHidden) return
+                    splashHidden = true
                     void SplashScreen.hideAsync()
-                }, 200)
+                }
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(hideSplash)
+                })
+                setTimeout(hideSplash, SPLASH_HIDE_BACKSTOP_MS)
             }
         }
 

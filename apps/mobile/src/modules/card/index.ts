@@ -13,3 +13,11 @@
 export { PeraCardStackNavigator } from './routes'
 export type { PeraCardStackParamList } from './routes'
 export type { CardOnboardingStackParamList } from './routes/card-onboarding'
+
+// Card screens registered by navigators outside this module.
+export {
+    peraCardAccountScreens,
+    peraCardFlowScreens,
+} from './routes/screen-descriptors'
+export type { PeraCardAccountStackParamList } from './routes'
+export type { PeraCardFlowParamList } from './routes'

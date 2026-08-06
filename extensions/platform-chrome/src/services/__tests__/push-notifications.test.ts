@@ -150,7 +150,7 @@ describe('ChromePushNotificationService notification open', () => {
             listener,
         )
 
-        expect(listener).toHaveBeenCalledWith('perawallet://asset/0')
+        expect(listener).toHaveBeenCalledWith({ url: 'perawallet://asset/0' })
     })
 
     it('does not fire without a deeplink param', () => {

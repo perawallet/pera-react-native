@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { AppStackParamList } from '@routes/types'
@@ -41,12 +42,17 @@ export type UseAppNavigation = {
 export function useAppNavigation(): UseAppNavigation {
     const navigation = useNavigation<AppNavigationProp>()
 
-    return {
-        navigate: navigation.navigate as NavigationMethod,
-        push: navigation.push as NavigationMethod,
-        replace: navigation.replace as NavigationMethod,
-        goBack: navigation.goBack,
-        canGoBack: navigation.canGoBack,
-        reset: navigation.reset,
-    }
+    // Memoized because callers put this in `useCallback`/`useEffect` deps; a
+    // fresh object every render would rebuild every handler built from it.
+    return useMemo(
+        () => ({
+            navigate: navigation.navigate as NavigationMethod,
+            push: navigation.push as NavigationMethod,
+            replace: navigation.replace as NavigationMethod,
+            goBack: navigation.goBack,
+            canGoBack: navigation.canGoBack,
+            reset: navigation.reset,
+        }),
+        [navigation],
+    )
 }

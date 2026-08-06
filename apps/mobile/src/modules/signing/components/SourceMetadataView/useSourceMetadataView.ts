@@ -22,6 +22,7 @@ import {
 } from '@perawallet/wallet-core-projects'
 import { type SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useWebView } from '@modules/webview/hooks'
+import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
 
 export const useSourceMetadataView = (
     metadata: SignRequestSource,
@@ -55,8 +56,11 @@ export const useSourceMetadataView = (
     const { pushWebView } = useWebView()
 
     const handlePressUrl = () => {
-        if (!metadata.url) return
-        pushWebView({ id: generateUniqueId(), url: metadata.url })
+        // metadata.url is dApp-asserted peerMeta, never validated upstream;
+        // gate it to https:// before it reaches the WebView.
+        const validatedUrl = toValidatedBrowserUrl(metadata.url)
+        if (!validatedUrl) return
+        pushWebView({ id: generateUniqueId(), url: validatedUrl })
     }
 
     return {

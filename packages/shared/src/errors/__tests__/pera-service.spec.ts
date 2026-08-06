@@ -27,4 +27,14 @@ describe('PeraServiceUnavailableError', () => {
         expect(error.message).toContain('betanet')
         expect(error).toBeInstanceOf(AppError)
     })
+
+    test('declares user-facing copy that does not interpolate the network', () => {
+        const error = new PeraServiceUnavailableError('betanet')
+
+        expect(error.metadata.messageKey).toBe(
+            'errors.pera_service.unavailable',
+        )
+        // network rides along as log context; the copy says "this network".
+        expect(error.metadata.params).toEqual({ network: 'betanet' })
+    })
 })

@@ -24,6 +24,7 @@ import { SettingsWalletConnectScreen } from '@modules/settings/screens/SettingsW
 import { SettingsPasskeyScreen } from '@modules/settings/screens/SettingsPasskeysScreen'
 import { SettingsCurrencyScreen } from '@modules/settings/screens/SettingsCurrencyScreen/SettingsCurrencyScreen'
 import { SettingsThemeScreen } from '@modules/settings/screens/SettingsThemeScreen/SettingsThemeScreen'
+import { SettingsLanguageScreen } from '@modules/settings/screens/SettingsLanguageScreen'
 import { SettingsDeveloperScreen } from '@modules/settings/screens/developer/SettingsDeveloperScreen'
 import { fullScreenLayout } from '@layouts/index'
 import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
@@ -212,6 +213,7 @@ export type SettingsStackParamsList = {
     ConnectionsSettings: undefined
     CurrencySettings: undefined
     ThemeSettings: undefined
+    LanguageSettings: undefined
     DeveloperSettings: NavigatorScreenParams<DeveloperSettingsStackParamsList>
 }
 
@@ -314,6 +316,13 @@ export const SettingsStackNavigator = () => {
                     title: 'screens.theme',
                 }}
                 component={SettingsThemeScreen}
+            />
+            <SettingsStack.Screen
+                name='LanguageSettings'
+                options={{
+                    title: 'screens.language',
+                }}
+                component={SettingsLanguageScreen}
             />
             <SettingsStack.Screen
                 name='DeveloperSettings'

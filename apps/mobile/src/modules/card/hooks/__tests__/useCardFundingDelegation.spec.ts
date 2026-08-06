@@ -110,6 +110,20 @@ describe('useCardFundingDelegation', () => {
         expect(mockMutateAsync).not.toHaveBeenCalled()
     })
 
+    it('rejects rekeyed accounts before any network call', async () => {
+        const rekeyedAccount = {
+            ...localAccount,
+            rekeyAddress: 'AUTH_ADDR',
+        } as unknown as WalletAccount
+        const { result } = renderHook(() => useCardFundingDelegation())
+
+        expect(result.current.canDelegate(rekeyedAccount)).toBe(false)
+        await expect(result.current.delegateTo(rekeyedAccount)).rejects.toThrow(
+            ProgramSigningUnsupportedError,
+        )
+        expect(mockMutateAsync).not.toHaveBeenCalled()
+    })
+
     it('reports local-key accounts as able to delegate', () => {
         const { result } = renderHook(() => useCardFundingDelegation())
 

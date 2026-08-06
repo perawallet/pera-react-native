@@ -16,10 +16,25 @@ export type PushNotificationInitResult = {
 }
 
 /**
- * Called with the deeplink URL carried by a tapped push notification
- * (foreground, background-resume, or cold-start).
+ * The actionable fields carried by a tapped push notification (foreground,
+ * background-resume, or cold-start). Mirrors the in-app notification schema:
+ * `url` is the optional deeplink; `type`/`accountAddress` let the app route by
+ * notification type when the URL alone can't reach the target — e.g. a multisig
+ * sign request, whose payload carries only the shared-account address.
  */
-export type NotificationOpenListener = (deeplinkUrl: string) => void
+export type NotificationOpenPayload = {
+    url?: string
+    type?: string
+    accountAddress?: string
+}
+
+/**
+ * Called with the payload of a tapped push notification (foreground,
+ * background-resume, or cold-start).
+ */
+export type NotificationOpenListener = (
+    payload: NotificationOpenPayload,
+) => void
 
 /** Called with the freshly issued push token whenever it changes. */
 export type PushTokenRefreshListener = (token: string) => void
@@ -44,10 +59,10 @@ export interface PushNotificationService {
      */
     addTokenRefreshListener(listener: PushTokenRefreshListener): () => void
     /**
-     * Registers a listener for push-notification taps that carry a deeplink
-     * URL. Returns an unsubscribe function. A cold-start tap that resolves
-     * before any listener is registered is replayed to the first listener so
-     * launching the app from a notification isn't lost to a race.
+     * Registers a listener for push-notification taps. Returns an unsubscribe
+     * function. A cold-start tap that resolves before any listener is
+     * registered is replayed to the first listener so launching the app from a
+     * notification isn't lost to a race.
      */
     addNotificationOpenListener(listener: NotificationOpenListener): () => void
 }

@@ -10,15 +10,14 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
 import { PWText, PWView } from '@components/core'
 import {
     ConfirmActionContent,
     ConfirmActionLayout,
 } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
-import { config } from '@perawallet/wallet-core-config'
 import { useStyles } from './styles'
+import { useWalletConnectErrorContent } from './useWalletConnectErrorContent'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -42,19 +41,7 @@ export const WalletConnectErrorContent = ({
 }: WalletConnectErrorContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-
-    const errorMessage = useMemo(() => {
-        let actualError = error?.message
-        if (config.debugEnabled && error?.cause) {
-            if (typeof error.cause === 'string') {
-                actualError = error.cause
-            } else if (error.cause instanceof Error) {
-                actualError = error.cause.message
-            }
-        }
-
-        return actualError ?? 'errors.walletconnect.unknown'
-    }, [error])
+    const { errorBody } = useWalletConnectErrorContent(error)
 
     // One copy composition, two hosts — so the extension's approval page and
     // mobile's sheet cannot drift apart.
@@ -67,7 +54,7 @@ export const WalletConnectErrorContent = ({
                 <PWText variant='body'>
                     {t('walletconnect.request.error_sheet_body')}
                 </PWText>
-                <PWText variant='body'>{t(errorMessage)}</PWText>
+                <PWText variant='body'>{errorBody}</PWText>
                 <PWText variant='body'>
                     {t('walletconnect.request.error_sheet_retry')}
                 </PWText>

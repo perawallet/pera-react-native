@@ -20,6 +20,8 @@ export {
     compileAutoDrawProgram,
     renderAutoDrawTeal,
     resolveEscrowChainConfig,
+    verifyAutoDrawProgram,
+    AutoDrawProgramUnverifiedError,
     type EscrowChainConfig,
     type RenderAutoDrawTealArgs,
 } from './lsig'

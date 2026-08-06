@@ -88,6 +88,18 @@ vi.mock('@modules/card/hooks', async () => {
     }
 })
 
+// The AutoDraw program pin is deliberately empty in source until the compiled
+// artifacts are committed (PERA-4712), so `compileAutoDrawProgram` fails closed
+// for every network — correct in production, but it would stop this flow test at
+// the LSig step. The MSW compile handler also answers with `BoEB` (`int 1`),
+// which is exactly the substituted program the guard exists to reject. Stub the
+// compile step to stand in for a pinned build; the guard itself is unit-tested
+// in packages/card/src/api/escrow/__tests__/lsig.spec.ts.
+vi.mock('@perawallet/wallet-core-card', async () => ({
+    ...(await vi.importActual<object>('@perawallet/wallet-core-card')),
+    compileAutoDrawProgram: vi.fn(async () => new Uint8Array([6, 129, 1])),
+}))
+
 // Manual funding gates only on PIN; skip the PIN sheet here (unit-tested in
 // useRequirePinVerification.spec).
 vi.mock('@modules/security', async () => ({

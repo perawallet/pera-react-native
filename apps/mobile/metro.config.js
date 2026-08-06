@@ -49,6 +49,7 @@ const aliasMap = {
     '@providers': path.resolve(projectRoot, 'src/providers'),
     '@routes': path.resolve(projectRoot, 'src/routes'),
     '@hooks': path.resolve(projectRoot, 'src/hooks'),
+    '@i18n': path.resolve(projectRoot, 'src/i18n'),
     '@constants': path.resolve(projectRoot, 'src/constants'),
     '@modules': path.resolve(projectRoot, 'src/modules'),
     '@assets': path.resolve(projectRoot, 'assets'),
@@ -143,6 +144,55 @@ const webStubs = {
     // only needs to survive bundling; it throws clearly if ever invoked.
     'falcon-1024': 'falcon-1024.js',
 };
+
+// Locale tour (i18n screenshot QA) is swapped for no-op stubs in any build
+// that is not a dev build. Resolution-time, not runtime: a `config.*` read
+// would ship the tour's navigation-driving code into release bundles, which
+// Metro can only strip when the gate is statically known here.
+//
+// Fail-safe by construction: `NODE_ENV` must EQUAL 'development'. Expo CLI
+// sets that for `expo start`; `expo export:embed` sets 'production' and vitest
+// sets 'test', so undefined and everything else falls through to stubbed. Do
+// not loosen this to `!== 'production'`.
+const localeTourEnabled = process.env.NODE_ENV === 'development';
+
+// Keyed by resolved absolute path, not by specifier: the swap has to hold for
+// the alias form (`@modules/locale-tour`), a relative import of the same file,
+// and a bare directory import that lands on index.ts. Matching after
+// resolution covers all three; matching specifiers would need one rule each
+// and silently miss the next one someone writes.
+const localeTourStubs = Object.fromEntries(
+    [
+        // The load-bearing one. register.ts is the tour driver's only importer
+        // (App.tsx pulls it in for effect), so stubbing it is what detaches
+        // runTour/runTourStep/steps from the graph. The deeplink handler
+        // reaches the driver through locale-tour/registry.ts instead, which
+        // imports nothing — see that file for the cycle this avoids.
+        'src/modules/locale-tour/register',
+        // Backstop for anything that reaches the barrel directly. The gallery
+        // catalog steps.ts reads is NOT detached by any of this: it already
+        // ships in release via the developer settings screens.
+        'src/modules/locale-tour/index',
+        // Overflow instrumentation, called from PWText on every render.
+        'src/modules/locale-tour/hooks/useOverflowProbe',
+        // Deeplink parse boundary: the stub returns null, so the tour URL
+        // falls through to a harmless HOME like any unrecognized path.
+        'src/hooks/deeplink/dev-locale-tour-parser',
+        // Deeplink dispatch. Belt-and-braces since the registry inversion: it
+        // no longer imports the driver, and with register.ts stubbed it would
+        // find no runner and no-op anyway.
+        'src/hooks/deeplink/handlers/useLocaleTourDeeplink',
+        // Pseudolocale bundle (~180 KB generated from `en`).
+        'src/i18n/pseudoResources',
+    ].map(modulePath => [
+        path.resolve(projectRoot, `${modulePath}.ts`),
+        path.resolve(projectRoot, `${modulePath}.stub.ts`),
+    ]),
+);
+
+console.log(
+    `[metro] locale tour: ${localeTourEnabled ? 'enabled' : 'stubbed'} (NODE_ENV=${process.env.NODE_ENV ?? 'unset'})`,
+);
 
 // Custom resolver function
 const customResolveRequest = (context, moduleName, platform) => {
@@ -386,6 +436,16 @@ const customResolveRequest = (context, moduleName, platform) => {
     }
 };
 
+// Wraps the resolver rather than living inside it: every early `return` above
+// is a path the swap would otherwise miss, and several of them (the alias
+// branch in particular) re-enter Metro's own resolver, not this one.
+const resolveRequest = (context, moduleName, platform) => {
+    const resolved = customResolveRequest(context, moduleName, platform);
+    if (localeTourEnabled || resolved?.type !== 'sourceFile') return resolved;
+    const stub = localeTourStubs[resolved.filePath];
+    return stub ? { type: 'sourceFile', filePath: stub } : resolved;
+};
+
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = {
     ...defaultConfig,
@@ -409,7 +469,7 @@ const config = {
         // additive: packages that expose react-native/default still match those
         // first (exports matching is keyed by the package's own condition order).
         unstable_conditionNames: ['require', 'import'],
-        resolveRequest: customResolveRequest,
+        resolveRequest,
     },
 };
 

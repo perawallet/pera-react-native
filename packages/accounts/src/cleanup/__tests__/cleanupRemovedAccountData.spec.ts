@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import {
+    registerAccountCleanup,
+    resetAccountCleanupRegistry,
+} from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import {
     runMigrations,
@@ -72,6 +76,16 @@ describe('cleanupRemovedAccountData', () => {
 
     afterEach(() => {
         teardown()
+        resetAccountCleanupRegistry()
+    })
+
+    it('runs registered account cleanup handlers with the db and address', async () => {
+        const handler = vi.fn().mockResolvedValue(undefined)
+        registerAccountCleanup(handler)
+
+        await cleanupRemovedAccountData({ db, accountAddress: 'ADDR1' })
+
+        expect(handler).toHaveBeenCalledWith({ db, accountAddress: 'ADDR1' })
     })
 
     it('removes the account holdings and balance row', async () => {

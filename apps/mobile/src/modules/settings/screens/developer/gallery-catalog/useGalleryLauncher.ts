@@ -11,49 +11,19 @@
  */
 
 import { useCallback } from 'react'
-import { useNavigation, type ParamListBase } from '@react-navigation/native'
 
-import { useBottomSheet } from '@modules/bottom-sheet'
+import { launchGalleryEntry } from './launchGalleryEntry'
 
 import type { GalleryEntry } from './types'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 
 type UseGalleryLauncherResult = {
     launch: (entry: GalleryEntry) => void
 }
 
 export const useGalleryLauncher = (): UseGalleryLauncherResult => {
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { request, requestByType } = useBottomSheet()
-
-    const launch = useCallback(
-        (entry: GalleryEntry) => {
-            const { launch: l } = entry
-            switch (l.kind) {
-                case 'navigate': {
-                    navigation.navigate(l.target.name, l.target.params)
-                    break
-                }
-                case 'sheet': {
-                    void request(l.request())
-                    break
-                }
-                case 'sheetByType': {
-                    void requestByType(l.type, l.props, l.options)
-                    break
-                }
-                case 'action': {
-                    l.run()
-                    break
-                }
-                case 'preview': {
-                    navigation.navigate('GalleryPreview', { entryId: entry.id })
-                    break
-                }
-            }
-        },
-        [navigation, request, requestByType],
-    )
+    const launch = useCallback((entry: GalleryEntry) => {
+        launchGalleryEntry(entry)
+    }, [])
 
     return { launch }
 }

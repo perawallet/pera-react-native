@@ -91,3 +91,7 @@ dist/
 
 # IDE
 .idea/
+
+# Locale tour driver output (screenshots + report — regenerate with
+# `pnpm --filter mobile locale-tour`)
+/locale-shots/

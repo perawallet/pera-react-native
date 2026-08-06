@@ -13,6 +13,7 @@
 /* eslint-disable max-lines */
 
 import type WebView from 'react-native-webview'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
 import { Linking } from 'react-native'
 import { useDeviceID } from '@perawallet/wallet-core-device'
@@ -147,6 +148,7 @@ export const usePeraWebviewInterface = (
     onBackRequested?: () => void,
 ) => {
     const { showToast } = useToast()
+    const { showError } = useErrorToast()
     const signingAccounts = useSigningAccounts()
     const allAccounts = useAllAccounts()
     const { network } = useNetwork()
@@ -565,12 +567,11 @@ export const usePeraWebviewInterface = (
                             e as Error,
                             webview,
                         )
-                        // guardrails-ignore-next-line no-error-toast-in-catch reason: dApp signing path surfaces raw error message verbatim for diagnosis
-                        showToast({
-                            title: t('errors.signing.title'),
-                            body: (e as Error).message,
-                            type: 'error',
-                        })
+                        // The dApp gets the protocol message via
+                        // sendErrorToWebview above; the user gets localized copy,
+                        // with the raw detail logged (and appended only when
+                        // config.debugEnabled).
+                        showError(e, t('errors.signing.title'))
                     }
                 },
             )
@@ -581,7 +582,7 @@ export const usePeraWebviewInterface = (
             resolveArc0001,
             enqueueSignRequest,
             sourceUrl,
-            showToast,
+            showError,
             t,
         ],
     )
@@ -758,12 +759,11 @@ export const usePeraWebviewInterface = (
                             e as Error,
                             webview,
                         )
-                        // guardrails-ignore-next-line no-error-toast-in-catch reason: dApp signing path surfaces raw error message verbatim for diagnosis
-                        showToast({
-                            title: t('errors.signing.title'),
-                            body: (e as Error).message,
-                            type: 'error',
-                        })
+                        // The dApp gets the protocol message via
+                        // sendErrorToWebview above; the user gets localized copy,
+                        // with the raw detail logged (and appended only when
+                        // config.debugEnabled).
+                        showError(e, t('errors.signing.title'))
                     }
                 },
             )
@@ -774,7 +774,7 @@ export const usePeraWebviewInterface = (
             addSignRequest,
             allAccounts,
             sourceUrl,
-            showToast,
+            showError,
             t,
         ],
     )

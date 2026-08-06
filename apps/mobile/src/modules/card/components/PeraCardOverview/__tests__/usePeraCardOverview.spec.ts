@@ -17,6 +17,10 @@ import {
     type CardInternalWallet,
     type CardTransaction,
 } from '@perawallet/wallet-core-card'
+import {
+    useAllAccounts,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 const mockState = vi.hoisted(() => ({
     selectedFundingType: null as string | null,
@@ -35,7 +39,17 @@ vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
         ...actual,
-        useNavigation: () => ({ navigate: mockNavigate }),
+        // The hook goes through useAppNavigation, which reads all of these
+        // off the navigation object at call time — stub them all so the mock
+        // doesn't silently hand out undefined.
+        useNavigation: () => ({
+            navigate: mockNavigate,
+            push: vi.fn(),
+            replace: vi.fn(),
+            goBack: vi.fn(),
+            canGoBack: vi.fn(() => true),
+            reset: vi.fn(),
+        }),
     }
 })
 
@@ -100,6 +114,20 @@ import { usePeraCardOverview } from '../usePeraCardOverview'
 const tx = (id: string, dateTime: string): CardTransaction =>
     ({ id, dateTime }) as unknown as CardTransaction
 
+// Auto funding needs a connected account that can sign the AutoDraw LSig, so
+// the stored type alone is not enough — the account has to be resolvable.
+const LOCAL_ACCOUNT = {
+    address: 'LINKED_ADDR',
+    type: 'algo25',
+    keyPairId: 'key-1',
+} as WalletAccount
+
+const LEDGER_ACCOUNT = {
+    address: 'LINKED_ADDR',
+    type: 'hardware',
+    hardwareDetails: { manufacturer: 'ledger' },
+} as unknown as WalletAccount
+
 describe('usePeraCardOverview', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -111,6 +139,7 @@ describe('usePeraCardOverview', () => {
         mockState.isWalletsLoading = false
         mockState.delegatedWallet = null
         mockState.isExternalLoading = false
+        vi.mocked(useAllAccounts).mockReturnValue([LOCAL_ACCOUNT])
     })
 
     it('reports the balance as loading while the wallets query is in flight', () => {
@@ -153,6 +182,24 @@ describe('usePeraCardOverview', () => {
         const { result } = renderHook(() => usePeraCardOverview())
 
         expect(result.current.isAutoFunding).toBe(true)
+    })
+
+    // A Ledger can never sign the AutoDraw LSig, so a stored AUTO left over
+    // from a previous account must not be treated as live: it would add the
+    // linked balance and the per-tx limit to a spendable amount the card can
+    // never actually draw.
+    it('ignores a stored AUTO when the connected account is a Ledger', () => {
+        mockState.selectedFundingType = 'AUTO'
+        mockState.delegatedWallet = {
+            balance: new Decimal('500'),
+            allowance: new Decimal('200'),
+        }
+        vi.mocked(useAllAccounts).mockReturnValue([LEDGER_ACCOUNT])
+
+        const { result } = renderHook(() => usePeraCardOverview())
+
+        expect(result.current.isAutoFunding).toBe(false)
+        expect(result.current.spendablePerTx.toString()).toBe('0')
     })
 
     it('groups transactions by month, newest first', () => {

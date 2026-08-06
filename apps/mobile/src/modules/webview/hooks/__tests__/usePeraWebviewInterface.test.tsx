@@ -267,6 +267,15 @@ vi.mock('@hooks/useToast', () => ({
     })),
 }))
 
+// Stubbed rather than exercised: the real hook pulls resolveErrorCopy, whose
+// TITLE_KEY_BY_CATEGORY needs the ErrorCategory enum this file's shared mock
+// does not provide. Copy resolution is covered by resolveErrorCopy.spec.ts.
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: vi.fn(() => ({
+        showError: vi.fn(),
+    })),
+}))
+
 vi.mock('@hooks/useDeepLink', () => ({
     useDeepLink: vi.fn(() => ({
         handleDeepLink: vi.fn(),

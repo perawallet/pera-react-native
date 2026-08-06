@@ -83,6 +83,37 @@ describe('useInboxScreen', () => {
         expect(mockHandleInboxItemPress).toHaveBeenCalledWith(signItem)
     })
 
+    it('refetches the inbox when refresh is triggered', () => {
+        const mockRefetch = vi.fn()
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+            isRefetching: false,
+            refetch: mockRefetch,
+        } as unknown as ReturnType<typeof useInboxQuery>)
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        act(() => {
+            result.current.refetch()
+        })
+
+        expect(mockRefetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('surfaces the refetching state of the inbox query', () => {
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+            isRefetching: true,
+            refetch: vi.fn(),
+        } as unknown as ReturnType<typeof useInboxQuery>)
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.isRefetching).toBe(true)
+    })
+
     it('is awaiting registration when there are no items and registration is pending', () => {
         vi.mocked(useIsDeviceRegistrationPending).mockReturnValue(true)
 

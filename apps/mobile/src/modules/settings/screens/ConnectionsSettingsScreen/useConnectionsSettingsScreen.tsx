@@ -66,6 +66,7 @@ export const useConnectionsSettingsScreen =
                         connection,
                         disconnect,
                         handleDisconnectError,
+                        t('walletconnect.settings.unknown_peer'),
                     ),
                 ),
                 ...sites.map(site =>
@@ -84,6 +85,7 @@ export const useConnectionsSettingsScreen =
             revoke,
             handleRevokeError,
             handleDisconnectError,
+            t,
         ])
 
         const confirmRevoke = useCallback(

@@ -106,16 +106,25 @@ vi.mock('@react-navigation/native', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    ALGO_ASSET_ID: '0',
-    isAlgoAssetId: (assetId: string | number | bigint) =>
-        String(assetId) === '0',
-    logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
-    generateOrderedUniqueId: vi.fn(() => 'test-id'),
-    decodeFromBase64: vi.fn((b64: string) =>
-        Uint8Array.from(Buffer.from(b64, 'base64')),
-    ),
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    // Real enum rather than a hand-copied literal — see the note in
+    // vitest.setup.ts. base.ts has no runtime imports.
+    const { ErrorCategory } = await vi.importActual<
+        typeof import('../../../../../../packages/shared/src/errors/base')
+    >('../../../../../../packages/shared/src/errors/base')
+
+    return {
+        ALGO_ASSET_ID: '0',
+        isAlgoAssetId: (assetId: string | number | bigint) =>
+            String(assetId) === '0',
+        logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
+        generateOrderedUniqueId: vi.fn(() => 'test-id'),
+        decodeFromBase64: vi.fn((b64: string) =>
+            Uint8Array.from(Buffer.from(b64, 'base64')),
+        ),
+        ErrorCategory,
+    }
+})
 
 // useDeepLink reads the device's biometric level to gate passkey deeplinks.
 // Stub the package so the real security store (with its module-load

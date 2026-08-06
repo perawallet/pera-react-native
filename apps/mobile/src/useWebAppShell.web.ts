@@ -101,12 +101,14 @@ export const useWebAppShell = (): UseWebAppShellResult => {
             hasApiKey: config.backendAPIKey.length > 0,
         })
         // Chrome's initialize() already Promise.allSettled's the three
-        // services, so a single failing one cannot take the others down. The
-        // push notification service runs last and resolves the FCM token;
-        // writing it to state is what eventually reaches the device store.
+        // services, so a single failing one cannot take the others down. Push
+        // registration is deliberately not awaited (see PlatformInitResult) —
+        // the token lands whenever it lands and then reaches the device store.
         void getProvider()
             .initialize()
-            .then(({ token }) => setFcmToken(token ?? null))
+            .then(({ notifications }) =>
+                notifications.then(({ token }) => setFcmToken(token ?? null)),
+            )
             .catch(error => {
                 logger.error('Web platform services init failed', { error })
             })

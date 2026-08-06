@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { eq, and, desc, lt, gte, sql } from 'drizzle-orm'
+import { eq, and, desc, lt, gte, sql, notExists } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type {
@@ -330,4 +330,45 @@ export async function getLatestTransactionRoundTime({
         .all()
 
     return rows[0]?.maxRoundTime ?? null
+}
+
+type DeleteTransactionsForAccountParams = {
+    db?: Database
+    accountAddress: string
+}
+
+/**
+ * Removes an account's transaction links (all networks), then prunes any
+ * `transactions` rows no remaining account still references. A single on-chain
+ * transaction can be linked to more than one owned account (e.g. a transfer
+ * between them), so the prune is reference-counted per `(id, network)` rather
+ * than deleting every transaction the account touched. Idempotent — safe for an
+ * address with no data.
+ */
+export async function deleteTransactionsForAccount({
+    db = getDatabase(),
+    accountAddress,
+}: DeleteTransactionsForAccountParams): Promise<void> {
+    await db
+        .delete(AccountTransactionsSchema)
+        .where(eq(AccountTransactionsSchema.accountAddress, accountAddress))
+        .run()
+
+    const stillReferenced = db
+        .select({ referenced: sql`1` })
+        .from(AccountTransactionsSchema)
+        .where(
+            and(
+                eq(
+                    AccountTransactionsSchema.transactionId,
+                    TransactionsSchema.id,
+                ),
+                eq(
+                    AccountTransactionsSchema.network,
+                    TransactionsSchema.network,
+                ),
+            ),
+        )
+
+    await db.delete(TransactionsSchema).where(notExists(stillReferenced)).run()
 }

@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { ActivityIndicator, SectionList } from 'react-native'
 import { useStyles } from './styles'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWRefreshControl, PWText, PWView } from '@components/core'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
@@ -47,7 +47,9 @@ export const AssetTransactionList = ({
     const {
         sections,
         isFetchingNextPage,
+        isRefreshing,
         handleLoadMore,
+        handleRefresh,
         handleExportCsv,
         isExportingCsv,
         isCsvExportVisible,
@@ -129,6 +131,12 @@ export const AssetTransactionList = ({
                             <ActivityIndicator size='small' />
                         </PWView>
                     )
+                }
+                refreshControl={
+                    <PWRefreshControl
+                        isRefreshing={isRefreshing}
+                        onRefresh={handleRefresh}
+                    />
                 }
             />
         </>

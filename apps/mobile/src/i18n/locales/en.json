@@ -180,6 +180,9 @@
     },
     "address_entry": {
         "scan_qr": "Scan QR Code",
+        "paste_from_clipboard": "Paste From Clipboard",
+        "invalid_qr_title": "Invalid QR Code",
+        "invalid_qr_body": "This QR code doesn't contain a wallet address",
         "address": "Address",
         "contacts": "Contacts",
         "my_accounts": "Accounts",
@@ -479,6 +482,7 @@
         }
     },
     "camera": {
+        "handling_code": "Just a moment...",
         "no_camera_device_found": {
             "title": "No camera device found or missing permissions.",
             "body": "Please double check in your system settings that you have enabled camera permissions for the app."
@@ -641,14 +645,10 @@
             "title": "An error occurred processing this account",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
             "generic": "An error occurred processing this account.",
-            "no_hd_wallet": "Could not find the Universal Wallet for address {{address}}.",
-            "key_access_error": "Failed to access the signing key."
+            "no_hd_wallet": "Could not find the Universal Wallet for this account."
         },
         "blockchain": {
-            "generic": "Something went wrong accessing the blockchain.",
-            "transaction": "Failed to process the transaction: {{cause}}",
-            "invalid_transaction": "Invalid transaction: {{cause}}",
-            "signing": "Failed to sign the transaction: {{cause}}"
+            "generic": "Something went wrong accessing the blockchain."
         },
         "algod": {
             "overspend": {
@@ -716,6 +716,9 @@
                 "body": "We didn't get a response in time. Please try again."
             }
         },
+        "pera_service": {
+            "unavailable": "Pera services aren't available on this network. Switch to MainNet to use this feature."
+        },
         "api": {
             "generic": {
                 "title": "Request failed",
@@ -738,38 +741,32 @@
             "generic": "The data appears to be invalid.",
             "invalid_address": "The address appears to be invalid: {{address}}",
             "invalid_amount": "The amount appears to be invalid: {{amount}}",
-            "invalid_mnemonic": "The mnemonic appears to be invalid: {{mnemonic}}",
+            "invalid_mnemonic": "The recovery passphrase appears to be invalid.",
             "required_field": "A required field is missing: {{field}}"
-        },
-        "auth": {
-            "generic": "Something went wrong with the authentication.",
-            "biometric_failed": "Something went wrong with the authentication.",
-            "pin_incorrect": "Something went wrong with the authentication."
-        },
-        "storage": {
-            "generic": "Couldn't access stored data.",
-            "read_failed": "Something went wrong reading from storage.",
-            "write_failed": "Something went wrong writing to storage."
         },
         "transaction": {
             "title": "An error occurred processing this transaction",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
         "kms": {
-            "key_not_found": "Could not find the key for wallet {{walletId}}.",
+            "key_not_found": "Could not find the signing key for this account.",
             "key_access_error": "Failed to access the signing key.",
-            "invalid_key": "The key for wallet {{walletId}} is invalid."
+            "invalid_key": "The signing key for this account is invalid.",
+            "generic": "Something went wrong accessing your signing key."
         },
-        "unknown": "An unknown error occurred.",
         "walletconnect": {
             "title": "An error occurred processing an app request",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
-            "unknown": "An unknown error occurred when signing.  Check the dapp for more information."
+            "unknown": "An unknown error occurred when signing.  Check the dapp for more information.",
+            "invalid_network_body": "You have received a request from an invalid network. Please switch your wallet to the correct network and try again.",
+            "sign_request_body": "You have received an invalid request to sign a transaction. Please check the app and try again.",
+            "permission_body": "You have received an unauthorized request from an app. Please check the app and try again.",
+            "invalid_session_body": "You have received an invalid session request from an app. Please check the app and try again.",
+            "connection_timeout_body": "Couldn't reach WalletConnect to deliver your signed transaction. Check your connection and try again.",
+            "session_request_expired_body": "This connection request has expired. Start a new connection from the dApp and try again."
         },
         "signing": {
-            "title": "An error occurred processing the signing request",
-            "transaction_limit_exceeded": "Too many transactions: {{count}} exceeds the maximum of {{max}}.",
-            "data_limit_exceeded": "Too many data items: {{count}} exceeds the maximum of {{max}}."
+            "title": "An error occurred processing the signing request"
         },
         "webview": {
             "invalid_method": "Invalid method {{method}}",
@@ -1015,8 +1012,8 @@
         },
         "intro": {
             "navigation_title": "Pera Card",
-            "title": "Your gateway to\nWeb3 payments",
-            "body": "Get your free Pera Card. The card will be immediately available to you.",
+            "title": "Your crypto,\nready to spend",
+            "body": "Get your free Pera Card. Your most convenient offramp, wherever accepted.",
             "powered_by": "Powered by",
             "learn_more": "Learn more",
             "create_account": "Create a Baanx Account",
@@ -1308,7 +1305,8 @@
             "title": "Set a Threshold",
             "description": "You need to set the minimum number of accounts required to confirm a transaction.",
             "number_of_accounts": "Number of accounts",
-            "required_signatures": "Threshold"
+            "required_signatures": "Threshold",
+            "exceeds_participants": "The threshold ({{threshold}}) cannot be higher than the number of participants ({{participantCount}})."
         },
         "before_you_create": {
             "title": "Before You Create a Shared Account",
@@ -1325,7 +1323,6 @@
             "finish_button": "Finish Account Creation",
             "creating": "Creating shared account...",
             "error_title": "Failed to create account",
-            "error_message": "Something went wrong while creating the shared account: {{error}}",
             "error_name_taken": "An account with this name already exists.",
             "duplicate_account_title": "Account already added",
             "duplicate_account_body": "A shared account with these participants and threshold is already in your wallet."
@@ -1485,8 +1482,7 @@
         },
         "create_account": {
             "processing": "Setting up your wallet...",
-            "error_title": "Failed to create account",
-            "error_message": "Something went wrong. Details: {{error}}"
+            "error_title": "Failed to create account"
         },
         "main_screen": {
             "welcome": "Welcome to \n Pera Wallet",
@@ -1949,6 +1945,7 @@
         "connections": "Connections",
         "currency": "Currency",
         "theme": "Theme",
+        "language": "Language",
         "developer_settings": "Developer Settings",
         "node_settings": "Node Settings",
         "feature_flags": "Feature Flags",
@@ -2139,6 +2136,7 @@
             "app_preferences_section": "App Preferences",
             "currency_title": "Currency",
             "theme_title": "Theme",
+            "language_title": "Language",
             "support_section": "Support",
             "rate_title": "Rate Pera Wallet",
             "terms_title": "Terms and Services",
@@ -2156,6 +2154,9 @@
             "system_label": "System Default",
             "light_label": "Light",
             "dark_label": "Dark"
+        },
+        "language": {
+            "system_label": "System Default"
         },
         "rating": {
             "title": "Rate your experience",
@@ -2619,6 +2620,7 @@
             "delete_all_title": "Delete All Sessions",
             "delete_all_body": "Are you sure you want to delete all sessions?  This will remove all your active sessions and disconnect you from all connected apps.",
             "disconnect_failed_title": "Couldn't disconnect",
+            "unknown_peer": "Unknown",
             "version": "This session is using WalletConnect V{{version}}",
             "connected_accounts": "Connected with",
             "permissions": "Advanced Permissions",
@@ -2674,6 +2676,7 @@
         },
         "form": {
             "swap": "Swap",
+            "insufficient_balance": "The amount exceeds your available balance.",
             "no_balance_title": "Nothing to swap",
             "no_balance_body": "This account holds no {{unit}}.",
             "percentage_error_title": "Couldn't calculate the amount",
@@ -2722,6 +2725,7 @@
         },
         "execution": {
             "error_title": "Swap Failed",
+            "error_body": "Something went wrong during the swap. Please try again.",
             "success_title": "Swap Complete",
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled",

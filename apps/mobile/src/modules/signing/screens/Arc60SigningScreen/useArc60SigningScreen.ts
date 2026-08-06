@@ -25,8 +25,11 @@ import {
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { SigningStackParamList } from '@modules/signing/routes'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { useLanguage } from '@hooks/useLanguage'
+import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
+import type { SigningStackParamList } from '@modules/signing/routes'
 
 type NavigationProp = StackNavigationProp<SigningStackParamList, 'Arc60Signing'>
 
@@ -36,7 +39,8 @@ type UseArc60SigningScreenResult = {
     parsed: Nullable<Arc60ParsedPayload>
     isPending: boolean
     canConfirm: boolean
-    error: Nullable<Error>
+    /** Localized copy for the pipeline's failure, resolved for direct display. */
+    errorMessage: Nullable<string>
     /**
      * The SIWA `domain` is asking for a signature from an origin the wallet
      * actually loaded a different page from — a relay/phishing signal. Surfaced
@@ -51,6 +55,8 @@ type UseArc60SigningScreenResult = {
 
 export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const navigation = useNavigation<NavigationProp>()
+    const { t } = useLanguage()
+    const { getMessage } = useAlgodErrorMessage()
     const pipeline = useSigningPipeline()
     const request =
         (pipeline.currentRequest as Optional<Arc60SignRequest>) ?? null
@@ -91,13 +97,17 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         request?.verifiedOrigin,
     )
 
+    const errorMessage = pipeline.error
+        ? resolveErrorCopy(pipeline.error, t, undefined, getMessage).body
+        : null
+
     return {
         request,
         account: account ?? undefined,
         parsed,
         isPending,
         canConfirm,
-        error: pipeline.error,
+        errorMessage,
         hasOriginMismatch,
         handleApprove,
         handleReject,

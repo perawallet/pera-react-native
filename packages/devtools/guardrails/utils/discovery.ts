@@ -23,9 +23,12 @@ export async function discoverFilePaths(
     repoRoot: string,
     extraIgnore: string[] = [],
 ): Promise<string[]> {
+    // One level deep, mirroring the pnpm-workspace.yaml globs — every workspace
+    // member lives directly under apps/, packages/ or extensions/.
     const patterns = [
-        'apps/mobile/src/**/*.{ts,tsx}',
+        'apps/*/src/**/*.{ts,tsx}',
         'packages/*/src/**/*.{ts,tsx}',
+        'extensions/*/src/**/*.{ts,tsx}',
     ]
     const ignore = [
         '**/__tests__/**',

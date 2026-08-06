@@ -39,12 +39,14 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
         enable_pera_card: 'enable_pera_card',
         enable_motion_lock: 'enable_motion_lock',
         terms_version: 'terms_version',
+        active_locales: 'active_locales',
         fee_warning_standard_fee: 'fee_warning_standard_fee',
     },
     RemoteConfigDefaults: {
         enable_pera_card: false, // boolean
         enable_motion_lock: true, // boolean
         terms_version: '1', // string
+        active_locales: '', // string
         fee_warning_standard_fee: 0.001, // number
     },
 }))
@@ -152,6 +154,47 @@ describe('useFeatureFlagOverrides', () => {
                 'enable_pera_card',
                 'enable_motion_lock',
             ])
+        })
+    })
+
+    describe('stringFlagKeys', () => {
+        it('includes only string-valued remote config keys', () => {
+            const { result } = renderHook(() => useFeatureFlagOverrides())
+
+            // Booleans get toggles instead, and number-valued keys have no
+            // editor at all — neither belongs in the text-field list.
+            expect(result.current.stringFlagKeys).toEqual([
+                'terms_version',
+                'active_locales',
+            ])
+        })
+    })
+
+    describe('setStringOverride', () => {
+        it('stores a non-empty value as the override', () => {
+            const { result } = renderHook(() => useFeatureFlagOverrides())
+
+            act(() => {
+                result.current.setStringOverride('active_locales', 'de,fr')
+            })
+
+            expect(mockSetConfigOverride).toHaveBeenCalledWith(
+                'active_locales',
+                'de,fr',
+            )
+        })
+
+        it('clears the override when the field is emptied', () => {
+            const { result } = renderHook(() => useFeatureFlagOverrides())
+
+            act(() => {
+                result.current.setStringOverride('active_locales', '')
+            })
+
+            expect(mockSetConfigOverride).toHaveBeenCalledWith(
+                'active_locales',
+                null,
+            )
         })
     })
 

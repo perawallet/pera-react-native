@@ -600,9 +600,9 @@ export class SyncService {
      *
      * Used by post-submission auto-refresh paths (see
      * `submitAndAutoRefresh` in @perawallet/wallet-core-signing) to update
-     * sender/receiver balances as soon as a transaction confirms, without
-     * waiting for the next periodic tick. Failures are logged but never
-     * thrown — the periodic tick is the safety net.
+     * sender/receiver balances as soon as a transaction confirms, and by
+     * pull-to-refresh, without waiting for the next periodic tick. Failures
+     * are logged but never thrown — the periodic tick is the safety net.
      */
     async refreshAccounts(
         addresses: string[],

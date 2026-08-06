@@ -27,9 +27,18 @@ const mocks = vi.hoisted(() => {
             getAppVersion: () => '1.0.0',
             getDevicePlatform: () => 'ios',
             getDeviceLocale: () => 'en',
+            getDeviceLocales: () => ['en-US'],
             getDeviceOSVersion: () => '17',
             getDeviceModelId: () => 'iPhone',
             getUserAgent: () => 'ua',
+        },
+        remoteConfig: {
+            getBooleanValue: vi.fn(
+                (_key: string, fallback?: boolean) => fallback ?? false,
+            ),
+            getStringValue: vi.fn(
+                (_key: string, fallback?: string) => fallback ?? '',
+            ),
         },
     }
     return {
@@ -44,6 +53,14 @@ const mocks = vi.hoisted(() => {
         createAsyncStoragePersister: vi.fn(() => ({ persistClient: vi.fn() })),
         runPasskeyAutofillBootstrap: vi.fn(),
         loggerError: vi.fn(),
+        configOverrides: {} as Record<string, string | boolean | number>,
+        settingsState: { language: 'system' as string },
+        settingsHasHydrated: vi.fn(() => true),
+        settingsOnFinishHydration: vi.fn(
+            (_fn: (state: unknown) => void) => () => {},
+        ),
+        i18nChangeLanguage: vi.fn().mockResolvedValue(undefined),
+        i18nLanguage: 'en',
     }
 })
 
@@ -100,6 +117,53 @@ vi.mock('../bootstrap/passkey-autofill', () => ({
     runPasskeyAutofillBootstrap: mocks.runPasskeyAutofillBootstrap,
 }))
 
+vi.mock('@perawallet/wallet-core-settings', () => ({
+    useSettingsStore: {
+        getState: () => mocks.settingsState,
+        persist: {
+            hasHydrated: mocks.settingsHasHydrated,
+            onFinishHydration: mocks.settingsOnFinishHydration,
+        },
+    },
+}))
+
+vi.mock('./i18n', () => ({
+    default: {
+        get language() {
+            return mocks.i18nLanguage
+        },
+        changeLanguage: mocks.i18nChangeLanguage,
+    },
+}))
+vi.mock('../i18n', () => ({
+    default: {
+        get language() {
+            return mocks.i18nLanguage
+        },
+        changeLanguage: mocks.i18nChangeLanguage,
+    },
+}))
+
+// The real `readRemoteConfigWithOverrides` is imported from its own module
+// rather than stubbed: the whole point of item 2a is that bootstrap and the
+// hook share one implementation, so a stub here would test nothing. The
+// package barrel itself can't be `importActual`'d — it pulls the zustand
+// store, which registers itself against the (mocked) shared logger.
+vi.mock('@perawallet/wallet-core-remote-config', async () => {
+    const { readRemoteConfigWithOverrides } =
+        await import('../../../../packages/remote-config/src/utils/readRemoteConfigWithOverrides')
+    return {
+        RemoteConfigKeys: {
+            enable_language_selection: 'enable_language_selection',
+            active_locales: 'active_locales',
+        },
+        readRemoteConfigWithOverrides,
+        useRemoteConfigStore: {
+            getState: () => ({ configOverrides: mocks.configOverrides }),
+        },
+    }
+})
+
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: {
         error: mocks.loggerError,
@@ -114,11 +178,26 @@ describe('useAppBootstrap', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         vi.useRealTimers()
-        mocks.provider.initialize.mockResolvedValue({ token: 'fcm-token' })
+        mocks.provider.initialize.mockResolvedValue({
+            notifications: Promise.resolve({ token: 'fcm-token' }),
+        })
         mocks.hydrateKeystore.mockResolvedValue(undefined)
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedAlgoAsset.mockResolvedValue(undefined)
         mocks.runPasskeyAutofillBootstrap.mockResolvedValue(undefined)
+        mocks.configOverrides = {}
+        mocks.settingsState.language = 'system'
+        mocks.settingsHasHydrated.mockReturnValue(true)
+        mocks.settingsOnFinishHydration.mockImplementation(() => () => {})
+        mocks.i18nChangeLanguage.mockResolvedValue(undefined)
+        mocks.i18nLanguage = 'en'
+        mocks.provider.remoteConfig.getBooleanValue.mockImplementation(
+            (_key: string, fallback?: boolean) => fallback ?? false,
+        )
+        mocks.provider.remoteConfig.getStringValue.mockImplementation(
+            (_key: string, fallback?: string) => fallback ?? '',
+        )
+        mocks.provider.deviceInfo.getDeviceLocales = () => ['en-US']
     })
 
     it('bootstraps successfully: bootstrapped true, initError false, persister set, splash hidden', async () => {
@@ -133,6 +212,26 @@ describe('useAppBootstrap', () => {
         expect(result.current.initError).toBe(false)
         expect(result.current.persister).toBeDefined()
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
+    })
+
+    // rAF does not fire while the app produces no frames, so a cold start that
+    // begins in the background must still reach hideAsync via the backstop
+    // timer — otherwise the splash sits there until the user foregrounds the
+    // app (PERA-4727).
+    it('hides the splash via the backstop when no frames are produced', async () => {
+        const rafSpy = vi
+            .spyOn(globalThis, 'requestAnimationFrame')
+            .mockImplementation(() => 0 as unknown as number)
+        vi.useFakeTimers()
+
+        renderHook(() => useAppBootstrap())
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(rafSpy).toHaveBeenCalled()
+        expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
+        rafSpy.mockRestore()
     })
 
     it('sets initError and hides splash when provider.initialize() rejects', async () => {
@@ -164,7 +263,9 @@ describe('useAppBootstrap', () => {
     })
 
     it('tolerates token undefined from initialize (fcmToken null, no error)', async () => {
-        mocks.provider.initialize.mockResolvedValue({ token: undefined })
+        mocks.provider.initialize.mockResolvedValue({
+            notifications: Promise.resolve({ token: undefined }),
+        })
         vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
@@ -180,7 +281,9 @@ describe('useAppBootstrap', () => {
     it('retryBootstrap clears initError and re-runs bootstrap to success', async () => {
         mocks.provider.initialize
             .mockRejectedValueOnce(new Error('first attempt fails'))
-            .mockResolvedValue({ token: 'fcm-token' })
+            .mockResolvedValue({
+                notifications: Promise.resolve({ token: 'fcm-token' }),
+            })
         vi.useFakeTimers()
         const { result } = renderHook(() => useAppBootstrap())
 
@@ -200,5 +303,133 @@ describe('useAppBootstrap', () => {
 
         expect(result.current.initError).toBe(false)
         expect(result.current.bootstrapped).toBe(true)
+    })
+
+    it('forces English when language selection is disabled, even if a language was previously active', async () => {
+        mocks.i18nLanguage = 'de'
+        mocks.settingsState.language = 'de'
+        mocks.provider.remoteConfig.getBooleanValue.mockReturnValue(false)
+        vi.useFakeTimers()
+
+        const { result } = renderHook(() => useAppBootstrap())
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.i18nChangeLanguage).toHaveBeenCalledWith('en')
+        expect(result.current.bootstrapped).toBe(true)
+    })
+
+    it('applies a stored override that is still within the effective set once enabled', async () => {
+        mocks.i18nLanguage = 'fr'
+        mocks.settingsState.language = 'en'
+        mocks.provider.remoteConfig.getBooleanValue.mockReturnValue(true)
+        mocks.provider.remoteConfig.getStringValue.mockReturnValue('en')
+        vi.useFakeTimers()
+
+        renderHook(() => useAppBootstrap())
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.i18nChangeLanguage).toHaveBeenCalledWith('en')
+    })
+
+    it('does not call changeLanguage when the effective locale already matches', async () => {
+        mocks.i18nLanguage = 'en'
+        mocks.settingsState.language = 'system'
+        mocks.provider.remoteConfig.getBooleanValue.mockReturnValue(false)
+        vi.useFakeTimers()
+
+        renderHook(() => useAppBootstrap())
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.i18nChangeLanguage).not.toHaveBeenCalled()
+    })
+
+    it('waits for settings hydration before resolving the effective locale', async () => {
+        // 'fr' has no shipped bundle, so it can never be effective regardless
+        // of active_locales — use 'en' as the override target and start
+        // i18n on a different language so the eventual change is observable.
+        mocks.i18nLanguage = 'fr'
+        mocks.settingsState.language = 'en'
+        mocks.provider.remoteConfig.getBooleanValue.mockReturnValue(true)
+        mocks.provider.remoteConfig.getStringValue.mockReturnValue('en')
+        mocks.settingsHasHydrated.mockReturnValue(false)
+        let finishHydration: (() => void) | undefined
+        mocks.settingsOnFinishHydration.mockImplementation(fn => {
+            finishHydration = () => fn(mocks.settingsState)
+            return () => {}
+        })
+        vi.useFakeTimers()
+
+        const { result } = renderHook(() => useAppBootstrap())
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(10)
+        })
+        expect(result.current.bootstrapped).toBe(false)
+
+        finishHydration?.()
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.i18nChangeLanguage).toHaveBeenCalledWith('en')
+        expect(result.current.bootstrapped).toBe(true)
+    })
+
+    // zustand's persist never fires onFinishHydration when rehydration
+    // rejects, so without the bounded wait this leaves the app on the splash
+    // screen forever.
+    it('bootstraps anyway when settings hydration never finishes', async () => {
+        mocks.settingsHasHydrated.mockReturnValue(false)
+        mocks.settingsOnFinishHydration.mockImplementation(() => () => {})
+        vi.useFakeTimers()
+
+        const { result } = renderHook(() => useAppBootstrap())
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(10)
+        })
+        expect(result.current.bootstrapped).toBe(false)
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(result.current.bootstrapped).toBe(true)
+        expect(result.current.initError).toBe(false)
+        expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
+    })
+
+    // A flag flipped in the dev Feature Flags screen has to survive the next
+    // cold start — bootstrap reads the same override layer useRemoteConfig()
+    // applies, not the raw service underneath it.
+    it('honours dev remote-config overrides when resolving the locale', async () => {
+        mocks.i18nLanguage = 'fr'
+        mocks.settingsState.language = 'en'
+        // Raw service says the feature is off; only the override turns it on.
+        mocks.provider.remoteConfig.getBooleanValue.mockReturnValue(false)
+        mocks.provider.remoteConfig.getStringValue.mockReturnValue('')
+        mocks.configOverrides = {
+            enable_language_selection: true,
+            active_locales: 'en',
+        }
+        vi.useFakeTimers()
+
+        renderHook(() => useAppBootstrap())
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.i18nChangeLanguage).toHaveBeenCalledWith('en')
+        // The raw service was never consulted for the overridden keys.
+        expect(
+            mocks.provider.remoteConfig.getBooleanValue,
+        ).not.toHaveBeenCalledWith('enable_language_selection', false)
+        expect(
+            mocks.provider.remoteConfig.getStringValue,
+        ).not.toHaveBeenCalledWith('active_locales', '')
     })
 })

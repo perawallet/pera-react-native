@@ -67,20 +67,29 @@ vi.mock('../deeplink/parser', () => ({
     parseDeeplink: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    ALGO_ASSET_ID: '0',
-    isAlgoAssetId: (assetId: string | number | bigint) =>
-        String(assetId) === '0',
-    logger: {
-        debug: vi.fn(),
-        warn: vi.fn(),
-        error: vi.fn(),
-    },
-    generateOrderedUniqueId: vi.fn(() => 'test-id'),
-    decodeFromBase64: vi.fn((b64: string) =>
-        Uint8Array.from(Buffer.from(b64, 'base64')),
-    ),
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    // Real enum rather than a hand-copied literal — see the note in
+    // vitest.setup.ts. base.ts has no runtime imports.
+    const { ErrorCategory } = await vi.importActual<
+        typeof import('../../../../../packages/shared/src/errors/base')
+    >('../../../../../packages/shared/src/errors/base')
+
+    return {
+        ALGO_ASSET_ID: '0',
+        isAlgoAssetId: (assetId: string | number | bigint) =>
+            String(assetId) === '0',
+        logger: {
+            debug: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+        },
+        generateOrderedUniqueId: vi.fn(() => 'test-id'),
+        decodeFromBase64: vi.fn((b64: string) =>
+            Uint8Array.from(Buffer.from(b64, 'base64')),
+        ),
+        ErrorCategory,
+    }
+})
 
 // useDeepLink reads the device's biometric level to gate passkey deeplinks.
 // Stub the package so the real security store (with its module-load
@@ -309,6 +318,17 @@ vi.mock('@modules/transactions/components/send-funds/SendFundsContent', () => ({
 
 vi.mock('@modules/gift-card/components/BidaliContent', () => ({
     BidaliContent: vi.fn(),
+}))
+
+const { mockRunTourStep } = vi.hoisted(() => ({
+    mockRunTourStep: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@modules/locale-tour/registry', () => ({
+    getLocaleTourRunner: () => ({
+        runTourStep: mockRunTourStep,
+        runTour: vi.fn().mockResolvedValue(undefined),
+    }),
 }))
 
 const { mockSetPendingAmountBaseUnits } = vi.hoisted(() => ({
@@ -1628,6 +1648,30 @@ describe('useDeepLink', () => {
         })
 
         expect(mockOnError).toHaveBeenCalled()
+    })
+
+    describe('the locale-tour deeplink', () => {
+        it('dispatches to runTourStep', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: 'DEV_LOCALE_TOUR',
+                locale: 'en-XA',
+                step: 'scr-home',
+            })
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/dev/locale-tour?locale=en-XA&step=scr-home',
+                    false,
+                    'deeplink',
+                )
+            })
+
+            expect(mockRunTourStep).toHaveBeenCalledWith({
+                stepId: 'scr-home',
+                locale: 'en-XA',
+            })
+        })
     })
 })
 

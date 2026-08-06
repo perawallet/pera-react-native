@@ -13,6 +13,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Decimal } from 'decimal.js'
 import { setupServer } from 'msw/node'
 import React from 'react'
 
@@ -37,6 +38,39 @@ const xoQuote: RampQuoteApiResponse = {
         min: { assetId: '0', value: 1 },
         minerFee: { assetId: '0', value: 1 },
         pairId: 'pair-1',
+    },
+}
+
+// Mirrors the staging Meld payload (Mercuryo): lowKyc and several other
+// provider fields arrive as null.
+const meldQuote: RampQuoteApiResponse = {
+    quote_id: 'meld_3b03fdf4',
+    payment_method: {
+        id: 'CREDIT_DEBIT_CARD',
+        logo: null,
+        name: 'Credit Debit Card',
+    },
+    provider_response: {
+        transactionType: 'CRYPTO_PURCHASE',
+        sourceAmount: 100.0,
+        sourceAmountWithoutFees: 93.88,
+        fiatAmountWithoutFees: 93.88,
+        destinationAmountWithoutFees: null,
+        sourceCurrencyCode: 'USD',
+        countryCode: 'TR',
+        totalFee: 6.12,
+        networkFee: null,
+        transactionFee: 6.12,
+        destinationAmount: 1050.695113,
+        destinationCurrencyCode: 'ALGO',
+        exchangeRate: 0.09517508815,
+        paymentMethodType: 'CREDIT_DEBIT_CARD',
+        customerScore: 24.91,
+        serviceProvider: 'MERCURYO',
+        institutionName: null,
+        lowKyc: null,
+        partnerFee: null,
+        isNativeAvailable: false,
     },
 }
 
@@ -71,5 +105,31 @@ describe('onramp/useCreateRampQuoteMutation', () => {
         expect(quotes).toHaveLength(1)
         expect(quotes[0].quoteId).toBe('quote-1')
         expect(quotes[0].kind).toBe('xo')
+    })
+
+    test('accepts a Meld quote whose nullable provider fields are null', async () => {
+        server.use(mockCreateRampQuote({ response: [meldQuote] }))
+
+        const { result } = renderHook(() => useCreateRampQuoteMutation(), {
+            wrapper: createWrapper(),
+        })
+
+        const quotes = await result.current.mutateAsync({
+            pair: 'USD__ALGO',
+            destinationAddress: 'DEST_ADDRESS',
+            sourceAmount: 100,
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        expect(quotes).toHaveLength(1)
+        const quote = quotes[0]
+        if (quote.kind !== 'meld') throw new Error('expected meld quote')
+        expect(quote.lowKyc).toBeNull()
+        expect(quote.networkFee).toBeNull()
+        expect(quote.institutionName).toBeNull()
+        expect(quote.destinationAmount.equals(new Decimal('1050.695113'))).toBe(
+            true,
+        )
     })
 })

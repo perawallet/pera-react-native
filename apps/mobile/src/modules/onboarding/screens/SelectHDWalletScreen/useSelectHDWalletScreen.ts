@@ -13,8 +13,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import {
     useHDWalletGroups,
@@ -46,7 +46,7 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
     // Forwarded to NameAccount so a caller flow (e.g. Pera Card) resumes after naming.
     const returnTo = route.params?.returnTo
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
     const { hdWalletGroups } = useHDWalletGroups()
     const { buildHdWalletAccount } = useCreateAccount()
     const [isCreatingWallet, setIsCreatingWallet] = useState(false)
@@ -91,17 +91,10 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
                 // Reveal the picker for a manual retry instead of getting stuck.
                 setAutoSelectFailed(true)
                 setIsSelectingWallet(false)
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
-                showToast({
-                    title: t('onboarding.create_account.error_title'),
-                    body: t('onboarding.create_account.error_message', {
-                        error: `${error}`,
-                    }),
-                    type: 'error',
-                })
+                showError(error, t('onboarding.create_account.error_title'))
             }
         },
-        [buildHdWalletAccount, navigation, returnTo, showToast, t],
+        [buildHdWalletAccount, navigation, returnTo, showError, t],
     )
 
     // A lone wallet makes the picker pointless — auto-select it.
@@ -126,19 +119,12 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
                     returnTo,
                 })
             } catch (error) {
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
-                showToast({
-                    title: t('onboarding.create_account.error_title'),
-                    body: t('onboarding.create_account.error_message', {
-                        error: `${error}`,
-                    }),
-                    type: 'error',
-                })
+                showError(error, t('onboarding.create_account.error_title'))
             } finally {
                 setIsCreatingWallet(false)
             }
         })
-    }, [buildHdWalletAccount, navigation, showToast, t, returnTo])
+    }, [buildHdWalletAccount, navigation, showError, t, returnTo])
 
     const handleGoBack = useCallback(() => {
         navigation.goBack()

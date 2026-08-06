@@ -39,6 +39,27 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
+const mockRefreshAccounts = vi.fn(() => Promise.resolve())
+const mockInvalidateQueries = vi.fn()
+
+vi.mock('@perawallet/wallet-core-background', () => ({
+    getSyncService: () => ({
+        refreshAccounts: mockRefreshAccounts,
+        invalidateQueries: mockInvalidateQueries,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...actual,
+        useNetwork: () => ({ network: 'mainnet' }),
+    }
+})
+
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-shared',
@@ -133,6 +154,14 @@ const makeFungibleAsset = (id: string, name: string): PeraAsset => ({
     },
 })
 
+const createDeferred = () => {
+    let resolve: () => void = () => {}
+    const promise = new Promise<void>(res => {
+        resolve = () => res()
+    })
+    return { promise, resolve }
+}
+
 describe('useAccountNfts', () => {
     const mockAccount = {
         address: 'ACCOUNT_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -141,6 +170,7 @@ describe('useAccountNfts', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockNavigate.mockReset()
+        mockRefreshAccounts.mockResolvedValue(undefined)
         mockSortMode = 'titleAsc'
         mockGalleryLayout = 'grid'
         mockShowOptedIn = false
@@ -375,6 +405,41 @@ describe('useAccountNfts', () => {
             const { result } = renderHook(() => useAccountNfts())
 
             expect(result.current.collectibles).toHaveLength(2)
+        })
+    })
+
+    describe('pull to refresh', () => {
+        it('refreshes the selected account through the sync service', async () => {
+            const { result } = renderHook(() => useAccountNfts())
+
+            await act(async () => {
+                result.current.handleRefresh()
+            })
+
+            expect(mockRefreshAccounts).toHaveBeenCalledWith(
+                [mockAccount.address],
+                'mainnet',
+            )
+            expect(mockInvalidateQueries).not.toHaveBeenCalled()
+        })
+
+        it('reports isRefreshing while the sync refresh is in flight', async () => {
+            const deferred = createDeferred()
+            mockRefreshAccounts.mockReturnValue(deferred.promise)
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.isRefreshing).toBe(false)
+
+            act(() => {
+                result.current.handleRefresh()
+            })
+            expect(result.current.isRefreshing).toBe(true)
+
+            await act(async () => {
+                deferred.resolve()
+                await deferred.promise
+            })
+            expect(result.current.isRefreshing).toBe(false)
         })
     })
 

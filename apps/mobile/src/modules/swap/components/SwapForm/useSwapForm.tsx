@@ -12,7 +12,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useFocusEffect } from '@react-navigation/native'
-import { type Decimal } from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     useAccountAssetBalanceQuery,
     useAccountBalancesInvalidator,
@@ -61,6 +61,8 @@ type UseSwapFormResult = {
     selectedQuote: Nullable<SwapQuote>
     providerSelectionMode: 'auto' | 'manual'
     canSwap: boolean
+    /** Pay amount exceeds what the account actually holds of the pay asset. */
+    hasInsufficientBalance: boolean
     isLocalCurrencyInput: boolean
     handlePayAmountChange: (amount: Nullable<Decimal>) => void
     handleSwapDirection: () => void
@@ -109,10 +111,11 @@ export const useSwapForm = (): UseSwapFormResult => {
     const { data: payAssets } = useAssetsQuery([fromAsset])
     const payAsset = payAssets?.get(fromAsset)
 
-    const { data: payAssetBalance } = useAccountAssetBalanceQuery(
-        selectedAccount ?? undefined,
-        fromAsset,
-    )
+    const {
+        data: payAssetBalance,
+        isFetched: isPayBalanceFetched,
+        isError: isPayBalanceError,
+    } = useAccountAssetBalanceQuery(selectedAccount ?? undefined, fromAsset)
     const { data: receiveAssetBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
         toAsset,
@@ -206,13 +209,33 @@ export const useSwapForm = (): UseSwapFormResult => {
         ),
     )
 
+    const hasInsufficientBalance = useMemo(() => {
+        // Wait for the query to settle: the balance mapper reports zero while
+        // asset metadata is still syncing, which would flash a false warning.
+        if (payAmount === null || !isPayBalanceFetched) return false
+        // `isFetched` is also true once a fetch has *failed*, where data is null
+        // — treating that as a zero balance would blame the user's holding for a
+        // failed load, and block the swap on it.
+        if (isPayBalanceError) return false
+        // Settled with no holding row means the account never opted in — a zero
+        // balance, which is the case this warning exists for.
+        const available = payAssetBalance?.amount ?? new Decimal(0)
+        return payAmount.greaterThan(available)
+    }, [
+        payAmount,
+        payAssetBalance?.amount,
+        isPayBalanceFetched,
+        isPayBalanceError,
+    ])
+
     const canSwap = useMemo(
         () =>
             selectedQuote !== null &&
             payAmount !== null &&
             payAmount.greaterThan(0) &&
+            !hasInsufficientBalance &&
             !isQuoteFetching,
-        [selectedQuote, payAmount, isQuoteFetching],
+        [selectedQuote, payAmount, hasInsufficientBalance, isQuoteFetching],
     )
 
     const handlePayAmountChange = useCallback(
@@ -476,6 +499,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         selectedQuote,
         providerSelectionMode,
         canSwap,
+        hasInsufficientBalance,
         isLocalCurrencyInput,
         handlePayAmountChange,
         handleSwapDirection,

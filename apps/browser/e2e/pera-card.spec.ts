@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-// Smoke test for the PeraCardStackNavigator screen graph on web. The card flow
-// is NOT age-gated, unlike Discover/Swap/Onramp/Staking, so no age-gate
+// Smoke test for the card screen graph on web. Only PeraCardStackNavigator
+// (intro, sign-in, onboarding) is exercised here; the dashboard and its
+// transaction screens live in the Home tab's account stack and the money flows
+// on the root stack. The card flow is NOT age-gated, unlike
+// Discover/Swap/Onramp/Staking, so no age-gate
 // helper is needed here.
 import {
     expect,
@@ -144,7 +147,7 @@ test.afterAll(async () => {
 
 // The activate row's visibility alone proves the remote-config override took
 // effect and the entry point is wired; reaching the intro screen's CTA proves
-// the route registered and the whole card graph booted with no eval crash.
+// the route registered and the pre-card stack booted with no eval crash.
 test('activation entry renders and navigates to the intro screen', async () => {
     await dismissPinPromptIfPresent(page)
     await clickThroughPinPrompt(

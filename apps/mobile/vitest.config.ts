@@ -101,6 +101,10 @@ export default defineConfig({
                 replacement: path.resolve(__dirname, './src/hooks'),
             },
             {
+                find: '@i18n',
+                replacement: path.resolve(__dirname, './src/i18n'),
+            },
+            {
                 find: '@analytics',
                 replacement: path.resolve(__dirname, './src/analytics'),
             },

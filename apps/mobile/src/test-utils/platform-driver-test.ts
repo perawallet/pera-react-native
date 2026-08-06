@@ -109,6 +109,7 @@ const buildServices = (): PlatformServices => {
         getDevicePlatform: () => DevicePlatforms.web,
         getDeviceOSVersion: () => '0',
         getDeviceLocale: () => 'en-US',
+        getDeviceLocales: () => ['en-US'],
         getDeviceCountry: () => 'US',
         getDeviceModelId: () => 'test-model-id',
         getUserAgent: () => 'Pera/test',
@@ -170,7 +171,9 @@ export const WithPlatformExtension: PlatformExtensionFn = _provider => {
     const services = getServices()
     return {
         ...services,
-        initialize: async () => ({ unsubscribe: () => {} }),
+        initialize: async () => ({
+            notifications: Promise.resolve({ unsubscribe: () => {} }),
+        }),
     }
 }
 

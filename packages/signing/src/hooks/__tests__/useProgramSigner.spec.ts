@@ -100,6 +100,24 @@ describe('useProgramSigner', () => {
         expect(mockSignDataWithKey).not.toHaveBeenCalled()
     })
 
+    // A rekeyed account's own key would produce a signature the chain checks
+    // against the auth-addr and rejects at draw time — refuse it up front.
+    test('rejects rekeyed accounts with the typed error', async () => {
+        const rekeyedAccount = {
+            ...hdAccount,
+            rekeyAddress: 'AUTH_ADDR',
+        } as unknown as WalletAccount
+
+        const { result } = renderHook(() => useProgramSigner())
+
+        await expect(
+            act(async () => {
+                await result.current.signProgram(rekeyedAccount, PROGRAM)
+            }),
+        ).rejects.toThrow(ProgramSigningUnsupportedError)
+        expect(mockSignDataWithKey).not.toHaveBeenCalled()
+    })
+
     test('rejects hardware wallet accounts with the typed error', async () => {
         const hwAccount = {
             address: 'HW_ADDR',

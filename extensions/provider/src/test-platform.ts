@@ -108,6 +108,9 @@ export const buildTestPlatform = (
         getDeviceLocale() {
             return 'testLocale'
         },
+        getDeviceLocales() {
+            return ['testLocale']
+        },
         getAppVersion() {
             return 'testVersion'
         },

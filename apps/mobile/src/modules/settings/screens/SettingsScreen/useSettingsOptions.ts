@@ -12,12 +12,14 @@
 
 import { useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsLanguageSelectionEnabled } from '@hooks/useIsLanguageSelectionEnabled'
 import { config } from '@perawallet/wallet-core-config'
 import { routeCapabilities } from '@routes/capabilities'
 import type { SettingsStackParamsList } from '../../routes'
 
 export const useSettingsOptions = () => {
     const { t } = useLanguage()
+    const isLanguageSelectionEnabled = useIsLanguageSelectionEnabled()
 
     const settingsOptions = useMemo(
         () =>
@@ -122,6 +124,15 @@ export const useSettingsOptions = () => {
                             icon: 'moon',
                             title: t('settings.main.theme_title'),
                         },
+                        ...(isLanguageSelectionEnabled
+                            ? [
+                                  {
+                                      route: 'LanguageSettings' as keyof SettingsStackParamsList,
+                                      icon: 'globe',
+                                      title: t('settings.main.language_title'),
+                                  },
+                              ]
+                            : []),
                     ],
                 },
                 {
@@ -157,7 +168,7 @@ export const useSettingsOptions = () => {
                     ],
                 },
             ].filter(section => section.items.length > 0),
-        [t],
+        [t, isLanguageSelectionEnabled],
     )
 
     return {

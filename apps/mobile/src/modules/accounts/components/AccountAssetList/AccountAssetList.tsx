@@ -13,6 +13,7 @@
 import { PWButton, PWText, PWView, type PWFlatListRef } from '@components/core'
 import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
 import React, { useCallback, useEffect, useRef } from 'react'
+import { type RefreshControlProps } from 'react-native'
 import { useStyles } from './styles'
 
 import {
@@ -33,6 +34,7 @@ export type AccountAssetListProps = {
     scrollEnabled?: boolean
     header?: React.ReactNode
     isLoading?: boolean
+    refreshControl?: React.ReactElement<RefreshControlProps>
 }
 
 export const AccountAssetList = ({
@@ -40,6 +42,7 @@ export const AccountAssetList = ({
     scrollEnabled,
     header,
     isLoading = false,
+    refreshControl,
 }: AccountAssetListProps) => {
     const listRef = useRef<PWFlatListRef>(null)
     const styles = useStyles()
@@ -164,6 +167,7 @@ export const AccountAssetList = ({
                 data={holdings}
                 renderItem={renderItem}
                 scrollEnabled={scrollEnabled}
+                refreshControl={refreshControl}
                 keyExtractor={item => item.assetId}
                 // Render further ahead so fast flings on a long asset list don't
                 // outrun the cell renderer and leave blank gaps.

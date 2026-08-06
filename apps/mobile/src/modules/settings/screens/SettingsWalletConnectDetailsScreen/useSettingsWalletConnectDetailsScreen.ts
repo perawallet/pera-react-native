@@ -15,6 +15,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useWebView } from '@modules/webview'
 import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
+import { toValidatedBrowserUrl } from '@modules/webview/hooks/handlers'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { type WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
@@ -90,12 +91,15 @@ export const useSettingsWalletConnectDetailsScreen = (
     }
 
     const handleOpenLink = () => {
-        if (!session.session?.peerMeta?.url) {
-            return
-        }
+        // peerMeta.url is dApp-asserted, never validated upstream; gate it to
+        // https:// before it reaches the WebView.
+        const validatedUrl = toValidatedBrowserUrl(
+            session.session?.peerMeta?.url,
+        )
+        if (!validatedUrl) return
         pushWebView({
             id: generateOrderedUniqueId(),
-            url: session.session.peerMeta.url,
+            url: validatedUrl,
         })
     }
 

@@ -54,7 +54,9 @@ const meldProviderQuoteResponseSchema = z
         paymentMethodType: z.string(),
         serviceProvider: z.string(),
         institutionName: z.string().nullable(),
-        lowKyc: z.boolean(),
+        // Meld providers (Mercuryo, Banxa) send null here; a hard boolean
+        // would reject the entire quote array.
+        lowKyc: z.boolean().nullish(),
     })
     .passthrough()
 

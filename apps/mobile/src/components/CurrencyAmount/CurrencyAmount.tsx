@@ -22,8 +22,8 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { type Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
+import { useLanguage } from '@hooks/useLanguage'
 import { type StyleProp, type TextStyle } from 'react-native'
-import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import {
     getVariantFontWeight,
     type FontWeight,
@@ -80,8 +80,6 @@ export type CurrencyAmountProps = {
 
 export const CurrencyAmount = (props: CurrencyAmountProps) => {
     const themeStyle = useStyles(props)
-    const provider = usePeraProvider()
-    const locale = provider.deviceInfo.getDeviceLocale()
     const {
         currency,
         value,
@@ -106,6 +104,9 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
     )
 
     const isAlgo = useMemo(() => isAlgoAssetName(currency), [currency])
+    // Passed explicitly rather than left to formatCurrency's getActiveLocale()
+    // default so a mid-session language switch actually invalidates the memo.
+    const { currentLanguage } = useLanguage()
     const { privacyMode: privacyModeSetting } = useSettings()
     const privacyMode = privacyModeSetting && !ignorePrivacyMode
 
@@ -126,7 +127,9 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
 
     const displayValue = useMemo(() => {
         if (rawValue != null) {
-            return privacyMode ? '****' : formatRawNumberInput(rawValue, locale)
+            return privacyMode
+                ? '****'
+                : formatRawNumberInput(rawValue, currentLanguage)
         }
 
         if (value == null) {
@@ -139,7 +142,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
                   value,
                   precision,
                   currency,
-                  locale,
+                  currentLanguage,
                   shouldShowSymbolInFormat,
                   truncateToUnits,
                   minPrecision,
@@ -148,12 +151,12 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
         value,
         precision,
         currency,
-        locale,
         shouldShowSymbolInFormat,
         truncateToUnits,
         minPrecision,
         privacyMode,
         rawValue,
+        currentLanguage,
     ])
 
     const trailingSymbol = useMemo(() => {

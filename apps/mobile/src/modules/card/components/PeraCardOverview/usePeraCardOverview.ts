@@ -12,19 +12,16 @@
 
 import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { useNavigation } from '@react-navigation/native'
-import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     AUTO_FUNDING_PER_TX_LIMIT_USD,
     DEFAULT_CARD_CURRENCY,
-    FundingType,
     useCardExternalWalletsQuery,
     useCardInternalWalletsQuery,
     useCardStore,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
-import { useCardComingSoonToast } from '../../hooks'
-import { type PeraCardStackParamList } from '../../routes/types'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useCardComingSoonToast, useIsCardAutoFundingActive } from '../../hooks'
 import {
     groupCardTransactionsByMonth,
     type CardTransactionSection,
@@ -58,13 +55,13 @@ type UsePeraCardOverviewResult = {
 }
 
 export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
-    const navigation =
-        useNavigation<NativeStackNavigationProp<PeraCardStackParamList>>()
-    const selectedFundingType = useCardStore(state => state.selectedFundingType)
+    // Reaches both the Home tab's card screens and the root-stack money flows,
+    // so it needs the app-wide navigation type rather than one param list.
+    const navigation = useAppNavigation()
     const connectedAddress = useCardStore(
         state => state.connectedFundingSourceAddress,
     )
-    const isAutoFunding = selectedFundingType === FundingType.Auto
+    const isAutoFunding = useIsCardAutoFundingActive()
     const { transactions, isLoading } = useCardTransactionsQuery()
 
     const transactionSections = useMemo(

@@ -244,6 +244,52 @@ describe('RNDeviceInfoStorageService', () => {
         })
     })
 
+    describe('getDeviceLocales', () => {
+        it('returns every device locale tag in order', async () => {
+            const { getLocales } = await import('expo-localization')
+            vi.mocked(getLocales).mockReturnValue([
+                {
+                    languageTag: 'fr-CA',
+                    languageCode: 'fr',
+                    textDirection: 'ltr',
+                    regionCode: 'CA',
+                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+                {
+                    languageTag: 'en-US',
+                    languageCode: 'en',
+                    textDirection: 'ltr',
+                    regionCode: 'US',
+                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            ])
+
+            expect(service.getDeviceLocales()).toEqual(['fr-CA', 'en-US'])
+        })
+
+        it('returns an empty array when the device reports no locales', async () => {
+            const { getLocales } = await import('expo-localization')
+            vi.mocked(getLocales).mockReturnValue([])
+
+            expect(service.getDeviceLocales()).toEqual([])
+        })
+
+        it('caches the result across calls', async () => {
+            const { getLocales } = await import('expo-localization')
+            const mocked = vi.mocked(getLocales)
+            mocked.mockReturnValue([
+                {
+                    languageTag: 'de-DE',
+                    languageCode: 'de',
+                    textDirection: 'ltr',
+                    regionCode: 'DE',
+                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+            ])
+
+            expect(service.getDeviceLocales()).toEqual(['de-DE'])
+            mocked.mockReturnValue([])
+            expect(service.getDeviceLocales()).toEqual(['de-DE'])
+        })
+    })
+
     describe('build environment', () => {
         it('returns the configured app environment', () => {
             const service = new RNDeviceInfoStorageService()

@@ -1,12 +1,15 @@
 name: GitHub Release
 
-# Publishes a GitHub Release for a release tag pushed by a person — in practice
-# the stable vX.Y.Z cut, since nightly and rc tags are minted with GITHUB_TOKEN
-# and publish their own release from the minting job (GitHub does not trigger
-# workflows from GITHUB_TOKEN events, so this `push` trigger never sees them).
+# Publishes a GitHub Release for a stable vX.Y.Z tag, and only for those.
+# Nightly (-alpha.N) and rc (-rc.N) tags never get a release: their workflows
+# only push the tag, which is all Bitrise needs to build.
+#
+# Both entry points below funnel through tools/publish-github-release.sh, which
+# owns the stable-only rule — so a hand-pushed prerelease tag and a manual
+# dispatch of one behave identically to the scheduled path: no release.
 #
 # workflow_dispatch doubles as a backfill: the repo has 50+ release tags and no
-# releases, so any of them can be published after the fact by tag name.
+# releases, so any stable one can be published after the fact by tag name.
 
 on:
   push:
@@ -15,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag to publish (e.g. v7.0.0-alpha.38)"
+        description: "Stable release tag to publish (e.g. v7.0.0)"
         required: true
         type: string
 

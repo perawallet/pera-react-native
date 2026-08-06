@@ -40,6 +40,7 @@ export const GroupPreviewItem = ({
         <PWTouchableOpacity
             style={styles.groupPreviewContainer}
             onPress={onPress}
+            testID='group_preview_item'
         >
             <TransactionIcon
                 type='group'

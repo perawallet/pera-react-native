@@ -14,6 +14,7 @@ import { Linking } from 'react-native'
 import { useToast } from './useToast'
 import { ALGO_ASSET_ID, logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
+import { isDevLocaleTourDeeplink } from './deeplink/dev-locale-tour-parser'
 import { DeeplinkType } from './deeplink/types'
 import {
     AccountTypes,
@@ -45,6 +46,7 @@ import {
     useBrowserDeeplink,
     useDiscoverPathDeeplink,
     useKeyregDeeplink,
+    useLocaleTourDeeplink,
     usePeraWebImportDeeplink,
     useRecoverAddressDeeplink,
     useSendFundsDeeplink,
@@ -85,6 +87,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const handlePeraWebImport = usePeraWebImportDeeplink()
     const optInAsset = useAssetOptInDeeplink()
     const showError = useDeeplinkErrorHandler()
+    const runLocaleTourStep = useLocaleTourDeeplink()
 
     const isValidDeepLink = (url: string): boolean => {
         if (isValidAlgorandAddress(url)) return true
@@ -139,6 +142,12 @@ export const useDeepLink = (): UseDeepLinkResult => {
         }
 
         try {
+            if (isDevLocaleTourDeeplink(parsedData)) {
+                await runLocaleTourStep(parsedData)
+                onSuccess?.()
+                return
+            }
+
             switch (parsedData.type) {
                 case DeeplinkType.ADD_CONTACT: {
                     // AddContact lives inside the nested Contacts stack, so it

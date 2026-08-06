@@ -15,3 +15,4 @@ export {
     useNetworkStatus,
 } from './useNetworkStatusStore'
 export { useNetworkStatusListener } from './useNetworkStatusListener'
+export { useOfflineFeedbackStore } from './useOfflineFeedbackStore'
