@@ -94,8 +94,21 @@ updates:
       # ALL update types — these move only when the RN/Expo SDK moves.
       - dependency-name: react
       - dependency-name: react-dom
+      # Patch is in this list because a react-native patch is not a patch as far
+      # as native code is concerned. With EXPO_USE_PRECOMPILED_MODULES, Expo's
+      # modules ship as prebuilt XCFrameworks compiled against one specific RN,
+      # and RN moves Fabric/JSI C++ internals between patch releases. Nothing
+      # expresses that coupling — expo declares `react-native: "*"` — so the
+      # resolver cannot catch it, and dyld can't either: it rejects *missing*
+      # symbols, not *changed struct layouts*, which instead corrupt the heap at
+      # runtime. 0.86.0 → 0.86.2 did exactly that (PERA-4830): the app died mid-
+      # navigation with a Hermes GC protection fault and a malloc free-list
+      # botch. Moves only when the Expo SDK moves.
       - dependency-name: react-native
-        update-types: [version-update:semver-major, version-update:semver-minor]
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
       - dependency-name: expo
         update-types: [version-update:semver-major]
       - dependency-name: typescript

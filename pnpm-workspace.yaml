@@ -68,7 +68,7 @@ catalog:
   oxfmt: ^0.61.0
   react: 19.2.3
   react-dom: 19.2.3
-  react-native: 0.86.2
+  react-native: 0.86.0
   react-native-mmkv: ^4.2.0
   react-native-quick-base64: ^3.0.0
   react-native-ssl-public-key-pinning: ^1.2.6
@@ -178,7 +178,7 @@ overrides:
   protobufjs@7: 7.6.5
   react: 19.2.3
   react-dom: 19.2.3
-  react-native: 0.86.2
+  react-native: 0.86.0
   react-native-nitro-modules: 0.35.9
   react-native-quick-base64: ^3.0.0
   react-native-quick-crypto: ^1.0.17
