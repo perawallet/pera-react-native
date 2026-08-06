@@ -123,6 +123,17 @@ case "$PROFILE" in
     ;;
 esac
 
+# Smoke builds reuse the ios/android profiles and only reach BrowserStack after
+# a full native build. Validate here so a missing credential costs seconds
+# rather than a finished archive.
+if [ "${SMOKE_BUILD:-}" = "true" ]; then
+  required_global+=(
+    "BROWSERSTACK_USERNAME"
+    "BROWSERSTACK_ACCESS_KEY"
+    "SMOKE_HARNESS_GITHUB_TOKEN"
+  )
+fi
+
 missing=()
 
 is_set() {

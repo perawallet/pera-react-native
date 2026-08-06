@@ -6,6 +6,10 @@ app:
   envs:
   - BITRISE_SCHEME_STAGING: Pera7Staging
   - BITRISE_SCHEME_PRODUCTION: PeraAlgoWallet
+  # Smoke builds turn it off: those binaries ship with screen-capture
+  # prevention disabled so Appium can drive them, and a public install page
+  # would hand that build to anyone holding the link.
+  - ENABLE_PUBLIC_INSTALL_PAGE: 'true'
 pipelines:
   release-builds:
     workflows:
@@ -25,6 +29,16 @@ pipelines:
         depends_on:
         - test
         - generate-changelog
+      # Parallel with the release builds rather than gating them: these build
+      # their own drivable binaries, so making ios-production wait would add
+      # mac-stack latency without changing what a red gate means — don't
+      # promote this tag. A failure fails the pipeline and shows in the card.
+      ios-smoke:
+        depends_on:
+        - test
+      android-smoke:
+        depends_on:
+        - test
       notify-release:
         depends_on:
         - generate-changelog
@@ -32,6 +46,8 @@ pipelines:
         - android-production
         - ios-staging
         - android-staging
+        - ios-smoke
+        - android-smoke
         should_always_run: workflow
     triggers:
       tag:
@@ -202,6 +218,34 @@ workflows:
     - ROW_ID: IOS_PRODUCTION
     after_run:
     - _ios-build
+    - _publish-result
+    meta:
+      bitrise.io:
+        stack: osx-xcode-26.2.x
+        machine_type_id: g2.mac.large
+  ios-smoke:
+    description: Build a drivable production IPA and run the release smoke gate on
+      BrowserStack. Never distributed — see DISABLE_SCREEN_CAPTURE_PREVENTION below.
+    envs:
+    - ENVIRONMENT: production
+    - APP_ENV: production
+    # Appium can't drive a FLAG_SECURE surface, so the shipped binary is
+    # untestable by construction. This is the "e2e build job" that
+    # tools/generate-config.sh sanctions: same scheme, configuration and
+    # backend as ios-production, differing only in this one baked boolean.
+    - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+    - BITRISE_SCHEME: "$BITRISE_SCHEME_PRODUCTION"
+    # Deliberately not cached. USE_CACHE=true would let this workflow *save* a
+    # DerivedData cache holding an RN bundle built with capture prevention
+    # disabled, which a later ios-production build could restore.
+    - USE_CACHE: 'false'
+    - VALIDATE_PROFILE: ios
+    - SMOKE_BUILD: 'true'
+    - ENABLE_PUBLIC_INSTALL_PAGE: 'false'
+    - ROW_ID: IOS_SMOKE
+    after_run:
+    - _ios-build
+    - _smoke-ios
     - _publish-result
     meta:
       bitrise.io:
@@ -387,7 +431,13 @@ workflows:
               CLEAN="false"
             fi
 
-            bundle exec fastlane ios deploy_testflight scheme:$BITRISE_SCHEME clean:$CLEAN
+            # The smoke gate needs the archive, not the release. Same scheme
+            # and configuration, stopping before the TestFlight upload.
+            if [ "$SMOKE_BUILD" == "true" ]; then
+              bundle exec fastlane ios build_smoke scheme:$BITRISE_SCHEME clean:$CLEAN
+            else
+              bundle exec fastlane ios deploy_testflight scheme:$BITRISE_SCHEME clean:$CLEAN
+            fi
     - save-cache@1:
         run_if: '{{enveq "USE_CACHE" "true"}}'
         inputs:
@@ -412,7 +462,11 @@ workflows:
               exit 0
             fi
             SHA="$(printf '%s' "${BITRISE_GIT_COMMIT:-$GIT_CLONE_COMMIT_HASH}" | cut -c1-7)"
-            NAME="pera-ios-${BITRISE_GIT_TAG:-${APP_VERSION:-b$BITRISE_BUILD_NUMBER}}-${SHA:-b$BITRISE_BUILD_NUMBER}"
+            # Smoke binaries have screen-capture prevention disabled — keep the
+            # filename saying so wherever one is downloaded.
+            SUFFIX=""
+            [ "$SMOKE_BUILD" == "true" ] && SUFFIX="-smoke"
+            NAME="pera-ios-${BITRISE_GIT_TAG:-${APP_VERSION:-b$BITRISE_BUILD_NUMBER}}-${SHA:-b$BITRISE_BUILD_NUMBER}${SUFFIX}"
             DEST="${BITRISE_DEPLOY_DIR}/${NAME}.ipa"
             cp "$IPA" "$DEST"
             envman add --key BITRISE_IPA_PATH --value "$DEST"
@@ -428,7 +482,7 @@ workflows:
         is_always_run: true
         inputs:
         - notify_user_groups: none
-        - is_enable_public_page: 'true'
+        - is_enable_public_page: "$ENABLE_PUBLIC_INSTALL_PAGE"
     - script@1:
         is_always_run: true
         title: Capture artifact URLs
@@ -469,6 +523,29 @@ workflows:
     - ROW_ID: ANDROID_PRODUCTION
     after_run:
     - _android-build
+    - _publish-result
+    meta:
+      bitrise.io:
+        stack: ubuntu-noble-24.04-bitrise-2025-android
+  android-smoke:
+    description: Build a drivable production APK and run the release smoke gate on
+      BrowserStack. Never distributed — see DISABLE_SCREEN_CAPTURE_PREVENTION below.
+    envs:
+    - ENVIRONMENT: production
+    - APP_ENV: production
+    # See ios-smoke: Appium can't drive a FLAG_SECURE surface. deploy_internal
+    # already does this for the Firebase APK it builds alongside the Play AAB.
+    - DISABLE_SCREEN_CAPTURE_PREVENTION: 'true'
+    - ANDROID_FLAVOR: production
+    - ANDROID_PACKAGE_NAME: com.algorand.android
+    - USE_CACHE: 'false'
+    - VALIDATE_PROFILE: android
+    - SMOKE_BUILD: 'true'
+    - ENABLE_PUBLIC_INSTALL_PAGE: 'false'
+    - ROW_ID: ANDROID_SMOKE
+    after_run:
+    - _android-build
+    - _smoke-android
     - _publish-result
     meta:
       bitrise.io:
@@ -726,7 +803,10 @@ workflows:
               CLEAN="false"
             fi
 
-            if [ "$DISTRIBUTION" == "firebase" ]; then
+            # The smoke gate needs an installable APK, not a distribution.
+            if [ "$SMOKE_BUILD" == "true" ]; then
+              bundle exec fastlane android build_smoke flavor:$ANDROID_FLAVOR clean:$CLEAN
+            elif [ "$DISTRIBUTION" == "firebase" ]; then
               bundle exec fastlane android deploy_firebase flavor:$ANDROID_FLAVOR clean:$CLEAN
             else
               bundle exec fastlane android deploy_internal flavor:$ANDROID_FLAVOR clean:$CLEAN
@@ -756,7 +836,11 @@ workflows:
             # is_always_run: the AAB is built before the Play upload, so a
             # failed upload (e.g. a Play policy gate) still yields the AAB.
             SHA="$(printf '%s' "${BITRISE_GIT_COMMIT:-$GIT_CLONE_COMMIT_HASH}" | cut -c1-7)"
-            BASE="pera-android-${BITRISE_GIT_TAG:-${APP_VERSION:-b$BITRISE_BUILD_NUMBER}}-${SHA:-b$BITRISE_BUILD_NUMBER}"
+            # Smoke binaries have screen-capture prevention disabled — keep the
+            # filename saying so wherever one is downloaded.
+            SUFFIX=""
+            [ "$SMOKE_BUILD" == "true" ] && SUFFIX="-smoke"
+            BASE="pera-android-${BITRISE_GIT_TAG:-${APP_VERSION:-b$BITRISE_BUILD_NUMBER}}-${SHA:-b$BITRISE_BUILD_NUMBER}${SUFFIX}"
             AAB="apps/mobile/android/app/build/outputs/bundle/release/app-release.aab"
             APK="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
             if [ -f "$AAB" ]; then
@@ -774,7 +858,7 @@ workflows:
         is_always_run: true
         inputs:
         - notify_user_groups: none
-        - is_enable_public_page: 'true'
+        - is_enable_public_page: "$ENABLE_PUBLIC_INSTALL_PAGE"
     - script@1:
         is_always_run: true
         title: Capture artifact URLs
@@ -906,7 +990,7 @@ workflows:
         is_always_run: true
         inputs:
         - notify_user_groups: none
-        - is_enable_public_page: 'true'
+        - is_enable_public_page: "$ENABLE_PUBLIC_INSTALL_PAGE"
     - script@1:
         is_always_run: true
         title: Capture artifact URLs
@@ -926,6 +1010,58 @@ workflows:
               done
             fi
             envman add --key INSTALL_PAGE_URL --value "$INSTALL_URL"
+  _smoke-ios:
+    steps:
+    - script@1:
+        title: Patch IPA for BrowserStack
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -exo pipefail
+            # Must happen on the macOS stack — the patch re-signs, so it can't
+            # move to the workflow that uploads. The script prints progress on
+            # stderr and only the output path on stdout, so this captures the
+            # path directly; pipefail is what makes a codesign failure fail the
+            # step rather than assigning its last stdout line to SMOKE_ARTIFACT.
+            PATCHED="$(./tools/patch-ipa-for-browserstack.sh "$BITRISE_IPA_PATH")"
+            envman add --key SMOKE_ARTIFACT --value "$PATCHED"
+    - script@1:
+        title: Run smoke gate
+        # ~11 min covers upload + pip + the run at their worst. The margin above
+        # that absorbs a short BrowserStack queue; beyond it we are almost
+        # certainly stuck behind the Mon/Wed/Fri regression, which holds its
+        # session for hours. BrowserStack has no priority queue, so bound the
+        # wait: a release should fail fast and legibly rather than idle a
+        # g2.mac.large until someone notices.
+        timeout: 1800
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -eo pipefail
+            ./tools/smoke-test.sh ios "$SMOKE_ARTIFACT"
+    - deploy-to-bitrise-io@2:
+        is_always_run: true
+        inputs:
+        - notify_user_groups: none
+        - is_enable_public_page: 'false'
+        - deploy_path: "$BITRISE_SOURCE_DIR/smoke-results"
+  _smoke-android:
+    steps:
+    - script@1:
+        title: Run smoke gate
+        # See _smoke-ios for why this is bounded.
+        timeout: 1800
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -eo pipefail
+            ./tools/smoke-test.sh android "$BITRISE_APK_PATH"
+    - deploy-to-bitrise-io@2:
+        is_always_run: true
+        inputs:
+        - notify_user_groups: none
+        - is_enable_public_page: 'false'
+        - deploy_path: "$BITRISE_SOURCE_DIR/smoke-results"
   _publish-result:
     steps:
     - script@1:
@@ -1106,6 +1242,10 @@ workflows:
             ROWS="${ROWS}\n$(row "${ANDROID_STAGING_STATUS:-}" "${ANDROID_STAGING_URL:-}" "${ANDROID_STAGING_INSTALL:-}" "APK" "Android staging" "Firebase")"
             ROWS="${ROWS}\n$(row "${IOS_PRODUCTION_STATUS:-}" "${IOS_PRODUCTION_URL:-}" "${IOS_PRODUCTION_INSTALL:-}" "IPA" "iOS production" "TestFlight")"
             ROWS="${ROWS}\n$(row "${IOS_STAGING_STATUS:-}" "${IOS_STAGING_URL:-}" "${IOS_STAGING_INSTALL:-}" "IPA" "iOS staging" "TestFlight")"
+            # No install link: smoke binaries have screen-capture prevention
+            # disabled and are deliberately not published anywhere.
+            ROWS="${ROWS}\n$(row "${IOS_SMOKE_STATUS:-}" "${IOS_SMOKE_URL:-}" "" "" "iOS smoke gate" "BrowserStack")"
+            ROWS="${ROWS}\n$(row "${ANDROID_SMOKE_STATUS:-}" "${ANDROID_SMOKE_URL:-}" "" "" "Android smoke gate" "BrowserStack")"
 
             # Header icon per channel on success (any failed build flips it
             # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
@@ -1116,7 +1256,7 @@ workflows:
               *)       OVERALL="📦" ;;
             esac
             COLOR="#36a64f"
-            for s in "${IOS_STAGING_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}"; do
+            for s in "${IOS_STAGING_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}" "${IOS_SMOKE_STATUS:-}" "${ANDROID_SMOKE_STATUS:-}"; do
               if [ "$s" = "fail" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
             done
 

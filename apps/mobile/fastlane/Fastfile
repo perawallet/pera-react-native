@@ -188,17 +188,39 @@ platform :ios do
   end
 
 
-  desc "Deploy to TestFlight"
-  lane :deploy_testflight do |options|
-    scheme = options[:scheme] || "Pera7Staging"
-
-    # Map scheme to configuration
-    configuration = case scheme
+  def configuration_for_scheme(scheme)
+    case scheme
     when "Pera7Staging" then "Staging"
     when "PeraAlgoWallet" then "Production"
     when "Pera-Dev" then "Dev"
     else "Staging"
     end
+  end
+
+  # Same archive as deploy_testflight, stopping before the upload. The release
+  # smoke gate drives this IPA on BrowserStack; the workflow that calls it sets
+  # DISABLE_SCREEN_CAPTURE_PREVENTION so the surface is drivable, which is why
+  # this artifact must never be distributed.
+  desc "Build an IPA for the smoke gate (no upload)"
+  lane :build_smoke do |options|
+    scheme = options[:scheme] || "Pera7Staging"
+
+    clean = options[:clean]
+    clean = true if clean.nil?
+
+    build_ios(
+      scheme: scheme,
+      configuration: configuration_for_scheme(scheme),
+      export_method: "app-store",
+      clean: clean
+    )
+  end
+
+  desc "Deploy to TestFlight"
+  lane :deploy_testflight do |options|
+    scheme = options[:scheme] || "Pera7Staging"
+
+    configuration = configuration_for_scheme(scheme)
 
     clean = options[:clean]
     clean = true if clean.nil?
@@ -316,6 +338,19 @@ platform :android do
     else
       "android/app/build/outputs/bundle/release/app-release.aab"
     end
+  end
+
+  # BrowserStack installs an APK, never an AAB. The workflow that calls this
+  # sets DISABLE_SCREEN_CAPTURE_PREVENTION so FLAG_SECURE is off and the
+  # surface is drivable, which is why this artifact must never be distributed.
+  desc "Build an APK for the smoke gate (no distribution)"
+  lane :build_smoke do |options|
+    build_android(
+      flavor: options[:flavor] || "staging",
+      build_type: "Release",
+      clean: options[:clean].nil? ? true : options[:clean],
+      artifact_type: "apk"
+    )
   end
 
   desc "Build AAB, upload to Play internal track, and distribute APK to Firebase"
