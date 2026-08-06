@@ -54,8 +54,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useTransactionEncoder: () => ({ decodeTransaction: decodeTransactionMock }),
 }))
 
+const pendingSignRequestsMock = vi.fn<() => unknown[]>(() => [])
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useSigningRequest: () => ({ addSignRequest: addSignRequestMock }),
+    useSigningRequest: () => ({
+        addSignRequest: addSignRequestMock,
+        pendingSignRequests: pendingSignRequestsMock(),
+    }),
+    isTransactionRequest: (request: { type?: string }) =>
+        request?.type === 'transactions',
 }))
 
 vi.mock('../../utils/getLocalUnsignedSigners', () => ({
@@ -133,6 +139,7 @@ describe('useHandleMultisigSignTap', () => {
         buildCosignArgsMock.mockClear()
         localUnsignedSignersMock.mockReset()
         localUnsignedSignersMock.mockReturnValue([])
+        pendingSignRequestsMock.mockReturnValue([])
     })
 
     it.each<SignRequestStatus>(['pending', 'ready'])(
@@ -235,9 +242,11 @@ describe('useHandleMultisigSignTap', () => {
         expect(addSignRequestMock).not.toHaveBeenCalled()
     })
 
-    it('dispatches local-key cosigns AND opens the pending sheet when hardware participants are also unsigned', () => {
-        // Ledger prompts must never auto-fire on inbox tap; the per-row
-        // Sign button in PendingSignaturesContent is the only entry point.
+    it('opens the pending sheet WITHOUT dispatching local-key cosigns when hardware participants are also unsigned', () => {
+        // Mixed case: dispatching the local-key cosign here would surface a
+        // review sheet *under* the pending sheet with no Sign tap. The pending
+        // sheet owns the flow — local-key signing waits for the footer Sign,
+        // and Ledger participants sign via their per-row Sign button.
         localUnsignedSignersMock.mockReturnValue([
             buildAccount('A'),
             buildHardwareAccount('L'),
@@ -246,8 +255,37 @@ describe('useHandleMultisigSignTap', () => {
         const { result } = renderHook(() => useHandleMultisigSignTap())
         result.current(buildSignRequest({ id: 'sr-mixed', status: 'pending' }))
 
-        // Local-key A is dispatched; hardware L is NOT.
-        expect(buildCosignArgsMock).toHaveBeenCalledTimes(1)
+        expect(addSignRequestMock).not.toHaveBeenCalled()
+        expect(buildCosignArgsMock).not.toHaveBeenCalled()
+        expect(openSheetMock).toHaveBeenCalledWith('sr-mixed')
+    })
+
+    it('caps the shortcut dispatch at the signatures still needed', () => {
+        // threshold 1, nothing signed → only ONE cosign fires even though the
+        // device holds three local participants.
+        localUnsignedSignersMock.mockReturnValue([
+            buildAccount('A'),
+            buildAccount('B'),
+            buildAccount('C'),
+        ])
+
+        const { result } = renderHook(() => useHandleMultisigSignTap())
+        result.current(
+            buildSignRequest({
+                id: 'sr-cap',
+                status: 'pending',
+                multisigAccount: {
+                    customId: 'm-1',
+                    createdAt: new Date('2026-05-06T09:00:00Z'),
+                    address: 'MULTISIG',
+                    version: 1,
+                    threshold: 1,
+                    participantAddresses: ['A', 'B', 'C'],
+                },
+            }),
+        )
+
+        expect(addSignRequestMock).toHaveBeenCalledTimes(1)
         expect(
             (
                 buildCosignArgsMock.mock.calls[0]![0] as {
@@ -255,9 +293,7 @@ describe('useHandleMultisigSignTap', () => {
                 }
             ).signerAddress,
         ).toBe('A')
-        expect(addSignRequestMock).toHaveBeenCalledTimes(1)
-        // Sheet opens so the user can per-row Sign the Ledger participant.
-        expect(openSheetMock).toHaveBeenCalledWith('sr-mixed')
+        expect(openSheetMock).not.toHaveBeenCalled()
     })
 
     it('opens the pending sheet WITHOUT dispatching anything when only hardware participants are unsigned', () => {

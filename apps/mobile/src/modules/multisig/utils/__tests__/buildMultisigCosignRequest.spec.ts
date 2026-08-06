@@ -123,10 +123,9 @@ describe('buildMultisigCosignRequest', () => {
         expect(result.signerOverrides!.get(1)).toBe('B')
     })
 
-    it('assigns a non-empty unique id to each cosign request', () => {
-        // Regression: an empty id collides in the actor map and `??` fall-
-        // backs further upstream, so two cosigns trample each other and a
-        // stale signing-event-bus failure falsely matches any future cosign.
+    it('assigns a deterministic id per (signRequestId, signer) so distinct signers stay distinct', () => {
+        // A non-empty, distinct id per signer is what keeps the actor map and
+        // the inline-error guards from letting two cosigns trample each other.
         const decodeTransaction = vi.fn(() => txFrom())
 
         const a = buildMultisigCosignRequest({
@@ -140,9 +139,28 @@ describe('buildMultisigCosignRequest', () => {
             decodeTransaction,
         })
 
-        expect(a.id).not.toBe('')
-        expect(b.id).not.toBe('')
+        expect(a.id).toBe('sr-42:A')
+        expect(b.id).toBe('sr-42:B')
         expect(a.id).not.toBe(b.id)
+    })
+
+    it('is stable across rebuilds of the same (signRequestId, signer) so the queue dedups a re-dispatch', () => {
+        // Same work-item → same id → the signing store's id-dedup drops a
+        // repeat dispatch instead of stacking a duplicate review sheet.
+        const decodeTransaction = vi.fn(() => txFrom())
+
+        const first = buildMultisigCosignRequest({
+            signRequest: buildSignRequest(),
+            signerAddress: 'A',
+            decodeTransaction,
+        })
+        const second = buildMultisigCosignRequest({
+            signRequest: buildSignRequest(),
+            signerAddress: 'A',
+            decodeTransaction,
+        })
+
+        expect(first.id).toBe(second.id)
     })
 
     it('throws when the sign request has no transaction lists', () => {

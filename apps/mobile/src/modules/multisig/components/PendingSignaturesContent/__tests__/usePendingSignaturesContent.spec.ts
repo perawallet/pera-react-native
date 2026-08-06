@@ -432,9 +432,23 @@ describe('usePendingSignaturesContent', () => {
     })
 
     describe('handleSign', () => {
-        it('dispatches a cosign SignRequest for every local-key unsigned signer (in order) and keeps the sheet open', () => {
+        it('dispatches a cosign for every local-key unsigned signer (in order) when the whole batch is still needed, keeping the sheet open', () => {
             usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
-            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            // threshold 3 with one signed → two more signatures needed, so both
+            // local participants are dispatched.
+            mockQueryReturn(
+                buildSignRequest({
+                    status: 'pending',
+                    multisigAccount: {
+                        customId: 'm-1',
+                        createdAt: new Date('2026-05-06T09:00:00Z'),
+                        address: 'MULTISIG',
+                        version: 1,
+                        threshold: 3,
+                        participantAddresses: ['A', 'B', 'C', 'D'],
+                    },
+                }),
+            )
             localUnsignedSignersMock.mockReturnValue([
                 buildAccount('A'),
                 buildAccount('B'),
@@ -459,18 +473,101 @@ describe('usePendingSignaturesContent', () => {
                 ).signerAddress,
             ).toBe('B')
             expect(addSignRequestMock).toHaveBeenCalledTimes(2)
-            expect(addSignRequestMock).toHaveBeenNthCalledWith(
-                1,
-                cosignRequestStub,
-            )
-            expect(addSignRequestMock).toHaveBeenNthCalledWith(
-                2,
-                cosignRequestStub,
-            )
             expect(
                 usePendingSignaturesSheetStore.getState().signRequestId,
             ).toBe('sr-1')
             expect(mockDismiss).not.toHaveBeenCalled()
+        })
+
+        it('caps the batch at the signatures still needed (threshold − signedCount)', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            // Default fixture: threshold 2, one already signed → only one more
+            // signature is needed, so the second local signer is NOT dispatched.
+            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            localUnsignedSignersMock.mockReturnValue([
+                buildAccount('A'),
+                buildAccount('B'),
+            ])
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+            result.current.handleSign()
+
+            expect(buildCosignArgsMock).toHaveBeenCalledTimes(1)
+            expect(
+                (
+                    buildCosignArgsMock.mock.calls[0]![0] as {
+                        signerAddress: string
+                    }
+                ).signerAddress,
+            ).toBe('A')
+            expect(addSignRequestMock).toHaveBeenCalledTimes(1)
+        })
+
+        it('skips a signer already in flight and does not re-dispatch it', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(
+                buildSignRequest({
+                    status: 'pending',
+                    multisigAccount: {
+                        customId: 'm-1',
+                        createdAt: new Date('2026-05-06T09:00:00Z'),
+                        address: 'MULTISIG',
+                        version: 1,
+                        threshold: 3,
+                        participantAddresses: ['A', 'B', 'C', 'D'],
+                    },
+                }),
+            )
+            localUnsignedSignersMock.mockReturnValue([
+                buildAccount('A'),
+                buildAccount('B'),
+            ])
+            // A is already mid-cosign in the queue.
+            pendingSignRequestsMock.mockReturnValue([
+                {
+                    type: 'transactions',
+                    sourceType: 'multisig-cosign',
+                    signRequestId: 'sr-1',
+                    signerOverrides: new Map([[0, 'A']]),
+                },
+            ])
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+            result.current.handleSign()
+
+            expect(buildCosignArgsMock).toHaveBeenCalledTimes(1)
+            expect(
+                (
+                    buildCosignArgsMock.mock.calls[0]![0] as {
+                        signerAddress: string
+                    }
+                ).signerAddress,
+            ).toBe('B')
+        })
+
+        it('is a no-op once enough signatures are signed or in flight (a repeated Sign does not stack sheets)', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            // Default fixture needs one more signature; A is already in flight,
+            // so a second press has nothing left to dispatch.
+            mockQueryReturn(buildSignRequest({ status: 'pending' }))
+            localUnsignedSignersMock.mockReturnValue([
+                buildAccount('A'),
+                buildAccount('B'),
+            ])
+            pendingSignRequestsMock.mockReturnValue([
+                {
+                    type: 'transactions',
+                    sourceType: 'multisig-cosign',
+                    signRequestId: 'sr-1',
+                    signerOverrides: new Map([[0, 'A']]),
+                },
+            ])
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+            result.current.handleSign()
+
+            expect(addSignRequestMock).not.toHaveBeenCalled()
+            expect(buildCosignArgsMock).not.toHaveBeenCalled()
         })
 
         it('iterates only local-key signers and skips hardware participants (those use per-row Sign)', () => {

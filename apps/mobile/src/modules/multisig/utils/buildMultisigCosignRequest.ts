@@ -14,10 +14,7 @@ import {
     generateMultisigAddress,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    decodeFromBase64,
-    generateOrderedUniqueId,
-} from '@perawallet/wallet-core-shared'
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 
 import type { MultisigSignRequest } from '@perawallet/wallet-core-multisig'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
@@ -88,12 +85,14 @@ export const buildMultisigCosignRequest = ({
     }
 
     return {
-        // A real id is required so the actor map, queue dedup, and inline-
-        // error guards in SignRequestView keep cosign requests distinct.
-        // The lifecycle hooks fall back to `??` (null-coalescing), which
-        // doesn't substitute for empty strings — handing in a real id here
-        // is the only reliable place to do it.
-        id: generateOrderedUniqueId(),
+        // Deterministic per (signRequestId, signer): a participant's cosignature
+        // for a given request is a single unit of work, so re-dispatching the
+        // same signer collapses on the store's id-dedup instead of stacking a
+        // duplicate review sheet — this closes the same-tick double-tap race the
+        // render-derived in-flight guard can't (both taps read a stale queue).
+        // Distinct signers still get distinct ids, so the actor map and the
+        // inline-error guards in SignRequestView keep cosigns apart as before.
+        id: `${signRequest.id}:${signerAddress}`,
         type: 'transactions',
         transport: 'callback',
         // `sourceType: 'multisig-cosign'` is in `INTERACTIVE_SOURCES`, so
