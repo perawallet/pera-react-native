@@ -13,7 +13,7 @@
 import type { Decimal } from 'decimal.js'
 import { PWView } from '@components/core'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { RampToken } from '@perawallet/wallet-core-onramp'
+import type { RampQuoteLimits, RampToken } from '@perawallet/wallet-core-onramp'
 import { OnrampAmountSection } from '../OnrampAmountSection'
 import { OnrampMinMaxPill } from '../OnrampMinMaxPill'
 import { useStyles } from './styles'
@@ -23,7 +23,7 @@ export type OnrampAmountFieldsProps = {
     destinationToken: Nullable<RampToken>
     sourceAmount: string
     destinationAmount: Nullable<Decimal>
-    limits: Nullable<{ min: Decimal; max: Decimal }>
+    limits: Nullable<RampQuoteLimits>
     isReceiveLoading: boolean
     onSourceAmountChange: (amount: string) => void
     onSetSourceAmount: (amount: string) => void
@@ -45,6 +45,10 @@ export const OnrampAmountFields = ({
 }: OnrampAmountFieldsProps) => {
     const styles = useStyles()
 
+    // Destructure so narrowing survives into the JSX closures below.
+    const min = limits?.min ?? null
+    const max = limits?.max ?? null
+
     return (
         <>
             <OnrampAmountSection
@@ -56,14 +60,18 @@ export const OnrampAmountFields = ({
             />
 
             <PWView style={styles.receiveWrapper}>
-                {limits ? (
+                {min || max ? (
                     <PWView style={styles.minMaxPill}>
                         <OnrampMinMaxPill
-                            onMin={() =>
-                                onSetSourceAmount(limits.min.toString())
+                            onMin={
+                                min
+                                    ? () => onSetSourceAmount(min.toString())
+                                    : undefined
                             }
-                            onMax={() =>
-                                onSetSourceAmount(limits.max.toString())
+                            onMax={
+                                max
+                                    ? () => onSetSourceAmount(max.toString())
+                                    : undefined
                             }
                         />
                     </PWView>

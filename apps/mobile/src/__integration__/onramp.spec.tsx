@@ -71,6 +71,7 @@ import {
     mockRampPairs,
     mockRampRegion,
     mockCreateRampQuote,
+    mockCreateRampQuoteError,
     mockCreateRampOrder,
     mockRampHistory,
     type MockRampPairsParams,
@@ -191,6 +192,74 @@ const buildXoQuote = (
         pairId: 'provider-pair-1',
     },
     payment_method: { id: 'CREDIT_CARD', logo: null, name: 'Credit card' },
+})
+
+// Meld pair: fiat (USD) → ALGO. `provider.id === 'meld'` switches the form to
+// the fiat flow (amount seeded to 100, auto re-quote on every edit).
+const buildMeldPair = (): RampPairApiResponse => ({
+    id: 'pair-usd-algo',
+    source_token: {
+        id: 'USD',
+        symbol: 'USD',
+        name: 'US Dollar',
+        fraction_decimals: 2,
+        logo: null,
+        network: { id: 'FIAT', name: 'Fiat', logo: null },
+        price_in_usd: '1',
+        extra: {},
+    },
+    destination_token: {
+        id: 'ALGO',
+        symbol: 'ALGO',
+        name: 'Algorand',
+        fraction_decimals: 6,
+        logo: null,
+        network: ALGORAND_NETWORK,
+        price_in_usd: '1',
+        extra: {},
+    },
+    provider: {
+        id: 'meld',
+        payment_types: ['CARD'],
+        limits: { min_source_amount: '600', max_source_amount: '5000' },
+    },
+})
+
+// Meld quote at the provider minimum: 600 USD → 950.5 ALGO.
+const buildMeldQuoteResponse = (): RampQuoteApiResponse => ({
+    quote_id: 'quote-meld-600',
+    provider_response: {
+        sourceAmount: 600,
+        destinationAmount: 950.5,
+        sourceCurrencyCode: 'USD',
+        destinationCurrencyCode: 'ALGO',
+        totalFee: 6,
+        networkFee: null,
+        transactionFee: 6,
+        exchangeRate: 0.63,
+        paymentMethodType: 'CREDIT_DEBIT_CARD',
+        serviceProvider: 'MERCURYO',
+        institutionName: null,
+        lowKyc: false,
+    },
+    payment_method: {
+        id: 'CREDIT_DEBIT_CARD',
+        logo: null,
+        name: 'Credit card',
+    },
+})
+
+// Real /v1/ramp/quotes/ 400 body: the single-quoted JSON leaf in
+// non_field_errors[0] carries the provider limits.
+const buildBelowMinQuoteErrorBody = (leaf?: string) => ({
+    type: 'SourceAmountIsTooLow',
+    fallback_message: 'Amount is too low.',
+    detail: {
+        non_field_errors: [
+            leaf ??
+                "{'message': 'Source amount is below the minimum allowed, which is 600.00.', 'min_amount': '600.00', 'max_amount': '5000.00'}",
+        ],
+    },
 })
 
 const buildXoOrder = (): RampOrderApiResponse => ({
@@ -609,6 +678,103 @@ describe('Flow: Onramp buy (native XO)', () => {
             // No webview was pushed — XO orders render in-sheet, not a Meld
             // widget.
             expect(useWebViewStore.getState().openWebViews).toHaveLength(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a Meld pair whose seeded amount is below the provider minimum, when the user taps MIN, then the form re-quotes at the minimum and Proceed enables',
+        async () => {
+            seedSelectedAccount()
+            markIntroSeen()
+            useOnrampStore.setState({
+                selectedSourceTokenId: 'USD',
+                selectedDestinationTokenId: 'ALGO',
+            })
+
+            server.use(
+                mockRampPairs({ response: [buildMeldPair()] }),
+                mockRampRegion({ response: REGION_RESPONSE }),
+                mockCreateRampQuoteError({
+                    response: buildBelowMinQuoteErrorBody(),
+                }),
+            )
+
+            renderWithNavigation(OnrampScreen, 'Fund')
+
+            // Meld pairs seed the amount to 100, so the failing quote fires on
+            // entry without typing. i18n is uninitialized in the harness, so
+            // copy renders as raw keys.
+            expect(
+                await screen.findByText(
+                    'onramp.form.amount_below_min',
+                    {},
+                    { timeout: 5000 },
+                ),
+            ).toBeTruthy()
+            expect(screen.getByTestId('onramp-min-button')).toBeTruthy()
+            expect(screen.getByTestId('onramp-max-button')).toBeTruthy()
+
+            const buyButton = screen.getByTestId(
+                'onramp-buy-button',
+            ) as HTMLButtonElement
+            expect(buyButton.disabled).toBe(true)
+
+            // Swap in a successful quote for the re-fetch, then tap MIN.
+            server.use(
+                mockCreateRampQuote({ response: [buildMeldQuoteResponse()] }),
+            )
+            fireEvent.click(screen.getByTestId('onramp-min-button'))
+
+            const input = screen.getByTestId(
+                'onramp-pay-input',
+            ) as HTMLInputElement
+            expect(input.value).toBe('600')
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('onramp-receive-amount').textContent,
+                    ).toContain('950.5')
+                },
+                { timeout: 5000 },
+            )
+            expect(
+                screen.queryByText('onramp.form.amount_below_min'),
+            ).toBeNull()
+            await waitFor(() => expect(buyButton.disabled).toBe(false))
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a min-only below-minimum error, when the pill renders, then only the MIN segment shows',
+        async () => {
+            seedSelectedAccount()
+            markIntroSeen()
+            useOnrampStore.setState({
+                selectedSourceTokenId: 'USD',
+                selectedDestinationTokenId: 'ALGO',
+            })
+
+            server.use(
+                mockRampPairs({ response: [buildMeldPair()] }),
+                mockRampRegion({ response: REGION_RESPONSE }),
+                mockCreateRampQuoteError({
+                    response: buildBelowMinQuoteErrorBody(
+                        "{'message': 'Too low.', 'min_amount': '600.00'}",
+                    ),
+                }),
+            )
+
+            renderWithNavigation(OnrampScreen, 'Fund')
+
+            await screen.findByTestId(
+                'onramp-min-button',
+                {},
+                { timeout: 5000 },
+            )
+            expect(screen.queryByTestId('onramp-max-button')).toBeNull()
         },
         SLOW_TEST_TIMEOUT_MS,
     )
