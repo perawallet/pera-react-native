@@ -13,6 +13,7 @@
 const LOCALE_LABELS: Readonly<Record<string, string>> = {
     en: 'English',
     de: 'Deutsch',
+    es: 'Español',
 }
 
 /**

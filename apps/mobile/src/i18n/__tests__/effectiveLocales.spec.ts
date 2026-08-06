@@ -56,10 +56,12 @@ describe('i18n/effectiveLocales - getEffectiveSupportedLocales', () => {
     })
 
     it('defaults bundledLocales to the real, bundle-derived registry', () => {
-        // `en` and `de` ship today; `fr`/`es` don't, so even a generous
-        // allowlist can't produce them until a real bundle exists for them.
-        expect(getEffectiveSupportedLocales(true, 'de,fr,es')).toEqual(
-            new Set(['en', 'de']),
+        // `ja` is deliberately not a wave-one locale, so it stays unshipped
+        // and keeps proving the allowlist can't conjure a bundle. Naming a
+        // locale that *is* planned (this asserted on `fr` before) means the
+        // test quietly stops testing anything the day that bundle lands.
+        expect(getEffectiveSupportedLocales(true, 'de,es,ja')).toEqual(
+            new Set(['en', 'de', 'es']),
         )
     })
 })
