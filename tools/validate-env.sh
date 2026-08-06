@@ -128,6 +128,17 @@ case "$PROFILE" in
     ;;
 esac
 
+# The smoke gate runs at the end of the staging workflows and only reaches
+# BrowserStack after a full native build and a store upload. Validate here so a
+# missing credential costs seconds rather than a finished archive.
+if [ "${RUN_SMOKE:-}" = "true" ]; then
+  required_global+=(
+    "BROWSERSTACK_USERNAME"
+    "BROWSERSTACK_ACCESS_KEY"
+    "SMOKE_HARNESS_GITHUB_TOKEN"
+  )
+fi
+
 missing=()
 
 is_set() {

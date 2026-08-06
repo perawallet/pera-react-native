@@ -225,9 +225,16 @@ workflows:
     - USE_CACHE: 'true'
     - VALIDATE_PROFILE: ios
     - ROW_ID: IOS_STAGING
+    # The gate drives this workflow's own artifact — ios-staging already bakes
+    # DISABLE_SCREEN_CAPTURE_PREVENTION, so no second build is needed.
+    - RUN_SMOKE: 'true'
     after_run:
     - _ios-build
+    # After _publish-result, not before: that step snapshots
+    # BITRISE_BUILD_STATUS, so the staging row stays green when the build and
+    # the TestFlight upload succeeded and only the gate went red.
     - _publish-result
+    - _smoke-ios
     meta:
       bitrise.io:
         stack: osx-xcode-26.2.x
@@ -519,9 +526,12 @@ workflows:
     - DISTRIBUTION: firebase
     - VALIDATE_PROFILE: android
     - ROW_ID: ANDROID_STAGING
+    # See ios-staging.
+    - RUN_SMOKE: 'true'
     after_run:
     - _android-build
     - _publish-result
+    - _smoke-android
     meta:
       bitrise.io:
         stack: ubuntu-noble-24.04-bitrise-2025-android
@@ -1058,6 +1068,98 @@ workflows:
               done
             fi
             envman add --key INSTALL_PAGE_URL --value "$INSTALL_URL"
+  _smoke-ios:
+    steps:
+    - script@1:
+        title: Patch IPA for BrowserStack
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -exo pipefail
+            # Must happen on the macOS stack — the patch re-signs, so it can't
+            # move to the workflow that uploads. The script prints progress on
+            # stderr and only the output path on stdout, so this captures the
+            # path directly; pipefail is what makes a codesign failure fail the
+            # step rather than assigning its last stdout line to SMOKE_ARTIFACT.
+            PATCHED="$(./tools/patch-ipa-for-browserstack.sh "$BITRISE_IPA_PATH")"
+            envman add --key SMOKE_ARTIFACT --value "$PATCHED"
+    - script@1:
+        title: Run smoke gate
+        # ~11 min covers upload + pip + the run at their worst. The margin above
+        # that absorbs a short BrowserStack queue; beyond it we are almost
+        # certainly stuck behind the Mon/Wed/Fri regression, which holds its
+        # session for hours. BrowserStack has no priority queue, so bound the
+        # wait: a release should fail fast and legibly rather than idle a
+        # g2.mac.large until someone notices.
+        timeout: 1800
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -eo pipefail
+            ./tools/smoke-test.sh ios "$SMOKE_ARTIFACT"
+    - deploy-to-bitrise-io@2:
+        is_always_run: true
+        inputs:
+        - notify_user_groups: none
+        - is_enable_public_page: 'false'
+        - deploy_path: "$BITRISE_SOURCE_DIR/smoke-results"
+    - script@1:
+        is_always_run: true
+        title: Publish smoke result
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -e
+            # Its own row, not $ROW_ID: the gate now runs inside the staging
+            # workflow, whose ROW_ID is IOS_STAGING/ANDROID_STAGING. Reusing
+            # that would overwrite a green build row with the gate's verdict
+            # and lose which of the two actually broke.
+            if [ "$BITRISE_BUILD_STATUS" = "0" ]; then STATUS=ok; else STATUS=fail; fi
+            envman add --key "IOS_SMOKE_STATUS" --value "$STATUS"
+            envman add --key "IOS_SMOKE_URL" --value "${BITRISE_BUILD_URL:-}"
+    - share-pipeline-variable@1:
+        is_always_run: true
+        inputs:
+        - variables: |-
+            IOS_SMOKE_STATUS
+            IOS_SMOKE_URL
+  _smoke-android:
+    steps:
+    - script@1:
+        title: Run smoke gate
+        # See _smoke-ios for why this is bounded.
+        timeout: 1800
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -eo pipefail
+            ./tools/smoke-test.sh android "$BITRISE_APK_PATH"
+    - deploy-to-bitrise-io@2:
+        is_always_run: true
+        inputs:
+        - notify_user_groups: none
+        - is_enable_public_page: 'false'
+        - deploy_path: "$BITRISE_SOURCE_DIR/smoke-results"
+    - script@1:
+        is_always_run: true
+        title: Publish smoke result
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -e
+            # Its own row, not $ROW_ID: the gate now runs inside the staging
+            # workflow, whose ROW_ID is IOS_STAGING/ANDROID_STAGING. Reusing
+            # that would overwrite a green build row with the gate's verdict
+            # and lose which of the two actually broke.
+            if [ "$BITRISE_BUILD_STATUS" = "0" ]; then STATUS=ok; else STATUS=fail; fi
+            envman add --key "ANDROID_SMOKE_STATUS" --value "$STATUS"
+            envman add --key "ANDROID_SMOKE_URL" --value "${BITRISE_BUILD_URL:-}"
+    - share-pipeline-variable@1:
+        is_always_run: true
+        inputs:
+        - variables: |-
+            ANDROID_SMOKE_STATUS
+            ANDROID_SMOKE_URL
   _publish-result:
     steps:
     - script@1:
@@ -1253,6 +1355,10 @@ workflows:
             ROWS="${ROWS}\n$(row "${ANDROID_STAGING_STATUS:-}" "${ANDROID_STAGING_URL:-}" "${ANDROID_STAGING_INSTALL:-}" "APK" "Android staging" "Firebase")"
             ROWS="${ROWS}\n$(row "${IOS_PRODUCTION_STATUS:-}" "${IOS_PRODUCTION_URL:-}" "${IOS_PRODUCTION_INSTALL:-}" "IPA" "iOS production" "TestFlight")"
             ROWS="${ROWS}\n$(row "${IOS_STAGING_STATUS:-}" "${IOS_STAGING_URL:-}" "${IOS_STAGING_INSTALL:-}" "IPA" "iOS staging" "TestFlight")"
+            # No install link: smoke binaries have screen-capture prevention
+            # disabled and are deliberately not published anywhere.
+            ROWS="${ROWS}\n$(row "${IOS_SMOKE_STATUS:-}" "${IOS_SMOKE_URL:-}" "" "" "iOS smoke gate" "BrowserStack")"
+            ROWS="${ROWS}\n$(row "${ANDROID_SMOKE_STATUS:-}" "${ANDROID_SMOKE_URL:-}" "" "" "Android smoke gate" "BrowserStack")"
 
             # Header icon per channel on success (any failed build flips it
             # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
@@ -1269,8 +1375,11 @@ workflows:
             # empty string fell into the benign "skipped" bucket. TEST_STATUS
             # is checked here deliberately even though tests get no row of
             # their own — the header/colour is the only signal that the skips
-            # below were caused by a red test run rather than by nothing.
-            for s in "${TEST_STATUS:-}" "${IOS_STAGING_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}"; do
+            # below were caused by a red test run rather than by nothing. The
+            # smoke gates run inside the staging workflows and always publish
+            # a status, so an empty one likewise means the build never got
+            # there rather than that the gate was skipped.
+            for s in "${TEST_STATUS:-}" "${IOS_STAGING_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}" "${IOS_SMOKE_STATUS:-}" "${ANDROID_SMOKE_STATUS:-}"; do
               if [ "$s" != "ok" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
             done
 
