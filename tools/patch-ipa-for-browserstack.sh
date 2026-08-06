@@ -33,7 +33,10 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 
 unzip -q "$INPUT_IPA" -d "$WORK_DIR"
 
-APP_PATH=$(find "$WORK_DIR/Payload" -maxdepth 1 -name "*.app" | head -1)
+# -print -quit rather than `| head -1`: an early-exiting consumer can close the
+# pipe while find is still writing, and `set -o pipefail` turns that SIGPIPE
+# into exit 141. Nothing in this script may pipe into a command that exits early.
+APP_PATH=$(find "$WORK_DIR/Payload" -maxdepth 1 -name "*.app" -print -quit)
 if [[ -z "$APP_PATH" ]]; then
   echo "Error: no .app found in $INPUT_IPA" >&2
   exit 1
@@ -56,7 +59,21 @@ fi
 ENTITLEMENTS_FILE="$WORK_DIR/entitlements.plist"
 codesign -d --entitlements :- "$APP_PATH" 2>/dev/null >"$ENTITLEMENTS_FILE"
 
-SIGN_IDENTITY=$(codesign -dvv "$APP_PATH" 2>&1 | awk -F= '/^Authority=/ {print $2; exit}')
+# Captured then parsed in-shell rather than piped into awk. codesign interleaves
+# work with its writes, so a consumer that stops at the first Authority= line
+# (awk's `exit`, or `head -1`) can close the pipe mid-write; codesign then dies
+# of SIGPIPE and `set -o pipefail` surfaces it as exit 141 — which is exactly how
+# this failed on v7.0.0-alpha.44. No pipe, no race.
+CODESIGN_INFO=$(codesign -dvv "$APP_PATH" 2>&1)
+SIGN_IDENTITY=""
+while IFS= read -r line; do
+  case "$line" in
+    Authority=*)
+      SIGN_IDENTITY="${line#Authority=}"
+      break
+      ;;
+  esac
+done <<<"$CODESIGN_INFO"
 if [[ -z "$SIGN_IDENTITY" ]]; then
   echo "Error: could not determine the signing identity of $APP_PATH" >&2
   exit 1
