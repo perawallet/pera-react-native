@@ -265,12 +265,14 @@ describe('Deeplink Parser - dev locale tour', () => {
     })
 
     it('rejects a locale that is not a registered i18next resource', () => {
-        // 'fr' isn't in SUPPORTED_LOCALES today (i18n/locales.ts — only
-        // 'en', 'de', and the dev pseudolocale are) — an unrecognized locale
-        // is unrecognized input, not a partially-parsed deeplink.
+        // 'ja' isn't in SUPPORTED_LOCALES and isn't a planned wave-one locale
+        // either — an unrecognized locale is unrecognized input, not a
+        // partially-parsed deeplink. Deliberately not 'fr'/'tr'/'pt-BR', which
+        // this asserted on before: the day that bundle ships, the case silently
+        // inverts and stops testing rejection at all.
         expect(
             parseDevLocaleTourUri(
-                'perawallet://app/dev/locale-tour?locale=fr&step=scr-home',
+                'perawallet://app/dev/locale-tour?locale=ja&step=scr-home',
             ),
         ).toBeNull()
         expect(
@@ -280,7 +282,7 @@ describe('Deeplink Parser - dev locale tour', () => {
         ).toBeNull()
         expect(
             parseDeeplink(
-                'perawallet://app/dev/locale-tour?locale=fr&step=scr-home',
+                'perawallet://app/dev/locale-tour?locale=ja&step=scr-home',
             )?.type,
         ).toBe(DeeplinkType.HOME)
     })
