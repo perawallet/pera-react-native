@@ -21,6 +21,7 @@
     "@algorandfoundation/algokit-utils": "catalog:",
     "algosdk": "catalog:",
     "@algorandfoundation/keystore": "catalog:",
+    "@algorandfoundation/keystore-core": "catalog:",
     "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@babel/runtime": "catalog:",
