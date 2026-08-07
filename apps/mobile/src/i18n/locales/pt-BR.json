@@ -45,7 +45,7 @@
         "title": "Contas",
         "sort": "Ordenar",
         "select_title": "Selecionar conta",
-        "select_description": "Selecione uma conta para fazer o swap"
+        "select_description": "Selecione uma conta para fazer a conversão"
     },
     "account_sort": {
         "title": "Ordenar",
@@ -73,7 +73,7 @@
             "no": "Tenho menos de 18 anos"
         },
         "restricted": {
-            "title": "Conteúdo não disponível",
+            "title": "Conteúdo indisponível",
             "body": "Devido a exigências legais em algumas jurisdições, este conteúdo está disponível apenas para usuários com 18 anos ou mais.",
             "retry": "Verificar minha idade novamente"
         }
@@ -81,7 +81,7 @@
     "app": {
         "initialization_failed": {
             "title": "Falha ao iniciar o app",
-            "body": "Ocorreu um erro ao inicializar o app. Tente reiniciá-lo. Se o problema continuar, entre em contato com o suporte.\n\nSeus fundos estão seguros na blockchain da Algorand.",
+            "body": "Ocorreu um erro ao inicializar o app. Tente reiniciá-lo. Se o problema persistir, entre em contato com o suporte.\n\nSeus fundos estão seguros na blockchain da Algorand.",
             "retry": "Tentar novamente"
         }
     },
@@ -226,7 +226,7 @@
         "markets": {
             "something_went_wrong_title": "Algo deu errado",
             "something_went_wrong_body": "Não foi possível carregar os detalhes deste ativo. Verifique sua conexão e tente novamente.",
-            "discover_more": "Ver mais detalhes no Discover",
+            "discover_more": "Ver mais detalhes no Explorar",
             "title": "Mercados",
             "stats": "Estatísticas",
             "price": "Preço",
@@ -240,7 +240,7 @@
             "total_supply_info_body": "O fornecimento total de um ativo é definido no momento da criação e corresponde ao total de unidades criadas do ativo."
         },
         "action_buttons": {
-            "swap": "Swap",
+            "swap": "Converter",
             "buy": "Comprar",
             "send": "Enviar",
             "receive": "Receber"
@@ -312,7 +312,7 @@
             "sort_oldest_first": "Mais antigos primeiro"
         },
         "button_panel": {
-            "swap": "Swap",
+            "swap": "Converter",
             "send": "Enviar",
             "receive": "Receber",
             "more": "Mais"
@@ -379,7 +379,7 @@
         "see_wallet_structure": "Ver estrutura da wallet",
         "hide_wallet_structure": "Ocultar estrutura da wallet",
         "scan_new_addresses": "Buscar novos endereços",
-        "wallet_label": "Wallet #{{number}}",
+        "wallet_label": "Wallet nº {{number}}",
         "main_address": "Endereço principal",
         "sub_address": "Subendereço",
         "type_universal_wallet": "Universal Wallet",
@@ -573,7 +573,7 @@
         },
         "error": {
             "title": "Ocorreu um erro",
-            "body": "Parece que algo deu errado. Tente novamente e entre em contato com o suporte se o problema continuar."
+            "body": "Parece que algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir."
         },
         "retry": {
             "label": "Tentar novamente"
@@ -643,7 +643,7 @@
     "errors": {
         "account": {
             "title": "Ocorreu um erro ao processar esta conta",
-            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema continuar.",
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir.",
             "generic": "Ocorreu um erro ao processar esta conta.",
             "no_hd_wallet": "Não foi possível encontrar a Universal Wallet desta conta."
         },
@@ -681,11 +681,11 @@
             },
             "logic_eval_error": {
                 "title": "Transação recusada",
-                "body": "O smart contract recusou a transação ({{detail}}). Tente novamente e entre em contato com o suporte se o problema continuar."
+                "body": "O smart contract recusou a transação ({{detail}}). Tente novamente e entre em contato com o suporte se o problema persistir."
             },
             "unavailable_resource": {
                 "title": "Transação recusada",
-                "body": "A transação fez referência a um recurso que a rede não conseguiu acessar ({{resourceType}} {{resource}}). Tente novamente e entre em contato com o suporte se o problema continuar."
+                "body": "A transação fez referência a um recurso que a rede não conseguiu acessar ({{resourceType}} {{resource}}). Tente novamente e entre em contato com o suporte se o problema persistir."
             },
             "group_fee_too_small": {
                 "title": "Taxa de rede muito baixa",
@@ -693,7 +693,7 @@
             },
             "unknown_node_error": {
                 "title": "A transação falhou",
-                "body": "A rede recusou a transação. Tente novamente ou entre em contato com o suporte se o problema continuar."
+                "body": "A rede recusou a transação. Tente novamente ou entre em contato com o suporte se o problema persistir."
             }
         },
         "deeplink": {
@@ -704,7 +704,7 @@
         },
         "general": {
             "title": "Ocorreu um erro",
-            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema continuar."
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir."
         },
         "network": {
             "no_connection": {
@@ -746,7 +746,7 @@
         },
         "transaction": {
             "title": "Ocorreu um erro ao processar esta transação",
-            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema continuar."
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir."
         },
         "kms": {
             "key_not_found": "Não foi possível encontrar a chave de assinatura desta conta.",
@@ -756,7 +756,7 @@
         },
         "walletconnect": {
             "title": "Ocorreu um erro ao processar a solicitação de um app",
-            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema continuar.",
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir.",
             "unknown": "Ocorreu um erro desconhecido ao assinar. Verifique o dApp para mais informações.",
             "invalid_network_body": "Você recebeu uma solicitação de uma rede inválida. Mude sua wallet para a rede correta e tente novamente.",
             "sign_request_body": "Você recebeu uma solicitação inválida para assinar uma transação. Verifique o app e tente novamente.",
@@ -846,7 +846,7 @@
             "funding_type_updated_body": "Sua preferência de financiamento do cartão foi salva.",
             "funding_change_requires_manual_title": "Mude primeiro para o financiamento manual",
             "funding_change_requires_manual_body": "Não é possível alterar a conta conectada enquanto o financiamento automático está ativo. Mude para manual, altere a conta e reative o financiamento automático.",
-            "funding_type_auto_unavailable_hint": "Não disponível para esta conta — ela não pode assinar uma autorização de financiamento automático.",
+            "funding_type_auto_unavailable_hint": "Indisponível para esta conta — ela não pode assinar uma autorização de financiamento automático.",
             "funding_type_auto_ledger_hint": "Não compatível com contas Ledger. Conecte outra conta para usar o financiamento automático.",
             "funding_type_auto_coming_soon_hint": "O financiamento automático chega em breve.",
             "authorize_delegation_title": "Autorizar financiamento automático",
@@ -938,7 +938,7 @@
         },
         "add_funds": {
             "navigation_title": "Adicionar fundos",
-            "subtitle": "Adicione USDC ou troque ativos por USDC na sua conta Pera vinculada para adicionar mais fundos.",
+            "subtitle": "Adicione USDC ou converta ativos para USDC na sua conta Pera vinculada para adicionar mais fundos.",
             "fund_address": "Endereço de depósito",
             "amount": "Valor",
             "balance": "Saldo: {{amount}}",
@@ -947,9 +947,9 @@
             "select_asset_search": "Buscar por nome ou ID",
             "select_asset_empty_title": "Nenhum ativo encontrado",
             "select_asset_empty_body": "Nenhum ativo corresponde ao termo buscado",
-            "swap_success_title": "Swap concluído",
-            "swap_success_body": "Seus ativos foram trocados por USDC.",
-            "swap_error_title": "Falha no swap"
+            "swap_success_title": "Conversão concluída",
+            "swap_success_body": "Seus ativos foram convertidos para USDC.",
+            "swap_error_title": "Falha na conversão"
         },
         "withdraw": {
             "navigation_title": "Sacar",
@@ -965,7 +965,7 @@
             "success_body": "{{amount}} USDC está a caminho da sua conta."
         },
         "confirm_swap": {
-            "navigation_title": "Confirmar swap",
+            "navigation_title": "Confirmar conversão",
             "price": "Preço",
             "slippage": "Tolerância de slippage",
             "price_impact": "Impacto no preço",
@@ -1063,6 +1063,7 @@
         "verify_email": {
             "navigation_title": "Confirme seu e-mail",
             "body": "Use o código de verificação que acabamos de enviar para {{email}} para confirmar seu endereço de e-mail.",
+            "send_again_in_zero": "Enviar novamente em {{count}} segundos",
             "send_again_in_one": "Enviar novamente em {{count}} segundo",
             "send_again_in_other": "Enviar novamente em {{count}} segundos",
             "send_again": "Enviar novamente",
@@ -1106,6 +1107,7 @@
             "send_error_title": "Algo deu errado",
             "send_error_body": "Não conseguimos enviar seu código de verificação. Tente novamente.",
             "body": "Use o código de verificação que acabamos de enviar para {{phone}} para confirmar seu número de telefone.",
+            "send_again_in_zero": "Enviar novamente em {{count}} segundos",
             "send_again_in_one": "Enviar novamente em {{count}} segundo",
             "send_again_in_other": "Enviar novamente em {{count}} segundos",
             "send_again": "Enviar novamente",
@@ -1245,6 +1247,7 @@
         "inbox": {
             "empty_title": "Nenhuma mensagem pendente",
             "empty_body": "Você não tem nenhuma mensagem pendente na caixa de entrada",
+            "asa_requests_zero": "{{count}} ativos a receber",
             "asa_requests_one": "1 ativo a receber",
             "asa_requests_other": "{{count}} ativos a receber",
             "multisig_sign": {
@@ -1387,6 +1390,7 @@
             "x_of_y": "{{signed}} de {{total}} assinaram",
             "time_left": "≈ {{time}} restante",
             "accounts_heading": "Contas",
+            "accounts_subtitle_zero": "Você precisa de pelo menos {{count}} contas para assinar",
             "accounts_subtitle_one": "Você precisa de pelo menos 1 conta para assinar",
             "accounts_subtitle_other": "Você precisa de pelo menos {{count}} contas para assinar",
             "confirmed": "Transação concluída com sucesso",
@@ -1500,7 +1504,7 @@
         "name_account": {
             "title": "Dê um nome à sua conta",
             "description": "Dê um nome à sua conta para identificá-la facilmente ao usar a Pera Wallet. Esses nomes são armazenados localmente e só podem ser vistos por você.",
-            "wallet_label": "Wallet #{{count}}",
+            "wallet_label": "Wallet nº {{count}}",
             "finish_button": "Concluir criação da conta"
         },
         "import_select_addresses": {
@@ -1623,9 +1627,11 @@
             },
             "select": {
                 "title": "Recuperar contas",
+                "body_zero": "{{count}} contas foram encontradas no seu backup. Escolha quais recuperar.",
                 "body_one": "{{count}} conta foi encontrada no seu backup. Escolha quais recuperar.",
                 "body_other": "{{count}} contas foram encontradas no seu backup. Escolha quais recuperar.",
                 "body": "{{count}} contas foram encontradas no seu backup. Escolha quais recuperar.",
+                "count_zero": "{{count}} contas disponíveis",
                 "count_one": "{{count}} conta disponível",
                 "count_other": "{{count}} contas disponíveis",
                 "count": "{{count}} contas disponíveis",
@@ -1640,6 +1646,7 @@
             },
             "result": {
                 "success_title": "Contas recuperadas",
+                "success_body_zero": "{{count}} contas foram adicionadas à sua wallet.",
                 "success_body_one": "{{count}} conta foi adicionada à sua wallet.",
                 "success_body_other": "{{count}} contas foram adicionadas à sua wallet.",
                 "success_body": "{{count}} contas foram adicionadas à sua wallet.",
@@ -1649,10 +1656,13 @@
                 "nothing_new_body": "Todas as contas do backup já estão nesta wallet.",
                 "failed_title": "Falha na recuperação",
                 "failed_body": "Não foi possível recuperar nenhuma conta do backup.",
+                "imported_count_zero": "{{count}} contas recuperadas",
                 "imported_count_one": "{{count}} conta recuperada",
                 "imported_count_other": "{{count}} contas recuperadas",
+                "skipped_count_zero": "{{count}} contas já estão nesta wallet",
                 "skipped_count_one": "{{count}} conta já está nesta wallet",
                 "skipped_count_other": "{{count}} contas já estão nesta wallet",
+                "failed_count_zero": "{{count}} contas não puderam ser recuperadas",
                 "failed_count_one": "{{count}} conta não pôde ser recuperada",
                 "failed_count_other": "{{count}} contas não puderam ser recuperadas",
                 "done": "Concluir"
@@ -1672,6 +1682,7 @@
             },
             "result": {
                 "success_title": "Contas importadas",
+                "success_body_zero": "{{count}} contas foram adicionadas à sua wallet.",
                 "success_body_one": "{{count}} conta foi adicionada à sua wallet.",
                 "success_body_other": "{{count}} contas foram adicionadas à sua wallet.",
                 "success_body": "{{count}} contas foram adicionadas à sua wallet.",
@@ -1681,10 +1692,13 @@
                 "nothing_new_body": "Todas as contas do backup já estão nesta wallet.",
                 "failed_title": "Falha na importação",
                 "failed_body": "Não foi possível importar nenhuma conta do backup.",
+                "imported_count_zero": "{{count}} contas importadas",
                 "imported_count_one": "{{count}} conta importada",
                 "imported_count_other": "{{count}} contas importadas",
+                "skipped_count_zero": "{{count}} contas já estão nesta wallet",
                 "skipped_count_one": "{{count}} conta já está nesta wallet",
                 "skipped_count_other": "{{count}} contas já estão nesta wallet",
+                "failed_count_zero": "{{count}} contas não puderam ser importadas",
                 "failed_count_one": "{{count}} conta não pôde ser importada",
                 "failed_count_other": "{{count}} contas não puderam ser importadas",
                 "done": "Concluir"
@@ -1693,7 +1707,8 @@
         "select_hd_wallet": {
             "title": "Selecionar Universal Wallet",
             "description": "Crie sua nova conta em uma Universal Wallet que você já tem",
-            "wallet_label": "Wallet #{{number}}",
+            "wallet_label": "Wallet nº {{number}}",
+            "account_count_zero": "{{count}} contas",
             "account_count_one": "{{count}} conta",
             "account_count_other": "{{count}} contas",
             "create_new_wallet": "Criar uma nova wallet"
@@ -1871,6 +1886,7 @@
             "subtitle": "Selecione as contas que você quer importar como contas com rekey.",
             "fetching": "Buscando contas com rekey…",
             "sweep_fetching": "Escaneando as suas chaves ({{scanned}}/{{total}})…",
+            "partial_failure_notice_zero": "Não foi possível escanear {{count}} chaves — os resultados podem estar incompletos. Tente novamente para escaneá-las.",
             "partial_failure_notice_one": "Não foi possível escanear 1 chave — os resultados podem estar incompletos. Tente novamente para escaneá-la.",
             "partial_failure_notice_other": "Não foi possível escanear {{count}} chaves — os resultados podem estar incompletos. Tente novamente para escaneá-las.",
             "empty_title": "Nenhuma conta com rekey encontrada",
@@ -2171,7 +2187,7 @@
                 "betanet_label": "Algorand BetaNet",
                 "custom_label": "Rede personalizada",
                 "non_mainnet_warning_title": "Suporte limitado fora da MainNet",
-                "non_mainnet_warning_body": "A MainNet é a única rede totalmente compatível. Os recursos que dependem dos serviços da Pera — detalhes de ativos, swap, compra, card, staking e caixa de entrada — são limitados na TestNet e indisponíveis na BetaNet e em nós personalizados.",
+                "non_mainnet_warning_body": "A MainNet é a única rede totalmente compatível. Os recursos que dependem dos serviços da Pera — detalhes de ativos, conversão, compra, card, staking e caixa de entrada — são limitados na TestNet e indisponíveis na BetaNet e em nós personalizados.",
                 "enable_mainnet": "Ativar MainNet",
                 "enable_testnet": "Ativar TestNet",
                 "custom_sheet_title": "Configurar rede personalizada",
@@ -2237,19 +2253,19 @@
             "biometric_error_title": "Falha na autenticação.",
             "biometric_error_message": "Não foi possível autenticar você. Tente novamente.",
             "biometric_weak_title": "É necessária uma biometria mais forte",
-            "biometric_weak_message": "O Pera exige uma impressão digital ou outra biometria forte para desbloquear sua wallet. Adicione uma impressão digital nas configurações de biometria do seu aparelho e ative esta opção novamente.",
+            "biometric_weak_message": "A Pera exige uma impressão digital ou outra biometria forte para desbloquear sua wallet. Adicione uma impressão digital nas configurações de biometria do seu aparelho e ative esta opção novamente.",
             "advanced_security_settings": "Configurações avançadas de segurança",
             "enable_asset_freeze_support": "Ativar congelamento de ativos",
             "enable_asset_freeze_support_description": "Ao ativar isso, você poderá confirmar solicitações de transação para congelar ou descongelar ativos nas contas. Isso pode impedir que a conta afetada faça transações com o ativo indicado.",
             "shake_to_lock": "Agitar para bloquear",
             "shake_to_lock_description": "Bloqueia a wallet automaticamente quando você agita ou sacode o celular com força. Útil se o celular for arrancado da sua mão ou se você quiser uma forma rápida de bloquear de qualquer tela.",
             "shake_to_lock_info_title": "Agitar para bloquear",
-            "shake_to_lock_info_body": "Quando esta opção está ativada, o Pera detecta movimentos bruscos com o sensor de movimento do celular enquanto você tem a wallet aberta. Uma sacudida forte ou um movimento brusco bloqueia a wallet na hora, então você pode agitar o celular para bloqueá-la com rapidez. Requer o PIN ativado.",
+            "shake_to_lock_info_body": "Quando esta opção está ativada, a Pera detecta movimentos bruscos com o sensor de movimento do celular enquanto você tem a wallet aberta. Uma sacudida forte ou um movimento brusco bloqueia a wallet na hora, então você pode agitar o celular para bloqueá-la com rapidez. Requer o PIN ativado.",
             "shake_to_lock_requires_pin": "Ative o PIN para usar este recurso.",
             "duress_pin": "PIN de emergência",
             "duress_pin_description": "Um PIN alternativo que apaga a wallet silenciosamente quando é digitado na tela de bloqueio. Os dados apagados não podem ser recuperados — verifique se você tem um backup da sua passphrase de recuperação antes de ativar isso.",
             "duress_pin_info_title": "PIN de emergência",
-            "duress_pin_info_body": "Configure um PIN alternativo que você possa digitar sob coação. Se algum dia você digitá-lo na tela de bloqueio em vez do seu PIN real, o Pera excluirá silenciosamente todas as suas contas e as substituirá por uma wallet nova e vazia, para parecer que você simplesmente não tem fundos. Você pode manter a biometria ativada, se quiser — sob coação, cancele a solicitação biométrica e digite o PIN de emergência manualmente. O PIN de emergência precisa ser diferente do seu PIN normal.\n\nImportante: um apagamento de emergência é permanente. Tudo o que estiver salvo apenas neste aparelho (contas das quais você não tem backup em outro lugar) não poderá ser recuperado depois. Certifique-se de ter salvo sua passphrase de recuperação antes de ativar isso.",
+            "duress_pin_info_body": "Configure um PIN alternativo que você possa digitar sob coação. Se algum dia você digitá-lo na tela de bloqueio em vez do seu PIN real, a Pera excluirá silenciosamente todas as suas contas e as substituirá por uma wallet nova e vazia, para parecer que você simplesmente não tem fundos. Você pode manter a biometria ativada, se quiser — sob coação, cancele a solicitação biométrica e digite o PIN de emergência manualmente. O PIN de emergência precisa ser diferente do seu PIN normal.\n\nImportante: um apagamento de emergência é permanente. Tudo o que estiver salvo apenas neste aparelho (contas das quais você não tem backup em outro lugar) não poderá ser recuperado depois. Certifique-se de ter salvo sua passphrase de recuperação antes de ativar isso.",
             "duress_pin_requires_pin": "Ative o PIN para usar este recurso.",
             "duress_pin_matches_regular": "Seu PIN de emergência precisa ser diferente do seu PIN normal."
         },
@@ -2290,7 +2306,7 @@
             "hd_wallet_required_body": "Você não pode usar passkeys até ter uma Universal Wallet neste aparelho. Crie ou recupere uma e escaneie novamente.",
             "hd_wallet_required_dismiss": "Entendi",
             "interception_toggle_title": "Preenchimento de passkeys",
-            "interception_toggle_body_enabled": "O Pera Wallet pode salvar e oferecer passkeys para os sites em que você entra.",
+            "interception_toggle_body_enabled": "A Pera Wallet pode salvar e oferecer passkeys para os sites em que você entra.",
             "interception_toggle_body_disabled": "Ative isso para que a Pera Wallet possa salvar e oferecer passkeys para os sites em que você entra."
         },
         "connected_sites": {
@@ -2352,6 +2368,7 @@
             "title_one": "Revisar transação",
             "title_many": "Revisar transações",
             "multiple_transactions_title": "Várias transações",
+            "transactions_count_zero": "{{count}} transações",
             "transactions_count_one": "{{count}} transação",
             "transactions_count_other": "{{count}} transações",
             "details": "Detalhes da transação",
@@ -2441,7 +2458,7 @@
         "list_item": {
             "send": "Enviar",
             "receive": "Receber",
-            "swap": "Swap",
+            "swap": "Converter",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Configuração de ativo",
@@ -2463,9 +2480,11 @@
             "unknown": "Transação desconhecida"
         },
         "warning": {
-            "title": "Atenção",
+            "title": "Aviso",
+            "title_cta_group_zero": "{{count}} ações potencialmente perigosas encontradas",
             "title_cta_group_one": "Ação potencialmente perigosa encontrada",
             "title_cta_group_other": "{{count}} ações potencialmente perigosas encontradas",
+            "title_cta_zero": "{{count}} ações potencialmente perigosas encontradas",
             "title_cta_one": "Ação potencialmente perigosa encontrada",
             "title_cta_other": "{{count}} ações potencialmente perigosas encontradas",
             "close_group_warning": "Este grupo de transações fecha uma das suas contas e envia os fundos restantes para outro endereço. Revise com atenção antes de assinar.",
@@ -2546,15 +2565,18 @@
             "foreign_apps": "Apps externos",
             "foreign_assets": "Ativos externos",
             "boxes": "Referências de boxes",
+            "inner_transactions_zero": "{{count}} transações internas",
             "inner_transactions_one": "{{count}} transação interna",
             "inner_transactions_other": "{{count}} transações internas",
             "inner_transactions_unavailable": "Conecte-se à internet para visualizar"
         },
+        "group_transactions_zero": "{{count}} transações em grupo",
         "group_transactions_one": "{{count}} transação em grupo",
         "group_transactions_other": "{{count}} transações em grupo",
         "group": {
             "group_number": "Grupo de transações",
             "group_id": "ID do grupo: {{groupId}}",
+            "transactions_count_zero": "{{count}} transações",
             "transactions_count_one": "{{count}} transação",
             "transactions_count_other": "{{count}} transações"
         },
@@ -2567,7 +2589,7 @@
             "app_id": "ID do aplicativo: {{id}}"
         },
         "filter": {
-            "title": "Filtro",
+            "title": "Filtrar",
             "all_time": "Todo o período",
             "today": "Hoje",
             "yesterday": "Ontem",
@@ -2578,14 +2600,15 @@
     },
     "tabbar": {
         "home": "Início",
-        "discover": "Discover",
-        "swap": "Swap",
-        "fund": "Fundos",
+        "discover": "Explorar",
+        "swap": "Converter",
+        "fund": "Depositar",
         "menu": "Menu"
     },
     "walletconnect": {
         "request": {
             "title": "{{name}} quer se conectar à sua conta",
+            "permissions_title_zero": "{{count}} permissões solicitadas",
             "permissions_title_one": "{{count}} permissão solicitada",
             "permissions_title_other": "{{count}} permissões solicitadas",
             "permissions_request_accounts": "Ver o endereço e os saldos da sua wallet",
@@ -2662,22 +2685,22 @@
             "title": "Tipos de staking",
             "liquid_description": "Aplicativos de liquid staking permitem que os usuários façam staking dos seus Algo mantendo a liquidez. Normalmente, o processo pede que o usuário deposite Algo e receba novos tokens que representam a propriedade e o valor do Algo em staking, e que podem ser usados em todo o <0>ecossistema DeFi</0>.",
             "pools_description": "Pools de staking permitem que grupos de pessoas participem do consenso em conjunto. Os usuários podem fazer staking de Algo em um validador e ser recompensados com base nas recompensas desse validador. Também há opções como staking em pools de liquidez de DEX.",
-            "delegated_description": "No staking delegado, um terceiro opera um node em seu nome enquanto seu Algo permanece na sua wallet. É útil para quem quer ajudar a proteger a rede e receber recompensas sem operar o próprio node."
+            "delegated_description": "No staking delegado, um terceiro opera um node em seu nome, enquanto seu Algo permanece na sua wallet o tempo todo. É uma opção para quem quer ajudar a proteger a rede e receber recompensas, mas não tem o conhecimento nem os recursos para operar o próprio node."
         }
     },
     "swap": {
         "introduction": {
-            "title": "Swap na Pera",
-            "description": "A Pera Wallet oferece uma forma rápida e fácil de trocar ativos. Com o P.E.R.A., as solicitações de swap são roteadas de forma inteligente entre várias exchanges descentralizadas baseadas em Algorand para garantir o melhor preço disponível.",
+            "title": "Converter na Pera",
+            "description": "A Pera Wallet oferece uma forma rápida e fácil de converter ativos. Com o P.E.R.A., as solicitações de conversão são roteadas de forma inteligente entre várias exchanges descentralizadas baseadas em Algorand para garantir o melhor preço disponível.",
             "powered_by": "Com tecnologia ",
             "powered_by_brand": "P.E.R.A.",
-            "start_swapping": "Começar a trocar",
+            "start_swapping": "Começar a converter",
             "terms_agreement": "Ao continuar, você concorda com os <0>Termos de Serviço</0> do nosso parceiro de swap"
         },
         "form": {
-            "swap": "Trocar",
+            "swap": "Converter",
             "insufficient_balance": "O valor excede seu saldo disponível.",
-            "no_balance_title": "Nada para trocar",
+            "no_balance_title": "Nada para converter",
             "no_balance_body": "Esta conta não possui {{unit}}.",
             "percentage_error_title": "Não foi possível calcular o valor",
             "percentage_error_body": "Tente novamente em instantes.",
@@ -2689,14 +2712,14 @@
             "select_asset": "Selecionar"
         },
         "asset_selection": {
-            "swap_from_title": "Trocar de",
-            "swap_to_title": "Trocar para",
+            "swap_from_title": "Converter de",
+            "swap_to_title": "Converter para",
             "search_placeholder": "Buscar por nome ou ID",
             "no_results_title": "Nenhum ativo encontrado",
             "no_results_body": "Nenhum ativo corresponde à sua busca"
         },
         "configuration": {
-            "title": "Configurações de swap",
+            "title": "Configurações de conversão",
             "apply": "Aplicar",
             "balance_percentage": "Porcentagem do saldo",
             "balance_custom_hint": "Definir porcentagem personalizada",
@@ -2718,26 +2741,26 @@
             "pera_fee": "Taxa da Pera",
             "provider": "Provedor",
             "minimum_received": "Mínimo recebido",
-            "confirm_swap": "Confirmar swap",
+            "confirm_swap": "Confirmar conversão",
             "slide_to_confirm": "Arraste para confirmar",
-            "high_price_impact_warning": "Este swap tem um impacto alto no preço. Você pode receber bem menos tokens do que o esperado.",
+            "high_price_impact_warning": "Esta conversão tem um impacto alto no preço. Você pode receber bem menos tokens do que o esperado.",
             "quote_error": "Não foi possível obter cotações. Tente novamente."
         },
         "execution": {
-            "error_title": "Falha no swap",
-            "error_body": "Algo deu errado durante o swap. Tente novamente.",
-            "success_title": "Swap concluído",
-            "success_body": "Swap de {{fromAsset}} para {{toAsset}} concluído com sucesso",
-            "user_rejected": "Swap cancelado",
-            "pending_cosign_title": "Solicitação de swap enviada",
-            "pending_cosign_body": "Seu swap precisa de outra assinatura. Ele será concluído quando o outro signatário aprovar na caixa de entrada dele."
+            "error_title": "Falha na conversão",
+            "error_body": "Algo deu errado durante a conversão. Tente novamente.",
+            "success_title": "Conversão concluída",
+            "success_body": "Conversão de {{fromAsset}} para {{toAsset}} concluída com sucesso",
+            "user_rejected": "Conversão cancelada",
+            "pending_cosign_title": "Solicitação de conversão enviada",
+            "pending_cosign_body": "Sua conversão precisa de outra assinatura. Ela será concluída quando o outro signatário aprovar na caixa de entrada dele."
         },
         "signing": {
-            "source_name": "Swap",
-            "source_description": "Confirme as transações para concluir seu swap"
+            "source_name": "Converter",
+            "source_description": "Confirme as transações para concluir sua conversão"
         },
         "info": {
-            "slippage_tolerance": "A diferença máxima entre o preço esperado e o preço de execução. Uma tolerância maior aumenta a chance de o swap dar certo, mas pode resultar em uma taxa de câmbio menos favorável.",
+            "slippage_tolerance": "A diferença máxima entre o preço esperado e o preço de execução. Uma tolerância maior aumenta a chance de a conversão dar certo, mas pode resultar em uma taxa de câmbio menos favorável.",
             "price_impact": "A diferença entre o preço de mercado e o preço estimado devido ao tamanho da operação. Operações maiores costumam ter um impacto maior no preço."
         },
         "provider": {
@@ -2749,39 +2772,39 @@
             "auto_description": "Melhor preço disponível"
         },
         "history": {
-            "title": "Histórico de swaps",
+            "title": "Histórico de conversões",
             "widget": {
-                "title": "Histórico de swaps",
+                "title": "Histórico de conversões",
                 "see_all": "Ver tudo",
-                "error": "Não foi possível carregar o histórico de swaps."
+                "error": "Não foi possível carregar o histórico de conversões."
             },
             "list": {
                 "item": {
-                    "description": "Trocou {{amountIn}} {{unitIn}} por "
+                    "description": "Converteu {{amountIn}} {{unitIn}} por "
                 },
                 "empty": {
-                    "title": "Nenhum swap ainda",
-                    "body": "Seu histórico de swaps aparecerá aqui."
+                    "title": "Nenhuma conversão ainda",
+                    "body": "Seu histórico de conversões aparecerá aqui."
                 },
                 "error": {
                     "title": "Algo deu errado",
-                    "body": "Não foi possível carregar seu histórico de swaps. Tente novamente."
+                    "body": "Não foi possível carregar seu histórico de conversões. Tente novamente."
                 }
             }
         },
         "top_pairs": {
-            "title": "Top 5 swaps",
+            "title": "Top 5 conversões",
             "volume_24h": "Volume (24h)",
-            "error": "Não foi possível carregar os principais swaps"
+            "error": "Não foi possível carregar as principais conversões"
         }
     },
     "onramp": {
         "tabs": {
-            "fund": "Adicionar fundos",
+            "fund": "Depositar",
             "history": "Histórico"
         },
         "testnet": {
-            "title": "Não disponível na TestNet",
+            "title": "Indisponível na TestNet",
             "body": "Adicionar fundos à sua wallet só está disponível na MainNet. Mude para a MainNet para comprar ALGO ou USDC."
         },
         "region": {
@@ -2792,7 +2815,7 @@
             "info_body_secondary": "Com base no seu país, algumas opções de cripto ou fiat podem ser limitadas."
         },
         "introduction": {
-            "title": "Adicionar fundos",
+            "title": "Depositar",
             "new_chip": "NOVO",
             "continue": "Continuar",
             "feature_buy": "Compre ALGO ou USDC com fiat ou cripto",
@@ -2847,7 +2870,7 @@
             "confirm": "Confirmar"
         },
         "order_review": {
-            "xo_title": "Revisão do swap",
+            "xo_title": "Revisão da conversão",
             "pay_in_address": "Endereço de pagamento",
             "send_to_address": "Envie {{amount}} para este endereço.",
             "address": "Endereço",
@@ -2862,7 +2885,7 @@
         },
         "order_details": {
             "title": "Detalhes do pedido",
-            "swapped": "Trocado",
+            "swapped": "Convertido",
             "order_id": "ID do pedido",
             "source_amount": "Valor de origem",
             "destination_amount": "Valor de destino",
@@ -2875,7 +2898,7 @@
         "terms": {
             "title": "Termos e condições",
             "updated": "Atualizado em abril de 2026",
-            "body": "O serviço que permite a compra de Algo com outros ativos cripto é fornecido por meio de um serviço operado pela Exodus Movement LLC. Esses pedidos são executados exclusivamente pela Exodus, sob os termos da Exodus. A Pera fornece uma interface de wallet não custodial e não executa nem controla swaps. A Pera não é parte das transações de swap nem custodia ativos para elas.",
+            "body": "O serviço que permite a compra de Algo com outros ativos cripto é fornecido por meio de um serviço operado pela Exodus Movement LLC. Esses pedidos são executados exclusivamente pela Exodus, sob os termos da Exodus. A Pera fornece uma interface de wallet não custodial e não executa nem controla conversões. A Pera não é parte das transações de conversão nem custodia ativos para elas.",
             "agreement": "Ao continuar, você concorda com os <0>Termos</0> e a <1>Política de Privacidade</1> da Exodus e, quanto à Pera, reconhece os <2>Termos.</2>",
             "accept": "Aceitar e continuar"
         },
@@ -2923,7 +2946,7 @@
             "step_3": "Mantenha o seu dispositivo Ledger por perto",
             "continue": "Continuar",
             "permission_required_title": "Permissão de Bluetooth necessária",
-            "permission_required_message": "O Pera precisa da permissão de Bluetooth para se comunicar com o seu dispositivo Ledger. Ative-a nas configurações.",
+            "permission_required_message": "A Pera precisa da permissão de Bluetooth para se comunicar com o seu dispositivo Ledger. Ative-a nas configurações.",
             "usb": {
                 "title": "Conectar o Ledger via USB",
                 "description": "Siga estas etapas para conectar o seu dispositivo Ledger via USB:",
@@ -2966,11 +2989,13 @@
             "retry": "Tentar novamente"
         },
         "select_accounts": {
+            "title_zero": "{{count}} contas encontradas",
             "title_one": "{{count}} conta encontrada",
             "title_other": "{{count}} contas encontradas",
             "description": "Este dispositivo Ledger pode assinar transações das contas a seguir. Selecione as contas para adicionar à sua Pera Wallet.",
             "select_all": "Selecionar todas",
             "already_imported": "Já importada",
+            "cta_zero": "Verificar contas selecionadas",
             "cta_one": "Verificar conta selecionada",
             "cta_other": "Verificar contas selecionadas",
             "cta_done": "Concluir",
@@ -2994,10 +3019,13 @@
             "description": "Os endereços das contas a seguir serão exibidos no seu dispositivo Ledger. Compare e verifique cuidadosamente cada endereço para concluir o emparelhamento do dispositivo.",
             "awaiting": "Aguardando verificação",
             "verified": "Conta verificada",
+            "add_accounts_zero": "Adicionar contas verificadas",
             "add_accounts_one": "Adicionar conta verificada",
             "add_accounts_other": "Adicionar contas verificadas",
+            "upgrade_watch_title_zero": "Atualizar contas de observação?",
             "upgrade_watch_title_one": "Atualizar conta de observação?",
             "upgrade_watch_title_other": "Atualizar contas de observação?",
+            "upgrade_watch_body_zero": "{{count}} desses endereços já estão na sua wallet como contas de observação. Ao importá-los, eles serão atualizados para contas Ledger capazes de assinar transações. Os nomes e as configurações serão mantidos.",
             "upgrade_watch_body_one": "Este endereço já está na sua wallet como conta de observação. Ao importá-lo, ele será atualizado para uma conta Ledger capaz de assinar transações. O nome e as configurações serão mantidos.",
             "upgrade_watch_body_other": "{{count}} desses endereços já estão na sua wallet como contas de observação. Ao importá-los, eles serão atualizados para contas Ledger capazes de assinar transações. Os nomes e as configurações serão mantidos.",
             "upgrade_watch_confirm": "Atualizar"
@@ -3067,7 +3095,7 @@
             "location_services_disabled_title": "Localização desativada",
             "location_services_disabled": "Os serviços de localização precisam estar ativados para buscar dispositivos Ledger próximos. Ative-os e tente novamente.",
             "provider_unavailable_title": "Conexão indisponível",
-            "provider_unavailable": "O serviço de conexão com hardware wallet está indisponível. Reinicie o Pera e tente novamente."
+            "provider_unavailable": "O serviço de conexão com hardware wallet está indisponível. Reinicie a Pera e tente novamente."
         },
         "troubleshooting": {
             "title": "Problemas de conexão com o Ledger?",
@@ -3077,16 +3105,16 @@
             "pairing_step_2": "Abra o app Algorand no seu Ledger.",
             "pairing_step_3": "Se o app Algorand não estiver instalado, instale-o pelo Ledger Live.",
             "common_issues_title": "Problemas comuns",
-            "issue_unlocked": "Verifique se o dispositivo está desbloqueado, por perto e com o Bluetooth ativado. Se o problema continuar, remova o dispositivo das configurações de Bluetooth do celular e emparelhe novamente seguindo as instruções da Pera Wallet.",
+            "issue_unlocked": "Verifique se o dispositivo está desbloqueado, por perto e com o Bluetooth ativado. Se o problema persistir, remova o dispositivo das configurações de Bluetooth do celular e emparelhe novamente seguindo as instruções da Pera Wallet.",
             "issue_bluetooth": "O Bluetooth precisa estar ativado no seu dispositivo para buscar dispositivos Ledger próximos.",
             "issue_permissions": "É preciso conceder a permissão de busca via Bluetooth para buscar Ledgers próximos.",
-            "issue_unsupported": "O Pera é compatível com Ledger Nano X, Stax, Flex e Nano Gen5.",
+            "issue_unsupported": "A Pera é compatível com Ledger Nano X, Stax, Flex e Nano Gen5.",
             "done": "Entendi",
             "tip_unlocked": "Verifique se o dispositivo está desbloqueado",
             "tip_nearby": "Verifique se o dispositivo está por perto",
             "tip_bluetooth": "Verifique se o Bluetooth está ativado",
             "tip_app_open": "Verifique se o app Algorand está aberto no seu Ledger",
-            "tip_repair": "Se o problema continuar, tente emparelhar o dispositivo novamente nas configurações"
+            "tip_repair": "Se o problema persistir, tente emparelhar o dispositivo novamente nas configurações"
         },
         "scan_header": {
             "having_issues": "Com problemas?"
@@ -3435,6 +3463,7 @@
     },
     "migration": {
         "splash": {
+            "failure_message_zero": "Não foi possível migrar {{count}} contas",
             "failure_message_one": "Não foi possível migrar {{count}} conta",
             "failure_message_other": "Não foi possível migrar {{count}} contas",
             "continue": "Continuar",
