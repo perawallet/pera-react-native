@@ -10,6 +10,12 @@
  limitations under the License
  */
 
+// fallow-ignore-file re-export-cycle -- false positive: fallow's
+// platform-suffix resolver matches the `./useRequirePinVerification` type
+// re-export below back to this same `.web.tsx` file instead of the intended
+// `useRequirePinVerification.ts` sibling (TypeScript itself resolves it
+// correctly — `pnpm build` passes).
+
 // Web twin of the shared PIN gate.
 //
 // The native hook resolves TRUE when no PIN is configured — sound on mobile,

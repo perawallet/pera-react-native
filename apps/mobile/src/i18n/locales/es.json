@@ -3,6 +3,11 @@
         "enable": {
             "title": "Conectar con este sitio",
             "description": "Selecciona las cuentas que quieres compartir con este sitio.",
+            "peer_origin_claim": "El sitio indica: {{origin}}",
+            "request_origin": "La solicitud proviene de {{origin}}",
+            "requester_verified_label": "Pestaña verificada",
+            "requester_verified_a11y_label": "Verificado: esta solicitud proviene de tu pestaña del navegador",
+            "requester_verified_a11y_origin": "Verificado: esta solicitud proviene de tu pestaña del navegador en {{origin}}",
             "connect_button": "Conectar",
             "cancel_button": "Cancelar"
         },
@@ -14,7 +19,8 @@
             },
             "network_mismatch": "Esta transacción es para una red de Algorand distinta a la red activa de tu wallet. Cambia de red en los ajustes y vuelve a intentarlo.",
             "unsupported_message": "Este sitio envió una solicitud de firma de mensaje que Pera no puede procesar. La solicitud se ha rechazado.",
-            "unauthorized_signer": "Este sitio no está autorizado para solicitar una firma para esa cuenta."
+            "unauthorized_signer": "Este sitio no está autorizado para solicitar una firma para esa cuenta.",
+            "no_session": "Esta conexión ya no es válida. Vuelve a conectar el sitio y inténtalo de nuevo."
         },
         "passkey": {
             "create": {
@@ -25,7 +31,14 @@
             },
             "approve_button": "Continuar",
             "decline_button": "Cancelar",
-            "error": "Pera no ha podido completar esta solicitud de passkey. La solicitud se ha rechazado."
+            "error": "Pera no ha podido completar esta solicitud de passkey. La solicitud se ha rechazado.",
+            "choose": {
+                "title": "Elige una passkey",
+                "description": "Tienes más de una passkey guardada para {{origin}}. Elige con cuál quieres iniciar sesión."
+            }
+        },
+        "approval": {
+            "delivery_failed": "Pera no ha podido enviar tu decisión al sitio. La extensión se suspendió mientras esta ventana estaba abierta. Cierra esta ventana y vuelve a hacer la solicitud desde el sitio."
         }
     },
     "account_menu": {
@@ -489,6 +502,14 @@
         "paste_label": "O pega el contenido de un QR",
         "paste_placeholder": "Pega una dirección o un URI de WalletConnect",
         "paste_submit": "Enviar"
+    },
+    "paste_link": {
+        "title": "Pegar un enlace",
+        "description": "Pega un URI de WalletConnect o un enlace de Pera para abrirlo.",
+        "placeholder": "wc:… o perawallet://…",
+        "submit": "Abrir enlace",
+        "error_invalid": "Esto no parece un enlace que Pera pueda abrir.",
+        "error_failed": "Pera no ha podido abrir ese enlace. Revísalo y vuelve a intentarlo."
     },
     "chart": {
         "one_week": {
@@ -1561,6 +1582,7 @@
                 "title": "Selecciona tu archivo de copia de seguridad",
                 "body": "Para restaurar tu wallet, selecciona o pega tu archivo de copia de seguridad.",
                 "pick_file_button": "Selecciona tu archivo de copia de seguridad",
+                "pick_file_button_new_tab": "Abre una pestaña nueva para seleccionar tu archivo de copia de seguridad",
                 "paste_button": "Pegar el texto del archivo",
                 "continue": "Siguiente",
                 "pasted_name": "Copia pegada",
@@ -2574,9 +2596,11 @@
             "success_sheet_body": "Vuelve a {{name}} para continuar y finalizar la operación. Puedes ver todas las sesiones conectadas en la página de ajustes correspondiente.",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
+            "networks_betanet": "Betanet",
             "error_sheet_title": "Error",
             "error_sheet_body": "Tu solicitud de WalletConnect ha fallado con el siguiente error:",
             "error_sheet_retry": "Vuelve a intentarlo desde la dApp donde iniciaste la solicitud.",
+            "error_network_mismatch": "Esta app ha pedido conectarse en {{requested}}, pero tu wallet está en {{active}}. Cambia de red en los ajustes y vuelve a intentarlo.",
             "quantum_fee_delivery_failed": "No se ha podido completar la solicitud. Puede que esta app no admita las comisiones de red más altas que requieren las cuentas Quantum."
         },
         "connection": {
@@ -2595,6 +2619,7 @@
             "delete_body": "¿Seguro que quieres eliminar esta sesión? Esto eliminará tu sesión activa y te desconectará de la app conectada.",
             "delete_all_title": "Eliminar todas las sesiones",
             "delete_all_body": "¿Seguro que quieres eliminar todas las sesiones? Esto eliminará todas tus sesiones activas y te desconectará de todas las apps conectadas.",
+            "disconnect_failed_title": "No se pudo desconectar",
             "unknown_peer": "Desconocido",
             "version": "Esta sesión usa WalletConnect V{{version}}",
             "connected_accounts": "Conectado con",
@@ -3397,10 +3422,15 @@
             "placeholder": "Interfaz de aprobación — próximamente en M4."
         },
         "expanded": {
-            "onboarding_title": "Configúralo en una pestaña completa",
-            "onboarding_body": "La configuración de la wallet se abre en una pestaña completa del navegador para que puedas guardar tu frase de recuperación de forma segura.",
-            "onboarding_cta": "Continuar en una pestaña nueva",
             "redirecting": "Continuando en una pestaña nueva…"
+        },
+        "reauth": {
+            "title": "Confirma que eres tú",
+            "confirm_button": "Confirmar",
+            "use_passkey": "Usar passkey",
+            "passkey_description": "Este sitio requiere que verifiques tu identidad antes de iniciar sesión con tu passkey.",
+            "confirm_description": "Verifica tu identidad para confirmar esta acción.",
+            "passkey_error": "La verificación con passkey falló. Usa tu contraseña en su lugar."
         }
     },
     "migration": {
