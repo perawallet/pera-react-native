@@ -27,10 +27,7 @@ import type {
 } from '../models'
 import { fetchStakingProjectsInfo } from './endpoints'
 import { getStakingProjectsQueryKey } from './queryKeys'
-import {
-    parseStakingProjectsConfig,
-    parseStakingProjectsI18nConfig,
-} from '../utils'
+import { parseStakingProjectsI18nConfig } from '../utils'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type UseStakingProjectsQueryResult = {
@@ -86,9 +83,6 @@ export const useStakingProjectsQuery = (
     const remoteProjectsI18nConfig = remoteConfigService.getStringValue(
         RemoteConfigKeys.staking_projects_i18n,
     )
-    const remoteProjectsConfig = remoteConfigService.getStringValue(
-        RemoteConfigKeys.staking_projects,
-    )
 
     // Parser only throws on invalid JSON / schema. Catch here so a malformed
     // remote config payload surfaces as the hook's error state instead of
@@ -98,18 +92,13 @@ export const useStakingProjectsQuery = (
         error: Nullable<Error>
     }>(() => {
         try {
-            // Prefer the localized key. Falling through to the legacy array
-            // keeps Staking populated in the window where the backend has only
-            // published `staking_projects` — without this, shipping the client
-            // change first would empty the screen until ops migrated.
-            const projects = remoteProjectsI18nConfig?.trim()
-                ? parseStakingProjectsI18nConfig(
-                      remoteProjectsI18nConfig,
-                      locale,
-                  )
-                : parseStakingProjectsConfig(remoteProjectsConfig)
-
-            return { projects, error: null }
+            return {
+                projects: parseStakingProjectsI18nConfig(
+                    remoteProjectsI18nConfig,
+                    locale,
+                ),
+                error: null,
+            }
         } catch (err) {
             const error = toError(err)
             logger.warn('Failed to parse staking projects remote config', {
@@ -118,7 +107,7 @@ export const useStakingProjectsQuery = (
             })
             return { projects: [], error }
         }
-    }, [remoteProjectsI18nConfig, remoteProjectsConfig, locale])
+    }, [remoteProjectsI18nConfig, locale])
 
     // Skip the TVL request when we already know the config is broken — the
     // result would be discarded by mapProjects anyway.

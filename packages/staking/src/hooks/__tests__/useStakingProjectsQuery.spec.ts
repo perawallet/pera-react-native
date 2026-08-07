@@ -21,7 +21,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useStakingProjectsQuery } from '../useStakingProjectsQuery'
 
-const VALID_PROJECTS_CONFIG = JSON.stringify([
+const VALID_PROJECTS = [
     {
         id: 'folks',
         title: 'Folks Finance',
@@ -49,7 +49,10 @@ const VALID_PROJECTS_CONFIG = JSON.stringify([
         link: 'https://stake.valar.solutions/',
         type: 'delegated',
     },
-])
+]
+
+/** Single-locale payload: the shape `staking_projects_i18n` actually holds. */
+const VALID_PROJECTS_CONFIG = JSON.stringify({ en: VALID_PROJECTS })
 
 const mocks = vi.hoisted(() => ({
     fetchStakingProjectsInfo: vi.fn(),
@@ -69,7 +72,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
     RemoteConfigKeys: {
-        staking_projects: 'staking_projects',
         staking_projects_i18n: 'staking_projects_i18n',
     },
     useRemoteConfig: () => ({
@@ -77,20 +79,8 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
     }),
 }))
 
-/**
- * Firebase returns a different value per key; a mock that ignores its argument
- * would hand the legacy array to the i18n parser and fail for the wrong reason.
- */
-const mockRemoteConfig = ({
-    legacy = '',
-    i18n = '',
-}: {
-    legacy?: string
-    i18n?: string
-}) => {
-    mocks.getStringValue.mockImplementation((key: string) =>
-        key === 'staking_projects_i18n' ? i18n : legacy,
-    )
+const mockRemoteConfig = (i18n: string) => {
+    mocks.getStringValue.mockReturnValue(i18n)
 }
 
 describe('useStakingProjectsQuery', () => {
@@ -106,7 +96,7 @@ describe('useStakingProjectsQuery', () => {
             },
         })
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
-        mockRemoteConfig({ legacy: VALID_PROJECTS_CONFIG })
+        mockRemoteConfig(VALID_PROJECTS_CONFIG)
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -141,10 +131,7 @@ describe('useStakingProjectsQuery', () => {
         })
 
         it('prefers the localized key and honours the requested locale', async () => {
-            mockRemoteConfig({
-                legacy: VALID_PROJECTS_CONFIG,
-                i18n: I18N_CONFIG,
-            })
+            mockRemoteConfig(I18N_CONFIG)
             mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
             const { result } = renderHook(() => useStakingProjectsQuery('de'), {
@@ -160,7 +147,7 @@ describe('useStakingProjectsQuery', () => {
         })
 
         it('falls back to en inside the payload for an untranslated locale', async () => {
-            mockRemoteConfig({ i18n: I18N_CONFIG })
+            mockRemoteConfig(I18N_CONFIG)
             mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
             const { result } = renderHook(() => useStakingProjectsQuery('tr'), {
@@ -174,10 +161,11 @@ describe('useStakingProjectsQuery', () => {
             )
         })
 
-        it('falls back to the legacy key while only it is published', async () => {
-            // The migration window: shipping the client before ops publish the
-            // localized key must not empty the Staking screen.
-            mockRemoteConfig({ legacy: VALID_PROJECTS_CONFIG, i18n: '' })
+        it('renders empty rather than erroring when the key is unset', async () => {
+            // Firebase not fetched yet, or the key absent in this environment.
+            // An empty Staking screen is the intended state; an error banner
+            // would misattribute a config gap to a failure.
+            mockRemoteConfig('')
             mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
             const { result } = renderHook(() => useStakingProjectsQuery('de'), {
@@ -186,16 +174,14 @@ describe('useStakingProjectsQuery', () => {
 
             await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-            expect(result.current.data.length).toBeGreaterThan(0)
+            expect(result.current.data).toEqual([])
+            expect(result.current.isError).toBe(false)
         })
 
-        it('surfaces a legacy-shaped array in the localized key as an error', async () => {
-            // A paste mistake in Firebase: the array shape belongs to the old
-            // key. Better a visible error than silently ignoring the new key.
-            mockRemoteConfig({
-                legacy: VALID_PROJECTS_CONFIG,
-                i18n: VALID_PROJECTS_CONFIG,
-            })
+        it('surfaces a bare project array as an error, not silence', async () => {
+            // A paste mistake in Firebase: the pre-i18n array shape instead of
+            // a locale map. Better a visible error than an empty screen.
+            mockRemoteConfig(JSON.stringify(VALID_PROJECTS))
             mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
             const { result } = renderHook(() => useStakingProjectsQuery('de'), {
@@ -250,7 +236,7 @@ describe('useStakingProjectsQuery', () => {
     })
 
     it('surfaces invalid remote config JSON as error state (does not crash)', async () => {
-        mockRemoteConfig({ legacy: 'not-json' })
+        mockRemoteConfig('not-json')
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
         const { result } = renderHook(() => useStakingProjectsQuery(), {
@@ -266,18 +252,20 @@ describe('useStakingProjectsQuery', () => {
     })
 
     it('surfaces schema validation failures as error state (does not crash)', async () => {
-        mockRemoteConfig({
-            legacy: JSON.stringify([
-                {
-                    id: '',
-                    title: 'Invalid',
-                    description: 'Invalid',
-                    logoUrl: 'https://example.com/logo.png',
-                    link: 'https://example.com',
-                    type: 'liquid',
-                },
-            ]),
-        })
+        mockRemoteConfig(
+            JSON.stringify({
+                en: [
+                    {
+                        id: '',
+                        title: 'Invalid',
+                        description: 'Invalid',
+                        logoUrl: 'https://example.com/logo.png',
+                        link: 'https://example.com',
+                        type: 'liquid',
+                    },
+                ],
+            }),
+        )
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
         const { result } = renderHook(() => useStakingProjectsQuery(), {
@@ -291,7 +279,7 @@ describe('useStakingProjectsQuery', () => {
     })
 
     it('returns empty list when remote config value is missing or empty', async () => {
-        mockRemoteConfig({ legacy: '' })
+        mockRemoteConfig('')
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
         const { result } = renderHook(() => useStakingProjectsQuery(), {
@@ -327,7 +315,7 @@ describe('useStakingProjectsQuery', () => {
 
         it('reports isPaused (not isLoading) when offline with no cached TVL', async () => {
             onlineManager.setOnline(false)
-            mockRemoteConfig({ legacy: VALID_PROJECTS_CONFIG })
+            mockRemoteConfig(VALID_PROJECTS_CONFIG)
 
             const { result } = renderHook(() => useStakingProjectsQuery(), {
                 wrapper,
@@ -340,7 +328,7 @@ describe('useStakingProjectsQuery', () => {
         })
 
         it('serves cached TVL data (stale) when going offline after a successful fetch', async () => {
-            mockRemoteConfig({ legacy: VALID_PROJECTS_CONFIG })
+            mockRemoteConfig(VALID_PROJECTS_CONFIG)
             mocks.fetchStakingProjectsInfo.mockResolvedValue({
                 folks: {
                     tvl_in_algo: '1000',

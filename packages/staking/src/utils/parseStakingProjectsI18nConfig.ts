@@ -49,13 +49,12 @@ const resolveLocaleKey = (
 
 /**
  * Parse Firebase Remote Config key `staking_projects_i18n` — a map of locale tag
- * to the project array the legacy `staking_projects` key held — and return the
- * entry for the app's active language.
+ * to that locale's project array — and return the entry for the app's active
+ * language.
  *
- * Returns an empty array when the value is absent, matching
- * `parseStakingProjectsConfig`: Firebase may not have fetched yet, or the key
- * may be unset in this environment, and the Staking screen should render empty
- * rather than error. Throws on malformed JSON or a schema violation; the hook
+ * Returns an empty array when the value is absent: Firebase may not have
+ * fetched yet, or the key may be unset in this environment, and the Staking
+ * screen should render empty rather than error. Throws on malformed JSON or a schema violation; the hook
  * layer catches those and surfaces them as its error state.
  *
  * The schema requires an `en` entry, so the fallback can always be satisfied.
@@ -73,7 +72,7 @@ export const parseStakingProjectsI18nConfig = (
     try {
         parsedValue = JSON.parse(raw)
     } catch {
-        throw new Error('Invalid staking projects i18n remote config JSON')
+        throw new Error('Invalid staking projects remote config JSON')
     }
 
     const byLocale = stakingProjectsI18nConfigSchema.parse(parsedValue)

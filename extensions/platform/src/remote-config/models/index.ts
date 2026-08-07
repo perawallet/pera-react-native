@@ -17,7 +17,6 @@ export const RemoteConfigKeys = {
     fee_pq_multiplier: 'fee_pq_multiplier',
     fee_asset_mbr: 'fee_asset_mbr',
     fee_base_account_mbr: 'fee_base_account_mbr',
-    staking_projects: 'staking_projects',
     staking_projects_i18n: 'staking_projects_i18n',
     swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
     swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
@@ -54,12 +53,6 @@ export const RemoteConfigDefaults: Record<
     fee_asset_mbr: 100_000,
     // Base minimum balance requirement for any account, in µAlgo.
     fee_base_account_mbr: 100_000,
-    staking_projects: '',
-    // Localized replacement for `staking_projects`: a map of locale tag to the
-    // same project array. Empty by default for the same reason the legacy key
-    // is — an unset value renders an empty Staking screen rather than crashing.
-    // The client prefers this key and falls back to `staking_projects` while
-    // the backend has only the legacy value published.
     staking_projects_i18n: '',
     swap_price_impact_low_threshold: 1,
     swap_price_impact_high_threshold: 5,

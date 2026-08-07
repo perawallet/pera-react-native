@@ -47,8 +47,8 @@ export type StakingType = z.infer<typeof stakingTypeSchema>
 export type StakingProjectInfo = z.infer<typeof stakingProjectInfoSchema>
 
 /**
- * The localized shape of `staking_projects_i18n`: locale tag → the same project
- * array the legacy `staking_projects` key held.
+ * The localized shape of `staking_projects_i18n`: locale tag → that locale's
+ * project array.
  *
  * `en` is required. It is the fallback every other locale resolves to, so a
  * payload without it would leave the Staking screen empty for any locale the

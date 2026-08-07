@@ -80,7 +80,7 @@ describe('parseStakingProjectsI18nConfig', () => {
 
     it('throws on malformed JSON', () => {
         expect(() => parseStakingProjectsI18nConfig('not-json', 'en')).toThrow(
-            'Invalid staking projects i18n remote config JSON',
+            'Invalid staking projects remote config JSON',
         )
     })
 

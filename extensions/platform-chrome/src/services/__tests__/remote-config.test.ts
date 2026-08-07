@@ -117,9 +117,9 @@ describe('ChromeRemoteConfigService', () => {
     })
 
     // A missing Firebase project means every remote flag silently serves its
-    // bundled default — `staking_projects: ''` renders an empty Staking screen
-    // that reads as a backend outage rather than a misconfigured build. A warn
-    // nobody reads is not enough signal for a shipped zip.
+    // bundled default — `staking_projects_i18n: ''` renders an empty Staking
+    // screen that reads as a backend outage rather than a misconfigured build.
+    // A warn nobody reads is not enough signal for a shipped zip.
     describe('when the Firebase project is missing', () => {
         afterEach(() => {
             configMock.isDebug = true

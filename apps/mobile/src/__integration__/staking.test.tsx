@@ -77,7 +77,7 @@ const seedProjectsConfig = (projects: ConfigProject[]) => {
     useRemoteConfigStore
         .getState()
         .setConfigOverride(
-            RemoteConfigKeys.staking_projects,
+            RemoteConfigKeys.staking_projects_i18n,
             JSON.stringify(projects),
         )
 }
