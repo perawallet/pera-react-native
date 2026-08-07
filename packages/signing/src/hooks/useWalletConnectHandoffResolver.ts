@@ -27,9 +27,17 @@ import type { PendingWalletConnectHandoff } from '../pipeline/walletConnectHando
 import { useWalletConnectHandoffsStore } from '../store/walletConnectHandoffsStore'
 import { useHandoffResolver } from './useHandoffResolver'
 
-/** Stable accessor (module-level so the core's dispatch effect isn't churned). */
+/** Stable accessors (module-level so the core's dispatch effect isn't churned). */
 const handoffKey = (handoff: PendingWalletConnectHandoff): string =>
     handoff.signRequestId
+
+const handoffExpiresAt = (detail: SignRequestResponse): number | null => {
+    const expiresAt = new Date(detail.expected_expire_datetime).getTime()
+    return Number.isNaN(expiresAt) ? null : expiresAt
+}
+
+const handoffRegisteredAt = (handoff: PendingWalletConnectHandoff): number =>
+    handoff.registeredAt
 
 export type UseWalletConnectHandoffResolverArgs = {
     /**
@@ -119,5 +127,7 @@ export const useWalletConnectHandoffResolver = ({
         poll,
         classify: classifyHandoffPoll,
         resolve,
+        expiresAtOf: handoffExpiresAt,
+        registeredAtOf: handoffRegisteredAt,
     })
 }

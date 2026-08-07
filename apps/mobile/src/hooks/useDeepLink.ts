@@ -36,6 +36,7 @@ import { useLanguage } from './useLanguage'
 import { useIsPeraCardEnabled } from './useIsPeraCardEnabled'
 import { routeCapabilities } from '@routes/capabilities'
 import { navigateToScreen } from './deeplink/navigateToScreen'
+import { isPeraOwnedDeeplink } from './deeplink/utils'
 import {
     buildAccountDeeplink,
     buildDeeplink,
@@ -133,10 +134,17 @@ export const useDeepLink = (): UseDeepLinkResult => {
         const parsedData = parseDeeplink(url)
 
         if (!parsedData) {
-            errorToast(
-                t('errors.deeplink.invalid_url_title'),
-                t('errors.deeplink.invalid_url_body'),
-            )
+            // A recognized-but-unsupported Pera deeplink (e.g. an app-action
+            // this build doesn't handle) stays silent, mirroring the QR
+            // scanner which quietly re-arms on codes it doesn't recognize.
+            // Only input that isn't aimed at Pera at all is treated as
+            // malformed and surfaces the invalid-URL toast.
+            if (!isPeraOwnedDeeplink(url)) {
+                errorToast(
+                    t('errors.deeplink.invalid_url_title'),
+                    t('errors.deeplink.invalid_url_body'),
+                )
+            }
             onError?.()
             return
         }
