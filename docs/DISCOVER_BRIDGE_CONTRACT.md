@@ -33,26 +33,54 @@ injected `peraMobileInterface.version` (`'2'`, the injected-surface generation).
 
 ## Method inventory
 
-| Method                      | Params                                                                  | Response                                                                          | requireSecure |
-| --------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------- |
-| `pushWebView`               | `{ url, title?, isFavorite? }`                                          | none — opens a stacked in-app webview                                             | yes           |
-| `openSystemBrowser`         | `{ url }`                                                               | none; `-32602` if the OS cannot open it                                           | yes           |
-| `canOpenURI`                | `{ uri }`                                                               | `{ supported: boolean }`                                                          | yes           |
-| `openNativeURI`             | `{ uri }`                                                               | none — Pera deeplinks route in-app, others via OS; `-32602` if unsupported        | yes           |
-| `notifyUser`                | `{ type: 'message', message }`                                          | none — shows a toast                                                              | yes           |
-| `getAddresses`              | none                                                                    | `Array<{ name, address, type }>` — signing-capable accounts only                  | yes           |
-| `getSettings`               | none                                                                    | app/device/theme/network/currency payload incl. `protocolVersion: '3'`            | yes           |
-| `getDeviceId`               | none                                                                    | action message `{ action: 'getDeviceId', payload: <id> }`, not a JSON-RPC result  | yes           |
-| `getPublicSettings`         | none                                                                    | `{ theme, network, currency, language }`                                          | no            |
-| `onBackPressed`             | none                                                                    | none — host handles back navigation                                               | no            |
-| `logAnalyticsEvent`         | `{ name, payload }`                                                     | none — forwarded to the analytics provider                                        | yes           |
-| `closeWebView`              | none                                                                    | none — closes the hosting webview                                                 | no            |
-| `requestTransactionSigning` | `{ txns: Arc0001WalletTransaction[], opts?, metadata }`                 | `(base64 \| null)[]` after user approval; rejection/errors as JSON-RPC errors     | yes           |
-| `requestDataSigning`        | ARC-60 wire payload (`StdSigData` + `metadata`) or `{ data, metadata }` | `base64[]` signatures after user approval                                         | yes           |
-| `walletConnect`             | `{ uri }`                                                               | none on success — session continues through the WC approval sheet; errors relayed | no            |
+| Method                      | Params                                                                  | Response                                                                                                                                | requireSecure |
+| --------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| `pushWebView`               | `{ url, title?, isFavorite? }`                                          | none — opens a stacked in-app webview                                                                                                   | yes           |
+| `openSystemBrowser`         | `{ url }`                                                               | none; `-32602` if the OS cannot open it                                                                                                 | yes           |
+| `canOpenURI`                | `{ uri }`                                                               | `{ supported: boolean }`                                                                                                                | yes           |
+| `openNativeURI`             | `{ uri }`                                                               | none — Pera deeplinks route in-app, others via OS; `-32602` if unsupported                                                              | yes           |
+| `notifyUser`                | `{ type: 'message', message }`                                          | none — shows a toast                                                                                                                    | yes           |
+| `getAddresses`              | none                                                                    | `Array<{ name, address, type }>` — signing-capable accounts only                                                                        | yes           |
+| `getSettings`               | none                                                                    | app/device/theme/network/currency payload incl. `protocolVersion: '3'`; `language` is the app locale, `region` the device's — see below | yes           |
+| `getDeviceId`               | none                                                                    | action message `{ action: 'getDeviceId', payload: <id> }`, not a JSON-RPC result                                                        | yes           |
+| `getPublicSettings`         | none                                                                    | `{ theme, network, currency, language }` — `language` is the app locale, see below                                                      | no            |
+| `onBackPressed`             | none                                                                    | none — host handles back navigation                                                                                                     | no            |
+| `logAnalyticsEvent`         | `{ name, payload }`                                                     | none — forwarded to the analytics provider                                                                                              | yes           |
+| `closeWebView`              | none                                                                    | none — closes the hosting webview                                                                                                       | no            |
+| `requestTransactionSigning` | `{ txns: Arc0001WalletTransaction[], opts?, metadata }`                 | `(base64 \| null)[]` after user approval; rejection/errors as JSON-RPC errors                                                           | yes           |
+| `requestDataSigning`        | ARC-60 wire payload (`StdSigData` + `metadata`) or `{ data, metadata }` | `base64[]` signatures after user approval                                                                                               | yes           |
+| `walletConnect`             | `{ uri }`                                                               | none on success — session continues through the WC approval sheet; errors relayed                                                       | no            |
 
 `getDeviceId` is also pushed proactively (same action shape) whenever the
 device id changes after load, so the web app can refetch id-keyed state.
+
+## The `language` field
+
+Both `getSettings` and `getPublicSettings` report `language`. It is **the app's
+resolved UI locale** — i18next's `i18n.language` after `resolveLocale` — not the
+device locale and not the raw stored preference.
+
+Three consequences web code should know:
+
+- **It is a bundle tag, so it may have no region.** The shipped set is `en`,
+  `de`, `es`, `fr`, `tr`, `pt-BR` — only Brazilian Portuguese carries a region.
+  Match on the language subtag; do not assume `xx-YY`. Historically
+  `getPublicSettings` sent a constant `en-US` and `getSettings` echoed the
+  device locale (`en-US`, `tr-TR`, …), so region-qualified tags used to be the
+  norm and no longer are.
+- **`en-XA` can appear.** That is the dev pseudolocale, deliberately forwarded
+  rather than masked so a tester can see the mismatch it exists to expose.
+- **`en-US` is the fallback**, used when i18next has not resolved a locale yet.
+  `getPublicSettings` is unguarded, so it can be called before app bootstrap has
+  run `changeLanguage`.
+
+`region` is a separate field and still comes from the **device**
+(`getDeviceCountry`). The language picker does not change where the user is, so
+the two fields answer different questions and can legitimately disagree — a user
+in Germany reading the app in Turkish reports `region: 'DE'`, `language: 'tr'`.
+
+Whether the Discover web app can serve every locale the wallet can select is a
+separate question from what this bridge reports; see PERA-4835.
 
 ## RN-only additions (intentional)
 

@@ -109,6 +109,19 @@ function flattenKeys(obj, prefix = '') {
     return keys
 }
 
+// i18next plural suffixes
+const PLURAL_SUFFIXES = ['_one', '_other', '_zero', '_two', '_few', '_many']
+
+// Helper to get base key from plural key (e.g., 'foo_one' -> 'foo')
+function getBaseKey(key) {
+    for (const suffix of PLURAL_SUFFIXES) {
+        if (key.endsWith(suffix)) {
+            return key.slice(0, -suffix.length)
+        }
+    }
+    return null
+}
+
 function main() {
     log('Starting i18n lint...', colors.blue)
 
@@ -157,12 +170,25 @@ function main() {
             }
         })
 
-        // Check for extra keys
+        // Check for extra keys. How many plural forms a language has is set by
+        // CLDR, not by English — pt-BR needs a `_zero` ("0 contas") that English
+        // has no category for, and Arabic needs `_two`/`_few`/`_many`. So an
+        // extra plural variant is legitimate as long as en.json pluralizes the
+        // same base key. Everything else still has to match en.json exactly, and
+        // the missing-key check above stays strict either way.
         fileKeys.forEach(key => {
-            if (!baseKeys.has(key)) {
-                warn(`Extra key in ${file}: ${key} (not in en.json)`)
-                consistencyIssues = true
+            if (baseKeys.has(key)) return
+
+            const base = getBaseKey(key)
+            if (
+                base &&
+                PLURAL_SUFFIXES.some(suffix => baseKeys.has(`${base}${suffix}`))
+            ) {
+                return
             }
+
+            warn(`Extra key in ${file}: ${key} (not in en.json)`)
+            consistencyIssues = true
         })
     })
 
@@ -238,19 +264,6 @@ function main() {
             if (literalPaths.has(segments.slice(0, i).join('.'))) return true
         }
         return false
-    }
-
-    // i18next plural suffixes
-    const PLURAL_SUFFIXES = ['_one', '_other', '_zero', '_two', '_few', '_many']
-
-    // Helper to get base key from plural key (e.g., 'foo_one' -> 'foo')
-    const getBaseKey = key => {
-        for (const suffix of PLURAL_SUFFIXES) {
-            if (key.endsWith(suffix)) {
-                return key.slice(0, -suffix.length)
-            }
-        }
-        return null
     }
 
     // Helper to check if a key is a plural variant
