@@ -29,7 +29,7 @@ catalog:
   "@react-native-firebase/app": ^25.1.0
   "@react-native-firebase/crashlytics": ^25.1.0
   "@react-native-firebase/messaging": ^25.1.0
-  "@react-native-firebase/remote-config": ^25.1.0
+  "@react-native-firebase/remote-config": ^26.0.0
   "@scure/base": 2.2.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
