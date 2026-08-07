@@ -150,40 +150,6 @@ export const useKMS = () => {
     )
 
     /**
-     * Signs each payload with the real Falcon-1024 PQ signer. The quantum
-     * child entry holds no private material — the keypair is re-derived from
-     * the parent seed's private bytes, exported only for the duration of
-     * this call. Both the seed bytes and the derived secret key are zeroed
-     * in `finally` once signing completes.
-     */
-    const signWithQuantumSeed = (
-        seedKey: Key,
-        payloads: Uint8Array[],
-    ): Promise<Uint8Array[]> =>
-        withExportedKey(seedKey.id, seedData => {
-            if (!seedData.privateKey) {
-                throw new KeyManagementError(
-                    'Quantum seed has no private key bytes',
-                )
-            }
-            const seedBytes = new Uint8Array(seedData.privateKey)
-            try {
-                const provider = getPQProvider()
-                const { secretKey } =
-                    provider.generateKeypairFromSeed(seedBytes)
-                try {
-                    return payloads.map(payload =>
-                        provider.sign(secretKey, payload),
-                    )
-                } finally {
-                    zeroBytes(secretKey)
-                }
-            } finally {
-                zeroBytes(seedBytes)
-            }
-        })
-
-    /**
      * Returns the Falcon public-key bytes committed on the quantum signing
      * child at `keyPairId` (the id `createQuantumKey` returns as
      * `signKeyId`, and what `account.keyPairId` is set to for quantum
@@ -277,6 +243,10 @@ export const useKMS = () => {
 
     /**
      * Signs each item with the child key at `childKeyId`.
+     *
+     * Scheme-agnostic on purpose: Ed25519 and Falcon-1024 children are both
+     * keystore-native, so the private material stays sealed and never
+     * reaches JS on the signing path.
      */
     const signTransactionsWithKey = async (
         childKeyId: string,
@@ -285,9 +255,6 @@ export const useKMS = () => {
     ): Promise<Uint8Array[]> => {
         const seedKey = resolveSeedKey(childKeyId)
         checkAccess(seedKey, domain)
-        if (seedSchemeOf(seedKey) === SeedScheme.Quantum) {
-            return signWithQuantumSeed(seedKey, encodedTxs)
-        }
         return Promise.all(encodedTxs.map(tx => keyStore.sign(childKeyId, tx)))
     }
 
@@ -298,9 +265,6 @@ export const useKMS = () => {
     ): Promise<Uint8Array[]> => {
         const seedKey = resolveSeedKey(childKeyId)
         checkAccess(seedKey, domain)
-        if (seedSchemeOf(seedKey) === SeedScheme.Quantum) {
-            return signWithQuantumSeed(seedKey, data)
-        }
         return Promise.all(data.map(d => keyStore.sign(childKeyId, d)))
     }
 
