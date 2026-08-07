@@ -12,18 +12,41 @@
 
 import type { Network } from '@perawallet/wallet-core-shared'
 import { useWalletConnectHandoffsStore } from '../store/walletConnectHandoffsStore'
-import type { SourceCallbacks, SourceMetadata } from './types'
+import type { SourceCallbacks, SourceType } from './types'
 
 /**
- * In-flight WalletConnect (or webview / deeplink) sync-flow handoff. Stashed
- * by the multisig-propose transport at the moment the backend record is
- * created, so a later "threshold met" event can pick up the callbacks and
- * deliver the assembled signed bytes to the dApp.
+ * Serializable context to answer a WalletConnect peer without the in-memory
+ * closures — i.e. after an app kill. The resolver reconstructs the exact
+ * `algo_signTxn` response from these fields: it answers the peer identified by
+ * {@link clientId} / {@link payloadId} and rebuilds the result array from
+ * {@link indicesToSign} / {@link totalLength}.
  *
- * Storage lives in {@link useWalletConnectHandoffsStore}; this module
- * exposes thin imperative wrappers so non-React consumers (the propose
- * transport, the resolver delivery code) can register/unregister without
- * pulling in Zustand.
+ * Present only for WalletConnect handoffs. Webview / deeplink / injected
+ * handoffs deliver over their own transport (not the WC connector), and their
+ * caller is gone after a kill anyway, so they carry no recovery context.
+ */
+export type WalletConnectHandoffRecovery = {
+    clientId: string
+    payloadId: number
+    indicesToSign: number[]
+    totalLength: number
+}
+
+/**
+ * In-flight WalletConnect (or webview / deeplink / injected) sync-flow handoff.
+ * Stashed by the multisig-propose transport at the moment the backend record is
+ * created, so a later "threshold met" event can deliver the assembled signed
+ * bytes to the dApp.
+ *
+ * Persisted (see {@link useWalletConnectHandoffsStore}) so a WalletConnect
+ * handoff survives an app kill. The record is a hybrid: the live session
+ * delivers via {@link callbacks} (transport-agnostic, works for every source);
+ * those closures don't serialize, so a rehydrated handoff has none and the
+ * resolver falls back to {@link recovery} — WalletConnect only.
+ *
+ * This module exposes thin imperative wrappers so non-React consumers (the
+ * propose transport, the resolver delivery code) can register/unregister
+ * without pulling in Zustand.
  */
 export type PendingWalletConnectHandoff = {
     signRequestId: string
@@ -52,18 +75,26 @@ export type PendingWalletConnectHandoff = {
      * networks mid-flight.
      */
     network: Network
+    /** Originating source type, for logging / telemetry. */
+    sourceType: SourceType
     /**
-     * The WC source callbacks. `approveSignedBytes` delivers the
-     * assembled signed bytes (pre-encoded msgpack, original txn embedded
-     * verbatim so participant signatures verify on algod). `error` for
-     * terminal failures; `reject({ kind: 'softReject', error })` for
-     * participant decline / expired without a connection-error banner.
+     * Timestamp of registration. Anchors the client-side handoff deadline
+     * (PERA-4819); persisted, so a resumed-but-stale handoff self-expires on
+     * relaunch instead of resuming a dead poll.
      */
-    callbacks: Pick<SourceCallbacks, 'approveSignedBytes' | 'error' | 'reject'>
-    /** Forwarded source metadata, useful for logging / dedup. */
-    source: SourceMetadata
-    /** Timestamp of registration; for diagnostics. */
     registeredAt: number
+    /**
+     * Live-session delivery closures — the transport-agnostic way to answer any
+     * external source (WC connector, webview bridge, extension provider).
+     * `approveSignedBytes` delivers the assembled signed bytes; `error` for
+     * terminal failures; `reject({ kind: 'softReject', error })` for participant
+     * decline / expired without a connection-error banner. Dropped when the
+     * store persists (functions don't serialize), so a rehydrated handoff has
+     * none and falls back to {@link recovery}.
+     */
+    callbacks?: Pick<SourceCallbacks, 'approveSignedBytes' | 'error' | 'reject'>
+    /** WalletConnect-only serializable delivery context; drives post-kill recovery. */
+    recovery?: WalletConnectHandoffRecovery
 }
 
 export const walletConnectHandoffs = {

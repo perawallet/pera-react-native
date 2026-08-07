@@ -35,7 +35,7 @@ const buildHandoff = (
         error: vi.fn(),
         reject: vi.fn(),
     },
-    source: { type: 'walletconnect' },
+    sourceType: 'walletconnect',
     registeredAt: Date.now(),
     ...overrides,
 })
