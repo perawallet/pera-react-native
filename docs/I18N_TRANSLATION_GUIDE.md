@@ -47,11 +47,39 @@ German set the house style and it is deliberate:
 Languages borrow English at different rates, so **three terms deliberately
 diverge between bundles**. Do not "harmonise" these without reading why:
 
-| Term     | de       | es       | fr       | tr           | pt-BR    | Why                                                                                                                                                                                                                                         |
-| -------- | -------- | -------- | -------- | ------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `asset`  | `Asset`  | `activo` | `actif`  | `varlık`     | `ativo`  | German borrows English tech vocabulary readily; the Romance languages and Turkish do not, and `activos`/`ativos` is what Binance/Coinbase ship in those languages.                                                                          |
-| `wallet` | `Wallet` | `wallet` | `wallet` | **`cüzdan`** | `wallet` | Kept English in Spanish specifically to dodge the `cartera` (Spain) / `billetera` (LatAm) split in a single neutral `es` bundle. Turkish has no such split and its crypto UIs universally say `cüzdan`, so translating it there is correct. |
-| `swap`   | **`Tauschen`** | `Swap`   | `Swap`   | `Swap`       | `Swap`   | The one term German translates and everyone else keeps. `Tauschen` for actions, `Tausch` as a singular noun, `Tausch-` in compounds (`Tauschverlauf`, `Tauscheinstellungen`); plural is `Tauschvorgänge`, because `Tausche` is awkward German. `Cross-Chain-Swap` stays English as a domain term.                              |
+| Term     | de         | es       | fr       | tr           | pt-BR           | Why                                                                                                                                                                                                                                         |
+| -------- | ---------- | -------- | -------- | ------------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `asset`  | `Asset`    | `activo` | `actif`  | `varlık`     | `ativo`         | German borrows English tech vocabulary readily; the Romance languages and Turkish do not, and `activos`/`ativos` is what Binance/Coinbase ship in those languages.                                                                          |
+| `wallet` | `Wallet`   | `wallet` | `wallet` | **`cüzdan`** | `wallet`        | Kept English in Spanish specifically to dodge the `cartera` (Spain) / `billetera` (LatAm) split in a single neutral `es` bundle. Turkish has no such split and its crypto UIs universally say `cüzdan`, so translating it there is correct. |
+| `swap`   | `Tauschen` | mixed    | mixed    | `Swap`       | **`Converter`** | The least consistent term in the app — treat the table below as the real answer, not this cell.                                                                                                                                             |
+
+### `swap` in detail
+
+There is no single house rule here, and pretending otherwise in one table cell
+would be misleading. Counting strings that still contain the literal `Swap`:
+
+| Locale  | Strings with `Swap` | Tab bar     | Action button  | History title             |
+| ------- | ------------------- | ----------- | -------------- | ------------------------- |
+| `de`    | 38 → 2              | `Tauschen`  | `Tauschen`     | `Tauschverlauf`           |
+| `tr`    | 26                  | `Swap`      | `Swap`         | `Swap geçmişi`            |
+| `es`    | 11                  | `Swap`      | `Intercambiar` | `Historial de swaps`      |
+| `fr`    | 9                   | `Swap`      | `Échanger`     | `Historique des swaps`    |
+| `pt-BR` | 0                   | `Converter` | `Converter`    | `Histórico de conversões` |
+
+`es` and `fr` translate the **verb** but keep the **noun** — you swap by pressing
+`Échanger`, and what you get is a `swap`. `pt-BR` is the only bundle that
+translates it everywhere, and it uses the CEX word `Converter` rather than a
+literal _trocar_. `tr` keeps it almost throughout.
+
+German is a deliberate move toward the `pt-BR` end: `Tauschen` for actions,
+`Tausch` as a singular noun, `Tausch-` in compounds (`Tauschverlauf`,
+`Tauscheinstellungen`), and `Tauschvorgänge` for plurals because `Tausche` is
+awkward German. Two strings keep `Swap` on purpose — `Cross-Chain-Swap` is a
+domain term, and the Exodus legal disclaimer is handled separately.
+
+If you are adding a locale: pick a point on this spectrum deliberately and apply
+it consistently _within_ your bundle. Do not copy another locale's choice on the
+assumption it is the house rule.
 
 ## Register per locale
 
@@ -77,6 +105,24 @@ the absent `asa_requests_many` as a missing key and resolves it through
 An unsuffixed **base key catches any category the suffixes don't cover.** The
 three groups shaped `count` + `count_one` (rather than `count_one` +
 `count_other`) return localised text at 1,000,000 for exactly this reason.
+
+### `_zero` works, and it is not a CLDR category
+
+**No locale we ship has a `zero` plural category** — not even pt-BR, where CLDR
+selects `one` for a count of 0. Read that in isolation and the 29 `_zero` keys in
+`pt-BR.json` look like dead weight someone should delete.
+
+They are not. i18next treats `_zero` as an **explicit special case** at
+`count === 0`, independent of CLDR. Measured on i18next 26.3.6 with `lng:
+'pt-BR'`: a group with `_one`/`_other`/`_zero` returns the `_zero` string at 0,
+`_one` at 1, `_other` at 2. So `_zero` is a legitimate way to say "0 contas"
+rather than "0 conta" — but it is an i18next feature, not a CLDR one, and it will
+not appear in any plural-category table you look up.
+
+`tools/i18n-lint.cjs` was relaxed to allow a bundle to carry plural variants
+`en.json` has no category for, which is what lets those keys exist. The
+missing-key check stays strict, so this does not weaken parity in the direction
+that matters.
 
 ### Today: a real gap, but unreachable
 
@@ -111,7 +157,7 @@ it as its own change rather than inside a locale PR.
 
 Leaving an English word untranslated is usually safe in `de`, but check it is
 not already a German word meaning something else. `Fund` shipped untranslated
-for a while and reads as the ordinary noun *"a find"*, so the tab bar showed
+for a while and reads as the ordinary noun _"a find"_, so the tab bar showed
 `Entdecken` next to `Fund` — two adjacent tabs both saying discover. It is now
 `Aufladen`. Words worth the same check before borrowing them: `Gift`, `Bald`,
 `Rat`, `Brand`, `Herd`, `Tag`.
