@@ -18,14 +18,15 @@ export default defineConfig({
     test: {
         coverage: coverageConfig,
         // The vault KDF is Argon2id at OWASP's baseline (19 MiB, t=2) — being
-        // expensive is the entire point, and a single derivation costs a few
-        // hundred milliseconds. Tests that create, unlock, change a password,
-        // or exhaust the 5-attempt lockout chain several derivations together,
-        // which is comfortably over vitest's 5s default once `turbo run test`
-        // is contending for cores with every other package. Raised rather than
-        // weakening the parameters under test: these specs are the only place
-        // the real cost is exercised.
-        testTimeout: 30_000,
+        // expensive is the entire point, and vault.test.ts asserts those pinned
+        // values directly, so the budget gets raised rather than the cost
+        // lowered. Sized off the worst case: the throttling spec that fills and
+        // clears the 5-attempt lockout twice chains 11 derivations, and under
+        // `turbo run test` (54 sibling vitest processes, each pool sized to
+        // cpus/2) one derivation stretches from ~330ms to ~2.9s — 32s in all,
+        // which is what overran the previous 30s ceiling. Hooks only build the
+        // chrome fake, so they keep the tighter budget.
+        testTimeout: 120_000,
         hookTimeout: 30_000,
     },
     ...poolConfig,
