@@ -12,6 +12,24 @@
 
 import { KEYSTORE_PREFIX } from '../storage-keys'
 
+/**
+ * `remove`/`clearAll` are synchronous in the upstream MMKV-shaped interface, so
+ * the underlying delete can only be fired and forgotten. A swallowed rejection
+ * here is worse than a lost write: the entry is dropped from the in-memory
+ * cache while its ciphertext stays on disk, so the app reports the key as gone
+ * when it is still recoverable from the profile.
+ *
+ * Deliberately console-only. This package keeps a minimal dependency surface
+ * because it handles key material — pulling a telemetry SDK in here is not a
+ * trade worth making for a delete failure.
+ */
+const reportDeleteFailure = (keyIds: string[], error: unknown): void => {
+    console.error(
+        `[pera] keystore delete failed; ciphertext may remain on disk for ${keyIds.length} entr${keyIds.length === 1 ? 'y' : 'ies'}`,
+        error,
+    )
+}
+
 export type SecureEntryStorage = {
     getString(key: string): string | undefined
     set(key: string, value: string): Promise<void>
@@ -80,7 +98,9 @@ export class ChromeSecureEntryStorage implements SecureEntryStorage {
 
     remove(key: string): void {
         this.ensureCache().delete(key)
-        void chrome.storage.local.remove(KEYSTORE_PREFIX + key)
+        chrome.storage.local
+            .remove(KEYSTORE_PREFIX + key)
+            .catch(error => reportDeleteFailure([key], error))
     }
 
     getAllKeys(): string[] {
@@ -90,7 +110,9 @@ export class ChromeSecureEntryStorage implements SecureEntryStorage {
     clearAll(): void {
         const keys = this.getAllKeys()
         this.ensureCache().clear()
-        void chrome.storage.local.remove(keys.map(key => KEYSTORE_PREFIX + key))
+        chrome.storage.local
+            .remove(keys.map(key => KEYSTORE_PREFIX + key))
+            .catch(error => reportDeleteFailure(keys, error))
     }
 
     contains(key: string): boolean {

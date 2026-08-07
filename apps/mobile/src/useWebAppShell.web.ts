@@ -1,0 +1,190 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useEffect, useRef, useState } from 'react'
+import {
+    getCurrentApproval,
+    getSurface,
+} from '@perawallet/wallet-extension-platform-chrome'
+import { armAutoLock } from '@perawallet/wallet-extension-keystore-chrome'
+import { useVaultLockState } from '@modules/vault'
+import { useShowOnboarding } from '@hooks/useShowOnboarding'
+import {
+    getProvider,
+    hydrateKeystore,
+} from '@perawallet/wallet-extension-provider'
+import {
+    getDatabase,
+    initializeDatabase,
+} from '@perawallet/wallet-core-database'
+import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
+import {
+    getSyncService,
+    initializeSyncService,
+} from '@perawallet/wallet-core-background'
+import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
+import { useHasAccounts } from '@perawallet/wallet-core-accounts'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { config } from '@perawallet/wallet-core-config'
+import { queryClient } from '@providers/QueryProvider'
+
+export type WebShellState =
+    | 'resolving'
+    | 'create-password'
+    | 'onboarding'
+    | 'main'
+    | 'approval-placeholder'
+    | 'dapp-request'
+    | 'error'
+
+type UseWebAppShellResult = {
+    shellState: WebShellState
+    fcmToken: Nullable<string>
+}
+
+export const useWebAppShell = (): UseWebAppShellResult => {
+    const { isInitialized, isUnlocked } = useVaultLockState()
+    const showOnboarding = useShowOnboarding()
+    const hasAccounts = useHasAccounts()
+    const [isBootstrapped, setIsBootstrapped] = useState(false)
+    const [hasBootstrapError, setHasBootstrapError] = useState(false)
+    const [fcmToken, setFcmToken] = useState<Nullable<string>>(null)
+    const bootstrapStarted = useRef(false)
+    const platformInitStarted = useRef(false)
+    // The toolbar popup (surface 'popup') can't receive a ?requestId query
+    // param — chrome.action.openPopup() has no way to pass one — so unlike
+    // the approval surface below, discovering a pending approval here (enable
+    // OR sign: both open in the toolbar popup) means an async round-trip over
+    // runtime messaging. null = still checking.
+    const [hasPendingApproval, setHasPendingApproval] = useState<
+        boolean | null
+    >(null)
+    const pendingApprovalCheckStarted = useRef(false)
+
+    useEffect(() => {
+        if (getSurface() !== 'popup' || pendingApprovalCheckStarted.current) {
+            return
+        }
+        pendingApprovalCheckStarted.current = true
+        void getCurrentApproval().then(approval => {
+            setHasPendingApproval(approval !== null)
+        })
+    }, [])
+
+    // Native runs this via provider.initialize() in useAppBootstrap before
+    // anything else; the web shell mirrored the rest of that bootstrap but
+    // dropped this call, so Remote Config never initialized and every
+    // getStringValue served the bundled default — which is why the Staking
+    // screen rendered zero providers (staking_projects defaults to '').
+    // Deliberately NOT gated on isUnlocked: none of crash reporting, remote
+    // config, or analytics needs the master key, and remote config must be
+    // activated before the first screen reads a flag.
+    useEffect(() => {
+        if (platformInitStarted.current) return
+        platformInitStarted.current = true
+        // Counterpart to the same line in the service worker entry point —
+        // Metro resolves packages/*/src while esbuild resolves packages/*/dist,
+        // so compare the two before blaming the backend. Host and channel
+        // only; never the API key.
+        logger.info('Web shell config', {
+            appEnvironment: config.appEnvironment,
+            build: config.appBuildNumber || '(local)',
+            hasApiKey: config.backendAPIKey.length > 0,
+        })
+        // Chrome's initialize() already Promise.allSettled's the three
+        // services, so a single failing one cannot take the others down. Push
+        // registration is deliberately not awaited (see PlatformInitResult) —
+        // the token lands whenever it lands and then reaches the device store.
+        void getProvider()
+            .initialize()
+            .then(({ notifications }) =>
+                notifications.then(({ token }) => setFcmToken(token ?? null)),
+            )
+            .catch(error => {
+                logger.error('Web platform services init failed', { error })
+            })
+    }, [])
+
+    useEffect(() => {
+        if (!isUnlocked || bootstrapStarted.current) return
+        bootstrapStarted.current = true
+        const bootstrap = async (): Promise<void> => {
+            // Mirrors native App.tsx:126-156 minus native-only branches
+            // (push token, passkey autofill, splash): keystore first (needs
+            // the unlocked master key), then DB through the offscreen proxy,
+            // then the sync service.
+            await hydrateKeystore()
+            await initializeDatabase(getProvider().database)
+            await seedAlgoAsset(getDatabase())
+            initializeSyncService({
+                queryClient,
+                registerCompletionHandler: setOnConfirmedHandler,
+            })
+            setIsBootstrapped(true)
+        }
+        bootstrap().catch(error => {
+            logger.error('Web shell bootstrap failed', { error })
+            setHasBootstrapError(true)
+        })
+    }, [isUnlocked])
+
+    useEffect(() => {
+        if (!isUnlocked) return
+        void armAutoLock() // sliding window: surface open re-arms
+    }, [isUnlocked])
+
+    // Sync runs while a UI context is open AND the wallet is usable
+    // (spec: "Sync service: runs while any UI context is open"). Closing the
+    // popup kills this context (no AppState dance needed); locking stops it.
+    useEffect(() => {
+        if (!isBootstrapped || !isUnlocked || !hasAccounts) return
+        getSyncService().start()
+        return () => {
+            getSyncService().stop()
+        }
+    }, [isBootstrapped, isUnlocked, hasAccounts])
+
+    if (getSurface() === 'approval') {
+        // The SW's approval bridge opens this popup at
+        // approval.html?requestId=…; a requestId in the query string means
+        // there's a real ARC-0027 enable request to render. Any other
+        // navigation into the approval surface (e.g. opened by hand) falls
+        // back to the placeholder. This check stays ahead of the
+        // resolving/create-password/error branches below — same as before
+        // 'dapp-request' existed — so the approval surface never blocks on
+        // full portfolio bootstrap to show either state.
+        const requestId = new URLSearchParams(window.location.search).get(
+            'requestId',
+        )
+        return {
+            shellState: requestId ? 'dapp-request' : 'approval-placeholder',
+            fcmToken,
+        }
+    }
+    if (getSurface() === 'popup' && hasPendingApproval !== false) {
+        // Overlaps the vault/bootstrap resolution below: both start out
+        // 'resolving', so a popup with no pending approval isn't perceptibly
+        // delayed by this check before falling through to the normal flow.
+        if (hasPendingApproval === null)
+            return { shellState: 'resolving', fcmToken }
+        return { shellState: 'dapp-request', fcmToken }
+    }
+    if (hasBootstrapError) return { shellState: 'error', fcmToken }
+    if (isInitialized === null || isUnlocked === null) {
+        return { shellState: 'resolving', fcmToken }
+    }
+    if (!isInitialized) return { shellState: 'create-password', fcmToken }
+    if (isUnlocked && !isBootstrapped)
+        return { shellState: 'resolving', fcmToken }
+    // isInitialized && !isUnlocked never reaches here — VaultGate intercepts.
+    return { shellState: showOnboarding ? 'onboarding' : 'main', fcmToken }
+}

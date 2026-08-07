@@ -13,7 +13,7 @@
     "mobile:start": "turbo run start --filter=mobile",
     "pre-push": "./tools/pre-push",
     "lint": "turbo run lint && pnpm lint:guardrails",
-    "lint:types": "oxlint --config .oxlintrc.types.json --type-aware apps packages",
+    "lint:types": "oxlint --config .oxlintrc.types.json --type-aware apps packages extensions",
     "lint:fix": "turbo run lint -- --fix",
     "lint:guardrails": "pnpm --filter @perawallet/wallet-core-devtools guardrails",
     "lint:guardrails:warn": "pnpm --filter @perawallet/wallet-core-devtools guardrails --warn-only",

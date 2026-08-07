@@ -206,13 +206,16 @@ export default defineConfig({
                 ),
             },
             {
-                // Platform-agnostic types/errors/constants — safe to alias
-                // straight to source. MUST come before the main package alias
-                // below so prefix matching doesn't shadow it.
-                find: '@perawallet/wallet-extension-ledger-react-native/protocol',
+                // Platform-agnostic types/errors/constants, now its own
+                // package (it has no react-native dependency, and the two web
+                // transports were reaching it through a package named
+                // "react-native"). Safe to alias straight to source. MUST come
+                // before the ledger-react-native alias below so prefix
+                // matching doesn't shadow it.
+                find: '@perawallet/wallet-extension-ledger-shared',
                 replacement: path.resolve(
                     __dirname,
-                    '../../extensions/ledger-react-native/src/protocol.ts',
+                    '../../extensions/ledger-shared/src/index.ts',
                 ),
             },
             {
@@ -630,6 +633,18 @@ export default defineConfig({
                 test: {
                     name: 'unit',
                     setupFiles: ['./vitest.setup.ts'],
+                    // apps/browser's offscreen host is headless production
+                    // code that lives with the extension shell, but its specs
+                    // were written against this project's React Native mock
+                    // environment (the ~2300-line setup above) and need it —
+                    // wallet-core packages pull native modules in transitively
+                    // when their stores evaluate. Running them here is cheaper
+                    // and less brittle than duplicating that environment in
+                    // apps/browser, whose own vitest is deliberately minimal.
+                    include: [
+                        'src/**/*.{test,spec}.{ts,tsx}',
+                        '../browser/src/offscreen/**/*.{test,spec}.{ts,tsx}',
+                    ],
                     exclude: [
                         '**/node_modules/**',
                         '**/dist/**',

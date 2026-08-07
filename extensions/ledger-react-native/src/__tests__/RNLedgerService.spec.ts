@@ -87,7 +87,7 @@ import {
     LedgerBluetoothDisabledError,
     LedgerPermissionDeniedError,
     classifyLedgerError,
-} from '../errors'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 describe('RNLedgerService', () => {
     beforeEach(() => {

@@ -26,6 +26,11 @@ export type RouteCapabilities = {
     /** In-app webview screens (help center, terms links). Off ⇒ Linking.openURL. */
     inAppWebView: boolean
     qrScanner: boolean
+    /** Paste-a-deeplink entry point in the Menu icon bar (web only). Replaces
+     * qrScanner there: a camera is near-useless in a 360x600 toolbar popup and
+     * Pera Connect now covers the pairing path scanning existed to serve. The
+     * two flags are mutually exclusive per platform. */
+    deepLinkPaste: boolean
     pushNotificationSettings: boolean
     walletConnectSettings: boolean
     /** Native passkey-autofill credential-manager settings (not vault passkey unlock). */
@@ -46,6 +51,10 @@ export type RouteCapabilities = {
      * standard/shared/ledger flows) — native-only; these stacks aren't
      * registered in WebMainRoutes. */
     rekeyFlows: boolean
+    /** Multisig / shared-account flows. Off where the Multisig stack isn't
+     * registered, so the SHARED_ACCOUNT_IMPORT deeplink can decline cleanly
+     * instead of navigating nowhere. */
+    sharedAccounts: boolean
     /** Unified settings screen merging WalletConnect sessions and ARC-0027
      * dapp connections into one list (web only). When on, it supersedes the
      * separate walletConnectSettings/dappConnections settings-menu entries —

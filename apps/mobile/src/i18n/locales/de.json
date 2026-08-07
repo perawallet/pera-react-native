@@ -4,7 +4,12 @@
             "title": "Mit dieser Website verbinden",
             "description": "Wähle die Konten aus, die du mit dieser Website teilen möchtest.",
             "connect_button": "Verbinden",
-            "cancel_button": "Abbrechen"
+            "cancel_button": "Abbrechen",
+            "peer_origin_claim": "Website gibt an: {{origin}}",
+            "request_origin": "Anfrage kam von {{origin}}",
+            "requester_verified_label": "Verifizierter Tab",
+            "requester_verified_a11y_label": "Verifiziert: Diese Anfrage kam aus deinem Browser-Tab",
+            "requester_verified_a11y_origin": "Verifiziert: Diese Anfrage kam aus deinem Browser-Tab unter {{origin}}"
         },
         "sign": {
             "error": {
@@ -14,7 +19,8 @@
             },
             "network_mismatch": "Diese Transaktion ist für ein anderes Algorand-Netzwerk als das aktive Netzwerk deines Wallets bestimmt. Wechsle das Netzwerk in den Einstellungen und versuche es erneut.",
             "unsupported_message": "Diese Website hat eine Anfrage zum Signieren einer Nachricht gesendet, die Pera nicht verarbeiten kann. Die Anfrage wurde abgelehnt.",
-            "unauthorized_signer": "Diese Website ist nicht berechtigt, eine Signatur für dieses Konto anzufordern."
+            "unauthorized_signer": "Diese Website ist nicht berechtigt, eine Signatur für dieses Konto anzufordern.",
+            "no_session": "Diese Verbindung ist nicht mehr gültig. Verbinde die Website erneut und versuche es noch einmal."
         },
         "passkey": {
             "create": {
@@ -25,7 +31,14 @@
             },
             "approve_button": "Weiter",
             "decline_button": "Abbrechen",
-            "error": "Pera konnte diese Passkey-Anfrage nicht abschließen. Die Anfrage wurde abgelehnt."
+            "error": "Pera konnte diese Passkey-Anfrage nicht abschließen. Die Anfrage wurde abgelehnt.",
+            "choose": {
+                "title": "Passkey auswählen",
+                "description": "Für {{origin}} sind mehrere Passkeys gespeichert. Wähle den Passkey aus, mit dem du dich anmelden möchtest."
+            }
+        },
+        "approval": {
+            "delivery_failed": "Pera konnte deine Entscheidung nicht an die Website übermitteln. Die Erweiterung wurde in den Ruhezustand versetzt, während dieses Fenster geöffnet war. Schließe dieses Fenster und starte die Anfrage erneut über die Website."
         }
     },
     "account_menu": {
@@ -1576,7 +1589,8 @@
                     "malformed_payload": "Die Backup-Datei enthält keine wiederherstellbaren Konten.",
                     "empty_clipboard": "In der Zwischenablage befindet sich nichts zum Einfügen.",
                     "read_failed": "Die Datei konnte nicht gelesen werden."
-                }
+                },
+                "pick_file_button_new_tab": "Neuen Tab öffnen, um deine Backup-Datei auszuwählen"
             },
             "key": {
                 "title": "Gib deinen 12-Wort-Wiederherstellungsschlüssel ein",
@@ -2577,7 +2591,9 @@
             "error_sheet_title": "Fehler",
             "error_sheet_body": "Deine WalletConnect-Anfrage ist mit folgendem Fehler fehlgeschlagen:",
             "error_sheet_retry": "Bitte versuche es erneut, indem du zur dApp zurückkehrst, bei der du die Anfrage gestellt hast.",
-            "quantum_fee_delivery_failed": "Die Anfrage konnte nicht abgeschlossen werden. Diese App unterstützt möglicherweise nicht die höheren Netzwerkgebühren, die für Quantum-Konten erforderlich sind."
+            "quantum_fee_delivery_failed": "Die Anfrage konnte nicht abgeschlossen werden. Diese App unterstützt möglicherweise nicht die höheren Netzwerkgebühren, die für Quantum-Konten erforderlich sind.",
+            "networks_betanet": "Betanet",
+            "error_network_mismatch": "Diese App wollte sich mit {{requested}} verbinden, dein Wallet ist aber auf {{active}}. Wechsle das Netzwerk in den Einstellungen und versuche es erneut."
         },
         "connection": {
             "approve_delivery_failed": "Die dApp konnte nicht erreicht werden, um die Verbindung zu bestätigen. Überprüfe deine Internetverbindung und versuche es erneut."
@@ -2600,7 +2616,8 @@
             "connected_accounts": "Verbunden mit",
             "permissions": "Erweiterte Berechtigungen",
             "permissions_info_title": "Erweiterte Berechtigungen",
-            "permissions_info_body": "WalletConnect ist ein Kommunikationsprotokoll für Web3, das es Wallets und dApps ermöglicht, sich sicher zu verbinden und zu interagieren. Mit jeder neuen Version führt WalletConnect neue Möglichkeiten ein, Transaktionsanfragen von Drittanbieter-Projekten zu handhaben, zu signieren und/oder anzuzeigen."
+            "permissions_info_body": "WalletConnect ist ein Kommunikationsprotokoll für Web3, das es Wallets und dApps ermöglicht, sich sicher zu verbinden und zu interagieren. Mit jeder neuen Version führt WalletConnect neue Möglichkeiten ein, Transaktionsanfragen von Drittanbieter-Projekten zu handhaben, zu signieren und/oder anzuzeigen.",
+            "disconnect_failed_title": "Trennen nicht möglich"
         }
     },
     "staking": {
@@ -3397,10 +3414,15 @@
             "placeholder": "Genehmigungsoberfläche — kommt in M4."
         },
         "expanded": {
-            "onboarding_title": "In einem vollständigen Tab einrichten",
-            "onboarding_body": "Die Wallet-Einrichtung öffnet sich in einem vollständigen Browser-Tab, damit du deine Wiederherstellungsphrase sicher sichern kannst.",
-            "onboarding_cta": "In einem neuen Tab fortfahren",
             "redirecting": "Wird in einem neuen Tab fortgesetzt…"
+        },
+        "reauth": {
+            "title": "Bestätige, dass du es bist",
+            "confirm_button": "Bestätigen",
+            "use_passkey": "Passkey verwenden",
+            "passkey_description": "Diese Website verlangt, dass du deine Identität bestätigst, bevor du dich mit deinem Passkey anmeldest.",
+            "confirm_description": "Bestätige deine Identität, um diese Aktion auszuführen.",
+            "passkey_error": "Passkey-Verifizierung fehlgeschlagen. Verwende stattdessen dein Passwort."
         }
     },
     "migration": {
@@ -3410,5 +3432,13 @@
             "continue": "Weiter",
             "do_not_show_again": "Nicht erneut anzeigen"
         }
+    },
+    "paste_link": {
+        "title": "Link einfügen",
+        "description": "Füge eine WalletConnect-URI oder einen Pera-Link ein, um ihn zu öffnen.",
+        "placeholder": "wc:… oder perawallet://…",
+        "submit": "Link öffnen",
+        "error_invalid": "Das scheint kein Link zu sein, den Pera öffnen kann.",
+        "error_failed": "Pera konnte diesen Link nicht öffnen. Überprüfe ihn und versuche es erneut."
     }
 }

@@ -316,8 +316,11 @@ export class RNFirebaseService
 
         // Foreground notification events — a tap on a notifee-displayed
         // notification routes its deeplink to the registered listener.
+        // Not async: notifee expects a void-returning handler and nothing in
+        // here awaits, so returning a promise only detached the body from
+        // notifee's own error handling.
         const unsubscribeNotifeeForeground = notifee.onForegroundEvent(
-            async ({ type, detail }) => {
+            ({ type, detail }) => {
                 switch (type) {
                     case EventType.ACTION_PRESS:
                     case EventType.PRESS: {
@@ -367,7 +370,9 @@ export class RNFirebaseService
         // errors) into the SAME Firebase app as their variant's signed
         // release, drowning real crashes in noise. `isDebug` is the
         // debug-vs-release axis; the app variant is the wrong signal here.
-        setCrashlyticsCollectionEnabled(this.crashlytics, !isDebug)
+        // Fire-and-forget: the setting is best-effort and a failure must not
+        // block crash reporting from initializing.
+        void setCrashlyticsCollectionEnabled(this.crashlytics, !isDebug)
     }
 
     recordNonFatalError(error: unknown): void {
@@ -388,7 +393,9 @@ export class RNFirebaseService
 
     logEvent(key: string, payload?: Record<string, unknown>): void {
         if (this.analytics) {
-            logEventGA<string>(this.analytics, key, payload)
+            // Fire-and-forget: analytics delivery must never surface to or
+            // block the caller.
+            void logEventGA<string>(this.analytics, key, payload)
         }
     }
 }

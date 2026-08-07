@@ -10,9 +10,17 @@
  limitations under the License
  */
 
-import { describe, it, expect, afterEach } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { usePickBackupFile } from '../usePickBackupFile.web'
+
+const getSurfaceMock = vi.fn()
+const openExpandedTabMock = vi.fn()
+
+vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
+    getSurface: () => getSurfaceMock(),
+    openExpandedTab: (flow?: string) => openExpandedTabMock(flow),
+}))
 
 // The hook drives a hidden `<input type="file">` it appends to `document.body`
 // and clicks synchronously — jsdom doesn't show a real OS file chooser, so
@@ -27,6 +35,12 @@ const getFileInput = (): HTMLInputElement => {
 }
 
 describe('usePickBackupFile (web)', () => {
+    beforeEach(() => {
+        getSurfaceMock.mockReset()
+        getSurfaceMock.mockReturnValue('expanded')
+        openExpandedTabMock.mockReset()
+    })
+
     afterEach(() => {
         document
             .querySelectorAll('input[type="file"]')
@@ -91,5 +105,34 @@ describe('usePickBackupFile (web)', () => {
         input.dispatchEvent(new Event('change'))
 
         await expect(pickPromise).resolves.toBeNull()
+    })
+
+    it('reports no hand-off outside the popup', () => {
+        const { result } = renderHook(() => usePickBackupFile())
+
+        expect(result.current.isPopupHandoff).toBe(false)
+    })
+
+    describe('popup surface', () => {
+        beforeEach(() => {
+            getSurfaceMock.mockReturnValue('popup')
+        })
+
+        it('reports the hand-off so the caller can relabel the affordance', () => {
+            const { result } = renderHook(() => usePickBackupFile())
+
+            expect(result.current.isPopupHandoff).toBe(true)
+        })
+
+        it('opens the expanded tab and resolves null instead of picking', async () => {
+            const { result } = renderHook(() => usePickBackupFile())
+
+            await expect(result.current.pickFile()).resolves.toBeNull()
+
+            expect(openExpandedTabMock).toHaveBeenCalledWith('asb-import')
+            // The OS dialog would tear the popup down before either listener
+            // could fire, so no input may be appended in the first place.
+            expect(document.querySelector('input[type="file"]')).toBeNull()
+        })
     })
 })

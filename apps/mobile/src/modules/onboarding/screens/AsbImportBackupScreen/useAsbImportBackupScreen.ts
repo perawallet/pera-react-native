@@ -32,6 +32,8 @@ type LoadedFile = {
 type UseAsbImportBackupScreenResult = {
     loadedFile: LoadedFile | null
     canContinue: boolean
+    /** True when picking hands off to a browser tab instead of opening a picker. */
+    isPickFileHandoff: boolean
     handlePickFile: () => Promise<void>
     handlePasteFromClipboard: () => Promise<void>
     handleClearFile: () => void
@@ -45,7 +47,7 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
     const { t } = useLanguage()
     const { errorToast } = useToast()
     const { readText } = useClipboard()
-    const { pickFile } = usePickBackupFile()
+    const { pickFile, isPopupHandoff } = usePickBackupFile()
     const envelope = useAsbImportFlowStore(state => state.envelope)
     const setEnvelope = useAsbImportFlowStore(state => state.setEnvelope)
 
@@ -134,6 +136,7 @@ export const useAsbImportBackupScreen = (): UseAsbImportBackupScreenResult => {
     return {
         loadedFile,
         canContinue: loadedFile !== null,
+        isPickFileHandoff: isPopupHandoff,
         handlePickFile,
         handlePasteFromClipboard,
         handleClearFile,

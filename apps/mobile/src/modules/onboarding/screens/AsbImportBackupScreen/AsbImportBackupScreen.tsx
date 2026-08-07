@@ -30,6 +30,7 @@ export const AsbImportBackupScreen = () => {
     const {
         loadedFile,
         canContinue,
+        isPickFileHandoff,
         handlePickFile,
         handlePasteFromClipboard,
         handleClearFile,
@@ -97,7 +98,9 @@ export const AsbImportBackupScreen = () => {
                                 ellipsizeMode='tail'
                             >
                                 {t(
-                                    'onboarding.asb_import.backup.pick_file_button',
+                                    isPickFileHandoff
+                                        ? 'onboarding.asb_import.backup.pick_file_button_new_tab'
+                                        : 'onboarding.asb_import.backup.pick_file_button',
                                 )}
                             </PWText>
                         </PWTouchableOpacity>

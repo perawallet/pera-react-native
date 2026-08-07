@@ -20,10 +20,9 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { useSecurityStore } from '@perawallet/wallet-core-security'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { LedgerConnectionIssueContent } from '../LedgerConnectionIssueContent'
-import { useLedgerSigningContent } from '../LedgerSigningContent/useLedgerSigningContent'
 import { TransactionRequestFAQContent } from '../TransactionRequestFAQContent'
 import { useLedgerSigningDriver } from './useLedgerSigningDriver'
+import { useLedgerConnectionIssueDriver } from './useLedgerConnectionIssueDriver'
 import { useSigningCompletedDriver } from './useSigningCompletedDriver'
 import { useSignRequestDriver } from './useSignRequestDriver'
 
@@ -73,74 +72,6 @@ const useTransactionRequestFAQDriver = () => {
         getPreference,
         setPreference,
         requestBottomSheet,
-    ])
-}
-
-/**
- * Watches the hardware-signing content hook for the troubleshooting sheet
- * visibility flag and shows the LedgerConnectionIssueContent via the
- * centralized bottom sheet manager.
- *
- * `onCloseTroubleshooting()` is only invoked when the user dismisses the
- * sheet (pan-down or backdrop press). The effect cleanup sets
- * `cancelled = true` before driver-initiated dismissals, so the post-await
- * branch is skipped in that path — important because in the BLE-class
- * auto-open flow `onCloseTroubleshooting` rejects the active sign request
- * (it is not safely idempotent).
- */
-const useLedgerConnectionIssueDriver = () => {
-    const { isTroubleshootingVisible, onCloseTroubleshooting } =
-        useLedgerSigningContent()
-    // BLE errors only fire while the active sign request is in flight, so the
-    // head of the pending queue identifies the request the troubleshooting
-    // sheet is bound to. Mirrors the previous `useHardwareSigning().requestId`
-    // behavior without a parallel store.
-    const { pendingSignRequests } = useSigningRequest()
-    const requestId = pendingSignRequests[0]?.id ?? null
-    const { request: requestBottomSheet, dismiss } = useBottomSheet()
-    const openIdRef = useRef<string | null>(null)
-
-    useEffect(() => {
-        if (!isTroubleshootingVisible) {
-            if (openIdRef.current) {
-                dismiss(openIdRef.current)
-                openIdRef.current = null
-            }
-            return
-        }
-        if (openIdRef.current) return
-
-        const sheetId = requestId
-            ? `ledger-troubleshooting:${requestId}`
-            : 'ledger-troubleshooting'
-        openIdRef.current = sheetId
-
-        let cancelled = false
-        void (async () => {
-            await requestBottomSheet<void>({
-                id: sheetId,
-                contents: <LedgerConnectionIssueContent />,
-                options: {
-                    size: 'auto',
-                    enablePanDownToClose: true,
-                    enableCloseOnBackdropPress: true,
-                },
-            })
-            if (cancelled) return
-            if (openIdRef.current === sheetId) {
-                openIdRef.current = null
-            }
-            onCloseTroubleshooting()
-        })()
-        return () => {
-            cancelled = true
-        }
-    }, [
-        isTroubleshootingVisible,
-        requestId,
-        onCloseTroubleshooting,
-        requestBottomSheet,
-        dismiss,
     ])
 }
 

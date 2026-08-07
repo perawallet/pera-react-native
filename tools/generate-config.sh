@@ -118,6 +118,7 @@ append_config "FIREBASE_STORAGE_BUCKET" "firebaseStorageBucket" "string"
 append_config "FIREBASE_MESSAGING_SENDER_ID" "firebaseMessagingSenderId" "string"
 append_config "FIREBASE_APP_ID" "firebaseAppId" "string"
 append_config "FIREBASE_MEASUREMENT_ID" "firebaseMeasurementId" "string"
+append_config "FIREBASE_VAPID_KEY" "firebaseVapidKey" "string"
 
 # GA4 Measurement Protocol + Sentry (browser extension analytics/crash reporting)
 append_config "GA_MEASUREMENT_API_SECRET" "gaMeasurementApiSecret" "string"

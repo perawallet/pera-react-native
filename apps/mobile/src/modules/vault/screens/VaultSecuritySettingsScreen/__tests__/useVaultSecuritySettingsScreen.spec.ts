@@ -57,7 +57,7 @@ vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
     VaultCorruptedError: mocks.MockVaultCorruptedError,
 }))
 
-import { useVaultSecuritySettingsScreen } from '../useVaultSecuritySettingsScreen'
+import { useVaultSecuritySettingsScreen } from '../useVaultSecuritySettingsScreen.web'
 
 describe('useVaultSecuritySettingsScreen', () => {
     beforeEach(() => {

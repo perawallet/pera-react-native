@@ -24,6 +24,7 @@ import {
     PWButton,
     PWCheckbox,
     PWFlatList,
+    PWIcon,
     PWImage,
     PWScreen,
     PWText,
@@ -41,7 +42,8 @@ export const EnableRequestScreen = (): React.JSX.Element => {
     const { t } = useLanguage()
     const styles = useStyles()
     const {
-        origin,
+        originLabel,
+        requesterOrigin,
         faviconUrl,
         accounts,
         selected,
@@ -50,6 +52,7 @@ export const EnableRequestScreen = (): React.JSX.Element => {
         isLoading,
         handleConnect,
         handleCancel,
+        deliveryError,
     } = useEnableRequestScreen()
 
     const renderAccountRow = ({
@@ -93,8 +96,37 @@ export const EnableRequestScreen = (): React.JSX.Element => {
                         style={styles.origin}
                         testID='dapp-enable-origin'
                     >
-                        {origin}
+                        {originLabel}
                     </PWText>
+                    {!!requesterOrigin && (
+                        <PWView style={styles.requesterRow}>
+                            <PWText
+                                variant='caption'
+                                style={styles.requesterOrigin}
+                                testID='dapp-enable-requester-origin'
+                            >
+                                {t('dapp.enable.request_origin', {
+                                    origin: requesterOrigin,
+                                })}
+                            </PWText>
+                            <PWView style={styles.verifiedBadge}>
+                                <PWIcon
+                                    name='assets/verified'
+                                    size='sm'
+                                />
+                                <PWText
+                                    variant='caption'
+                                    style={styles.verifiedBadgeText}
+                                    accessibilityLabel={t(
+                                        'dapp.enable.requester_verified_a11y_label',
+                                    )}
+                                    testID='dapp-enable-requester-verified-badge'
+                                >
+                                    {t('dapp.enable.requester_verified_label')}
+                                </PWText>
+                            </PWView>
+                        </PWView>
+                    )}
                     <PWText
                         variant='h3'
                         style={styles.title}
@@ -110,22 +142,33 @@ export const EnableRequestScreen = (): React.JSX.Element => {
                 </PWView>
             }
             footer={
-                <PWView style={styles.buttonContainer}>
-                    <PWButton
-                        variant='secondary'
-                        title={t('dapp.enable.cancel_button')}
-                        onPress={handleCancel}
-                        style={styles.cancelButton}
-                        testID='dapp-enable-cancel'
-                    />
-                    <PWButton
-                        variant='primary'
-                        title={t('dapp.enable.connect_button')}
-                        onPress={handleConnect}
-                        style={styles.connectButton}
-                        isDisabled={!canConnect}
-                        testID='dapp-enable-connect'
-                    />
+                <PWView>
+                    {deliveryError && (
+                        <PWText
+                            variant='caption'
+                            style={styles.deliveryError}
+                            testID='dapp-enable-delivery-error'
+                        >
+                            {t('dapp.approval.delivery_failed')}
+                        </PWText>
+                    )}
+                    <PWView style={styles.buttonContainer}>
+                        <PWButton
+                            variant='secondary'
+                            title={t('dapp.enable.cancel_button')}
+                            onPress={handleCancel}
+                            style={styles.cancelButton}
+                            testID='dapp-enable-cancel'
+                        />
+                        <PWButton
+                            variant='primary'
+                            title={t('dapp.enable.connect_button')}
+                            onPress={handleConnect}
+                            style={styles.connectButton}
+                            isDisabled={!canConnect}
+                            testID='dapp-enable-connect'
+                        />
+                    </PWView>
                 </PWView>
             }
         >

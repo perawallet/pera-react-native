@@ -28,6 +28,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
 import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
+import { PasteLinkContent } from '@modules/menu/components/PasteLinkContent'
 import { useCallback } from 'react'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
@@ -61,6 +62,18 @@ export const MenuScreen = () => {
             contents: <BidaliContent />,
             options: {
                 size: 'modal',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [requestBottomSheet])
+
+    const openPasteLink = useCallback(() => {
+        trackEvent(MenuEvent.PasteLink)
+        void requestBottomSheet({
+            contents: <PasteLinkContent />,
+            options: {
+                size: 'auto',
                 enablePanDownToClose: true,
                 autoCreateContainer: false,
             },
@@ -117,6 +130,17 @@ export const MenuScreen = () => {
                         >
                             <PWIcon
                                 name='camera'
+                                variant='primary'
+                            />
+                        </PWTouchableOpacity>
+                    )}
+                    {routeCapabilities.deepLinkPaste && (
+                        <PWTouchableOpacity
+                            onPress={openPasteLink}
+                            testID='menu_paste_link_button'
+                        >
+                            <PWIcon
+                                name='link'
                                 variant='primary'
                             />
                         </PWTouchableOpacity>

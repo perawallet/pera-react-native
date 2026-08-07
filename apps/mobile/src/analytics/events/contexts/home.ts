@@ -14,6 +14,7 @@
 export enum HomeEvent {
     AccountAdd = 'homescr_account_add', // Started adding an account from the account picker
     QrScan = 'homescr_qr_scan', // Opened the QR scanner from the home header
+    PasteLink = 'homescr_paste_link_tap', // Tapped paste-a-link in the home header
     QrConnected = 'homescr_qr_scan_connected', // A home QR scan established a WalletConnect session
     Send = 'homescr_send_click', // Opened Send from the home overview
     Receive = 'homescr_receive_click', // Opened Receive from the home overview (RN-specific)

@@ -401,7 +401,7 @@ const seedAttestation = () => {
         integrityToken: 'integration-test-token',
         expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
         keyId: 'integrity-key-1',
-        deviceId: TEST_DEVICE_ID,
+        deviceInstallationId: TEST_DEVICE_ID,
     })
 }
 

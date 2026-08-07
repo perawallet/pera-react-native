@@ -31,12 +31,17 @@ import { getActiveDatabaseHost } from '../database/host'
 
 const EXEC_TIMEOUT_MS = 10_000
 const READY_POLL_INTERVAL_MS = 250
+// Between asks. Offscreen creation is idempotent, so re-asking is cheap; this
+// only avoids hammering the service worker every poll tick.
+const ENSURE_OFFSCREEN_RETRY_MS = 3000
+
 const READY_WAIT_TIMEOUT_MS = 15_000
 
 type ChromeDatabaseServiceOptions = {
     execTimeoutMs?: number
     readyPollIntervalMs?: number
     readyWaitTimeoutMs?: number
+    ensureOffscreenRetryMs?: number
 }
 
 const withTimeout = async <T>(
@@ -108,6 +113,7 @@ export class ChromeDatabaseService implements DatabaseService {
     private readonly execTimeoutMs: number
     private readonly readyPollIntervalMs: number
     private readonly readyWaitTimeoutMs: number
+    private readonly ensureOffscreenRetryMs: number
 
     constructor(options: ChromeDatabaseServiceOptions = {}) {
         this.execTimeoutMs = options.execTimeoutMs ?? EXEC_TIMEOUT_MS
@@ -115,6 +121,8 @@ export class ChromeDatabaseService implements DatabaseService {
             options.readyPollIntervalMs ?? READY_POLL_INTERVAL_MS
         this.readyWaitTimeoutMs =
             options.readyWaitTimeoutMs ?? READY_WAIT_TIMEOUT_MS
+        this.ensureOffscreenRetryMs =
+            options.ensureOffscreenRetryMs ?? ENSURE_OFFSCREEN_RETRY_MS
     }
 
     async open(name: string): Promise<DatabaseDriver> {
@@ -222,7 +230,12 @@ export class ChromeDatabaseService implements DatabaseService {
 
     private async ensureHostAvailable(): Promise<void> {
         const deadline = Date.now() + this.readyWaitTimeoutMs
-        let askedServiceWorker = false
+        // Re-ask periodically rather than once per call. A document created on
+        // the first ask can still die part-way through the wait (a db-worker
+        // failure makes it self-close), and a single ask meant the remaining
+        // seconds of polling were spent waiting for something nothing would
+        // ever recreate.
+        let nextAskAt = 0
         while (Date.now() < deadline) {
             try {
                 // Timeout-wrapped like exec/delete: a listener that accepts
@@ -242,8 +255,8 @@ export class ChromeDatabaseService implements DatabaseService {
                 // No receiver yet, or the ping above timed out — keep
                 // polling until the overall deadline.
             }
-            if (!askedServiceWorker) {
-                askedServiceWorker = true
+            if (Date.now() >= nextAskAt) {
+                nextAskAt = Date.now() + this.ensureOffscreenRetryMs
                 try {
                     // Concurrent callers (e.g. several UI contexts booting at
                     // once) may each reach this branch and send
@@ -257,9 +270,10 @@ export class ChromeDatabaseService implements DatabaseService {
                         kind: 'ensure-offscreen',
                     })
                 } catch {
-                    // SW asleep mid-restart: the next ping loop iteration
-                    // retries; sendMessage itself wakes the SW.
-                    askedServiceWorker = false
+                    // SW asleep mid-restart: retry on the very next iteration
+                    // rather than waiting out the backoff — sendMessage itself
+                    // wakes the SW, so the next attempt usually lands.
+                    nextAskAt = 0
                 }
             }
             await sleep(this.readyPollIntervalMs)

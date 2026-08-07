@@ -7,7 +7,7 @@ This guide helps you understand where different types of code belong and how the
 ```
 pera-react-native/
 ├── apps/mobile/      # React Native app (UI)
-├── apps/extension/   # Chrome MV3 browser extension (UI)
+├── apps/browser/     # Chrome MV3 browser extension (UI)
 ├── packages/         # Business logic packages
 ├── extensions/       # Platform adapters (React Native, Chrome)
 ├── tools/            # Build scripts and utilities

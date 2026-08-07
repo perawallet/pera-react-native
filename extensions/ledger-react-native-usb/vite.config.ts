@@ -49,6 +49,7 @@ export default defineConfig({
                 '@ledgerhq/hw-transport',
                 '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-shared',
+                '@perawallet/wallet-extension-ledger-shared',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-extension-ledger-react-native',
             ],

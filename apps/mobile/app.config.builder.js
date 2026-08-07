@@ -335,7 +335,7 @@ function buildAppConfig(env) {
             // release smoke-test / R8 `missing_rules.txt` output rather than speculating —
             // over-keeping silently defeats both the obfuscation and the size reduction.
             extraProguardRules: [
-              '# --- Release R8 keep rules (see docs/SECURITY_OBFUSCATION_AUDIT.md) ---',
+              '# --- Release R8 keep rules (rationale in the comment above) ---',
               '-keepclasseswithmembernames class * { native <methods>; }',
               '-dontwarn okhttp3.**',
               '-dontwarn okio.**',

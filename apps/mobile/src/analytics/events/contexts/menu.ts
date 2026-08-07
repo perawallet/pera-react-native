@@ -15,4 +15,5 @@ export enum MenuEvent {
     QrScan = 'menuscr_qr_scan', // Tapped QR scan in menu
     Receive = 'menuscr_receive_tap', // Tapped Receive in menu
     Stake = 'menuscr_stake_tap', // Tapped Stake in menu
+    PasteLink = 'menuscr_paste_link_tap', // Tapped paste-a-link in menu
 }

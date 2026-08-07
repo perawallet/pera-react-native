@@ -23,20 +23,24 @@ import {
     NavigationIndependentTree,
 } from '@react-navigation/native'
 import { PWView } from '@components/core'
+import { BottomSheetManager } from '@modules/bottom-sheet'
+import { LedgerSigningOverlays } from '@modules/signing/components/SigningOverlays'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getNavigationTheme } from '@theme/theme'
 import { FullScreenLoadingView } from '@components/FullScreenLoadingView'
-import { useDappRequest } from '../hooks/useDappRequest'
+import { useDappRequest } from '../hooks/useDappRequest.web'
 import { EnableRequestScreen } from '../screens/EnableRequestScreen'
 import { PasskeyApprovalScreen } from '../screens/PasskeyApprovalScreen'
 import { SignRequestApprovalScreen } from '../screens/SignRequestApprovalScreen'
+import { WcConnectScreen } from '../screens/WcConnectScreen'
+import { WcErrorScreen } from '../screens/WcErrorScreen'
 import { useStyles } from './styles'
 
 // Routes on `approval.kind` rather than a react-navigation stack: each kind
 // is its own self-contained flow (EnableRequestScreen owns its
-// approve/reject; SignRequestApprovalScreen hands off both sign-transactions
-// and sign-message requests to the shared signing pipeline), so there's
-// nothing to navigate between within a single approval window.
+// approve/reject; SignRequestApprovalScreen hands off sign-transactions,
+// sign-message, AND wc-sign requests to the shared signing pipeline), so
+// there's nothing to navigate between within a single approval window.
 const DappRequestSurface = (): React.JSX.Element => {
     const { approval, isLoading } = useDappRequest()
 
@@ -46,12 +50,29 @@ const DappRequestSurface = (): React.JSX.Element => {
 
     switch (approval.kind) {
         case 'sign-transactions':
-        case 'sign-message': {
+        case 'sign-message':
+        case 'wc-sign': {
             return <SignRequestApprovalScreen />
         }
         case 'passkey-create':
         case 'passkey-get': {
             return <PasskeyApprovalScreen />
+        }
+        // Notification-only: nothing is pending on the socket (the host
+        // already answered the peer), so this screen just explains the
+        // refusal and settles the approval to close the window.
+        case 'wc-error': {
+            return <WcErrorScreen />
+        }
+        // 'wc-connect' has its own screen (the web twin of mobile's
+        // ConnectionView) rather than sharing 'enable's: a WalletConnect
+        // handshake carries peer metadata and a requested permission set that
+        // ARC-0027's enable request has no equivalent of, and the wallet
+        // already had an established look for presenting them. Both still
+        // settle through the same bridge — resolveApproval/rejectApproval
+        // don't branch on `kind` (ApprovalWindowBridge.finish doesn't either).
+        case 'wc-connect': {
+            return <WcConnectScreen />
         }
         case 'enable':
         default: {
@@ -75,6 +96,13 @@ export const DappRequestRoutes = (): React.JSX.Element => {
                 <PWView style={styles.surface}>
                     <DappRequestSurface />
                 </PWView>
+                {/* Hardware signing runs in THIS window, so its sheets need a
+                    manager here — the shell mounts one per branch and the
+                    dapp-request branch had none. Only the Ledger slice of
+                    SigningOverlays: see LedgerSigningOverlays for why the
+                    full set would double up the review sheet. */}
+                <BottomSheetManager />
+                <LedgerSigningOverlays />
             </NavigationContainer>
         </NavigationIndependentTree>
     )

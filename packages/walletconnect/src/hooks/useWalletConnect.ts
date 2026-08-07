@@ -22,7 +22,6 @@ import {
     WalletConnectSessionRequestExpiredError,
 } from '../errors'
 import {
-    AlgorandChainId,
     type WalletConnectConnection,
     type WalletConnectSessionRequest,
 } from '../models'
@@ -35,6 +34,7 @@ import {
     setConnectorHandlerBinder,
 } from '../connection'
 import { isSessionRequestFresh } from './useWalletConnectSessionRequests'
+import { isChainIdAcceptable } from '../utils/chain'
 import WalletConnect from '@perawallet/walletconnect'
 import { useCallback, useEffect, useRef } from 'react'
 import { useWalletConnectSessionRequests } from './useWalletConnectSessionRequests'
@@ -44,7 +44,6 @@ import {
     type Network,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-import { getExpectedChainId } from '../utils/expectedChainId'
 
 /**
  * Surface a WalletConnect error to the UI. We go through the store rather
@@ -383,16 +382,11 @@ export const useWalletConnect = (network: Network) => {
             logger.debug('WC session_request received', { payload })
 
             const currentNetwork = networkRef.current
-            const expectedChainId = getExpectedChainId(currentNetwork)
 
-            if (
-                chainId !== AlgorandChainId.all &&
-                chainId !== expectedChainId
-            ) {
+            if (!isChainIdAcceptable(chainId, currentNetwork)) {
                 logger.debug('WC session_request rejected: wrong network', {
                     clientId: connector.clientId,
                     chainId,
-                    expectedChainId,
                     network: currentNetwork,
                 })
                 // `rejectSession()` throws on an already-connected connector;

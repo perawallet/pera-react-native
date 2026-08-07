@@ -27,6 +27,10 @@ pipelines:
         - generate-changelog
       notify-release:
         depends_on:
+        # `test` is listed even though the builds already gate on it — shared
+        # pipeline variables only reach dependent workflows, and without it
+        # TEST_STATUS would never arrive here.
+        - test
         - generate-changelog
         - ios-production
         - android-production
@@ -52,6 +56,10 @@ pipelines:
         - test
       notify-release-web:
         depends_on:
+        # `test` is listed even though the two builds already gate on it —
+        # shared pipeline variables only reach dependent workflows, and
+        # without it TEST_STATUS would never arrive here.
+        - test
         - generate-changelog
         - web-production
         - web-staging
@@ -73,6 +81,9 @@ workflows:
     # same suite with APP_ENV unset — and handing a test job the production
     # secrets just to satisfy the guard would widen their exposure for nothing.
     - VALIDATE_PROFILE: test
+    # Publishes TEST_STATUS so the release cards can show a red Tests row
+    # instead of rendering the gated builds as a benign "skipped".
+    - ROW_ID: TEST
     steps:
     - git-clone@8: {}
     - script@1:
@@ -84,15 +95,43 @@ workflows:
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+    # `.tool-versions` is asdf-format (`nodejs 22`), which the nvm step's
+    # node_version_file does not parse — it silently fell through to the
+    # stack default (Node 26) while GitHub Actions' setup-node read the same
+    # file correctly and used Node 22. Node >=24 ships an inert Web Storage
+    # `globalThis.localStorage`, which makes vitest's jsdom environment skip
+    # copying jsdom's own, so `window.localStorage` came back undefined only
+    # here. Resolve the pin explicitly and hand nvm an exact version.
+    - script@1:
+        title: Resolve pinned Node version
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            NODE_VERSION=$(awk '$1 == "nodejs" { print $2 }' .tool-versions)
+            if [ -z "$NODE_VERSION" ]; then
+              echo "No 'nodejs' pin found in .tool-versions"
+              exit 1
+            fi
+            envman add --key NODE_VERSION --value "$NODE_VERSION"
     - nvm@1:
         inputs:
-        - node_version_file: ".tool-versions"
+        - node_version: "$NODE_VERSION"
     - script@1:
         title: Install pnpm
         inputs:
         - content: |
             #!/usr/bin/env bash
             set -ex
+            # Fail loudly if nvm handed us a different major than the repo
+            # pins. A silent drift here changes host globals under the test
+            # suite (see the Node version note above) and is otherwise only
+            # visible as an unrelated-looking test failure.
+            ACTIVE_NODE_MAJOR=$(node -p "process.versions.node.split('.')[0]")
+            if [ "$ACTIVE_NODE_MAJOR" != "$NODE_VERSION" ]; then
+              echo "Node ${ACTIVE_NODE_MAJOR} is active but .tool-versions pins ${NODE_VERSION}"
+              exit 1
+            fi
             # Pin to the repo's packageManager version — an unpinned
             # `npm i -g pnpm` floats to latest and a pnpm major release
             # would change lockfile/hoisting behavior under the release
@@ -131,6 +170,8 @@ workflows:
             #!/usr/bin/env bash
             set -ex
             pnpm run test
+    after_run:
+    - _publish-result
   generate-changelog:
     description: Generate the release changelog once and share it with the build workflows
     meta:
@@ -254,15 +295,43 @@ workflows:
         - key: |-
             node-modules-ios-{{ checksum "pnpm-lock.yaml" }}
             node-modules-ios-
+    # `.tool-versions` is asdf-format (`nodejs 22`), which the nvm step's
+    # node_version_file does not parse — it silently fell through to the
+    # stack default (Node 26) while GitHub Actions' setup-node read the same
+    # file correctly and used Node 22. Node >=24 ships an inert Web Storage
+    # `globalThis.localStorage`, which makes vitest's jsdom environment skip
+    # copying jsdom's own, so `window.localStorage` came back undefined only
+    # here. Resolve the pin explicitly and hand nvm an exact version.
+    - script@1:
+        title: Resolve pinned Node version
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            NODE_VERSION=$(awk '$1 == "nodejs" { print $2 }' .tool-versions)
+            if [ -z "$NODE_VERSION" ]; then
+              echo "No 'nodejs' pin found in .tool-versions"
+              exit 1
+            fi
+            envman add --key NODE_VERSION --value "$NODE_VERSION"
     - nvm@1:
         inputs:
-        - node_version_file: ".tool-versions"
+        - node_version: "$NODE_VERSION"
     - script@1:
         title: Install pnpm
         inputs:
         - content: |
             #!/usr/bin/env bash
             set -ex
+            # Fail loudly if nvm handed us a different major than the repo
+            # pins. A silent drift here changes host globals under the test
+            # suite (see the Node version note above) and is otherwise only
+            # visible as an unrelated-looking test failure.
+            ACTIVE_NODE_MAJOR=$(node -p "process.versions.node.split('.')[0]")
+            if [ "$ACTIVE_NODE_MAJOR" != "$NODE_VERSION" ]; then
+              echo "Node ${ACTIVE_NODE_MAJOR} is active but .tool-versions pins ${NODE_VERSION}"
+              exit 1
+            fi
             # Pin to the repo's packageManager version — an unpinned
             # `npm i -g pnpm` floats to latest and a pnpm major release
             # would change lockfile/hoisting behavior under the release
@@ -554,15 +623,43 @@ workflows:
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+    # `.tool-versions` is asdf-format (`nodejs 22`), which the nvm step's
+    # node_version_file does not parse — it silently fell through to the
+    # stack default (Node 26) while GitHub Actions' setup-node read the same
+    # file correctly and used Node 22. Node >=24 ships an inert Web Storage
+    # `globalThis.localStorage`, which makes vitest's jsdom environment skip
+    # copying jsdom's own, so `window.localStorage` came back undefined only
+    # here. Resolve the pin explicitly and hand nvm an exact version.
+    - script@1:
+        title: Resolve pinned Node version
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            NODE_VERSION=$(awk '$1 == "nodejs" { print $2 }' .tool-versions)
+            if [ -z "$NODE_VERSION" ]; then
+              echo "No 'nodejs' pin found in .tool-versions"
+              exit 1
+            fi
+            envman add --key NODE_VERSION --value "$NODE_VERSION"
     - nvm@1:
         inputs:
-        - node_version_file: ".tool-versions"
+        - node_version: "$NODE_VERSION"
     - script@1:
         title: Install pnpm
         inputs:
         - content: |
             #!/usr/bin/env bash
             set -ex
+            # Fail loudly if nvm handed us a different major than the repo
+            # pins. A silent drift here changes host globals under the test
+            # suite (see the Node version note above) and is otherwise only
+            # visible as an unrelated-looking test failure.
+            ACTIVE_NODE_MAJOR=$(node -p "process.versions.node.split('.')[0]")
+            if [ "$ACTIVE_NODE_MAJOR" != "$NODE_VERSION" ]; then
+              echo "Node ${ACTIVE_NODE_MAJOR} is active but .tool-versions pins ${NODE_VERSION}"
+              exit 1
+            fi
             # Pin to the repo's packageManager version — an unpinned
             # `npm i -g pnpm` floats to latest and a pnpm major release
             # would change lockfile/hoisting behavior under the release
@@ -833,15 +930,43 @@ workflows:
     - restore-cache@3:
         inputs:
         - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+    # `.tool-versions` is asdf-format (`nodejs 22`), which the nvm step's
+    # node_version_file does not parse — it silently fell through to the
+    # stack default (Node 26) while GitHub Actions' setup-node read the same
+    # file correctly and used Node 22. Node >=24 ships an inert Web Storage
+    # `globalThis.localStorage`, which makes vitest's jsdom environment skip
+    # copying jsdom's own, so `window.localStorage` came back undefined only
+    # here. Resolve the pin explicitly and hand nvm an exact version.
+    - script@1:
+        title: Resolve pinned Node version
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -euo pipefail
+            NODE_VERSION=$(awk '$1 == "nodejs" { print $2 }' .tool-versions)
+            if [ -z "$NODE_VERSION" ]; then
+              echo "No 'nodejs' pin found in .tool-versions"
+              exit 1
+            fi
+            envman add --key NODE_VERSION --value "$NODE_VERSION"
     - nvm@1:
         inputs:
-        - node_version_file: ".tool-versions"
+        - node_version: "$NODE_VERSION"
     - script@1:
         title: Install pnpm
         inputs:
         - content: |
             #!/usr/bin/env bash
             set -ex
+            # Fail loudly if nvm handed us a different major than the repo
+            # pins. A silent drift here changes host globals under the test
+            # suite (see the Node version note above) and is otherwise only
+            # visible as an unrelated-looking test failure.
+            ACTIVE_NODE_MAJOR=$(node -p "process.versions.node.split('.')[0]")
+            if [ "$ACTIVE_NODE_MAJOR" != "$NODE_VERSION" ]; then
+              echo "Node ${ACTIVE_NODE_MAJOR} is active but .tool-versions pins ${NODE_VERSION}"
+              exit 1
+            fi
             # Pin to the repo's packageManager version — an unpinned
             # `npm i -g pnpm` floats to latest and a pnpm major release
             # would change lockfile/hoisting behavior under the release
@@ -886,19 +1011,20 @@ workflows:
             #!/usr/bin/env bash
             set -ex
             # Unlike the mobile build (which only needs `packages/*`), the
-            # extension also depends on workspace packages under
+            # browser extension also depends on workspace packages under
             # `extensions/*` (platform-chrome, keystore-chrome, ledger-web-*).
-            # `--filter=...extension` walks the real dependency graph instead
-            # of a path glob, so it picks up both.
+            # `--filter=...browser` walks the real dependency graph instead
+            # of a path glob, so it picks up both. `browser` is the package
+            # name in apps/browser/package.json — not the directory.
             export APP_ENV="${ENVIRONMENT:-development}"
-            pnpm exec turbo run build --filter=...extension
+            pnpm exec turbo run build --filter=...browser
     - script@1:
         title: Bundle extension (Web)
         inputs:
         - content: |
             #!/usr/bin/env bash
             set -ex
-            pnpm --filter extension bundle
+            pnpm --filter browser bundle
     - script@1:
         title: Zip extension bundle
         inputs:
@@ -908,9 +1034,15 @@ workflows:
             sudo apt-get update -y
             sudo apt-get install -y zip
             SHA="$(printf '%s' "${BITRISE_GIT_COMMIT:-$GIT_CLONE_COMMIT_HASH}" | cut -c1-7)"
-            NAME="pera-extension-web-${BITRISE_GIT_TAG:-b$BITRISE_BUILD_NUMBER}-${SHA:-b$BITRISE_BUILD_NUMBER}.zip"
+            # ENVIRONMENT is in the name because `_web-build` is shared by
+            # web-staging and web-production: same commit, same tag, same
+            # SHA, so both jobs used to emit a byte-identically *named* zip.
+            # Once downloaded they were indistinguishable, and a staging zip
+            # installed by mistake looks exactly like a broken production
+            # build (staging backend, no API key, no Remote Config).
+            NAME="pera-extension-web-${ENVIRONMENT:-unknown}-${BITRISE_GIT_TAG:-b$BITRISE_BUILD_NUMBER}-${SHA:-b$BITRISE_BUILD_NUMBER}.zip"
             DEST="${BITRISE_DEPLOY_DIR}/${NAME}"
-            (cd apps/extension/dist && zip -r "$DEST" .)
+            (cd apps/browser/dist && zip -r "$DEST" .)
             envman add --key BITRISE_EXTENSION_ZIP_PATH --value "$DEST"
     - deploy-to-bitrise-io@2:
         is_always_run: true
@@ -1086,10 +1218,14 @@ workflows:
             # (empty status = the build never ran). Literal \n separates rows.
             row() { # $1 status  $2 build_url  $3 install_url  $4 artifact_label  $5 label  $6 dest
               local e
+              # An empty status means the build never ran, which on these
+              # pipelines only happens when an upstream workflow (`test`,
+              # `generate-changelog`) already failed. That is a failed
+              # release, so it reads as ❌ on the build's own row rather
+              # than as a neutral skip next to a separate Tests row.
               case "$1" in
-                ok)   e="✅" ;;
-                fail) e="❌" ;;
-                *)    e="⏭️" ;;
+                ok) e="✅" ;;
+                *)  e="❌" ;;
               esac
               local r="${e}  *${5}*  →  ${6}"
               if [ -n "$2" ]; then r="${r}  ·  <${2}|Build>"; fi
@@ -1109,8 +1245,15 @@ workflows:
               *)       OVERALL="📦" ;;
             esac
             COLOR="#36a64f"
-            for s in "${WEB_STAGING_STATUS:-}" "${WEB_PRODUCTION_STATUS:-}"; do
-              if [ "$s" = "fail" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
+            # Anything that is not an explicit `ok` turns the card red.
+            # Matching only on `fail` used to let a failed `test` through as
+            # green, because gated builds publish no status at all and the
+            # empty string fell into the benign "skipped" bucket. TEST_STATUS
+            # is checked here deliberately even though tests get no row of
+            # their own — the header/colour is the only signal that the skips
+            # below were caused by a red test run rather than by nothing.
+            for s in "${TEST_STATUS:-}" "${WEB_STAGING_STATUS:-}" "${WEB_PRODUCTION_STATUS:-}"; do
+              if [ "$s" != "ok" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
             done
 
             # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
@@ -1193,10 +1336,14 @@ workflows:
             # (empty status = the build never ran). Literal \n separates rows.
             row() { # $1 status  $2 build_url  $3 install_url  $4 artifact_label  $5 label  $6 dest
               local e
+              # An empty status means the build never ran, which on these
+              # pipelines only happens when an upstream workflow (`test`,
+              # `generate-changelog`) already failed. That is a failed
+              # release, so it reads as ❌ on the build's own row rather
+              # than as a neutral skip next to a separate Tests row.
               case "$1" in
-                ok)   e="✅" ;;
-                fail) e="❌" ;;
-                *)    e="⏭️" ;;
+                ok) e="✅" ;;
+                *)  e="❌" ;;
               esac
               local r="${e}  *${5}*  →  ${6}"
               if [ -n "$2" ]; then r="${r}  ·  <${2}|Build>"; fi
@@ -1222,8 +1369,18 @@ workflows:
               *)       OVERALL="📦" ;;
             esac
             COLOR="#36a64f"
-            for s in "${IOS_STAGING_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}" "${IOS_SMOKE_STATUS:-}" "${ANDROID_SMOKE_STATUS:-}"; do
-              if [ "$s" = "fail" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
+            # Anything that is not an explicit `ok` turns the card red.
+            # Matching only on `fail` used to let a failed `test` through as
+            # green, because gated builds publish no status at all and the
+            # empty string fell into the benign "skipped" bucket. TEST_STATUS
+            # is checked here deliberately even though tests get no row of
+            # their own — the header/colour is the only signal that the skips
+            # below were caused by a red test run rather than by nothing. The
+            # smoke gates run inside the staging workflows and always publish
+            # a status, so an empty one likewise means the build never got
+            # there rather than that the gate was skipped.
+            for s in "${TEST_STATUS:-}" "${IOS_STAGING_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}" "${IOS_SMOKE_STATUS:-}" "${ANDROID_SMOKE_STATUS:-}"; do
+              if [ "$s" != "ok" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
             done
 
             # generate_changelog.sh caps each section at 7 entries, so a busy

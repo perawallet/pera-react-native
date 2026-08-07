@@ -76,7 +76,7 @@ const buildServices = (): PlatformServices => {
     }
 
     const remoteConfig: RemoteConfigService = {
-        initializeRemoteConfig() {},
+        async initializeRemoteConfig() {},
         getStringValue: (_key, fallback) => fallback ?? '',
         getBooleanValue: (_key, fallback) => fallback ?? false,
         getNumberValue: (_key, fallback) => fallback ?? 0,
@@ -104,7 +104,7 @@ const buildServices = (): PlatformServices => {
         getAppPackage: () => 'com.test.perawallet',
         getAppBuild: () => '1',
         getAppVersion: () => '0.0.0-test',
-        getDeviceID: async () => 'test-device-id',
+        getDeviceInstallationID: async () => 'test-device-id',
         getDeviceModel: () => 'TestDevice',
         getDevicePlatform: () => DevicePlatforms.web,
         getDeviceOSVersion: () => '0',

@@ -62,7 +62,7 @@ export const buildTestPlatform = (
     }
 
     const defaultRemote: RemoteConfigService = {
-        initializeRemoteConfig() {},
+        async initializeRemoteConfig() {},
         getStringValue(_, f) {
             return f ?? ''
         },
@@ -96,7 +96,7 @@ export const buildTestPlatform = (
     }
 
     const deviceInfo: DeviceInfoService = {
-        getDeviceID() {
+        getDeviceInstallationID() {
             return Promise.resolve('testID')
         },
         getDeviceModel() {

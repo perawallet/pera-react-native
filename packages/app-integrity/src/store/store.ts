@@ -22,7 +22,7 @@ const initialState = {
     integrityToken: null,
     expiresAt: null,
     keyId: null,
-    deviceId: null,
+    deviceInstallationId: null,
     status: 'idle' as const,
     lastError: null,
     lastAttemptAt: null,
@@ -35,12 +35,17 @@ export const useAppIntegrityStore: UseBoundStore<
     persist(
         set => ({
             ...initialState,
-            setRegistration: ({ integrityToken, expiresAt, keyId, deviceId }) =>
+            setRegistration: ({
+                integrityToken,
+                expiresAt,
+                keyId,
+                deviceInstallationId,
+            }) =>
                 set({
                     integrityToken,
                     expiresAt,
                     keyId,
-                    deviceId,
+                    deviceInstallationId,
                     status: 'success',
                     lastError: null,
                     lastSuccessAt: new Date().toISOString(),
@@ -58,12 +63,12 @@ export const useAppIntegrityStore: UseBoundStore<
             // platform key-value storage is unencrypted (plaintext MMKV on RN).
             // Keeping them in memory and re-attesting on boot (via
             // useAppIntegrityBootstrap, which re-runs whenever no valid token is
-            // present) avoids writing the token to disk. `keyId`/`deviceId` are
+            // present) avoids writing the token to disk. `keyId`/`deviceInstallationId` are
             // non-secret identifiers and are kept so iOS can reuse its App
             // Attest key across launches.
             partialize: state => ({
                 keyId: state.keyId,
-                deviceId: state.deviceId,
+                deviceInstallationId: state.deviceInstallationId,
                 status: state.status,
                 lastError: state.lastError,
                 lastAttemptAt: state.lastAttemptAt,

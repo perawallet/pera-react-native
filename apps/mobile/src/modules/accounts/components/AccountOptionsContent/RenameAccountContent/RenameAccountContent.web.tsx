@@ -62,6 +62,7 @@ export const RenameAccountContent = ({
                     placeholder={t('account_options.rename_label')}
                     autoFocus
                     inputStyle={styles.input}
+                    testID='rename_account_input'
                 />
             </PWView>
             <PWView style={styles.buttonContainer}>
@@ -70,6 +71,7 @@ export const RenameAccountContent = ({
                     title={t('account_options.rename_save')}
                     onPress={handleSave}
                     isDisabled={isSaveDisabled}
+                    testID='rename_account_save_button'
                 />
             </PWView>
         </PWSheetLayout>

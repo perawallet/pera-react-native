@@ -60,9 +60,9 @@ export const registerAppIntegrity = async ({
             return { status: 'skipped' }
         }
 
-        const deviceId = await deviceInfo.getDeviceID()
+        const deviceInstallationId = await deviceInfo.getDeviceInstallationID()
         const challenge = await requestChallenge({
-            deviceId,
+            deviceInstallationId,
             platform,
             network,
             signal,
@@ -75,9 +75,14 @@ export const registerAppIntegrity = async ({
             if (!keyId) {
                 throw new Error('iOS attestation did not return a key id')
             }
-            payload = { deviceId, platform: 'ios', keyId, attestation }
+            payload = {
+                deviceInstallationId,
+                platform: 'ios',
+                keyId,
+                attestation,
+            }
         } else {
-            payload = { deviceId, platform: 'android', attestation }
+            payload = { deviceInstallationId, platform: 'android', attestation }
         }
 
         const { integrityToken, expiresAt } = await attestDevice({
@@ -90,7 +95,7 @@ export const registerAppIntegrity = async ({
             integrityToken,
             expiresAt,
             keyId: payload.platform === 'ios' ? payload.keyId : null,
-            deviceId,
+            deviceInstallationId,
         })
         return { status: 'success' }
     } catch (error) {

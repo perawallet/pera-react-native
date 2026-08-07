@@ -16,87 +16,11 @@ import {
     PersistQueryClientProvider,
     type PersistQueryClientRootOptions,
 } from '@tanstack/react-query-persist-client'
-import {
-    type OmitKeyof,
-    MutationCache,
-    QueryCache,
-    QueryClient,
-    focusManager,
-} from '@tanstack/react-query'
+import { type OmitKeyof, focusManager } from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
-import {
-    isPeraServiceUnavailableError,
-    isTransientNetworkError,
-    logger,
-    mutationDefaults,
-} from '@perawallet/wallet-core-shared'
 import { isActiveAppState } from '@utils/app-state'
 import { shouldDehydrateQuery } from './query-persistence'
-
-const cache = new QueryCache({
-    onError: error => {
-        // Transient connectivity errors are already logged at warn level by
-        // the ky `beforeError` hook (see packages/shared/src/api/query-client).
-        // Re-logging them at error level here would double-fire the dev RedBox
-        // on every flaky network blip without adding signal.
-        if (isTransientNetworkError(error)) {
-            return
-        }
-        // A Pera service that is simply not deployed on the active network
-        // (betanet, custom) is an expected condition, not a crash: every
-        // ungated Pera query — useCurrenciesQuery mounts on any screen with a
-        // fiat value — would otherwise fire a crash-report non-fatal and a
-        // dev RedBox on every render. Kept separate from
-        // isTransientNetworkError, which means "retrying may succeed" and
-        // must keep meaning exactly that.
-        if (isPeraServiceUnavailableError(error)) {
-            return
-        }
-        logger.error('An error has occurred:', { error })
-    },
-})
-
-const mutationCache = new MutationCache({
-    onError: (error, _variables, _context, mutation) => {
-        // Same transient- and not-deployed-skip rationale as the query cache
-        // above.
-        if (
-            isTransientNetworkError(error) ||
-            isPeraServiceUnavailableError(error)
-        ) {
-            return
-        }
-        logger.error('Mutation failed:', {
-            error,
-            mutationKey: mutation.options.mutationKey,
-        })
-    },
-})
-
-const queryClient = new QueryClient({
-    queryCache: cache,
-    mutationCache,
-    defaultOptions: {
-        queries: {
-            gcTime: config.reactQueryDefaultGCTime,
-            staleTime: config.reactQueryDefaultStaleTime,
-            retry: 0, //ky handles retries
-            // Focus is wired below solely to pause interval polls in the
-            // background. Without this pin, wiring focus would also switch on
-            // the library default refetchOnWindowFocus for every mounted stale
-            // query, bursting requests on each foreground. Opt in per-query.
-            refetchOnWindowFocus: false,
-        },
-        // OFF-004: mutation policy (networkMode 'always' → fail fast offline,
-        // never pause/auto-resume; throwOnError false → surface as
-        // `mutation.error`, not render-phase throw). `mutationDefaults` in
-        // `@perawallet/wallet-core-shared` is the single source of truth so
-        // package-level tests exercise the identical config. Failures are logged
-        // centrally by `mutationCache.onError`; user-facing surfacing stays at
-        // the call site.
-        mutations: mutationDefaults,
-    },
-})
+import { queryClient } from './queryClient'
 
 export type QueryProviderProps = OmitKeyof<
     PersistQueryClientRootOptions,

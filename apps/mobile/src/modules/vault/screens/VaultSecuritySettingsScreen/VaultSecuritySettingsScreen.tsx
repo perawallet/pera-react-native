@@ -21,7 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useVaultSecuritySettingsScreen } from './useVaultSecuritySettingsScreen'
+import { useVaultSecuritySettingsScreen } from './useVaultSecuritySettingsScreen.web'
 import { useStyles } from './styles'
 
 export const VaultSecuritySettingsScreen = () => {

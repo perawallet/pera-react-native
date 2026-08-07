@@ -219,7 +219,9 @@ function main() {
     // The second case is why any literal dot-path claims its descendants at dot
     // boundaries. That also subsumes keysFor('errors.network.timeout'), which
     // expands to `${base}.title` / `${base}.body`.
-    const templateHeads = [...allCode.matchAll(/`([a-z][\w.]*\.)\$\{/gi)].map(
+    // A head may end at `_` as well as `.`: t(`walletconnect.request.networks_${chain}`)
+    // builds a leaf by suffix, not by nesting, so a dot-only terminator misses it.
+    const templateHeads = [...allCode.matchAll(/`([a-z][\w.]*[._])\$\{/gi)].map(
         match => match[1],
     )
     const literalPaths = new Set(

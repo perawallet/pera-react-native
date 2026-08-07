@@ -115,6 +115,11 @@ case "$PROFILE" in
       "FIREBASE_PROJECT_ID" "FIREBASE_STORAGE_BUCKET" "FIREBASE_MESSAGING_SENDER_ID"
       "FIREBASE_APP_ID" "FIREBASE_MEASUREMENT_ID" "GA_MEASUREMENT_API_SECRET"
       "SENTRY_DSN"
+      # Unset means push notifications are silently off for the whole build:
+      # ChromePushNotificationService.getPushToken() returns undefined before
+      # it ever calls getToken, so devices register with no push_token and
+      # nothing surfaces at runtime. The warning is the only signal.
+      "FIREBASE_VAPID_KEY"
     )
     ;;
   *)

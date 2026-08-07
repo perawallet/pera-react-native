@@ -53,7 +53,7 @@ describe('useAppIntegrityBootstrap', () => {
             integrityToken: 'jwt',
             expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
             keyId: null,
-            deviceId: 'd1',
+            deviceInstallationId: 'd1',
         })
         renderHook(() => useAppIntegrityBootstrap())
         await new Promise(r => setTimeout(r, 10))

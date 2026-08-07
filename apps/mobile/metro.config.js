@@ -22,10 +22,10 @@ const fs = require('fs');
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '../..');
 // Web-only platform shims live with the extension build they belong to
-// (apps/extension), not comingled in the mobile app tree. Metro resolves them
+// (apps/browser), not comingled in the mobile app tree. Metro resolves them
 // from here for the web bundle; `.web.tsx` component variants stay colocated
 // with their native siblings under src/.
-const webShimsRoot = path.resolve(projectRoot, '../extension/web-shims');
+const webShimsRoot = path.resolve(projectRoot, '../browser/web-shims');
 
 const defaultConfig = getDefaultConfig(projectRoot);
 
@@ -56,6 +56,10 @@ const aliasMap = {
     '@theme': path.resolve(projectRoot, 'src/theme'),
     '@layouts': path.resolve(projectRoot, 'src/layouts'),
     '@utils': path.resolve(projectRoot, 'src/utils'),
+    // Web-only application code that lives with the extension shell rather
+    // than in the RN app (the offscreen document's headless hosts). Only ever
+    // resolved on platform === 'web' — a native bundle never imports it.
+    '@browser': path.resolve(projectRoot, '../browser/src'),
 };
 
 const polyfillMap = {

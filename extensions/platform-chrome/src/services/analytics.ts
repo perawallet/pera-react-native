@@ -12,7 +12,7 @@
 
 import type { AnalyticsService } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
-import { ensureDeviceID } from '../device-id'
+import { ensureDeviceInstallationID } from '../device-installation-id'
 
 const MEASUREMENT_PROTOCOL_URL = 'https://www.google-analytics.com/mp/collect'
 
@@ -43,7 +43,7 @@ export class ChromeAnalyticsService implements AnalyticsService {
         payload?: Record<string, unknown>,
     ): Promise<void> {
         try {
-            this.clientIdPromise ??= ensureDeviceID()
+            this.clientIdPromise ??= ensureDeviceInstallationID()
             const clientId = await this.clientIdPromise
 
             const url = `${MEASUREMENT_PROTOCOL_URL}?measurement_id=${config.firebaseMeasurementId}&api_secret=${config.gaMeasurementApiSecret}`

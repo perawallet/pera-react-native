@@ -25,33 +25,7 @@ import {
     type MigrationService,
     type MigrationStepVersions,
     type SimulateLegacyDatabaseArgs,
-    type NotificationOpenListener,
-    type PushNotificationInitResult,
-    type PushNotificationService,
-    type PushTokenRefreshListener,
 } from '@perawallet/wallet-extension-platform'
-
-const noop = (): void => undefined
-
-export class ChromePushNotificationService implements PushNotificationService {
-    // Chrome ≥116 supports MV3 web push, but the backend only accepts FCM
-    // tokens today — flip this once that lands.
-    isSupported(): boolean {
-        return false
-    }
-    async initializeNotifications(): Promise<PushNotificationInitResult> {
-        return { token: undefined, unsubscribe: noop }
-    }
-    async getPushToken(): Promise<string | undefined> {
-        return undefined
-    }
-    addTokenRefreshListener(_listener: PushTokenRefreshListener) {
-        return noop
-    }
-    addNotificationOpenListener(_listener: NotificationOpenListener) {
-        return noop
-    }
-}
 
 /**
  * Chrome has no OS-level biometric API, so this stub always reports

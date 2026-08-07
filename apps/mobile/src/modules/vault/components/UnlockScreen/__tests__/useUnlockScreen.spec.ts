@@ -53,12 +53,18 @@ vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
     },
 }))
 
-import { useUnlockScreen } from '../useUnlockScreen'
+import { useUnlockScreen } from '../useUnlockScreen.web'
 
 describe('useUnlockScreen', () => {
     beforeEach(() => {
         mocks.unlockVault.mockResolvedValue(undefined)
         mocks.getLockoutRemainingSeconds.mockResolvedValue(0)
+        // clearAllMocks (vitest.setup.ts) clears calls, NOT implementations —
+        // without these, a `true` from the canUsePasskey tests leaks forward
+        // and the auto-launch effect fires in unrelated tests.
+        mocks.isPasskeyUnlockSupported.mockResolvedValue(false)
+        mocks.isPasskeyUnlockEnabled.mockResolvedValue(false)
+        mocks.unlockWithPasskey.mockResolvedValue(undefined)
     })
 
     it('sets hasError and clears password on wrong password', async () => {
@@ -191,6 +197,143 @@ describe('useUnlockScreen', () => {
         })
     })
 
+    describe('passkey auto-launch', () => {
+        // Auto-launch waits on TWO independent async mount probes (the
+        // supported/enabled pair and the lockout hydration) plus the effect
+        // they unblock. One `act` flush settles a single promise chain; these
+        // need the whole cascade, so flush repeatedly.
+        const settle = async (): Promise<void> => {
+            for (let i = 0; i < 4; i++) {
+                await act(async () => {})
+            }
+        }
+
+        it('launches the passkey challenge once when a passkey is available', async () => {
+            mocks.isPasskeyUnlockSupported.mockResolvedValue(true)
+            mocks.isPasskeyUnlockEnabled.mockResolvedValue(true)
+            renderHook(() => useUnlockScreen())
+            await settle()
+            expect(mocks.unlockWithPasskey).toHaveBeenCalledOnce()
+        })
+
+        it('does not launch when no passkey is enrolled', async () => {
+            mocks.isPasskeyUnlockSupported.mockResolvedValue(true)
+            mocks.isPasskeyUnlockEnabled.mockResolvedValue(false)
+            renderHook(() => useUnlockScreen())
+            await settle()
+            expect(mocks.unlockWithPasskey).not.toHaveBeenCalled()
+        })
+
+        it('does not launch while locked out', async () => {
+            mocks.isPasskeyUnlockSupported.mockResolvedValue(true)
+            mocks.isPasskeyUnlockEnabled.mockResolvedValue(true)
+            mocks.getLockoutRemainingSeconds.mockResolvedValue(30)
+            renderHook(() => useUnlockScreen())
+            await settle()
+            expect(mocks.unlockWithPasskey).not.toHaveBeenCalled()
+        })
+
+        it('does not relaunch on re-render', async () => {
+            mocks.isPasskeyUnlockSupported.mockResolvedValue(true)
+            mocks.isPasskeyUnlockEnabled.mockResolvedValue(true)
+            const { result, rerender } = renderHook(() => useUnlockScreen())
+            await settle()
+            act(() => result.current.setPassword('typing'))
+            rerender()
+            await settle()
+            expect(mocks.unlockWithPasskey).toHaveBeenCalledOnce()
+        })
+
+        it('leaves the retry path available after the user cancels', async () => {
+            mocks.isPasskeyUnlockSupported.mockResolvedValue(true)
+            mocks.isPasskeyUnlockEnabled.mockResolvedValue(true)
+            mocks.unlockWithPasskey.mockRejectedValue(
+                new DOMException('User cancelled', 'NotAllowedError'),
+            )
+            const { result } = renderHook(() => useUnlockScreen())
+            await settle()
+            expect(mocks.unlockWithPasskey).toHaveBeenCalledOnce()
+            expect(result.current.canUsePasskey).toBe(true)
+            expect(result.current.hasPasskeyError).toBe(false)
+            expect(result.current.isSubmitting).toBe(false)
+            expect(result.current.isPasskeyPending).toBe(false)
+        })
+
+        // Regression coverage for the isLockoutChecked gate: the mock harness
+        // otherwise resolves the lockout probe before the passkey-support
+        // probe every time (Promise.all + one await vs. a single .then), so
+        // nothing ever exercises the branch where they land in the opposite
+        // order — which is the order the real extension can produce, since
+        // both probes are independent chrome.storage.local IPCs. Extra
+        // microtask hops on the lockout probe force that inversion here.
+        const settleLong = async (): Promise<void> => {
+            for (let i = 0; i < 10; i++) {
+                await act(async () => {})
+            }
+        }
+
+        it('does not auto-launch on a stale lockoutSeconds read when the lockout probe resolves after the passkey probe', async () => {
+            mocks.isPasskeyUnlockSupported.mockResolvedValue(true)
+            mocks.isPasskeyUnlockEnabled.mockResolvedValue(true)
+            mocks.getLockoutRemainingSeconds.mockImplementation(async () => {
+                await Promise.resolve()
+                await Promise.resolve()
+                await Promise.resolve()
+                return 30
+            })
+            renderHook(() => useUnlockScreen())
+            await settleLong()
+            expect(mocks.unlockWithPasskey).not.toHaveBeenCalled()
+        })
+
+        // Regression coverage for the once-per-DECISION latch: a user who
+        // arrives already locked out is declined at mount, and must NOT get
+        // an unprompted biometric dialog 30-120 seconds later when the
+        // countdown reaches zero. Against the old latch (burned only on a
+        // SUCCESSFUL launch), lockoutSeconds is a live effect dependency, so
+        // the effect re-evaluates on every countdown tick and fires the
+        // moment lockoutSeconds hits 0.
+        describe('lockout present at mount', () => {
+            beforeEach(() => {
+                vi.useFakeTimers()
+            })
+
+            afterEach(() => {
+                vi.useRealTimers()
+            })
+
+            it('does not fire an automatic prompt once a lockout present at mount later expires', async () => {
+                mocks.isPasskeyUnlockSupported.mockResolvedValue(true)
+                mocks.isPasskeyUnlockEnabled.mockResolvedValue(true)
+                mocks.getLockoutRemainingSeconds.mockResolvedValue(2)
+                const { result } = renderHook(() => useUnlockScreen())
+                await settle()
+                expect(result.current.lockoutSeconds).toBe(2)
+                expect(mocks.unlockWithPasskey).not.toHaveBeenCalled()
+
+                act(() => vi.advanceTimersByTime(1000))
+                act(() => vi.advanceTimersByTime(1000))
+                expect(result.current.lockoutSeconds).toBe(0)
+
+                expect(mocks.unlockWithPasskey).not.toHaveBeenCalled()
+            })
+        })
+
+        it('surfaces hasPasskeyError, without rejecting, when the auto-launch itself throws an unexpected error', async () => {
+            mocks.isPasskeyUnlockSupported.mockResolvedValue(true)
+            mocks.isPasskeyUnlockEnabled.mockResolvedValue(true)
+            mocks.unlockWithPasskey.mockRejectedValue(
+                new Error(
+                    'PRF extension not supported or not returned by the authenticator.',
+                ),
+            )
+            const { result } = renderHook(() => useUnlockScreen())
+            await settle()
+            expect(mocks.unlockWithPasskey).toHaveBeenCalledOnce()
+            expect(result.current.hasPasskeyError).toBe(true)
+        })
+    })
+
     describe('lockout', () => {
         beforeEach(() => {
             vi.useFakeTimers()
@@ -243,6 +386,37 @@ describe('useUnlockScreen', () => {
             await act(() => result.current.handlePasskeyUnlock())
             expect(result.current.lockoutSeconds).toBe(45)
             expect(result.current.hasPasskeyError).toBe(false)
+        })
+    })
+
+    describe('password fallback while a passkey challenge is pending', () => {
+        it('handleUnlock still performs a password unlock while isPasskeyPending is true', async () => {
+            let resolvePasskey: () => void = () => {}
+            mocks.unlockWithPasskey.mockImplementation(
+                () =>
+                    new Promise<void>(resolve => {
+                        resolvePasskey = resolve
+                    }),
+            )
+            const { result } = renderHook(() => useUnlockScreen())
+
+            act(() => {
+                void result.current.handlePasskeyUnlock()
+            })
+            expect(result.current.isPasskeyPending).toBe(true)
+            expect(result.current.isSubmitting).toBe(false)
+
+            act(() => result.current.setPassword('correctpassword'))
+            await act(() => result.current.handleUnlock())
+
+            expect(mocks.unlockVault).toHaveBeenCalledWith('correctpassword')
+            expect(result.current.password).toBe('')
+
+            // Let the still-pending passkey challenge resolve so it doesn't
+            // leak into other tests.
+            await act(async () => {
+                resolvePasskey()
+            })
         })
     })
 })

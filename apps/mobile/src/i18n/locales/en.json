@@ -3,6 +3,11 @@
         "enable": {
             "title": "Connect to this site",
             "description": "Select the accounts you want to share with this site.",
+            "peer_origin_claim": "Site says: {{origin}}",
+            "request_origin": "Request came from {{origin}}",
+            "requester_verified_label": "Verified tab",
+            "requester_verified_a11y_label": "Verified: this request came from your browser tab",
+            "requester_verified_a11y_origin": "Verified: this request came from your browser tab at {{origin}}",
             "connect_button": "Connect",
             "cancel_button": "Cancel"
         },
@@ -14,7 +19,8 @@
             },
             "network_mismatch": "This transaction is for a different Algorand network than your wallet's active network. Switch networks in Settings, then try again.",
             "unsupported_message": "This site sent a message-signing request Pera can't process. The request has been declined.",
-            "unauthorized_signer": "This site isn't authorized to request a signature for that account."
+            "unauthorized_signer": "This site isn't authorized to request a signature for that account.",
+            "no_session": "This connection is no longer valid. Reconnect the site and try again."
         },
         "passkey": {
             "create": {
@@ -25,7 +31,14 @@
             },
             "approve_button": "Continue",
             "decline_button": "Cancel",
-            "error": "Pera couldn't complete this passkey request. The request has been declined."
+            "error": "Pera couldn't complete this passkey request. The request has been declined.",
+            "choose": {
+                "title": "Choose a passkey",
+                "description": "You have more than one passkey saved for {{origin}}. Pick the one to sign in with."
+            }
+        },
+        "approval": {
+            "delivery_failed": "Pera couldn't deliver your decision to the site. The extension went to sleep while this window was open. Close this window and try the request again from the site."
         }
     },
     "account_menu": {
@@ -489,6 +502,14 @@
         "paste_label": "Or paste a QR payload",
         "paste_placeholder": "Paste an address or WalletConnect URI",
         "paste_submit": "Submit"
+    },
+    "paste_link": {
+        "title": "Paste a Link",
+        "description": "Paste a WalletConnect URI or a Pera link to open it.",
+        "placeholder": "wc:… or perawallet://…",
+        "submit": "Open Link",
+        "error_invalid": "That doesn't look like a link Pera can open.",
+        "error_failed": "Pera couldn't open that link. Check it and try again."
     },
     "chart": {
         "one_week": {
@@ -1561,6 +1582,7 @@
                 "title": "Select your backup file",
                 "body": "To restore your wallet, select or paste your backup file.",
                 "pick_file_button": "Select your backup file",
+                "pick_file_button_new_tab": "Open a new tab to select your backup file",
                 "paste_button": "Paste backup file text",
                 "continue": "Next",
                 "pasted_name": "Pasted backup",
@@ -2574,9 +2596,11 @@
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
+            "networks_betanet": "Betanet",
             "error_sheet_title": "Error",
             "error_sheet_body": "Your WalletConnect request failed with the following error:",
             "error_sheet_retry": "Please try again by going back to the dApp where you initiated the request.",
+            "error_network_mismatch": "This app asked to connect on {{requested}}, but your wallet is on {{active}}. Switch networks in Settings, then try again.",
             "quantum_fee_delivery_failed": "The request could not be completed. This app may not support the higher network fees required by Quantum accounts."
         },
         "connection": {
@@ -2595,6 +2619,7 @@
             "delete_body": "Are you sure you want to delete this session?  This will remove your active session and disconnect you from the connected app.",
             "delete_all_title": "Delete All Sessions",
             "delete_all_body": "Are you sure you want to delete all sessions?  This will remove all your active sessions and disconnect you from all connected apps.",
+            "disconnect_failed_title": "Couldn't disconnect",
             "unknown_peer": "Unknown",
             "version": "This session is using WalletConnect V{{version}}",
             "connected_accounts": "Connected with",
@@ -3397,10 +3422,15 @@
             "placeholder": "Approval surface — coming in M4."
         },
         "expanded": {
-            "onboarding_title": "Set up in a full tab",
-            "onboarding_body": "Wallet setup opens in a full browser tab so you can back up your recovery phrase safely.",
-            "onboarding_cta": "Continue in a new tab",
             "redirecting": "Continuing in a new tab…"
+        },
+        "reauth": {
+            "title": "Confirm it's you",
+            "confirm_button": "Confirm",
+            "use_passkey": "Use Passkey",
+            "passkey_description": "This site requires you to verify your identity before signing in with your passkey.",
+            "confirm_description": "Verify your identity to confirm this action.",
+            "passkey_error": "Passkey verification failed. Use your password instead."
         }
     },
     "migration": {
