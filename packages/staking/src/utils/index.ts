@@ -11,3 +11,4 @@
  */
 
 export { parseStakingProjectsConfig } from './parseStakingProjectsConfig'
+export { parseStakingProjectsI18nConfig } from './parseStakingProjectsI18nConfig'

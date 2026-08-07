@@ -22,6 +22,7 @@ import {
     StakingHelpContent,
 } from '@modules/staking/components'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { useLanguage } from '@hooks/useLanguage'
 import { useNetworkStatus, useNetworkStatusStore } from '@modules/network'
 import type { StakingProject } from '@modules/staking/models'
 
@@ -37,13 +38,17 @@ type UseStakingScreenResult = {
 
 export const useStakingScreen = (): UseStakingScreenResult => {
     const { pushWebView } = useWebView()
+    // Passed through so the project list re-resolves when the user switches
+    // language: the staking package can't read i18next itself (no
+    // react-i18next dependency there), so the reactive value comes from here.
+    const { currentLanguage } = useLanguage()
     const {
         data: projects,
         isLoading,
         isError,
         isPaused,
         refetch,
-    } = useStakingProjectsQuery()
+    } = useStakingProjectsQuery(currentLanguage)
     const { hasInternet } = useNetworkStatus()
     const { isDisclaimerAccepted, acceptDisclaimer } = useStakingDisclaimer()
     const { request: requestBottomSheet } = useBottomSheet()

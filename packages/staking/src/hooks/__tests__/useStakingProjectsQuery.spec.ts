@@ -68,11 +68,30 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-remote-config', () => ({
-    RemoteConfigKeys: { staking_projects: 'staking_projects' },
+    RemoteConfigKeys: {
+        staking_projects: 'staking_projects',
+        staking_projects_i18n: 'staking_projects_i18n',
+    },
     useRemoteConfig: () => ({
         getStringValue: mocks.getStringValue,
     }),
 }))
+
+/**
+ * Firebase returns a different value per key; a mock that ignores its argument
+ * would hand the legacy array to the i18n parser and fail for the wrong reason.
+ */
+const mockRemoteConfig = ({
+    legacy = '',
+    i18n = '',
+}: {
+    legacy?: string
+    i18n?: string
+}) => {
+    mocks.getStringValue.mockImplementation((key: string) =>
+        key === 'staking_projects_i18n' ? i18n : legacy,
+    )
+}
 
 describe('useStakingProjectsQuery', () => {
     let queryClient: QueryClient
@@ -87,7 +106,7 @@ describe('useStakingProjectsQuery', () => {
             },
         })
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
-        mocks.getStringValue.mockReturnValue(VALID_PROJECTS_CONFIG)
+        mockRemoteConfig({ legacy: VALID_PROJECTS_CONFIG })
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -96,6 +115,97 @@ describe('useStakingProjectsQuery', () => {
             { client: queryClient },
             children,
         )
+
+    describe('localized config (staking_projects_i18n)', () => {
+        const I18N_CONFIG = JSON.stringify({
+            en: [
+                {
+                    id: 'folks',
+                    title: 'Folks Finance',
+                    description: 'Stake your Algo on Folks',
+                    logoUrl: 'https://example.com/logo.png',
+                    link: 'https://app.folks.finance',
+                    type: 'liquid',
+                },
+            ],
+            de: [
+                {
+                    id: 'folks',
+                    title: 'Folks Finance',
+                    description: 'Stake dein Algo auf Folks',
+                    logoUrl: 'https://example.com/logo.png',
+                    link: 'https://app.folks.finance',
+                    type: 'liquid',
+                },
+            ],
+        })
+
+        it('prefers the localized key and honours the requested locale', async () => {
+            mockRemoteConfig({
+                legacy: VALID_PROJECTS_CONFIG,
+                i18n: I18N_CONFIG,
+            })
+            mocks.fetchStakingProjectsInfo.mockResolvedValue({})
+
+            const { result } = renderHook(() => useStakingProjectsQuery('de'), {
+                wrapper,
+            })
+
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+            expect(result.current.data).toHaveLength(1)
+            expect(result.current.data[0].description).toBe(
+                'Stake dein Algo auf Folks',
+            )
+        })
+
+        it('falls back to en inside the payload for an untranslated locale', async () => {
+            mockRemoteConfig({ i18n: I18N_CONFIG })
+            mocks.fetchStakingProjectsInfo.mockResolvedValue({})
+
+            const { result } = renderHook(() => useStakingProjectsQuery('tr'), {
+                wrapper,
+            })
+
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+            expect(result.current.data[0].description).toBe(
+                'Stake your Algo on Folks',
+            )
+        })
+
+        it('falls back to the legacy key while only it is published', async () => {
+            // The migration window: shipping the client before ops publish the
+            // localized key must not empty the Staking screen.
+            mockRemoteConfig({ legacy: VALID_PROJECTS_CONFIG, i18n: '' })
+            mocks.fetchStakingProjectsInfo.mockResolvedValue({})
+
+            const { result } = renderHook(() => useStakingProjectsQuery('de'), {
+                wrapper,
+            })
+
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+            expect(result.current.data.length).toBeGreaterThan(0)
+        })
+
+        it('surfaces a legacy-shaped array in the localized key as an error', async () => {
+            // A paste mistake in Firebase: the array shape belongs to the old
+            // key. Better a visible error than silently ignoring the new key.
+            mockRemoteConfig({
+                legacy: VALID_PROJECTS_CONFIG,
+                i18n: VALID_PROJECTS_CONFIG,
+            })
+            mocks.fetchStakingProjectsInfo.mockResolvedValue({})
+
+            const { result } = renderHook(() => useStakingProjectsQuery('de'), {
+                wrapper,
+            })
+
+            await waitFor(() => expect(result.current.isError).toBe(true))
+            expect(result.current.data).toEqual([])
+        })
+    })
 
     it('merges projects and sorts by tvl in algo descending', async () => {
         mocks.fetchStakingProjectsInfo.mockResolvedValue({
@@ -140,7 +250,7 @@ describe('useStakingProjectsQuery', () => {
     })
 
     it('surfaces invalid remote config JSON as error state (does not crash)', async () => {
-        mocks.getStringValue.mockReturnValue('not-json')
+        mockRemoteConfig({ legacy: 'not-json' })
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
         const { result } = renderHook(() => useStakingProjectsQuery(), {
@@ -156,8 +266,8 @@ describe('useStakingProjectsQuery', () => {
     })
 
     it('surfaces schema validation failures as error state (does not crash)', async () => {
-        mocks.getStringValue.mockReturnValue(
-            JSON.stringify([
+        mockRemoteConfig({
+            legacy: JSON.stringify([
                 {
                     id: '',
                     title: 'Invalid',
@@ -167,7 +277,7 @@ describe('useStakingProjectsQuery', () => {
                     type: 'liquid',
                 },
             ]),
-        )
+        })
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
         const { result } = renderHook(() => useStakingProjectsQuery(), {
@@ -181,7 +291,7 @@ describe('useStakingProjectsQuery', () => {
     })
 
     it('returns empty list when remote config value is missing or empty', async () => {
-        mocks.getStringValue.mockReturnValue('')
+        mockRemoteConfig({ legacy: '' })
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
         const { result } = renderHook(() => useStakingProjectsQuery(), {
@@ -217,7 +327,7 @@ describe('useStakingProjectsQuery', () => {
 
         it('reports isPaused (not isLoading) when offline with no cached TVL', async () => {
             onlineManager.setOnline(false)
-            mocks.getStringValue.mockReturnValue(VALID_PROJECTS_CONFIG)
+            mockRemoteConfig({ legacy: VALID_PROJECTS_CONFIG })
 
             const { result } = renderHook(() => useStakingProjectsQuery(), {
                 wrapper,
@@ -230,7 +340,7 @@ describe('useStakingProjectsQuery', () => {
         })
 
         it('serves cached TVL data (stale) when going offline after a successful fetch', async () => {
-            mocks.getStringValue.mockReturnValue(VALID_PROJECTS_CONFIG)
+            mockRemoteConfig({ legacy: VALID_PROJECTS_CONFIG })
             mocks.fetchStakingProjectsInfo.mockResolvedValue({
                 folks: {
                     tvl_in_algo: '1000',

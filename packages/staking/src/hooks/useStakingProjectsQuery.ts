@@ -27,7 +27,10 @@ import type {
 } from '../models'
 import { fetchStakingProjectsInfo } from './endpoints'
 import { getStakingProjectsQueryKey } from './queryKeys'
-import { parseStakingProjectsConfig } from '../utils'
+import {
+    parseStakingProjectsConfig,
+    parseStakingProjectsI18nConfig,
+} from '../utils'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type UseStakingProjectsQueryResult = {
@@ -66,10 +69,23 @@ const mapProjects = (
         .sort((a, b) => b.tvlInAlgo.minus(a.tvlInAlgo).toNumber())
 }
 
-export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
+/**
+ * `locale` is a parameter rather than read from i18next here because this
+ * package must not depend on react-i18next (same boundary as
+ * useWalletConnectHandoffResolver). Callers in the app pass the reactive value
+ * from `useLanguage()`, which is what makes the list re-resolve when the user
+ * switches language; omitting it falls back to the non-reactive
+ * `getActiveLocale()`, which is correct on first render but will not update.
+ */
+export const useStakingProjectsQuery = (
+    locale?: string,
+): UseStakingProjectsQueryResult => {
     const { network } = useNetwork()
     const remoteConfigService = useRemoteConfig()
 
+    const remoteProjectsI18nConfig = remoteConfigService.getStringValue(
+        RemoteConfigKeys.staking_projects_i18n,
+    )
     const remoteProjectsConfig = remoteConfigService.getStringValue(
         RemoteConfigKeys.staking_projects,
     )
@@ -82,10 +98,18 @@ export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
         error: Nullable<Error>
     }>(() => {
         try {
-            return {
-                projects: parseStakingProjectsConfig(remoteProjectsConfig),
-                error: null,
-            }
+            // Prefer the localized key. Falling through to the legacy array
+            // keeps Staking populated in the window where the backend has only
+            // published `staking_projects` — without this, shipping the client
+            // change first would empty the screen until ops migrated.
+            const projects = remoteProjectsI18nConfig?.trim()
+                ? parseStakingProjectsI18nConfig(
+                      remoteProjectsI18nConfig,
+                      locale,
+                  )
+                : parseStakingProjectsConfig(remoteProjectsConfig)
+
+            return { projects, error: null }
         } catch (err) {
             const error = toError(err)
             logger.warn('Failed to parse staking projects remote config', {
@@ -94,7 +118,7 @@ export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
             })
             return { projects: [], error }
         }
-    }, [remoteProjectsConfig])
+    }, [remoteProjectsI18nConfig, remoteProjectsConfig, locale])
 
     // Skip the TVL request when we already know the config is broken — the
     // result would be discarded by mapProjects anyway.
