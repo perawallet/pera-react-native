@@ -94,8 +94,21 @@ updates:
       # ALL update types — these move only when the RN/Expo SDK moves.
       - dependency-name: react
       - dependency-name: react-dom
+      # Patch is in this list because a react-native patch is not a patch as far
+      # as native code is concerned. With EXPO_USE_PRECOMPILED_MODULES, Expo's
+      # modules ship as prebuilt XCFrameworks compiled against one specific RN,
+      # and RN moves Fabric/JSI C++ internals between patch releases. Nothing
+      # expresses that coupling — expo declares `react-native: "*"` — so the
+      # resolver cannot catch it, and dyld can't either: it rejects *missing*
+      # symbols, not *changed struct layouts*, which instead corrupt the heap at
+      # runtime. 0.86.0 → 0.86.2 did exactly that (PERA-4830): the app died mid-
+      # navigation with a Hermes GC protection fault and a malloc free-list
+      # botch. Moves only when the Expo SDK moves.
       - dependency-name: react-native
-        update-types: [version-update:semver-major, version-update:semver-minor]
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
+          - version-update:semver-patch
       - dependency-name: expo
         update-types: [version-update:semver-major]
       - dependency-name: typescript
@@ -137,6 +150,17 @@ updates:
       - dependency-name: react-native-nitro-modules
       - dependency-name: react-native-pager-view
       - dependency-name: react-native-keyboard-controller
+      # expo-image is the same lockstep case, but it bites at *launch* rather
+      # than at build: with EXPO_USE_PRECOMPILED_MODULES its XCFramework is
+      # downloaded prebuilt, so it is linked against whatever
+      # expo-modules-core existed when Expo published it — never against ours.
+      # 57.0.2 was built against the module-lifecycle API (didCreate,
+      # didStartListening, didStopListening, willDestroy) that core only gained
+      # in 57.0.9, so pairing it with the 57.0.7 core that expo@57.0.8 pins
+      # aborts in dyld before any JS runs. Nothing catches this: expo-image
+      # declares no dependency on expo-modules-core, and each artifact is
+      # fetched per-package. Pinned exactly, and moves only when the SDK does.
+      - dependency-name: expo-image
 
   # Pin GitHub Actions by SHA; Dependabot rewrites the SHA and updates the
   # trailing version comment so reviewers can see the human-readable bump.

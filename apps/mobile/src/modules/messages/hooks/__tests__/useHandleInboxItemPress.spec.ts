@@ -15,21 +15,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { InboxItem } from '@perawallet/wallet-core-messages'
 import { useHandleInboxItemPress } from '../useHandleInboxItemPress'
 
-const mockPush = vi.fn()
 const mockErrorToast = vi.fn()
 
-const { mockRequestBottomSheet } = vi.hoisted(() => ({
+// `pushScreen` is referenced directly by the mock factory (not behind a hook
+// call like the old `useAppNavigation` mock), so it has to be hoisted with the
+// factory rather than declared as a plain top-level const.
+const { mockPush, mockRequestBottomSheet } = vi.hoisted(() => ({
+    mockPush: vi.fn(),
     mockRequestBottomSheet: vi.fn(),
 }))
 
-vi.mock('@hooks/useAppNavigation', () => ({
-    useAppNavigation: () => ({
-        push: mockPush,
-        goBack: vi.fn(),
-        navigate: vi.fn(),
-        replace: vi.fn(),
-        canGoBack: () => true,
-    }),
+// The hook pushes through the global navigationRef, not `useAppNavigation` —
+// see useHandleInboxItemPress and the outside-navigator spec next to this one.
+vi.mock('@hooks/deeplink/navigateToScreen', () => ({
+    pushScreen: mockPush,
+    navigateToScreen: vi.fn(),
 }))
 
 vi.mock('@hooks/useToast', () => ({
