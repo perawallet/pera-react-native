@@ -13,7 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Optional } from '@perawallet/wallet-core-shared'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import { useKMSService, checkAccess } from '../useKMSServices'
 import { AccessControlPermission } from '../../models'
 import { SeedScheme } from '../../constants'
@@ -39,7 +39,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 const mockClearKeyData = vi.fn()
 
-vi.mock('@algorandfoundation/keystore', () => ({
+vi.mock('@algorandfoundation/keystore-core', () => ({
     clearKeyData: (...args: any[]) => mockClearKeyData(...args),
 }))
 

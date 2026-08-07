@@ -11,7 +11,7 @@
  */
 
 import nacl from 'tweetnacl'
-import type { Key, Seed } from '@algorandfoundation/keystore'
+import type { Key, Seed } from '@algorandfoundation/keystore-core'
 import {
     generateOrderedUniqueId,
     logger,

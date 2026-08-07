@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
 import { credentialToPasskey, keyToPasskey } from '../passkey'
 

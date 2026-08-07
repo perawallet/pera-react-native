@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
 import {
     InvalidKeyError,

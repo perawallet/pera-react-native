@@ -35,7 +35,7 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     },
 }))
 
-vi.mock('@algorandfoundation/keystore', () => ({
+vi.mock('@algorandfoundation/keystore-core', () => ({
     initializeKeyStore: keystoreMocks.initializeKeyStore,
     addKey: keystoreMocks.addKey,
 }))

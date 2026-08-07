@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@algorandfoundation/dp256": "catalog:",
-    "@algorandfoundation/keystore": "catalog:",
+    "@algorandfoundation/keystore-core": "catalog:",
     "@noble/hashes": "catalog:",
     "@algorandfoundation/react-native-keystore": "catalog:",
     "@babel/runtime": "catalog:",

@@ -47,7 +47,7 @@ export default defineConfig({
                 '@tanstack/react-query',
                 '@tanstack/store',
                 'before-after-hook',
-                '@algorandfoundation/keystore',
+                '@algorandfoundation/keystore-core',
                 '@algorandfoundation/react-native-keystore',
                 '@algorandfoundation/wallet-provider',
                 '@perawallet/wallet-core-shared',

@@ -40,7 +40,7 @@ export default defineConfig({
             external: [
                 'react',
                 'react/jsx-runtime',
-                '@algorandfoundation/keystore',
+                '@algorandfoundation/keystore-core',
                 '@algorandfoundation/react-native-keystore',
                 '@tanstack/react-query',
                 '@tanstack/store',

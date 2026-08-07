@@ -13,8 +13,12 @@
 import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
 import type { HookCollection } from 'before-after-hook'
-import type { Key, KeyData, KeyStoreState } from '@algorandfoundation/keystore'
-import { initializeKeyStore } from '@algorandfoundation/keystore'
+import type {
+    Key,
+    KeyData,
+    KeyStoreState,
+} from '@algorandfoundation/keystore-core'
+import { initializeKeyStore } from '@algorandfoundation/keystore-core'
 import {
     clear as clearKeystoreStore,
     decode,

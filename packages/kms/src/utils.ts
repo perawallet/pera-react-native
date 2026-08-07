@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import { encodeAddress } from 'algosdk'
 import nacl from 'tweetnacl'
 import { AccessControlPermission, type AccessControl } from './models'

@@ -15,8 +15,8 @@ import type {
     KeyStoreAPI,
     KeyData,
     KeyId,
-} from '@algorandfoundation/keystore'
-import { clearKeyData } from '@algorandfoundation/keystore'
+} from '@algorandfoundation/keystore-core'
+import { clearKeyData } from '@algorandfoundation/keystore-core'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { AccessControlPermission } from '../models'
 import { aclOf } from '../utils'

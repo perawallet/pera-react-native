@@ -37,7 +37,7 @@ export default defineConfig({
         rollupOptions: {
             external: [
                 'react-native',
-                '@algorandfoundation/keystore',
+                '@algorandfoundation/keystore-core',
                 '@algorandfoundation/react-native-passkey-autofill',
                 '@algorandfoundation/wallet-provider',
                 '@perawallet/wallet-core-shared',

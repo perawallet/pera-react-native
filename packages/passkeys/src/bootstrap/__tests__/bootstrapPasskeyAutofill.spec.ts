@@ -11,7 +11,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { KeyData } from '@algorandfoundation/keystore'
+import type { KeyData } from '@algorandfoundation/keystore-core'
 
 const mocks = vi.hoisted(() => {
     // Restated rather than imported: the real keystore barrel pulls

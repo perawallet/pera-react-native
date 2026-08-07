@@ -15,7 +15,7 @@ import type {
     ProviderOptions,
 } from '@algorandfoundation/wallet-provider'
 import type { WithKeyStore } from '@algorandfoundation/react-native-keystore'
-import type { KeyStoreExtension } from '@algorandfoundation/keystore'
+import type { KeyStoreExtension } from '@algorandfoundation/keystore-core'
 import type {
     WithPlatformExtension,
     PlatformExtension,

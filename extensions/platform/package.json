@@ -18,7 +18,7 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "@algorandfoundation/keystore": "catalog:",
+    "@algorandfoundation/keystore-core": "catalog:",
     "@babel/runtime": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",

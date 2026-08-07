@@ -28,7 +28,7 @@ const mockKeyStoreImport = vi.fn()
 const mockKeyStoreGenerate = vi.fn()
 const mockKeyStoreRemove = vi.fn()
 
-vi.mock('@algorandfoundation/keystore', () => ({
+vi.mock('@algorandfoundation/keystore-core', () => ({
     clearKeyData: vi.fn(),
 }))
 

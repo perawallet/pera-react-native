@@ -18,7 +18,7 @@ import { isValidAddress, seedFromMnemonic } from 'algosdk'
 const mockKeyStoreImport = vi.fn()
 const mockKeyStoreRemove = vi.fn()
 
-vi.mock('@algorandfoundation/keystore', () => ({
+vi.mock('@algorandfoundation/keystore-core', () => ({
     clearKeyData: vi.fn(),
 }))
 

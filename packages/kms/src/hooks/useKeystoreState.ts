@@ -11,7 +11,7 @@
  */
 
 import { useSyncExternalStore } from 'react'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import type { Optional } from '@perawallet/wallet-core-shared'
 

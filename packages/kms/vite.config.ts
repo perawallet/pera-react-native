@@ -46,7 +46,7 @@ export default defineConfig({
                 'zustand',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-core-shared',
-                '@algorandfoundation/keystore',
+                '@algorandfoundation/keystore-core',
                 '@algorandfoundation/react-native-keystore',
                 '@algorandfoundation/xhd-wallet-api',
                 '@algorandfoundation/algokit-utils',

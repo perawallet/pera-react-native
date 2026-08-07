@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Key, KeyId, Seed } from '@algorandfoundation/keystore'
+import type { Key, KeyId, Seed } from '@algorandfoundation/keystore-core'
 import {
     BIP32DerivationType,
     KeyContext,

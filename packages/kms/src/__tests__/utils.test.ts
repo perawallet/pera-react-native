@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 
 vi.mock('algosdk', async importOriginal => ({
     ...(await importOriginal<typeof import('algosdk')>()),
