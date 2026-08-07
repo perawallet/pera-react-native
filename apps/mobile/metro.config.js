@@ -290,9 +290,16 @@ const customResolveRequest = (context, moduleName, platform) => {
             }
         }
     }
-    // Web builds swap the RN keystore for the chrome implementation with the
-    // same export surface (extensions/keystore-chrome). Native keeps the real
+    // Web builds swap the RN keystore for the chrome implementation
+    // (extensions/keystore-chrome). Native keeps the real
     // react-native-keystore (Keychain + MMKV).
+    //
+    // The surfaces are NO LONGER equivalent: the app moved to
+    // react-native-keystore canary.14 while this port still implements
+    // canary.12, so the engine factory and the WebCrypto seal helpers are
+    // missing. src/canary14-unsupported.ts stubs them to throw a message
+    // naming the cause. Web is knowingly broken until the port is replaced by
+    // @algorandfoundation/keystore-web.
     if (
         platform === 'web' &&
         moduleName === '@algorandfoundation/react-native-keystore'
