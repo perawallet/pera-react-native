@@ -16,11 +16,13 @@ a missing key fails, and so does an extra one.
 
 1. **Mirror `en.json`'s key structure exactly** — same nesting, same names. Never
    add, drop, rename or re-nest.
-2. **Never add plural categories.** Spanish, French and Portuguese all have a
-   CLDR `many` category. `en.json` does not use it, so adding `_many` is an
-   _extra key_ and fails the lint. Mirror English's `_one`/`_other` and nothing
-   else. If `en.json` already contains a `_many` key (it does, once — see
-   `signing.transactions.title_many`), mirror that too.
+2. **Never add plural categories to a bundle alone.** Spanish, French and
+   Portuguese all have a CLDR `many` category. `en.json` mostly does not use it,
+   so adding `_many` to one bundle is an _extra key_ and fails the lint. Mirror
+   English's forms exactly — including `signing.transactions.title_many`, which
+   `en.json` does carry. If a locale genuinely needs a category English lacks,
+   the fix is to add it to `en.json` too (duplicating the `_other` text) so
+   parity holds — see the plural-category section below before doing that.
 3. **Preserve `{{interpolation}}` placeholders verbatim** — same names, same
    count. Never translate a variable name.
 4. **Preserve rich-text tags exactly** — `<0>…</0>`, `<1>…</1>`. The numbers map
@@ -62,6 +64,45 @@ between bundles**. Do not "harmonise" these without reading why:
 
 **Sentence case everywhere.** English Title-Cases buttons (`Buy Gift Card`); no
 other locale should.
+
+## Plural categories, and the one that will bite a future locale
+
+**A missing plural form does not fall back to that locale's `_other` — it falls
+back to English.** Measured, not assumed: with `lng: 'es'` and `count: 1000000`,
+`messages.inbox.asa_requests` returns `"1000000 incoming assets"`. i18next treats
+the absent `asa_requests_many` as a missing key and resolves it through
+`fallbackLng: 'en'`.
+
+An unsuffixed **base key catches any category the suffixes don't cover.** The
+three groups shaped `count` + `count_one` (rather than `count_one` +
+`count_other`) return localised text at 1,000,000 for exactly this reason.
+
+### Today: a real gap, but unreachable
+
+`es`, `fr` and `pt-BR` have a `many` category, and CLDR fires it only on **exact
+multiples of 1,000,000** with no decimals — the `1 000 000 de dollars` form. All
+32 plural groups count bounded UI entities (18 accounts, 5 transactions, 2
+seconds, 2 warning actions, and one each of NFT/asset/key/permission/address), so
+none can reach it. `de` and `tr` have no `many` category at all.
+
+So no action is needed for the current five locales. Don't blanket-add `_many` to
+`en.json` either: bidirectional parity would then force those ~29 dead keys into
+`de` and `tr`, which can never select `many`, and into every locale added later.
+
+### Before adding a locale with `few`, `two` or `zero`, fix this properly
+
+This stops being theoretical the moment Pera ships Polish, Russian, Czech,
+Arabic or Welsh. Russian and Polish both select **`few` for counts 2–4** — so
+every one of the ~29 `_one`+`_other` groups would render **English** for a count
+of 2, on very common screens.
+
+The robust fix is to give every plural group an unsuffixed **base key** carrying
+the general plural text, because that catches all unmatched categories at once.
+Per-category duplication (`_many`, then `_few`, then `_two`…) is a point fix that
+has to be repeated for every category and every locale.
+
+Either way it is an `en.json` change plus a mirrored update to all bundles, so do
+it as its own change rather than inside a locale PR.
 
 ## Locale-specific traps
 
