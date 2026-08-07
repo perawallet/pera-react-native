@@ -2662,7 +2662,7 @@
             "title": "Tipos de staking",
             "liquid_description": "Las aplicaciones de liquid staking permiten hacer staking de tus Algo manteniendo la liquidez. Lo habitual es que pidan depositar Algo y acuñar nuevos tokens que representan la propiedad y el valor del Algo en staking, y que se pueden usar en todo el <0>ecosistema DeFi</0>.",
             "pools_description": "Los pools de staking permiten que grupos de personas participen juntas en el consenso. Puedes hacer staking de Algo con un validador y recibir recompensas según las recompensas de ese validador. También hay opciones como el staking en pools de liquidez de DEX.",
-            "delegated_description": "El staking delegado consiste en recurrir a un tercero para que ejecute un nodo en tu nombre mientras tus Algo permanecen en tu wallet. Es útil para quienes quieren proteger la red y obtener recompensas sin ejecutar su propio nodo."
+            "delegated_description": "El staking delegado consiste en recurrir a un tercero para que ejecute un nodo en tu nombre, mientras tus Algo permanecen en tu wallet en todo momento. Es una opción para quienes quieren ayudar a proteger la red y obtener recompensas, pero no tienen los conocimientos ni los recursos para ejecutar su propio nodo."
         }
     },
     "swap": {

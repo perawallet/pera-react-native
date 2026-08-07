@@ -2662,7 +2662,7 @@
             "title": "Staking Types",
             "liquid_description": "Liquid staking applications allow users to stake their Algo while maintaining liquidity. The typical process asks users to deposit Algo and mint new tokens that represent ownership and value of staked Algo, and can be used across the <0>DeFi ecosystem</0>.",
             "pools_description": "Staking pools enable groups of individuals to participate in consensus together. Users can stake Algo to a validator and get rewarded based on validator rewards. Options like DEX liquidity pool staking are also available.",
-            "delegated_description": "Delegated staking involves using a third-party to run a node on your behalf while your Algo remains in your wallet. This is useful for users who want to secure the network and collect rewards without running their own node."
+            "delegated_description": "Delegated staking involves utilizing a third-party to run a node on your behalf while your ALGO remains in your wallet at all times. This provides an option for users who want to help secure the network and collect rewards, but don't have the knowledge or resources to run their own node."
         }
     },
     "swap": {
