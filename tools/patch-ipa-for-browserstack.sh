@@ -57,7 +57,14 @@ fi
 # archive already carries. BrowserStack re-signs again on upload; this only has
 # to be well-formed enough to survive the trip.
 ENTITLEMENTS_FILE="$WORK_DIR/entitlements.plist"
-codesign -d --entitlements :- "$APP_PATH" 2>/dev/null >"$ENTITLEMENTS_FILE"
+# stderr captured rather than discarded: under `set -e` a codesign failure here
+# aborts the script with no output whatsoever — the same undiagnosable shape as
+# the SIGPIPE that failed v7.0.0-alpha.44. `2>&1 >file` orders the redirections
+# so stderr reaches the capture and stdout still reaches the plist.
+if ! CODESIGN_ERR=$(codesign -d --entitlements :- "$APP_PATH" 2>&1 >"$ENTITLEMENTS_FILE"); then
+  echo "Error: could not read entitlements from $APP_PATH: $CODESIGN_ERR" >&2
+  exit 1
+fi
 
 # Captured then parsed in-shell rather than piped into awk. codesign interleaves
 # work with its writes, so a consumer that stops at the first Authority= line
