@@ -41,6 +41,14 @@ const handoffNetwork = (
     handoff: SwapHandoffRecord,
 ): SwapHandoffRecord['network'] => handoff.network
 
+const handoffExpiresAt = (detail: SignRequestResponse): number | null => {
+    const expiresAt = new Date(detail.expected_expire_datetime).getTime()
+    return Number.isNaN(expiresAt) ? null : expiresAt
+}
+
+const handoffRegisteredAt = (handoff: SwapHandoffRecord): number =>
+    handoff.registeredAt
+
 export type UseSwapCosignResolverArgs = {
     /** Polling pauses when false (e.g. app backgrounded — iOS suspends timers). */
     isAppActive: boolean
@@ -115,11 +123,13 @@ export const useSwapCosignResolver = ({
         (
             outcome: TerminalHandoffOutcome,
             handoff: SwapHandoffRecord,
-            detail: SignRequestResponse,
+            detail: SignRequestResponse | undefined,
         ) => {
             // Proposer address from the poll — the only local participant
-            // allowed to cancel the request on a terminal failure.
-            const proposerAddress = detail.proposer_address ?? undefined
+            // allowed to cancel the request on a terminal failure. Absent when
+            // a client-side deadline fires with no poll body: the decline is
+            // best-effort and simply skipped below.
+            const proposerAddress = detail?.proposer_address ?? undefined
 
             return resolveSwapHandoffOutcome({
                 outcome,
@@ -171,5 +181,7 @@ export const useSwapCosignResolver = ({
         resolve,
         activeNetwork: network,
         networkOf: handoffNetwork,
+        expiresAtOf: handoffExpiresAt,
+        registeredAtOf: handoffRegisteredAt,
     })
 }
