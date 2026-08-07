@@ -25,9 +25,16 @@ vi.mock('react-native', () => ({
 }))
 
 // Mock Firebase modules with simple implementations
-const { mockGetValue, mockFetchAndActivate } = vi.hoisted(() => ({
+const {
+    mockGetValue,
+    mockFetchAndActivate,
+    mockSetConfigSettings,
+    mockSetDefaults,
+} = vi.hoisted(() => ({
     mockGetValue: vi.fn(),
     mockFetchAndActivate: vi.fn().mockResolvedValue(true),
+    mockSetConfigSettings: vi.fn().mockResolvedValue(undefined),
+    mockSetDefaults: vi.fn().mockResolvedValue(null),
 }))
 
 vi.mock('@react-native-firebase/crashlytics', () => ({
@@ -37,7 +44,10 @@ vi.mock('@react-native-firebase/crashlytics', () => ({
 }))
 
 vi.mock('@react-native-firebase/remote-config', () => ({
-    getRemoteConfig: vi.fn(() => ({})),
+    getRemoteConfig: vi.fn(() => ({
+        setConfigSettings: mockSetConfigSettings,
+        setDefaults: mockSetDefaults,
+    })),
     fetchAndActivate: mockFetchAndActivate,
     getValue: mockGetValue,
 }))
@@ -112,6 +122,56 @@ describe('RNFirebaseService', () => {
                 await expect(
                     service.initializeRemoteConfig(),
                 ).resolves.not.toThrow()
+            })
+
+            // Both native writes must land before the fetch. Assigning the
+            // `settings`/`defaultConfig` properties instead dispatched the fetch
+            // first, and native setDefaults then reset the config database and
+            // cancelled the in-flight request — so no fetch ever succeeded and
+            // every key served its bundled default (PERA-4836).
+            it('completes both native config writes before fetching', async () => {
+                const order: string[] = []
+                mockSetConfigSettings.mockImplementationOnce(async () => {
+                    order.push('setConfigSettings')
+                })
+                mockSetDefaults.mockImplementationOnce(async () => {
+                    order.push('setDefaults')
+                    return null
+                })
+                mockFetchAndActivate.mockImplementationOnce(async () => {
+                    order.push('fetchAndActivate')
+                    return true
+                })
+
+                await service.initializeRemoteConfig()
+
+                expect(order).toEqual([
+                    'setConfigSettings',
+                    'setDefaults',
+                    'fetchAndActivate',
+                ])
+            })
+
+            // A second concurrent fetch makes Firebase cancel the in-flight one.
+            it('shares one fetch between concurrent callers, then allows a later refetch', async () => {
+                await Promise.all([
+                    service.initializeRemoteConfig(),
+                    service.initializeRemoteConfig(),
+                ])
+                expect(mockFetchAndActivate).toHaveBeenCalledTimes(1)
+
+                await service.initializeRemoteConfig()
+                expect(mockFetchAndActivate).toHaveBeenCalledTimes(2)
+            })
+
+            it('seeds the bundled defaults so unfetched keys still resolve', async () => {
+                await service.initializeRemoteConfig()
+
+                expect(mockSetDefaults).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        staking_projects_i18n: expect.any(String),
+                    }),
+                )
             })
         })
 

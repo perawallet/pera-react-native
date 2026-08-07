@@ -3268,7 +3268,7 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
     RemoteConfigKeys: {
         fee_warning_standard_fee: 'fee_warning_standard_fee',
         fee_warning_usd_threshold: 'fee_warning_usd_threshold',
-        staking_projects: 'staking_projects',
+        staking_projects_i18n: 'staking_projects_i18n',
         swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
         swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
         pera_7_migration: 'pera_7_migration',

@@ -17,7 +17,7 @@ export const RemoteConfigKeys = {
     fee_pq_multiplier: 'fee_pq_multiplier',
     fee_asset_mbr: 'fee_asset_mbr',
     fee_base_account_mbr: 'fee_base_account_mbr',
-    staking_projects: 'staking_projects',
+    staking_projects_i18n: 'staking_projects_i18n',
     swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
     swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
     enable_motion_lock: 'enable_motion_lock',
@@ -53,7 +53,7 @@ export const RemoteConfigDefaults: Record<
     fee_asset_mbr: 100_000,
     // Base minimum balance requirement for any account, in µAlgo.
     fee_base_account_mbr: 100_000,
-    staking_projects: '',
+    staking_projects_i18n: '',
     swap_price_impact_low_threshold: 1,
     swap_price_impact_high_threshold: 5,
     enable_motion_lock: false,

@@ -22,4 +22,7 @@ export type {
     StakingType,
     StakingProjectInfo,
     StakingProjectsApiResponse,
+    StakingProjectsI18nConfig,
 } from './schema'
+
+export { STAKING_FALLBACK_LOCALE } from './schema'
