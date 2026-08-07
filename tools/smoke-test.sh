@@ -30,13 +30,16 @@ Environment:
   SMOKE_TAG                    Robot tag to select (default: release-gate)
   SMOKE_SUITE                  suite file (default: Tests/OnboardingTest.robot)
   SMOKE_RESULTS_DIR            Robot output dir (default: ./smoke-results)
+  UV_VERSION                   uv release used to build the harness venv
 EOF
   exit 1
 }
 
+# Each harness pins its requirements against the interpreter its own CI
+# validates; resolving them on a newer python breaks pinned sdists.
 case "$PLATFORM" in
-  ios) HARNESS_REPO="perawallet/pera-ios-tests" ;;
-  android) HARNESS_REPO="perawallet/pera-android-tests" ;;
+  ios) HARNESS_REPO="perawallet/pera-ios-tests"; HARNESS_PYTHON="3.9" ;;
+  android) HARNESS_REPO="perawallet/pera-android-tests"; HARNESS_PYTHON="3.11" ;;
   *) usage ;;
 esac
 
@@ -51,6 +54,7 @@ HARNESS_REF="${SMOKE_HARNESS_REF:-main}"
 # that say nothing about whether the app launches.
 SMOKE_TAG="${SMOKE_TAG:-release-gate}"
 SMOKE_SUITE="${SMOKE_SUITE:-Tests/OnboardingTest.robot}"
+UV_VERSION="${UV_VERSION:-0.12.2}"
 
 # Outside the scratch dir: the Robot report matters most when the run fails,
 # and the trap below would take it with the harness checkout.
@@ -90,11 +94,20 @@ git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-ac
 
 cd "$WORK_DIR/harness"
 
-python3 -m venv .venv
+# uv fetches the interpreter the harness expects rather than whatever the
+# stack ships; pinned for reproducibility, --seed because the SDK expects pip.
+if ! command -v uv >/dev/null 2>&1; then
+  echo "--- Installing uv $UV_VERSION"
+  curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" \
+    | env UV_INSTALL_DIR="$WORK_DIR/uv" INSTALLER_NO_MODIFY_PATH=1 sh >/dev/null
+  PATH="$WORK_DIR/uv:$PATH"
+fi
+
+echo "--- Preparing harness venv on Python $HARNESS_PYTHON"
+uv venv --seed --quiet --python "$HARNESS_PYTHON" .venv
 # shellcheck disable=SC1091
 source .venv/bin/activate
-pip install --quiet --upgrade pip
-pip install --quiet -r requirements.txt
+uv pip install --quiet -r requirements.txt
 
 # The harness pins a manually-uploaded build in browserstack.yml; point it at
 # the artifact this pipeline just produced instead.
