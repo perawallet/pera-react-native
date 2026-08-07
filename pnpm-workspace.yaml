@@ -25,7 +25,7 @@ catalog:
   "@noble/hashes": ^1.8.0
   "@notifee/react-native": ^9.1.8
   "@playwright/test": ^1.53.0
-  "@react-native-firebase/analytics": ^25.1.0
+  "@react-native-firebase/analytics": ^26.0.0
   "@react-native-firebase/app": ^25.1.0
   "@react-native-firebase/crashlytics": ^25.1.0
   "@react-native-firebase/messaging": ^25.1.0
