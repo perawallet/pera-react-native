@@ -681,7 +681,7 @@
             },
             "group_fee_too_small": {
                 "title": "Netzwerkgebühr zu niedrig",
-                "body": "Diese Transaktionsgruppe hat {{paid}} µALGO an Gebühren gezahlt, das Netzwerk verlangt jedoch {{required}} µALGO. Bitte versuche es erneut."
+                "body": "Diese Transaktionsgruppe hat {{paid}} microALGO an Gebühren gezahlt, das Netzwerk verlangt jedoch {{required}} microALGO. Bitte versuche es erneut."
             },
             "unknown_node_error": {
                 "title": "Transaktion fehlgeschlagen",

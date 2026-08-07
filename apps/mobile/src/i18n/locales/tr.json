@@ -98,8 +98,8 @@
         "hide_zero_balance_description": "Bakiyesi sıfır olan varlıkları gösterebilir veya gizleyebilirsin",
         "display_nfts": "NFT’leri varlık listesinde göster",
         "display_nfts_description": "NFT varlıkları hesabının varlık listesinde gösterilecek",
-        "display_opted_in_nfts": "Opt-in yapılan NFT’leri göster",
-        "display_opted_in_nfts_description": "Opt-in yapılmış ama sana ait olmayan NFT’leri gösterebilir veya gizleyebilirsin"
+        "display_opted_in_nfts": "Opt-in olduğun NFT’leri göster",
+        "display_opted_in_nfts_description": "Opt-in olduğun ama sana ait olmayan NFT’leri gösterebilir veya gizleyebilirsin"
     },
     "add_asset": {
         "title": "Varlık ekle",
@@ -108,8 +108,8 @@
         "opt_in": {
             "failed_title": "Opt-in başarısız",
             "success_title": "Opt-in başarılı",
-            "success_body": "{{assetName}} için opt-in başarıyla yapıldı ve varlık hesabına eklendi",
-            "success_body_generic": "Varlık için opt-in başarıyla yapıldı ve varlık hesabına eklendi"
+            "success_body": "{{assetName}} için opt-in işlemi başarıyla tamamlandı ve varlık hesabına eklendi",
+            "success_body_generic": "Varlık için opt-in işlemi başarıyla tamamlandı ve varlık hesabına eklendi"
         },
         "select_account": {
             "title": "Bir hesap seç",
@@ -119,11 +119,11 @@
             "title": "Varlık ekleniyor",
             "account_label": "Hesap",
             "fee_label": "İşlem ücreti",
-            "description": "Bir varlıkla etkileşime geçmeden önce hesabından o varlığa opt-in yapmalısın. Bu, izinsiz varlık işlemlerinin sana gönderilmesini engeller.",
+            "description": "Bir varlıkla etkileşime geçmeden önce hesabından o varlığa opt-in olmalısın. Bu, izinsiz varlık işlemlerinin sana gönderilmesini engeller.",
             "copy_id": "ID’yi kopyala"
         },
-        "collectible_title": "NFT’ye opt-in yap",
-        "collectible_note": "NFT’yi cüzdanına aktarabilmek için NFT’nin ASA ID’sine opt-in yapman gerekir. ASA ID’sini arama çubuğuna yapıştır.",
+        "collectible_title": "NFT’ye opt-in ol",
+        "collectible_note": "NFT’yi cüzdanına aktarabilmek için NFT’nin ASA ID’sine opt-in olman gerekir. ASA ID’sini arama çubuğuna yapıştır.",
         "collectible_search_placeholder": "Varlık ID’si veya NFT adı ara"
     },
     "asa_verification_info": {
@@ -135,7 +135,7 @@
     },
     "asset_opt_out": {
         "title": "Varlığı kaldır",
-        "description": "{{accountName}} hesabıyla {{assetName}} varlığını kaldırmak ve opt-out yapmak üzeresin. Yeniden opt-in yapmadıkça bu hesaptan bu varlıkla işlem yapamazsın.",
+        "description": "{{accountName}} hesabıyla {{assetName}} varlığını kaldırmak ve opt-out olmak üzeresin. Yeniden opt-in olmadıkça bu hesaptan bu varlıkla işlem yapamazsın.",
         "fee_label": "İşlem ücreti",
         "keep": "Kalsın",
         "copy_id": "ID’yi kopyala",
@@ -266,7 +266,7 @@
             "media_save_failed": "Kaydedilemedi",
             "image_copy_failed": "Görsel kopyalanamadı",
             "media_permission_denied": "Medyayı kaydetmek için kitaplık erişimi gerekiyor",
-            "not_owner_notice": "Bu NFT henüz sana ait değil, ancak onun için opt-in yaptın. Artık hesabına aktarabilirsin."
+            "not_owner_notice": "Bu NFT henüz sana ait değil, ancak onun için opt-in oldun. Artık hesabına aktarabilirsin."
         },
         "verification_card": {
             "trusted_title": "Güvenilir ASA",
@@ -302,8 +302,8 @@
             "sort": "Sırala",
             "filter_title": "NFT’leri filtrele",
             "filter": "Filtrele",
-            "filter_opted_in": "Opt-in yapılan NFT’leri göster",
-            "filter_opted_in_description": "Sahibi olmadığın hâlde opt-in yaptığın NFT’leri gösterebilir veya gizleyebilirsin",
+            "filter_opted_in": "Opt-in olduğun NFT’leri göster",
+            "filter_opted_in_description": "Sahibi olmadığın hâlde opt-in olduğun NFT’leri gösterebilir veya gizleyebilirsin",
             "filter_watch_accounts": "İzleme hesaplarındaki NFT’leri göster",
             "filter_watch_accounts_description": "Bu, kendi hesaplarının yanı sıra izleme hesaplarındaki NFT’leri de gösterir",
             "sort_title_asc": "Ad (A-Z)",
@@ -423,7 +423,7 @@
     },
     "min_balance_info": {
         "title": "Minimum bakiye",
-        "description": "Minimum bakiye, bir hesapta tutmak zorunda olduğun en az Algo miktarıdır. Hesap her akıllı sözleşme, ASA veya NFT için opt-in yaptığında bu miktar artar."
+        "description": "Minimum bakiye, bir hesapta tutmak zorunda olduğun en az Algo miktarıdır. Hesap her akıllı sözleşme, ASA veya NFT için opt-in olduğunda bu miktar artar."
     },
     "view_passphrase": {
         "acknowledge": {
@@ -661,7 +661,7 @@
             },
             "missing_opt_in": {
                 "title": "Varlık kabul edilmiyor",
-                "body": "Alıcı hesap, {{assetId}} ID’li varlığı henüz eklememiş. Alıcıdan varlığı eklemesini iste veya ASA gelen kutusu üzerinden gönder."
+                "body": "Alıcı hesap, {{assetId}} ID’li varlığı henüz eklememiş. Alıcıdan varlığı eklemesini iste veya ASA Inbox üzerinden gönder."
             },
             "duplicate_txn": {
                 "title": "Zaten gönderildi",
@@ -689,7 +689,7 @@
             },
             "group_fee_too_small": {
                 "title": "Ağ ücreti çok düşük",
-                "body": "Bu işlem grubu ücret olarak {{paid}} µALGO ödedi ancak ağ {{required}} µALGO gerektiriyor. Tekrar dene."
+                "body": "Bu işlem grubu ücret olarak {{paid}} microALGO ödedi ancak ağ {{required}} microALGO gerektiriyor. Tekrar dene."
             },
             "unknown_node_error": {
                 "title": "İşlem başarısız oldu",
@@ -786,7 +786,7 @@
         "intro": {
             "navigation_title": "Bidali ile hediye kartı satın al",
             "title": "Kripto ile hediye kartı satın al",
-            "body": "Dünya genelinde binlerce markadan hediye kartı ve mobil yükleme satın almak için Algo veya USDC bakiyeni kullanabilirsin!",
+            "body": "Dünya genelinde binlerce markadan hediye kartı ve mobil yükleme satın almak için ALGO veya USDC bakiyeni kullanabilirsin!",
             "buy_gift_cards": "Hediye kartı satın al"
         },
         "accountSelection": {
@@ -809,8 +809,8 @@
             "spendable_per_tx": "≈{{amount}} {{currency}} kullanılabilir",
             "spendable_info_title": "İşlem başına kullanılabilir",
             "spendable_info_body": "Tek bir alışverişin çekebileceği en yüksek tutar: kart bakiyen ve krediler, ayrıca otomatik fonlama açıkken bağlı hesabından {{limit}} tutarına kadar.",
-            "withdraw": "Para çek",
-            "add_funds": "Fon ekle",
+            "withdraw": "Çek",
+            "add_funds": "Ekle",
             "get_usdc": "USDC al",
             "credits_title": "Krediler",
             "credits_description": "Kredilerin, iadelerden veya geri alınan işlemlerden sana dönen paradır.",
@@ -858,16 +858,16 @@
             "add_to_google_pay": "Google Pay’e ekle",
             "set_pin": "PIN kodu belirle",
             "freeze_card": "Kartı dondur",
-            "unfreeze_card": "Kartı çözdür",
+            "unfreeze_card": "Kartı kullanıma aç",
             "frozen_banner_title": "Kart donduruldu",
-            "frozen_banner_body": "Kartın donduruldu. Harcamaya devam etmek için dilediğin zaman çözdürebilirsin.",
+            "frozen_banner_body": "Kartın donduruldu. Harcamaya devam etmek için dilediğin zaman kullanıma açabilirsin.",
             "reactivate_card": "Kartı yeniden etkinleştir",
             "freeze_sheet_title": "Kartı dondur",
-            "freeze_sheet_body": "Kartını kaybettiysen veya yeni işlemleri geçici olarak engellemek istiyorsan kartını dondur. Tekrar kullanmaya hazır olduğunda anında çözdürebilirsin.",
+            "freeze_sheet_body": "Kartını kaybettiysen veya yeni işlemleri geçici olarak engellemek istiyorsan kartını dondur. Tekrar kullanmaya hazır olduğunda anında kullanıma açabilirsin.",
             "freeze_sheet_confirm": "Kartı dondur",
-            "unfreeze_sheet_title": "Kartı çözdür",
-            "unfreeze_sheet_body": "Kartını çözdürdüğünde kart yeni işlemler için yeniden kullanılabilir. Dilediğin zaman tekrar dondurabilirsin.",
-            "unfreeze_sheet_confirm": "Kartı çözdür",
+            "unfreeze_sheet_title": "Kartı kullanıma aç",
+            "unfreeze_sheet_body": "Kartını kullanıma açtığında kart yeni işlemler için yeniden kullanılabilir. Dilediğin zaman tekrar dondurabilirsin.",
+            "unfreeze_sheet_confirm": "Kartı kullanıma aç",
             "report_lost_stolen": "Kayıp/çalıntı kartı bildir",
             "report_suspicious": "Şüpheli hareket bildir",
             "report_lost_sheet_title": "Kayıp/çalıntı kartı bildir",
@@ -880,7 +880,7 @@
             "report_suspicious_sheet_confirm": "Kartı dondur",
             "report_suspicious_frozen_toast_title": "Kartın donduruldu",
             "report_suspicious_before_title": "Devam etmeden önce",
-            "report_suspicious_before_body": "Lütfen kartını ailenden birinin veya yetkili başka bir kullanıcının kullanıp kullanmadığını kontrol et. Kullandıysa, kullanmaya devam etmek için kartını dilediğin zaman çözdürebilirsin. Kullanmadıysa bildirime devam et.",
+            "report_suspicious_before_body": "Lütfen kartını ailenden birinin veya yetkili başka bir kullanıcının kullanıp kullanmadığını kontrol et. Kullandıysa, kullanmaya devam etmek için kartını dilediğin zaman kullanıma açabilirsin. Kullanmadıysa bildirime devam et.",
             "report_suspicious_before_confirm": "Bildirime devam et",
             "error_title": "Bir şeyler ters gitti",
             "error_body": "Lütfen tekrar dene."
@@ -923,7 +923,7 @@
             "mcc_category_utilities": "Faturalar",
             "mcc_category_misc": "Diğer",
             "detail_report": "İşlemi bildir",
-            "detail_open_explorer_accessibility_label": "İşlemi explorer’da görüntüle",
+            "detail_open_explorer_accessibility_label": "İşlemi Explorer’da görüntüle",
             "detail_copy_hash_accessibility_label": "İşlem hash’ini kopyala",
             "detail_not_found_title": "İşlem bulunamadı",
             "detail_not_found_body": "Bu işlem artık mevcut değil. Lütfen tekrar dene.",
