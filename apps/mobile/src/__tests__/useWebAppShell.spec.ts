@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
     isUnlocked: null as boolean | null,
     showOnboarding: false,
     hasAccounts: false,
-    hydrateKeystore: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    keystoreReady: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
     armAutoLock: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
     initializeDatabase: vi
         .fn<() => Promise<void>>()
@@ -73,7 +73,7 @@ vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
         >()
     return {
         ...original,
-        hydrateKeystore: () => mocks.hydrateKeystore(),
+        getKeystore: () => ({ ready: mocks.keystoreReady() }),
         getProvider: () => ({ database: {} }),
     }
 })
@@ -156,7 +156,7 @@ describe('useWebAppShell', () => {
         vi.clearAllMocks()
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedAlgoAsset.mockResolvedValue(undefined)
-        mocks.hydrateKeystore.mockResolvedValue(undefined)
+        mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.armAutoLock.mockResolvedValue(undefined)
         mocks.getCurrentApproval.mockResolvedValue(null)
     })
@@ -242,7 +242,7 @@ describe('useWebAppShell', () => {
             expect(result.current.shellState).toBe('onboarding'),
         )
 
-        expect(mocks.hydrateKeystore).toHaveBeenCalledOnce()
+        expect(mocks.keystoreReady).toHaveBeenCalledOnce()
     })
 
     it('returns main when initialized+unlocked and showOnboarding is false, after bootstrap resolves', async () => {
@@ -256,9 +256,7 @@ describe('useWebAppShell', () => {
         expect(result.current.shellState).toBe('resolving')
 
         // Stays 'resolving' until DB + sync bootstrap resolve, not just keystore.
-        await waitFor(() =>
-            expect(mocks.hydrateKeystore).toHaveBeenCalledOnce(),
-        )
+        await waitFor(() => expect(mocks.keystoreReady).toHaveBeenCalledOnce())
         await waitFor(() =>
             expect(mocks.initializeDatabase).toHaveBeenCalledOnce(),
         )
@@ -266,7 +264,7 @@ describe('useWebAppShell', () => {
         await waitFor(() => expect(result.current.shellState).toBe('main'))
     })
 
-    it('calls hydrateKeystore only once per unlock transition, not on every render', async () => {
+    it('calls keystore ready only once per unlock transition, not on every render', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = true
         mocks.isUnlocked = true
@@ -283,7 +281,7 @@ describe('useWebAppShell', () => {
             rerender()
         })
 
-        expect(mocks.hydrateKeystore).toHaveBeenCalledOnce()
+        expect(mocks.keystoreReady).toHaveBeenCalledOnce()
     })
 
     it('re-arms auto-lock on every unlock but hydrates the keystore once', async () => {
@@ -298,7 +296,7 @@ describe('useWebAppShell', () => {
         await waitFor(() => expect(result.current.shellState).toBe('main'))
 
         // First unlock: both hydrate and arm
-        expect(mocks.hydrateKeystore).toHaveBeenCalledOnce()
+        expect(mocks.keystoreReady).toHaveBeenCalledOnce()
         expect(mocks.armAutoLock).toHaveBeenCalledOnce()
 
         // Lock: transition isUnlocked to false
@@ -315,18 +313,18 @@ describe('useWebAppShell', () => {
 
         await waitFor(() => expect(mocks.armAutoLock).toHaveBeenCalledTimes(2))
 
-        expect(mocks.hydrateKeystore).toHaveBeenCalledOnce()
+        expect(mocks.keystoreReady).toHaveBeenCalledOnce()
     })
 
-    it('bootstraps in order: hydrateKeystore before initializeDatabase; seedAlgoAsset receives getDatabase(); initializeSyncService called once with queryClient + registerCompletionHandler', async () => {
+    it('bootstraps in order: keystore ready before initializeDatabase; seedAlgoAsset receives getDatabase(); initializeSyncService called once with queryClient + registerCompletionHandler', async () => {
         mocks.surface = 'popup'
         mocks.isInitialized = true
         mocks.isUnlocked = true
         mocks.showOnboarding = false
 
         const callOrder: string[] = []
-        mocks.hydrateKeystore.mockImplementation(async () => {
-            callOrder.push('hydrateKeystore')
+        mocks.keystoreReady.mockImplementation(async () => {
+            callOrder.push('keystoreReady')
         })
         mocks.initializeDatabase.mockImplementation(async () => {
             callOrder.push('initializeDatabase')
@@ -340,7 +338,7 @@ describe('useWebAppShell', () => {
         await waitFor(() => expect(result.current.shellState).toBe('main'))
 
         expect(callOrder).toEqual([
-            'hydrateKeystore',
+            'keystoreReady',
             'initializeDatabase',
             'seedAlgoAsset',
         ])

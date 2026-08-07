@@ -1576,6 +1576,8 @@ vi.mock('react-native-quick-crypto', () => ({
         createHmac: vi.fn(),
         randomBytes: vi.fn(),
     },
+    // Named: the keystore engine is constructed with this at module scope.
+    subtle: globalThis.crypto?.subtle,
 }))
 
 // Basic NativeEventEmitter dependency to avoid errors when no native module is provided

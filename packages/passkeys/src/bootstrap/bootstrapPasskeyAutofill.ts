@@ -33,6 +33,9 @@ export interface BootstrapPasskeyAutofillOptions {
     }
 }
 
+/** The keystore driver's metadata bucket; ids are stored prefixed. */
+const METADATA_PREFIX = 'k/'
+
 const HD_ROOT_KEY_TYPES = new Set<string>([
     'hd-root-key',
     'xhd-root-key',
@@ -156,14 +159,17 @@ const runBootstrap = async (
 }
 
 /**
- * Decrypts every entry's metadata to find the seed — `hydrateKeystore` scoped to
- * the single key the autofill subsystem needs.
+ * Decrypts every entry to find the seed — keystore hydration scoped to the
+ * single key the autofill subsystem needs.
  */
 const configureHdRootKey = async (
     service: PasskeyAutofillService,
     masterKey: Buffer,
 ): Promise<void> => {
-    const keyIds = keystoreStorage.getAllKeys()
+    const keyIds = keystoreStorage
+        .getAllKeys()
+        .filter(key => key.startsWith(METADATA_PREFIX))
+        .map(key => key.slice(METADATA_PREFIX.length))
     if (keyIds.length === 0) {
         logger.warn(
             'Keystore MMKV is empty; passkey autofill has no HD root key to derive from',

@@ -50,6 +50,7 @@ export default defineConfig({
                 '@algorandfoundation/keystore-core',
                 '@algorandfoundation/react-native-keystore',
                 '@algorandfoundation/wallet-provider',
+                'react-native-quick-crypto',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-extension-platform-driver',

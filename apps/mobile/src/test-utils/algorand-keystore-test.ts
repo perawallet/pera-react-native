@@ -81,12 +81,31 @@ export const storage = {
 // is meaningless; the encrypt/decrypt funcs just pass through.
 const TEST_MASTER_KEY = Buffer.alloc(32)
 export const readMasterKey = async (): Promise<Buffer> => TEST_MASTER_KEY
-export const encryptData = (_key: Buffer, data: string): string => data
-export const decryptData = (_key: Buffer, payload: string): string => payload
+export const sealData = async (
+    _subtle: SubtleCrypto,
+    _key: Buffer | Uint8Array,
+    data: string,
+): Promise<string> => data
+export const openData = async (
+    _subtle: SubtleCrypto,
+    _key: Buffer | Uint8Array,
+    payload: string,
+): Promise<string> => payload
 export const encode = (key: KeyData): string =>
     JSON.stringify(key, replaceUint8Array)
 export const decode = (data: string): KeyData =>
     JSON.parse(data, reviveUint8Array) as KeyData
+
+// canary.14 builds the engine outside `WithKeyStore`, and the provider
+// singleton constructs one at module scope. Every operation still routes
+// through the `WithKeyStore` api below, so this only has to answer the two
+// lifecycle members the singleton itself reaches for.
+export const createReactNativeKeyStore = (options: {
+    store: Store<KeyStoreState>
+}): { ready: Promise<void>; clear: () => Promise<void> } => ({
+    ready: Promise.resolve(),
+    clear: () => clear({ store: options.store }),
+})
 
 // Mutates the reactive store with the metadata representation of a Key
 // (privateKey/seed bytes are stripped from the metadata mirror — kept only

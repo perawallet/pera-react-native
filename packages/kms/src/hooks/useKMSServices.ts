@@ -16,8 +16,8 @@ import type {
     KeyData,
     KeyId,
 } from '@algorandfoundation/keystore-core'
-import { clearKeyData } from '@algorandfoundation/keystore-core'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import { zeroBytes } from '../crypto/secure-memory'
 import { AccessControlPermission } from '../models'
 import { aclOf } from '../utils'
 import { KeyAccessError } from '../errors'
@@ -84,7 +84,11 @@ export const useKMSService = (): UseKMSServiceResult => {
         try {
             return await handler(keyData)
         } finally {
-            clearKeyData(keyData)
+            // The keystore no longer exports a scrubber, so wipe the exported
+            // material here — `keyData` is a detached copy the engine will not
+            // clean up for us.
+            zeroBytes(keyData.privateKey)
+            delete keyData.privateKey
         }
     }
 

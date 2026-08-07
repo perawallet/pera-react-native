@@ -37,12 +37,6 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-const mockClearKeyData = vi.fn()
-
-vi.mock('@algorandfoundation/keystore-core', () => ({
-    clearKeyData: (...args: any[]) => mockClearKeyData(...args),
-}))
-
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-shared',
@@ -172,9 +166,10 @@ describe('useKMSService', () => {
 
     describe('withExportedKey', () => {
         test('exports key, passes it to handler, and returns result', async () => {
+            const privateKey = new Uint8Array(64).fill(2)
             const mockKeyData = {
                 publicKey: new Uint8Array(32).fill(1),
-                privateKey: new Uint8Array(64).fill(2),
+                privateKey,
             }
             mockKeyStoreExport.mockResolvedValue(mockKeyData)
 
@@ -192,10 +187,11 @@ describe('useKMSService', () => {
             expect(handlerResult).toBe(mockKeyData.publicKey)
         })
 
-        test('calls clearKeyData after handler completes', async () => {
+        test('zeroes and drops the exported private key after the handler completes', async () => {
+            const privateKey = new Uint8Array(64).fill(2)
             const mockKeyData = {
                 publicKey: new Uint8Array(32).fill(1),
-                privateKey: new Uint8Array(64).fill(2),
+                privateKey,
             }
             mockKeyStoreExport.mockResolvedValue(mockKeyData)
 
@@ -205,13 +201,15 @@ describe('useKMSService', () => {
                 await result.current.withExportedKey('ks-key-1', () => 'done')
             })
 
-            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
+            expect(privateKey.every(byte => byte === 0)).toBe(true)
+            expect(mockKeyData).not.toHaveProperty('privateKey')
         })
 
-        test('calls clearKeyData even when handler throws', async () => {
+        test('zeroes and drops the exported private key even when the handler throws', async () => {
+            const privateKey = new Uint8Array(64).fill(2)
             const mockKeyData = {
                 publicKey: new Uint8Array(32).fill(1),
-                privateKey: new Uint8Array(64).fill(2),
+                privateKey,
             }
             mockKeyStoreExport.mockResolvedValue(mockKeyData)
 
@@ -225,12 +223,14 @@ describe('useKMSService', () => {
                 }),
             ).rejects.toThrow('handler failed')
 
-            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
+            expect(privateKey.every(byte => byte === 0)).toBe(true)
+            expect(mockKeyData).not.toHaveProperty('privateKey')
         })
 
         test('works with async handlers', async () => {
+            const privateKey = new Uint8Array(64).fill(3)
             const mockKeyData = {
-                privateKey: new Uint8Array(64).fill(3),
+                privateKey,
                 metadata: { mnemonic: 'test words' },
             }
             mockKeyStoreExport.mockResolvedValue(mockKeyData)
@@ -248,7 +248,8 @@ describe('useKMSService', () => {
             })
 
             expect(mnemonic).toBe('test words')
-            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
+            expect(privateKey.every(byte => byte === 0)).toBe(true)
+            expect(mockKeyData).not.toHaveProperty('privateKey')
         })
     })
 })

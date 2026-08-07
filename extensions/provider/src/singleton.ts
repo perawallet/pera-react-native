@@ -13,20 +13,17 @@
 import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
 import type { HookCollection } from 'before-after-hook'
-import type {
-    Key,
-    KeyData,
-    KeyStoreState,
-} from '@algorandfoundation/keystore-core'
-import { initializeKeyStore } from '@algorandfoundation/keystore-core'
+import type { Key, KeyStoreState } from '@algorandfoundation/keystore-core'
+import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
 import {
-    clear as clearKeystoreStore,
     decode,
-    decryptData,
-    readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
+import { createPeraKeystore } from './keystore/createKeystore'
 import { PeraProvider } from './pera-provider'
+
+/** The driver's metadata bucket. Sealed material lives under `m/` instead. */
+const METADATA_PREFIX = 'k/'
 
 const keystoreStore = new Store<KeyStoreState>({
     keys: [],
@@ -34,12 +31,18 @@ const keystoreStore = new Store<KeyStoreState>({
 })
 const keystoreHooks = new Hook.Collection()
 
+const keystore = createPeraKeystore({
+    store: keystoreStore,
+    hooks: keystoreHooks,
+})
+
 let instance: PeraProvider | null = new PeraProvider(
     {
         id: 'pera-wallet',
         name: 'Pera Wallet',
     },
     {
+        api: { keystore },
         keystore: {
             store: keystoreStore,
             hooks: keystoreHooks,
@@ -67,6 +70,13 @@ export const getProvider = (): PeraProvider => {
 export const getKeystoreStore = (): Store<KeyStoreState> => keystoreStore
 
 /**
+ * The keystore the provider was built with. Await its `ready` during bootstrap:
+ * it resolves once the shim stack is layered and persisted metadata has been
+ * loaded into {@link getKeystoreStore}.
+ */
+export const getKeystore = (): ReactNativeKeyStore => keystore
+
+/**
  * Where wallet-domain packages register hooks to intercept keystore operations.
  * `wrap` fully replaces one — kms uses it to route `type: 'algo25'` signing
  * through tweetnacl.
@@ -89,28 +99,22 @@ export const initializeProvider = (provider: PeraProvider): void => {
  * Used during "delete all data" flows as a safety net after individual key deletion.
  */
 export const clearKeystore = async (): Promise<void> => {
-    await clearKeystoreStore({ store: keystoreStore })
+    await keystore.clear?.()
 }
 
 /**
- * Metadata only — the `privateKey`/`seed` bytes are zeroed before returning.
- * `null` on a missing or undecodable entry, so a caller can skip it rather than
- * abort a whole hydration pass.
+ * `null` on a missing or unreadable entry, so a caller can skip it rather than
+ * abort a whole reconcile pass.
  */
-const decodeKeyEntry = (id: string, masterKey: Buffer): Key | null => {
-    const encrypted = keystoreStorage.getString(id)
-    if (!encrypted) return null
+const decodeKeyEntry = (key: string): Key | null => {
+    const raw = keystoreStorage.getString(key)
+    if (!raw) return null
 
     try {
-        const decrypted = decryptData(masterKey, encrypted)
-        const data = decode(decrypted) as KeyData & { seed?: Uint8Array }
-        if (data.privateKey instanceof Uint8Array) data.privateKey.fill(0)
-        if (data.seed instanceof Uint8Array) data.seed.fill(0)
-        const { privateKey: _pk, seed: _seed, ...meta } = data
-        return meta as Key
+        return decode(raw) as Key
     } catch (err) {
         console.error(
-            `[provider] keystore decode: failed to decode entry ${id}`,
+            `[provider] keystore decode: failed to decode entry ${key}`,
             err,
         )
         return null
@@ -118,62 +122,27 @@ const decodeKeyEntry = (id: string, masterKey: Buffer): Key | null => {
 }
 
 /**
- * Seeds the reactive store from the keystore MMKV namespace. Must run once at
- * bootstrap: `react-native-keystore` only mutates `state.keys` on
- * `commit`/`removeKey`, so without this, entries persisted in earlier sessions
- * are invisible to the synchronous lookups until a session-local mutation
- * happens to add them.
- *
- * Metadata only — secret bytes are decrypted briefly to read the rest of the
- * record, then zeroed. Idempotent, safe on an empty keystore, and entries that
- * fail to decrypt are logged and skipped rather than aborting.
- */
-export const hydrateKeystore = async (): Promise<void> => {
-    if (keystoreStore.state.keys.length > 0) return
-
-    const ids = keystoreStorage.getAllKeys()
-    if (ids.length === 0) return
-
-    let masterKey: Buffer | null = null
-    try {
-        masterKey = await readMasterKey()
-        const mk = masterKey
-        const keys = ids
-            .map(id => decodeKeyEntry(id, mk))
-            .filter((key): key is Key => key !== null)
-        initializeKeyStore({ store: keystoreStore, keys })
-    } finally {
-        if (masterKey) masterKey.fill(0)
-    }
-}
-
-/**
  * Re-seeds the store to pick up out-of-process writes. The Android passkey
  * credential provider runs in its own process and writes straight to the MMKV
- * namespace — both new keys and metadata updates on existing ones — none of
- * which the in-process store sees until the next cold-start hydrate.
+ * namespace — both new keys and metadata updates on existing ones — and nothing
+ * in the engine re-reads: its `ready` hydration runs once per launch.
  *
- * Unlike {@link hydrateKeystore} this does NOT skip when the store is already
- * populated: it re-reads every entry and re-initializes the store. Re-reading
- * (rather than merging only the ids not yet present) is what surfaces metadata
- * updates on keys that are already in the store — merging new ids alone would
- * miss them. Skips fetching the master key only when MMKV is empty.
+ * Re-reading every entry (rather than merging only the ids not yet present) is
+ * what surfaces metadata updates on keys already in the store.
+ *
+ * No master key and no biometric prompt: the driver keeps metadata in the `k/`
+ * bucket as plaintext and only material under `m/` is sealed.
  */
 export const reconcileKeystore = async (): Promise<void> => {
-    const ids = keystoreStorage.getAllKeys()
-    if (ids.length === 0) return
+    const keys = keystoreStorage
+        .getAllKeys()
+        .filter(key => key.startsWith(METADATA_PREFIX))
+        .map(decodeKeyEntry)
+        .filter((key): key is Key => key !== null)
 
-    let masterKey: Buffer | null = null
-    try {
-        masterKey = await readMasterKey()
-        const mk = masterKey
-        const keys = ids
-            .map(id => decodeKeyEntry(id, mk))
-            .filter((key): key is Key => key !== null)
-        initializeKeyStore({ store: keystoreStore, keys })
-    } finally {
-        if (masterKey) masterKey.fill(0)
-    }
+    if (keys.length === 0) return
+
+    keystoreStore.setState(state => ({ ...state, keys }))
 }
 
 /**

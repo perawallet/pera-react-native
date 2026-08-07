@@ -35,8 +35,8 @@ import {
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import {
+    getKeystore,
     getProvider,
-    hydrateKeystore,
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
@@ -180,7 +180,7 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 // do startup hydration and setup in parallel to speed up time
                 // to interactive. Keystore/database failures must fail the whole
                 // bootstrap; only the passkey branch is allowed to fail silently.
-                const keystoreBranch = hydrateKeystore().catch(err => {
+                const keystoreBranch = getKeystore().ready.catch(err => {
                     logger.error('Keystore hydration failed', { error: err })
                     throw err
                 })

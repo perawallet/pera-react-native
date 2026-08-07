@@ -43,7 +43,7 @@ const mocks = vi.hoisted(() => {
     }
     return {
         provider,
-        hydrateKeystore: vi.fn(),
+        keystoreReady: vi.fn(),
         getProvider: vi.fn(() => provider),
         initializeDatabase: vi.fn(),
         getDatabase: vi.fn(() => ({})),
@@ -66,7 +66,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     usePeraProvider: () => mocks.provider,
-    hydrateKeystore: mocks.hydrateKeystore,
+    getKeystore: () => ({ ready: mocks.keystoreReady() }),
     getProvider: mocks.getProvider,
 }))
 
@@ -181,7 +181,7 @@ describe('useAppBootstrap', () => {
         mocks.provider.initialize.mockResolvedValue({
             notifications: Promise.resolve({ token: 'fcm-token' }),
         })
-        mocks.hydrateKeystore.mockResolvedValue(undefined)
+        mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedAlgoAsset.mockResolvedValue(undefined)
         mocks.runPasskeyAutofillBootstrap.mockResolvedValue(undefined)

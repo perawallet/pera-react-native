@@ -44,6 +44,7 @@ export default defineConfig({
                 'react',
                 'react/jsx-runtime',
                 'react-native',
+                'react-native-quick-crypto',
                 'zustand',
                 'zustand/middleware',
                 '@noble/hashes/sha2',

@@ -12,20 +12,21 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { platformMock, encodeMock, encryptMock, masterKeyMock, storageMock } =
+const { platformMock, encodeMock, sealMock, masterKeyMock, storageMock } =
     vi.hoisted(() => ({
         platformMock: { OS: 'android' as 'android' | 'ios' },
         encodeMock: vi.fn((value: unknown) => value),
-        encryptMock: vi.fn(() => new Uint8Array([1])),
+        sealMock: vi.fn(async () => 'sealed'),
         masterKeyMock: vi.fn(async () => new Uint8Array(32)),
         storageMock: { set: vi.fn(), getString: vi.fn() },
     }))
 
 vi.mock('react-native', () => ({ Platform: platformMock }))
+vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     encode: encodeMock,
-    encryptData: encryptMock,
+    sealData: sealMock,
     readMasterKey: masterKeyMock,
     storage: storageMock,
 }))
@@ -73,7 +74,7 @@ const entryParams = (credentialId: string): WriteNativePasskeyEntryParams => ({
 
 beforeEach(() => {
     encodeMock.mockClear()
-    encryptMock.mockClear()
+    sealMock.mockClear()
     storageMock.set.mockClear()
     masterKeyMock.mockClear()
     masterKeyMock.mockImplementation(async () => new Uint8Array(32))

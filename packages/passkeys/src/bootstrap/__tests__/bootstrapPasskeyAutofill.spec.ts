@@ -90,7 +90,7 @@ describe('bootstrapPasskeyAutofill', () => {
         service.setMasterKey.mockImplementation(async (bytes: Uint8Array) => {
             receivedMasterKey = Buffer.from(bytes)
         })
-        mocks.getAllKeys.mockReturnValue(['k1', 'hd'])
+        mocks.getAllKeys.mockReturnValue(['k/k1', 'k/hd'])
         wireSecrets({
             k1: { id: 'k1', type: 'algo25' } as KeyData,
             hd: {
@@ -196,7 +196,7 @@ describe('bootstrapPasskeyAutofill', () => {
     it('does not build or push a derived main key when the native side lacks setDerivedMainKey support', async () => {
         const service = makeService()
         service.supportsDerivedMainKey = false
-        mocks.getAllKeys.mockReturnValue(['hd'])
+        mocks.getAllKeys.mockReturnValue(['k/hd'])
         wireSecrets({
             hd: {
                 id: 'root-id',
@@ -217,7 +217,7 @@ describe('bootstrapPasskeyAutofill', () => {
 
     it('does not push a derived main key when the HD root secret has no private bytes', async () => {
         const service = makeService()
-        mocks.getAllKeys.mockReturnValue(['hd'])
+        mocks.getAllKeys.mockReturnValue(['k/hd'])
         wireSecrets({
             hd: { id: 'root-id', type: 'xhd-root-key' } as KeyData,
         })
@@ -248,9 +248,30 @@ describe('bootstrapPasskeyAutofill', () => {
         expect(service.refreshCredentialIdentities).toHaveBeenCalled()
     })
 
+    // MMKV holds sealed material under `m/` and metadata under `k/`; only the
+    // latter enumerates keys, and the id has to lose its prefix before use.
+    it('enumerates the metadata bucket only, with the prefix stripped', async () => {
+        const service = makeService()
+        mocks.getAllKeys.mockReturnValue(['m/hd', 'k/hd'])
+        wireSecrets({
+            hd: { id: 'root-id', type: 'hd-root-key' } as KeyData,
+        })
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        expect(mocks.fetchSecret).toHaveBeenCalledOnce()
+        expect(mocks.fetchSecret).toHaveBeenCalledWith(
+            expect.objectContaining({ keyId: 'hd' }),
+        )
+        expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
+    })
+
     it('warns and skips HD wiring when no HD root key is present among the stored keys', async () => {
         const service = makeService()
-        mocks.getAllKeys.mockReturnValue(['k1', 'k2'])
+        mocks.getAllKeys.mockReturnValue(['k/k1', 'k/k2'])
         wireSecrets({
             k1: { id: 'k1', type: 'algo25' } as KeyData,
             k2: { id: 'k2', type: 'hd-derived-p256' } as KeyData,
@@ -283,7 +304,7 @@ describe('bootstrapPasskeyAutofill', () => {
                 .fn()
                 .mockRejectedValue(new Error('refreshCredentialIdentities')),
         }
-        mocks.getAllKeys.mockReturnValue(['hd'])
+        mocks.getAllKeys.mockReturnValue(['k/hd'])
         wireSecrets({
             hd: {
                 id: 'root-id',
@@ -348,7 +369,7 @@ describe('bootstrapPasskeyAutofill', () => {
 
     it('treats an undecryptable secret as absent and warns', async () => {
         const service = makeService()
-        mocks.getAllKeys.mockReturnValue(['hd'])
+        mocks.getAllKeys.mockReturnValue(['k/hd'])
         mocks.fetchSecret.mockRejectedValue(new Error('decrypt failed'))
 
         await bootstrapPasskeyAutofill({

@@ -11,10 +11,11 @@
  */
 
 import { Platform } from 'react-native'
+import { subtle as quickCryptoSubtle } from 'react-native-quick-crypto'
 import {
     encode,
-    encryptData,
     readMasterKey,
+    sealData,
     storage,
 } from '@algorandfoundation/react-native-keystore'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
@@ -105,7 +106,9 @@ export type NativePasskeyWriter = ((
  * A failed fetch isn't cached, so a later write retries rather than inheriting a
  * poisoned key.
  */
-export const createNativePasskeyWriter = (): NativePasskeyWriter => {
+export const createNativePasskeyWriter = (
+    subtle: SubtleCrypto = quickCryptoSubtle as unknown as SubtleCrypto,
+): NativePasskeyWriter => {
     let masterKeyPromise: ReturnType<typeof readMasterKey> | undefined
 
     const resolveMasterKey = (): ReturnType<typeof readMasterKey> => {
@@ -122,7 +125,8 @@ export const createNativePasskeyWriter = (): NativePasskeyWriter => {
         const masterKey = await resolveMasterKey()
         storage.set(
             params.credentialId,
-            encryptData(
+            await sealData(
+                subtle,
                 masterKey,
                 encode(
                     buildKeystoreKeyData(params) as Parameters<
@@ -148,8 +152,9 @@ export const createNativePasskeyWriter = (): NativePasskeyWriter => {
  */
 export const writeNativePasskeyEntry = async (
     params: WriteNativePasskeyEntryParams,
+    subtle?: SubtleCrypto,
 ): Promise<void> => {
-    const write = createNativePasskeyWriter()
+    const write = createNativePasskeyWriter(subtle)
     try {
         await write(params)
     } finally {
