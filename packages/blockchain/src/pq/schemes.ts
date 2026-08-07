@@ -21,10 +21,13 @@ import { FALCON_1024_SCHEME } from 'algosdk'
  * protocol ('f1' for Falcon-1024).
  *
  * **What is scheme-agnostic:** the transaction assembly and signing path.
- * `PQSignature`, `assemblePQSignedTransaction`, `pqSigningDigest`,
- * `deriveQuantumAddress`, `PQSignatureProvider` and
+ * `PQSignature`, `assemblePQSignedTransaction`, `pqSigningDigest` and
  * `useLocalKeyTransactionSigner` all carry `PQSchemeId` through generically —
- * a second scheme needs no new types there and no new signing branch.
+ * a second scheme needs no new types there and no new signing branch. The
+ * signature bytes themselves come from the keystore, which seals the private
+ * key and signs internally; `PQSignatureProvider` contributes only the scheme
+ * id and the public-key derivation `deriveQuantumAddress` consumes, and is
+ * likewise `PQSchemeId`-generic.
  *
  * **What is NOT** — two single-scheme assumptions a second scheme must fix
  * first, both out of scope here:

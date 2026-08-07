@@ -35,8 +35,23 @@ import { describe, it, expect } from 'vitest'
 // `import(\`falcon-1024\`)`) are caught too. The falcon-1024 alternative also
 // allows an optional subpath (e.g. `falcon-1024/wasm`) so a deep import can't
 // slip past a bare-specifier-only check.
-const FORBIDDEN_SPECIFIER_PATTERN =
-    /[`'"](@joe-p\/react-native-falcon|falcon-1024(\/[^'"`]*)?)[`'"]/
+const QUOTED_PQ_LIBRARY_SOURCE =
+    '[`\'"](@joe-p/react-native-falcon|falcon-1024(?:/[^\'"`]*)?)[`\'"]'
+
+// A quoted MENTION of a PQ library — an import, a bundler `external` entry, or
+// a plain string that merely looks like one. Not what the guard enforces; it
+// only documents the build-config blind spot below.
+const SPECIFIER_MENTION_PATTERN = new RegExp(QUOTED_PQ_LIBRARY_SOURCE)
+
+// What the guard actually enforces: a mention only counts as a dependency edge
+// when it sits in an import position (`from '…'`, `import('…')`,
+// `require('…')`). Requiring that context is load-bearing, not cosmetic:
+// `'falcon-1024'` is ALSO keystore-core's `KeyType` literal — the value of
+// `FALCON_CHILD_KEY_TYPE` — so a quote-only match flags every plain type
+// literal in the repo while proving nothing about what gets bundled.
+const FORBIDDEN_SPECIFIER_PATTERN = new RegExp(
+    `(?:\\bfrom|\\bimport|\\brequire)\\s*\\(?\\s*${QUOTED_PQ_LIBRARY_SOURCE}`,
+)
 
 // Seam A (pure crypto) is the sole remaining sanctioned home for these
 // imports. `@joe-p/algosdk` is no longer forbidden anywhere — it is now
@@ -64,13 +79,14 @@ const SKIPPED_DIR_NAMES = new Set(['node_modules', '.git', 'dist', '__tests__'])
 // Build-config files (e.g. `vite.config.ts`, `vitest.config.ts`) are a
 // deliberate, accepted blind spot — the same class as `__tests__` above. They
 // run at BUILD time, are never shipped in the runtime bundle, and legitimately
-// NAME external packages: a bundler `external: ['@joe-p/react-native-falcon']`
-// entry is a build directive telling the bundler "don't inline this; the app's
-// Metro bundler resolves it", NOT a runtime import of the PQ lib. Scanning
-// configs would flag that safe declaration. The exemption is scoped to the
-// `*.config.(ts|tsx)` filename suffix so it cannot widen to arbitrary source
-// files — a genuine `import ... from '@joe-p/...'` in a non-config, non-seam
-// source file is still caught (see the regression test below).
+// both NAME and IMPORT external packages: a bundler
+// `external: ['@joe-p/react-native-falcon']` entry is a build directive
+// telling the bundler "don't inline this; the app's Metro bundler resolves
+// it", and a config may equally need to `import` a package to configure it.
+// The exemption is scoped to the `*.config.(ts|tsx)` filename suffix so it
+// cannot widen to arbitrary source files — a genuine
+// `import ... from '@joe-p/...'` in a non-config, non-seam source file is
+// still caught (see the regression test below).
 const BUILD_CONFIG_FILE_PATTERN = /\.config\.(ts|tsx)$/
 
 const isBuildConfigFile = (fileName: string): boolean =>
@@ -158,6 +174,39 @@ describe('PQ library import firewall', () => {
         ).toBe(true)
     })
 
+    it("regression: a bare 'falcon-1024' type literal is NOT a violation, but importing it still is", () => {
+        // `falcon-1024` is simultaneously an npm package name and
+        // keystore-core's `KeyType` for a Falcon signing child, so
+        // `FALCON_CHILD_KEY_TYPE`, the `k.type === …` guards and the
+        // integration double all spell it as a plain string. Those are type
+        // literals, not dependency edges, and a quote-only regex flagged every
+        // one of them.
+        expect(
+            FORBIDDEN_SPECIFIER_PATTERN.test(
+                "export const FALCON_CHILD_KEY_TYPE = 'falcon-1024'",
+            ),
+        ).toBe(false)
+        expect(
+            FORBIDDEN_SPECIFIER_PATTERN.test("if (key.type === 'falcon-1024')"),
+        ).toBe(false)
+
+        // ...while every real import position still trips it.
+        expect(
+            FORBIDDEN_SPECIFIER_PATTERN.test(
+                "import { generateKey } from 'falcon-1024'",
+            ),
+        ).toBe(true)
+        expect(FORBIDDEN_SPECIFIER_PATTERN.test("import 'falcon-1024'")).toBe(
+            true,
+        )
+        expect(
+            FORBIDDEN_SPECIFIER_PATTERN.test("require('falcon-1024/wasm')"),
+        ).toBe(true)
+        expect(FORBIDDEN_SPECIFIER_PATTERN.test('import(`falcon-1024`)')).toBe(
+            true,
+        )
+    })
+
     it('positive control: wasmFalconProvider.ts still imports falcon-1024 (Seam A)', () => {
         const file = join(
             root,
@@ -170,6 +219,12 @@ describe('PQ library import firewall', () => {
         )
         const content = readFileSync(file, 'utf-8')
         expect(content).toMatch(/['"]falcon-1024['"]/)
+
+        // The real import in the real seam file must still trip the ENFORCED
+        // pattern. This is what proves tightening the regex to an import
+        // context did not blind the guard: were the seam not exempt, this file
+        // would be reported as a violation.
+        expect(findViolations([file])).toEqual([`${file} → falcon-1024`])
     })
 
     it('regression: a sibling dir merely prefixed by a seam name (e.g. pq-legacy) is NOT treated as inside the seam', () => {
@@ -206,10 +261,10 @@ describe('PQ library import firewall', () => {
         // packages/kms/vite.config.ts declares '@joe-p/react-native-falcon' in
         // rollup `external` (a build directive — the app's Metro bundler
         // resolves the native module — not a runtime import). It genuinely
-        // contains the forbidden specifier, yet must be excluded from the scan.
+        // names the PQ library, yet must be excluded from the scan.
         const viteConfig = join(root, 'packages', 'kms', 'vite.config.ts')
         const content = readFileSync(viteConfig, 'utf-8')
-        expect(content).toMatch(FORBIDDEN_SPECIFIER_PATTERN)
+        expect(content).toMatch(SPECIFIER_MENTION_PATTERN)
 
         expect(isBuildConfigFile('vite.config.ts')).toBe(true)
         expect(isBuildConfigFile('vitest.config.ts')).toBe(true)

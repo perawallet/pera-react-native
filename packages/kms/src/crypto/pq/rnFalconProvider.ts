@@ -25,10 +25,10 @@ import type { PQSignatureProvider } from './types'
  * `Falcon` type) so the pure-logic KMS package does not take a compile-time
  * dependency on `react-native-nitro-modules`' `HybridObject` types.
  *
- * All buffers are raw `ArrayBuffer`s: keys and signatures are exact-length
- * Falcon-1024 byte blobs. `signCompressed` signs the raw `message` bytes as
- * given (no hashing/digesting), matching the {@link PQSignatureProvider}
- * contract.
+ * All buffers are raw `ArrayBuffer`s: keys are exact-length Falcon-1024 byte
+ * blobs. The module's signing entry point is deliberately absent — the
+ * keystore installs its own binding onto this same native module and signs
+ * from sealed material, so nothing here ever holds a secret key to sign with.
  */
 type NativeFalconModule = {
     /** Falcon-1024 public-key length in bytes (1793). */
@@ -37,7 +37,6 @@ type NativeFalconModule = {
         publicKey: ArrayBuffer
         privateKey: ArrayBuffer
     }
-    signCompressed(privateKey: ArrayBuffer, message: ArrayBuffer): ArrayBuffer
 }
 
 /**
@@ -87,14 +86,6 @@ export const createRNFalconProvider = (): PQSignatureProvider => {
                 publicKey: new Uint8Array(publicKey),
                 secretKey: new Uint8Array(privateKey),
             }
-        },
-        sign(secretKey, message) {
-            return new Uint8Array(
-                FalconModule.signCompressed(
-                    toArrayBuffer(secretKey),
-                    toArrayBuffer(message),
-                ),
-            )
         },
     }
 }

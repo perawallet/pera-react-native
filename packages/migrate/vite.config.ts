@@ -49,7 +49,6 @@ export default defineConfig({
                 'zustand/middleware',
                 '@noble/hashes/sha2',
                 '@algorandfoundation/dp256',
-                '@algorandfoundation/keystore',
                 '@algorandfoundation/react-native-keystore',
                 '@scure/bip39',
                 '@scure/bip39/wordlists/english.js',

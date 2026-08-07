@@ -100,7 +100,7 @@ describe('algorand-keystore-test double', () => {
         )
     })
 
-    it('signs Falcon children with a real, seed-stable signature', async () => {
+    it('signs Falcon children with a Falcon-sized, seed-stable signature', async () => {
         const store = createStore()
         const keystore = createReactNativeKeyStore({ store })
         await keystore.ready
@@ -119,6 +119,12 @@ describe('algorand-keystore-test double', () => {
 
         const signature = await keystore.sign(id, payload)
 
+        // Not a verifiable Falcon signature — the library lives behind the kms
+        // PQ seam and the real keystore signs from sealed material. What the
+        // integration suite needs from the double is the SHAPE: a carrier far
+        // larger than the 64-byte Ed25519 stub (the WC PQ-fee flow asserts
+        // >1000 bytes) that is stable per payload.
+        expect(signature.length).toBeGreaterThan(1000)
         expect(signature).toEqual(await keystore.sign(id, payload))
         expect(signature).not.toEqual(
             await keystore.sign(id, new TextEncoder().encode('other')),

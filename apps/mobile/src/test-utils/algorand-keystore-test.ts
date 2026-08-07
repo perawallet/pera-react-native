@@ -22,6 +22,7 @@
 
 import { KeyContext, XHDWalletAPI } from '@algorandfoundation/xhd-wallet-api'
 import { crypto_sign_keypair } from '@algorandfoundation/xhd-wallet-api/dist/sumo.facade.js'
+import { sha512 } from '@noble/hashes/sha2'
 import { type Optional } from '@perawallet/wallet-core-shared'
 
 // Types come from `@tanstack/store` and `@algorandfoundation/keystore`,
@@ -73,6 +74,41 @@ const ALGORITHMS: KeyStoreCapability[] = [
 ]
 
 const FALCON_KEY_TYPE = 'falcon-1024'
+
+// Length of a real compressed Falcon-1024 signature for this build (max 1423,
+// typical 1228). Size-sensitive flows assert on it — the WC PQ-fee test checks
+// the quantum slot's carrier is >1000 bytes — so the double must not emit a
+// 64-byte stub the way it does for Ed25519.
+const FALCON_SIGNATURE_BYTES = 1228
+
+/**
+ * A Falcon-SHAPED signature: correct length, stable per (secret key, payload),
+ * and different for a different payload — but not a verifiable Falcon
+ * signature. That is deliberate. Real signatures would have to come from the
+ * Falcon library, which only `packages/kms/src/crypto/pq` may import, and the
+ * production keystore signs from sealed material that never reaches JS, so
+ * there is no `sign(secretKey, …)` entry point left to borrow. Keystore-Falcon
+ * byte parity is proven where it is meaningful, in
+ * `packages/kms/src/crypto/pq/__tests__/keystoreFalconParity.spec.ts`; nothing
+ * in the integration suite verifies a signature cryptographically.
+ */
+const falconShapedSignature = (
+    secretKey: Uint8Array,
+    data: Uint8Array,
+): Uint8Array => {
+    const signature = new Uint8Array(FALCON_SIGNATURE_BYTES)
+    for (let offset = 0, counter = 0; offset < signature.length; counter++) {
+        const block = sha512
+            .create()
+            .update(secretKey)
+            .update(data)
+            .update(Uint8Array.of(counter))
+            .digest()
+        signature.set(block.subarray(0, signature.length - offset), offset)
+        offset += block.length
+    }
+    return signature
+}
 
 // Reached through kms's PQ seam rather than the Falcon library directly: the
 // seam is the only sanctioned home for that import (see
@@ -487,7 +523,7 @@ const createKeyStoreApi = (
             const entry = keyData.get(id)
             if (!entry) throw new Error(`Key not found: ${id}`)
             if (entry.type === FALCON_KEY_TYPE && entry.privateKey) {
-                return (await loadPQProvider()).sign(entry.privateKey, data)
+                return falconShapedSignature(entry.privateKey, data)
             }
             // 64-byte deterministic stub. Real flows that care about
             // signature contents should override at the test level.

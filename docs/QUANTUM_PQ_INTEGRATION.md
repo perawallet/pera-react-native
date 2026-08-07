@@ -25,7 +25,8 @@ source-level import.
 Pure crypto, with no SDK or address coupling:
 
 - `PQSignatureProvider` — the interface (`scheme`, `publicKeyLength`,
-  `generateKeypairFromSeed`, `sign`).
+  `generateKeypairFromSeed`). It does not sign: the keystore owns custody and
+  signs from sealed material.
 - `wasmFalconProvider.ts` — wraps WASM `falcon-1024`; used in node, vitest and
   the web/extension build.
 - `rnFalconProvider.ts` — wraps the native `@joe-p/react-native-falcon` Nitro
@@ -158,11 +159,13 @@ networks still reject it (see PQ-023 below).
 
 Quantum accounts now sign locally end-to-end on real Falcon-1024:
 
-- **KMS runtime** — `useQuantum` generates the real keypair + address via the
-  provider (Seam A) and `deriveQuantumAddress` (Seam B); `useKMS.signWithQuantumSeed`
-  produces real Falcon signatures (secret key zeroed in `finally`);
-  `getQuantumPublicKey(keyPairId)` exposes the committed public key (guarded by
-  `FALCON_CHILD_KEY_TYPE`). The three keygen/sign mocks were retired.
+- **KMS runtime** — `useQuantum` mints the signing child through the keystore's
+  `falcon-1024` generator and derives the address with `deriveQuantumAddress`
+  (Seam B); `useKMS.signTransactionsWithKey`/`signDataWithKey` produce real
+  Falcon signatures through `keyStore.sign`, with the private key sealed and
+  never reaching JS; `getQuantumPublicKey(keyPairId)` exposes the recorded
+  public key (guarded by `FALCON_CHILD_KEY_TYPE`). The three keygen/sign mocks
+  were retired.
 - **No more byte carrier (PERA-4653)** — the resolved `algosdk` fork's
   `SignedTransaction` accepts `pqsig` directly, so a PQ-signed transaction is
   now a plain `SignedTransaction`, encoded through the ordinary
