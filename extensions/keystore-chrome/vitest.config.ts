@@ -17,15 +17,10 @@ import { poolConfig } from '@perawallet/wallet-core-devtools/vitest/pool'
 export default defineConfig({
     test: {
         coverage: coverageConfig,
-        // The vault KDF is Argon2id at OWASP's baseline (19 MiB, t=2) — being
-        // expensive is the entire point, and a single derivation costs a few
-        // hundred milliseconds. Tests that create, unlock, change a password,
-        // or exhaust the 5-attempt lockout chain several derivations together,
-        // which is comfortably over vitest's 5s default once `turbo run test`
-        // is contending for cores with every other package. Raised rather than
-        // weakening the parameters under test: these specs are the only place
-        // the real cost is exercised.
-        testTimeout: 30_000,
+        // Argon2id is deliberately expensive and vault.test.ts asserts the
+        // pinned cost, so the budget moves instead: the throttling spec chains
+        // 11 derivations, ~32s under full-suite contention.
+        testTimeout: 120_000,
         hookTimeout: 30_000,
     },
     ...poolConfig,
