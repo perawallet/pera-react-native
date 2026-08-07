@@ -74,6 +74,17 @@ export type TransactionSignRequest = {
     signableIndices?: number[]
     rawTransactionsBase64?: string[]
     /**
+     * WalletConnect JSON-RPC request id (`algo_signTxn` payload id). Set only
+     * for WalletConnect requests; threaded to the multisig sync-flow handoff so
+     * the dApp response can be reconstructed after an app kill.
+     */
+    payloadId?: number
+    /**
+     * Full atomic-group length. The WalletConnect result array is null-padded
+     * to this; carried so the handoff can rebuild it without the enqueue closure.
+     */
+    totalLength?: number
+    /**
      * Fees the pipeline raised to a required minimum, indexed in groupContext
      * space. Absent when nothing was modified.
      */

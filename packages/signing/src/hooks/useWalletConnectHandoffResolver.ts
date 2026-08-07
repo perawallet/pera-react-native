@@ -20,6 +20,7 @@ import {
 import {
     classifyHandoffPoll,
     resolveHandoffOutcome,
+    type HandoffPeerDelivery,
     type ResolverMessages,
     type TerminalHandoffOutcome,
 } from '../pipeline/classifyHandoffPoll'
@@ -48,6 +49,13 @@ export type UseWalletConnectHandoffResolverArgs = {
     isAppActive: boolean
     /** Localized strings delivered to the dApp on terminal outcomes. */
     messages: ResolverMessages
+    /**
+     * Answers the WC peer, keyed by the handoff's serializable clientId /
+     * payloadId. Injected from the app layer so this hook stays free of any
+     * WalletConnect dependency and works identically for a handoff resumed
+     * after an app kill (no in-memory closures to replay).
+     */
+    delivery: HandoffPeerDelivery
 }
 
 /**
@@ -76,6 +84,7 @@ export type UseWalletConnectHandoffResolverArgs = {
 export const useWalletConnectHandoffResolver = ({
     isAppActive,
     messages,
+    delivery,
 }: UseWalletConnectHandoffResolverArgs): void => {
     // Re-render whenever a handoff is registered / unregistered. The store
     // swaps the `handoffs` dict reference on every change, so the default
@@ -112,9 +121,10 @@ export const useWalletConnectHandoffResolver = ({
                 outcome,
                 handoff,
                 messages,
+                delivery,
                 markConfirmed,
             }),
-        [messages, markConfirmed],
+        [messages, delivery, markConfirmed],
     )
 
     useHandoffResolver<
