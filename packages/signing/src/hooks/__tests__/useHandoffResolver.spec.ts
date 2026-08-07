@@ -13,6 +13,8 @@
 import { describe, expect, test } from 'vitest'
 import { resolveHandoffDeadline } from '../useHandoffResolver'
 
+// Passed explicitly so these cases pin the min/fallback logic, not whatever the
+// module's default cap happens to be.
 const FALLBACK = 60 * 60_000
 
 describe('resolveHandoffDeadline', () => {
@@ -20,9 +22,13 @@ describe('resolveHandoffDeadline', () => {
         const registeredAt = 1_000
         const expiresAt = registeredAt + 5 * 60_000
 
-        expect(resolveHandoffDeadline({ expiresAt, registeredAt })).toBe(
-            expiresAt,
-        )
+        expect(
+            resolveHandoffDeadline({
+                expiresAt,
+                registeredAt,
+                fallbackMs: FALLBACK,
+            }),
+        ).toBe(expiresAt)
     })
 
     test('caps at the fallback when the authoritative expiry is further out', () => {
@@ -30,18 +36,26 @@ describe('resolveHandoffDeadline', () => {
         const registeredAt = 1_000
         const expiresAt = registeredAt + 10 * 60 * 60_000
 
-        expect(resolveHandoffDeadline({ expiresAt, registeredAt })).toBe(
-            registeredAt + FALLBACK,
-        )
+        expect(
+            resolveHandoffDeadline({
+                expiresAt,
+                registeredAt,
+                fallbackMs: FALLBACK,
+            }),
+        ).toBe(registeredAt + FALLBACK)
     })
 
     test('falls back to registration + cap when the expiry is unknown', () => {
         // The backend never returned a body, so there is no authoritative expiry.
         const registeredAt = 1_000
 
-        expect(resolveHandoffDeadline({ expiresAt: null, registeredAt })).toBe(
-            registeredAt + FALLBACK,
-        )
+        expect(
+            resolveHandoffDeadline({
+                expiresAt: null,
+                registeredAt,
+                fallbackMs: FALLBACK,
+            }),
+        ).toBe(registeredAt + FALLBACK)
     })
 
     test('uses the authoritative expiry when no registration anchor exists', () => {
