@@ -18,6 +18,7 @@ import {
     normalizeUrl,
     extractPath,
     isValidAssetId,
+    isPeraOwnedDeeplink,
 } from '../utils'
 
 describe('Deeplink Parser - Helper Functions', () => {
@@ -134,6 +135,38 @@ describe('Deeplink Parser - Helper Functions', () => {
             expect(isValidAssetId('1.5')).toBe(false)
             expect(isValidAssetId('12x')).toBe(false)
             expect(isValidAssetId('')).toBe(false)
+        })
+    })
+
+    describe('isPeraOwnedDeeplink', () => {
+        it('recognizes Pera-owned schemes and the universal-link host', () => {
+            expect(
+                isPeraOwnedDeeplink('perawallet://app/web-import/?backupId=x'),
+            ).toBe(true)
+            expect(isPeraOwnedDeeplink('perawallet://unknown-action')).toBe(
+                true,
+            )
+            expect(isPeraOwnedDeeplink('perawallet-wc://wc?uri=x')).toBe(true)
+            expect(
+                isPeraOwnedDeeplink(
+                    'https://perawallet.app/qr/perawallet/app/web-import/',
+                ),
+            ).toBe(true)
+        })
+
+        it('normalizes the scheme before matching', () => {
+            expect(
+                isPeraOwnedDeeplink('  PERAWALLET://app/web-import/  '),
+            ).toBe(true)
+        })
+
+        it('rejects foreign URLs and garbage', () => {
+            expect(
+                isPeraOwnedDeeplink('https://google.com/app/web-import'),
+            ).toBe(false)
+            expect(isPeraOwnedDeeplink('wc://pair?uri=x')).toBe(false)
+            expect(isPeraOwnedDeeplink('not a url')).toBe(false)
+            expect(isPeraOwnedDeeplink('')).toBe(false)
         })
     })
 })
