@@ -19,12 +19,11 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { seedFromMnemonic } from 'algosdk'
 import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
-import { quantumSignKeyId } from '../models'
+import { FALCON_CHILD_KEY_TYPE, quantumSignKeyId } from '../models'
 import { useKMSService } from './useKMSServices'
 import { buildSeedMetadata } from '../utils'
-import { getPQProvider } from '../crypto/pq'
-import { commitQuantumChildKey } from '../storage/quantum-child'
 import { zeroBytes } from '../crypto/secure-memory'
+import { KeyManagementError } from '../errors'
 import { QUANTUM_SEED_LENGTH, SeedScheme } from '../constants'
 
 export type QuantumKeyResult = {
@@ -55,9 +54,6 @@ export const useQuantum = () => {
                 ? seedFromMnemonic(params.mnemonic)
                 : nacl.randomBytes(QUANTUM_SEED_LENGTH)
 
-            const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
-            const address = deriveQuantumAddress(publicKey)
-
             const metadata = buildSeedMetadata({ scheme: SeedScheme.Quantum })
 
             // 1. Persist the 32-byte quantum seed.
@@ -76,14 +72,34 @@ export const useQuantum = () => {
             await keyStore.import(seedData, 'raw')
             committedSeed = true
 
-            // 2. Persist the quantum signing child (public material only —
-            // signing always re-derives from the parent seed).
-            const signKeyId = quantumSignKeyId(seedKeyId)
-            await commitQuantumChildKey({
-                id: signKeyId,
-                parentKeyId: seedKeyId,
-                publicKey,
+            // 2. Mint the signing child — the keystore derives the Falcon
+            // keypair from `seed` and seals the private half itself.
+            //
+            // `id` and `parentKeyId` ride the untyped `params` bag: the engine
+            // resolves the entry id as `params.id ?? randomUUID()`, and strips
+            // seed/entropy/passphrase/salt before mirroring `params` into the
+            // entry's plaintext metadata — so the seed does not leak there.
+            const signKeyId = await keyStore.generate({
+                type: FALCON_CHILD_KEY_TYPE,
+                algorithm: 'Falcon-1024',
+                extractable: false,
+                keyUsages: ['sign', 'verify'],
+                params: {
+                    seed,
+                    parentKeyId: seedKeyId,
+                    id: quantumSignKeyId(seedKeyId),
+                },
             })
+
+            // The address must come from the key the keystore actually minted,
+            // not from a second in-JS derivation that could drift from it.
+            const { publicKey } = await keyStore.export(signKeyId)
+            if (!publicKey) {
+                throw new KeyManagementError(
+                    `Quantum child ${signKeyId} has no public key to derive an address from`,
+                )
+            }
+            const address = deriveQuantumAddress(publicKey)
 
             return {
                 seedKey: {

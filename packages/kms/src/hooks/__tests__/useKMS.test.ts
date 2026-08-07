@@ -655,7 +655,7 @@ describe('useKMS', () => {
             // exactly as useQuantum.createQuantumKey({ mnemonic }) persists them.
             const seedBytes = seedFromMnemonic(TEST_MNEMONIC)
             seedQuantumRoot('quantum-1')
-            childOf('quantum-1-quantum', 'quantum-1', 'falcon1024')
+            childOf('quantum-1-quantum', 'quantum-1', FALCON_CHILD_KEY_TYPE)
             mockKeyStoreExport.mockResolvedValue({
                 privateKey: new Uint8Array(seedBytes),
             })
@@ -812,7 +812,7 @@ describe('useKMS', () => {
             // alone) still Falcon-signs them — silently re-creating the
             // exact un-digested-signing bug PERA-4653 closed.
             seedQuantumRoot('quantum-1')
-            childOf('quantum-1-quantum', 'quantum-1', 'falcon1024')
+            childOf('quantum-1-quantum', 'quantum-1', FALCON_CHILD_KEY_TYPE)
 
             const { result } = renderHook(() => useKMS())
 

@@ -188,9 +188,8 @@ export const useKMS = () => {
      * child at `keyPairId` (the id `createQuantumKey` returns as
      * `signKeyId`, and what `account.keyPairId` is set to for quantum
      * accounts). Reads from the live reactive store rather than
-     * `keyStore.export`: the child is minted `extractable: false`, and
-     * `commitQuantumChildKey` stores the public key as plain (non-secret)
-     * metadata on the entry itself.
+     * `keyStore.export`: the child is minted `extractable: false`, so only the
+     * public half the keystore records on the entry is readable at all.
      */
     const getQuantumPublicKey = (keyPairId: string): Uint8Array => {
         const child = getKeystoreStore().state.keys.find(
@@ -251,7 +250,7 @@ export const useKMS = () => {
 
         if (isQuantumSeed !== isFalconChild) {
             throw new KeyManagementError(
-                `PQ scheme mismatch for keyPairId ${keyPairId}: seed scheme reports quantum=${isQuantumSeed}, child type reports falcon1024=${isFalconChild}`,
+                `PQ scheme mismatch for keyPairId ${keyPairId}: seed scheme reports quantum=${isQuantumSeed}, child type reports ${FALCON_CHILD_KEY_TYPE}=${isFalconChild}`,
             )
         }
 
