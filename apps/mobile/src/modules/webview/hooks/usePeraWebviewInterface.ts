@@ -36,6 +36,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback, useEffect, useRef } from 'react'
 import { useWebView } from './useWebViewStore'
 import { useLanguage } from '@hooks/useLanguage'
+import { resolveWebviewLanguage } from './webviewLanguage'
 import {
     type Arc60SignRequest,
     type ArbitraryDataSignRequest,
@@ -160,7 +161,7 @@ export const usePeraWebviewInterface = (
     const deviceInfo = provider.deviceInfo
     const { preferredCurrency } = useCurrency()
     const analytics = provider.analytics
-    const { t } = useLanguage()
+    const { t, currentLanguage } = useLanguage()
     const { pushWebView: pushWebViewContext } = useWebView()
     const { addSignRequest } = useSigningRequest()
     const { pair } = useWalletConnectPairing()
@@ -470,14 +471,29 @@ export const usePeraWebviewInterface = (
                         network,
                         currency: preferredCurrency,
                         region: deviceInfo.getDeviceCountry(),
-                        language: deviceInfo.getDeviceLocale(),
+                        // The app's resolved locale, not the device's. Before
+                        // the in-app language picker existed the two were
+                        // always the same, so reading the device was harmless;
+                        // now a user on an English phone who picks Turkish
+                        // would get a Turkish app around an English Discover.
+                        // `region` still comes from the device — that answers
+                        // "where are you", which the picker doesn't change.
+                        language: resolveWebviewLanguage(currentLanguage),
                         protocolVersion: '3',
                     }
                     sendMessageToWebview(message.id, payload, webview)
                 },
             )
         },
-        [deviceID, deviceInfo, preferredCurrency, theme, network, webview],
+        [
+            deviceID,
+            deviceInfo,
+            preferredCurrency,
+            theme,
+            network,
+            currentLanguage,
+            webview,
+        ],
     )
 
     const requestTransactionSigning = useCallback(
@@ -829,11 +845,11 @@ export const usePeraWebviewInterface = (
                 theme,
                 network,
                 currency: preferredCurrency,
-                language: 'en-US', //TODO pull from app locale
+                language: resolveWebviewLanguage(currentLanguage),
             }
             sendMessageToWebview(message.id, payload, webview)
         },
-        [preferredCurrency, theme, network, webview],
+        [preferredCurrency, theme, network, currentLanguage, webview],
     )
 
     // Keyed by origin: an in-place navigation must not let one site's connect

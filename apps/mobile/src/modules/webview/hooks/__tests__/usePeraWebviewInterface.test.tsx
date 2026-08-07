@@ -298,16 +298,28 @@ vi.mock('@hooks/deeplink/walletconnect-parser', () => ({
     ),
 }))
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: vi.fn(() => ({
-        t: (key: string, params?: Record<string, string>) => {
-            if (key === 'errors.webview.unsupported_url' && params?.url) {
-                return `Unsupported URL: ${params.url}`
-            }
-            return key
-        },
-    })),
+const { mockUseLanguage } = vi.hoisted(() => ({
+    mockUseLanguage: vi.fn(),
 }))
+
+// `currentLanguage` is left undefined by default so the existing expectations
+// keep exercising the en-US fallback; the locale-specific cases set it.
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: mockUseLanguage,
+}))
+
+const languageMockValue = (currentLanguage?: string) => ({
+    t: (key: string, params?: Record<string, string>) => {
+        if (key === 'errors.webview.unsupported_url' && params?.url) {
+            return `Unsupported URL: ${params.url}`
+        }
+        return key
+    },
+    currentLanguage,
+    changeLanguage: vi.fn(),
+})
+
+mockUseLanguage.mockImplementation(() => languageMockValue())
 
 const mockPushWebView = vi.fn()
 vi.mock('@modules/webview/hooks', () => ({
@@ -815,6 +827,102 @@ describe('usePeraWebviewInterface', () => {
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"theme":"light"'),
+        )
+    })
+
+    it('reports the app locale to getPublicSettings, not a hardcoded en-US', () => {
+        // Regression guard: this handler shipped `language: 'en-US'` hardcoded,
+        // so Discover stayed English no matter what the user picked.
+        mockUseLanguage.mockImplementation(() => languageMockValue('tr'))
+
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        act(() => {
+            result.current.handleMessage({
+                id: 'lang-1',
+                jsonrpc: '2.0',
+                method: 'getPublicSettings',
+                params: {},
+            })
+        })
+
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"language":"tr"'),
+        )
+    })
+
+    it('reports the app locale to getSettings rather than the device locale', () => {
+        // deviceInfo.getDeviceLocale() is mocked to en-US; the in-app choice is
+        // pt-BR. Before this fix getSettings echoed the device, so an English
+        // phone with a Portuguese app sent en-US.
+        mockUseLanguage.mockImplementation(() => languageMockValue('pt-BR'))
+
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        act(() => {
+            result.current.handleMessage({
+                id: 'lang-2',
+                jsonrpc: '2.0',
+                method: 'getSettings',
+                params: {},
+            })
+        })
+
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"language":"pt-BR"'),
+        )
+    })
+
+    it('still reports region from the device, which the language picker does not change', () => {
+        mockUseLanguage.mockImplementation(() => languageMockValue('tr'))
+
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        act(() => {
+            result.current.handleMessage({
+                id: 'lang-3',
+                jsonrpc: '2.0',
+                method: 'getSettings',
+                params: {},
+            })
+        })
+
+        const sent = (
+            mockWebview.injectJavaScript as ReturnType<typeof vi.fn>
+        ).mock.calls
+            .map(call => String(call[0]))
+            .join('')
+        expect(sent).toContain('"language":"tr"')
+        expect(sent).toContain('"region"')
+        expect(sent).not.toContain('"region":"tr"')
+    })
+
+    it('falls back to en-US when i18next has not resolved a locale yet', () => {
+        // getPublicSettings is reachable before bootstrap has called
+        // changeLanguage, so an empty language must not reach the web app.
+        mockUseLanguage.mockImplementation(() => languageMockValue(undefined))
+
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        act(() => {
+            result.current.handleMessage({
+                id: 'lang-4',
+                jsonrpc: '2.0',
+                method: 'getPublicSettings',
+                params: {},
+            })
+        })
+
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"language":"en-US"'),
         )
     })
 
