@@ -2654,7 +2654,7 @@
             "title": "Staking-Arten",
             "liquid_description": "Liquid-Staking-Anwendungen ermöglichen es Nutzern, ihr Algo zu staken und dabei liquide zu bleiben. Beim typischen Ablauf zahlen Nutzer Algo ein und prägen neue Token, die Eigentum und Wert des gestakten Algo repräsentieren und im gesamten <0>DeFi-Ökosystem</0> verwendet werden können.",
             "pools_description": "Staking-Pools ermöglichen es Gruppen von Personen, gemeinsam am Konsens teilzunehmen. Nutzer können Algo bei einem Validator staken und werden basierend auf den Validator-Prämien belohnt. Optionen wie DEX-Liquiditätspool-Staking sind ebenfalls verfügbar.",
-            "delegated_description": "Delegiertes Staking bedeutet, dass ein Drittanbieter in deinem Namen einen Node betreibt, während dein Algo in deinem Wallet bleibt. Dies ist nützlich für Nutzer, die das Netzwerk sichern und Prämien sammeln möchten, ohne einen eigenen Node zu betreiben."
+            "delegated_description": "Delegiertes Staking bedeutet, dass ein Drittanbieter in deinem Namen einen Node betreibt, während dein Algo jederzeit in deinem Wallet bleibt. Das ist eine Option für Nutzer, die dabei helfen möchten, das Netzwerk zu sichern und Prämien zu sammeln, aber nicht über das Wissen oder die Ressourcen verfügen, um einen eigenen Node zu betreiben."
         }
     },
     "swap": {
