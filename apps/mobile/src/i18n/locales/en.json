@@ -689,7 +689,7 @@
             },
             "group_fee_too_small": {
                 "title": "Network fee too low",
-                "body": "This transaction group paid {{paid}} µALGO in fees but the network requires {{required}} µALGO. Please try again."
+                "body": "This transaction group paid {{paid}} microALGO in fees but the network requires {{required}} microALGO. Please try again."
             },
             "unknown_node_error": {
                 "title": "Transaction failed",
