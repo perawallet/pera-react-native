@@ -17,8 +17,8 @@ import {
     useSigningRequest,
     type SigningLifecycleEvent,
 } from '@perawallet/wallet-core-signing'
-import { RekeyTargetNotFoundError } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
+import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { getNavigationTheme } from '@theme/theme'
@@ -30,7 +30,7 @@ import {
 import { PWButton, PWTouchableIcon, PWView } from '@components/core'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
-import { config } from '@perawallet/wallet-core-config'
+import { useSignRequestFailure } from './useSignRequestFailure'
 import { useStyles } from './styles'
 
 export type SignRequestViewProps = {
@@ -85,6 +85,7 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
             e.type === 'failed',
         request.id,
     )
+    const failure = useSignRequestFailure(request, failedEvent?.error ?? null)
 
     const isSupported =
         request.type === 'transactions' ||
@@ -114,32 +115,23 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
             return null
         }
 
-        // Backstop for a rekeyed-to-external sender that slipped past the
-        // up-front gate (useSigningActionButtons) and failed at machine init
-        // — explain the rekey state instead of the generic failure copy.
-        const rekeyTargetError =
-            failedEvent.error instanceof RekeyTargetNotFoundError
-                ? failedEvent.error
-                : null
-        const body =
-            config.debugEnabled && failedEvent.error.message
-                ? failedEvent.error.message
-                : rekeyTargetError
-                  ? t('signing.cannot_sign.rekeyed_auth_missing_body', {
-                        authAddress: String(
-                            rekeyTargetError.metadata.params?.rekeyAddress ??
-                                '',
-                        ),
-                    })
-                  : t('signing.signing_failed.body')
         const handleDismiss = () => {
             removeSignRequest(request)
         }
         return (
             <EmptyView
-                title={t('signing.signing_failed.title')}
-                body={body}
+                title={failure.title}
+                body={failure.body}
                 style={styles.errorView}
+                isLoading={failure.isResolving}
+                loadingView={
+                    <PWView style={styles.errorView}>
+                        <LoadingView
+                            variant='circle'
+                            size='lg'
+                        />
+                    </PWView>
+                }
                 button={
                     <PWButton
                         title={t('common.done')}

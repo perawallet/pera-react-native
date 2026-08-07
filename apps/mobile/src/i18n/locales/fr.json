@@ -1431,6 +1431,20 @@
                 "assembly_failed": "Échec de l’assemblage Multisig : {{reason}}",
                 "delivery_failed": "Impossible de transmettre la transaction signée à la dApp"
             }
+        },
+        "already_resolved": {
+            "confirmed": {
+                "title": "Déjà effectuée",
+                "body": "Cette transaction a déjà été signée et envoyée par un autre signataire."
+            },
+            "declined": {
+                "title": "Déjà refusée",
+                "body": "Un autre signataire a refusé cette transaction, elle ne peut donc plus être signée."
+            },
+            "expired": {
+                "title": "Demande expirée",
+                "body": "Cette transaction a expiré avant que suffisamment de signataires l'approuvent."
+            }
         }
     },
     "onboarding": {

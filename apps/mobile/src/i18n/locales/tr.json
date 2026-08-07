@@ -1431,6 +1431,20 @@
                 "assembly_failed": "Multisig birleştirme başarısız oldu: {{reason}}",
                 "delivery_failed": "İmzalanmış işlem dApp’e iletilemedi"
             }
+        },
+        "already_resolved": {
+            "confirmed": {
+                "title": "Zaten tamamlandı",
+                "body": "Bu işlem başka bir imzalayan tarafından zaten imzalandı ve gönderildi."
+            },
+            "declined": {
+                "title": "Zaten reddedildi",
+                "body": "Başka bir imzalayan bu işlemi reddetti, bu nedenle artık imzalanamaz."
+            },
+            "expired": {
+                "title": "İstek süresi doldu",
+                "body": "Bu işlemin süresi, yeterli sayıda imzalayan onaylamadan önce doldu."
+            }
         }
     },
     "onboarding": {

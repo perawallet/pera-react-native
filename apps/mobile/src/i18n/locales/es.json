@@ -1431,6 +1431,20 @@
                 "assembly_failed": "Error al ensamblar la transacción multisig: {{reason}}",
                 "delivery_failed": "No se pudo entregar la transacción firmada a la dApp"
             }
+        },
+        "already_resolved": {
+            "confirmed": {
+                "title": "Ya se completó",
+                "body": "Otro firmante ya firmó y envió esta transacción."
+            },
+            "declined": {
+                "title": "Ya se rechazó",
+                "body": "Otro firmante rechazó esta transacción, por lo que ya no se puede firmar."
+            },
+            "expired": {
+                "title": "La solicitud expiró",
+                "body": "Esta transacción expiró antes de que suficientes firmantes la aprobaran."
+            }
         }
     },
     "onboarding": {

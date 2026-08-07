@@ -1423,6 +1423,20 @@
                 "assembly_failed": "Multisig-Zusammenstellung fehlgeschlagen: {{reason}}",
                 "delivery_failed": "Signierte Transaktion konnte nicht an die dApp übermittelt werden"
             }
+        },
+        "already_resolved": {
+            "confirmed": {
+                "title": "Bereits abgeschlossen",
+                "body": "Diese Transaktion wurde bereits von einem anderen Unterzeichner signiert und gesendet."
+            },
+            "declined": {
+                "title": "Bereits abgelehnt",
+                "body": "Ein anderer Unterzeichner hat diese Transaktion abgelehnt, sie kann nicht mehr signiert werden."
+            },
+            "expired": {
+                "title": "Anfrage abgelaufen",
+                "body": "Diese Transaktion ist abgelaufen, bevor genügend Unterzeichner zugestimmt haben."
+            }
         }
     },
     "onboarding": {

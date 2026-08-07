@@ -1431,6 +1431,20 @@
                 "assembly_failed": "Multisig assembly failed: {{reason}}",
                 "delivery_failed": "Failed to deliver signed transaction to dApp"
             }
+        },
+        "already_resolved": {
+            "confirmed": {
+                "title": "Already completed",
+                "body": "This transaction was already signed and submitted by another signer."
+            },
+            "declined": {
+                "title": "Already declined",
+                "body": "Another signer declined this transaction, so it can no longer be signed."
+            },
+            "expired": {
+                "title": "Request expired",
+                "body": "This transaction expired before enough signers approved it."
+            }
         }
     },
     "onboarding": {
