@@ -73,12 +73,18 @@ const FOLKS: ConfigProject = {
     type: 'pools',
 }
 
+/**
+ * `staking_projects_i18n` holds a locale map, not a bare array. Seeding only
+ * `en` is enough for these flows: the app runs on `en` under test, and locale
+ * resolution has its own unit coverage in
+ * `packages/staking/src/utils/__tests__/parseStakingProjectsI18nConfig.spec.ts`.
+ */
 const seedProjectsConfig = (projects: ConfigProject[]) => {
     useRemoteConfigStore
         .getState()
         .setConfigOverride(
             RemoteConfigKeys.staking_projects_i18n,
-            JSON.stringify(projects),
+            JSON.stringify({ en: projects }),
         )
 }
 

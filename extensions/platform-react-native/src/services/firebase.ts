@@ -56,9 +56,22 @@ import {
     type RemoteConfigKey,
 } from '@perawallet/wallet-extension-platform'
 import { config, isDebug } from '@perawallet/wallet-core-config'
-import { withTimeout } from '@perawallet/wallet-core-shared'
+import { logger, withTimeout } from '@perawallet/wallet-core-shared'
 
 const NOTIFICATION_SMALL_ICON = 'ic_notification_small'
+
+/**
+ * `getRemoteConfig()` is typed as the Firebase-JS `RemoteConfig`, which exposes
+ * `settings`/`defaultConfig` only as properties. The instance is really
+ * `FirebaseConfigModule`, which also carries the awaitable equivalents — the
+ * only way to know the native writes landed before fetching.
+ */
+type AwaitableRemoteConfig = RemoteConfig & {
+    setConfigSettings(settings: {
+        minimumFetchIntervalMillis: number
+    }): Promise<void>
+    setDefaults(defaults: typeof RemoteConfigDefaults): Promise<null>
+}
 
 // FCM/APNs registration is a known indefinite-hang surface offline. Bound the
 // token fetch so cold-start degrades to a no-token result instead of stalling.
@@ -97,6 +110,7 @@ export class RNFirebaseService
         PushNotificationService
 {
     remoteConfig: RemoteConfig | null = null
+    private remoteConfigInitInFlight: Promise<void> | null = null
     messaging: FirebaseMessagingTypes.Module | null = null
     analytics: Analytics | null = null
     crashlytics: FirebaseCrashlyticsTypes.Module | null = null
@@ -141,21 +155,53 @@ export class RNFirebaseService
         }
     }
 
-    async initializeRemoteConfig() {
-        this.remoteConfig = getRemoteConfig()
-        // v25 removed the modular setConfigSettings/setDefaults functions;
-        // assign the Firebase-JS-v9 settings/defaultConfig properties instead
-        // (assignment eagerly seeds the in-memory value cache).
-        this.remoteConfig.settings = {
-            ...this.remoteConfig.settings,
-            minimumFetchIntervalMillis: config.remoteConfigRefreshTime,
-        }
-        this.remoteConfig.defaultConfig = RemoteConfigDefaults
+    /**
+     * Single-flight: a second concurrent fetch makes Firebase cancel the one
+     * already in flight (the same NSURLErrorCancelled that broke this before),
+     * so overlapping callers share one initialization. Cleared on settle, so a
+     * later call still refetches.
+     */
+    async initializeRemoteConfig(): Promise<void> {
+        this.remoteConfigInitInFlight ??= this.fetchRemoteConfig().finally(
+            () => {
+                this.remoteConfigInitInFlight = null
+            },
+        )
+
+        return this.remoteConfigInitInFlight
+    }
+
+    private async fetchRemoteConfig(): Promise<void> {
+        const remoteConfig = getRemoteConfig() as AwaitableRemoteConfig
+        this.remoteConfig = remoteConfig
+
+        // Must be awaited, not assigned. The `settings`/`defaultConfig` setters
+        // are fire-and-forget (`void this.setConfigSettings(...)`) and queue the
+        // native call on a microtask, while `fetchAndActivate` reaches native
+        // synchronously — so assigning then fetching dispatched the fetch FIRST,
+        // and native `setDefaults` then reset the config database mid-flight and
+        // cancelled it (NSURLErrorCancelled → RC error 8003) on every launch.
+        // The fetch never once succeeded, so every key served its bundled
+        // default — an empty `staking_projects_i18n` among them (PERA-4836).
+        await remoteConfig.setConfigSettings({
+            // Firebase persists this interval across launches, so an hour in dev
+            // means freshly published values are invisible for an hour.
+            minimumFetchIntervalMillis: isDebug
+                ? 0
+                : config.remoteConfigRefreshTime,
+        })
+        await remoteConfig.setDefaults(RemoteConfigDefaults)
 
         try {
-            await fetchAndActivate(this.remoteConfig)
-        } catch {
-            // ignore fetch errors, rely on cached/default values
+            await fetchAndActivate(remoteConfig)
+        } catch (error) {
+            // Best-effort — cached/default values still serve. Logged because a
+            // silent catch here is what hid the failure above: every remote
+            // value quietly degraded to its default with no signal at all.
+            logger.warn(
+                'Remote Config fetch failed; serving cached or default values',
+                { source: 'FirebaseService.initializeRemoteConfig', error },
+            )
         }
     }
 
