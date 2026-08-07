@@ -13,6 +13,7 @@
 import de from './locales/de.json'
 import en from './locales/en.json'
 import es from './locales/es.json'
+import fr from './locales/fr.json'
 
 /**
  * Every locale this app has an actual translation bundle for. Add a real
@@ -32,6 +33,7 @@ export const TRANSLATION_BUNDLES: Readonly<
     en,
     de,
     es,
+    fr,
 }
 
 export const BASE_LOCALE = 'en'

@@ -60,8 +60,8 @@ describe('i18n/effectiveLocales - getEffectiveSupportedLocales', () => {
         // and keeps proving the allowlist can't conjure a bundle. Naming a
         // locale that *is* planned (this asserted on `fr` before) means the
         // test quietly stops testing anything the day that bundle lands.
-        expect(getEffectiveSupportedLocales(true, 'de,es,ja')).toEqual(
-            new Set(['en', 'de', 'es']),
+        expect(getEffectiveSupportedLocales(true, 'de,es,fr,ja')).toEqual(
+            new Set(['en', 'de', 'es', 'fr']),
         )
     })
 })
