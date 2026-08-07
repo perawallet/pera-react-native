@@ -124,13 +124,36 @@ function buildAppConfig(env) {
       infoPlist: {
         CFBundleDisplayName: appNames[variant],
         LSApplicationCategoryType: 'public.app-category.finance',
-        NSCameraUsageDescription: '$(PRODUCT_NAME) needs access to your Camera.',
-        NSBluetoothAlwaysUsageDescription: '$(PRODUCT_NAME) will use Bluetooth to communicate with Ledger X.',
-        NSBluetoothPeripheralUsageDescription: '$(PRODUCT_NAME) will use Bluetooth to communicate with Ledger X.',
-        NSFaceIDUsageDescription: '$(PRODUCT_NAME) uses Face ID to secure access to your wallet.',
-        NSPhotoLibraryAddUsageDescription: '$(PRODUCT_NAME) will save QR codes to your photo library.',
-        NSPhotoLibraryUsageDescription: '$(PRODUCT_NAME) needs access to your photo library so you can pick a contact photo.',
-        NSLocationWhenInUseUsageDescription: '$(PRODUCT_NAME) needs access to your location for Bluetooth communication with Ledger devices.',
+        // Purpose strings are the single source of truth for every iOS
+        // permission prompt: an active, specific sentence naming the feature
+        // that needs the capability. 7.0.0 (10305) was rejected under
+        // guideline 5.1.1(ii) for "Pera needs access to your camera." — a
+        // string that says nothing about how the camera is used. Anything
+        // vaguer than "app does X so you can Y" will be rejected again, and a
+        // plugin option must never be allowed to shadow these (see the
+        // expo-image-picker entry below). No $(PRODUCT_NAME): it expands to
+        // the spaceless target name (PeraAlgoWallet), and the alert already
+        // shows the display name above the string.
+        NSCameraUsageDescription:
+          'Pera scans QR codes with the camera to fill in a recipient address, add a contact, or connect your account to a dApp.',
+        NSBluetoothAlwaysUsageDescription:
+          'Pera uses Bluetooth to reach your Ledger hardware wallet so you can review and approve transactions on the device.',
+        NSBluetoothPeripheralUsageDescription:
+          'Pera uses Bluetooth to reach your Ledger hardware wallet so you can review and approve transactions on the device.',
+        NSFaceIDUsageDescription:
+          'Pera uses Face ID to unlock your wallet and approve transactions without typing your PIN.',
+        NSPhotoLibraryAddUsageDescription:
+          'Pera saves a collectible image to your photo library when you choose to download it.',
+        NSPhotoLibraryUsageDescription:
+          'Pera opens your photo library so you can pick a picture for one of your contacts.',
+        // expo-sensors would otherwise inject its own placeholder here; the
+        // accelerometer is read only to notice a shake (shake-to-lock).
+        NSMotionUsageDescription:
+          'Pera reads device motion to notice when you shake your phone, which locks the app straight away.',
+        // No NSLocationWhenInUseUsageDescription / NSMicrophoneUsageDescription
+        // on purpose: nothing reads either one. Only Android needs location for
+        // a BLE scan (ACCESS_FINE_LOCATION below) — CoreBluetooth does not, and
+        // an unbacked location string is review surface for no feature.
         // twitter/tg/discord: Linking.canOpenURL checks for the in-app
         // browser's social-media handoff (PWWebView navigation guard).
         LSApplicationQueriesSchemes: ['itms-apps', 'twitter', 'tg', 'com.hammerandchisel.discord'],
@@ -369,8 +392,16 @@ function buildAppConfig(env) {
       [
         'expo-image-picker',
         {
-          photosPermission: 'Pera needs access to your photo library so you can pick a contact photo.',
-          cameraPermission: 'Pera needs access to your camera.',
+          // Permission copy stays in ios.infoPlist above. A truthy option here
+          // silently overwrites it — applyPermissions resolves
+          // `option || infoPlist[key] || pluginDefault` — which is how 7.0.0
+          // shipped "Pera needs access to your camera." over the string this
+          // config declares, and got rejected under 5.1.1(ii).
+          // The picker only ever opens the photo library (there is no
+          // launchCameraAsync call site), so it owns no camera copy; `false`
+          // drops the microphone string and RECORD_AUDIO it would add for a
+          // recorder the app doesn't have.
+          microphonePermission: false,
         },
       ],
       // Note: The following packages are autolinked and don't require config plugins:
