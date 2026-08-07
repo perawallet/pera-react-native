@@ -41,16 +41,17 @@ German set the house style and it is deliberate:
   term — `Recovery Phrase` → `Wiederherstellungsphrase`, `Minimum Balance` →
   `Mindestguthaben`, `Shared Account` → `Gemeinschaftskonto`.
 - **Keep Algorand/crypto ecosystem terms in English** — `Asset`, `Vault`,
-  `Staking`, `Rekey`, `Passphrase`, `Swap`, `passkey`. German even inflects them
+  `Staking`, `Rekey`, `Passphrase`, `passkey`. German even inflects them
   natively (`rekeyen`, `deines Vaults`) rather than inventing a calque.
 
-Languages borrow English at different rates, so **two terms deliberately diverge
-between bundles**. Do not "harmonise" these without reading why:
+Languages borrow English at different rates, so **three terms deliberately
+diverge between bundles**. Do not "harmonise" these without reading why:
 
 | Term     | de       | es       | fr       | tr           | pt-BR    | Why                                                                                                                                                                                                                                         |
 | -------- | -------- | -------- | -------- | ------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `asset`  | `Asset`  | `activo` | `actif`  | `varlık`     | `ativo`  | German borrows English tech vocabulary readily; the Romance languages and Turkish do not, and `activos`/`ativos` is what Binance/Coinbase ship in those languages.                                                                          |
 | `wallet` | `Wallet` | `wallet` | `wallet` | **`cüzdan`** | `wallet` | Kept English in Spanish specifically to dodge the `cartera` (Spain) / `billetera` (LatAm) split in a single neutral `es` bundle. Turkish has no such split and its crypto UIs universally say `cüzdan`, so translating it there is correct. |
+| `swap`   | **`Tauschen`** | `Swap`   | `Swap`   | `Swap`       | `Swap`   | The one term German translates and everyone else keeps. `Tauschen` for actions, `Tausch` as a singular noun, `Tausch-` in compounds (`Tauschverlauf`, `Tauscheinstellungen`); plural is `Tauschvorgänge`, because `Tausche` is awkward German. `Cross-Chain-Swap` stays English as a domain term.                              |
 
 ## Register per locale
 
@@ -105,6 +106,15 @@ Either way it is an `en.json` change plus a mirrored update to all bundles, so d
 it as its own change rather than inside a locale PR.
 
 ## Locale-specific traps
+
+### German — English words that are already German
+
+Leaving an English word untranslated is usually safe in `de`, but check it is
+not already a German word meaning something else. `Fund` shipped untranslated
+for a while and reads as the ordinary noun *"a find"*, so the tab bar showed
+`Entdecken` next to `Fund` — two adjacent tabs both saying discover. It is now
+`Aufladen`. Words worth the same check before borrowing them: `Gift`, `Bald`,
+`Rat`, `Brand`, `Herd`, `Tag`.
 
 ### Turkish — agglutination is the big one
 
