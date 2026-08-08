@@ -400,6 +400,26 @@ workflows:
         # a dyld missing-symbol. No prefix fallback for the same reason: nothing
         # reconciles Pods/ after restore the way pnpm install reconciles node_modules.
         - key: ios-pods-{{ checksum "pnpm-lock.yaml" }}
+    # Must precede Expo Prebuild: app.config.builder.js reads APP_VERSION /
+    # BUILD_NUMBER to bake the version into the generated native project. Same
+    # ordering as the Android workflow — keep the two in step.
+    - script@1:
+        title: Resolve marketing version (tag-driven)
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # Marketing version: the git tag is the source of truth (strip
+            # leading v + any -prerelease suffix). Fall back to package.json
+            # for manual/non-tag builds.
+            if [ -n "$BITRISE_GIT_TAG" ]; then
+              VERSION="${BITRISE_GIT_TAG#v}"
+              VERSION="${VERSION%%-*}"
+            else
+              VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
+            fi
+            envman add --key APP_VERSION --value "$VERSION"
+            envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
     - script@1:
         title: Expo Prebuild
         inputs:
@@ -420,23 +440,6 @@ workflows:
         # as the Pods cache above.
         - key: ios-derived-data-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock"
             }}-{{ checksum "pnpm-lock.yaml" }}
-    - script@1:
-        title: Resolve marketing version (tag-driven)
-        inputs:
-        - content: |
-            #!/usr/bin/env bash
-            set -ex
-            # Marketing version: the git tag is the source of truth (strip
-            # leading v + any -prerelease suffix). Fall back to package.json
-            # for manual/non-tag builds.
-            if [ -n "$BITRISE_GIT_TAG" ]; then
-              VERSION="${BITRISE_GIT_TAG#v}"
-              VERSION="${VERSION%%-*}"
-            else
-              VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
-            fi
-            envman add --key APP_VERSION --value "$VERSION"
-            envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
     # Deprecated, but kept deliberately: it unconditionally installs the
     # uploaded certs + profiles that fastlane pins by name (CODE_SIGN_STYLE=
     # Manual). Its replacement, manage-ios-code-signing, only installs the
