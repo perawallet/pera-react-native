@@ -86,6 +86,18 @@ catalog:
 
 minimumReleaseAge: 10080
 
+# image-size has no patched release: GitHub reports first_patched_version: null
+# on both advisories and npm's latest is 2.0.2 (Apr 2025), so there is nothing to
+# override to. It reaches the --prod graph only because react-native declares
+# @react-native/community-cli-plugin as a runtime dep; the sole consumer is
+# metro's build-time asset sizer (metro/src/Assets.js), never shipped to a
+# device. Exploiting it means committing a malformed ICNS/JXL/HEIF to our own
+# assets to stall a bundle. Drop these two once image-size publishes a fix.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-5p2g-fcmc-qvqq # image-size: JXL/HEIF parsers infinite loop
+    - GHSA-w3rx-r6r6-pgpr # image-size: ICNS parser infinite loop
+
 minimumReleaseAgeExclude:
   - '@algorandfoundation/keystore'
   - '@algorandfoundation/react-native-keystore'
@@ -94,6 +106,9 @@ minimumReleaseAgeExclude:
   - '@joe-p/react-native-falcon'
   - falcon-1024
   - fast-uri
+  # 3.3.17 is the GHSA-2v37-7h3g-55p8 fix and is younger than the 7-day gate.
+  # Same sole maintainer (ai <andrey@sitnik.es>) as 3.3.16, no install scripts.
+  - nanoid
   - expo
   - expo-*
   - '@expo/*'
@@ -152,7 +167,18 @@ overrides:
   js-yaml@>=4.0.0 <4.3.1: '>=4.3.1'
   js-yaml@>=5.0.0 <5.2.2: '>=5.2.2'
   lodash@4: 4.18.1
-  nanoid@<3.3.8: '>=3.3.8'
+  # GHSA-2v37-7h3g-55p8 (custom generators loop forever when size is 0). Exact
+  # target, not '>=3.3.17': an open range resolves to nanoid 6.
+  #
+  # pnpm matches this selector against the *declared* spec, not the resolved
+  # version, so `^3.3.1` is captured too — which is how the old '>=3.3.8' entry
+  # silently pulled @gorhom/portal up to nanoid 6. That resolution shipped in
+  # v7.0.0 and is not vulnerable (the advisory is <3.3.17), so it is pinned below
+  # rather than dragged back to 3.x by this line.
+  nanoid@<3.3.17: 3.3.17
+  # Keep the production-proven resolution: in the tree since #996 and shipped in
+  # v7.0.0. Deliberately outside @gorhom/portal's declared `^3.3.1`.
+  '@gorhom/portal>nanoid': 6.0.0
   node-fetch@<2.6.7: '>=2.6.7'
   node-forge@1: 1.4.0
   picomatch@2: 2.3.2
