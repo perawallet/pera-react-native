@@ -1392,6 +1392,8 @@
             "confirmed": "İşlem başarıyla tamamlandı",
             "submitting": "Tüm imzalar toplandı. İşlem gönderiliyor…",
             "failed_default": "İşlem başarısız oldu",
+            "load_error": "Bu işlem yüklenemedi. Süresi dolmuş veya kaldırılmış olabilir.",
+            "retry": "Tekrar dene",
             "canceled": "İşlem iptal edildi.",
             "declined": "İşlem reddedildi.",
             "close": "Kapat",

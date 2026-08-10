@@ -63,6 +63,13 @@ export type UsePendingSignaturesContentResult = {
     failReason: string | null
     signers: SignerRow[]
     handleClose: () => void
+    /**
+     * The backend query settled in error before any data arrived (e.g. the
+     * request was deleted or purged). A poll failure over already-loaded data
+     * keeps showing that data instead.
+     */
+    hasLoadError: boolean
+    handleRetryLoad: () => void
     canSign: boolean
     handleSign: () => void
     handleSignParticipant: (address: string) => void
@@ -130,7 +137,12 @@ export const usePendingSignaturesContent =
         const [isFailedRecoveryExpired, setIsFailedRecoveryExpired] =
             useState(false)
 
-        const { data: signRequestData, isLoading } = useSignRequestDetailQuery({
+        const {
+            data: signRequestData,
+            isLoading,
+            isError,
+            refetch,
+        } = useSignRequestDetailQuery({
             network,
             deviceId,
             signRequestId: signRequestId ?? '',
@@ -147,6 +159,14 @@ export const usePendingSignaturesContent =
             : (signRequestData ?? null)
 
         const status = signRequest?.status ?? null
+
+        // Errors also stop the polling loop (refetchInterval sees no status),
+        // so without a manual retry the sheet would never recover.
+        const hasLoadError = isError && !signRequest
+
+        const handleRetryLoad = useCallback(() => {
+            void refetch()
+        }, [refetch])
 
         // Measured from the FIRST `failed`, not reset per poll — the dependency
         // is the `status` string, which is stable across identical polls.
@@ -357,6 +377,8 @@ export const usePendingSignaturesContent =
             failReason: signRequest?.failReasonDisplay ?? null,
             signers,
             handleClose,
+            hasLoadError,
+            handleRetryLoad,
             canSign,
             handleSign,
             handleSignParticipant,
