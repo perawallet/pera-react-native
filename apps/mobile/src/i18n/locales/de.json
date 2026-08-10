@@ -1384,6 +1384,8 @@
             "confirmed": "Transaktion erfolgreich abgeschlossen",
             "submitting": "Alle Signaturen gesammelt. Transaktion wird übermittelt…",
             "failed_default": "Transaktion fehlgeschlagen",
+            "load_error": "Diese Transaktion konnte nicht geladen werden. Sie ist möglicherweise abgelaufen oder wurde entfernt.",
+            "retry": "Erneut versuchen",
             "canceled": "Transaktion abgebrochen.",
             "declined": "Transaktion abgelehnt.",
             "close": "Schließen",

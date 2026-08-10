@@ -1392,6 +1392,8 @@
             "confirmed": "Transaction effectuée avec succès",
             "submitting": "Toutes les signatures ont été collectées. Envoi de la transaction…",
             "failed_default": "La transaction a échoué",
+            "load_error": "Impossible de charger cette transaction. Elle a peut-être expiré ou été supprimée.",
+            "retry": "Réessayer",
             "canceled": "Transaction annulée.",
             "declined": "Transaction refusée.",
             "close": "Fermer",

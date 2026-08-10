@@ -90,6 +90,17 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         paddingVertical: theme.spacing['5xl'],
     },
+    errorContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.lg,
+        paddingVertical: theme.spacing['3xl'],
+        paddingHorizontal: theme.spacing.xl,
+    },
+    errorText: {
+        color: theme.colors.textGray,
+        textAlign: 'center',
+    },
     accountsHeader: {
         gap: theme.spacing.xs,
     },
