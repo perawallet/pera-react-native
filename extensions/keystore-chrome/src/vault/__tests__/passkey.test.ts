@@ -18,6 +18,7 @@ import {
     isPasskeyUnlockEnabled,
     enablePasskeyUnlock,
     unlockWithPasskey,
+    verifyPasskey,
     disablePasskeyUnlock,
 } from '../passkey'
 import {
@@ -29,6 +30,7 @@ import { getSessionMasterKey } from '../session'
 import { createVault, unlockVault, lockVault } from '../vault'
 import { InvalidPasswordError } from '../../errors'
 import { getLockoutRemainingSeconds, recordFailedAttempt } from '../lockout'
+import { AUTO_LOCK_ALARM } from '../autolock'
 
 // 32 deterministic bytes used as the fake PRF output.
 const FAKE_PRF_BYTES = new Uint8Array(32).fill(0xab)
@@ -438,6 +440,100 @@ describe('passkey vault', () => {
 
             await expect(unlockWithPasskey()).rejects.toThrow(DOMException)
             expect(await getSessionMasterKey()).toBeNull()
+        })
+    })
+
+    describe('verifyPasskey', () => {
+        it('resolves without putting the master key in the session', async () => {
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+
+            await expect(verifyPasskey()).resolves.toBeUndefined()
+
+            // The whole point: proving identity must not unlock anything.
+            expect(await getSessionMasterKey()).toBeNull()
+            // lockVault() above already cleared the alarm, so this only
+            // passes if verifyPasskey itself never re-arms it.
+            expect(fake.alarms.has(AUTO_LOCK_ALARM)).toBe(false)
+        })
+
+        it('throws VaultLockedOutError without invoking WebAuthn when locked out', async () => {
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+
+            const { getMock } = installCredentialsMock()
+            for (let i = 0; i < 5; i++) await recordFailedAttempt()
+            expect(await getLockoutRemainingSeconds()).toBeGreaterThan(0)
+
+            await expect(verifyPasskey()).rejects.toBeInstanceOf(
+                VaultLockedOutError,
+            )
+            expect(getMock).not.toHaveBeenCalled()
+        })
+
+        it('maps an authentication tag failure to PasskeyUnlockError', async () => {
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+
+            // Assertion succeeds but returns PRF output that derives the wrong KEK,
+            // so AES-GCM rejects the tag.
+            installWebAuthnMocks({
+                getPrfResultsForSalt: () => new Uint8Array(32).fill(0x11),
+            })
+
+            await expect(verifyPasskey()).rejects.toBeInstanceOf(
+                PasskeyUnlockError,
+            )
+        })
+
+        it('does not record a failed attempt on a bad assertion', async () => {
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+
+            // Assertion succeeds but returns PRF output that derives the wrong KEK,
+            // so AES-GCM rejects the tag.
+            installWebAuthnMocks({
+                getPrfResultsForSalt: () => new Uint8Array(32).fill(0x11),
+            })
+
+            await expect(verifyPasskey()).rejects.toBeInstanceOf(
+                PasskeyUnlockError,
+            )
+
+            // If verifyPasskey had burned a failed attempt, these 4 more would
+            // reach the 5-attempt threshold and trigger a lockout.
+            for (let i = 0; i < 4; i++) await recordFailedAttempt()
+            expect(await getLockoutRemainingSeconds()).toBe(0)
+        })
+
+        it('rejects a stored PRF blob whose iv decodes to the wrong byte length', async () => {
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+
+            const blob = JSON.parse(
+                String(fake.data.get('vault:wrapped-master-key-prf')),
+            )
+            blob.iv = base64.encode(new Uint8Array(4)) // enable path writes 12 bytes
+            fake.data.set('vault:wrapped-master-key-prf', JSON.stringify(blob))
+
+            await expect(verifyPasskey()).rejects.toBeInstanceOf(
+                VaultCorruptedError,
+            )
+        })
+
+        it('unlockWithPasskey still establishes the session after the refactor', async () => {
+            await createVault('test-password')
+            await enablePasskeyUnlock('test-password')
+            await lockVault()
+
+            await unlockWithPasskey()
+
+            expect(await getSessionMasterKey()).not.toBeNull()
         })
     })
 

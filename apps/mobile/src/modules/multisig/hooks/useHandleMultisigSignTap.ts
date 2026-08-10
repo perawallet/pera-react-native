@@ -21,7 +21,10 @@ import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { logger } from '@perawallet/wallet-core-shared'
 import { usePendingSignaturesSheetStore } from '../stores/usePendingSignaturesSheetStore'
 import { buildMultisigCosignRequest } from '../utils/buildMultisigCosignRequest'
+import { getInFlightCosignAddresses } from '../utils/getInFlightCosignAddresses'
 import { getLocalUnsignedSigners } from '../utils/getLocalUnsignedSigners'
+import { selectCosignDispatchAddresses } from '../utils/selectCosignDispatchAddresses'
+import { getSignedResponseCount } from '../utils/signRequestStatus'
 import { splitLocalUnsignedSigners } from '../utils/splitLocalUnsignedSigners'
 
 export type UseHandleMultisigSignTapResult = (
@@ -30,20 +33,25 @@ export type UseHandleMultisigSignTapResult = (
 
 /**
  * Returns a callback that handles a tap on a multisig-sign inbox item.
- * When actionable and the user holds an unsigned local-key (Algo25/HD)
- * participant, batch-dispatch a `multisig-cosign` SignRequest per signer —
- * the signing pipeline opens the sign bottom sheet directly. Hardware
- * (Ledger) participants are never auto-dispatched: their per-row Sign
- * button in `PendingSignaturesContent` is the only entry point that fires
- * a device prompt. The pending sheet opens whenever hardware action is
- * still required, when there is nothing to dispatch, or when the status
- * isn't actionable.
+ *
+ * Shortcut: when the request is actionable and the only unsigned local
+ * participants are local-key (Algo25/HD), the tap itself is the sign intent —
+ * batch-dispatch a `multisig-cosign` SignRequest per signer (capped at the
+ * signatures still needed) and let the signing pipeline own the review sheet.
+ *
+ * Otherwise the pending-signatures sheet opens and owns the flow. That
+ * includes the mixed case (local-key AND hardware unsigned): dispatching the
+ * local-key cosigns here would surface a review sheet *under* the pending
+ * sheet with no explicit Sign tap, so the local-key signing waits for the
+ * footer Sign button. Hardware (Ledger) participants are never auto-dispatched
+ * — their per-row Sign button is the only entry point that fires a device
+ * prompt.
  */
 export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
     const openSheet = usePendingSignaturesSheetStore(state => state.openSheet)
     const accounts = useAllAccounts()
     const { decodeTransaction } = useTransactionEncoder()
-    const { addSignRequest } = useSigningRequest()
+    const { addSignRequest, pendingSignRequests } = useSigningRequest()
 
     return useCallback(
         (signRequest: MultisigSignRequest) => {
@@ -51,33 +59,46 @@ export const useHandleMultisigSignTap = (): UseHandleMultisigSignTapResult => {
                 const { localKey, hardware } = splitLocalUnsignedSigners(
                     getLocalUnsignedSigners(signRequest, accounts),
                 )
-                for (const signer of localKey) {
-                    try {
-                        addSignRequest(
-                            buildMultisigCosignRequest({
-                                signRequest,
-                                signerAddress: signer.address,
-                                decodeTransaction,
-                            }),
-                        )
-                    } catch (error) {
-                        // A cosign request that fails validation (PERA-4711)
-                        // must never be signed; skip it without crashing the
-                        // tap handler.
-                        logger.error(
-                            'Skipping invalid multisig cosign request',
-                            { error },
-                        )
+                if (localKey.length > 0 && hardware.size === 0) {
+                    const toDispatch = selectCosignDispatchAddresses({
+                        localKeySigners: localKey,
+                        inFlightAddresses: getInFlightCosignAddresses(
+                            pendingSignRequests,
+                            signRequest.id,
+                        ),
+                        threshold: signRequest.multisigAccount.threshold,
+                        signedCount: getSignedResponseCount(signRequest),
+                    })
+                    for (const address of toDispatch) {
+                        try {
+                            addSignRequest(
+                                buildMultisigCosignRequest({
+                                    signRequest,
+                                    signerAddress: address,
+                                    decodeTransaction,
+                                }),
+                            )
+                        } catch (error) {
+                            // A cosign request that fails validation
+                            // (PERA-4711) must never be signed; skip it
+                            // without crashing the tap handler.
+                            logger.error(
+                                'Skipping invalid multisig cosign request',
+                                { error },
+                            )
+                        }
                     }
+                    return
                 }
-                // Only the local-key cosign sign sheet owns the visible UI
-                // when there's nothing else to do. If hardware participants
-                // still need a per-row tap (or there was nothing dispatchable),
-                // fall through and open the pending-signatures sheet.
-                if (localKey.length > 0 && hardware.size === 0) return
             }
             openSheet(signRequest.id)
         },
-        [openSheet, accounts, decodeTransaction, addSignRequest],
+        [
+            openSheet,
+            accounts,
+            decodeTransaction,
+            addSignRequest,
+            pendingSignRequests,
+        ],
     )
 }

@@ -12,12 +12,23 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useExpandedFlowNavigation } from '../useExpandedFlowNavigation'
+import {
+    useExpandedFlowNavigation,
+    useOnboardingExpandedFlowNavigation,
+} from '../useExpandedFlowNavigation.web'
 
 const consumeInitialExpandedFlowMock = vi.fn()
+const setIsOnboardingMock = vi.fn()
 
 vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     consumeInitialExpandedFlow: () => consumeInitialExpandedFlowMock(),
+}))
+
+vi.mock('@modules/onboarding/hooks', () => ({
+    useIsOnboarding: () => ({
+        isOnboarding: false,
+        setIsOnboarding: setIsOnboardingMock,
+    }),
 }))
 
 describe('useExpandedFlowNavigation', () => {
@@ -108,4 +119,82 @@ describe('useExpandedFlowNavigation', () => {
 
         expect(navigate).not.toHaveBeenCalled()
     })
+
+    it('deep-links into AsbImportBackup when the flow is asb-import', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('asb-import')
+        const navigate = vi.fn()
+        const { result } = renderHook(() => useExpandedFlowNavigation(navigate))
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'AsbImportBackup',
+        })
+        expect(navigate).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('useOnboardingExpandedFlowNavigation', () => {
+    beforeEach(() => {
+        consumeInitialExpandedFlowMock.mockReset()
+        setIsOnboardingMock.mockReset()
+    })
+
+    it.each([
+        ['ledger-usb', 'usb'],
+        ['ledger-ble', 'ble'],
+    ])('navigates to LedgerScan for %s', (flow, transportType) => {
+        consumeInitialExpandedFlowMock.mockReturnValue(flow)
+        const navigate = vi.fn()
+        const { result } = renderHook(() =>
+            useOnboardingExpandedFlowNavigation(navigate),
+        )
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('LedgerScan', { transportType })
+        expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
+    it('navigates to AsbImportBackup for asb-import', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('asb-import')
+        const navigate = vi.fn()
+        const { result } = renderHook(() =>
+            useOnboardingExpandedFlowNavigation(navigate),
+        )
+
+        result.current()
+
+        expect(navigate).toHaveBeenCalledWith('AsbImportBackup')
+        expect(navigate).toHaveBeenCalledTimes(1)
+    })
+
+    // Without this the imported account makes `useShowOnboarding` false and the
+    // shell swaps the onboarding stack for the main one mid-flow.
+    it('pins the shell to onboarding before navigating', () => {
+        consumeInitialExpandedFlowMock.mockReturnValue('ledger-usb')
+        const { result } = renderHook(() =>
+            useOnboardingExpandedFlowNavigation(vi.fn()),
+        )
+
+        result.current()
+
+        expect(setIsOnboardingMock).toHaveBeenCalledWith(true)
+    })
+
+    it.each(['add-account', 'backup-wallet', 'scan', null, 'evil'])(
+        'ignores %s, which has no onboarding-stack destination',
+        flow => {
+            consumeInitialExpandedFlowMock.mockReturnValue(flow)
+            const navigate = vi.fn()
+            const { result } = renderHook(() =>
+                useOnboardingExpandedFlowNavigation(navigate),
+            )
+
+            result.current()
+
+            expect(navigate).not.toHaveBeenCalled()
+            expect(setIsOnboardingMock).not.toHaveBeenCalled()
+        },
+    )
 })

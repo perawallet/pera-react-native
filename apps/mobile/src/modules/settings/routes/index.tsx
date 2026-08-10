@@ -257,13 +257,15 @@ export const SettingsStackNavigator = () => {
                         component={VaultSecuritySettingsScreen}
                     />
                 )}
-            <SettingsStack.Screen
-                name='NotificationsSettings'
-                options={{
-                    title: 'screens.notifications',
-                }}
-                component={SettingsNotificationsScreen}
-            />
+            {routeCapabilities.pushNotificationSettings && (
+                <SettingsStack.Screen
+                    name='NotificationsSettings'
+                    options={{
+                        title: 'screens.notifications',
+                    }}
+                    component={SettingsNotificationsScreen}
+                />
+            )}
             {routeCapabilities.walletConnectSettings && (
                 <SettingsStack.Screen
                     name='WalletConnectSettings'

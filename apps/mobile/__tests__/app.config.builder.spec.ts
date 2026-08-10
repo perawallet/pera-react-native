@@ -18,6 +18,7 @@ const PASSKEY_PLUGIN = '@algorandfoundation/react-native-passkey-autofill'
 type ResolvedConfig = {
     name: string
     slug: string
+    version: string
     scheme: string[]
     ios: {
         bundleIdentifier: string
@@ -45,15 +46,21 @@ type ResolvedConfig = {
 const build = (env: Record<string, string | undefined>): ResolvedConfig =>
     buildAppConfig(env)
 
-const passkeyOptions = (config: ResolvedConfig): Record<string, unknown> => {
+const pluginOptions = (
+    config: ResolvedConfig,
+    name: string,
+): Record<string, unknown> => {
     const entry = config.plugins.find(
-        plugin => Array.isArray(plugin) && plugin[0] === PASSKEY_PLUGIN,
+        plugin => Array.isArray(plugin) && plugin[0] === name,
     )
     if (!Array.isArray(entry)) {
-        throw new Error('passkey-autofill plugin entry not found')
+        throw new Error(`${name} plugin entry not found`)
     }
     return entry[1] as Record<string, unknown>
 }
+
+const passkeyOptions = (config: ResolvedConfig): Record<string, unknown> =>
+    pluginOptions(config, PASSKEY_PLUGIN)
 
 describe('buildAppConfig — refactor invariants', () => {
     it('maps APP_ENV to the app variant', () => {
@@ -82,14 +89,49 @@ describe('buildAppConfig — refactor invariants', () => {
         )
     })
 
-    it('declares non-exempt encryption as false and keeps the privacy usage strings', () => {
+    it('declares non-exempt encryption as false', () => {
         const { ios } = build({ APP_ENV: 'production' })
 
         expect(ios.config.usesNonExemptEncryption).toBe(false)
-        expect(ios.infoPlist.NSCameraUsageDescription).toBeTruthy()
-        expect(ios.infoPlist.NSFaceIDUsageDescription).toBeTruthy()
-        expect(ios.infoPlist.NSPhotoLibraryAddUsageDescription).toBeTruthy()
-        expect(ios.infoPlist.NSBluetoothAlwaysUsageDescription).toBeTruthy()
+    })
+
+    // App Review rejected 7.0.0 under guideline 5.1.1(ii) for a camera string
+    // that named the permission instead of the feature, so assert the shape
+    // Apple asks for rather than mere presence.
+    it('states what each protected capability is used for', () => {
+        const { ios } = build({ APP_ENV: 'production' })
+        const purposeStrings = Object.entries(ios.infoPlist).filter(([key]) =>
+            key.endsWith('UsageDescription'),
+        ) as Array<[string, string]>
+
+        expect(purposeStrings.map(([key]) => key)).toEqual(
+            expect.arrayContaining([
+                'NSCameraUsageDescription',
+                'NSFaceIDUsageDescription',
+                'NSBluetoothAlwaysUsageDescription',
+                'NSPhotoLibraryAddUsageDescription',
+                'NSMotionUsageDescription',
+            ]),
+        )
+
+        for (const [key, value] of purposeStrings) {
+            expect(value, `${key} must be a complete sentence`).toMatch(/\.$/)
+            expect(value, `${key} must name the feature`).toMatch(/\b(to|so)\b/)
+            expect(value, `${key} restates the permission`).not.toMatch(
+                /needs access to/i,
+            )
+        }
+    })
+
+    it('leaves iOS permission copy to infoPlist rather than a plugin option', () => {
+        const options = pluginOptions(
+            build({ APP_ENV: 'production' }),
+            'expo-image-picker',
+        )
+
+        expect(options.cameraPermission).toBeUndefined()
+        expect(options.photosPermission).toBeUndefined()
+        expect(options.microphonePermission).toBe(false)
     })
 
     it('app.config.js resolves through the builder with the live process env', async () => {
@@ -352,6 +394,25 @@ describe('buildAppConfig — store versioning floor (WB-5)', () => {
             build({ APP_ENV: 'production', BUILD_NUMBER: '42' }).ios
                 .buildNumber,
         ).toBe(String(base + 42))
+    })
+})
+
+describe('buildAppConfig — marketing version', () => {
+    // Regression guard: this was pinned to a literal '7.0.0'. iOS survived it
+    // because fastlane rewrites the project after prebuild; Android has no such
+    // step, so every Play release shipped as 7.0.0 regardless of the tag.
+    it('takes the marketing version from APP_VERSION', () => {
+        expect(
+            build({ APP_ENV: 'production', APP_VERSION: '8.1.4' }).version,
+        ).toBe('8.1.4')
+    })
+
+    it("falls back to package.json's base version when APP_VERSION is unset", () => {
+        const declared = (pkg as { version: string }).version
+        expect(build({ APP_ENV: 'production' }).version).toBe(
+            declared.split('-')[0],
+        )
+        expect(declared).toContain('-')
     })
 })
 

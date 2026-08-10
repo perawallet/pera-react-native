@@ -25,6 +25,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 import type { RejectReason, SourceType } from '../pipeline/types'
+import { buildWalletConnectSignResult } from '../utils/buildWalletConnectSignResult'
 import type { SignRequestSource, TransactionSignRequest } from '../models'
 import type { FeeAdjustment } from '../pipeline/sources'
 import {
@@ -41,6 +42,12 @@ import {
 export type ExternalSignTxnTransport = {
     sourceType: SourceType
     transportId: string
+    /**
+     * WalletConnect JSON-RPC request id (`algo_signTxn` payload id). Set only
+     * by the WalletConnect handler; threaded to the multisig sync-flow handoff
+     * so the dApp response survives an app kill.
+     */
+    payloadId?: number
     sourceMetadata?: SignRequestSource
     /** SW/platform-observed origin (trusted, not dApp-asserted) — used for
      *  trust display and ARC-60 SIWA domain binding. */
@@ -151,6 +158,8 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
                 // the wallet will sign.
                 signableIndices: indicesToSign,
                 rawTransactionsBase64,
+                payloadId: transport.payloadId,
+                totalLength,
                 signerOverrides:
                     signerOverrides.size > 0 ? signerOverrides : undefined,
                 feeAdjustments,
@@ -186,14 +195,13 @@ export const useEnqueueArc0001SignRequest = (): EnqueueArc0001SignRequest => {
                 // into the unsignable slots and hand straight to the
                 // transport — no algosdk re-encode.
                 approveSignedBytes: async (signedBytes: Uint8Array[]) => {
-                    const result: Nullable<string>[] = new Array(
+                    // Same mapping the post-kill recovery path uses, so live and
+                    // resumed deliveries produce a byte-identical response.
+                    const result = buildWalletConnectSignResult(
+                        signedBytes,
+                        indicesToSign,
                         totalLength,
-                    ).fill(null)
-                    signedBytes.forEach((bytes, i) => {
-                        const idx = indicesToSign[i]
-                        if (idx === undefined || !bytes) return
-                        result[idx] = encodeToBase64(bytes)
-                    })
+                    )
                     await transport.respondWithResult(result)
                 },
                 reject: async (reason: RejectReason = { kind: 'user' }) => {

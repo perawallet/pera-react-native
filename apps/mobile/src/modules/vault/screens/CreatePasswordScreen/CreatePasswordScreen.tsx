@@ -20,7 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useCreatePasswordScreen } from './useCreatePasswordScreen'
+import { useCreatePasswordScreen } from './useCreatePasswordScreen.web'
 import { useStyles } from './styles'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'

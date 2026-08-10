@@ -201,14 +201,20 @@ export const createMultisigProposeTransport = (
                             response.rawTransactionsBase64,
                         deviceId,
                         network: capturedNetwork,
+                        sourceType: source.type,
+                        registeredAt: Date.now(),
+                        // Live-session delivery (any source). Dropped when the
+                        // store persists; a resumed WC handoff falls back to
+                        // `recovery` below.
                         callbacks: {
                             approveSignedBytes:
                                 source.callbacks?.approveSignedBytes,
                             error: source.callbacks?.error,
                             reject: source.callbacks?.reject,
                         },
-                        source,
-                        registeredAt: Date.now(),
+                        // WalletConnect-only serializable delivery context (undefined
+                        // for webview/deeplink/injected). Drives post-kill recovery.
+                        recovery: source.handoffDelivery,
                     })
                 }
 

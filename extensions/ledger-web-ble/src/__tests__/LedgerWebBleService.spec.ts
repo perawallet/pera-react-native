@@ -44,7 +44,7 @@ import { LedgerWebBleService } from '../LedgerWebBleService'
 import {
     LedgerSigningError,
     LedgerUserRejectedError,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 const NANO_X_DEVICE = { id: 'ble-device-1', name: 'Nano X ABCD' }
 const STAX_DEVICE = { id: 'ble-device-2', name: 'Stax 1234' }

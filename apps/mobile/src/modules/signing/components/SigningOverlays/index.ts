@@ -11,3 +11,4 @@
  */
 
 export { SigningOverlays } from './SigningOverlays'
+export { LedgerSigningOverlays } from './LedgerSigningOverlays'

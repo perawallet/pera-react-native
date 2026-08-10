@@ -272,6 +272,7 @@ describe('env-loader', () => {
             firebaseMessagingSenderId: 'base-sender-id',
             firebaseAppId: 'base-app-id',
             firebaseMeasurementId: 'G-BASE',
+            firebaseVapidKey: 'base-vapid-key',
             gaMeasurementApiSecret: 'base-ga-secret',
             sentryDsn: 'https://base@o0.ingest.sentry.io/0',
             mainnetExplorerUrl: 'https://explorer.example.com',
@@ -384,6 +385,14 @@ describe('env-loader', () => {
             expect(result.testnetBackendUrl).toBe(
                 mockBaseConfig.testnetBackendUrl,
             )
+        })
+
+        test('maps FIREBASE_VAPID_KEY onto firebaseVapidKey', () => {
+            process.env.FIREBASE_VAPID_KEY = 'env-vapid-key'
+
+            const result = getConfigWithEnvOverrides(mockBaseConfig)
+
+            expect(result.firebaseVapidKey).toBe('env-vapid-key')
         })
 
         test('overrides boolean flags correctly', () => {

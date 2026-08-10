@@ -53,9 +53,22 @@ export const useMultisigCreationStore = create<MultisigCreationStore>(set => ({
     // - updateParticipant is address-keyed — a name follows the contact
     //   identity, so a rename propagates to every slot sharing that address.
     removeParticipant: (index: number) =>
-        set(state => ({
-            participants: state.participants.filter((_, i) => i !== index),
-        })),
+        set(state => {
+            const participants = state.participants.filter(
+                (_, i) => i !== index,
+            )
+            // Lower the threshold to match when a removal drops the participant
+            // count below it — otherwise creation dead-ends at the final step,
+            // where algosdk rejects a threshold greater than the participant
+            // count with no way back to fix it.
+            return {
+                participants,
+                threshold: Math.min(
+                    state.threshold,
+                    Math.max(1, participants.length),
+                ),
+            }
+        }),
     updateParticipant: (address: string, name: Optional<string>) =>
         set(state => ({
             participants: state.participants.map(p =>

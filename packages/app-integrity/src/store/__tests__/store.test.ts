@@ -32,7 +32,7 @@ describe('useAppIntegrityStore', () => {
             integrityToken: 'jwt',
             expiresAt: '2026-07-01',
             keyId: 'k1',
-            deviceId: 'd1',
+            deviceInstallationId: 'd1',
         })
         const state = useAppIntegrityStore.getState()
         expect(state.integrityToken).toBe('jwt')
@@ -46,7 +46,7 @@ describe('useAppIntegrityStore', () => {
             integrityToken: 'jwt',
             expiresAt: '2026-07-01',
             keyId: 'k1',
-            deviceId: 'd1',
+            deviceInstallationId: 'd1',
         })
 
         const persisted = readPersistedState()
@@ -56,7 +56,7 @@ describe('useAppIntegrityStore', () => {
         expect(persisted.expiresAt).toBeUndefined()
         // Non-secret identifiers are still persisted.
         expect(persisted.keyId).toBe('k1')
-        expect(persisted.deviceId).toBe('d1')
+        expect(persisted.deviceInstallationId).toBe('d1')
     })
 
     it('records errors', () => {

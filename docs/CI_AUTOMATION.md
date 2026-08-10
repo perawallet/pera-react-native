@@ -26,14 +26,20 @@ open PR would otherwise drag it back out of In Code Review.
 
 ## Release publishing
 
+**Only stable `vX.Y.Z` tags get a GitHub Release.** Nightly (`-alpha.N`) and rc
+(`-rc.N`) tags exist to fire Bitrise's release builds; they are tagged but never
+published under Releases.
+
 | Tag source                       | Who publishes the GitHub Release           |
 | -------------------------------- | ------------------------------------------ |
-| `nightly-tag.yml` / `rc-tag.yml` | the minting job itself                     |
-| Hand-pushed `v*`                 | `github-release.yml` (`push: tags`)        |
-| Any older tag, after the fact    | `github-release.yml` (`workflow_dispatch`) |
+| `nightly-tag.yml` / `rc-tag.yml` | nobody — prerelease, tag only              |
+| Hand-pushed stable `vX.Y.Z`      | `github-release.yml` (`push: tags`)        |
+| Any older stable, after the fact | `github-release.yml` (`workflow_dispatch`) |
 
-A tag pushed with `GITHUB_TOKEN` does not trigger workflows, which is why the
-minting jobs publish their own release rather than relying on the tag trigger.
+The stable-only rule lives in `tools/publish-github-release.sh`, not in the
+workflow, so every route to it agrees: hand-pushing a prerelease tag or
+dispatching one by name skips just as the scheduled path does. Pinned by
+`tools/__tests__/publish-github-release.test.sh`.
 
 ## Safety rules
 
@@ -87,8 +93,9 @@ skipping fix versions rather than failing.
 
 ## Verifying changes
 
-`tools/__tests__/*.test.sh` cover the sync, drift and range logic against a
-stubbed Jira. The `CI Lint` job in `pre-merge.yml` runs `actionlint`,
+`tools/__tests__/*.test.sh` cover the sync, drift, range and release-publishing
+logic — against a stubbed Jira, or a throwaway git repo where no Jira is involved.
+The `CI Lint` job in `pre-merge.yml` runs `actionlint`,
 `shellcheck --severity=error`, and those suites.
 
 Run one locally with `bash tools/__tests__/jira-sync.test.sh`.

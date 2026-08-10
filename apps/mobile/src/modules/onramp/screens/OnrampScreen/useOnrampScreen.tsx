@@ -163,7 +163,10 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
     const handleRegionInfoPress = useCallback(() => {
         void requestBottomSheet<void>({
             contents: (
-                <OnrampCountryInfoContent countryName={region?.countryName} />
+                <OnrampCountryInfoContent
+                    countryCode={region?.countryCode}
+                    countryName={region?.countryName}
+                />
             ),
             options: {
                 size: 'auto',
@@ -173,7 +176,7 @@ export const useOnrampScreen = (): UseOnrampScreenResult => {
                 // with no height — that's why it appeared to do nothing).
             },
         })
-    }, [requestBottomSheet, region?.countryName])
+    }, [requestBottomSheet, region?.countryCode, region?.countryName])
 
     const destinationToken = useMemo<Nullable<RampToken>>(
         () =>

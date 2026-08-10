@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { sha256 } from '@noble/hashes/sha2'
 import { concatBytes } from '@perawallet/wallet-core-shared'
 import {
@@ -488,5 +488,138 @@ describe('assertCredential', () => {
             assertCredential(options, signer, { origin: ORIGIN }),
         ).rejects.toThrow(SecurityError)
         expect(signer.calls.signP256).toHaveLength(0)
+    })
+})
+
+// A discoverable ("usernameless") request sends no allowCredentials, so the
+// core previously took candidates[0] — signing the user in as an identity
+// they never chose, with no indication another existed.
+describe('assertCredential with several discoverable credentials', () => {
+    const twoCredentials = [
+        {
+            keyId: 'key-alice',
+            credentialId: deriveCredentialId(FAKE_PUBLIC_KEY_XY),
+            publicKeyXY: FAKE_PUBLIC_KEY_XY,
+            userHandle: 'aGFuZGxlLWE',
+            displayName: 'Alice Example',
+            userName: 'alice@example.com',
+        },
+        {
+            keyId: 'key-bob',
+            credentialId: deriveCredentialId(FAKE_PUBLIC_KEY_XY),
+            publicKeyXY: FAKE_PUBLIC_KEY_XY,
+            userHandle: 'aGFuZGxlLWI',
+            displayName: 'Bob Example',
+            userName: 'bob@example.com',
+        },
+    ]
+
+    const signerWith = (
+        credentials: typeof twoCredentials,
+    ): KeystoreSigner => ({
+        createP256Credential: async () => ({
+            keyId: 'unused',
+            publicKeyXY: FAKE_PUBLIC_KEY_XY,
+        }),
+        signP256: async () => FAKE_RAW_SIGNATURE,
+        listP256Credentials: async () => credentials,
+    })
+
+    const getOptions = {
+        challenge: new Uint8Array([1, 2, 3]),
+        rpId: 'webauthn.io',
+    } as unknown as PublicKeyCredentialRequestOptions
+
+    it('asks which identity to assert, with labels for each', async () => {
+        const selectCredential = vi.fn(async () => 'key-bob')
+
+        await assertCredential(getOptions, signerWith(twoCredentials), {
+            origin: 'https://webauthn.io',
+            selectCredential,
+        })
+
+        expect(selectCredential).toHaveBeenCalledWith([
+            expect.objectContaining({
+                keyId: 'key-alice',
+                userName: 'alice@example.com',
+            }),
+            expect.objectContaining({
+                keyId: 'key-bob',
+                userName: 'bob@example.com',
+            }),
+        ])
+    })
+
+    it('asserts the chosen credential, not the first', async () => {
+        const signer = signerWith(twoCredentials)
+        const signP256 = vi.fn(async () => FAKE_RAW_SIGNATURE)
+
+        await assertCredential(
+            getOptions,
+            { ...signer, signP256 },
+            {
+                origin: 'https://webauthn.io',
+                selectCredential: async () => 'key-bob',
+            },
+        )
+
+        expect(signP256).toHaveBeenCalledWith('key-bob', expect.anything())
+    })
+
+    // Dismissing the picker is a decline. Falling back to the first would be
+    // the exact behaviour the picker exists to prevent.
+    it('declines when the choice is dismissed', async () => {
+        await expect(
+            assertCredential(getOptions, signerWith(twoCredentials), {
+                origin: 'https://webauthn.io',
+                selectCredential: async () => null,
+            }),
+        ).rejects.toBeInstanceOf(NotAllowedError)
+    })
+
+    it('does not ask when there is only one credential', async () => {
+        const selectCredential = vi.fn(async () => null)
+
+        await assertCredential(getOptions, signerWith([twoCredentials[0]]), {
+            origin: 'https://webauthn.io',
+            selectCredential,
+        })
+
+        expect(selectCredential).not.toHaveBeenCalled()
+    })
+
+    // An RP that named the credential has already made the choice.
+    it('does not ask when allowCredentials names one', async () => {
+        const selectCredential = vi.fn(async () => null)
+
+        await assertCredential(
+            {
+                ...getOptions,
+                allowCredentials: [
+                    {
+                        id: deriveCredentialId(FAKE_PUBLIC_KEY_XY),
+                        type: 'public-key',
+                    },
+                ],
+            } as unknown as PublicKeyCredentialRequestOptions,
+            signerWith(twoCredentials),
+            { origin: 'https://webauthn.io', selectCredential },
+        )
+
+        expect(selectCredential).not.toHaveBeenCalled()
+    })
+
+    // A transport with no UI must keep working rather than being forced to
+    // invent a picker.
+    it('falls back to the first when no picker is provided', async () => {
+        const signP256 = vi.fn(async () => FAKE_RAW_SIGNATURE)
+
+        await assertCredential(
+            getOptions,
+            { ...signerWith(twoCredentials), signP256 },
+            { origin: 'https://webauthn.io' },
+        )
+
+        expect(signP256).toHaveBeenCalledWith('key-alice', expect.anything())
     })
 })

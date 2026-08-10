@@ -200,6 +200,10 @@ When a screen or module-level component has logic, extract it into a `useXxx` ho
 
 See `docs/TESTING.md` for the integration test harness, MSW handler factories, and flow-test patterns.
 
+## Translations
+
+Adding or revising a locale bundle in `apps/mobile/src/i18n/locales/`? Read `docs/I18N_TRANSLATION_GUIDE.md` first. `pnpm run lint:i18n` enforces **bidirectional** key parity against `en.json` — an extra key fails as loudly as a missing one, so never add CLDR plural categories (`_many`) that `en.json` doesn't use. The guide also records the register per locale (French is formal `vous` on purpose), the two terms that deliberately differ between bundles, and the per-language traps — Turkish suffixes must never attach to a `{{placeholder}}`.
+
 ## Work Completion
 
 Before reporting any task complete:

@@ -30,7 +30,7 @@ vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
     },
 }))
 
-import { useVaultLockState } from '../useVaultLockState'
+import { useVaultLockState } from '../useVaultLockState.web'
 
 describe('useVaultLockState', () => {
     beforeEach(() => {

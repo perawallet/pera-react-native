@@ -12,3 +12,5 @@
 
 export { ConfirmActionContent } from './ConfirmActionContent'
 export type { ConfirmActionContentProps } from './ConfirmActionContent'
+export { ConfirmActionLayout } from './ConfirmActionLayout'
+export type { ConfirmActionLayoutProps } from './ConfirmActionLayout'

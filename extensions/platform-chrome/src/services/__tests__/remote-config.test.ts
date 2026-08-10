@@ -29,9 +29,14 @@ vi.mock('firebase/remote-config', () => ({
 const getFirebaseAppMock = vi.hoisted(() => vi.fn())
 vi.mock('../firebase-app', () => ({ getFirebaseApp: getFirebaseAppMock }))
 
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: { remoteConfigRefreshTime: 3_600_000 },
+const configMock = vi.hoisted(() => ({
+    config: {
+        remoteConfigRefreshTime: 3_600_000,
+        appEnvironment: 'development',
+    },
+    isDebug: true,
 }))
+vi.mock('@perawallet/wallet-core-config', () => configMock)
 
 import { ChromeRemoteConfigService } from '../remote-config'
 
@@ -109,5 +114,43 @@ describe('ChromeRemoteConfigService', () => {
         await service.initializeRemoteConfig()
 
         expect(service.getBooleanValue('enable_pera_card', true)).toBe(true)
+    })
+
+    // A missing Firebase project means every remote flag silently serves its
+    // bundled default — `staking_projects_i18n: ''` renders an empty Staking
+    // screen that reads as a backend outage rather than a misconfigured build.
+    // A warn nobody reads is not enough signal for a shipped zip.
+    describe('when the Firebase project is missing', () => {
+        afterEach(() => {
+            configMock.isDebug = true
+        })
+
+        it('warns only, in a dev build', async () => {
+            configMock.isDebug = true
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+            const error = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {})
+            getFirebaseAppMock.mockReturnValue(null)
+
+            await new ChromeRemoteConfigService().initializeRemoteConfig()
+
+            expect(warn).toHaveBeenCalled()
+            expect(error).not.toHaveBeenCalled()
+        })
+
+        it('escalates to an error in a shipped build', async () => {
+            configMock.isDebug = false
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+            const error = vi
+                .spyOn(console, 'error')
+                .mockImplementation(() => {})
+            getFirebaseAppMock.mockReturnValue(null)
+
+            await new ChromeRemoteConfigService().initializeRemoteConfig()
+
+            expect(error).toHaveBeenCalled()
+            expect(warn).not.toHaveBeenCalled()
+        })
     })
 })

@@ -31,10 +31,11 @@ const mocks = vi.hoisted(() => {
         getKeystoreStore: vi.fn(),
         resolvePasskey: vi.fn(),
         rejectPasskey: vi.fn(),
+        requireVaultPassword: vi.fn(),
     }
 })
 
-vi.mock('../../../hooks/useDappRequest', () => ({
+vi.mock('../../../hooks/useDappRequest.web', () => ({
     useDappRequest: mocks.useDappRequest,
 }))
 
@@ -59,11 +60,22 @@ vi.mock('@perawallet/wallet-extension-platform-chrome', () => ({
     rejectPasskey: mocks.rejectPasskey,
 }))
 
+const requestBottomSheet = vi.hoisted(() => vi.fn())
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({ request: requestBottomSheet }),
+}))
+
+vi.mock('@modules/vault', () => ({
+    useRequireVaultPassword: () => ({
+        requireVaultPassword: mocks.requireVaultPassword,
+    }),
+}))
+
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
-import { usePasskeyApproval } from '../usePasskeyApproval'
+import { usePasskeyApproval } from '../usePasskeyApproval.web'
 
 const CREATE_APPROVAL = {
     kind: 'passkey-create' as const,
@@ -137,7 +149,10 @@ describe('usePasskeyApproval', () => {
         expect(mocks.createCredential).toHaveBeenCalledWith(
             DESERIALIZED_CREATE,
             FAKE_SIGNER,
-            { origin: 'https://webauthn.io' },
+            expect.objectContaining({
+                origin: 'https://webauthn.io',
+                userVerified: false,
+            }),
         )
         expect(mocks.assertCredential).not.toHaveBeenCalled()
         expect(mocks.resolvePasskey).toHaveBeenCalledWith(
@@ -163,7 +178,10 @@ describe('usePasskeyApproval', () => {
         expect(mocks.assertCredential).toHaveBeenCalledWith(
             DESERIALIZED_GET,
             FAKE_SIGNER,
-            { origin: 'https://webauthn.io' },
+            expect.objectContaining({
+                origin: 'https://webauthn.io',
+                userVerified: false,
+            }),
         )
         expect(mocks.createCredential).not.toHaveBeenCalled()
         expect(mocks.resolvePasskey).toHaveBeenCalledWith(
@@ -214,5 +232,122 @@ describe('usePasskeyApproval', () => {
         expect(mocks.createCredential).not.toHaveBeenCalled()
         expect(mocks.resolvePasskey).not.toHaveBeenCalled()
         expect(mocks.rejectPasskey).not.toHaveBeenCalled()
+    })
+
+    // A button press is user PRESENCE. When the RP demands user verification
+    // we must actually check a factor before setting the UV bit — mobile gets
+    // that from the OS credential-provider ceremony; the extension asks.
+    describe('when the relying party requires user verification', () => {
+        beforeEach(() => {
+            mocks.useDappRequest.mockReturnValue({
+                requestId: 'pk2',
+                approval: GET_APPROVAL,
+                isLoading: false,
+            })
+            mocks.deserializeGetOptions.mockReturnValue({
+                ...DESERIALIZED_GET,
+                userVerification: 'required',
+            })
+        })
+
+        it('re-authenticates and reports the ceremony as verified', async () => {
+            mocks.requireVaultPassword.mockResolvedValue(true)
+            const { result } = renderHook(() => usePasskeyApproval())
+
+            await act(async () => result.current.approve())
+
+            expect(mocks.requireVaultPassword).toHaveBeenCalled()
+            expect(mocks.assertCredential).toHaveBeenCalledWith(
+                expect.anything(),
+                FAKE_SIGNER,
+                expect.objectContaining({
+                    origin: 'https://webauthn.io',
+                    userVerified: true,
+                }),
+            )
+        })
+
+        // Falling through with UV off would hand the RP an assertion it
+        // explicitly said it would not accept, so this declines outright.
+        it('declines the ceremony when re-authentication is dismissed', async () => {
+            mocks.requireVaultPassword.mockResolvedValue(false)
+            const { result } = renderHook(() => usePasskeyApproval())
+
+            await act(async () => result.current.approve())
+
+            expect(mocks.assertCredential).not.toHaveBeenCalled()
+            expect(mocks.resolvePasskey).not.toHaveBeenCalled()
+            expect(mocks.rejectPasskey).toHaveBeenCalledWith(
+                'pk2',
+                'NotAllowedError',
+            )
+        })
+    })
+
+    // 'preferred' is the RP stating it will accept an unverified assertion, so
+    // prompting on every sign-in would be friction it never asked for.
+    it.each(['preferred', 'discouraged', undefined])(
+        'does not re-authenticate when userVerification is %s',
+        async requirement => {
+            mocks.useDappRequest.mockReturnValue({
+                requestId: 'pk2',
+                approval: GET_APPROVAL,
+                isLoading: false,
+            })
+            mocks.deserializeGetOptions.mockReturnValue({
+                ...DESERIALIZED_GET,
+                userVerification: requirement,
+            })
+            const { result } = renderHook(() => usePasskeyApproval())
+
+            await act(async () => result.current.approve())
+
+            expect(mocks.requireVaultPassword).not.toHaveBeenCalled()
+            expect(mocks.assertCredential).toHaveBeenCalledWith(
+                expect.anything(),
+                FAKE_SIGNER,
+                expect.objectContaining({
+                    origin: 'https://webauthn.io',
+                    userVerified: false,
+                }),
+            )
+        },
+    )
+
+    // The core asks only for a discoverable request with several stored
+    // credentials; this hook's job is to turn that question into a sheet and
+    // the answer back into a keyId.
+    describe('the discoverable-credential picker it hands the core', () => {
+        const runSelector = async (
+            sheetResult: string | undefined,
+        ): Promise<string | null> => {
+            mocks.useDappRequest.mockReturnValue({
+                requestId: 'pk2',
+                approval: GET_APPROVAL,
+                isLoading: false,
+            })
+            requestBottomSheet.mockResolvedValue(sheetResult)
+            const { result } = renderHook(() => usePasskeyApproval())
+            await act(async () => result.current.approve())
+
+            const context = mocks.assertCredential.mock.calls[0][2] as {
+                selectCredential: (choices: unknown[]) => Promise<string | null>
+            }
+            return context.selectCredential([
+                { keyId: 'key-a', userName: 'a@example.com' },
+                { keyId: 'key-b', userName: 'b@example.com' },
+            ])
+        }
+
+        it('returns the chosen keyId', async () => {
+            expect(await runSelector('key-b')).toBe('key-b')
+        })
+
+        // Dismissing must read as a decline. `undefined` reaching the core
+        // unchanged would be falsy but not `null`, and the core only treats
+        // an explicit `null` as "the user said no".
+        it('maps a dismissed sheet to null', async () => {
+            expect(await runSelector(undefined)).toBeNull()
+        })
     })
 })

@@ -34,6 +34,7 @@ export {
     lockVault,
     onLockStateChanged,
     unlockVault,
+    verifyVaultPassword,
     PBKDF2_ITERATIONS,
     PBKDF2_MAX_ITERATIONS,
 } from './vault/vault'
@@ -55,6 +56,7 @@ export {
     isPasskeyUnlockEnabled,
     enablePasskeyUnlock,
     unlockWithPasskey,
+    verifyPasskey,
     disablePasskeyUnlock,
 } from './vault/passkey'
 export { createKeystoreSigner } from './webauthn/keystore-signer'

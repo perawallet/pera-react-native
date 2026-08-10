@@ -115,6 +115,11 @@ case "$PROFILE" in
       "FIREBASE_PROJECT_ID" "FIREBASE_STORAGE_BUCKET" "FIREBASE_MESSAGING_SENDER_ID"
       "FIREBASE_APP_ID" "FIREBASE_MEASUREMENT_ID" "GA_MEASUREMENT_API_SECRET"
       "SENTRY_DSN"
+      # Unset means push notifications are silently off for the whole build:
+      # ChromePushNotificationService.getPushToken() returns undefined before
+      # it ever calls getToken, so devices register with no push_token and
+      # nothing surfaces at runtime. The warning is the only signal.
+      "FIREBASE_VAPID_KEY"
     )
     ;;
   *)
@@ -122,6 +127,17 @@ case "$PROFILE" in
     exit 1
     ;;
 esac
+
+# The smoke gate runs at the end of the staging workflows and only reaches
+# BrowserStack after a full native build and a store upload. Validate here so a
+# missing credential costs seconds rather than a finished archive.
+if [ "${RUN_SMOKE:-}" = "true" ]; then
+  required_global+=(
+    "BROWSERSTACK_USERNAME"
+    "BROWSERSTACK_ACCESS_KEY"
+    "SMOKE_HARNESS_GITHUB_TOKEN"
+  )
+fi
 
 missing=()
 

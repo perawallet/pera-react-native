@@ -89,6 +89,33 @@ Card entry points are gated on remote config (`useIsPeraCardEnabled`) _and_
 route capabilities. A card deeplink reaching a build with the flag off is a
 deliberate no-op — see `useDeepLink`.
 
+## Add to Wallet (push provisioning)
+
+The native Add to Apple/Google Wallet flow (`useAddCardToWallet`, via
+`@expensify/react-native-wallet`) is scaffolded but dormant: it needs the
+`enable_card_push_provisioning` flag _and_ a device-level availability check
+that stays false until Pera holds the Apple In-App Provisioning entitlement
+and the Google TapAndPay allowlisting. Until then — and whenever the native
+flow can't complete — every entry point falls back to the manual
+`WalletInstructionsSheet`.
+
+- The native calls live behind `getProvider().walletProvisioning`
+  (implemented in `extensions/platform-react-native`, permanently unavailable
+  on `platform-chrome`); the availability/status queries are package hooks
+  (`useWalletProvisioningAvailabilityQuery` / `useWalletProvisioningStatusQuery`
+  in `packages/card`).
+- The Baanx provisioning-payload endpoints don't exist yet;
+  `modules/card/utils/provisioningPayload.ts` rejects, which routes to the
+  fallback. Implement it (plus the backend proxy) once accreditation lands.
+- The RN service loads the library lazily: it constructs a NativeEventEmitter
+  at import time, which crashes iOS at boot on any binary without the RNWallet
+  TurboModule — e.g. a dev client built before this dependency. Old dev
+  clients therefore still boot and simply report unavailable; rebuild
+  (pod install) only when you need the native flow.
+- Do **not** add the library's Expo config plugin to `app.config.js`: its
+  default injects the Apple Pay provisioning entitlement on prebuild, which
+  breaks code signing until Apple grants the entitlement.
+
 ## Tests
 
 Seventeen integration specs in `apps/mobile/src/__integration__/` cover the

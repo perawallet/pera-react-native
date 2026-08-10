@@ -16,7 +16,6 @@ import {
     ChromeAppIntegrityService,
     ChromeBiometricsService,
     ChromeMigrationService,
-    ChromePushNotificationService,
 } from '../stubs'
 
 describe('capability stubs', () => {
@@ -33,16 +32,5 @@ describe('capability stubs', () => {
         await expect(
             new ChromeMigrationService().hasLegacyData(),
         ).resolves.toBe(false)
-    })
-
-    it('push notifications resolve with no token and an unsubscribe fn', async () => {
-        const result =
-            await new ChromePushNotificationService().initializeNotifications()
-        expect(result.token).toBeUndefined()
-        expect(() => result.unsubscribe()).not.toThrow()
-    })
-
-    it('reports push notifications as unsupported', () => {
-        expect(new ChromePushNotificationService().isSupported()).toBe(false)
     })
 })

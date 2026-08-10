@@ -33,8 +33,16 @@ export const AAGUID: Uint8Array = Uint8Array.from([
     0xfd, 0xc1, 0x4e, 0x52,
 ])
 
-const FLAGS_ASSERTION = 0x1d
-const FLAGS_ATTESTATION = 0x5d
+// Authenticator-data flag bits (WebAuthn L3 §6.1).
+const FLAG_UP = 0x01 // user present
+const FLAG_UV = 0x04 // user VERIFIED — a second factor was actually checked
+const FLAG_BE = 0x08 // backup eligible
+const FLAG_BS = 0x10 // backup state
+const FLAG_AT = 0x40 // attested credential data included
+
+// UP|BE|BS. UV is added per-ceremony, never baked in — see `userVerified`.
+const FLAGS_BASE = FLAG_UP | FLAG_BE | FLAG_BS
+
 const SIGN_COUNT = Uint8Array.from([0x00, 0x00, 0x00, 0x00])
 
 export type P256PublicKeyXY = {
@@ -74,22 +82,39 @@ export type AuthenticatorDataParams = {
     attested: boolean
     credentialId?: Uint8Array
     publicKeyXY?: P256PublicKeyXY
+    /**
+     * Whether this ceremony actually verified the user (a password, PIN, or
+     * biometric checked at ceremony time) — NOT merely that they clicked
+     * approve.
+     *
+     * Relying parties configured `userVerification: 'required'` treat the UV
+     * bit as proof a human authenticated with a factor just now, and use it to
+     * gate passwordless sign-in and high-value step-up. On iOS/Android this
+     * bit is truthful because the OS gates the credential-provider ceremony
+     * behind Face ID; the extension has no such guarantee, so the caller must
+     * state it. Defaults to `false`: a caller that forgets understates its
+     * assurance rather than overstating it.
+     */
+    userVerified?: boolean
 }
 
 /**
  * Assembles `authenticatorData`: SHA256(rpId) || flags || signCount(4 zero
- * bytes) [|| attestedCredentialData]. Flags are `0x1D` for an assertion (no
- * attested data) or `0x5D` when attested data is included.
+ * bytes) [|| attestedCredentialData].
+ *
+ * Flags are UP|BE|BS, plus AT when attested data is included, plus UV when —
+ * and only when — the ceremony verified the user.
  */
 export const authenticatorData = async ({
     rpId,
     attested,
     credentialId,
     publicKeyXY,
+    userVerified = false,
 }: AuthenticatorDataParams): Promise<Uint8Array> => {
     const rpIdHash = sha256(new TextEncoder().encode(rpId))
     const flags = Uint8Array.from([
-        attested ? FLAGS_ATTESTATION : FLAGS_ASSERTION,
+        FLAGS_BASE | (attested ? FLAG_AT : 0) | (userVerified ? FLAG_UV : 0),
     ])
 
     if (!attested) {

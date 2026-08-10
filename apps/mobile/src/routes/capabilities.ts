@@ -23,6 +23,8 @@ export const routeCapabilities: RouteCapabilities = {
     giftCards: true,
     inAppWebView: true,
     qrScanner: true,
+    // Native keeps the camera; paste has no reason to exist there.
+    deepLinkPaste: false,
     pushNotificationSettings: true,
     walletConnectSettings: true,
     passkeysAutofillSettings: true,
@@ -34,6 +36,7 @@ export const routeCapabilities: RouteCapabilities = {
     dappConnections: false,
     quantum: true,
     rekeyFlows: true,
+    sharedAccounts: true,
     // Native keeps the two separate WalletConnect/Connected Sites menu
     // entries (dappConnections is off there anyway).
     connectionsSettings: false,

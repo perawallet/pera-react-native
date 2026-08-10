@@ -10,17 +10,17 @@
  limitations under the License
  */
 
+// Discover is intentionally absent from the web tab registration below (see
+// tab-screens.web.tsx's own comment and routes/capabilities.web.ts's discoverTab comment).
 import { describe, expect, it, vi } from 'vitest'
 
 const {
-    DiscoverScreen,
     SwapScreen,
     OnrampScreen,
     MenuScreen,
     AccountStackNavigator,
     ageGateCalls,
 } = vi.hoisted(() => ({
-    DiscoverScreen: () => null,
     SwapScreen: () => null,
     OnrampScreen: () => null,
     MenuScreen: () => null,
@@ -28,7 +28,6 @@ const {
     ageGateCalls: [] as unknown[],
 }))
 
-vi.mock('@modules/discover/screens/DiscoverScreen', () => ({ DiscoverScreen }))
 vi.mock('@modules/swap/screens/SwapScreen', () => ({ SwapScreen }))
 vi.mock('@modules/onramp/screens/OnrampScreen', () => ({ OnrampScreen }))
 vi.mock('@modules/menu/screens/MenuScreen', () => ({ MenuScreen }))
@@ -57,37 +56,37 @@ vi.mock('@analytics', () => ({
 }))
 
 import { headeredLayout, safeAreaLayout } from '@layouts/index'
+import { routeCapabilities } from '../capabilities.web'
 import { tabScreens } from '../tab-screens.web'
 
 describe('web tab registration', () => {
-    it('registers Home, Discover, Swap, Fund, Menu in native order', () => {
+    it('registers Home, Swap, Fund, Menu in order, with Discover off pending the web feature-gate fix', () => {
         expect(tabScreens.map(screen => screen.name)).toEqual([
             'Home',
-            'Discover',
             'Swap',
             'Fund',
             'Menu',
         ])
     })
 
-    it('age-gates Discover, Swap and Fund exactly like native', () => {
-        expect(ageGateCalls).toContain(DiscoverScreen)
+    it('age-gates Swap and Fund like native, and never age-gates a Discover screen', () => {
         expect(ageGateCalls).toContain(SwapScreen)
         expect(ageGateCalls).toContain(OnrampScreen)
-        expect(ageGateCalls).toHaveLength(3)
+        expect(ageGateCalls).toHaveLength(2)
     })
 
     it('mirrors native layouts and exposes e2e tab testIDs', () => {
-        const discover = tabScreens.find(screen => screen.name === 'Discover')
         const swap = tabScreens.find(screen => screen.name === 'Swap')
         const fund = tabScreens.find(screen => screen.name === 'Fund')
-        expect(discover?.layout).toBe(headeredLayout)
-        expect(discover?.options?.tabBarButtonTestID).toBe(
-            'tab_discover_button',
-        )
         expect(swap?.layout).toBe(safeAreaLayout)
         expect(swap?.options?.tabBarButtonTestID).toBe('tab_swap_button')
         expect(fund?.layout).toBe(headeredLayout)
         expect(fund?.options?.tabBarButtonTestID).toBe('tab_fund_button')
+    })
+
+    it('has no Discover descriptor, kept in lockstep with the capability flag being off', () => {
+        const discover = tabScreens.find(screen => screen.name === 'Discover')
+        expect(discover).toBeUndefined()
+        expect(routeCapabilities.discoverTab).toBe(false)
     })
 })

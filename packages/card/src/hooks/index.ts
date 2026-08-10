@@ -26,6 +26,8 @@ export * from './useIsCardUnfreezing'
 
 // User / profile
 export * from './useCardUserQuery'
+export * from './useWalletProvisioningAvailabilityQuery'
+export * from './useWalletProvisioningStatusQuery'
 
 // Sensitive (imperative, never cached)
 export * from './useCardDetailsMutation'

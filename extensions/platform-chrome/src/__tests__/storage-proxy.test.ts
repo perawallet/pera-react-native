@@ -143,14 +143,20 @@ describe('storage proxy', () => {
         const listener = vi.fn()
         offscreenChrome.storage.onChanged.addListener(listener)
 
-        await fake.chrome.runtime.sendMessage(
-            {
-                scope: 'pera-storage-event',
-                changes: { 'kv:x': { newValue: 'y' } },
-                areaName: 'local',
-            },
-            { url: 'https://dapp.example' },
-        )
+        // The storage-event relay is a broadcast: it never answers, so Chrome
+        // closes the port on the sender. That rejection is the expected
+        // condition here — the assertion is that the untrusted event never
+        // reached the offscreen shim's listener.
+        await fake.chrome.runtime
+            .sendMessage(
+                {
+                    scope: 'pera-storage-event',
+                    changes: { 'kv:x': { newValue: 'y' } },
+                    areaName: 'local',
+                },
+                { url: 'https://dapp.example' },
+            )
+            .catch(() => undefined)
         await new Promise(resolve => setTimeout(resolve, 0))
         expect(listener).not.toHaveBeenCalled()
     })

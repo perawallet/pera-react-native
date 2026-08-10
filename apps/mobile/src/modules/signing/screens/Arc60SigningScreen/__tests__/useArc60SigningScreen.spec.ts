@@ -10,10 +10,17 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AppError, PeraNetworkError } from '@perawallet/wallet-core-shared'
+import { CardEvent } from '@analytics'
 import { useArc60SigningScreen } from '../useArc60SigningScreen'
+
+const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+vi.mock('@analytics', async () => {
+    const actual = await vi.importActual<object>('@analytics')
+    return { ...actual, trackEvent: mockTrackEvent }
+})
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', () => ({
@@ -103,5 +110,44 @@ describe('useArc60SigningScreen', () => {
 
         expect(result.current.errorMessage).not.toBe('boom')
         expect(result.current.errorMessage).toBe('errors.general.body')
+    })
+
+    it('tracks card events only for card-originated (sourceType arc60) requests', () => {
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            sourceType: 'arc60',
+            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        act(() => {
+            result.current.handleApprove()
+        })
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            CardEvent.CreateArbTxConfirm,
+        )
+
+        act(() => {
+            result.current.handleReject()
+        })
+        expect(mockTrackEvent).toHaveBeenCalledWith(CardEvent.CreateArbTxClose)
+    })
+
+    it('does not track card events for dApp-originated requests', () => {
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            sourceType: 'walletconnect',
+            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        act(() => {
+            result.current.handleApprove()
+            result.current.handleReject()
+        })
+
+        expect(mockTrackEvent).not.toHaveBeenCalled()
+        expect(mockPipeline.next).toHaveBeenCalledTimes(1)
+        expect(mockPipeline.fail).toHaveBeenCalledTimes(1)
     })
 })

@@ -12,6 +12,13 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { CardEvent } from '@analytics'
+
+const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+vi.mock('@analytics', async () => {
+    const actual = await vi.importActual<object>('@analytics')
+    return { ...actual, trackEvent: mockTrackEvent }
+})
 
 const mockMutateAsync = vi.fn()
 const mockSetOnboardingStep = vi.fn()
@@ -115,6 +122,34 @@ describe('useCardSignInScreen', () => {
             'peraCard.sign_in.coming_soon_title',
             'peraCard.sign_in.coming_soon_body',
         )
+        // The tap is tracked even while the flow is a stub — demand signal.
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            CardEvent.RecoverForgotPassword,
+        )
+    })
+
+    it('tracks the sign-in submit on the credentials pass', async () => {
+        mockMutateAsync.mockResolvedValue({
+            accessToken: 'token',
+            userId: 'user-1',
+            isOtpRequired: false,
+            phase: null,
+            verificationState: null,
+            isLinked: true,
+        })
+        const { result } = renderHook(() => useCardSignInScreen())
+
+        act(() => {
+            Object.assign(result.current.control._formValues, {
+                email: 'user@example.com',
+                password: 'hunter2hunter22!',
+            })
+        })
+        await act(async () => {
+            result.current.handleSignIn()
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(CardEvent.RecoverSignIn)
     })
 
     it('keeps the OTP submit gated until the code is complete', () => {

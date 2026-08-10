@@ -10,6 +10,12 @@
  limitations under the License
  */
 
+import {
+    PERAWALLET_SCHEME,
+    PERAWALLET_UNIVERSAL_LINK_HOST,
+    PERAWALLET_WC_SCHEME,
+} from './constants'
+
 /**
  * Parse query parameters from a URL
  */
@@ -99,4 +105,18 @@ export const extractPath = (url: string): string => {
     } catch {
         return ''
     }
+}
+
+// True when a URL targets a Pera-owned scheme/host but didn't resolve to a
+// supported action — a recognized-but-unsupported deeplink. Callers stay
+// silent on these (mirroring the QR scanner, which quietly re-arms on codes it
+// doesn't handle) and only surface the invalid-URL toast for input that isn't
+// aimed at Pera at all.
+export const isPeraOwnedDeeplink = (url: string): boolean => {
+    const normalized = normalizeUrl(url)
+    return (
+        normalized.startsWith(`${PERAWALLET_SCHEME}:`) ||
+        normalized.startsWith(`${PERAWALLET_WC_SCHEME}:`) ||
+        normalized.startsWith(`${PERAWALLET_UNIVERSAL_LINK_HOST}/`)
+    )
 }

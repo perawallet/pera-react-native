@@ -29,6 +29,30 @@ export const useStyles = makeStyles(theme => ({
     origin: {
         color: theme.colors.textGray,
     },
+    requesterRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
+    // Distinct from `origin` above: this is the browser-verified requester,
+    // not the dApp's self-asserted peerMeta url. Uses `textMain`, not
+    // `verifiedBannerContent` — at `caption` (11px) `verifiedBannerContent`
+    // only clears 3.82:1 against `theme.colors.background` in light mode,
+    // below the 4.5:1 WCAG AA threshold for that size. `verifiedBannerContent`
+    // stays reserved for the verified badge below (icon + label), which is
+    // the actual trust signal — this line's job is just to be legible body
+    // text.
+    requesterOrigin: {
+        color: theme.colors.textMain,
+    },
+    verifiedBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
+    verifiedBadgeText: {
+        color: theme.colors.verifiedBannerContent,
+    },
     title: {
         ...getFontWeightVariant(theme, 'h3', 600),
         color: theme.colors.textMain,
@@ -48,6 +72,12 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         gap: theme.spacing.sm,
         paddingVertical: theme.spacing.sm,
+    },
+    deliveryError: {
+        color: theme.colors.negative,
+        textAlign: 'center',
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.md,
     },
     buttonContainer: {
         flexDirection: 'row',

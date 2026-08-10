@@ -99,6 +99,14 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
         // Unit tests never call into the registry so providing an empty one is safe.
         hardwareWalletRegistry:
             require('@perawallet/wallet-core-hardware-wallet').createHardwareWalletRegistry(),
+        // Dormant defaults: card push provisioning reports unavailable, so
+        // suites exercise today's manual-instructions fallback.
+        walletProvisioning: {
+            checkWalletAvailability: vi.fn().mockResolvedValue(false),
+            getCardStatusBySuffix: vi.fn().mockResolvedValue('not found'),
+            addCardToAppleWallet: vi.fn().mockResolvedValue('canceled'),
+            addCardToGoogleWallet: vi.fn().mockResolvedValue('canceled'),
+        },
     }),
     getPlatformServices: () => ({
         keyValueStorage: {
@@ -3265,14 +3273,12 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         logEvent: vi.fn(),
     })),
     RemoteConfigDefaults: {
-        welcome_message: 'Hello',
         pera_7_migration: false,
     },
     RemoteConfigKeys: {
-        welcome_message: 'welcome_message',
         fee_warning_standard_fee: 'fee_warning_standard_fee',
         fee_warning_usd_threshold: 'fee_warning_usd_threshold',
-        staking_projects: 'staking_projects',
+        staking_projects_i18n: 'staking_projects_i18n',
         swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
         swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
         pera_7_migration: 'pera_7_migration',

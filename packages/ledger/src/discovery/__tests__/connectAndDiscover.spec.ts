@@ -11,13 +11,13 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { LEDGER_CONNECTION_TIMEOUT_MS } from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import { LEDGER_CONNECTION_TIMEOUT_MS } from '@perawallet/wallet-extension-ledger-shared'
 import { connectAndDiscoverAccounts } from '../connectAndDiscover'
 import type {
     LedgerTransport,
     LedgerTransportProvider,
     LedgerAccount,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 const createMockAccount = (index: number): LedgerAccount => ({
     address: `ADDR_${index}`,

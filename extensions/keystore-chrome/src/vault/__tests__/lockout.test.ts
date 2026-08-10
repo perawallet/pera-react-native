@@ -48,3 +48,13 @@ describe('vault lockout', () => {
         expect(await getLockoutRemainingSeconds()).toBe(0)
     })
 })
+
+// Concurrent unlock attempts from different extension surfaces each read the
+// same counter and wrote value+1, so parallel guesses under-counted against
+// the 5-attempt threshold.
+it('counts concurrent failed attempts without losing any', async () => {
+    await Promise.all(Array.from({ length: 5 }, () => recordFailedAttempt()))
+
+    // Five genuine failures must produce a lockout, however they interleaved.
+    expect(await getLockoutRemainingSeconds()).toBeGreaterThan(0)
+})

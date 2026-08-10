@@ -47,7 +47,7 @@ import {
     LedgerUsbMultipleDevicesError,
     LedgerUsbNoDeviceError,
     LedgerUserRejectedError,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 // The real @ledgerhq/react-native-hid DeviceObj exposes only vendorId,
 // productId and deviceName — there is no stable per-device id — so

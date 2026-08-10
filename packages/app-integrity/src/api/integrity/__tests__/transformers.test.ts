@@ -35,7 +35,7 @@ describe('integrity transformers', () => {
         })
         expect(result).toEqual({
             ok: true,
-            deviceId: 'device-1',
+            deviceInstallationId: 'device-1',
             platform: 'android',
         })
     })

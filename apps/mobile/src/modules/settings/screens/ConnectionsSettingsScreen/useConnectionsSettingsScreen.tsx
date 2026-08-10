@@ -14,90 +14,29 @@ import { useCallback, useMemo } from 'react'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState, type ModalState } from '@hooks/useModalState'
+import { useModalState } from '@hooks/useModalState'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useDappConnectionsStore } from '@modules/settings/hooks/useDappConnectionsStore'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
 import {
-    useWalletConnect,
-    type WalletConnectConnection,
-} from '@perawallet/wallet-core-walletconnect'
-import type { DappPermission } from '@perawallet/wallet-extension-platform-chrome'
+    toComparableTime,
+    toUnifiedDappPermission,
+    toUnifiedWalletConnectConnection,
+    type UnifiedConnection,
+    type UseConnectionsSettingsScreenResult,
+} from './connectionsSettingsHelpers'
 
-/**
- * Extensible by design — a `'liquidauth'` member is expected once Liquid
- * Auth lands as a third adapter (design doc). A plain string-literal union
- * is deliberately as far as this goes for now.
- */
-export type ConnectionKind = 'walletconnect' | 'dapp'
-
-/** Screen-only presentation type. Neither underlying store is touched or
- * reshaped — this just unions their read models for one flat list. */
-export type UnifiedConnection = {
-    id: string
-    kind: ConnectionKind
-    title: string
-    subtitle: string
-    iconUrl?: string
-    connectedAt?: Date
-    onRevoke: () => void
-}
-
-export type UseConnectionsSettingsScreenResult = {
-    connections: UnifiedConnection[]
-    isLoading: boolean
-    handleRevoke: (connection: UnifiedConnection) => void
-    keyExtractor: (item: UnifiedConnection) => string
-    /** Drives the QR-paste flow for pairing a new WalletConnect session —
-     * the only connection kind here that's user-initiated (dapp connections
-     * come from the injected provider's enable() flow instead). */
-    scannerState: ModalState
-}
-
-const toUnifiedWalletConnectConnection = (
-    connection: WalletConnectConnection,
-    disconnect: (clientId: string, triggerDisconnect: boolean) => Promise<void>,
-    onError: (error: unknown) => void,
-    unknownPeerLabel: string,
-): UnifiedConnection => {
-    const peerMeta = connection.session?.peerMeta
-    const clientId = connection.clientId ?? ''
-
-    return {
-        id: `walletconnect-${clientId}`,
-        kind: 'walletconnect',
-        title: peerMeta?.name ?? unknownPeerLabel,
-        subtitle: peerMeta?.url ?? connection.bridge ?? '',
-        iconUrl: peerMeta?.icons?.[0],
-        connectedAt: connection.createdAt,
-        onRevoke: () => {
-            void disconnect(clientId, true).catch(onError)
-        },
-    }
-}
-
-const toUnifiedDappPermission = (
-    site: DappPermission,
-    revoke: (origin: string) => Promise<void>,
-    onError: (error: unknown) => void,
-): UnifiedConnection => ({
-    id: `dapp-${site.origin}`,
-    kind: 'dapp',
-    title: site.name ?? site.origin,
-    subtitle: site.origin,
-    iconUrl: site.iconUrl,
-    connectedAt: new Date(site.grantedAt),
-    onRevoke: () => {
-        void revoke(site.origin).catch(onError)
-    },
-})
+export type {
+    ConnectionKind,
+    UnifiedConnection,
+    UseConnectionsSettingsScreenResult,
+} from './connectionsSettingsHelpers'
 
 export const useConnectionsSettingsScreen =
     (): UseConnectionsSettingsScreenResult => {
         const { t } = useLanguage()
-        const { network } = useNetwork()
         const { connections: walletConnectConnections, disconnect } =
-            useWalletConnect(network)
+            useWalletConnectSessionsControl()
         const { sites, isLoading, revoke } = useDappConnectionsStore()
         const { request: requestBottomSheet } = useBottomSheet()
         const scannerState = useModalState()
@@ -110,13 +49,23 @@ export const useConnectionsSettingsScreen =
             [showError, t],
         )
 
+        const handleDisconnectError = useCallback(
+            (error: unknown) => {
+                showError(
+                    error,
+                    t('walletconnect.settings.disconnect_failed_title'),
+                )
+            },
+            [showError, t],
+        )
+
         const connections = useMemo(() => {
             const unified: UnifiedConnection[] = [
                 ...walletConnectConnections.map(connection =>
                     toUnifiedWalletConnectConnection(
                         connection,
                         disconnect,
-                        handleRevokeError,
+                        handleDisconnectError,
                         t('walletconnect.settings.unknown_peer'),
                     ),
                 ),
@@ -126,8 +75,8 @@ export const useConnectionsSettingsScreen =
             ]
             return unified.sort(
                 (a, b) =>
-                    (b.connectedAt?.getTime() ?? 0) -
-                    (a.connectedAt?.getTime() ?? 0),
+                    toComparableTime(b.connectedAt) -
+                    toComparableTime(a.connectedAt),
             )
         }, [
             walletConnectConnections,
@@ -135,6 +84,7 @@ export const useConnectionsSettingsScreen =
             sites,
             revoke,
             handleRevokeError,
+            handleDisconnectError,
             t,
         ])
 

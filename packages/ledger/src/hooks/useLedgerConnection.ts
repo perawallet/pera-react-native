@@ -22,7 +22,7 @@ import {
     LedgerProviderNotFoundError,
     LedgerScanTimeoutError,
     classifyLedgerError,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 import type { AppError, Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseLedgerConnectionResult = {

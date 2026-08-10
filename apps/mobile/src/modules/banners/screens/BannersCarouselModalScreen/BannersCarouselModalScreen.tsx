@@ -10,13 +10,15 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BannerCarousel } from '@modules/banners/components/BannerCarousel'
 import { PWIcon, PWScreen, PWTouchableOpacity, PWView } from '@components/core'
 import { useBannersCarouselModalScreen } from './useBannersCarouselModalScreen'
 import { useStyles } from './styles'
 
 export const BannersCarouselModalScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const {
         banners,
         initialIndex,

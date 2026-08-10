@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import { FeeDelegationAttestationRequiredError } from '@perawallet/wallet-core-fee-delegation'
 import { PeraNetworkError } from '@perawallet/wallet-core-shared'
-import { toOnrampUserMessage } from '..'
+import { resolveRampQuoteLimits, toOnrampUserMessage } from '..'
 
 // The Pera API returns SourceAmountIsTooLow errors with this shape:
 // {
@@ -126,5 +126,96 @@ describe('toOnrampUserMessage', () => {
             originalError: httpError,
         })
         expect(toOnrampUserMessage(wrapped)).toBe('Specific onramp message')
+    })
+})
+
+const buildTooLowError = (leaf: string) => ({
+    type: 'SourceAmountIsTooLow',
+    fallback_message: 'Amount is too low.',
+    detail: { non_field_errors: [leaf] },
+})
+
+describe('resolveRampQuoteLimits', () => {
+    it('extracts both limits from the canonical payload', () => {
+        const limits = resolveRampQuoteLimits(sourceAmountIsTooLowError)
+
+        expect(limits?.min?.toString()).toBe('10')
+        expect(limits?.max?.toString()).toBe('5000')
+    })
+
+    it('extracts a min-only payload with a null max', () => {
+        const limits = resolveRampQuoteLimits(
+            buildTooLowError("{'message': 'Too low.', 'min_amount': '600.00'}"),
+        )
+
+        expect(limits?.min?.toString()).toBe('600')
+        expect(limits?.max).toBeNull()
+    })
+
+    it('extracts a max-only payload with a null min', () => {
+        const limits = resolveRampQuoteLimits(
+            buildTooLowError(
+                "{'message': 'Too high.', 'max_amount': '5000.00'}",
+            ),
+        )
+
+        expect(limits?.min).toBeNull()
+        expect(limits?.max?.toString()).toBe('5000')
+    })
+
+    it('returns null when the leaf is malformed', () => {
+        // An apostrophe inside the message corrupts the quote normalisation.
+        const limits = resolveRampQuoteLimits(
+            buildTooLowError(
+                "{'message': 'isn't allowed', 'min_amount': '600.00'}",
+            ),
+        )
+
+        expect(limits).toBeNull()
+    })
+
+    it('returns null when no amount is parseable', () => {
+        const limits = resolveRampQuoteLimits(
+            buildTooLowError("{'message': 'Too low.', 'min_amount': 'abc'}"),
+        )
+
+        expect(limits).toBeNull()
+    })
+
+    it('resolves through a ky HTTPError .data wrapper', () => {
+        const limits = resolveRampQuoteLimits({
+            name: 'HTTPError',
+            status: 400,
+            data: sourceAmountIsTooLowError,
+        })
+
+        expect(limits?.min?.toString()).toBe('10')
+    })
+
+    it('resolves through a PeraNetworkError wrapper', () => {
+        const wrapped = new PeraNetworkError('client', {
+            status: 400,
+            originalError: Object.assign(new Error('http'), {
+                data: sourceAmountIsTooLowError,
+            }),
+        })
+
+        expect(resolveRampQuoteLimits(wrapped)?.min?.toString()).toBe('10')
+    })
+
+    it('returns null for other Pera exception types', () => {
+        expect(
+            resolveRampQuoteLimits({
+                type: 'SomeOtherError',
+                fallback_message: 'Nope.',
+                detail: {},
+            }),
+        ).toBeNull()
+    })
+
+    it('returns null for plain errors and non-error values', () => {
+        expect(resolveRampQuoteLimits(new Error('boom'))).toBeNull()
+        expect(resolveRampQuoteLimits(undefined)).toBeNull()
+        expect(resolveRampQuoteLimits(null)).toBeNull()
     })
 })

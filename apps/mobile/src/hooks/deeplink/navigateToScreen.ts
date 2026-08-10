@@ -12,6 +12,7 @@
 
 import { StackActions } from '@react-navigation/native'
 import { navigationRef } from '@routes/navigationRef'
+import type { AppStackParamList } from '@routes/types'
 
 /**
  * Shared navigation helper for deeplink handlers. Goes through the global
@@ -31,4 +32,24 @@ export const navigateToScreen = (
     } else {
         navigationRef.navigate(screenName, params)
     }
+}
+
+/**
+ * Same reasoning as `navigateToScreen`, for callers that need `push` rather
+ * than `navigate`. Needed because `useHandleInboxItemPress` is shared between
+ * the inbox list (rendered inside the navigator) and the push-notification
+ * listener, which `RootComponent` mounts *above* `NavigationContainer` — so it
+ * cannot reach navigation through `useAppNavigation`/`useNavigation` at all.
+ *
+ * `StackActions.push`, not `navigationRef.navigate`: `navigate` would reuse an
+ * already-focused Messages route and only swap its params, which silently
+ * changes the back stack for the list path that previously called
+ * `useAppNavigation().push`.
+ */
+export const pushScreen = <RouteName extends keyof AppStackParamList>(
+    screenName: RouteName,
+    params?: AppStackParamList[RouteName],
+): void => {
+    if (!navigationRef.isReady()) return
+    navigationRef.dispatch(StackActions.push(screenName as string, params))
 }

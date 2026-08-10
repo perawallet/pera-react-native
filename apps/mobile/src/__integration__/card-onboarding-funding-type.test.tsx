@@ -240,7 +240,7 @@ describe('Flow: Card onboarding — select funding type', () => {
             integrityToken: 'TEST_INTEGRITY_TOKEN',
             expiresAt: new Date(Date.now() + 60_000).toISOString(),
             keyId: 'key',
-            deviceId: 'device',
+            deviceInstallationId: 'device',
         })
     })
     afterEach(() => {

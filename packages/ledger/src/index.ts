@@ -23,7 +23,7 @@ export type {
     LedgerConnectionStatus,
     LedgerTransport,
     LedgerTransportProvider,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 export {
     LedgerAddressMismatchError,
     LedgerAppNotOpenError,
@@ -48,7 +48,7 @@ export {
     LedgerUsbNoDeviceError,
     LedgerUserRejectedError,
     classifyLedgerError,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 export {
     ALGORAND_BIP44_PREFIX,
     LEDGER_BLE_SERVICE_UUIDS,
@@ -60,7 +60,7 @@ export {
     buildLedgerAccountPath,
     isAppVersionAtLeast,
     resolveDeviceModel,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 export * from './discovery'
 export * from './hooks'

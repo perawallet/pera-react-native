@@ -20,6 +20,7 @@ import { SearchableList } from '@components/SearchableList'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountResultRow } from './AccountResultRow'
 import { AddressSearchInput } from './AddressSearchInput'
+import { PasteFromClipboardRow } from './PasteFromClipboardRow'
 import { useStyles } from './styles'
 import {
     useAddressSearchView,
@@ -34,6 +35,8 @@ export type AddressSearchViewProps = {
     inBottomSheet?: boolean
     showAccountBalance?: boolean
     showAddIcon?: boolean
+    /** See {@link UseAddressSearchViewProps.showClipboardPaste}. */
+    showClipboardPaste?: boolean
 }
 
 export const AddressSearchView = ({
@@ -44,6 +47,7 @@ export const AddressSearchView = ({
     inBottomSheet,
     showAccountBalance = false,
     showAddIcon = false,
+    showClipboardPaste = false,
 }: AddressSearchViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -52,6 +56,7 @@ export const AddressSearchView = ({
             excludeAddress,
             excludeTypes,
             showAllContactsWhenEmpty,
+            showClipboardPaste,
         })
 
     const renderItem = useCallback(
@@ -59,6 +64,16 @@ export const AddressSearchView = ({
             switch (item.type) {
                 case 'section_header': {
                     return <PWText variant='h4'>{t(item.title)}</PWText>
+                }
+                case 'paste': {
+                    // Fills the field instead of selecting outright, matching
+                    // native: the user still confirms the pasted address.
+                    return (
+                        <PasteFromClipboardRow
+                            address={item.address}
+                            onPress={setValue}
+                        />
+                    )
                 }
                 case 'contact': {
                     return (
@@ -153,7 +168,7 @@ export const AddressSearchView = ({
                 }
             }
         },
-        [onSelected, styles, t, showAccountBalance, showAddIcon],
+        [onSelected, setValue, styles, t, showAccountBalance, showAddIcon],
     )
 
     const renderSeparator = useCallback(

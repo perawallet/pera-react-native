@@ -303,7 +303,7 @@ export class SyncService {
             if (isAuthError) {
                 this.hasAuthError = true
                 logger.warn(
-                    'Should-refresh rejected as unauthorized — check BACKEND_API_KEY is set (see apps/extension/README.md)',
+                    'Should-refresh rejected as unauthorized — check BACKEND_API_KEY is set (see apps/browser/README.md)',
                     { status },
                 )
             }

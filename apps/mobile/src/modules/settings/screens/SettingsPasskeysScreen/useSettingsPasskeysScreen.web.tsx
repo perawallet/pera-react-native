@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -61,7 +61,7 @@ export type UseSettingsPasskeysScreenResult = {
 // (react-native-passkey-autofill is a no-op web shim), so "active" is derived
 // from the `webauthnInterceptionEnabled` settings-store preference — the same
 // preference the ISOLATED relay content script
-// (apps/extension/src/content/webauthn-toggle.ts) reads once per page load to
+// (apps/browser/src/content/webauthn-toggle.ts) reads once per page load to
 // gate interception. Passkey listing/removal still work identically (both
 // read the keystore projection), so those are unchanged from the native hook.
 export const useSettingsPasskeysScreen =
@@ -75,6 +75,21 @@ export const useSettingsPasskeysScreen =
         const { t } = useLanguage()
         const scanner = useModalState()
         const { getPreference, setPreference } = usePreferences()
+
+        // Native refreshes on an AppState 'active' transition; the browser's
+        // equivalent is the document becoming visible again. Without it, a
+        // user who enables a screen lock in another tab (or another window)
+        // keeps seeing the stale "biometric required" notice until they
+        // manually reload the popup.
+        const refreshBiometric = biometric.refresh
+        useEffect(() => {
+            const onVisible = (): void => {
+                if (document.visibilityState === 'visible') refreshBiometric()
+            }
+            document.addEventListener('visibilitychange', onVisible)
+            return () =>
+                document.removeEventListener('visibilitychange', onVisible)
+        }, [refreshBiometric])
 
         const isInterceptionEnabled =
             getPreference(UserPreferences.webauthnInterceptionEnabled) === true

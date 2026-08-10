@@ -19,6 +19,7 @@ import {
     useStartVerificationMutation,
     VerificationState,
 } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import {
     useCardErrorToast,
     useCardOnboardingLogout,
@@ -66,6 +67,7 @@ export const useCardOnboardingVerificationScreen =
         } = useOnboardingKycPoll({ enabled: hasStarted && isFocused })
 
         const handleVerify = useCallback(() => {
+            trackEvent(CardEvent.CreateSubmitDocs)
             // Set by email/verify; if missing, re-verify rather than start a
             // KYC session with an empty onboarding id.
             if (onboardingId === null) {

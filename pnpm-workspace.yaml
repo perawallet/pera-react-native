@@ -25,11 +25,11 @@ catalog:
   "@noble/hashes": ^1.8.0
   "@notifee/react-native": ^9.1.8
   "@playwright/test": ^1.53.0
-  "@react-native-firebase/analytics": ^25.1.0
-  "@react-native-firebase/app": ^25.1.0
-  "@react-native-firebase/crashlytics": ^25.1.0
-  "@react-native-firebase/messaging": ^25.1.0
-  "@react-native-firebase/remote-config": ^25.1.0
+  "@react-native-firebase/analytics": ^26.0.0
+  "@react-native-firebase/app": ^26.0.0
+  "@react-native-firebase/crashlytics": ^26.0.0
+  "@react-native-firebase/messaging": ^26.0.0
+  "@react-native-firebase/remote-config": ^26.0.0
   "@scure/base": 2.2.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
@@ -43,7 +43,7 @@ catalog:
   "@types/react": ~19.2.14
   "@types/w3c-web-hid": ^1.0.7
   "@types/web-bluetooth": ^0.0.21
-  "@vitejs/plugin-react": 6.0.4
+  "@vitejs/plugin-react": 6.0.5
   "@vitest/coverage-v8": ^4.1.9
   "@xstate/react": ^6.1.0
   # A build of `feat/pq` in the OFFICIAL algorand/js-algorand-sdk repo
@@ -72,7 +72,7 @@ catalog:
   expo: ^57.0.7
   expo-application: ~57.0.2
   expo-device: ~57.0.1
-  expo-local-authentication: ~57.0.1
+  expo-local-authentication: ~57.0.2
   expo-localization: ~57.0.1
   expo-sqlite: ~57.0.1
   falcon-1024: ^0.2.0
@@ -93,7 +93,7 @@ catalog:
   typescript: ^5.9.3
   util: ^0.12.5
   uuid: 14.0.1
-  vite: ^8.1.5
+  vite: ^8.2.0
   vite-plugin-dts: ^5.0.0
   vitest: ^4.1.9
   xstate: ^5.28.0
@@ -101,6 +101,18 @@ catalog:
   zustand: ^5.0.12
 
 minimumReleaseAge: 10080
+
+# image-size has no patched release: GitHub reports first_patched_version: null
+# on both advisories and npm's latest is 2.0.2 (Apr 2025), so there is nothing to
+# override to. It reaches the --prod graph only because react-native declares
+# @react-native/community-cli-plugin as a runtime dep; the sole consumer is
+# metro's build-time asset sizer (metro/src/Assets.js), never shipped to a
+# device. Exploiting it means committing a malformed ICNS/JXL/HEIF to our own
+# assets to stall a bundle. Drop these two once image-size publishes a fix.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-5p2g-fcmc-qvqq # image-size: JXL/HEIF parsers infinite loop
+    - GHSA-w3rx-r6r6-pgpr # image-size: ICNS parser infinite loop
 
 minimumReleaseAgeExclude:
   - '@algorandfoundation/keystore'
@@ -118,29 +130,13 @@ minimumReleaseAgeExclude:
   - '@joe-p/react-native-falcon'
   - falcon-1024
   - fast-uri
+  # 3.3.17 is the GHSA-2v37-7h3g-55p8 fix and is younger than the 7-day gate.
+  # Same sole maintainer (ai <andrey@sitnik.es>) as 3.3.16, no install scripts.
+  - nanoid
   - expo
   - expo-*
   - '@expo/*'
   - babel-preset-expo
-  # Security patches for GHSA-mh99-v99m-4gvg / GHSA-pm4m-ph32-ghv5 (2026-07-23)
-  # and brace-expansion GHSA-rgw5-rvv9-x895 (2026-07-30), inside the 7-day
-  # window. Same maintainers as the prior releases (juliangruber+isaacs /
-  # vitaly), no consumer-run install scripts.
-  - brace-expansion
-  - js-yaml
-
-# GHSA-mh99-v99m-4gvg (brace-expansion OOM DoS) marks every release <=5.0.7
-# vulnerable; GHSA-rgw5-rvv9-x895 then marks <5.0.9 vulnerable (unbounded
-# intermediate arrays, bypassing the CVE-2026-14257 mitigation), so 5.0.9 is
-# the current patched version. The 1.x/2.x lines that minimatch@3/@9 consumers
-# (eslint, glob, @expo/cli) default-import have no patched release yet, and
-# 5.0.9 can't be substituted in — it only ships a named `expand` export, so a
-# v1/v2 override breaks minimatch at runtime. The 3.x-5.x resolutions ARE
-# pinned to 5.0.9 via overrides below. Drop this ignore once upstream ships
-# patched 1.x/2.x releases and bump the @1/@2 overrides instead.
-auditConfig:
-  ignoreGhsas:
-    - GHSA-mh99-v99m-4gvg
 
 onlyBuiltDependencies:
   - '@firebase/util'
@@ -176,11 +172,14 @@ overrides:
   '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
   '@expo/dom-webview': ~57.0.1
   '@grpc/grpc-js@<1.9.16': 1.9.16
-  '@react-native/metro-config': 0.86.0
   '@xmldom/xmldom': 0.8.13
   bn.js@4: 4.12.3
-  brace-expansion@1: 1.1.16
-  brace-expansion@2: 2.1.2
+  # GHSA-rgw5-rvv9-x895 is patched per major line, not by one version: the 1.x
+  # and 2.x consumers (minimatch@3/@9 via eslint, glob, @expo/cli) default-import
+  # brace-expansion, and 5.x only ships a named `expand` export — so they have to
+  # stay on their own patched lines rather than all pointing at 5.0.9.
+  brace-expansion@1: 1.1.18
+  brace-expansion@2: 2.1.4
   brace-expansion@3: 5.0.9
   brace-expansion@4: 5.0.9
   brace-expansion@5: 5.0.9
@@ -194,10 +193,21 @@ overrides:
   happy-dom@<20.0.0: '>=20.0.0'
   happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
   js-yaml@<3.14.2: '>=3.14.2'
-  js-yaml@>=4.0.0 <4.2.0: '>=4.2.0'
+  js-yaml@>=4.0.0 <4.3.1: '>=4.3.1'
   js-yaml@>=5.0.0 <5.2.2: '>=5.2.2'
   lodash@4: 4.18.1
-  nanoid@<3.3.8: '>=3.3.8'
+  # GHSA-2v37-7h3g-55p8 (custom generators loop forever when size is 0). Exact
+  # target, not '>=3.3.17': an open range resolves to nanoid 6.
+  #
+  # pnpm matches this selector against the *declared* spec, not the resolved
+  # version, so `^3.3.1` is captured too — which is how the old '>=3.3.8' entry
+  # silently pulled @gorhom/portal up to nanoid 6. That resolution shipped in
+  # v7.0.0 and is not vulnerable (the advisory is <3.3.17), so it is pinned below
+  # rather than dragged back to 3.x by this line.
+  nanoid@<3.3.17: 3.3.17
+  # Keep the production-proven resolution: in the tree since #996 and shipped in
+  # v7.0.0. Deliberately outside @gorhom/portal's declared `^3.3.1`.
+  '@gorhom/portal>nanoid': 6.0.0
   node-fetch@<2.6.7: '>=2.6.7'
   node-forge@1: 1.4.0
   picomatch@2: 2.3.2
@@ -209,7 +219,7 @@ overrides:
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.2
-  react-native-nitro-modules: 0.35.9
+  react-native-nitro-modules: 0.36.5
   react-native-quick-base64: ^3.0.0
   react-native-quick-crypto: ^1.0.17
   shell-quote@<1.9.0: 1.9.0

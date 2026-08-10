@@ -11,7 +11,7 @@
  */
 
 import { mnemonicIndexToWord } from '@perawallet/wallet-core-kms'
-import { PWHeader, PWText, PWView } from '@components/core'
+import { PWHeader, PWScrollView, PWText, PWView } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
@@ -45,8 +45,12 @@ export const ViewPassphraseContent = ({
                 leftIcon='cross'
                 onLeftPress={dismiss}
             />
-            <PWView
-                style={styles.body}
+            {/* 25 words overflow the fixed-height sheet on the extension's
+                short viewport, so the body has to scroll. */}
+            <PWScrollView
+                inBottomSheet
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.body}
                 testID={testID}
             >
                 <PWText
@@ -128,7 +132,7 @@ export const ViewPassphraseContent = ({
                             })}
                         </PWView>
                     )}
-            </PWView>
+            </PWScrollView>
         </PWView>
     )
 }

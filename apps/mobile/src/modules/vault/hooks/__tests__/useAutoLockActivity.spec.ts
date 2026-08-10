@@ -19,7 +19,7 @@ vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
     armAutoLock,
 }))
 
-import { useAutoLockActivity } from '../useAutoLockActivity'
+import { useAutoLockActivity } from '../useAutoLockActivity.web'
 
 const fireActivity = (
     type: 'pointerdown' | 'keydown' = 'pointerdown',

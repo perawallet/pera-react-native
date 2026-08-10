@@ -14,7 +14,7 @@ import type {
     LedgerAccount,
     LedgerTransport,
     LedgerTransportProvider,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 import { discoverLedgerAccounts } from './discoverAccounts'
 import { withLedgerConnectionTimeout } from './ledgerTimeouts'
 
