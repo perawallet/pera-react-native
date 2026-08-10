@@ -21,6 +21,7 @@
     "@algorandfoundation/keystore-core": "catalog:",
     "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
+    "@scure/base": "catalog:",
     "@tanstack/store": "catalog:",
     "@babel/runtime": "catalog:",
     "before-after-hook": "catalog:",

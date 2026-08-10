@@ -17,13 +17,20 @@ import type { Key, KeyStoreState } from '@algorandfoundation/keystore-core'
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
 import {
     decode,
+    encode,
+    openData,
+    readMasterKey,
+    sealData,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
+import { subtle } from 'react-native-quick-crypto'
 import { createPeraKeystore } from './keystore/createKeystore'
+import {
+    migrateKeystoreLayout,
+    type KeystoreLayoutMigrationResult,
+} from './keystore/migrateKeystoreLayout'
+import { METADATA_PREFIX } from './keystore/prefixes'
 import { PeraProvider } from './pera-provider'
-
-/** The driver's metadata bucket. Sealed material lives under `m/` instead. */
-const METADATA_PREFIX = 'k/'
 
 const keystoreStore = new Store<KeyStoreState>({
     keys: [],
@@ -144,6 +151,24 @@ export const reconcileKeystore = async (): Promise<void> => {
 
     keystoreStore.setState(state => ({ ...state, keys }))
 }
+
+/**
+ * Binds {@link migrateKeystoreLayout} to the live keystore package. Kept here
+ * because this module already owns the package's native imports; the migration
+ * itself stays dependency-free so it can be tested off device.
+ */
+export const runKeystoreLayoutMigration =
+    (): Promise<KeystoreLayoutMigrationResult> =>
+        migrateKeystoreLayout({
+            storage: keystoreStorage,
+            readMasterKey: () => readMasterKey(),
+            openData: (key, payload) =>
+                openData(subtle as unknown as SubtleCrypto, key, payload),
+            sealData: (key, data) =>
+                sealData(subtle as unknown as SubtleCrypto, key, data),
+            encode,
+            decode,
+        })
 
 /**
  * Resets the provider singleton. Only for use in tests.

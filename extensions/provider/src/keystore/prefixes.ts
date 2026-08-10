@@ -10,15 +10,10 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-extension-provider'
-
-export { Provider } from '@algorandfoundation/wallet-provider'
-export type {
-    ProviderOptions,
-    Extension,
-} from '@algorandfoundation/wallet-provider'
-export * from './pera-provider'
-export * from './context'
-export * from './keystore/migrateKeystoreLayout'
-export * from './singleton'
-export * from './test-platform'
+/**
+ * Mirrors the canary.14 Keychain driver's private bucket prefixes. The driver
+ * does not export them, so these must be kept in step with
+ * `react-native-keystore/dist/storage/driver.js` on every upgrade.
+ */
+export const METADATA_PREFIX = 'k/'
+export const MATERIAL_PREFIX = 'm/'
