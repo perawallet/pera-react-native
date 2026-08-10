@@ -15,15 +15,27 @@ import type { RouteCapabilities } from './capabilities-types'
 export type { RouteCapabilities } from './capabilities-types'
 
 export const routeCapabilities: RouteCapabilities = {
-    discoverTab: true, // iframe webview layer + discover bridge
+    // Off pending a Discover-side fix. Discover gates its UI tier on
+    // compareVersions(version, DISCOVER_V3[platform], '>=') with
+    // DISCOVER_V3 = { ios, android } — our honest clientType 'web' makes that
+    // lookup undefined, compare-versions throws mid-render, and React unmounts
+    // the whole Discover root (renders, then blanks). The iframe/bridge layer
+    // itself is verified working. See routes/capabilities.web.ts's discoverTab comment.
+    discoverTab: false,
     swapTab: true, // native RN screen graph
     fundTab: true, // native RN screen graph (Meld checkout via window.open)
     staking: true, // native RN screen graph
     peraCard: true, // Baanx card, additionally gated by useIsPeraCardEnabled() remote flag
     giftCards: true,
     inAppWebView: false, // stays false — help/terms open browser tabs
-    qrScanner: true, // BarcodeDetector camera scan + paste fallback
-    pushNotificationSettings: false, // permanently off: no push on web
+    // Off in the Menu and the home header: replaced by deepLinkPaste below.
+    // The QRScannerView camera+paste sheet itself stays reachable from the
+    // in-field scan buttons (AddressEntryField, ContactForm, Connections
+    // settings, Passkeys settings) and the ScanQR expanded tab — this flag
+    // only gates those two icon bars.
+    qrScanner: false,
+    deepLinkPaste: true, // paste a WC URI / perawallet:// link instead
+    pushNotificationSettings: true, // FCM web push via the background SW
     walletConnectSettings: true, // WC v1 pairing + sessions on web
     passkeysAutofillSettings: true, // WebAuthn-interception credential provider + settings toggle
     storeRating: false, // permanently off: no store review flow
@@ -35,6 +47,11 @@ export const routeCapabilities: RouteCapabilities = {
     // parse under Metro's web bundler, so quantum accounts have no working
     // signer path in the browser extension yet.
     quantum: false,
-    rekeyFlows: false, // RescanRekeyed/RekeyToStandard/RekeyToShared stacks aren't registered in WebMainRoutes
+    rekeyFlows: true,
+    // Gates the SHARED_ACCOUNT_IMPORT deeplink as well as the UI entry points;
+    // without the Multisig stack registered it navigated to an unregistered
+    // route — a no-op that also left the QR scanner locked, since it waits for
+    // one of its callbacks.
+    sharedAccounts: true,
     connectionsSettings: true, // unified WalletConnect + dapp connections settings screen
 }

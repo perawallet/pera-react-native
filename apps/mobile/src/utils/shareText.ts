@@ -12,7 +12,7 @@
 
 import Share from 'react-native-share'
 
-type ShareTextOptions = {
+export type ShareTextOptions = {
     message: string
     title?: string
     url?: string

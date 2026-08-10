@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import {
     useAllAccounts,
@@ -22,8 +22,13 @@ import {
     useNfdSearchQuery,
     type NfdSearchResult,
 } from '@perawallet/wallet-core-nfd'
-import { useDebouncedValue } from '@perawallet/wallet-core-shared'
+import {
+    useDebouncedValue,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
+import { useClipboard } from '@hooks/useClipboard'
+import { useFocusEffect } from '@react-navigation/native'
 
 export type AddressSearchItem =
     | { type: 'section_header'; title: string; key: string }
@@ -31,11 +36,19 @@ export type AddressSearchItem =
     | { type: 'contact'; contact: Contact; key: string }
     | { type: 'nfd'; nfd: NfdSearchResult; key: string }
     | { type: 'address'; address: string; key: string }
+    | { type: 'paste'; address: string; key: string }
 
 type UseAddressSearchViewProps = {
     excludeAddress?: string
     excludeTypes?: AccountType[]
     showAllContactsWhenEmpty?: boolean
+    /**
+     * Offer the clipboard's address as the first row. Opt-in because reading the
+     * clipboard makes iOS show its "pasted from" notice, so only the flows that
+     * want the affordance pay for it — mirrors native Android, where
+     * `willCopiedItemBeHandled` is the send-receiver screen only.
+     */
+    showClipboardPaste?: boolean
 }
 
 type UseAddressSearchViewResult = {
@@ -52,11 +65,32 @@ export const useAddressSearchView = (
     const excludeAddress = props?.excludeAddress
     const excludeTypes = props?.excludeTypes
     const showAllContactsWhenEmpty = props?.showAllContactsWhenEmpty ?? false
+    const showClipboardPaste = props?.showClipboardPaste ?? false
     const [value, setValue] = useState('')
+    const [clipboardAddress, setClipboardAddress] =
+        useState<Nullable<string>>(null)
     const { findContacts } = useContacts()
+    const { readText } = useClipboard()
     const accounts = useAllAccounts()
 
     const addressIsValid = useMemo(() => isValidAlgorandAddress(value), [value])
+
+    // Re-read on focus rather than once on mount: the user leaves to copy an
+    // address and comes back, which is the whole point of the affordance. Mirrors
+    // the native `onResume` re-read.
+    useFocusEffect(
+        useCallback(() => {
+            if (!showClipboardPaste) return
+            let isActive = true
+            void readText().then(text => {
+                if (!isActive) return
+                setClipboardAddress(isValidAlgorandAddress(text) ? text : null)
+            })
+            return () => {
+                isActive = false
+            }
+        }, [showClipboardPaste, readText]),
+    )
 
     const debouncedValue = useDebouncedValue(value, SEARCH_DEBOUNCE_TIME)
     const shouldSearchNfd = debouncedValue.includes('.') && !addressIsValid
@@ -107,6 +141,16 @@ export const useAddressSearchView = (
 
     const matchingItems = useMemo(() => {
         const items: AddressSearchItem[] = []
+
+        // First row, and deliberately not gated on the query or deduped against
+        // the user's own accounts — matches native.
+        if (clipboardAddress) {
+            items.push({
+                type: 'paste',
+                address: clipboardAddress,
+                key: `paste-${clipboardAddress}`,
+            })
+        }
 
         if (addressIsValid) {
             const ownAccount = accounts.find(a => a.address === value)
@@ -183,6 +227,7 @@ export const useAddressSearchView = (
         matchingAccounts,
         matchingContacts,
         nfdResults,
+        clipboardAddress,
     ])
 
     const hasResults = matchingItems.length > 0

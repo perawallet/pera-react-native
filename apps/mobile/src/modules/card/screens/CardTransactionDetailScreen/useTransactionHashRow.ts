@@ -17,6 +17,7 @@ import {
     generateUniqueId,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
+import { trackEvent, CardEvent } from '@analytics'
 import { useWebView } from '@modules/webview/hooks'
 import { routeCapabilities } from '@routes/capabilities'
 import { useClipboard } from '@hooks/useClipboard'
@@ -51,11 +52,13 @@ export const useTransactionHashRow = (
     const isAlgorand = network.trim().toLowerCase() === 'algorand'
 
     const onCopy = useCallback(() => {
+        trackEvent(CardEvent.TransactionsCopyTx)
         void copyToClipboard(txHash)
     }, [copyToClipboard, txHash])
 
     const openExplorer = useCallback(() => {
         if (!networkConfig.explorerUrl) return
+        trackEvent(CardEvent.TransactionsViewExplorer)
         const url = `${networkConfig.explorerUrl}/tx/${txHash}`
         if (!routeCapabilities.inAppWebView) {
             void Linking.openURL(url)

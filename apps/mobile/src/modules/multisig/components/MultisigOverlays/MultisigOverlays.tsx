@@ -16,8 +16,14 @@ import { useTranslation } from 'react-i18next'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useWalletConnectHandoffResolver,
+    type HandoffPeerDelivery,
     type ResolverMessages,
 } from '@perawallet/wallet-core-signing'
+import {
+    deliverApprove,
+    deliverReject,
+    deliverRejectInBackground,
+} from '@perawallet/wallet-core-walletconnect'
 import { useMultisigProposeListener } from '../../hooks/useMultisigProposeListener'
 import { usePendingSignaturesSheetStore } from '../../stores/usePendingSignaturesSheetStore'
 import { PendingSignaturesContent } from '../PendingSignaturesContent'
@@ -91,5 +97,24 @@ const useResolverWiring = (): void => {
         [t],
     )
 
-    useWalletConnectHandoffResolver({ isAppActive, messages })
+    // Answers the dApp for a handoff resumed after an app kill, keyed by the
+    // persisted clientId / payloadId (the in-memory closures are gone). Static —
+    // the WalletConnect primitives resolve the live connector by clientId.
+    const delivery = useMemo<HandoffPeerDelivery>(
+        () => ({
+            deliverResult: (clientId, payloadId, result) =>
+                deliverApprove(clientId, payloadId, result),
+            deliverSoftReject: (clientId, payloadId, error) =>
+                deliverReject(clientId, payloadId, error),
+            // Reject the peer without raising a connection-error banner: a
+            // launch-time banner for a previous session's request would confuse.
+            deliverError: (clientId, payloadId, error) => {
+                deliverRejectInBackground(clientId, payloadId, error)
+                return Promise.resolve()
+            },
+        }),
+        [],
+    )
+
+    useWalletConnectHandoffResolver({ isAppActive, messages, delivery })
 }

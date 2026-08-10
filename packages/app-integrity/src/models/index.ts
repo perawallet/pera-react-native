@@ -21,13 +21,18 @@ export type IntegrityRegistration = {
 
 export type IntegrityVerification = {
     ok: boolean
-    deviceId: string
+    deviceInstallationId: string
     platform: IntegrityPlatform
 }
 
 export type AttestPayload =
-    | { deviceId: string; platform: 'ios'; keyId: string; attestation: string }
-    | { deviceId: string; platform: 'android'; attestation: string }
+    | {
+          deviceInstallationId: string
+          platform: 'ios'
+          keyId: string
+          attestation: string
+      }
+    | { deviceInstallationId: string; platform: 'android'; attestation: string }
 
 export type AppIntegrityStatus =
     | 'idle'
@@ -40,7 +45,7 @@ export type AppIntegrityStore = BaseStoreState & {
     integrityToken: string | null
     expiresAt: string | null
     keyId: string | null
-    deviceId: string | null
+    deviceInstallationId: string | null
     status: AppIntegrityStatus
     lastError: string | null
     lastAttemptAt: string | null
@@ -49,7 +54,7 @@ export type AppIntegrityStore = BaseStoreState & {
         integrityToken: string
         expiresAt: string
         keyId: string | null
-        deviceId: string
+        deviceInstallationId: string
     }) => void
     setStatus: (status: AppIntegrityStatus) => void
     setError: (message: string) => void

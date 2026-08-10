@@ -15,9 +15,16 @@ export const name = '@perawallet/wallet-core-walletconnect'
 export * from './models'
 export * from './errors'
 export * from './connection'
+export * from './utils/chain'
+export * from './validation/inboundRequestGate'
 export * from './hooks/useWalletConnectSessionRequests'
 export * from './hooks/useWalletConnect'
 export * from './hooks/useWalletConnectReconnect'
+export {
+    deliverApprove,
+    deliverReject,
+    deliverRejectInBackground,
+} from './hooks/useWalletConnectHandlers'
 export * from './constants'
 export { useWalletConnectStore } from './store'
 export {

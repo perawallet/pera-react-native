@@ -14,15 +14,22 @@ import { useEffect } from 'react'
 
 import { logger } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import {
+    getMultisigIntentKind,
+    useHandleMultisigNotification,
+} from '@modules/messages/hooks'
 
 import { useDeepLink } from './useDeepLink'
 
 /**
- * Bridges OS push-notification taps to the deeplink dispatcher. The platform
- * service surfaces the tapped notification's deeplink URL (foreground,
- * background-resume, or cold-start) and this hook validates it and hands it to
- * `handleDeepLink`, so a notification reaches the same routing as a scanned QR
- * or an external deeplink.
+ * Bridges OS push-notification taps to the app's routing (foreground,
+ * background-resume, or cold-start).
+ *
+ * A multisig sign/import push carries no sign-request deeplink — only the
+ * shared-account address — so it's routed by notification type through the same
+ * resolver the in-app Notifications list uses. Every other tap keeps the
+ * URL-based routing: it's validated and handed to `handleDeepLink`, reaching
+ * the same dispatcher as a scanned QR or an external deeplink.
  *
  * Mount once at the root: the platform service holds a single listener slot,
  * so registering from multiple places would clobber it (and re-fire taps).
@@ -30,16 +37,25 @@ import { useDeepLink } from './useDeepLink'
 export const useNotificationDeeplinkListener = () => {
     const provider = usePeraProvider()
     const { handleDeepLink, isValidDeepLink } = useDeepLink()
+    const { handleMultisigNotification } = useHandleMultisigNotification()
 
     useEffect(() => {
         const unsubscribe =
-            provider.pushNotification.addNotificationOpenListener(url => {
-                logger.debug('Notification: deeplink tapped', { url })
-                if (isValidDeepLink(url)) {
-                    void handleDeepLink(url, false, 'deeplink')
+            provider.pushNotification.addNotificationOpenListener(payload => {
+                logger.debug('Notification: tapped', { payload })
+                const intentKind = getMultisigIntentKind(payload.type)
+                if (intentKind) {
+                    handleMultisigNotification(
+                        intentKind,
+                        payload.accountAddress,
+                    )
+                    return
+                }
+                if (payload.url && isValidDeepLink(payload.url)) {
+                    void handleDeepLink(payload.url, false, 'deeplink')
                 }
             })
 
         return unsubscribe
-    }, [provider, handleDeepLink, isValidDeepLink])
+    }, [provider, handleDeepLink, isValidDeepLink, handleMultisigNotification])
 }

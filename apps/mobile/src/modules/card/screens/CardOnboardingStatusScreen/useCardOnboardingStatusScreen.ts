@@ -32,6 +32,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { trackEvent, CardEvent } from '@analytics'
 import {
     canAutoFund,
     useCardFundingSourcePicker,
@@ -130,7 +131,7 @@ export type UseCardOnboardingStatusScreenResult = {
     /** Recovers the documents-row error state (PENDING review) by re-polling. */
     handleRetryStatus: () => void
     /** Opens the account picker and links the chosen account as funding source. */
-    handleConnectAccount: () => void
+    handleConnectAccount: (source: 'connect' | 'change') => void
     handleLogout: () => void
     handleOpenSupport: () => void
 }
@@ -176,6 +177,7 @@ export const useCardOnboardingStatusScreen =
         // The documents row's "Verify your Account" CTA — resumes KYC by
         // reopening the Veriff entry screen.
         const handleVerifyIdentity = useCallback(() => {
+            trackEvent(CardEvent.CreateVerifyAccount)
             navigation.navigate('CardOnboardingVerification')
         }, [navigation])
 
@@ -207,6 +209,11 @@ export const useCardOnboardingStatusScreen =
                     FundingType.Auto,
             )
         const handleSelectFundingType = useCallback((type: FundingType) => {
+            trackEvent(
+                type === FundingType.Auto
+                    ? CardEvent.CreateCardAutoFunding
+                    : CardEvent.CreateCardManualFunding,
+            )
             setSelectedFundingType(type)
         }, [])
 
@@ -287,16 +294,25 @@ export const useCardOnboardingStatusScreen =
         const { pickFundingSource } = useCardFundingSourcePicker({
             accountFilter: isSigningCapableFundingSource,
         })
-        const handleConnectAccount = useCallback(() => {
-            void (async () => {
-                const account = await pickFundingSource()
-                if (!account) return
-                // Purely local, the card gets created and linked to this account by the Pera backend
-                useCardStore
-                    .getState()
-                    .setConnectedFundingSourceAddress(account.address)
-            })()
-        }, [pickFundingSource])
+        const handleConnectAccount = useCallback(
+            (source: 'connect' | 'change') => {
+                trackEvent(
+                    source === 'change'
+                        ? CardEvent.CreateCardChangeAccount
+                        : CardEvent.CreateConnectWallet,
+                )
+                void (async () => {
+                    const account = await pickFundingSource()
+                    if (!account) return
+                    trackEvent(CardEvent.CreateVerifyAccountSelect)
+                    // Purely local, the card gets created and linked to this account by the Pera backend
+                    useCardStore
+                        .getState()
+                        .setConnectedFundingSourceAddress(account.address)
+                })()
+            },
+            [pickFundingSource],
+        )
 
         // Only `canCreateCard` is needed here — the actual creation sequence
         // (sign → create → optional LSig) now runs on CardCreateSigningScreen.
@@ -328,6 +344,7 @@ export const useCardOnboardingStatusScreen =
         // signing-capable connected account is required before handing off to
         // the signing screen, which runs the actual create sequence.
         const handleCreatePeraCard = useCallback(() => {
+            trackEvent(CardEvent.CreateCard)
             if (!connectedAccount || !canCreateCard(connectedAccount)) {
                 errorToast(
                     t('peraCard.setup_status.create_card_account_error_title'),

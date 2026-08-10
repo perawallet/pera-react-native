@@ -30,6 +30,9 @@ export {
     ChromeDeviceInfoService,
     ChromeKeyValueStorageService,
 } from './services'
+// The service worker's push handlers need the same Firebase app the UI
+// realms use; token acquisition and message receipt live in different realms.
+export { getFirebaseApp } from './services/firebase-app'
 export { getPlatformServices, hydratePlatform } from './resources'
 export { getSurface, type ExtensionSurface } from './surface'
 export {
@@ -40,7 +43,42 @@ export {
     type ExpandedFlow,
 } from './navigation'
 export { isTrustedExtensionPageSender } from './trusted-sender'
-export { ensureDeviceID, DEVICE_ID_STORAGE_KEY } from './device-id'
+export {
+    ensureDeviceInstallationID,
+    DEVICE_INSTALLATION_ID_STORAGE_KEY,
+} from './device-installation-id'
+export {
+    WC_CONTROL_SCOPE,
+    isWcControlMessage,
+    type WcControlMessage,
+    type WcDeliveryOutcome,
+    WC_REQUEST_SCOPE,
+    isWcApprovalRequestMessage,
+    type WcApprovalRequestMessage,
+    WC_PAIR_OUTCOME_SCOPE,
+    isWcPairOutcomeMessage,
+    type WcPairOutcome,
+    type WcPairOutcomeMessage,
+    isWcAck,
+    type WcAck,
+    WC_ERROR_NOTICE_SCOPE,
+    isWcErrorNoticeMessage,
+    type WcErrorNoticeMessage,
+} from './walletconnect/protocol'
+export {
+    WC_PAGE_PAIR_SCOPE,
+    isWcPagePairMessage,
+    type WcPagePairMessage,
+} from './walletconnect/page-pair'
+export {
+    sendWcApprovalRequest,
+    onWcControlMessage,
+    sendWcControlMessage,
+    sendPairOutcome,
+    onPairOutcome,
+    sendWcErrorNotice,
+    onWcErrorNotice,
+} from './walletconnect/client'
 export {
     DB_SCOPE,
     DB_CONTROL_SCOPE,

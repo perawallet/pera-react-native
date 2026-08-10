@@ -51,7 +51,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-extension-ledger-react-native',
-                '@perawallet/wallet-extension-ledger-react-native/protocol',
+                '@perawallet/wallet-extension-ledger-shared',
             ],
         },
     },

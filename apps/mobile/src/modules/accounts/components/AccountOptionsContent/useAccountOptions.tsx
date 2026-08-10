@@ -32,6 +32,7 @@ import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { routeCapabilities } from '@routes/capabilities'
 import { useAccountNotificationToggle } from '@hooks/useAccountNotificationToggle'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useViewPassphraseFlow } from '@modules/view-passphrase'
@@ -107,7 +108,7 @@ export const useAccountOptions = ({
         (isAlgo25Account(account) ||
             isHDWalletAccount(account) ||
             isQuantumAccount(account))
-    const canUndoRekey = isRekeyed && canSign
+    const canUndoRekey = routeCapabilities.rekeyFlows && isRekeyed && canSign
     const isHdWallet = isHDWalletAccount(account)
     const isQuantum = isQuantumAccount(account)
     const isSharedAccount = isMultisigAccount(account)
@@ -381,7 +382,10 @@ export const useAccountOptions = ({
             })
         }
 
-        if (canSign && !isSharedAccount) {
+        // Gated on the capability, not just on the account: every rekey target
+        // below is a root stack that a platform may not register, and an
+        // unregistered route makes the row a silent no-op rather than an error.
+        if (routeCapabilities.rekeyFlows && canSign && !isSharedAccount) {
             items.push({
                 id: 'rekey-to-ledger',
                 icon: 'rekey',
@@ -401,7 +405,7 @@ export const useAccountOptions = ({
             // Rekeying needs a signature from the source account, so only
             // offer it when this wallet can actually sign for the multisig.
             // Export stays available regardless — it only reads metadata.
-            if (canSign) {
+            if (routeCapabilities.rekeyFlows && canSign) {
                 items.push({
                     id: 'rekey-to-shared',
                     icon: 'rekey',
@@ -421,7 +425,7 @@ export const useAccountOptions = ({
         // Post-import rekey discovery: find accounts whose on-chain auth-addr
         // is this account's key. Signable types only — a watch account holds
         // no key another account could be rekeyed to sign with.
-        if (canSign) {
+        if (routeCapabilities.rekeyFlows && canSign) {
             items.push({
                 id: 'scan-rekeyed',
                 icon: 'magnifying-glass',

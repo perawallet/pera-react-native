@@ -26,6 +26,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
+import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
@@ -77,13 +78,20 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     )
     const isApproving = !!signingStarted
 
+    // `sourceType: 'arc60'` marks the first-party card-creation request (the
+    // only local producer of ARC-60 requests); dApp-originated ones come in as
+    // 'injected' / 'webview' / 'walletconnect' and must not fire card events.
+    const isCardRequest = request?.sourceType === 'arc60'
+
     const handleApprove = useCallback(() => {
+        if (isCardRequest) trackEvent(CardEvent.CreateArbTxConfirm)
         pipeline.next()
-    }, [pipeline])
+    }, [pipeline, isCardRequest])
 
     const handleReject = useCallback(() => {
+        if (isCardRequest) trackEvent(CardEvent.CreateArbTxClose)
         pipeline.fail()
-    }, [pipeline])
+    }, [pipeline, isCardRequest])
 
     const handleDetailsPress = useCallback(() => {
         navigation.navigate('Arc60SigningDetails')

@@ -40,6 +40,17 @@ export const WC_DELIVERY_TIMEOUT_MS = 8000
  */
 export const SESSION_REQUEST_TTL_MS = 5 * 60 * 1000
 
+/**
+ * How long a caller waits for a freshly paired connector's first
+ * `session_request` (or an error) before treating the pairing as timed out.
+ * Shared by native's `useWalletConnectPairing` (via `waitForSessionOutcome`),
+ * its web twin (via `waitForPairOutcome`), and the offscreen host's own
+ * leak-prevention timer for `pairingCorrelations` (`wcHost.ts`) — all three
+ * must agree on this budget, since the host's timer exists specifically to
+ * outlive every caller's own wait.
+ */
+export const WC_SESSION_OUTCOME_TIMEOUT_MS = 8000
+
 export {
     MAX_DATA_SIGN_REQUESTS,
     MAX_TRANSACTION_SIGN_REQUESTS,

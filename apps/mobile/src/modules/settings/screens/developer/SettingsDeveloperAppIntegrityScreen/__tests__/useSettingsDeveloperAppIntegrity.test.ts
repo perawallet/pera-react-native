@@ -54,9 +54,11 @@ import { useAppIntegrityStore } from '@perawallet/wallet-core-app-integrity'
 describe('useSettingsDeveloperAppIntegrity', () => {
     beforeEach(() => {
         registerMock.mockReset().mockResolvedValue({ status: 'success' })
-        verifyMock
-            .mockReset()
-            .mockResolvedValue({ ok: true, deviceId: 'd1', platform: 'ios' })
+        verifyMock.mockReset().mockResolvedValue({
+            ok: true,
+            deviceInstallationId: 'd1',
+            platform: 'ios',
+        })
         useAppIntegrityStore.getState().resetState()
     })
 
@@ -73,7 +75,7 @@ describe('useSettingsDeveloperAppIntegrity', () => {
             integrityToken: 'jwt',
             expiresAt: '2026-07-01',
             keyId: null,
-            deviceId: 'd1',
+            deviceInstallationId: 'd1',
         })
         const { result } = renderHook(() => useSettingsDeveloperAppIntegrity())
         await act(async () => {

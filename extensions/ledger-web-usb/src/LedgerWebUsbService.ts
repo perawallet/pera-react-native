@@ -20,7 +20,7 @@ import { AlgorandApp } from '@algorandfoundation/ledger-algorand-js'
 import {
     classifyLedgerError,
     createLedgerTransportWrapper,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 /**
  * Maps a WebHID device's USB product ID to a friendly model name.
@@ -104,7 +104,31 @@ export class LedgerWebUsbService implements HardwareWalletService {
             },
 
             async connect(deviceId: string): Promise<HardwareWalletTransport> {
-                const cached = devicesByKey.get(deviceId)
+                let cached = devicesByKey.get(deviceId)
+                // `devicesByKey` only holds what THIS document scanned, and
+                // scanning only ever happens in the Ledger connect/import
+                // flow. Every other document — most importantly the approval
+                // window, which is where dapp and WalletConnect signing runs
+                // — starts with an empty cache. Falling straight through to
+                // `request()` there asks for a WebHID permission prompt,
+                // which requires transient user activation the signing
+                // pipeline has already spent by the time it reaches connect,
+                // so the connect rejected and the device was never asked to
+                // sign. `list()` is `navigator.hid.getDevices()`: it returns
+                // the devices this extension origin was already granted, and
+                // needs no gesture.
+                if (!cached) {
+                    try {
+                        const permitted = await TransportWebHID.list()
+                        cached = permitted.find(
+                            device => deviceKey(device) === deviceId,
+                        )
+                        if (cached) devicesByKey.set(deviceId, cached)
+                    } catch {
+                        // No navigator.hid at all — let the request() path
+                        // below produce the real, classified error.
+                    }
+                }
                 try {
                     let hidTransport: TransportWebHID
                     if (cached?.opened) {

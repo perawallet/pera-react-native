@@ -89,6 +89,25 @@ export const clearKeystore = async (): Promise<void> => {
 }
 
 /**
+ * The web keystore (`extensions/keystore-chrome`, which each app's bundler
+ * aliases over this module) binds every ciphertext to the storage key it lives
+ * under as GCM additional authenticated data, so it cannot decrypt without that
+ * key; the native implementation takes two arguments and ignores a third.
+ *
+ * The cast is load-bearing, not cosmetic: types here resolve to the native
+ * signature, so the web one is invisible to `tsc`. That is precisely how the
+ * missing argument shipped as a runtime-only failure — every AAD-bound entry
+ * failed its ghash tag during hydration, got skipped, and the wallet then
+ * reported its own keys as "not found".
+ */
+const decryptEntry = (masterKey: Buffer, payload: string, id: string): string =>
+    (decryptData as (k: Buffer, p: string, keyId?: string) => string)(
+        masterKey,
+        payload,
+        id,
+    )
+
+/**
  * Metadata only — the `privateKey`/`seed` bytes are zeroed before returning.
  * `null` on a missing or undecodable entry, so a caller can skip it rather than
  * abort a whole hydration pass.
@@ -98,7 +117,7 @@ const decodeKeyEntry = (id: string, masterKey: Buffer): Key | null => {
     if (!encrypted) return null
 
     try {
-        const decrypted = decryptData(masterKey, encrypted)
+        const decrypted = decryptEntry(masterKey, encrypted, id)
         const data = decode(decrypted) as KeyData & { seed?: Uint8Array }
         if (data.privateKey instanceof Uint8Array) data.privateKey.fill(0)
         if (data.seed instanceof Uint8Array) data.seed.fill(0)

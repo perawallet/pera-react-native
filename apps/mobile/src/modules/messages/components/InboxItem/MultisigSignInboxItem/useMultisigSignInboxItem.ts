@@ -10,8 +10,14 @@
  limitations under the License
  */
 
+import { useEffect, useState } from 'react'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
-import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '@perawallet/wallet-core-multisig'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useDeviceID } from '@perawallet/wallet-core-device'
+import {
+    IN_FLIGHT_SIGN_REQUEST_STATUSES,
+    useSignRequestDetailQuery,
+} from '@perawallet/wallet-core-multisig'
 import {
     formatRelativeTime,
     formatTimeRemaining,
@@ -36,6 +42,18 @@ type UseMultisigSignInboxItemResult = {
     timeRemaining: string | null
 }
 
+/**
+ * How long a `failed` async request is held as "still submitting" before the
+ * inbox commits to the failure. An async (in-app) multisig broadcast can be
+ * briefly reported `failed` by the backend for a transaction that actually
+ * confirmed on chain; we keep re-polling within this window so a later
+ * `confirmed` supersedes it. Mirrors the pending-signatures sheet
+ * (`FAILED_RECOVERY_WINDOW_MS` there) — without it the inbox shows a permanent
+ * red "Failed transaction" for a successful send, because the shared inbox-list
+ * query stops polling the moment a request reaches any terminal status.
+ */
+const FAILED_RECOVERY_WINDOW_MS = 30_000
+
 const STATUS_KEY_BY_STATUS: Record<
     string,
     | 'messages.inbox.multisig_sign.status_pending'
@@ -57,14 +75,55 @@ export const useMultisigSignInboxItem = (
     item: MultisigSignItem,
 ): UseMultisigSignInboxItemResult => {
     const isDark = useIsDarkMode()
+    const { network } = useNetwork()
+    const deviceId = useDeviceID(network) ?? ''
 
     const avatarIcon: IconName = isDark
         ? 'accounts/dark/multisig-account'
         : 'accounts/light/multisig-account'
 
     const { data, createdAt } = item
-    const status = data.status
-    const isWaiting = IN_FLIGHT_SIGN_REQUEST_STATUSES.has(status)
+    const listStatus = data.status
+
+    // Measured from the first `failed`; reset whenever the item is no longer
+    // failed. The `data.id` dep restarts the timer if the row is recycled for a
+    // different request.
+    const [isFailedRecoveryExpired, setIsFailedRecoveryExpired] =
+        useState(false)
+    useEffect(() => {
+        if (listStatus !== 'failed') {
+            setIsFailedRecoveryExpired(false)
+            return
+        }
+        const timer = setTimeout(
+            () => setIsFailedRecoveryExpired(true),
+            FAILED_RECOVERY_WINDOW_MS,
+        )
+        return () => clearTimeout(timer)
+    }, [listStatus, data.id])
+
+    // The inbox-list query goes quiet once a request is terminal, so it never
+    // sees the backend correct a false-negative `failed` back to `confirmed`.
+    // Re-poll the detail endpoint per item, but only while recovering, so a
+    // genuinely failed request isn't polled forever.
+    const isRecovering = listStatus === 'failed' && !isFailedRecoveryExpired
+    const { data: recovered } = useSignRequestDetailQuery({
+        network,
+        deviceId,
+        signRequestId: data.id,
+        enabled: isRecovering,
+        pollWhilePending: true,
+        pollWhileFailed: isRecovering,
+    })
+
+    // A detail-poll `confirmed` supersedes the stale list `failed`.
+    const status = recovered?.status ?? listStatus
+    const source = recovered ?? data
+
+    const isWithinFailureRecovery =
+        status === 'failed' && !isFailedRecoveryExpired
+    const isWaiting =
+        IN_FLIGHT_SIGN_REQUEST_STATUSES.has(status) || isWithinFailureRecovery
     const isSuccess = status === 'confirmed'
     const isFailure = !isWaiting && !isSuccess
 
@@ -75,13 +134,14 @@ export const useMultisigSignInboxItem = (
         isWaiting,
         isSuccess,
         isFailure,
-        statusKey:
-            STATUS_KEY_BY_STATUS[status] ??
-            'messages.inbox.multisig_sign.status_pending',
-        signedCount: getSignedResponseCount(data),
-        threshold: data.multisigAccount.threshold,
+        statusKey: isWithinFailureRecovery
+            ? STATUS_KEY_BY_STATUS.submitting
+            : (STATUS_KEY_BY_STATUS[status] ??
+              'messages.inbox.multisig_sign.status_pending'),
+        signedCount: getSignedResponseCount(source),
+        threshold: source.multisigAccount.threshold,
         timeRemaining: isWaiting
-            ? formatTimeRemaining(data.expectedExpireDatetime)
+            ? formatTimeRemaining(source.expectedExpireDatetime)
             : null,
     }
 }

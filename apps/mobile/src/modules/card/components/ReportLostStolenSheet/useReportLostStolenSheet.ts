@@ -13,6 +13,7 @@
 import { useCallback } from 'react'
 import { useCardStore } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
+import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendEmail } from '@hooks/useSendEmail'
 import { useCardFreezeAction } from '../../hooks'
@@ -44,5 +45,18 @@ export const useReportLostStolenSheet = (): UseReportLostStolenSheetResult => {
         })
     }, [sendEmail, panLast4, t])
 
-    return useCardFreezeAction({ onFrozen })
+    const { isFreezing, onConfirm, onClose } = useCardFreezeAction({ onFrozen })
+
+    // The design's lost-card spec has separate cancel/close affordances; this
+    // sheet has a single dismiss, tracked as close.
+    const handleConfirm = useCallback(() => {
+        trackEvent(CardEvent.LostCardFileReport)
+        onConfirm()
+    }, [onConfirm])
+    const handleClose = useCallback(() => {
+        trackEvent(CardEvent.LostCardClose)
+        onClose()
+    }, [onClose])
+
+    return { isFreezing, onConfirm: handleConfirm, onClose: handleClose }
 }

@@ -22,6 +22,7 @@ import {
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { trackEvent, CardEvent } from '@analytics'
 import {
     useCardErrorToast,
     useEscrowCardCreation,
@@ -149,10 +150,12 @@ export const useCardCreateSigningScreen =
 
             const stepId = stepIds[currentStepIndex]
             if (stepId === 'authorize') {
+                trackEvent(CardEvent.CreateFinalizeTxProceed)
                 navigation.navigate('CardOnboardingAutoFundingSigning')
                 return
             }
 
+            trackEvent(CardEvent.CreateArbTxProceed)
             const run = async () => {
                 setIsProceeding(true)
                 try {

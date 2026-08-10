@@ -41,6 +41,14 @@ const handoffNetwork = (
     handoff: SwapHandoffRecord,
 ): SwapHandoffRecord['network'] => handoff.network
 
+const handoffExpiresAt = (detail: SignRequestResponse): number | null => {
+    const expiresAt = new Date(detail.expected_expire_datetime).getTime()
+    return Number.isNaN(expiresAt) ? null : expiresAt
+}
+
+const handoffRegisteredAt = (handoff: SwapHandoffRecord): number =>
+    handoff.registeredAt
+
 export type UseSwapCosignResolverArgs = {
     /** Polling pauses when false (e.g. app backgrounded — iOS suspends timers). */
     isAppActive: boolean
@@ -78,6 +86,9 @@ export const useSwapCosignResolver = ({
     const { markConfirmed } = useMarkSignRequestsConfirmedMutation()
 
     const handoffsMap = useSwapHandoffStore(s => s.handoffs)
+    const markHandoffSubmitted = useSwapHandoffStore(
+        s => s.markHandoffSubmitted,
+    )
     const removeHandoff = useSwapHandoffStore(s => s.removeHandoff)
 
     const handoffs = useMemo(() => Object.values(handoffsMap), [handoffsMap])
@@ -101,13 +112,26 @@ export const useSwapCosignResolver = ({
     )
 
     const classify = useCallback(
-        (detail: SignRequestResponse, handoff: SwapHandoffRecord) =>
-            classifyHandoffPoll(detail, {
+        (detail: SignRequestResponse, handoff: SwapHandoffRecord) => {
+            // Crash-recovered record whose group already landed on chain: skip
+            // classification entirely — no signature re-verification, and no
+            // stall if the backend has pruned payloads or moved the request to
+            // a post-submit status. The resolver's already-submitted branch
+            // ignores the outcome (and these empty bytes) and just replays the
+            // post-submit tail.
+            if (handoff.submission) {
+                return Promise.resolve({
+                    kind: 'ready' as const,
+                    assembledBytes: [],
+                })
+            }
+            return classifyHandoffPoll(detail, {
                 multisigAddress: handoff.multisigAddress,
                 msigMetadata: handoff.msigMetadata,
                 expectedRawTransactionsBase64:
                     handoff.expectedRawTransactionsBase64,
-            }),
+            })
+        },
         [],
     )
 
@@ -115,11 +139,13 @@ export const useSwapCosignResolver = ({
         (
             outcome: TerminalHandoffOutcome,
             handoff: SwapHandoffRecord,
-            detail: SignRequestResponse,
+            detail: SignRequestResponse | undefined,
         ) => {
             // Proposer address from the poll — the only local participant
-            // allowed to cancel the request on a terminal failure.
-            const proposerAddress = detail.proposer_address ?? undefined
+            // allowed to cancel the request on a terminal failure. Absent when
+            // a client-side deadline fires with no poll body: the decline is
+            // best-effort and simply skipped below.
+            const proposerAddress = detail?.proposer_address ?? undefined
 
             return resolveSwapHandoffOutcome({
                 outcome,
@@ -127,6 +153,8 @@ export const useSwapCosignResolver = ({
                 deps: {
                     submitGroup: bytes =>
                         submitRawSignedTransactionGroup(algorandClient, bytes),
+                    markSubmitted: txIds =>
+                        markHandoffSubmitted(handoff.signRequestId, txIds),
                     decodeBase64: decodeFromBase64,
                     updateSwapStatus,
                     markConfirmed,
@@ -154,6 +182,7 @@ export const useSwapCosignResolver = ({
             deviceId,
             updateSwapStatus,
             markConfirmed,
+            markHandoffSubmitted,
             removeHandoff,
             reportError,
         ],
@@ -171,5 +200,7 @@ export const useSwapCosignResolver = ({
         resolve,
         activeNetwork: network,
         networkOf: handoffNetwork,
+        expiresAtOf: handoffExpiresAt,
+        registeredAtOf: handoffRegisteredAt,
     })
 }

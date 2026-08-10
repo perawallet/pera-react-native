@@ -235,6 +235,10 @@ export const createKeystoreSigner = (
                         credentialId: deriveCredentialId(publicKeyXY),
                         publicKeyXY,
                         userHandle,
+                        // Registration-time labels, so a picker can name each
+                        // identity rather than showing opaque key ids.
+                        displayName: readMetadataString(key, 'displayName'),
+                        userName: readMetadataString(key, 'userName'),
                     },
                 ]
             })

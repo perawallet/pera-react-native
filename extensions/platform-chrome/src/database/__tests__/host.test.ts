@@ -113,12 +113,14 @@ describe('DatabaseHost', () => {
         })
     })
 
+    // "Ignores" means the host never answers, which Chrome surfaces to the
+    // sender as a closed port rather than an undefined result — asserting the
+    // rejection is what pins the real-browser behaviour.
     it('ignores foreign-scope messages', async () => {
         startDatabaseHost(createFakeExecutor())
-        const response = await fake.chrome.runtime.sendMessage({
-            scope: 'something-else',
-        })
-        expect(response).toBeUndefined()
+        await expect(
+            fake.chrome.runtime.sendMessage({ scope: 'something-else' }),
+        ).rejects.toThrow(/message port closed/i)
     })
 
     it('answers ping from a trusted extension-page sender (e.g. popup)', async () => {
@@ -145,11 +147,12 @@ describe('DatabaseHost', () => {
 
     it('refuses (no response) messages from a content-script-shaped sender', async () => {
         startDatabaseHost(createFakeExecutor())
-        const response = await fake.chrome.runtime.sendMessage(
-            { scope: DB_SCOPE, kind: 'ping' },
-            { url: 'https://dapp.example' },
-        )
-        expect(response).toBeUndefined()
+        await expect(
+            fake.chrome.runtime.sendMessage(
+                { scope: DB_SCOPE, kind: 'ping' },
+                { url: 'https://dapp.example' },
+            ),
+        ).rejects.toThrow(/message port closed/i)
     })
 
     // M3 review finding: a dead worker must not leave the host permanently

@@ -22,8 +22,8 @@ set -e
 # crash-reporting}.ts. Unused by the RN mobile builds.
 #   FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN, FIREBASE_DATABASE_URL,
 #   FIREBASE_PROJECT_ID, FIREBASE_STORAGE_BUCKET, FIREBASE_MESSAGING_SENDER_ID,
-#   FIREBASE_APP_ID, FIREBASE_MEASUREMENT_ID, GA_MEASUREMENT_API_SECRET,
-#   SENTRY_DSN
+#   FIREBASE_APP_ID, FIREBASE_MEASUREMENT_ID, FIREBASE_VAPID_KEY,
+#   GA_MEASUREMENT_API_SECRET, SENTRY_DSN
 
 echo "Setting up secrets for environment: $ENVIRONMENT"
 
@@ -54,6 +54,11 @@ SECRETS=(
   "FIREBASE_MESSAGING_SENDER_ID"
   "FIREBASE_APP_ID"
   "FIREBASE_MEASUREMENT_ID"
+  # Web Push certificate public key. Per-environment like the rest of the
+  # Firebase config because the key belongs to one Firebase project — pairing
+  # a key with a different FIREBASE_PROJECT_ID makes Chrome's push service
+  # reject the subscription, so no token is ever minted.
+  "FIREBASE_VAPID_KEY"
   "GA_MEASUREMENT_API_SECRET"
   "SENTRY_DSN"
 )

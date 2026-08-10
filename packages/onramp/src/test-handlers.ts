@@ -22,7 +22,9 @@ export {
 
 export {
     mockCreateRampQuote,
+    mockCreateRampQuoteError,
     type MockCreateRampQuoteParams,
+    type MockCreateRampQuoteErrorParams,
 } from './api/quotes/msw-handlers'
 
 export {

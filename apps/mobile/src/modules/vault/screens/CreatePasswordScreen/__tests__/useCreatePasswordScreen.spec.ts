@@ -21,7 +21,7 @@ vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
     createVault: mocks.createVault,
 }))
 
-import { useCreatePasswordScreen } from '../useCreatePasswordScreen'
+import { useCreatePasswordScreen } from '../useCreatePasswordScreen.web'
 
 describe('useCreatePasswordScreen', () => {
     const onDone = vi.fn()

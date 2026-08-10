@@ -35,7 +35,7 @@ export class RNDeviceInfoStorageService implements DeviceInfoService {
     private cachedDeviceLocale: string | undefined
     private cachedDeviceLocales: string[] | undefined
 
-    async getDeviceID(): Promise<string> {
+    async getDeviceInstallationID(): Promise<string> {
         if (Platform.OS === 'ios') {
             return (await Application.getIosIdForVendorAsync()) ?? ''
         }

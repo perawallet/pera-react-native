@@ -73,7 +73,7 @@ const isConnectionTimeout = (error: unknown): boolean =>
  * it can't be revived; the signing pipeline surfaces that as a retryable
  * failure.
  */
-const deliverApprove = async (
+export const deliverApprove = async (
     clientId: string,
     id: number,
     result: unknown,
@@ -85,7 +85,7 @@ const deliverApprove = async (
     await readyConnector.approveRequest({ id, result })
 }
 
-const deliverReject = async (
+export const deliverReject = async (
     clientId: string,
     id: number,
     error: Error,
@@ -103,7 +103,7 @@ const deliverReject = async (
  * revival is logged and dropped: the dApp times out exactly as it would
  * have when the response was queued into the dead socket.
  */
-const deliverRejectInBackground = (
+export const deliverRejectInBackground = (
     clientId: string,
     id: number,
     error: Error,
@@ -523,6 +523,9 @@ export const useWalletConnectHandlers = () => {
             void enqueueSignRequest(resolved, {
                 sourceType: 'walletconnect',
                 transportId: connector.clientId,
+                // Serializable id so a multisig sync-flow handoff can answer this
+                // exact request after an app kill (WC v1 keeps no pending request).
+                payloadId: payload.id,
                 // Approved-snapshot identity, not the live connector (PERA-4713).
                 sourceMetadata: foundSession.session?.peerMeta ?? undefined,
                 // deliverApprove guards the WC v1 dead-socket case: the

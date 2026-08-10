@@ -28,7 +28,11 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { NotifierWrapper } from 'react-native-notifier'
-import { NavigationContainer } from '@react-navigation/native'
+import {
+    NavigationContainer,
+    useNavigationContainerRef,
+    type ParamListBase,
+} from '@react-navigation/native'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import {
     algorandSafeQuerySerialize,
@@ -55,16 +59,16 @@ import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { getTheme, getNavigationTheme } from '@theme/theme'
 import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
-import {
-    getSurface,
-    openExpandedTab,
-} from '@perawallet/wallet-extension-platform-chrome'
-import { WebMainRoutes } from '@routes/WebMainRoutes'
+import { WebMainRoutes } from '@routes/WebMainRoutes.web'
+import { useOnboardingExpandedFlowNavigation } from '@routes/useExpandedFlowNavigation.web'
 import { DappRequestRoutes } from '@modules/dapp'
 import { TestnetIndicator } from '@components/TestnetIndicator'
+import { OfflineBanner } from '@components/OfflineBanner'
+import { initNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
-import { useWebAppShell } from './useWebAppShell'
+import { useWebAppShell } from './useWebAppShell.web'
 import { updateQueryHeaders } from './bootstrap/query-headers'
+import { registerWcStoreRehydration } from './bootstrap/wcStoreRehydration.web'
 
 // Platform hydration is complete before AppShell mounts (App.web.tsx ensures
 // this), so getProvider() is safe to call at module scope here.
@@ -75,6 +79,20 @@ const persister = createAsyncStoragePersister({
 })
 
 updateQueryHeaders()
+
+// Native does this at App.tsx module scope; the extension can't, because
+// App.web.tsx must stay free of store-bearing static imports (see its
+// BOOT-ORDER CONTRACT). Here is the earliest boot-order-safe equivalent, and
+// still before QueryProvider mounts below — which is what the seeding is for,
+// so early queries don't fire-and-fail against a dead link. Without it web had
+// no onlineManager binding at all and every query treated the app as online.
+void initNetworkStatus()
+
+// Boot-order-safe here for the same reason `persister` above is: App.web.tsx
+// only dynamically imports this module after `hydratePlatform()` resolves, so
+// `getProvider()` is ready. Registered once per UI realm (popup, expanded tab,
+// approval surface).
+registerWcStoreRehydration()
 
 // Authoritative theme-aware paint for the whole app area. Sits below
 // ThemeProvider so it sees in-app theme overrides, not just the OS theme, and
@@ -123,56 +141,20 @@ const ApprovalPlaceholder = (): React.JSX.Element => {
     )
 }
 
-const useOnboardingTabPromptStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        alignItems: 'center' as const,
-        justifyContent: 'center' as const,
-        padding: theme.spacing.lg,
-    },
-    title: {
-        textAlign: 'center' as const,
-        marginBottom: theme.spacing.sm,
-    },
-    body: {
-        textAlign: 'center' as const,
-        marginBottom: theme.spacing.lg,
-    },
-}))
-
-// Blur-fragile onboarding must not run in the 360x600 popup (design spec):
-// the popup shows a CTA that opens the full tab instead of the real stack.
-const OnboardingTabPrompt = (): React.JSX.Element => {
-    const styles = useOnboardingTabPromptStyles()
-    const { t } = useLanguage()
-
-    return (
-        <PWView style={styles.container}>
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t('vault.expanded.onboarding_title')}
-            </PWText>
-            <PWText style={styles.body}>
-                {t('vault.expanded.onboarding_body')}
-            </PWText>
-            <PWButton
-                variant='primary'
-                title={t('vault.expanded.onboarding_cta')}
-                testID='open-onboarding-tab'
-                onPress={() => {
-                    void openExpandedTab()
-                }}
-            />
-        </PWView>
-    )
-}
-
 const ShellRouter = (): React.JSX.Element => {
-    const { shellState } = useWebAppShell()
+    const { shellState, fcmToken } = useWebAppShell()
     const { t } = useLanguage()
     const isDarkMode = useIsDarkMode()
+    // Its own ref rather than the shared `routes/navigationRef`: that one is
+    // read by global handlers (deep links, notification taps) that only know
+    // main-shell routes, and binding it here would turn their isReady()===false
+    // no-op during onboarding into a navigate at a route that doesn't exist.
+    const onboardingNavigationRef = useNavigationContainerRef<ParamListBase>()
+    const handleOnboardingReady = useOnboardingExpandedFlowNavigation(
+        (screen, params) => {
+            onboardingNavigationRef.navigate(screen, params)
+        },
+    )
 
     switch (shellState) {
         case 'resolving': {
@@ -195,15 +177,14 @@ const ShellRouter = (): React.JSX.Element => {
             )
         }
         case 'onboarding': {
-            if (getSurface() === 'popup') {
-                return <OnboardingTabPrompt />
-            }
             return (
                 // Theme the container so React Navigation's DefaultTheme grey
                 // background (rgb(242,242,242)) doesn't paint the onboarding
                 // scene — same fix as WebMainRoutes and the sheet flows.
                 <NavigationContainer
+                    ref={onboardingNavigationRef}
                     theme={getNavigationTheme(isDarkMode ? 'dark' : 'light')}
+                    onReady={handleOnboardingReady}
                 >
                     <OnboardingStackNavigator />
                     <BottomSheetManager />
@@ -213,7 +194,7 @@ const ShellRouter = (): React.JSX.Element => {
         case 'main': {
             // WebMainRoutes mounts its own BottomSheetManager inside its
             // NavigationContainer (native parity) — do not add another here.
-            return <WebMainRoutes />
+            return <WebMainRoutes fcmToken={fcmToken} />
         }
         case 'error': {
             return (
@@ -302,6 +283,11 @@ const WebShellErrorBoundary = ({
 const AppShellThemedRoot = (): React.JSX.Element => {
     const rootStyles = useAppShellRootStyles()
 
+    // Native does this in RootComponent, which the web shell replaces — so
+    // without it here the reachability probe never runs and onlineManager
+    // keeps whatever seed initNetworkStatus left.
+    useNetworkStatusListener()
+
     return (
         <SafeAreaProvider>
             <GestureHandlerRootView style={rootStyles.root}>
@@ -322,6 +308,9 @@ const AppShellThemedRoot = (): React.JSX.Element => {
                             </QueryProvider>
                         </NotifierWrapper>
                     </KeyboardProvider>
+                    {/* Same contract as RootComponent's: LAST node inside the
+                        card so it paints above navigation and sheets. */}
+                    <OfflineBanner />
                 </PWView>
             </GestureHandlerRootView>
         </SafeAreaProvider>

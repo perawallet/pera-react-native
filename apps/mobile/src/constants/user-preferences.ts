@@ -29,7 +29,7 @@ export const UserPreferences = {
     // Web-only master toggle for WebAuthn interception. Deliberately
     // camelCase (breaking this map's kebab-case convention) — it must match
     // WEBAUTHN_TOGGLE_PREFERENCE_KEY in
-    // apps/extension/src/content/webauthn-toggle.ts verbatim, since the
+    // apps/browser/src/content/webauthn-toggle.ts verbatim, since the
     // ISOLATED relay content script parses this exact string key out of the
     // persisted settings-store envelope. Do not "normalize" this value
     // without updating that parser too.

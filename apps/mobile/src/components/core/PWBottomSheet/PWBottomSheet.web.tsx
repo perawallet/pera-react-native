@@ -32,14 +32,20 @@ import {
     Pressable,
     useWindowDimensions,
 } from 'react-native'
-import type { NotifierRoot } from 'react-native-notifier'
+import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles.web'
 import type { PWBottomSheetProps, PWBottomSheetSize } from './sheet-types'
 
-// Same-shaped export as the native module (index.ts re-exports it); nothing
-// on web renders through the notifier.
+// Same ref contract as the native module (index.ts re-exports it), and for the
+// same reason: react-native-web portals this sheet's Modal to document.body,
+// which puts it ABOVE the app-level NotifierWrapper in AppShell.web. Callers
+// that pass `notifier: bottomSheetNotifier.current` — signing errors,
+// send-confirmation errors, broadcast failures, copy confirmations — would
+// otherwise fall back to that buried global notifier and paint behind the open
+// sheet, i.e. be invisible exactly when they matter most. Populated by the
+// NotifierWrapper mounted inside the Modal below.
 export const bottomSheetNotifier = createRef<Nullable<NotifierRoot>>()
 export type { PWBottomSheetProps, PWBottomSheetSize }
 
@@ -169,12 +175,22 @@ export const PWBottomSheet = ({
                         { transform: [{ translateY }] },
                     ]}
                 >
-                    <PWView
-                        testID={testID}
-                        style={[styles.inner, innerContainerStyle]}
+                    {/* `omitGlobalMethodsHookup` matches native: this notifier
+                        is addressed explicitly via the ref, and must not
+                        hijack the global Notifier methods the app shell owns.
+                        No ContainerComponent — SafeAreaView is a native inset
+                        concern with nothing to contribute inside a web modal. */}
+                    <NotifierWrapper
+                        omitGlobalMethodsHookup
+                        ref={bottomSheetNotifier}
                     >
-                        {children}
-                    </PWView>
+                        <PWView
+                            testID={testID}
+                            style={[styles.inner, innerContainerStyle]}
+                        >
+                            {children}
+                        </PWView>
+                    </NotifierWrapper>
                 </Animated.View>
             </PWView>
         </Modal>

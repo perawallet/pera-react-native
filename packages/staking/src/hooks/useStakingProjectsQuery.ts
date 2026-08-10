@@ -27,7 +27,7 @@ import type {
 } from '../models'
 import { fetchStakingProjectsInfo } from './endpoints'
 import { getStakingProjectsQueryKey } from './queryKeys'
-import { parseStakingProjectsConfig } from '../utils'
+import { parseStakingProjectsI18nConfig } from '../utils'
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 
 type UseStakingProjectsQueryResult = {
@@ -66,12 +66,22 @@ const mapProjects = (
         .sort((a, b) => b.tvlInAlgo.minus(a.tvlInAlgo).toNumber())
 }
 
-export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
+/**
+ * `locale` is a parameter rather than read from i18next here because this
+ * package must not depend on react-i18next (same boundary as
+ * useWalletConnectHandoffResolver). Callers in the app pass the reactive value
+ * from `useLanguage()`, which is what makes the list re-resolve when the user
+ * switches language; omitting it falls back to the non-reactive
+ * `getActiveLocale()`, which is correct on first render but will not update.
+ */
+export const useStakingProjectsQuery = (
+    locale?: string,
+): UseStakingProjectsQueryResult => {
     const { network } = useNetwork()
     const remoteConfigService = useRemoteConfig()
 
-    const remoteProjectsConfig = remoteConfigService.getStringValue(
-        RemoteConfigKeys.staking_projects,
+    const remoteProjectsI18nConfig = remoteConfigService.getStringValue(
+        RemoteConfigKeys.staking_projects_i18n,
     )
 
     // Parser only throws on invalid JSON / schema. Catch here so a malformed
@@ -83,7 +93,10 @@ export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
     }>(() => {
         try {
             return {
-                projects: parseStakingProjectsConfig(remoteProjectsConfig),
+                projects: parseStakingProjectsI18nConfig(
+                    remoteProjectsI18nConfig,
+                    locale,
+                ),
                 error: null,
             }
         } catch (err) {
@@ -94,7 +107,7 @@ export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
             })
             return { projects: [], error }
         }
-    }, [remoteProjectsConfig])
+    }, [remoteProjectsI18nConfig, locale])
 
     // Skip the TVL request when we already know the config is broken — the
     // result would be discarded by mapProjects anyway.

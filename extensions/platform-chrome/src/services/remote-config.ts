@@ -21,7 +21,7 @@ import {
     type RemoteConfigKey,
     type RemoteConfigService,
 } from '@perawallet/wallet-extension-platform'
-import { config } from '@perawallet/wallet-core-config'
+import { config, isDebug } from '@perawallet/wallet-core-config'
 import { getFirebaseApp } from './firebase-app'
 
 /** Serves bundled defaults when unconfigured; fetches real Firebase Remote
@@ -32,6 +32,15 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
     async initializeRemoteConfig(): Promise<void> {
         const app = getFirebaseApp()
         if (!app) {
+            const message =
+                '[pera] Remote Config disabled: no Firebase project configured; serving bundled defaults'
+            if (isDebug) {
+                console.warn(message, { appEnvironment: config.appEnvironment })
+            } else {
+                console.error(message, {
+                    appEnvironment: config.appEnvironment,
+                })
+            }
             return
         }
         this.remoteConfig = getRemoteConfig(app)
@@ -43,8 +52,14 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
 
         try {
             await fetchAndActivate(this.remoteConfig)
-        } catch {
-            // ignore fetch errors, rely on cached/default values
+        } catch (error) {
+            // Still non-fatal — cached/default values carry the app — but a
+            // blocked host permission or a bad API key looks identical to
+            // "flag is off" from the UI, so leave a trace.
+            console.warn(
+                '[pera] Remote Config fetch failed; using cached/defaults',
+                error,
+            )
         }
     }
 

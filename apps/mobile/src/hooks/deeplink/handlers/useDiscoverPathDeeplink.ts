@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
+import { routeCapabilities } from '@routes/capabilities'
 import { isSafeRelativePath } from '@modules/webview/hooks/handlers'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -40,6 +41,26 @@ export const useDiscoverPathDeeplink = (): DiscoverPathDeeplinkHandler => {
                     path,
                     sourceUrl,
                 })
+                errorToast(
+                    t('errors.deeplink.invalid_url_title'),
+                    t('errors.deeplink.invalid_url_body'),
+                )
+                onError?.()
+                return false
+            }
+            if (!routeCapabilities.discoverTab) {
+                // The Discover tab isn't registered on this platform (web:
+                // Discover's feature-gate map has no 'web' key and throws
+                // mid-render — see routes/capabilities.web.ts's discoverTab comment). navigateToScreen would be a
+                // silent no-op, and the paste-a-link sheet locks until one of
+                // its callbacks fires, so fail loudly instead.
+                logger.warn(
+                    'Blocked DISCOVER_PATH deeplink: tab not registered',
+                    {
+                        path,
+                        sourceUrl,
+                    },
+                )
                 errorToast(
                     t('errors.deeplink.invalid_url_title'),
                     t('errors.deeplink.invalid_url_body'),

@@ -202,6 +202,18 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
                 ? request.onProposed
                 : undefined,
         },
+        // WalletConnect-only: a serializable delivery context so the multisig
+        // sync-flow handoff can answer the dApp after an app kill. Gated on
+        // `payloadId`, which only the WalletConnect handler sets.
+        handoffDelivery:
+            isTransactionRequest(request) && request.payloadId !== undefined
+                ? {
+                      clientId: request.transportId ?? '',
+                      payloadId: request.payloadId,
+                      indicesToSign: request.signableIndices ?? [],
+                      totalLength: request.totalLength ?? 0,
+                  }
+                : undefined,
     }
 }
 

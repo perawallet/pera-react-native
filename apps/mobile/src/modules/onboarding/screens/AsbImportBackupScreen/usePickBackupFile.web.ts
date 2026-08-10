@@ -11,6 +11,10 @@
  */
 
 import { useCallback } from 'react'
+import {
+    getSurface,
+    openExpandedTab,
+} from '@perawallet/wallet-extension-platform-chrome'
 import type {
     PickedBackupFile,
     UsePickBackupFileResult,
@@ -40,9 +44,22 @@ const readAsText = (file: globalThis.File): Promise<string> =>
  * Cancellation is detected via the `cancel` event fired on the input when
  * the user dismisses the picker without choosing a file (supported in all
  * Chromium/Firefox versions this extension ships to).
+ *
+ * Except in the 360x600 toolbar popup: the file dialog is an OS window, and
+ * Chrome tears the popup down the instant it takes focus — the picker opens
+ * over a dead surface and the `change`/`cancel` listeners never run. There the
+ * hand-off to the expanded tab (`?flow=asb-import`) replaces the pick, same
+ * pattern as `useLedgerExpandedTabHandoff` and the QR camera prompt. Pasting
+ * the backup text stays available inline either way.
  */
 export const usePickBackupFile = (): UsePickBackupFileResult => {
+    const isPopupHandoff = getSurface() === 'popup'
+
     const pickFile = useCallback((): Promise<PickedBackupFile | null> => {
+        if (isPopupHandoff) {
+            void openExpandedTab('asb-import')
+            return Promise.resolve(null)
+        }
         return new Promise((resolve, reject) => {
             const input = document.createElement('input')
             input.type = 'file'
@@ -78,7 +95,7 @@ export const usePickBackupFile = (): UsePickBackupFileResult => {
             document.body.appendChild(input)
             input.click()
         })
-    }, [])
+    }, [isPopupHandoff])
 
-    return { pickFile }
+    return { pickFile, isPopupHandoff }
 }

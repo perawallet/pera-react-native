@@ -26,6 +26,7 @@ import {
     type Arc0027ResponseEnvelope,
     type RouterDeps,
 } from '@perawallet/wallet-core-arc0027'
+import { isSecureDappOrigin } from './secure-origin'
 
 export {
     DAPP_RELAY_SCOPE,
@@ -99,7 +100,7 @@ export class ChromeDappRouter {
         // never delegated to anything that takes a caller-supplied origin
         // string without this extraction happening first.
         const origin = sender?.origin
-        if (!origin || origin === 'null' || !/^https?:\/\//.test(origin)) {
+        if (!isSecureDappOrigin(origin)) {
             sendResponse(untrustedOriginResponse(request))
             return true
         }

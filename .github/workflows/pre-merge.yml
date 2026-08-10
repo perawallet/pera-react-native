@@ -411,12 +411,12 @@ jobs:
         with:
           persist-credentials: false
 
-      # The bundle pulls in workspace packages (see the `...extension` filter in
-      # `Build packages`), so this cannot key off `apps/extension/**` alone — a
+      # The bundle pulls in workspace packages (see the `...browser` filter in
+      # `Build packages`), so this cannot key off `apps/browser/**` alone — a
       # `packages/**` change breaks the bundle just as easily. Fails safe by
       # inverting the test: skip ONLY when every changed path provably cannot
       # reach the extension build graph (apps/mobile and docs are not in it —
-      # verified: mobile is absent from `turbo run build --filter=...extension`
+      # verified: mobile is absent from `turbo run build --filter=...browser`
       # and nothing under extensions/ imports it). Anything else, including a
       # path this list has never seen, runs the job.
       - name: Detect changes affecting the extension
@@ -435,14 +435,19 @@ jobs:
           fi
           # Paths that cannot affect the extension bundle.
           irrelevant='^(apps/mobile/|docs/|[^/]*\.md$)'
+          # Filtered once into a variable, then printed with a herestring.
+          # Piping the filter straight into `head` sent SIGPIPE to `grep` the
+          # moment `head` had its 20 lines, and under `pipefail` that failed
+          # the step outright on any PR with more than 20 relevant files.
           # Counted rather than `grep -q`: with -v, BSD and GNU grep disagree on
           # the exit status, so a count is the only form that means the same
           # thing on a dev machine and on the runner.
-          relevant=$(printf '%s\n' "$files" | grep -vE "$irrelevant" | grep -c . || true)
+          relevant_files=$(printf '%s\n' "$files" | grep -vE "$irrelevant" || true)
+          relevant=$(printf '%s\n' "$relevant_files" | grep -c . || true)
           if [ "${relevant:-0}" -gt 0 ]; then
             echo "affected=true" >> "$GITHUB_OUTPUT"
             echo "Extension-relevant changes ($relevant):"
-            printf '%s\n' "$files" | grep -vE "$irrelevant" | head -20
+            head -20 <<< "$relevant_files"
           else
             echo "affected=false" >> "$GITHUB_OUTPUT"
             echo "Only mobile/docs paths changed — skipping the extension bundle and e2e."
@@ -476,7 +481,7 @@ jobs:
 
       - name: Bundle extension
         if: steps.changes.outputs.affected == 'true'
-        run: pnpm --filter extension bundle
+        run: pnpm --filter browser bundle
 
       # Keyed on the lockfile hash (same idiom as the node_modules/build-artifact
       # caches above) since @playwright/test is pinned via a semver range, not an
@@ -491,18 +496,18 @@ jobs:
 
       - name: Install Playwright Chromium
         if: steps.changes.outputs.affected == 'true'
-        run: pnpm --filter extension exec playwright install --with-deps chromium
+        run: pnpm --filter browser exec playwright install --with-deps chromium
 
       - name: Run extension e2e
         if: steps.changes.outputs.affected == 'true'
-        run: pnpm --filter extension test:e2e
+        run: pnpm --filter browser test:e2e
 
       - name: Upload fidelity screenshots
         if: always() && steps.changes.outputs.affected == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: extension-fidelity-screenshots
-          path: apps/extension/screenshots/
+          path: apps/browser/screenshots/
           retention-days: 14
 
       - name: Upload traces on failure
@@ -510,7 +515,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: extension-e2e-traces
-          path: apps/extension/test-results/
+          path: apps/browser/test-results/
           retention-days: 7
 
   gitleaks:

@@ -188,17 +188,20 @@ platform :ios do
   end
 
 
-  desc "Deploy to TestFlight"
-  lane :deploy_testflight do |options|
-    scheme = options[:scheme] || "Pera7Staging"
-
-    # Map scheme to configuration
-    configuration = case scheme
+  def configuration_for_scheme(scheme)
+    case scheme
     when "Pera7Staging" then "Staging"
     when "PeraAlgoWallet" then "Production"
     when "Pera-Dev" then "Dev"
     else "Staging"
     end
+  end
+
+  desc "Deploy to TestFlight"
+  lane :deploy_testflight do |options|
+    scheme = options[:scheme] || "Pera7Staging"
+
+    configuration = configuration_for_scheme(scheme)
 
     clean = options[:clean]
     clean = true if clean.nil?

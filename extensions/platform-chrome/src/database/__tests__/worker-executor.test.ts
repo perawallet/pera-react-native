@@ -173,4 +173,53 @@ describe('createWorkerExecutor', () => {
         expect(seenA).toHaveLength(1)
         expect(seenB).toHaveLength(1)
     })
+
+    // A failed sqlite/OPFS init raises no 'error' event — the worker just
+    // answers nothing forever. Treating its explicit fatal message as a crash
+    // is what lets the offscreen document self-close and be recreated instead
+    // of wedging the database until a manual extension reload.
+    describe('a worker that fails to start', () => {
+        it('treats the fatal startup message as a crash', () => {
+            const fake = createFakeWorker()
+            const executor = createWorkerExecutor(fake.worker)
+            const seen: Error[] = []
+            executor.onDeath?.(error => seen.push(error))
+
+            fake.respond({
+                fatal: true,
+                error: 'NoModificationAllowedError',
+            })
+
+            expect(seen).toHaveLength(1)
+            expect(seen[0].message).toBe(
+                'db worker failed to start: NoModificationAllowedError',
+            )
+        })
+
+        it('rejects in-flight and subsequent requests', async () => {
+            const fake = createFakeWorker()
+            const executor = createWorkerExecutor(fake.worker)
+            const inFlight = executor.exec('pera.db', 'SELECT 1', [], 'all')
+
+            fake.respond({ fatal: true, error: 'wasm load failed' })
+
+            await expect(inFlight).rejects.toThrow(/failed to start/)
+            await expect(
+                executor.exec('pera.db', 'SELECT 1', [], 'all'),
+            ).rejects.toThrow(/failed to start/)
+        })
+
+        it('does not mistake a fatal message for a response to request id 0', () => {
+            const fake = createFakeWorker()
+            const executor = createWorkerExecutor(fake.worker)
+            const seen: Error[] = []
+            executor.onDeath?.(error => seen.push(error))
+
+            // The fatal message carries no id at all; a naive `pending.get(
+            // response?.id)` lookup would simply miss and drop it silently.
+            fake.respond({ fatal: true, error: 'boom' })
+
+            expect(seen).toHaveLength(1)
+        })
+    })
 })

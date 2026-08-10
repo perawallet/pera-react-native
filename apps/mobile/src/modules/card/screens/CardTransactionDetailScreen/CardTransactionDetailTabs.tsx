@@ -11,6 +11,7 @@
  */
 
 import { type CardTransaction } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -42,7 +43,19 @@ export const CardTransactionDetailTabs = ({
     }
 
     return (
-        <Tab.Navigator>
+        <Tab.Navigator
+            screenListeners={({ route, navigation }) => ({
+                tabPress: () => {
+                    // Re-tapping the focused tab is not a switch.
+                    if (navigation.isFocused()) return
+                    trackEvent(
+                        route.name === 'MerchantInfo'
+                            ? CardEvent.TransactionsMerchantTab
+                            : CardEvent.TransactionsTransactionTab,
+                    )
+                },
+            })}
+        >
             <Tab.Screen
                 name='TransactionInfo'
                 options={{

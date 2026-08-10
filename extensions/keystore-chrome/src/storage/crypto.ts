@@ -43,33 +43,78 @@ export async function readMasterKey(
 }
 
 /**
- * AES-256-GCM, byte-identical payload format to mobile's node-style crypto:
- * JSON of { iv, tag, content } — 12-byte IV, detached 16-byte tag, all base64.
+ * Binds a ciphertext to the storage key it lives under, as GCM additional
+ * authenticated data.
+ *
+ * Without it every entry is encrypted under the same master key with nothing
+ * tying it to its location, so an attacker with write access to the profile
+ * can swap the ciphertexts at `keystore:<idA>` and `keystore:<idB>` and both
+ * still decrypt cleanly — the wallet then resolves the wrong signing key for
+ * an address. AAD makes that swap fail authentication instead.
  */
-export const encryptData = (key: Uint8Array, data: string): string => {
+const aadFor = (keyId: string): Uint8Array => utf8ToBytes(`keystore:${keyId}`)
+
+type EncryptedPayload = {
+    iv: string
+    tag: string
+    content: string
+    /**
+     * Format marker. Absent means a legacy entry written before AAD binding,
+     * which must still decrypt (unbound) or existing wallets would be
+     * unreadable — see decryptData.
+     */
+    v?: 2
+}
+
+/**
+ * AES-256-GCM. Payload is JSON of { iv, tag, content, v } — 12-byte IV,
+ * detached 16-byte tag, all base64. The detached-tag layout is byte-identical
+ * to mobile's node-style crypto; `v` and the AAD binding are web-only
+ * additions (mobile keeps its secrets in the OS keychain, where an attacker
+ * who could swap two entries already has the keychain).
+ */
+export const encryptData = (
+    key: Uint8Array,
+    data: string,
+    keyId: string,
+): string => {
     const iv = crypto.getRandomValues(new Uint8Array(12))
     // noble appends the 16-byte tag to the ciphertext; mobile stores it
     // detached — split to preserve the format.
-    const sealed = gcm(key, iv).encrypt(utf8ToBytes(data))
+    const sealed = gcm(key, iv, aadFor(keyId)).encrypt(utf8ToBytes(data))
     const content = sealed.subarray(0, sealed.length - GCM_TAG_LENGTH)
     const tag = sealed.subarray(sealed.length - GCM_TAG_LENGTH)
     return JSON.stringify({
         iv: base64.encode(iv),
         tag: base64.encode(tag),
         content: base64.encode(content),
-    })
+        v: 2,
+    } satisfies EncryptedPayload)
 }
 
-export const decryptData = (key: Uint8Array, payloadStr: string): string => {
-    const payload = JSON.parse(payloadStr) as {
-        iv: string
-        tag: string
-        content: string
+/** True when the stored payload predates AAD binding. */
+export const isLegacyPayload = (payloadStr: string): boolean => {
+    try {
+        return (JSON.parse(payloadStr) as EncryptedPayload).v !== 2
+    } catch {
+        return false
     }
+}
+
+export const decryptData = (
+    key: Uint8Array,
+    payloadStr: string,
+    keyId: string,
+): string => {
+    const payload = JSON.parse(payloadStr) as EncryptedPayload
     const content = base64.decode(payload.content)
     const tag = base64.decode(payload.tag)
     const sealed = new Uint8Array(content.length + tag.length)
     sealed.set(content)
     sealed.set(tag, content.length)
-    return bytesToUtf8(gcm(key, base64.decode(payload.iv)).decrypt(sealed))
+    // Legacy entries were sealed with no AAD, so they must be opened with
+    // none — passing it would fail authentication on every pre-existing key.
+    // They're re-sealed bound on first read (see fetchSecret).
+    const aad = payload.v === 2 ? aadFor(keyId) : undefined
+    return bytesToUtf8(gcm(key, base64.decode(payload.iv), aad).decrypt(sealed))
 }

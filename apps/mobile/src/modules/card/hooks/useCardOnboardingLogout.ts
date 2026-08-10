@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import { useCardLogout, useCardStore } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 export type UseCardOnboardingLogoutResult = {
@@ -24,6 +25,7 @@ export const useCardOnboardingLogout = (): UseCardOnboardingLogoutResult => {
     const { logout } = useCardLogout()
 
     const handleLogout = useCallback(() => {
+        trackEvent(CardEvent.CreateLogout)
         const run = async () => {
             await logout()
             useCardStore.getState().resetState()

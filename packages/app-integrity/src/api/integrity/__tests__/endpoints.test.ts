@@ -29,7 +29,7 @@ describe('integrity endpoints', () => {
     it('requests a challenge with device id and platform', async () => {
         queryClientMock.mockResolvedValue({ data: { challenge: 'abc' } })
         const challenge = await requestChallenge({
-            deviceId: 'd1',
+            deviceInstallationId: 'd1',
             platform: 'ios',
             network: 'mainnet',
         })
@@ -50,7 +50,7 @@ describe('integrity endpoints', () => {
         })
         const result = await attestDevice({
             payload: {
-                deviceId: 'd1',
+                deviceInstallationId: 'd1',
                 platform: 'ios',
                 keyId: 'k1',
                 attestation: 'att',
@@ -80,7 +80,7 @@ describe('integrity endpoints', () => {
         })
         await attestDevice({
             payload: {
-                deviceId: 'd1',
+                deviceInstallationId: 'd1',
                 platform: 'android',
                 attestation: 'tok',
             },
@@ -105,7 +105,11 @@ describe('integrity endpoints', () => {
             integrityToken: 'jwt',
             network: 'mainnet',
         })
-        expect(result).toEqual({ ok: true, deviceId: 'd1', platform: 'ios' })
+        expect(result).toEqual({
+            ok: true,
+            deviceInstallationId: 'd1',
+            platform: 'ios',
+        })
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
                 method: 'GET',

@@ -1,0 +1,3448 @@
+{
+    "dapp": {
+        "enable": {
+            "title": "Bu siteye bağlan",
+            "description": "Bu siteyle paylaşmak istediğin hesapları seç.",
+            "peer_origin_claim": "Site şunu bildiriyor: {{origin}}",
+            "request_origin": "İstek {{origin}} adresinden geldi",
+            "requester_verified_label": "Doğrulanmış sekme",
+            "requester_verified_a11y_label": "Doğrulandı: bu istek tarayıcı sekmenden geldi",
+            "requester_verified_a11y_origin": "Doğrulandı: bu istek {{origin}} adresindeki tarayıcı sekmenden geldi",
+            "connect_button": "Bağlan",
+            "cancel_button": "İptal"
+        },
+        "sign": {
+            "error": {
+                "title": "Bu istek işlenemiyor",
+                "body": "Bu site, Pera’nın okuyamadığı bir istek gönderdi. İstek reddedildi.",
+                "dismiss": "Kapat"
+            },
+            "network_mismatch": "Bu işlem, cüzdanının etkin ağından farklı bir Algorand ağı için. Ayarlardan ağı değiştir ve tekrar dene.",
+            "unsupported_message": "Bu site, Pera’nın işleyemediği bir mesaj imzalama isteği gönderdi. İstek reddedildi.",
+            "unauthorized_signer": "Bu site, o hesap için imza talep etmeye yetkili değil.",
+            "no_session": "Bu bağlantı artık geçerli değil. Siteyi yeniden bağla ve tekrar dene."
+        },
+        "passkey": {
+            "create": {
+                "title": "Bu site için passkey oluştur"
+            },
+            "get": {
+                "title": "Passkey ile giriş yap"
+            },
+            "approve_button": "Devam et",
+            "decline_button": "İptal",
+            "error": "Pera bu passkey isteğini tamamlayamadı. İstek reddedildi.",
+            "choose": {
+                "title": "Bir passkey seç",
+                "description": "{{origin}} adresi için kayıtlı birden fazla passkey’in var. Giriş yapmak için kullanacağın passkey’i seç."
+            }
+        },
+        "approval": {
+            "delivery_failed": "Pera kararını siteye iletemedi. Bu pencere açıkken uzantı uyku moduna geçti. Bu pencereyi kapat ve isteği siteden tekrar gönder."
+        }
+    },
+    "account_menu": {
+        "title": "Hesaplar",
+        "sort": "Sırala",
+        "select_title": "Hesap seç",
+        "select_description": "Swap yapmak için bir hesap seç"
+    },
+    "account_sort": {
+        "title": "Sırala",
+        "alphabetical_asc": "Alfabetik A’dan Z’ye",
+        "alphabetical_desc": "Alfabetik Z’den A’ya",
+        "balance_asc": "Değer: düşükten yükseğe",
+        "balance_desc": "Değer: yüksekten düşüğe",
+        "manual": "Elle",
+        "reorganize_manually": "Hesapları elle sırala"
+    },
+    "manage_assets": {
+        "title": "Varlıkları yönet",
+        "sort": "Sırala",
+        "filter": "Filtrele",
+        "remove_assets": "Varlıkları kaldır"
+    },
+    "age_gate": {
+        "loading": {
+            "title": "Yaş doğrulanıyor…"
+        },
+        "declare": {
+            "title": "Yaşını doğrula",
+            "body": "Bazı yargı bölgelerinde, belirli içerik türlerine erişim verebilmek için yaşını doğrulamamız yasa gereğidir.  Bu bilgi cihazında kalır.  Lütfen 18 yaşında veya daha büyük olup olmadığını onayla.",
+            "yes": "18 yaşında veya daha büyüğüm",
+            "no": "18 yaşından küçüğüm"
+        },
+        "restricted": {
+            "title": "İçerik kullanılamıyor",
+            "body": "Bazı yargı bölgelerindeki yasal gereklilikler nedeniyle bu içerik yalnızca 18 yaşında veya daha büyük kullanıcılara sunulur.",
+            "retry": "Yaşımı yeniden kontrol et"
+        }
+    },
+    "app": {
+        "initialization_failed": {
+            "title": "Uygulama başlatılamadı",
+            "body": "Uygulama başlatılırken bir hata oluştu. Lütfen uygulamayı yeniden başlatmayı dene. Sorun devam ederse destek ekibiyle iletişime geç.\n\nFonların Algorand blok zincirinde güvende.",
+            "retry": "Tekrar dene"
+        }
+    },
+    "asset_sort": {
+        "title": "Sırala",
+        "balance_desc": "Değer: yüksekten düşüğe",
+        "balance_asc": "Değer: düşükten yükseğe",
+        "alphabetical_asc": "Alfabetik A’dan Z’ye",
+        "alphabetical_desc": "Alfabetik Z’den A’ya"
+    },
+    "asset_filter": {
+        "title": "Varlıkları filtrele",
+        "hide_zero_balance": "Bakiyesi olmayan varlıkları gizle",
+        "hide_zero_balance_description": "Bakiyesi sıfır olan varlıkları gösterebilir veya gizleyebilirsin",
+        "display_nfts": "NFT’leri varlık listesinde göster",
+        "display_nfts_description": "NFT varlıkları hesabının varlık listesinde gösterilecek",
+        "display_opted_in_nfts": "Opt-in olduğun NFT’leri göster",
+        "display_opted_in_nfts_description": "Opt-in olduğun ama sana ait olmayan NFT’leri gösterebilir veya gizleyebilirsin"
+    },
+    "add_asset": {
+        "title": "Varlık ekle",
+        "search_placeholder": "Ada veya varlık ID’sine göre ara",
+        "no_results": "Varlık bulunamadı",
+        "opt_in": {
+            "failed_title": "Opt-in başarısız",
+            "success_title": "Opt-in başarılı",
+            "success_body": "{{assetName}} için opt-in işlemi başarıyla tamamlandı ve varlık hesabına eklendi",
+            "success_body_generic": "Varlık için opt-in işlemi başarıyla tamamlandı ve varlık hesabına eklendi"
+        },
+        "select_account": {
+            "title": "Bir hesap seç",
+            "empty": "Opt-in için uygun hesap yok"
+        },
+        "confirmation": {
+            "title": "Varlık ekleniyor",
+            "account_label": "Hesap",
+            "fee_label": "İşlem ücreti",
+            "description": "Bir varlıkla etkileşime geçmeden önce hesabından o varlığa opt-in olmalısın. Bu, izinsiz varlık işlemlerinin sana gönderilmesini engeller.",
+            "copy_id": "ID’yi kopyala"
+        },
+        "collectible_title": "NFT’ye opt-in ol",
+        "collectible_note": "NFT’yi cüzdanına aktarabilmek için NFT’nin ASA ID’sine opt-in olman gerekir. ASA ID’sini arama çubuğuna yapıştır.",
+        "collectible_search_placeholder": "Varlık ID’si veya NFT adı ara"
+    },
+    "asa_verification_info": {
+        "title": "ASA doğrulama",
+        "body_1": "Pera Wallet’ın Algorand Standard Asset (ASA) Doğrulama Programı, ASA oluşturanların varlığın sahibi olduklarını doğrulayarak otomatik olarak onaylanmasını sağlar.",
+        "body_2": "ASA doğrulamanın temel amacı, bir ASA’nın bağlantısı olmadığı bir projeyle ilişkiliymiş gibi görünmesini ve o projenin tokenı gibi davranmasını önlemektir.",
+        "body_3": "ASA doğrulama, bir projeye verilen onay anlamına gelmez. Ne Algorand ne de Pera, doğrulama sürecini bir projeyi desteklemek için kullanmaz.",
+        "learn_more": "Daha fazla bilgi"
+    },
+    "asset_opt_out": {
+        "title": "Varlığı kaldır",
+        "description": "{{accountName}} hesabıyla {{assetName}} varlığını kaldırmak ve opt-out olmak üzeresin. Yeniden opt-in olmadıkça bu hesaptan bu varlıkla işlem yapamazsın.",
+        "fee_label": "İşlem ücreti",
+        "keep": "Kalsın",
+        "copy_id": "ID’yi kopyala",
+        "account_label": "Hesap",
+        "success": "Varlık kaldırıldı",
+        "error": "Varlık kaldırılamadı",
+        "opt_out_cta": "Opt-out"
+    },
+    "remove_assets": {
+        "title": "Varlıkları kaldır",
+        "select_all": "Tümünü seç",
+        "deselect_all": "Seçimi kaldır",
+        "empty_title": "Kaldırılabilir varlık yok",
+        "empty_body": "Yalnızca bakiyesi sıfır olan ve senin oluşturmadığın varlıklar kaldırılabilir."
+    },
+    "deeplink": {
+        "error": {
+            "title_generic": "Bağlantı açılamadı",
+            "body_generic": "Bağlantıyı işleyemedik. Lütfen tekrar dene.",
+            "title_walletconnect": "WalletConnect başarısız oldu",
+            "body_walletconnect": "dApp’e bağlanamadık. Oturumun süresi dolmuş ya da köprüye ulaşılamıyor olabilir.",
+            "title_keyreg": "Anahtar kaydı hazırlanamadı",
+            "body_keyreg": "Anahtar kaydı işlemini oluşturamadık.",
+            "body_keyreg_unknown_account": "Bu anahtar kaydı, bu cüzdanda bulunmayan bir hesaba ait. Önce hesabı ekle, sonra tekrar tara.",
+            "title_recover": "Hesap içe aktarılamadı",
+            "body_recover": "Hesabı bu QR kodundan içe aktaramadık.",
+            "body_recover_duplicate": "Bu hesap cüzdanında zaten var.",
+            "title_timeout": "Çok uzun sürdü",
+            "body_timeout": "İstek zamanında tamamlanmadı. Ağını kontrol et ve tekrar dene."
+        }
+    },
+    "address_actions": {
+        "title": "Taranan hesap adresi",
+        "send_transaction": "İşlem gönder",
+        "send_transaction_subtitle": "Bu adrese ALGO veya varlık gönder",
+        "watch_address": "Bir adresi izle",
+        "watch_address_subtitle": "Yalnızca izleme hesabı olarak ekle",
+        "add_contact": "Yeni kişi ekle",
+        "add_contact_subtitle": "Bu adresi sonrası için kaydet",
+        "edit_contact": "Kişiyi düzenle",
+        "edit_contact_subtitle": "{{name}} bilgilerini güncelle"
+    },
+    "address_entry": {
+        "scan_qr": "QR kodu tara",
+        "paste_from_clipboard": "Panodan yapıştır",
+        "invalid_qr_title": "Geçersiz QR kodu",
+        "invalid_qr_body": "Bu QR kodu bir cüzdan adresi içermiyor",
+        "address": "Adres",
+        "contacts": "Kişiler",
+        "my_accounts": "Hesaplar",
+        "no_accounts_found": "Hesap bulunamadı",
+        "no_accounts_body": "Eşleşen hesap yok",
+        "search_placeholder": "Hesap adresi, NFD adı veya kısa ad",
+        "nfd_results": "NFDomains",
+        "nfd_resolving": "NFD çözümleniyor...",
+        "nfd_resolved": "{{name}} üzerinden çözümlendi"
+    },
+    "arc59": {
+        "requests": {
+            "empty_title": "Bekleyen varlık transfer isteği yok",
+            "empty_body": "Bir varlık transfer isteğin olduğunda burada görüntüleyebilirsin. Bu özellik hakkında daha fazla bilgi için dokun.",
+            "info_title": "Varlık transfer istekleri",
+            "info_body": "Bu özellik, hesabın için bir gelen kutusudur. Başkaları, sen açıkça eklememiş olsan bile sana varlık ve NFT gönderebilir. Buradan varlık transfer isteklerini kabul etmeyi veya reddetmeyi seçebilirsin."
+        },
+        "claim": {
+            "reject": "Reddet",
+            "algo_gain": "Opt-in masraflarını karşılamak için {{amount}} ALGO alacaksın."
+        }
+    },
+    "asset": {
+        "deleted_label": "(Silindi)"
+    },
+    "asset_details": {
+        "about": {
+            "title": "{{name}} hakkında",
+            "asa_id": "ASA ID",
+            "creator": "Oluşturan",
+            "url": "URL",
+            "asa_url": "ASA URL",
+            "show_on": "Şurada göster",
+            "project_website": "Proje web sitesi",
+            "open_browser": "Tarayıcıda aç"
+        },
+        "main_screen": {
+            "holdings_tab": "Varlıklar",
+            "markets_tab": "Piyasalar"
+        },
+        "markets": {
+            "something_went_wrong_title": "Bir şeyler ters gitti",
+            "something_went_wrong_body": "Bu varlığın detaylarını yükleyemedik. Lütfen bağlantını kontrol edip tekrar dene.",
+            "discover_more": "Discover’da daha fazla detay gör",
+            "title": "Piyasalar",
+            "stats": "İstatistikler",
+            "price": "Fiyat",
+            "total_supply": "Toplam arz",
+            "no_freeze": "Dondurma yok",
+            "no_clawback": "Clawback yok",
+            "description": "Açıklama",
+            "social_media": "Sosyal medya",
+            "chart_empty_body": "Bir bakiye geçmişin oluştuğunda burada bir grafik göreceksin",
+            "total_supply_info_title": "Toplam arz",
+            "total_supply_info_body": "Bir varlığın toplam arzı oluşturulma anında belirlenir ve varlığın oluşturulan toplam birim sayısına karşılık gelir."
+        },
+        "action_buttons": {
+            "swap": "Swap",
+            "buy": "Satın al",
+            "send": "Gönder",
+            "receive": "Al"
+        },
+        "transaction_list": {
+            "title": "İşlemler",
+            "empty_body": "İşlem bulunamadı",
+            "filter": "Filtrele",
+            "csv": "CSV"
+        },
+        "collectible": {
+            "description": "Açıklama",
+            "properties": "Özellikler",
+            "creator": "Oluşturan hesap",
+            "asset_id": "Varlık ID",
+            "total_supply": "Toplam arz",
+            "show_on": "Şurada göster",
+            "explorer": "Pera Explorer",
+            "share_message": "",
+            "image_copied": "Görsel panoya kopyalandı",
+            "media_saved": "Kitaplığına kaydedildi",
+            "model_3d_mode": "3D modu",
+            "media_save_failed": "Kaydedilemedi",
+            "image_copy_failed": "Görsel kopyalanamadı",
+            "media_permission_denied": "Medyayı kaydetmek için kitaplık erişimi gerekiyor",
+            "not_owner_notice": "Bu NFT henüz sana ait değil, ancak onun için opt-in oldun. Artık hesabına aktarabilirsin."
+        },
+        "verification_card": {
+            "trusted_title": "Güvenilir ASA",
+            "trusted_description": "Bu, Algorand ekosisteminde tanınmış ve köklü bir proje.",
+            "verified_title": "Doğrulanmış ASA",
+            "verified_description": "Bu ASA, Pera ASA Doğrulama programı aracılığıyla otomatik olarak doğrulandı.",
+            "suspicious_title": "Şüpheli ASA",
+            "suspicious_description": "Bu ASA, Pera ASA Doğrulama programı tarafından şüpheli olarak işaretlendi.",
+            "learn_more": "ASA doğrulaması hakkında daha fazla bilgi al"
+        }
+    },
+    "account_details": {
+        "assets": {
+            "title": "Varlıklar",
+            "add_asset": "Varlık ekle",
+            "search_placeholder": "Varlık ara",
+            "empty_title": "Varlık yok",
+            "empty_body": "Bu hesaba bağlı hiç varlığın yok",
+            "nomatch_title": "Eşleşen varlık yok",
+            "nomatch_body": "Arama terimiyle eşleşen varlık bulunamadı"
+        },
+        "nfts": {
+            "search_placeholder": "NFT ara",
+            "empty_title": "NFT’ler",
+            "empty_body": "NFT galerine hoş geldin! Henüz hiç NFT’n yok. Cüzdanındaki tüm NFT’ler burada görünecek.",
+            "empty_optin": "NFT ekle",
+            "nomatch_title": "Eşleşen NFT yok",
+            "nomatch_body": "Arama terimiyle eşleşen NFT bulunamadı",
+            "count": "{{count}} NFT",
+            "count_one": "{{count}} NFT",
+            "manage": "Yönet",
+            "manage_title": "NFT’leri yönet",
+            "sort": "Sırala",
+            "filter_title": "NFT’leri filtrele",
+            "filter": "Filtrele",
+            "filter_opted_in": "Opt-in olduğun NFT’leri göster",
+            "filter_opted_in_description": "Sahibi olmadığın hâlde opt-in olduğun NFT’leri gösterebilir veya gizleyebilirsin",
+            "filter_watch_accounts": "İzleme hesaplarındaki NFT’leri göster",
+            "filter_watch_accounts_description": "Bu, kendi hesaplarının yanı sıra izleme hesaplarındaki NFT’leri de gösterir",
+            "sort_title_asc": "Ad (A-Z)",
+            "sort_title_desc": "Ad (Z-A)",
+            "sort_newest_first": "Yeniden eskiye",
+            "sort_oldest_first": "Eskiden yeniye"
+        },
+        "button_panel": {
+            "swap": "Swap",
+            "send": "Gönder",
+            "receive": "Al",
+            "more": "Daha fazla"
+        },
+        "watch_button_panel": {
+            "copy_address": "Adresi kopyala",
+            "show_qr": "QR göster",
+            "more": "Daha fazla"
+        },
+        "main_screen": {
+            "no_account_title": "Hesap seçilmedi",
+            "no_account_body": "Şu anda seçili bir hesap yok",
+            "overview_tab": "Genel bakış",
+            "nfts_tab": "NFT’ler",
+            "history_tab": "Geçmiş"
+        },
+        "no_balance": {
+            "welcome": "Pera’ya hoş geldin!",
+            "get_started": "Başlamak için ALGO yatır",
+            "buy_algo": "Algo satın al",
+            "receive": "Al",
+            "more": "Daha fazla"
+        }
+    },
+    "account_options": {
+        "copy_address": "Adresi kopyala",
+        "shared_account_detail": "Paylaşılan hesap detayı ({{count}})",
+        "show_address": "Adresi göster",
+        "view_passphrase_hd": "Ana cüzdan passphrase’ini görüntüle",
+        "view_passphrase_algo25": "Cüzdan passphrase’ini görüntüle",
+        "view_passphrase_quantum": "Quantum hesabı passphrase’ini görüntüle",
+        "undo_rekey": "Rekey’i geri al",
+        "rekeyed_to": "Rekey hedefi",
+        "rekey_to_ledger": "Ledger hesabına rekey yap",
+        "rekey_to_standard": "Standart hesaba rekey yap",
+        "rekey_to_shared": "Paylaşılan hesaba rekey yap",
+        "export_share_account": "Hesabı dışa aktar/paylaş",
+        "scan_rekeyed": "Rekey yapılmış hesapları tara",
+        "rename_account": "Hesabı yeniden adlandır",
+        "mute_notifications": "Bildirimleri sessize al",
+        "unmute_notifications": "Bildirim sesini aç",
+        "remove_account": "Hesabı kaldır",
+        "rename_title": "Hesabı yeniden adlandır",
+        "rename_label": "Hesap adı",
+        "rename_save": "Bitti",
+        "rename_success": "Hesap yeniden adlandırıldı",
+        "remove_title": "Hesabı kaldır",
+        "remove_message": "Bu hesabı kaldırmak istediğinden emin misin? Daha sonra her zaman tekrar ekleyebilirsin.",
+        "remove_watch_message": "Bu izleme hesabını kaldırmak üzeresin. Bu işlem hesabı yalnızca cüzdan görünümünden kaldırır — hesabın kendisi etkilenmez.",
+        "remove_confirm": "Kaldır",
+        "remove_cancel": "İptal",
+        "remove_account_success_message": "Hesap başarıyla kaldırıldı.",
+        "notifications_muted": "Bildirimler sessize alındı",
+        "notifications_unmuted": "Bildirim sesi açıldı",
+        "backup_warning_title": "Hesabını yedekledin mi?",
+        "backup_warning_message": "Bu hesabın passphrase’inin bir kopyası sende yoksa ya da hesap bir Ledger cihazıyla yedeklenmemiş veya bir Auth Account tarafından yönetilmiyorsa, bu hesaba ve içindeki fonlara erişim kalıcı olarak kaybolur.",
+        "backup_warning_continue": "Evet, devam et",
+        "backup_warning_cancel": "Hayır, hesabı koru",
+        "remove_rekey_error_title": "Hesap kaldırılamıyor",
+        "remove_rekey_error_message": "Bu hesabı, ona rekey yapılmış {{count}} hesabı kaldırmadan kaldıramazsın"
+    },
+    "account_info": {
+        "min_balance": "Min. bakiye",
+        "see_wallet_structure": "Cüzdan yapısını gör",
+        "hide_wallet_structure": "Cüzdan yapısını gizle",
+        "scan_new_addresses": "Yeni adresleri tara",
+        "wallet_label": "Cüzdan #{{number}}",
+        "main_address": "Ana adres",
+        "sub_address": "Alt adres",
+        "type_universal_wallet": "Universal Wallet",
+        "type_algo25": "Algo25 hesabı",
+        "type_watch": "İzleme hesabı",
+        "type_ledger": "Ledger hesabı",
+        "type_multisig": "Paylaşılan hesap",
+        "type_quantum": "Quantum hesabı",
+        "type_rekeyed": "Rekey yapılmış hesap",
+        "type_rekeyed_transition": "Rekey yapıldı ({{from}} → {{to}})",
+        "rekey_part_standard": "Standart",
+        "rekey_part_ledger": "Ledger",
+        "rekey_part_watch": "İzleme",
+        "rekey_part_shared": "Paylaşılan hesap",
+        "rekey_part_quantum": "Quantum",
+        "type_no_auth": "Yetki yok",
+        "type_unknown": "Bilinmeyen hesap"
+    },
+    "account_type_info": {
+        "standard_title": "Algo25 hesabı",
+        "standard_description": "Hesabın standart bir Algorand hesabı. Rekey yapılmamış ve bir Ledger cihazıyla ilişkili değil. Cüzdanına anahtarlarıyla birlikte eklendi.",
+        "ledger_title": "Ledger hesabı",
+        "ledger_description": "Hesabın bir Ledger hesabı. Cüzdanına doğrudan hardware wallet cihazından eklendi. Bu hesaba ait tüm işlemlerin Ledger’ında onaylanması gerekir.",
+        "watch_title": "İzleme hesabı",
+        "watch_description": "Bu hesap cüzdanına anahtarlarıyla eklenmedi. Yalnızca okunabilir; diğer hesaplarla etkileşime geçemez veya işlemleri yetkilendiremez.",
+        "no_auth_title": "Yetki yok",
+        "no_auth_description": "Hesabın, cüzdanında bulunmayan bir Algorand hesabına rekey yapılmış durumda. Varlık gönderemez veya işlem imzalayamazsın.",
+        "rekeyed_standard_title": "Rekey yapılmış hesap",
+        "rekeyed_standard_description": "Hesabın, başka bir standart Algorand hesabına rekey yapılmış durumda. Bu hesaba ait işlemler diğer hesap tarafından yetkilendirilecek.",
+        "rekeyed_shared_description": "Hesabın, paylaşılan bir hesaba rekey yapılmış durumda. Bu hesaba ait işlemler paylaşılan hesap tarafından yetkilendirilecek.",
+        "rekeyed_ledger_description": "Hesabın, bir Ledger hardware wallet üzerindeki hesaba rekey yapılmış durumda. Bu hesaba ait işlemlerin Ledger cihazında yetkilendirilmesi gerekir.",
+        "rekeyed_ledger_to_ledger_description": "Ledger hesabın, başka bir Ledger hardware wallet üzerindeki hesaba rekey yapılmış durumda. Bu hesaba ait işlemler diğer Ledger cihazı tarafından yetkilendirilecek.",
+        "hd_wallet_title": "Universal Wallet",
+        "hd_wallet_description": "Hepsi aynı anahtarı kullanan yeni hesaplar türetmeni sağlayan cüzdan.",
+        "multisig_title": "Paylaşılan hesap",
+        "multisig_description": "Hesabın paylaşılan bir hesap. Bu hesaba ait işlemlerin birden fazla imzalayan tarafından onaylanması gerekir.",
+        "multisig_no_auth_description": "Bu paylaşılan bir hesap, ancak imzalayan hesaplarından hiçbiri cüzdanında değil. Bu hesap için işlem imzalayamazsın. İmzalamak için imzalayan hesaplardan birini cüzdanına ekle.",
+        "quantum_title": "Quantum hesabı",
+        "quantum_description": "Gelecekteki kuantum bilgisayarlara karşı bile varlıklarını güvende tutmak için tasarlanmış, kuantum sonrası kriptografiyle korunan standart bir hesap.",
+        "learn_more": "Daha fazla bilgi"
+    },
+    "min_balance_info": {
+        "title": "Minimum bakiye",
+        "description": "Minimum bakiye, bir hesapta tutmak zorunda olduğun en az Algo miktarıdır. Hesap her akıllı sözleşme, ASA veya NFT için opt-in olduğunda bu miktar artar."
+    },
+    "view_passphrase": {
+        "acknowledge": {
+            "title": "Gizli tut. Güvende tut.",
+            "description": "Aşağıdakileri onayla ve kabul et:",
+            "row_screen": "Ekranımı kimse görmüyor.",
+            "row_share": "Kurtarma ifademi biriyle paylaşırsam tüm fonlarımı kaybetme riskim var.",
+            "row_lose": "Kurtarma ifademi kaybedip cüzdanıma erişimimi de kaybedersem, fonlarım kalıcı olarak kaybolur.",
+            "row_pera": "Pera çalışanları kurtarma ifademi ASLA istemez.",
+            "cta_reveal": "Passphrase’i göster",
+            "cta_cancel": "İptal"
+        },
+        "screen": {
+            "title": "Passphrase",
+            "body": "Bu kelimeleri, karşılarındaki numaralara göre doğru sırayla kaydettiğinden emin ol.",
+            "error_title": "Passphrase alınamadı",
+            "error_body": "Bir şeyler ters gitti. Lütfen tekrar dene."
+        }
+    },
+    "banners": {
+        "dismiss": "Bir daha gösterme"
+    },
+    "backup": {
+        "banner": {
+            "text": "Passphrase’i yedeklemen gerekiyor",
+            "cta": "Şimdi yedekle"
+        },
+        "info": {
+            "title": "Hesabın için passphrase yedeklemesi oluştur",
+            "body": "Passphrase yedeklemesi oluşturmak, hesabını kurtarmanı sağlar. Passphrase olmadan; cihazını kaybedersen, hesabı kaldırırsan veya uygulamayı silersen, Algorand hesabına erişimini kalıcı olarak kaybedebilirsin!",
+            "cta": "Anladım"
+        },
+        "write_down": {
+            "title": "Kurtarma passphrase’ini yazmaya hazırlan",
+            "body": "Bir Algorand hesabını kurtarmanın tek yolu bu kurtarma passphrase’idir.",
+            "warning": "Bu passphrase’i kimseyle paylaşma; hesabına tam erişim sağlar.",
+            "cta": "Başlamaya hazırım"
+        },
+        "mnemonic": {
+            "title": "Kurtarma passphrase’i",
+            "body": "Bu kelimeleri, karşılarındaki numaralara göre doğru sırayla kaydettiğinden emin ol.",
+            "cta_continue": "İleri",
+            "error_title": "Passphrase alınamadı",
+            "error_body": "Bir şeyler ters gitti. Lütfen tekrar dene."
+        },
+        "verification": {
+            "title": "Kurtarma passphrase yedeklemesini doğrula",
+            "select_word": "{{number}}. kelimeyi seç",
+            "cta_next": "İleri",
+            "error_message": "Seçilen kelimeler hatalı"
+        },
+        "success": {
+            "title": "Passphrase doğrulandı",
+            "body": "Bu kurtarma passphrase’ini yalnızca senin erişebileceğin güvenli bir yerde sakla. Bu kurtarma passphrase’ini kaybetme.",
+            "cta_done": "Bitti"
+        }
+    },
+    "camera": {
+        "handling_code": "Bir saniye...",
+        "no_camera_device_found": {
+            "title": "Kamera bulunamadı veya izinler eksik.",
+            "body": "Uygulama için kamera izinlerini verdiğinden emin olmak üzere sistem ayarlarını kontrol et."
+        },
+        "scanner_load_failed": {
+            "title": "QR tarayıcı yüklenemedi",
+            "body": "Kamera açılırken bir şeyler ters gitti. Lütfen tekrar dene."
+        },
+        "find_qr": {
+            "title": "Taramak için bir QR kodu bul"
+        }
+    },
+    "qr_scanner": {
+        "title": "QR kodu tara",
+        "camera_unavailable": "Kamera kullanılamıyor. Bunun yerine kodu aşağıya yapıştır.",
+        "scan_with_camera": "Kamera tarayıcısını sekmede aç",
+        "paste_label": "Ya da bir QR içeriği yapıştır",
+        "paste_placeholder": "Bir adres veya WalletConnect URI’si yapıştır",
+        "paste_submit": "Gönder"
+    },
+    "paste_link": {
+        "title": "Bağlantı yapıştır",
+        "description": "Açmak için bir WalletConnect URI’si veya Pera bağlantısı yapıştır.",
+        "placeholder": "wc:… veya perawallet://…",
+        "submit": "Bağlantıyı aç",
+        "error_invalid": "Bu, Pera’nın açabileceği bir bağlantıya benzemiyor.",
+        "error_failed": "Pera bu bağlantıyı açamadı. Kontrol et ve tekrar dene."
+    },
+    "chart": {
+        "one_week": {
+            "label": "1H"
+        },
+        "one_month": {
+            "label": "1A"
+        },
+        "one_year": {
+            "label": "1Y"
+        }
+    },
+    "common": {
+        "offline_mode": "Çevrimdışı mod",
+        "offline_refresh_body": "Çevrimdışısın — yeniden çevrimiçi olduğunda otomatik olarak yenilenecek.",
+        "back_online": "Yeniden çevrimiçi",
+        "network_label": {
+            "mainnet": "MainNet",
+            "testnet": "TestNet",
+            "betanet": "BetaNet",
+            "custom": "Özel"
+        },
+        "yes": "Evet",
+        "no": "Hayır",
+        "enter_stealth_mode": "Gizli moda geç",
+        "exit_stealth_mode": "Gizli moddan çık",
+        "go_back": {
+            "label": "Geri"
+        },
+        "base64": {
+            "label": "Base64"
+        },
+        "delete": {
+            "label": "Sil"
+        },
+        "cancel": {
+            "label": "İptal"
+        },
+        "continue": {
+            "label": "Devam et"
+        },
+        "close": {
+            "label": "Kapat"
+        },
+        "ok": {
+            "label": "Tamam"
+        },
+        "connect": {
+            "label": "Bağlan"
+        },
+        "slide_to_confirm": {
+            "label": "Kaydırıp onayla"
+        },
+        "copied_to_clipboard": {
+            "title": "Panoya kopyalandı",
+            "body": ""
+        },
+        "email_failed": {
+            "title": "E-posta uygulaması açılamadı",
+            "body": "Bu cihazda kurulu bir e-posta uygulaması yok. Doğrudan {{email}} adresine yazabilirsin."
+        },
+        "error": {
+            "title": "Bir hata oluştu",
+            "body": "Bir şeyler ters gitmiş görünüyor. Lütfen tekrar dene; sorun devam ederse destek ekibiyle iletişime geç."
+        },
+        "retry": {
+            "label": "Tekrar dene"
+        },
+        "hex": {
+            "label": "Hex"
+        },
+        "not_implemented": {
+            "title": "Henüz hazır değil",
+            "body": "Bu ekran henüz hazır değil"
+        },
+        "text": {
+            "label": "Metin"
+        },
+        "wealth_chart": {
+            "empty_body": "Bakiye geçmişin olduğunda burada bir grafik göreceksin",
+            "asset_empty_body": "Bu hesapta bu varlık için bakiye geçmişin olduğunda burada bir grafik göreceksin"
+        },
+        "webview": {
+            "failed_title": "Sayfa yüklenemedi",
+            "reload": "Yeniden yükle",
+            "failed_body": "Bu sayfa yüklenirken bir hata oluştu. Lütfen internet bağlantını kontrol et ve tekrar dene.",
+            "offline_title": "Çevrimdışısın",
+            "offline_body": "Bu sayfa internet bağlantısı olmadan yüklenemez. Yeniden çevrimiçi olduğunda kendiliğinden yüklenecek.",
+            "unknown_host": "Bilinmeyen site"
+        },
+        "done": "Bitti",
+        "save": "Kaydet",
+        "apply": "Uygula",
+        "copy": "Kopyala",
+        "send": "Gönder"
+    },
+    "contacts": {
+        "edit_contact": {
+            "name_label": "Ad",
+            "address_label": "Adres",
+            "add_photo": "Fotoğraf ekle",
+            "add_contact": "Kişi ekle",
+            "done": "Bitti",
+            "delete_this": "Bu kişiyi sil",
+            "remove_title": "Kişiyi sil",
+            "remove_message": "Bu kişiyi silmek istediğinden emin misin?",
+            "remove_confirm": "Evet, kişiyi sil",
+            "remove_cancel": "Hayır, kalsın"
+        },
+        "add_contact": {
+            "duplicate_address_error": "Bu adres için bir kişi zaten var."
+        },
+        "view_contact": {
+            "no_contact_title": "Kişi bulunamadı",
+            "no_contact_body": "Bir şeyler ters gitmiş görünüyor. Belirtilen kişi bulunamadı",
+            "account_address": "Hesap adresi",
+            "nfd_label": "NFDomain"
+        },
+        "list": {
+            "no_contacts_title": "Henüz hiç kişi eklemedin",
+            "no_contacts_body": "Yeni kişiler ekleyerek varlık gönderme işlemini hızlandırabilirsin.",
+            "add_contact": "Kişi ekle",
+            "search_placeholder": "Ad veya adres ara",
+            "no_matching_title": "Eşleşen kişi yok",
+            "no_matching_body": "Eşleşen kişi bulunamadı.",
+            "qr_sheet_copy": "Adresi kopyala",
+            "qr_sheet_share": "Adresi paylaş",
+            "qr_accessibility_label": "{{name}} için QR kod"
+        }
+    },
+    "errors": {
+        "account": {
+            "title": "Bu hesap işlenirken bir hata oluştu",
+            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç.",
+            "generic": "Bu hesap işlenirken bir hata oluştu.",
+            "no_hd_wallet": "Bu hesap için Universal Wallet bulunamadı."
+        },
+        "blockchain": {
+            "generic": "Blockchain erişiminde bir şeyler ters gitti."
+        },
+        "algod": {
+            "overspend": {
+                "title": "Yetersiz ALGO",
+                "body": "Bu hesapta işlemi karşılamak ve minimum bakiyesini korumak için yeterli ALGO yok. En az {{missing}} microALGO ekle ve tekrar dene."
+            },
+            "below_min_balance": {
+                "title": "Minimum bakiyenin altında",
+                "body": "Bu işlem, hesabı gerekli olan {{required}} microALGO minimum bakiyesinin altına düşürür."
+            },
+            "missing_opt_in": {
+                "title": "Varlık kabul edilmiyor",
+                "body": "Alıcı hesap, {{assetId}} ID’li varlığı henüz eklememiş. Alıcıdan varlığı eklemesini iste veya ASA Inbox üzerinden gönder."
+            },
+            "duplicate_txn": {
+                "title": "Zaten gönderildi",
+                "body": "Bu işlem ağ tarafından zaten işlendi."
+            },
+            "expired_txn": {
+                "title": "İşlemin süresi doldu",
+                "body": "İşlemin geçerlilik süresi doldu. Tekrar göndermeyi dene."
+            },
+            "not_authorized": {
+                "title": "İmza yetkisi değişti",
+                "body": "Bu hesabın imza yetkisi değiştiği için ağ imzayı reddetti — hesaba kısa süre önce rekey yapılmış olabilir. Cüzdanın eşitlenmesi için biraz bekle ve tekrar dene."
+            },
+            "logic_error": {
+                "title": "Akıllı sözleşme işlemi reddetti",
+                "body": "Sözleşmenin döndürdüğü yanıt: {{msg}}"
+            },
+            "logic_eval_error": {
+                "title": "İşlem reddedildi",
+                "body": "İşlem akıllı sözleşme tarafından reddedildi ({{detail}}). Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç."
+            },
+            "unavailable_resource": {
+                "title": "İşlem reddedildi",
+                "body": "İşlem, ağın erişemediği bir kaynağa referans verdi ({{resourceType}} {{resource}}). Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç."
+            },
+            "group_fee_too_small": {
+                "title": "Ağ ücreti çok düşük",
+                "body": "Bu işlem grubu ücret olarak {{paid}} microALGO ödedi ancak ağ {{required}} microALGO gerektiriyor. Tekrar dene."
+            },
+            "unknown_node_error": {
+                "title": "İşlem başarısız oldu",
+                "body": "Ağ işlemi reddetti. Tekrar dene veya sorun devam ederse destek ekibiyle iletişime geç."
+            }
+        },
+        "deeplink": {
+            "invalid_url_title": "Geçersiz bağlantı",
+            "invalid_url_body": "Algılanan bağlantı geçerli görünmüyor. Bağlantıyı kontrol et ve tekrar dene.",
+            "blocked_origin_title": "Eylem engellendi",
+            "blocked_origin_body": "Bu web sitesi cüzdanında bir eylem başlatmayı denedi. Pera buna yalnızca güvenilir sitelerden izin verir."
+        },
+        "general": {
+            "title": "Bir hata oluştu",
+            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç."
+        },
+        "network": {
+            "no_connection": {
+                "title": "Çevrimdışı görünüyorsun",
+                "body": "Cihazın internete bağlı değil. Bağlantını kontrol et ve tekrar dene."
+            },
+            "timeout": {
+                "title": "Bu beklenenden uzun sürüyor",
+                "body": "Zamanında yanıt alınamadı. Tekrar dene."
+            }
+        },
+        "pera_service": {
+            "unavailable": "Pera hizmetleri bu ağda kullanılamıyor. Bu özelliği kullanmak için MainNet’e geç."
+        },
+        "api": {
+            "generic": {
+                "title": "İstek başarısız oldu",
+                "body": "Veriler alınırken bir şeyler ters gitti. Tekrar dene."
+            },
+            "not_found": {
+                "title": "Bulunamadı",
+                "body": "İstenen kaynak bulunamadı."
+            },
+            "unauthorized": {
+                "title": "Yetki yok",
+                "body": "Bu kaynağa erişim yetkin yok."
+            },
+            "server_error": {
+                "title": "Sunucu hatası",
+                "body": "Sunucu isteğini işlerken bir sorunla karşılaştı. Tekrar dene."
+            }
+        },
+        "validation": {
+            "generic": "Veriler geçersiz görünüyor.",
+            "invalid_address": "Adres geçersiz görünüyor: {{address}}",
+            "invalid_amount": "Miktar geçersiz görünüyor: {{amount}}",
+            "invalid_mnemonic": "Kurtarma passphrase’i geçersiz görünüyor.",
+            "required_field": "Zorunlu bir alan eksik: {{field}}"
+        },
+        "transaction": {
+            "title": "Bu işlem gerçekleştirilirken bir hata oluştu",
+            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç."
+        },
+        "kms": {
+            "key_not_found": "Bu hesabın imza anahtarı bulunamadı.",
+            "key_access_error": "İmza anahtarına erişilemedi.",
+            "invalid_key": "Bu hesabın imza anahtarı geçersiz.",
+            "generic": "İmza anahtarına erişilirken bir şeyler ters gitti."
+        },
+        "walletconnect": {
+            "title": "Bir uygulama isteği işlenirken bir hata oluştu",
+            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç.",
+            "unknown": "İmzalama sırasında bilinmeyen bir hata oluştu. Daha fazla bilgi için dApp’i kontrol et.",
+            "invalid_network_body": "Geçersiz bir ağdan istek aldın. Cüzdanını doğru ağa geçir ve tekrar dene.",
+            "sign_request_body": "İşlem imzalamak için geçersiz bir istek aldın. Uygulamayı kontrol et ve tekrar dene.",
+            "permission_body": "Bir uygulamadan yetkisiz bir istek aldın. Uygulamayı kontrol et ve tekrar dene.",
+            "invalid_session_body": "Bir uygulamadan geçersiz bir oturum isteği aldın. Uygulamayı kontrol et ve tekrar dene.",
+            "connection_timeout_body": "İmzalanan işlemi iletmek için WalletConnect’e ulaşılamadı. Bağlantını kontrol et ve tekrar dene.",
+            "session_request_expired_body": "Bu bağlantı isteğinin süresi doldu. dApp üzerinden yeni bir bağlantı başlat ve tekrar dene."
+        },
+        "signing": {
+            "title": "İmzalama isteği işlenirken bir hata oluştu"
+        },
+        "webview": {
+            "invalid_method": "Geçersiz metot: {{method}}",
+            "invalid_params": "Geçersiz parametreler. Eksik: {{params}}",
+            "unsupported_url": "Desteklenmeyen URL: {{url}}"
+        }
+    },
+    "menu": {
+        "title": "Menü",
+        "staking": "Staking",
+        "buy_gift_card": "Hediye kartı satın al",
+        "receive": "Al",
+        "contacts": "Kişiler",
+        "get_help": "Yardım al"
+    },
+    "giftCard": {
+        "intro": {
+            "navigation_title": "Bidali ile hediye kartı satın al",
+            "title": "Kripto ile hediye kartı satın al",
+            "body": "Dünya genelinde binlerce markadan hediye kartı ve mobil yükleme satın almak için ALGO veya USDC bakiyeni kullanabilirsin!",
+            "buy_gift_cards": "Hediye kartı satın al"
+        },
+        "accountSelection": {
+            "title": "Hesap seç",
+            "subtitle": "Devam etmek için bir hesap seç"
+        },
+        "signing": {
+            "source_name": "Bidali",
+            "source_description": "Bidali ile hediye kartı satın alma"
+        }
+    },
+    "peraCard": {
+        "account": {
+            "navigation_title": "Pera Card",
+            "linked_to": "{{name}} hesabına bağlı",
+            "linked_to_fallback": "Hesabına bağlı",
+            "overview_tab": "Genel bakış",
+            "card_details_tab": "Kart bilgileri",
+            "balance": "Bakiye",
+            "spendable_per_tx": "≈{{amount}} {{currency}} kullanılabilir",
+            "spendable_info_title": "İşlem başına kullanılabilir",
+            "spendable_info_body": "Tek bir alışverişin çekebileceği en yüksek tutar: kart bakiyen ve krediler, ayrıca otomatik fonlama açıkken bağlı hesabından {{limit}} tutarına kadar.",
+            "withdraw": "Çek",
+            "add_funds": "Ekle",
+            "get_usdc": "USDC al",
+            "credits_title": "Krediler",
+            "credits_description": "Kredilerin, iadelerden veya geri alınan işlemlerden sana dönen paradır.",
+            "cashbacks": "Cashback’ler",
+            "refunds": "İadeler",
+            "transactions_title": "İşlemler",
+            "show_all": "Tümünü göster",
+            "transactions_empty": "Henüz hiç işlemin yok.",
+            "transaction_fallback": "İşlem",
+            "coming_soon_title": "Çok yakında",
+            "coming_soon_body": "Bu özellik henüz kullanıma açık değil.",
+            "reveal_card_details": "Kart bilgilerini göster",
+            "hide_card_details": "Kart bilgilerini gizle",
+            "issuance_pending_title": "Doğrulama inceleniyor",
+            "issuance_pending_body": "Kimlik doğrulaman onaylandığında kartın otomatik olarak oluşturulacak.",
+            "issuance_issuing_title": "Kartın oluşturuluyor",
+            "issuance_issuing_body": "Bu genellikle birkaç dakika sürer.",
+            "issuance_rejected_title": "Doğrulama başarısız",
+            "issuance_rejected_body": "Kimliğini doğrulayamadık, bu yüzden kart oluşturulamıyor.",
+            "issuance_rejected_support": "Destekle iletişime geç",
+            "issuance_failed_title": "Kartını oluşturamadık",
+            "issuance_failed_body": "Kartın sipariş edilirken bir şeyler ters gitti.",
+            "issuance_retry": "Tekrar dene",
+            "funding_account": "Fonlama hesabı",
+            "no_funding_account": "Bağlı hesap yok",
+            "connect": "Bağla",
+            "change": "Değiştir",
+            "funding_type_label": "Fonlama türü",
+            "funding_type_sheet_title": "Fonlama türünü seç",
+            "funding_type_sheet_description": "Kartının nasıl fonlanacağını seç. Otomatik fonlama, işlem başına {{limit}} tutarına kadar olan alışverişleri karşılar.",
+            "funding_type_apply": "Uygula",
+            "funding_type_updated_title": "Fonlama türü güncellendi",
+            "funding_type_updated_body": "Kart fonlama tercihin kaydedildi.",
+            "funding_change_requires_manual_title": "Önce manuel fonlamaya geç",
+            "funding_change_requires_manual_body": "Otomatik fonlama açıkken bağlı hesap değiştirilemez. Manuel fonlamaya geç, hesabı değiştir, ardından otomatik fonlamayı yeniden aç.",
+            "funding_type_auto_unavailable_hint": "Bu hesap için kullanılamıyor — otomatik fonlama yetkisini imzalayamıyor.",
+            "funding_type_auto_ledger_hint": "Ledger hesaplarında desteklenmiyor. Otomatik fonlamayı kullanmak için farklı bir hesap bağla.",
+            "funding_type_auto_coming_soon_hint": "Otomatik fonlama çok yakında.",
+            "authorize_delegation_title": "Otomatik fonlamayı yetkilendir",
+            "authorize_delegation_body": "İşlem başına {{limit}} tutarına kadar otomatik fonlamaya yetki veriyorsun. Kaynak hesap: {{account}}. Pera kalıcı bir yetki imzalar; dilediğin zaman manuel fonlamaya geri dönebilirsin.",
+            "authorize_delegation_confirm": "Yetkilendir",
+            "options": "Seçenekler",
+            "accounts_details": "Hesap bilgileri",
+            "add_to_apple_wallet": "Apple Wallet’a ekle",
+            "add_to_google_pay": "Google Pay’e ekle",
+            "set_pin": "PIN kodu belirle",
+            "freeze_card": "Kartı dondur",
+            "unfreeze_card": "Kartı kullanıma aç",
+            "frozen_banner_title": "Kart donduruldu",
+            "frozen_banner_body": "Kartın donduruldu. Harcamaya devam etmek için dilediğin zaman kullanıma açabilirsin.",
+            "reactivate_card": "Kartı yeniden etkinleştir",
+            "freeze_sheet_title": "Kartı dondur",
+            "freeze_sheet_body": "Kartını kaybettiysen veya yeni işlemleri geçici olarak engellemek istiyorsan kartını dondur. Tekrar kullanmaya hazır olduğunda anında kullanıma açabilirsin.",
+            "freeze_sheet_confirm": "Kartı dondur",
+            "unfreeze_sheet_title": "Kartı kullanıma aç",
+            "unfreeze_sheet_body": "Kartını kullanıma açtığında kart yeni işlemler için yeniden kullanılabilir. Dilediğin zaman tekrar dondurabilirsin.",
+            "unfreeze_sheet_confirm": "Kartı kullanıma aç",
+            "report_lost_stolen": "Kayıp/çalıntı kartı bildir",
+            "report_suspicious": "Şüpheli hareket bildir",
+            "report_lost_sheet_title": "Kayıp/çalıntı kartı bildir",
+            "report_lost_sheet_body": "Kartının kayıp veya çalıntı olduğunu düşünüyorsan, kullanılamaması için kartı hemen donduracak ve Baanx desteğine bir e-posta açacağız; süreci oradan onlar devralacak.",
+            "report_lost_sheet_confirm": "Kartı dondur ve bildir",
+            "report_lost_email_subject": "Kayıp/çalıntı kartı bildir",
+            "report_lost_email_body": "Merhaba Baanx Destek Ekibi,\n\nSon dört hanesi {{panLast4}} olan kartımı kayıp veya çalıntı olarak bildirmek istiyorum. Kart uygulama üzerinden donduruldu. Lütfen kartı bloke edin ve sonraki adımlar hakkında bilgi verin.\n\nEk bilgiler:\n",
+            "report_suspicious_sheet_title": "Şüpheli hareket bildir",
+            "report_suspicious_sheet_body": "Bu kartta şüpheli hareket olduğunu düşünüyorsan, sonraki adımlara geçmeden önce lütfen kartı hemen dondur.",
+            "report_suspicious_sheet_confirm": "Kartı dondur",
+            "report_suspicious_frozen_toast_title": "Kartın donduruldu",
+            "report_suspicious_before_title": "Devam etmeden önce",
+            "report_suspicious_before_body": "Lütfen kartını ailenden birinin veya yetkili başka bir kullanıcının kullanıp kullanmadığını kontrol et. Kullandıysa, kullanmaya devam etmek için kartını dilediğin zaman kullanıma açabilirsin. Kullanmadıysa bildirime devam et.",
+            "report_suspicious_before_confirm": "Bildirime devam et",
+            "error_title": "Bir şeyler ters gitti",
+            "error_body": "Lütfen tekrar dene."
+        },
+        "transactions": {
+            "navigation_title": "İşlemler",
+            "kind_payment": "Ödeme",
+            "kind_refund": "İade",
+            "kind_deposit": "Yatırma",
+            "today": "Bugün",
+            "yesterday": "Dün",
+            "days_ago": "{{days}} gün önce",
+            "status_pending": "Beklemede",
+            "status_declined": "Reddedildi",
+            "status_reverted": "Geri alındı",
+            "status_completed": "Tamamlandı",
+            "export_accessibility_label": "Ekstreyi dışa aktar",
+            "error_title": "İşlemler yüklenemedi",
+            "error_body": "Lütfen tekrar dene.",
+            "retry": "Tekrar dene",
+            "detail_tab_transaction": "İşlem",
+            "detail_tab_merchant": "Satıcı",
+            "detail_card_number": "Kart numarası",
+            "detail_processed_on": "İşlem tarihi",
+            "detail_reference": "Referans no",
+            "detail_transaction_hash": "İşlem hash’i",
+            "detail_fees": "Ücretler",
+            "detail_merchant_category": "Kategori",
+            "detail_merchant_type": "Tür",
+            "merchant_type_in_store": "Mağazada",
+            "merchant_type_in_store_with_pin": "Mağazada PIN kodu ile",
+            "merchant_type_online": "Çevrimiçi",
+            "merchant_type_atm": "ATM",
+            "mcc_category_subscriptions": "Abonelikler",
+            "mcc_category_food": "Yiyecek ve içecek",
+            "mcc_category_travel": "Seyahat",
+            "mcc_category_entertainment": "Eğlence",
+            "mcc_category_health": "Sağlık",
+            "mcc_category_atm": "ATM",
+            "mcc_category_utilities": "Faturalar",
+            "mcc_category_misc": "Diğer",
+            "detail_report": "İşlemi bildir",
+            "detail_open_explorer_accessibility_label": "İşlemi Explorer’da görüntüle",
+            "detail_copy_hash_accessibility_label": "İşlem hash’ini kopyala",
+            "detail_not_found_title": "İşlem bulunamadı",
+            "detail_not_found_body": "Bu işlem artık mevcut değil. Lütfen tekrar dene.",
+            "report_email_subject": "Kart işlemi bildirimi - {{transactionId}}",
+            "report_email_body": "Merhaba Baanx Destek Ekibi,\n\nAşağıdaki kart işlemlerini bildirmek istiyorum:\n\nİşlem kimliği/kimlikleri: {{transactionId}}\nİşlem tarihi: {{processedOn}}\nSatıcı: {{merchantName}}\n\nSorunun açıklaması:\n",
+            "report_transactions_sheet_title": "İşlemleri bildir",
+            "report_transactions_sheet_subtitle": "Şüpheli işlemleri seç",
+            "report_transactions_recent_label": "Son işlemler",
+            "report_transactions_button": "İşlemleri bildir",
+            "report_transactions_email_subject": "Şüpheli kart işlemleri bildirimi",
+            "report_transactions_email_body": "Merhaba Baanx Destek Ekibi,\n\nAşağıdaki kart işlemlerini şüpheli olarak bildirmek istiyorum:\n\nİşlem kimliği/kimlikleri:\n{{transactionIds}}\n\nSorunun açıklaması:\n"
+        },
+        "add_funds": {
+            "navigation_title": "Fon ekle",
+            "subtitle": "Daha fazla fon eklemek için bağlı Pera hesabına USDC ekle veya varlıklarını USDC’ye takas et.",
+            "fund_address": "Fonlama adresi",
+            "amount": "Tutar",
+            "balance": "Bakiye: {{amount}}",
+            "deposit": "Yatır",
+            "select_asset": "Varlık seç",
+            "select_asset_search": "İsme veya ID’ye göre ara",
+            "select_asset_empty_title": "Eşleşen varlık yok",
+            "select_asset_empty_body": "Arama terimiyle eşleşen varlık bulunamadı",
+            "swap_success_title": "Swap tamamlandı",
+            "swap_success_body": "Varlıkların USDC’ye takas edildi.",
+            "swap_error_title": "Swap başarısız"
+        },
+        "withdraw": {
+            "navigation_title": "Para çek",
+            "subtitle": "Pera Card’ından bağlı Pera hesabına USDC çek.",
+            "to_account": "Alıcı hesap",
+            "amount": "Tutar",
+            "balance": "Bakiye: {{amount}}",
+            "withdraw": "Para çek",
+            "confirm_title": "Para çekmeyi onayla",
+            "confirm_body": "Pera Card’ından aşağıdaki hesaba {{amount}} USDC çekmek üzeresin.",
+            "confirm_button": "Onayla",
+            "success_title": "Para çekme başlatıldı",
+            "success_body": "{{amount}} USDC hesabına gönderiliyor."
+        },
+        "confirm_swap": {
+            "navigation_title": "Swap’ı onayla",
+            "price": "Fiyat",
+            "slippage": "Slippage toleransı",
+            "price_impact": "Fiyat etkisi",
+            "minimum_received": "Alınacak minimum tutar",
+            "exchange_fee": "Borsa ücreti",
+            "pera_fee": "Pera ücreti",
+            "confirm": "Onayla"
+        },
+        "account_details": {
+            "title": "Hesap bilgileri",
+            "full_name": "Ad soyad",
+            "email": "E-posta",
+            "phone": "Telefon",
+            "country": "Ülke",
+            "verification": "Doğrulama",
+            "kyc_verified": "Doğrulandı",
+            "kyc_pending": "Beklemede",
+            "kyc_rejected": "Reddedildi",
+            "kyc_unverified": "Başlatılmadı",
+            "value_unavailable": "—"
+        },
+        "wallet_instructions": {
+            "done": "Anladım",
+            "apple_title": "Apple Wallet’a ekle",
+            "google_title": "Google Pay’e ekle",
+            "apple_step_1": "Cihazındaki Wallet uygulamasını aç",
+            "apple_step_2": "Ekrandaki + düğmesine dokun",
+            "apple_step_3": "Kart bilgilerini ekle",
+            "apple_step_4": "Doğrulama talimatlarını izle",
+            "apple_step_5": "Bitti — kartın Wallet uygulamasında",
+            "google_step_1": "Cihazındaki Google Pay uygulamasını aç",
+            "google_step_2": "Profil fotoğrafına dokun, ardından kredi veya banka kartıyla öde seçeneğine dokun",
+            "google_step_3": "Kredi veya banka kartı ekle seçeneğine dokun",
+            "google_step_4": "Bilgileri manuel gir seçeneğine dokun",
+            "google_step_5": "Kart bilgilerini ekle",
+            "google_step_6": "Doğrulama talimatlarını izle",
+            "google_step_7": "Bitti — kartın doğrulandığında kullanıma hazır olacak"
+        },
+        "account_item": {
+            "title": "Pera Card hesabı",
+            "subtitle": "Kriptonu harca",
+            "activate": "Etkinleştir",
+            "status_approved": "Onaylandı"
+        },
+        "intro": {
+            "navigation_title": "Pera Card",
+            "title": "Kripton,\nharcamaya hazır",
+            "body": "Ücretsiz Pera Card’ını al. Kabul edildiği her yerde en pratik offramp çözümün.",
+            "powered_by": "Sağlayan",
+            "learn_more": "Daha fazla bilgi",
+            "create_account": "Baanx hesabı oluştur",
+            "already_have_account": "Hesabım var"
+        },
+        "sign_in": {
+            "navigation_title": "Giriş yap",
+            "email_placeholder": "E-posta adresini gir",
+            "email_invalid": "Geçerli bir e-posta adresi gir",
+            "password_placeholder": "Şifreni gir",
+            "forgot_password": "Şifreni mi unuttun?",
+            "submit_button": "Giriş yap",
+            "invalid_credentials": "E-posta veya şifre hatalı",
+            "error_title": "Bir şeyler ters gitti",
+            "error_body": "Giriş yapılamadı. Lütfen tekrar dene.",
+            "success_title": "Giriş yapıldı",
+            "success_body": "Pera Card hesabına giriş yaptın.",
+            "otp_body": "Girişi tamamlamak için sana gönderdiğimiz doğrulama kodunu gir.",
+            "otp_invalid": "Bu kod doğru değil. Lütfen tekrar dene.",
+            "send_again": "Tekrar gönder",
+            "send_again_in": "{{count}} sn içinde tekrar gönder",
+            "coming_soon_title": "Çok yakında",
+            "coming_soon_body": "Şifre sıfırlama henüz kullanıma açık değil. Kısa süre sonra tekrar kontrol et."
+        },
+        "create_account": {
+            "navigation_title": "Baanx hesabı oluştur",
+            "email_label": "E-posta adresi",
+            "email_placeholder": "E-posta adresini gir",
+            "email_invalid": "Geçerli bir e-posta adresi gir",
+            "email_taken": "Bu e-posta adresi zaten kayıtlı",
+            "country_label": "İkamet ülkesi",
+            "country_placeholder": "Ülke seç",
+            "country_required": "İkamet ülkeni seç",
+            "confirm_button": "Kod gönder",
+            "country_picker_title": "İkamet ülkesi",
+            "country_search_placeholder": "Ülke ara",
+            "country_empty_title": "Ülke bulunamadı",
+            "country_empty_body": "Farklı bir arama dene.",
+            "country_error_title": "Ülkeler yüklenemedi",
+            "country_error_body": "Lütfen bağlantını kontrol edip tekrar dene.",
+            "country_retry": "Tekrar dene",
+            "error_title": "Bir şeyler ters gitti",
+            "error_body": "Doğrulama e-postanı gönderemedik. Lütfen tekrar dene.",
+            "already_registered_title": "Hesap zaten var",
+            "already_registered_body": "Bu e-posta adresiyle bir hesap zaten var. Devam etmek için lütfen giriş yap."
+        },
+        "verify_email": {
+            "navigation_title": "E-postanı doğrula",
+            "body": "E-posta adresini doğrulamak için az önce {{email}} adresine gönderdiğimiz doğrulama kodunu kullan.",
+            "send_again_in_one": "{{count}} saniye içinde tekrar gönder",
+            "send_again_in_other": "{{count}} saniye içinde tekrar gönder",
+            "send_again": "Tekrar gönder",
+            "confirm_button": "Devam et",
+            "code_invalid": "Bu kod hatalı veya süresi dolmuş. Lütfen tekrar dene."
+        },
+        "waitlist": {
+            "join_button": "Bekleme listesine katıl",
+            "success_title": "Çok yakında",
+            "success_body": "{{country}} ülkesinde hizmete başladığımızda seni bilgilendireceğiz.",
+            "success_action": "Ana sayfaya dön",
+            "error_title": "Bir şeyler ters gitti",
+            "error_body": "Seni bekleme listesine ekleyemedik. Lütfen tekrar dene."
+        },
+        "create_password": {
+            "navigation_title": "Şifre oluştur",
+            "password_placeholder": "Şifreni gir",
+            "confirm_placeholder": "Şifreni tekrar gir",
+            "rule_length": "En az 15 karakter",
+            "rule_uppercase": "Bir büyük harf",
+            "rule_lowercase": "Bir küçük harf",
+            "rule_number": "Bir rakam",
+            "rule_special": "Bir özel karakter",
+            "common_password_hint": "Sık kullanılan şifrelerden kaçın",
+            "passwords_mismatch": "Şifreler eşleşmiyor",
+            "marketing_opt_in": "Güncellemeler ve teklifler hakkında pazarlama iletileri almak istiyorum.",
+            "sms_opt_in": "SMS mesajları almayı kabul ediyorum.",
+            "confirm_button": "Devam et"
+        },
+        "verify_phone": {
+            "entry_navigation_title": "Telefon numaranı ekle",
+            "navigation_title": "Telefonunu doğrula",
+            "phone_label": "Telefon numarası",
+            "phone_placeholder": "Telefon numaranı gir",
+            "phone_invalid": "Geçerli bir telefon numarası gir",
+            "phone_taken": "Bu telefon numarası zaten kayıtlı",
+            "phone_helper": "Bu numaraya SMS ile bir doğrulama kodu göndereceğiz.",
+            "calling_code_label": "Telefon ülke kodu",
+            "calling_code_placeholder": "Kod",
+            "send_button": "Kod gönder",
+            "send_error_title": "Bir şeyler ters gitti",
+            "send_error_body": "Doğrulama kodunu gönderemedik. Lütfen tekrar dene.",
+            "body": "Telefon numaranı doğrulamak için az önce {{phone}} numarasına gönderdiğimiz doğrulama kodunu kullan.",
+            "send_again_in_one": "{{count}} saniye içinde tekrar gönder",
+            "send_again_in_other": "{{count}} saniye içinde tekrar gönder",
+            "send_again": "Tekrar gönder",
+            "confirm_button": "Devam et",
+            "verify_error_title": "Bir şeyler ters gitti",
+            "verify_error_body": "Telefon numaranı doğrulayamadık. Lütfen tekrar dene.",
+            "code_invalid": "Bu kod hatalı veya süresi dolmuş. Lütfen tekrar dene."
+        },
+        "personal_details": {
+            "navigation_title": "Kişisel bilgiler",
+            "first_name_label": "Ad",
+            "first_name_invalid": "Adını gir",
+            "last_name_label": "Soyad",
+            "last_name_invalid": "Soyadını gir",
+            "dob_label": "Doğum tarihi GG/AA/YYYY",
+            "dob_invalid": "Geçerli bir tarih gir (GG/AA/YYYY)",
+            "nationality_label": "Uyruk",
+            "nationality_placeholder": "Uyruk seç",
+            "nationality_required": "Uyruğunu seç",
+            "nationality_picker_title": "Uyruk",
+            "confirm_button": "Devam et",
+            "error_title": "Bir şeyler ters gitti",
+            "error_body": "Bilgilerini kaydedemedik. Lütfen tekrar dene."
+        },
+        "address": {
+            "navigation_title": "İkamet adresi",
+            "country_label": "İkamet ülkesi",
+            "country_required": "İkamet ülkeni seç",
+            "city_label": "Şehir",
+            "city_invalid": "Şehrini gir",
+            "zip_label": "Posta kodu",
+            "zip_invalid": "Posta kodunu gir",
+            "address_line1_label": "Adres satırı 1 (sokak/cadde)",
+            "address_line1_invalid": "Açık adresini gir",
+            "address_line2_label": "Adres satırı 2 (daire, kat vb.)",
+            "us_state_label": "Eyalet",
+            "us_state_required": "Eyaletini seç",
+            "us_state_placeholder": "Eyalet seç",
+            "us_state_picker_title": "Eyalet",
+            "us_state_search_placeholder": "Eyalet ara",
+            "us_state_empty_title": "Eyalet bulunamadı",
+            "us_state_empty_body": "Farklı bir arama dene.",
+            "us_state_error_title": "Eyaletler yüklenemedi",
+            "us_state_error_body": "Lütfen bağlantını kontrol edip tekrar dene.",
+            "us_state_retry": "Tekrar dene",
+            "card_terms": "Kart ihracına ilişkin <0>Şartlar ve Koşullar</0> metnini okudum, anladım ve kabul ediyorum.",
+            "platform_terms": "Pera’nın <0>Şartlar ve Koşullar</0> metnini okudum, anladım ve kabul ediyorum.",
+            "confirm_button": "Devam et",
+            "error_title": "Bir şeyler ters gitti",
+            "error_body": "Adresini kaydedemedik. Lütfen tekrar dene.",
+            "already_registered_title": "Kayıt zaten tamamlanmış",
+            "already_registered_body": "Bilgilerin sistemimizde kayıtlı. Kart kurulumuna devam etmek için lütfen giriş yap."
+        },
+        "verification": {
+            "title": "Zincir üzerinde\nharcamaya başla",
+            "callout_title": "Belgelerini gönder",
+            "callout_body": "Zincir üzerinde harcamaya başlamak için lütfen hesabını doğrula.",
+            "verify_button": "Hesabını doğrula",
+            "logout_button": "Çıkış yap",
+            "contact_us": "Soruların varsa <0>bize ulaşmaktan</0> çekinme",
+            "error_title": "Bir şeyler ters gitti",
+            "error_body": "Doğrulamayı başlatamadık. Lütfen tekrar dene.",
+            "open_link_error_body": "Doğrulama sayfasını açamadık. Lütfen tekrar dene."
+        },
+        "kyc_required": {
+            "title": "Kimlik doğrulamanı tamamla",
+            "body": "Kimlik kontrolün henüz tamamlanmadı. Pera Card başvurunu sürdürmek için kimliğini doğrula.",
+            "verify_button": "Hesabını doğrula"
+        },
+        "setup_status": {
+            "title": "Kurulumu tamamla ve zincir üzerinde harcamaya başla",
+            "documents_title": "Belgelerini gönder",
+            "documents_pending_label": "Beklemede",
+            "documents_unverified_body": "Zincir üzerinde harcamaya başlamak için lütfen hesabını doğrula.",
+            "documents_verify_button": "Hesabını doğrula",
+            "documents_pending_body": "Doğrulaman gönderildi. Tamamlandığında sana e-posta göndereceğiz.",
+            "documents_verified_body": "Kimliğin doğrulandı.",
+            "documents_rejected_body": "Kimliğini doğrulayamadık. Yardım için lütfen destek ekibiyle iletişime geç.",
+            "documents_error_body": "Doğrulama durumunu kontrol edemedik. Lütfen tekrar dene.",
+            "documents_retry": "Tekrar dene",
+            "details_title": "Bilgilerini gir",
+            "details_body": "Devam etmek için bilgilerini doğrula ve adresini gir.",
+            "details_button": "Hesabını doğrula",
+            "connect_funds_title": "Fonları bağla",
+            "connect_funds_body": "Pera Card’ını kullanmaya başlamak için Pera hesaplarından birini fonlama kaynağı olarak bağla.",
+            "connect_funds_button": "Pera hesabı bağla",
+            "funding_type_title": "Fonlama türünü seç",
+            "funding_type_info_title": "Fonlama türleri",
+            "funding_type_auto_title": "Otomatik fonlama",
+            "funding_type_auto_description": "Bağlı Pera hesabından doğrudan harca",
+            "funding_type_auto_info": "Alışverişler doğrudan bağlı Pera hesabından ödenir, yükleme yapmana gerek kalmaz",
+            "funding_type_manual_title": "Manuel fonlama",
+            "funding_type_manual_description": "Harcamadan önce kartına kendin yükle",
+            "funding_type_manual_info": "Fonları karta kendin aktarırsın ve alışverişler bu bakiyeden çekilir",
+            "funding_type_limit_info": "Otomatik fonlama, işlem başına {{limit}} tutarına kadar olan alışverişleri karşılar; daha büyük alışverişler kart bakiyenden çekilir",
+            "funding_type_limit_hint": "İşlem başına {{limit}} tutarına kadar",
+            "funding_type_button": "Pera Card oluştur",
+            "create_card_success_title": "Her şey hazır",
+            "create_card_success_body": "Pera Card’ın yolda.",
+            "create_card_account_error_title": "Bu hesap imzalayamıyor",
+            "create_card_account_error_body": "Kart oluşturma, bu hesap türünün sağlayamadığı bir imza gerektiriyor. Fonlama kaynağı olarak standart bir Pera hesabı bağla.",
+            "linked_elsewhere_error_title": "Hesap zaten bağlı",
+            "linked_elsewhere_error_body": "Bu hesap başka bir Pera Card profiline zaten bağlı. Fonlama kaynağı olarak farklı bir hesap bağla.",
+            "auto_funding_degraded_title": "Kart oluşturuldu",
+            "auto_funding_degraded_body": "Otomatik fonlama şu anda etkinleştirilemedi, bu yüzden kartın manuel fonlamayla başlıyor. Daha sonra kart ayarlarından değiştirebilirsin."
+        },
+        "signing": {
+            "title": "Başlayalım",
+            "body": "Pera Card’ını oluşturmak için üç işlem grubunu imzalaman gerekiyor, lütfen şu adımları izle:",
+            "step_sign_label": "Bağlı hesabın sahibi olduğunu kanıtlamak için bir kimlik doğrulama isteğini imzala",
+            "step_create_label": "Yeni Pera Card hesabını oluştur ve tamamla",
+            "step_authorize_label": "Pera Card’ın bağlı hesabından harcama yapabilmesi için otomatik fonlama programını imzala",
+            "proceed_button": "Devam et"
+        },
+        "auto_funding_signing": {
+            "title": "Otomatik imzalama onay isteği",
+            "body": "Bu, kartının gerektiğinde fonları otomatik olarak çekmesini sağlar; böylece her yüklemeyi kendin onaylamak zorunda kalmazsın. Bağlı hesabından bu otomatik çekime izin veren bir logic sig — önceden yetkilendirilmiş bir imza — imzalıyorsun.",
+            "error_title": "Otomatik fonlama yetkilendirilemedi",
+            "error_body": "Otomatik fonlama yetkilendirilirken bir şeyler ters gitti. Tekrar dene veya iptal edip manuel fonlamayla devam et (daha sonra kart ayarlarından otomatik fonlamaya geçebilirsin).",
+            "cancel_button": "İptal"
+        },
+        "connect_account": {
+            "title": "Kart hesabını seç",
+            "subtitle": "Başlamak için hesabını kurmak üzere kullanmak istediğin cüzdanı bağla.",
+            "change": "Değiştir"
+        }
+    },
+    "notifications": {
+        "empty_title": "Şu anda bildirim yok",
+        "empty_body": "Son işlemlerin, varlık istekleri ve diğer işlemler burada görünecek"
+    },
+    "messages": {
+        "tabs": {
+            "inbox": "Gelen kutusu",
+            "notifications": "Bildirimler"
+        },
+        "inbox": {
+            "empty_title": "Bekleyen mesaj yok",
+            "empty_body": "Şu anda gelen kutunda bekleyen mesaj yok",
+            "asa_requests_one": "1 gelen varlık",
+            "asa_requests_other": "{{count}} gelen varlık",
+            "multisig_sign": {
+                "title": "{{address}} adresi için <0>imza isteği</0>",
+                "status_pending": "Bekleyen işlem",
+                "status_failed": "Başarısız işlem",
+                "status_expired": "İptal edilen işlem",
+                "status_declined": "Reddedilen işlem",
+                "status_confirmed": "Onaylandı"
+            },
+            "invitation_title": "{{address}} paylaşılan hesabına katılmak için <0>davet edildin</0>",
+            "view_invitation_details": "Davet ayrıntılarını görüntüle"
+        },
+        "claim": {
+            "asset_transfer_requests_title": "Varlık transfer istekleri",
+            "asset_transfer_request_title": "Varlık transfer isteği",
+            "senders": "Gönderenler",
+            "amount": "Miktar",
+            "copy_id": "ID’yi kopyala",
+            "account": "Hesap",
+            "reject": "Reddet",
+            "reject_title": "İstekler reddediliyor",
+            "reject_body": "Bu isteği reddedersen gelen varlık kalıcı olarak dolaşımdan çıkarılır ve gönderene geri dönmez. Bunun yerine, geri alınamayan bu işlem tamamlandığında {{algoAmount}} ALGO alırsın. Reddedildikten sonra varlığın kurtarılamayacağını lütfen unutma.",
+            "reject_cancel": "İptal",
+            "processing_title": "İşlem gönderiliyor",
+            "processing_subtitle": "İşlemin Algorand ağı tarafından işleniyor",
+            "success_title": "İşlem tamamlandı",
+            "success_subtitle": "İşlemin Algorand ağı tarafından başarıyla alındı",
+            "sender_count_more": "+{{count}} daha",
+            "insufficient_algo_claim": "Bu varlığı talep etmek için yeterli yeterli ALGO yok. Minimum bakiye gereksinimini karşılamak için fon ekle.",
+            "insufficient_algo_reject": "Bu varlığı reddetmek için yeterli yeterli ALGO yok. İşlem ücretlerini karşılamak için fon ekle."
+        }
+    },
+    "multisig": {
+        "create": {
+            "title": "Paylaşılan hesap\noluştur",
+            "description": "Bu hesabın kontrolünü paylaşacak ve işlemlerini imzalayacak hesapları seç.",
+            "accounts_section": "Hesaplar",
+            "accounts_subtitle": "En az iki hesap eklemen gerekiyor",
+            "add_account": "Hesap ekle",
+            "max_participants": "Maksimum katılımcı sayısına ulaştın"
+        },
+        "introduction": {
+            "title": "Paylaşılan hesap",
+            "bullet_1": "Birden fazla onay gerektirerek gelişmiş güvenlik. Paylaşılan veya yüksek değerli hesaplar için ideal.",
+            "bullet_2": "Her işlem için imzalayanları ve gereken onay sayısını belirle.",
+            "bullet_3": "Etkinliği ve imzalayanların eylemlerini güvenle izle.",
+            "continue": "Devam et"
+        },
+        "add_participant": {
+            "title": "Hesap ekle",
+            "cannot_add_multisig_error": "Paylaşılan hesap eklenemiyor",
+            "cannot_add_multisig_error_body": "Paylaşılan hesaplar, başka bir paylaşılan hesaba katılımcı olarak eklenemez.",
+            "cannot_add_watch_error": "İzleme hesabı eklenemiyor",
+            "cannot_add_watch_error_body": "İzleme hesapları işlem imzalayamaz, bu yüzden paylaşılan bir hesapta katılımcı olamaz."
+        },
+        "threshold": {
+            "title": "Eşik belirle",
+            "description": "Bir işlemi onaylamak için gereken minimum hesap sayısını belirlemen gerekiyor.",
+            "number_of_accounts": "Hesap sayısı",
+            "required_signatures": "Eşik",
+            "exceeds_participants": "Eşik ({{threshold}}), katılımcı sayısından ({{participantCount}}) yüksek olamaz."
+        },
+        "before_you_create": {
+            "title": "Paylaşılan hesap oluşturmadan önce",
+            "warning_participants": "Paylaşılan bir hesap oluşturduktan sonra katılımcıları değiştiremezsin.",
+            "warning_rekey": "Paylaşılan bir hesap oluşturduktan sonra, katılımcı hesaplardan herhangi birine rekey yapmak erişimini kaybetmene yol açabilir.",
+            "learn_more": "Daha fazla bilgi",
+            "proceed": "Devam et",
+            "go_back": "Geri dön ve düzenle"
+        },
+        "name": {
+            "title": "Hesabına isim ver",
+            "description": "Pera Wallet’ı kullanırken hesabını kolayca tanıyabilmek için ona bir isim ver. Bu isimler cihazında yerel olarak saklanır ve yalnızca sen görebilirsin.",
+            "default_name": "Paylaşılan hesap",
+            "finish_button": "Hesap oluşturmayı tamamla",
+            "creating": "Paylaşılan hesap oluşturuluyor...",
+            "error_title": "Hesap oluşturulamadı",
+            "error_name_taken": "Bu isimde bir hesap zaten var.",
+            "duplicate_account_title": "Hesap zaten eklenmiş",
+            "duplicate_account_body": "Bu katılımcılara ve bu eşiğe sahip bir paylaşılan hesap cüzdanında zaten var."
+        },
+        "import": {
+            "title": "Paylaşılan hesap",
+            "accounts_heading": "Hesaplar ({{count}})",
+            "ignore": "Yoksay",
+            "add_to_accounts": "Hesaplara ekle",
+            "already_imported": "Bu paylaşılan hesap cüzdanında zaten var.",
+            "loading": "Paylaşılan hesap yükleniyor…",
+            "error_title": "Paylaşılan hesap yüklenemedi",
+            "error_body": "Lütfen bağlantını kontrol et ve tekrar dene.",
+            "retry": "Tekrar dene",
+            "address_mismatch_title": "Paylaşılan hesap doğrulanamadı",
+            "address_mismatch_body": "Bu hesabın adresi, katılımcıları ve eşiği ile uyuşmuyor. Paylaşılan hesap kodu geçersiz olabilir — gönderenden kodu tekrar paylaşmasını iste."
+        },
+        "edit_participant": {
+            "title": "Adresi düzenle",
+            "nickname_label": "Takma ad",
+            "address_label": "Hesap adresi",
+            "remove": "Adresi kaldır",
+            "done": "Bitti"
+        },
+        "detail": {
+            "accounts_title": "Hesaplar ({{count}})"
+        },
+        "info_card": {
+            "number_of_accounts": "Hesap sayısı",
+            "you_included": "Sen dahil",
+            "cannot_sign_warning": "İmzalayamazsın — imzalayan hesapların hiçbiri cüzdanında değil",
+            "threshold": "Eşik",
+            "threshold_description": "Bir işlemi onaylamak için gereken \nminimum hesap sayısı"
+        },
+        "export": {
+            "title": "Hesabı dışa aktar/paylaş",
+            "url_label": "Hesap dışa aktarma URL’si",
+            "copy_url": "URL’yi kopyala",
+            "share_url": "URL’yi paylaş"
+        },
+        "invitation": {
+            "sheet_title": "Paylaşılan hesap",
+            "title": "Paylaşılan hesap daveti",
+            "accounts_heading": "Hesaplar ({{count}})",
+            "add_to_accounts": "Hesaplara ekle",
+            "ignore": "Yoksay",
+            "ignore_error": "Davet yoksayılamadı. Lütfen tekrar dene.",
+            "accept_success": "Paylaşılan hesap eklendi",
+            "accept_error": "Hesap eklenemedi. Lütfen tekrar dene.",
+            "already_added": "Bu paylaşılan hesap cüzdanında zaten var",
+            "name": {
+                "screen_title": "Paylaşılan hesap",
+                "title": "Paylaşılan hesabına isim ver",
+                "description": "Pera Wallet’ı kullanırken hesabını kolayca tanıyabilmek için ona bir isim ver. Bu isimler cihazında yerel olarak saklanır ve yalnızca sen görebilirsin.",
+                "default_name": "Paylaşılan hesap",
+                "finish_button": "Bitir",
+                "saving": "Paylaşılan hesap kaydediliyor..."
+            }
+        },
+        "pending_signatures": {
+            "title": "Bekleyen imzalar",
+            "x_of_y": "{{signed}} / {{total}} imzalandı",
+            "time_left": "≈ {{time}} kaldı",
+            "accounts_heading": "Hesaplar",
+            "accounts_subtitle_one": "İmzalamak için en az 1 hesaba ihtiyacın var",
+            "accounts_subtitle_other": "İmzalamak için en az {{count}} hesaba ihtiyacın var",
+            "confirmed": "İşlem başarıyla tamamlandı",
+            "submitting": "Tüm imzalar toplandı. İşlem gönderiliyor…",
+            "failed_default": "İşlem başarısız oldu",
+            "canceled": "İşlem iptal edildi.",
+            "declined": "İşlem reddedildi.",
+            "close": "Kapat",
+            "close_for_now": "Şimdilik kapat",
+            "sign": "İmzala"
+        },
+        "sign_sheet": {
+            "decline": "Reddet"
+        },
+        "decline": {
+            "confirm_title": "İşlem reddedilsin mi?",
+            "confirm_body": "Reddedersen bu işlemi bir daha imzalayamazsın.",
+            "confirm_action": "Reddet",
+            "keep_signing": "İmzalamaya devam et",
+            "error": {
+                "title": "Reddedilemedi",
+                "body": "Bu işlemi reddedemedik. Lütfen tekrar dene."
+            }
+        },
+        "cancel_transaction": {
+            "button": "İptal",
+            "confirm_title": "İşlem isteğini iptal et",
+            "confirm_body": "İşlem isteği iptal edilecek. Emin misin?",
+            "confirm_action": "Evet, iptal et",
+            "keep_waiting": "Beklemeye devam et",
+            "error": {
+                "title": "İptal edilemedi",
+                "body": "Bu işlemi iptal edemedik. Lütfen tekrar dene."
+            }
+        },
+        "sync_sign": {
+            "errors": {
+                "declined": "Multisig imza isteği bir katılımcı tarafından reddedildi",
+                "expired": "Multisig imza isteğinin süresi, eşiğe ulaşılmadan doldu",
+                "failed": "Multisig imza isteği başarısız oldu",
+                "no_transactions": "Multisig imza isteğinde hiç işlem yok",
+                "assembly_failed": "Multisig birleştirme başarısız oldu: {{reason}}",
+                "delivery_failed": "İmzalanmış işlem dApp’e iletilemedi"
+            }
+        }
+    },
+    "onboarding": {
+        "import_options": {
+            "title": "Mnemonic türünü seç",
+            "hd_wallet": {
+                "title": "Universal Wallet",
+                "description": "Aynı mnemonic ile yeni hesaplar türetmene olanak tanıyan cüzdan",
+                "chip": "yeni"
+            },
+            "algo25": {
+                "title": "ALGO25",
+                "description": "Algorand ekosistemine özgü eski format",
+                "chip": "eski",
+                "mnemonic_info": "25 kelimelik mnemonic anahtarlar"
+            },
+            "mnemonic_info": "24 kelimelik mnemonic anahtarlar"
+        },
+        "import_info": {
+            "title": "Algorand cüzdanı kurtar",
+            "body": "Sonraki adımlarda, bir Algorand cüzdanını kurtarmak için kurtarma passphrase’ini gireceksin. Başlamadan önce kurtarma ifadeni hazır bulundur.",
+            "button": "Algorand cüzdanı kurtar"
+        },
+        "import_account": {
+            "title": "Kurtarma passphrase’ini gir",
+            "quantum_title": "Quantum passphrase’ini gir",
+            "quantum_info_note": "Normal bir Algorand hesabına ait 25 kelimelik passphrase bir Quantum hesabı değildir ve buradan içe aktarılamaz.",
+            "importing": "Cüzdan içe aktarılıyor...",
+            "button": "Kurtar",
+            "failed_title": "İçe aktarma başarısız",
+            "failed_body": "Cüzdanın içe aktarılırken bir hata oluştu",
+            "duplicate_account_title": "Hesap zaten eklenmiş",
+            "duplicate_account_body": "Bu hesap cüzdanında zaten var.",
+            "invalid_mnemonic_title": "Geçersiz passphrase",
+            "invalid_mnemonic_body": "Yapıştırdığın passphrase çok fazla kelime içeriyor.",
+            "insufficient_slots_title": "Geçersiz passphrase",
+            "insufficient_slots_body": "Yapıştırdığın passphrase kalan alanlara sığmıyor.",
+            "support_options": {
+                "title": "Destek seçenekleri",
+                "paste_passphrase": "Passphrase’in tamamını yapıştır",
+                "scan_qr": "QR kodu tara",
+                "learn_more": "Daha fazla bilgi"
+            }
+        },
+        "searching_accounts": {
+            "title": "Hesapların aranıyor",
+            "no_new_addresses_title": "Yeni adres bulunamadı",
+            "no_new_addresses_body": "Bu cüzdanla ilişkili başka bir adres bulamadık."
+        },
+        "create_account": {
+            "processing": "Cüzdanın hazırlanıyor...",
+            "error_title": "Hesap oluşturulamadı"
+        },
+        "main_screen": {
+            "welcome": "Pera Wallet’a \n hoş geldin",
+            "new_to_algo": "Algorand’a yeni misin?",
+            "create_wallet": "Yeni cüzdan oluştur",
+            "already_have_account": "Hesabın var mı?",
+            "import_account": "Hesap içe aktar",
+            "privacy_agreement": "Cüzdan oluşturarak Pera Wallet’ın <0>Gizlilik Politikası</0>’nı kabul etmiş olursun"
+        },
+        "terms_sheet": {
+            "title": "Şartlar ve koşullar",
+            "updated_title": "Güncellenen şartlar ve koşullar",
+            "agree": "Kabul ediyorum"
+        },
+        "name_account": {
+            "title": "Hesabına ad ver",
+            "description": "Pera Wallet’ı kullanırken hesabını kolayca tanıyabilmek için ona bir ad ver. Bu adlar yalnızca cihazında saklanır ve yalnızca senin görebileceğin bilgilerdir.",
+            "wallet_label": "Cüzdan #{{count}}",
+            "finish_button": "Hesap oluşturmayı tamamla"
+        },
+        "import_select_addresses": {
+            "title": "Eklenecek adresleri seç",
+            "description": "Bu cüzdana kayıtlı {{count}} adres bulduk",
+            "addresses_count": "{{count}} adres",
+            "select_all": "Tümünü seç",
+            "already_imported": "zaten içe aktarıldı",
+            "finish_button": "Hesap oluşturmayı tamamla",
+            "all_imported_title": "Zaten cüzdanında",
+            "all_imported_body": "Bu cüzdanın türettiği tüm adresler zaten Pera’da — yalnızca izlediklerin dahil. Bir adresi özel anahtarıyla yeniden eklemek için önce onu kaldır."
+        },
+        "import_rekeyed_addresses": {
+            "title": "{{count}} rekey yapılmış hesap bulundu",
+            "description_line_1": "{{count}} rekey yapılmış hesabın var. Bu, rekey yapılmış hesapların işlemlerini az önce eklediğin hesapla imzalayabileceğin anlamına gelir",
+            "description_line_2": "Cüzdanına eklemek istediğin rekey yapılmış hesapları seç:",
+            "already_imported": "zaten içe aktarıldı",
+            "continue": "Eklenecek hesapları seç",
+            "skip": "Şimdilik atla",
+            "fetching": "Rekey yapılmış hesaplar getiriliyor...",
+            "rekeyed_account_subtitle": "Rekey yapılmış hesap",
+            "importing_accounts": "Hesaplar içe aktarılıyor...",
+            "info_sheet": {
+                "account_details": "Hesap detayları",
+                "assets": "Varlıklar",
+                "can_be_signed_by": "İmzalayabilecek hesap"
+            }
+        },
+        "add_account": {
+            "title": "Hesap\nekle",
+            "add_account_option_title": "Hesap ekle",
+            "add_account_option_description": "Mevcut Universal Wallet’ına yeni bir hesap ekle",
+            "import_account_option_title": "Hesap içe aktar",
+            "import_account_option_description": "Mevcut bir Algorand hesabını farklı yöntemlerle içe aktar",
+            "qr_scan_invalid_title": "Geçersiz QR kodu",
+            "qr_scan_invalid_body": "Bu QR kodu geçerli bir hesap kurtarma bağlantısı içermiyor",
+            "qr_scan_invalid_mnemonic_title": "Geçersiz passphrase",
+            "qr_scan_invalid_mnemonic_body": "Taranan QR kodundaki passphrase beklenmeyen sayıda kelime içeriyor",
+            "watch_address_option_title": "Adres izle",
+            "watch_address_option_description": "Adresini girerek bir Algorand adresini takip et",
+            "create_universal_wallet_option_title": "Universal Wallet oluştur",
+            "create_universal_wallet_option_description": "Aynı 24 kelimelik mnemonic ile yeni hesaplar türetmene olanak tanıyan cüzdan",
+            "create_algo25_option_title": "Algo25 hesabı oluştur",
+            "create_algo25_option_description": "Algorand’a özgü eski format",
+            "quantum_account_option_title": "Quantum hesabı ekle",
+            "quantum_account_option_description": "Algorand üzerinde doğal olarak güvence altına alınan Falcon-1024 imzaları. Anahtarların artık post-kuantum döneme hazır.",
+            "quantum_account_option_badge": "YENİ",
+            "quantum_account_option_learn_more": "Daha fazla bilgi",
+            "quantum_creating_title": "Quantum hesabın oluşturuluyor…",
+            "terms_and_privacy": "Cüzdan ekleyerek Pera Wallet’ın <0>Şartlar ve Koşullar</0> ve <1>Gizlilik Politikası</1>’nı kabul etmiş olursun",
+            "create_multisig_option_title": "Paylaşılan hesap ekle",
+            "create_multisig_option_description": "Birden fazla imzacı gerektiren, gelişmiş güvenlikli yeni bir paylaşılan hesap oluştur",
+            "pera_card_option_title": "Pera Card hesabı ekle",
+            "pera_card_option_description": "Pera Card ile kriptonu gerçek dünyada harca",
+            "see_other_options": "Diğer seçenekleri gör"
+        },
+        "import_account_options": {
+            "title": "Hesap\niçe aktar",
+            "recover_wallet_title": "Cüzdan kurtar",
+            "recover_wallet_description": "Bir Algorand cüzdanını kurtarmak istiyorum",
+            "recover_qr_title": "QR kod ile hesap kurtar",
+            "recover_qr_description": "QR kod kullanarak bir Algorand hesabını kurtarmak istiyorum",
+            "pair_ledger_title": "Ledger’ı Bluetooth ile eşleştir",
+            "pair_ledger_description": "Ledger hardware wallet’ımdaki bir Algorand hesabını Bluetooth ile kurtarmak istiyorum",
+            "pair_ledger_usb_title": "Ledger’ı USB ile eşleştir",
+            "pair_ledger_usb_description": "Ledger hardware wallet’ımdaki bir Algorand hesabını USB kablosu ile kurtarmak istiyorum",
+            "pera_web_title": "Pera Web’den içe aktar",
+            "pera_web_description": "Pera Web’den Algorand hesapları içe aktarmak istiyorum",
+            "asb_title": "Algorand Secure Backup",
+            "asb_description": "Hesaplarımı bir Algorand Secure Backup dosyası ve 12 kelimelik anahtar ile geri yüklemek istiyorum",
+            "quantum_title": "Quantum hesabı içe aktar",
+            "quantum_description": "25 kelimelik passphrase’ini kullanarak bir Quantum hesabı içe aktarmak istiyorum"
+        },
+        "asb_import": {
+            "info": {
+                "title": "Algorand Secure Backup’tan içe aktar",
+                "body": "Algorand Secure Backup dosyasına kaydettiğin hesapları kurtar. Yedekleme dosyasına ve yedekleme oluşturulurken üretilen 12 kelimelik kurtarma anahtarına ihtiyacın olacak.",
+                "continue": "Devam et"
+            },
+            "backup": {
+                "title": "Yedekleme dosyanı seç",
+                "body": "Cüzdanını geri yüklemek için yedekleme dosyanı seç veya yapıştır.",
+                "pick_file_button": "Yedekleme dosyanı seç",
+                "pick_file_button_new_tab": "Yedekleme dosyanı seçmek için yeni sekme aç",
+                "paste_button": "Yedekleme dosyası metnini yapıştır",
+                "continue": "İleri",
+                "pasted_name": "Yapıştırılan yedekleme",
+                "errors": {
+                    "title": "Yedekleme dosyası yüklenemedi",
+                    "empty_file": "Dosya boş.",
+                    "not_base64": "Dosya beklenen Algorand Secure Backup biçiminde değil.",
+                    "malformed_envelope": "Dosya geçerli bir Algorand Secure Backup değil.",
+                    "unsupported_version": "Bu yedekleme dosyası desteklenmeyen bir sürüm kullanıyor.",
+                    "unsupported_suite": "Bu yedekleme dosyası desteklenmeyen bir şifreleme paketi kullanıyor.",
+                    "invalid_recovery_key": "Girilen kurtarma anahtarı geçerli değil.",
+                    "decryption_failed": "Kurtarma anahtarı bu yedeklemenin kilidini açmadı.",
+                    "malformed_payload": "Yedekleme dosyası kurtarılabilir hesap içermiyor.",
+                    "empty_clipboard": "Panoda yapıştırılacak bir şey yok.",
+                    "read_failed": "Dosya okunamadı."
+                }
+            },
+            "key": {
+                "title": "12 kelimelik kurtarma anahtarını gir",
+                "body": "Algorand Secure Backup dosyası oluşturulurken üretilen 12 kelimelik kurtarma anahtarını gir.",
+                "continue": "Devam et",
+                "decrypting": "Yedeklemenin kilidi açılıyor…",
+                "too_many_words_title": "Geçersiz kurtarma anahtarı",
+                "too_many_words_body": "Yapıştırdığın kurtarma anahtarı çok fazla kelime içeriyor.",
+                "insufficient_slots_title": "Geçersiz kurtarma anahtarı",
+                "insufficient_slots_body": "Yapıştırdığın kurtarma anahtarı kalan alanlara sığmıyor.",
+                "errors": {
+                    "title": "Yedeklemenin kilidi açılamadı",
+                    "empty_file": "Yedekleme dosyası boş.",
+                    "not_base64": "Yedekleme dosyası geçerli değil.",
+                    "malformed_envelope": "Yedekleme dosyası geçerli değil.",
+                    "unsupported_version": "Bu yedekleme dosyası desteklenmeyen bir sürüm kullanıyor.",
+                    "unsupported_suite": "Bu yedekleme dosyası desteklenmeyen bir şifreleme paketi kullanıyor.",
+                    "invalid_recovery_key": "12 kelimelik kurtarma anahtarı geçerli değil.",
+                    "decryption_failed": "Bu kurtarma anahtarı yedeklemenin kilidini açmıyor. Her kelimeyi kontrol et ve tekrar dene.",
+                    "malformed_payload": "Yedeklemede kurtarılabilir hesap yoktu."
+                }
+            },
+            "select": {
+                "title": "Hesapları kurtar",
+                "body_one": "Yedeklemende {{count}} hesap bulundu. Kurtarmak istediğini seç.",
+                "body_other": "Yedeklemende {{count}} hesap bulundu. Hangilerini kurtarmak istediğini seç.",
+                "body": "Yedeklemende {{count}} hesap bulundu. Hangilerini kurtarmak istediğini seç.",
+                "count_one": "{{count}} hesap kullanılabilir",
+                "count_other": "{{count}} hesap kullanılabilir",
+                "count": "{{count}} hesap kullanılabilir",
+                "select_all": "Tümünü seç",
+                "already_imported": "Zaten içe aktarıldı",
+                "continue": "Hesapları kurtar",
+                "importing": "Hesaplar kurtarılıyor…",
+                "errors": {
+                    "title": "Kurtarma başarısız",
+                    "body": "Bazı hesaplar kurtarılamadı. Lütfen tekrar dene."
+                }
+            },
+            "result": {
+                "success_title": "Hesaplar kurtarıldı",
+                "success_body_one": "Cüzdanına {{count}} hesap eklendi.",
+                "success_body_other": "Cüzdanına {{count}} hesap eklendi.",
+                "success_body": "Cüzdanına {{count}} hesap eklendi.",
+                "partial_title": "Bazı hesaplar kurtarıldı",
+                "partial_body": "Yedeklemedeki bazı hesaplar kurtarılamadı. Yeni bir yedekleme dosyasıyla tekrar deneyebilirsin.",
+                "nothing_new_title": "Kurtarılacak yeni bir şey yok",
+                "nothing_new_body": "Yedeklemedeki tüm hesaplar bu cüzdanda zaten var.",
+                "failed_title": "Kurtarma başarısız",
+                "failed_body": "Yedeklemeden hiçbir hesap kurtarılamadı.",
+                "imported_count_one": "{{count}} hesap kurtarıldı",
+                "imported_count_other": "{{count}} hesap kurtarıldı",
+                "skipped_count_one": "{{count}} hesap bu cüzdanda zaten var",
+                "skipped_count_other": "{{count}} hesap bu cüzdanda zaten var",
+                "failed_count_one": "{{count}} hesap kurtarılamadı",
+                "failed_count_other": "{{count}} hesap kurtarılamadı",
+                "done": "Bitti"
+            }
+        },
+        "pera_web_import": {
+            "info": {
+                "title": "Pera Web’den içe aktar",
+                "body": "Bilgisayarında Pera Web Wallet’ı aç, Transfer Accounts bölümüne git, içe aktarmak istediğin hesapları seç ve oluşturulan QR kodu tara.",
+                "scan_button": "QR kodu tara",
+                "scanner_title": "Pera Web’deki QR kodu\ntara"
+            },
+            "loading": {
+                "title": "Hesaplar Pera Web’den içe aktarılıyor…",
+                "fetch_failed_title": "Yedekleme yüklenemedi",
+                "decrypt_failed_title": "Yedeklemenin kilidi açılamadı"
+            },
+            "result": {
+                "success_title": "Hesaplar içe aktarıldı",
+                "success_body_one": "Cüzdanına {{count}} hesap eklendi.",
+                "success_body_other": "Cüzdanına {{count}} hesap eklendi.",
+                "success_body": "Cüzdanına {{count}} hesap eklendi.",
+                "partial_title": "Bazı hesaplar içe aktarıldı",
+                "partial_body": "Yedeklemedeki bazı hesaplar içe aktarılamadı. Pera Web’de yeni bir QR kodu oluşturmayı dene.",
+                "nothing_new_title": "İçe aktarılacak yeni bir şey yok",
+                "nothing_new_body": "Yedeklemedeki tüm hesaplar bu cüzdanda zaten var.",
+                "failed_title": "İçe aktarma başarısız",
+                "failed_body": "Yedeklemeden hiçbir hesap içe aktarılamadı.",
+                "imported_count_one": "{{count}} hesap içe aktarıldı",
+                "imported_count_other": "{{count}} hesap içe aktarıldı",
+                "skipped_count_one": "{{count}} hesap bu cüzdanda zaten var",
+                "skipped_count_other": "{{count}} hesap bu cüzdanda zaten var",
+                "failed_count_one": "{{count}} hesap içe aktarılamadı",
+                "failed_count_other": "{{count}} hesap içe aktarılamadı",
+                "done": "Bitti"
+            }
+        },
+        "select_hd_wallet": {
+            "title": "Universal Wallet seç",
+            "description": "Yeni hesabını halihazırda sahip olduğun bir Universal Wallet altında oluştur",
+            "wallet_label": "Cüzdan #{{number}}",
+            "account_count_one": "{{count}} hesap",
+            "account_count_other": "{{count}} hesap",
+            "create_new_wallet": "Yeni cüzdan oluştur"
+        },
+        "watch_account": {
+            "info_title": "İzleme hesabı",
+            "info_description": "Kurtarma passphrase’ine ihtiyaç duymadan bir hesabın hareketlerini takip et. Bu, soğuk depolamada tutulan varlıkları izlemek için kullanışlıdır.",
+            "info_warning": "Bu hesaba ait kurtarma passphrase’ine sahip değilsen bu hesaba varlık gönderme.",
+            "info_button": "İzleme hesabı oluştur",
+            "title": "İzleme hesabı\noluştur",
+            "description": "Bir Algorand hesabının salt okunur bir görünümünü oluşturuyorsun.",
+            "address_placeholder": "Hesap adresi veya kısa ad",
+            "watch_button": "İzleme hesabı oluştur",
+            "invalid_address": "Lütfen geçerli bir Algorand adresi gir",
+            "duplicate_address": "Bu adres cüzdanına zaten eklenmiş"
+        }
+    },
+    "portfolio": {
+        "title": "Portföy değeri",
+        "show_chart": "Grafiği göster",
+        "hide_chart": "Grafiği gizle",
+        "last_24_hours": "Son 24 saat",
+        "last_7_days": "Son 7 gün",
+        "last_30_days": "Son 30 gün",
+        "last_year": "Son 1 yıl",
+        "info": {
+            "title": "Portföy değerini nasıl hesaplıyoruz",
+            "body": "Toplam portföy değeri, izleme hesapları hariç olmak üzere hesaplarındaki tüm varlıkların ve kullanılabilir Algo miktarının değeri toplanarak hesaplanır.\n\nVarlık değerleri, çeşitli ekosistem partnerlerinden alınan günlük değerlere göre hesaplanır.  Bazı varlıkların değerleri mevcut olmadığı için toplam portföy değeri bir tahmin olarak kabul edilmelidir."
+        }
+    },
+    "prompts": {
+        "security": {
+            "pin_dont_ask_again": "Bir daha sorma",
+            "pin_title": "PIN kodu ile güvenliğini artır",
+            "pin_description": "Pera Wallet’ı kullanmak için bu 6 haneli PIN kodu gerekli olacak. Telefonunun çalınması durumunda cüzdan güvenliğini artırmaya yardımcı olması için bir PIN kodu oluşturmanı önemle öneriyoruz.",
+            "pin_setpin": "PIN kodu belirle",
+            "pin_notnow": "Şimdi değil"
+        }
+    },
+    "rekey": {
+        "signing": {
+            "source_name": "Rekey hesabı",
+            "source_description": "Rekey işlemi",
+            "user_rejected_title": "İmzalama iptal edildi",
+            "user_rejected_body": "Rekey imzalamasını iptal ettin. Hiçbir değişiklik yapılmadı."
+        },
+        "errors": {
+            "build_failed": {
+                "title": "Rekey hazırlanamadı"
+            },
+            "signing_failed": {
+                "title": "Rekey imzalanamadı"
+            },
+            "submission_failed": {
+                "title": "Rekey gönderilemedi"
+            }
+        },
+        "confirm": {
+            "insufficient_fee_balance": "Bu hesapta {{fee}} ALGO’luk ücreti karşılamaya yetecek ALGO yok. ALGO ekle ve tekrar dene."
+        },
+        "to_standard": {
+            "intro": {
+                "title": "Standart hesaba rekey yap",
+                "body": "Bu hesap için işlemleri imzalamak üzere başka bir hesabın özel anahtarını kullan.",
+                "learn_more": "Daha fazla bilgi",
+                "expect_label": "Ne olacak",
+                "expect_1": "Gelecekteki işlemler yalnızca yetki verilen hesap tarafından imzalanabilir.",
+                "expect_2": "Bu hesap artık işlem imzalayamayacak.",
+                "expect_3": "Hesabının açık anahtarı, bakiyeleri ve yapılandırması değişmeyecek.",
+                "cta": "Süreci başlat"
+            },
+            "select": {
+                "title": "Hesap seç",
+                "subtitle": "Rekey yapmak istediğin hesabı seç. Burada seçtiğin hesap, kaynak hesabın tüm işlemlerini imzalamaktan sorumlu olacak.",
+                "empty": "Hesap bulunamadı"
+            },
+            "confirm": {
+                "title": "Rekey işlemini onayla",
+                "body": "Bu hesabı başka bir yetkili adrese rekey yapmak üzeresin. Yeni adres, bu hesap adına işlem imzalayabilecek.",
+                "learn_more": "Daha fazla bilgi",
+                "summary_label": "Rekey özeti",
+                "current_auth_label": "Şu anda rekey yapıldığı adres",
+                "fee_label": "İşlem ücreti",
+                "cta": "Onayla",
+                "replace_warning": {
+                    "title": "Önceki rekey’in değiştirilecek",
+                    "body": "<0>{{currentAuth}}</0>, artık <1>{{source}}</1> için işlem imzalama yetkisine sahip olmayacak. Devam etmeden önce bunun sonuçlarını anladığından emin ol. <2>Daha fazla bilgi</2>",
+                    "confirm": "Onayla",
+                    "cancel": "İptal"
+                }
+            },
+            "success": {
+                "title": "Hesaba başarıyla rekey yapıldı",
+                "body": "<0>{{source}}</0> hesabına başarıyla rekey yapıldı.",
+                "cta": "Bitti"
+            }
+        },
+        "to_shared": {
+            "intro": {
+                "title": "Paylaşılan hesaba rekey yap",
+                "body": "Bu hesap için işlemleri yetkilendirmek üzere başka bir paylaşılan hesabın imzalayanlarını kullan.",
+                "learn_more": "Daha fazla bilgi",
+                "expect_label": "Ne olacak",
+                "expect_1": "Gelecekteki işlemler, seçilen paylaşılan hesabın imzalayanları tarafından imzalanacak.",
+                "expect_2": "Bu hesap artık kendi başına işlem imzalayamayacak.",
+                "expect_3": "Hesabının açık anahtarı, bakiyeleri ve yapılandırması değişmeyecek.",
+                "cta": "Süreci başlat"
+            },
+            "select": {
+                "title": "Paylaşılan hesap seç",
+                "subtitle": "Rekey yapmak istediğin paylaşılan hesabı seç. Burada seçtiğin hesap, kaynak hesabın tüm işlemlerini imzalamaktan sorumlu olacak.",
+                "empty": "Paylaşılan hesap bulunamadı. Önce bir paylaşılan hesap oluştur."
+            },
+            "confirm": {
+                "title": "Rekey işlemini onayla",
+                "body": "Bu paylaşılan hesabı başka bir paylaşılan hesaba rekey yapmak üzeresin.",
+                "learn_more": "Daha fazla bilgi",
+                "summary_label": "Rekey özeti",
+                "current_auth_label": "Şu anda rekey yapıldığı adres",
+                "fee_label": "İşlem ücreti",
+                "cta": "Onayla",
+                "replace_warning": {
+                    "title": "Önceki rekey’in değiştirilecek",
+                    "body": "<0>{{currentAuth}}</0>, artık <1>{{source}}</1> için işlem imzalama yetkisine sahip olmayacak. Devam etmeden önce bunun sonuçlarını anladığından emin ol. <2>Daha fazla bilgi</2>",
+                    "confirm": "Onayla",
+                    "cancel": "İptal"
+                }
+            },
+            "success": {
+                "title": "Hesaba başarıyla rekey yapıldı",
+                "body": "<0>{{source}}</0> hesabına başarıyla rekey yapıldı.",
+                "cta": "Bitti"
+            }
+        },
+        "to_ledger": {
+            "intro": {
+                "title": "Ledger’a rekey yap",
+                "body": "Cüzdanın için imzalama yapan Ledger hesabını değiştir.",
+                "learn_more": "Daha fazla bilgi",
+                "expect_label": "Ne olacak",
+                "expect_1": "Gelecekteki işlemler yeni Ledger cihazın tarafından imzalanacak.",
+                "expect_2": "Bu hesaba bağlı bir Ledger cihazın varsa, eski Ledger’ın artık bu hesaba bağlı olmayacak.",
+                "expect_3": "Hesabının açık anahtarı, bakiyeleri ve yapılandırması değişmeyecek.",
+                "expect_4": "Telefonunda Bluetooth’un etkin olduğundan emin ol",
+                "cta": "Süreci başlat"
+            },
+            "select": {
+                "title": "Ledger hesabı seç",
+                "subtitle": "Rekey yapmak istediğin Ledger hesabını seç. Burada seçtiğin hesap, kaynak hesabın tüm işlemlerini imzalamaktan sorumlu olacak.",
+                "empty": "Ledger hesabı bulunamadı. Önce bir Ledger hesabı içe aktar."
+            },
+            "confirm": {
+                "title": "Rekey işlemini onayla",
+                "body": "Bu hesabı rekey yapmak üzeresin. Artık kendi işlemlerini imzalayamayacak.",
+                "learn_more": "Daha fazla bilgi",
+                "summary_label": "Rekey özeti",
+                "current_auth_label": "Şu anda rekey yapıldığı adres",
+                "fee_label": "İşlem ücreti",
+                "cta": "Onayla",
+                "replace_warning": {
+                    "title": "Önceki rekey’in değiştirilecek",
+                    "body": "<0>{{currentAuth}}</0>, artık <1>{{source}}</1> için işlem imzalama yetkisine sahip olmayacak. Devam etmeden önce bunun sonuçlarını anladığından emin ol. <2>Daha fazla bilgi</2>",
+                    "confirm": "Onayla",
+                    "cancel": "İptal"
+                }
+            },
+            "success": {
+                "title": "Hesaba başarıyla rekey yapıldı",
+                "body": "<0>{{source}}</0> hesabına başarıyla rekey yapıldı.",
+                "cta": "Bitti"
+            }
+        },
+        "rescan": {
+            "title": "Rekey yapılmış hesaplar",
+            "subtitle": "Rekey yapılmış hesap olarak içe aktarmak istediğin hesapları seç.",
+            "fetching": "Rekey yapılmış hesaplar aranıyor…",
+            "sweep_fetching": "Anahtarların taranıyor ({{scanned}}/{{total}})…",
+            "partial_failure_notice_one": "1 anahtar taranamadı — sonuçlar eksik olabilir. Yeniden taramak için tekrar dene.",
+            "partial_failure_notice_other": "{{count}} anahtar taranamadı — sonuçlar eksik olabilir. Yeniden taramak için tekrar dene.",
+            "empty_title": "Rekey yapılmış hesap bulunamadı",
+            "empty_body": "Blok zincirini taradık ve içe aktarılmamış hiçbir hesap bulamadık.",
+            "empty_cta": "Devam et",
+            "imported_section": "Cüzdanında olanlar",
+            "candidates_section": "İçe aktarılabilir olanlar",
+            "select_all": "Tümünü seç",
+            "cta_add": "Hesapları ekle",
+            "cta_skip": "Şimdi değil",
+            "error_title": "Tarama başarısız",
+            "error_body": "Rekey yapılmış hesaplar getirilemedi. Lütfen bağlantını kontrol et ve tekrar dene.",
+            "nothing_imported_title": "Hiçbir şey içe aktarılmadı",
+            "nothing_imported_body": "Seçilen hesaplar eklenemedi. Zaten cüzdanında olabilirler."
+        },
+        "undo": {
+            "confirm": {
+                "title": "Rekey’i geri al",
+                "body": "Bu hesabın rekey işlemini geri almak üzeresin. Yetkili adresini kullanarak hesabı yeniden kendisine rekey yapacaksın. <0>Daha fazla bilgi</0>",
+                "summary_label": "Rekey’i geri al",
+                "current_auth_label": "Şu anda rekey yapıldığı adres",
+                "fee_label": "İşlem ücreti",
+                "cta": "Devam et"
+            },
+            "warning": {
+                "title": "Önceki rekey’in geri alınacak",
+                "body": "<0>{{currentAuth}}</0>, artık <1>{{source}}</1> için işlem imzalama yetkisine sahip olmayacak. Devam etmeden önce bunun sonuçlarını anladığından emin ol. <2>Daha fazla bilgi</2>",
+                "confirm": "Onayla",
+                "cancel": "İptal"
+            },
+            "no_auth_warning": {
+                "title": "İmzalama yetkini kaybedeceksin",
+                "body": "<1>{{source}}</1> yalnızca izleme hesabına dönüşecek. Bu cüzdandan artık onun için işlem imzalayamayacaksın ve bu yalnızca özgün özel anahtarı içe aktarırsan geri alınabilir. <2>Daha fazla bilgi</2>",
+                "confirm": "Evet, rekey’i geri al",
+                "cancel": "İptal"
+            },
+            "success": {
+                "title": "Rekey başarıyla geri alındı",
+                "body": "<0>{{source}}</0> hesabı özgün durumuna döndürüldü",
+                "cta": "Bitti"
+            }
+        },
+        "quantum_downgrade_warning": {
+            "title": "Kuantuma dayanıklı koruma kaldırılsın mı?",
+            "body": "<0>{{source}}</0> hesabını <1>{{target}}</1> hesabına rekey yapmak, kuantuma dayanıklı korumasını kaldıracak. İşlemler bundan sonra kuantum saldırılarına dayanıklı olmayan standart bir anahtarla yetkilendirilecek. Bu, yeniden bir kuantum hesabına rekey yapılarak geri alınabilir.",
+            "confirm": "Devam et",
+            "cancel": "İptal"
+        }
+    },
+    "receive_funds": {
+        "account_selection": {
+            "title": "Hesap seç"
+        },
+        "qrview": {
+            "error_title": "Hesap seçilmedi",
+            "error_body": "Hiçbir hesap seçilmedi, lütfen önce bir hesap seç",
+            "copy_address": "Adresi kopyala",
+            "share": "Adresi paylaş"
+        }
+    },
+    "screens": {
+        "contacts": "Kişiler",
+        "edit_contact": "Kişiyi düzenle",
+        "add_contact": "Yeni kişi ekle",
+        "settings": "Ayarlar",
+        "security": "Güvenlik",
+        "notifications": "Bildirimler",
+        "wallet_connect": "Wallet Connect",
+        "wallet_connect_details": "Bağlantı detayları",
+        "passkeys": "Passkey’ler",
+        "connected_sites": "Bağlı siteler",
+        "connections": "Bağlantılar",
+        "currency": "Para birimi",
+        "theme": "Tema",
+        "language": "Dil",
+        "developer_settings": "Geliştirici ayarları",
+        "node_settings": "Node ayarları",
+        "feature_flags": "Özellik bayrakları",
+        "developer_menu": "Geliştirici seçenekleri",
+        "manage_cache": "Önbelleği yönet",
+        "app_integrity": "Uygulama bütünlüğü",
+        "messages": "Mesajlar"
+    },
+    "search": {
+        "title": "Ara",
+        "screen_title": "Pera Wallet’ta ara",
+        "placeholder": "Pera’da ara",
+        "empty_prompt_title": "Aramak için yazmaya başla",
+        "empty_prompt_body": "Hesaplarında, kişilerinde ve varlıklarında ara",
+        "show_more": "{{count}} tane daha göster",
+        "no_results_title": "Sonuç yok",
+        "no_results_body": "Farklı bir arama terimi dene",
+        "sections": {
+            "accounts": "Hesaplar",
+            "contacts": "Kişiler",
+            "assets": "Varlıklar"
+        },
+        "filter": {
+            "title": "Arama seçenekleri",
+            "accounts": "Hesapları dahil et",
+            "contacts": "Kişileri dahil et",
+            "assets": "Varlıkları dahil et"
+        }
+    },
+    "security": {
+        "pin": {
+            "setup_title": "6 haneli PIN kodunu\nbelirle",
+            "confirm_title": "6 haneli PIN kodunu\ntekrar gir",
+            "verify_title": "PIN kodunu gir",
+            "unlock_title": "PIN kodunu gir",
+            "change_old_title": "Eski 6 haneli PIN\nkodunu gir",
+            "logging_in": "Giriş yapılıyor"
+        },
+        "lockout": {
+            "title": "Pera Wallet uygulaması kilitli",
+            "subtitle": "Çok fazla hatalı PIN denemesi",
+            "tryagain_in": "Tekrar denemek için kalan süre",
+            "reset_button": "Tüm verileri sıfırla"
+        },
+        "biometric": {
+            "enable_prompt_title": "Biyometrik girişi etkinleştir",
+            "unlock_prompt_title": "Pera Wallet’ın kilidini aç",
+            "cancel_label": "İptal"
+        }
+    },
+    "send_funds": {
+        "input_view": {
+            "title": "{{asset}} gönder"
+        },
+        "add_note": {
+            "done": "Bitti",
+            "placeholder": "Notunu gir",
+            "button": "+ Not ekle",
+            "edit": "Notu düzenle"
+        },
+        "asset_selection": {
+            "title": "Varlık seç",
+            "search_placeholder": "Varlık adına veya ID’ye göre ara",
+            "no_results_title": "Eşleşen varlık yok",
+            "no_results_body": "Arama terimine uyan varlık bulunamadı"
+        },
+        "bottom_sheet": {
+            "no_account_title": "Hesap seçilmedi",
+            "no_account_body": "Hiçbir hesap seçilmedi, lütfen önce bir hesap seç"
+        },
+        "info": {
+            "title": "İşlem ipuçları",
+            "preamble": "İşlemini tamamlamadan önce birkaç ipucunu göz önünde bulundur",
+            "tip_1": "Bir adrese ilk kez gönderim yaparken, büyük bir miktar göndermeden önce küçük bir test işlemi yapmak faydalıdır.",
+            "tip_2": "Borsalar yatırma adreslerini sık sık değiştirir ve kaydettiğin borsa adresleri artık kullanımda olmayabilir. <0>Doğru adrese gönderdiğinden emin ol</0>",
+            "more_info": "İşlemler hakkında daha fazla bilgi için <0>buraya dokun</0>",
+            "i_understand": "Anladım"
+        },
+        "input": {
+            "max": "MAKS",
+            "next": "İleri",
+            "error_title": "Geçersiz miktar",
+            "error_body": "Lütfen {{min}} değerinden büyük bir miktar gir.",
+            "exceeds_max_title": "Yetersiz bakiye",
+            "exceeds_max_body": "Miktar, kullanılabilir bakiyeni aşıyor.",
+            "min_balance_title": "Min. bakiye",
+            "min_balance_amount": "Hesap yapılandırmana göre minimum bakiyen {{minBalance}}.",
+            "min_balance_body": "Devam’a bastığında, Algorand Blockchain’in gerektirdiği minimum bakiyeyi korumak için işlem miktarın güncellenecek. Bu değişikliği bir sonraki adımda önizleyebileceksin.",
+            "rekeyed_min_balance_title": "Min. bakiye",
+            "rekeyed_min_balance_amount": "Bu hesaba rekey yapılmış ve minimum bakiyesini koruması gerekiyor: {{minBalance}}.",
+            "rekeyed_min_balance_body": "Devam’a bastığında, gerekli minimum bakiyeyi korumak için işlem miktarın güncellenecek. Rekey yapılmış bir hesap kapatılamaz."
+        },
+        "destination": {
+            "error_title": "Bir şeyler ters gitti",
+            "error_body": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene."
+        },
+        "confirmation": {
+            "edit": "Düzenle",
+            "title": "İşlemi onayla",
+            "amount": "Miktar",
+            "account": "Hesap",
+            "to": "Alıcı",
+            "fee": "Ücret",
+            "current_balance": "Mevcut bakiye",
+            "note": "Not",
+            "recipient_below_mbr": {
+                "title": "Miktar alıcının minimumunun altında",
+                "body": "Algorand’ın minimum bakiye gereksinimini karşılamak için alıcının bu işlemden sonra en az {{min}} ALGO’ya sahip olması gerekiyor."
+            }
+        },
+        "processing": {
+            "title": "İşlem gönderiliyor",
+            "subtitle": "İşlemin Algorand ağı tarafından işleniyor.",
+            "title_hardware": "Ledger cihazına bağlanılıyor",
+            "subtitle_hardware": "{{deviceName}} cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, Algorand uygulamasının da açık olduğundan emin ol.",
+            "subtitle_hardware_noDevice": "Ledger cihazına ulaşılıyor. Cihazın kilidinin açık ve menzilde olduğundan, Algorand uygulamasının da açık olduğundan emin ol."
+        },
+        "success": {
+            "title": "İşlem gerçekleşti",
+            "asset_transferred_title": "Varlık transfer edildi",
+            "subtitle": "İşlemin Algorand ağı tarafından başarıyla alındı",
+            "view_in_explorer": "İşlem detayını Pera Explorer’da gör",
+            "done": "Bitti"
+        },
+        "close_account": {
+            "title": "Hesabı kapat",
+            "body": "Bu hesapta eklenmiş varlık yok. Bakiyenin tamamını göndermek, hesabı Algorand ağında kapatır.",
+            "confirm": "Hesabı kapat ve gönder",
+            "warning": "Bu işlem, hesabını Algorand ağında kapatacak.",
+            "success_title": "Hesap kapatıldı",
+            "success_subtitle": "Hesabın Algorand ağında kapatıldı."
+        },
+        "express_send": {
+            "title": "Hızlı gönderim",
+            "body_1": "Alıcı bu varlığı henüz eklemedi. İki hesap da senin cüzdanında olduğu için Pera, ekleme işlemini otomatik olarak yapabilir.",
+            "body_2": "Pera, her şeyin tek seferde olması için işlemleri tek bir atomik grupta birleştirecek.",
+            "how_it_works": "Nasıl çalışır",
+            "step_1": "Alıcının ekleme ücretini karşılamak için küçük bir ALGO ödemesi gönder",
+            "step_2": "Varlığı alıcının hesabına ekle",
+            "step_3": "Varlığı alıcıya gönder",
+            "continue": "Devam et",
+            "dont_show_again": "Bunu tekrar gösterme"
+        },
+        "arc59_summary": {
+            "title": "Varlık gelen kutusuna gönder",
+            "description": "Alıcı bu varlığı eklemedi. Bunun yerine varlığı, alıcının varlık gelen kutusuna gönderebilirsin.",
+            "read_more": "Daha fazla bilgi",
+            "recipient_label": "Alıcı",
+            "fees_label": "Protokol ve minimum bakiye ücretleri",
+            "disclaimer": "Yukarıdaki ücret, alıcının minimum bakiye gereksinimlerini karşılamak için kullanılacak. Alıcı varlığı reddederse sana hiçbir şey geri dönmez."
+        },
+        "arc59_warning": {
+            "title": "Uyarı",
+            "message": "Bu fonları göndermeden önce kullanıcının varlık gelen kutusuna erişebildiğinden emin ol:",
+            "confirm": "Anladım",
+            "cancel": "İptal",
+            "item1": "Pera Wallet kullanıcıları",
+            "item2": "Lute Wallet kullanıcıları",
+            "item3": "Merkezi borsalar",
+            "item4": "Akıllı kontrat cüzdanları",
+            "item5": "Merkeziyetsiz borsalar"
+        },
+        "insufficient_balance": {
+            "title": "Minimum bakiye",
+            "message": "Bu hesapta, bu işlem için gerekli olan {{amount}} ALGO’luk minimum bakiye yok.",
+            "done": "Bitti"
+        }
+    },
+    "settings": {
+        "currency": {
+            "title": "Ana para birimi",
+            "description": "Ana para birimin <0>{{preferredCurrency}}</0>, ikincil para birimin ise <0>{{fallbackCurrency}}</0>.",
+            "search_placeholder": "Ara",
+            "offline_rate": {
+                "title": "Çevrimdışıyken kur bilgisi yok",
+                "body": "{{currency}} tutarları yeniden çevrimiçi olana kadar gösterilemez. Seçimin kaydedildi."
+            }
+        },
+        "main": {
+            "account_section": "Hesap",
+            "security_title": "Güvenlik",
+            "notifications_title": "Bildirimler",
+            "scan_rekeyed_title": "Rekey yapılan hesapları tara",
+            "wallet_connect_title": "WalletConnect oturumları",
+            "passkeys_title": "Passkey’ler",
+            "connected_sites_title": "Bağlı siteler",
+            "connections_title": "Bağlantılar",
+            "app_preferences_section": "Uygulama tercihleri",
+            "currency_title": "Para birimi",
+            "theme_title": "Tema",
+            "language_title": "Dil",
+            "support_section": "Destek",
+            "rate_title": "Pera Wallet’i değerlendir",
+            "terms_title": "Kullanım koşulları",
+            "privacy_title": "Gizlilik politikası",
+            "developer_title": "Geliştirici ayarları",
+            "remove_all_accounts": "Tüm verileri sil ve çıkış yap",
+            "remove_title": "Tüm verileri sil",
+            "remove_message": "Kayıtlı hesapların da dahil olmak üzere cüzdandaki tüm verileri silmek üzeresin. Onaylamadan önce hesap passphrase’lerini başka bir yerde sakladığından emin ol. Aksi hâlde hesaplarını geri yükleyemezsin. Devam etmek istediğinden emin misin?",
+            "remove_confirm": "Evet, tüm hesapları sil ve çıkış yap",
+            "remove_cancel": "Kalsın",
+            "remove_success_title": "Verilerin başarıyla silindi",
+            "version_footer": "Pera Wallet sürüm {{version}} ({{build}})"
+        },
+        "theme": {
+            "system_label": "Sistem varsayılanı",
+            "light_label": "Açık",
+            "dark_label": "Koyu"
+        },
+        "language": {
+            "system_label": "Sistem varsayılanı"
+        },
+        "rating": {
+            "title": "Deneyimini değerlendir",
+            "body": "Deneyimin nasıldı, bize anlat."
+        },
+        "developer": {
+            "node_settings_title": "Node ayarları",
+            "dispenser_title": "Algorand Dispenser",
+            "node_settings": {
+                "mainnet_label": "Algorand MainNet",
+                "testnet_label": "Algorand TestNet",
+                "betanet_label": "Algorand BetaNet",
+                "custom_label": "Özel ağ",
+                "non_mainnet_warning_title": "MainNet dışında sınırlı destek",
+                "non_mainnet_warning_body": "Tam olarak desteklenen tek ağ MainNet’tir. Pera servislerine dayanan özellikler — varlık detayları, swap, satın alma, kart, staking ve gelen kutusu — TestNet’te sınırlıdır; BetaNet ve özel node’larda hiç kullanılamaz.",
+                "enable_mainnet": "MainNet’i etkinleştir",
+                "enable_testnet": "TestNet’i etkinleştir",
+                "custom_sheet_title": "Özel ağı yapılandır",
+                "algod_url_label": "Algod URL",
+                "indexer_url_label": "Indexer URL",
+                "algod_token_label": "Algod token (isteğe bağlı)",
+                "indexer_token_label": "Indexer token (isteğe bağlı)",
+                "genesis_hash_label": "Genesis hash",
+                "genesis_id_label": "Genesis ID",
+                "fetch_from_node": "Node’dan al",
+                "fetch_failed": "Bu node’a ulaşılamadı. Değerleri elle gir.",
+                "invalid_url": "Geçerli bir http:// veya https:// URL gir",
+                "genesis_required": "Genesis hash’i al veya gir",
+                "genesis_id_required": "Genesis ID’yi al veya gir",
+                "save": "Kaydet ve geç",
+                "cancel": "İptal",
+                "reset": "Varsayılanlara dön"
+            },
+            "debug_dapp": "Test Dapp",
+            "manage_cache": "Önbelleği yönet",
+            "screen_gallery": "Ekran galerisi",
+            "app_integrity": "Uygulama bütünlüğü",
+            "app_integrity_run": "Kayıt handshake’ini çalıştır",
+            "app_integrity_verify": "Token’ı doğrula",
+            "app_integrity_clear": "Kayıtlı durumu temizle",
+            "app_integrity_environment": "Ortam: {{value}}",
+            "app_integrity_platform": "Platform: {{value}}",
+            "app_integrity_supported": "Destekleniyor:",
+            "app_integrity_status": "Durum:",
+            "app_integrity_token": "Token: {{value}}",
+            "app_integrity_expiry": "Son kullanım: {{value}}",
+            "app_integrity_error": "Hata: {{value}}",
+            "app_integrity_verify_label": "Doğrulama:",
+            "app_integrity_verify_error": "Doğrulama hatası: {{value}}",
+            "app_integrity_none": "yok",
+            "app_integrity_verify_ok": "tamam",
+            "app_integrity_verify_failed": "başarısız",
+            "refresh_cache": "Tüm önbelleği yenile",
+            "refresh_cache_success_title": "Önbellek yenilendi",
+            "refresh_cache_success_body": "Tüm hesaplar yeniden çekildi ve sorgular geçersiz kılındı.",
+            "refresh_cache_error_title": "Yenileme başarısız",
+            "refresh_cache_error_body": "Önbellek yenilenemedi. Ayrıntılar için logları kontrol et.",
+            "reset_banners": "Banner’ları sıfırla",
+            "reset_banners_success_title": "Banner’lar sıfırlandı",
+            "reset_banners_success_body": "Kapatılan banner’lar yeniden görünecek.",
+            "clear_one_time_flags": "Tek seferlik işaretleri temizle",
+            "clear_one_time_flags_success_title": "Tek seferlik işaretler temizlendi",
+            "clear_one_time_flags_success_body": "İlk açılış mesajları ve uyarılar yeniden gösterilecek.",
+            "taps_to_notify": "{{remaining}} dokunuş sonra geliştirici menüsü açılacak",
+            "developer_menu_enabled": "Geliştirici menüsü açıldı",
+            "overridden": "Geçersiz kılındı",
+            "enabled": "Açık",
+            "disabled": "Kapalı"
+        },
+        "security": {
+            "security_settings_section": "Güvenlik ayarları",
+            "enable_pin_security": "PIN kodunu etkinleştir",
+            "change_pin": "PIN kodu belirle / değiştir",
+            "enable_biometrics": "Biyometriyi etkinleştir",
+            "antispam_section": "Spam koruması",
+            "enable_rekey_support": "Rekey desteğini etkinleştir",
+            "enable_rekey_support_description": "Bunu etkinleştirdiğinde, hesabına rekey yapan işlem isteklerini onaylayabilirsin. Bu, hesabının kontrolünü başka bir adrese verir.",
+            "biometric_error_title": "Kimlik doğrulanamadı.",
+            "biometric_error_message": "Kimliğini doğrulayamadık. Lütfen tekrar dene.",
+            "biometric_weak_title": "Daha güçlü biyometri gerekli",
+            "biometric_weak_message": "Pera, cüzdanının kilidini açmak için parmak izi ya da başka güçlü bir biyometri gerektirir. Cihazının biyometri ayarlarından bir parmak izi ekle, sonra bunu yeniden aç.",
+            "advanced_security_settings": "Gelişmiş güvenlik ayarları",
+            "enable_asset_freeze_support": "Varlık dondurma desteğini etkinleştir",
+            "enable_asset_freeze_support_description": "Bunu etkinleştirdiğinde, hesaplardaki varlıkları donduran veya dondurmayı kaldıran işlem isteklerini onaylayabilirsin. Bu, hedef hesabın belirtilen varlıkla işlem yapmasını engelleyebilir.",
+            "shake_to_lock": "Sallayarak kilitle",
+            "shake_to_lock_description": "Telefon sallandığında veya ani bir hareketle sarsıldığında cüzdanı otomatik olarak kilitler. Telefonun kapılması durumunda ya da herhangi bir ekrandan hızlıca kilitlemek istediğinde işine yarar.",
+            "shake_to_lock_info_title": "Sallayarak kilitle",
+            "shake_to_lock_info_body": "Bu açıkken Pera, cüzdan açık olduğu sürece telefonun hareket sensörüyle ani hareketleri dinler. Sert bir sallama ya da ani bir sarsıntı cüzdanı anında kilitler; böylece acele bir durumda telefonunu sallayarak kilitleyebilirsin. PIN’in etkin olması gerekir.",
+            "shake_to_lock_requires_pin": "Bu özelliği kullanmak için PIN’i etkinleştir.",
+            "duress_pin": "Zorlama PIN’i",
+            "duress_pin_description": "Kilit ekranında girildiğinde cüzdanı sessizce silen alternatif bir PIN. Silinen veriler kurtarılamaz — bunu etkinleştirmeden önce kurtarma passphrase’ini yedeklediğinden emin ol.",
+            "duress_pin_info_title": "Zorlama PIN’i",
+            "duress_pin_info_body": "Zorlama altında girebileceğin alternatif bir PIN belirle. Kilit ekranında gerçek PIN’in yerine bunu girersen Pera tüm hesaplarını sessizce siler ve yerine yeni, boş bir cüzdan koyar; böylece hiç fonun yokmuş gibi görünür. İstersen biyometri açık kalabilir — zorlama altında biyometri istemini iptal et ve zorlama PIN’ini elle yaz. Zorlama PIN’i normal PIN’inden farklı olmalıdır.\n\nÖnemli: zorlama silmesi kalıcıdır. Yalnızca bu cihazda saklanan hiçbir şey (başka bir yere yedeklemediğin hesaplar) sonradan kurtarılamaz. Bunu açmadan önce kurtarma passphrase’ini kaydettiğinden emin ol.",
+            "duress_pin_requires_pin": "Bu özelliği kullanmak için PIN’i etkinleştir.",
+            "duress_pin_matches_regular": "Zorlama PIN’in normal PIN’inden farklı olmalı."
+        },
+        "notifications": {
+            "push_notifications": "Push bildirimleri",
+            "account_notifications": "Bildirim gösterilecek hesaplar",
+            "no_accounts": "Hesap bulunamadı.",
+            "no_accounts_body": "Hesap bulunamadı. Bildirim tercihlerini yönetmek için bir hesap ekle."
+        },
+        "passkeys": {
+            "empty_title": "Henüz passkey yok",
+            "disabled_body_ios": "Herhangi bir web sitesi için passkey’lerini doğrudan Pera Wallet’te sakla ve TouchID ya da FaceID ile giriş yapmak için kullan.",
+            "disabled_body_android": "Herhangi bir web sitesi için passkey’lerini doğrudan Pera Wallet’te sakla ve parmak izi ya da yüz taramasıyla giriş yapmak için kullan.",
+            "disabled_info_header": "Passkey’leri etkinleştir",
+            "disabled_info_body_ios": "Pera Wallet için passkey’leri Ayarlar > Genel > Otomatik Doldurma ve Şifreler yolundan etkinleştirebilirsin",
+            "disabled_info_body_android": "Pera Wallet için passkey’leri Ayarlar > Şifreler, passkey’ler ve hesaplar yolundan etkinleştirebilirsin",
+            "disabled_cta": "Ayarlara git",
+            "last_used": "Son kullanım",
+            "last_used_today": "Bugün",
+            "last_used_never": "Hiç",
+            "username": "Kullanıcı adı",
+            "remove_title": "Passkey’i kaldır",
+            "remove_body": "Bu passkey’i kaldırmak üzeresin. Devam etmek istediğinden emin misin?",
+            "remove_confirm": "Kaldır",
+            "remove_cancel": "Kalsın",
+            "loading": "Passkey’ler kontrol ediliyor...",
+            "error_title": "Bir şeyler ters gitti",
+            "error_body": "Lütfen tekrar dene.",
+            "error_cta": "Kapat",
+            "liquid_protocol_placeholder_title": "Liquid Auth",
+            "liquid_protocol_placeholder_body": "Liquid Auth protokolü desteği yakında geliyor.",
+            "biometric_warning_title": "Ekran kilidi gerekli",
+            "biometric_warning_body": "Passkey’lerin güvenli şekilde kaydedilip girişte kullanılabilmesi için bu cihazda bir ekran kilidi — parmak izi, yüz tanıma ya da cihaz PIN’i, deseni veya şifresi — kurulu olmalı. Cihaz ayarlarından bir tane ekle.",
+            "biometric_required_body": "Bu cihazda bir ekran kilidi (parmak izi, yüz tanıma ya da cihaz PIN’i, deseni veya şifresi) kurulu olmadan passkey kullanamazsın. Cihaz ayarlarından bir tane ekle, sonra yeniden tara.",
+            "biometric_required_dismiss": "Anladım",
+            "hd_wallet_warning_title": "Universal Wallet gerekli",
+            "hd_wallet_warning_body": "Passkey’ler bir Universal Wallet’in kurtarma passphrase’inden türetilir. Passkey kullanmak için bu cihazda bir Universal Wallet oluştur ya da kurtar.",
+            "hd_wallet_required_body": "Bu cihazda bir Universal Wallet olmadan passkey kullanamazsın. Bir tane oluştur ya da kurtar, sonra yeniden tara.",
+            "hd_wallet_required_dismiss": "Anladım",
+            "interception_toggle_title": "Passkey otomatik doldurma",
+            "interception_toggle_body_enabled": "Pera Wallet, giriş yaptığın siteler için passkey kaydedebilir ve önerebilir.",
+            "interception_toggle_body_disabled": "Pera Wallet’in giriş yaptığın siteler için passkey kaydedip önermesi için bunu aç."
+        },
+        "connected_sites": {
+            "empty_title": "Bağlı site yok",
+            "empty_body": "Cüzdanını bağladığın siteler burada görünecek.",
+            "accounts_count": "{{count}} hesap",
+            "accounts_count_one": "{{count}} hesap",
+            "revoke_title": "Siteyle bağlantıyı kes",
+            "revoke_body": "{{origin}} artık bağlı hesaplarına erişemeyecek. Siteden dilediğin zaman yeniden bağlanabilirsin.",
+            "revoke_confirm": "Bağlantıyı kes",
+            "revoke_cancel": "İptal"
+        },
+        "connections": {
+            "empty_title": "Bağlantı yok",
+            "empty_body": "WalletConnect oturumların ve bağlı siteler burada görünecek.",
+            "badge_wallet_connect": "WalletConnect",
+            "badge_dapp": "Dapp"
+        }
+    },
+    "signing": {
+        "view_details": "İşlem detaylarını görüntüle",
+        "balance_impact": {
+            "receive_title": "Alacaksın",
+            "spend_title": "Harcayacaksın",
+            "analyzing": "İşlem analiz ediliyor…",
+            "unavailable": "Bakiye etkisi önizlenemiyor — imzalamadan önce işlem detaylarını dikkatlice incele.",
+            "entire_balance": "Tüm {{unit}} bakiyesi",
+            "closes_balance": "Kalan tüm bakiyen gönderilir",
+            "new_asset": "Bu işlemle oluşturulan yeni varlık"
+        },
+        "arbitrary_data_view": {
+            "body": "Veri imzalama isteği",
+            "details_title": "Serbest veri imzalama detayları",
+            "show_details": "Detayları göster",
+            "on_behalf_of": "Adına imzalanan hesap",
+            "data_label": "İmzalanacak veri",
+            "untrusted_message_label": "Görüntülenen mesaj (imzaladığın verinin parçası değil)",
+            "binary_warning_title": "Veri okunabilir metin değil",
+            "binary_warning_body": "İmzalanacak veri okunabilir bir metin değil, bu yüzden ham baytları onaltılık olarak gösteriliyor. Yalnızca bu uygulamaya güveniyorsan onayla."
+        },
+        "arbitrary_data_details": {
+            "unnamed": "Birisi",
+            "description": "Veri imzalama isteği, serbest verinin imzalanması için yapılan bir istektir. Servisler bunu genellikle bir hesabın sahipliğini doğrulamak için kullanır ve herhangi bir ücret oluşturmaz.",
+            "from": "İmzalayan hesap",
+            "to": "İsteği yapan",
+            "amount": "Miktar",
+            "fee": "Ücret",
+            "message": "Mesaj",
+            "message_untrusted_note": "Uygulama tarafından sağlandı. İmzalanan şey bu metin değil.",
+            "data": "İmzalanan veri"
+        },
+        "transaction_view": {
+            "invalid_title": "Geçersiz işlem",
+            "invalid_body": "Geçerli bir işlem bulunmuyor",
+            "transaction_failed_title": "İmzalama başarısız"
+        },
+        "transactions": {
+            "title": "İşlemleri incele",
+            "title_one": "İşlemi incele",
+            "title_many": "İşlemleri incele",
+            "multiple_transactions_title": "Birden fazla işlem",
+            "transactions_count_one": "{{count}} işlem",
+            "transactions_count_other": "{{count}} işlem",
+            "details": "İşlem detayları",
+            "signing_with": "İmzalayan hesap"
+        },
+        "external_transaction": {
+            "pill_label": "İmzalandı",
+            "sheet_title": "Başka imzalayan",
+            "sheet_body": "Bu işlem başka bir taraf tarafından imzalandı veya imzalanacak. Burada yalnızca bütünlük için gösteriliyor.",
+            "sheet_dismiss": "Anladım",
+            "detail_callout_title": "Başka imzalayan",
+            "detail_callout_body": "Bu işlem başka bir taraf tarafından imzalandı veya imzalanacak. Burada yalnızca bütünlük için gösteriliyor."
+        },
+        "unknown_request_type": {
+            "title": "Bilinmeyen istek türü",
+            "body": "İstek türü bilinmiyor."
+        },
+        "signing_completed": {
+            "transaction_title": "İşlem gerçekleştiriliyor",
+            "transaction_body": "İşlemin başarıyla gönderildi ve şu anda gerçekleştiriliyor.",
+            "data_title": "Veri imzalama başarılı",
+            "data_body": "Verin başarıyla imzalandı ve isteği yapan uygulamaya gönderildi."
+        },
+        "signing_failed": {
+            "title": "İmzalama başarısız",
+            "body": "Bu imzalama isteği tamamlanamadı. İsteği yapan uygulama bilgilendirildi."
+        },
+        "cannot_sign": {
+            "title": "Bu hesap için imzalayamazsın",
+            "body": "Bu bir paylaşılan hesap ve imzalayan hesaplarından hiçbiri cüzdanında yok. Bu hesap için işlem imzalamak üzere bir imzalayan hesap ekle.",
+            "rekeyed_auth_missing_body": "Bu hesap şu adrese rekey edilmiş: {{authAddress}}. Bu adres bu cüzdanda olmadığı için hesap işlem imzalayamaz. Bu hesap için imzalamak üzere auth hesabını içe aktar.",
+            "rekeyed_auth_watch_body": "Bu hesap, imzalama anahtarı bulunmayan bir izleme hesabına rekey edilmiş. Bu hesap için imzalamak üzere auth hesabının anahtarını içe aktar."
+        },
+        "transaction_request_faq": {
+            "title": "İşlem isteği SSS",
+            "body": "dApp olarak da bilinen harici uygulamalar, Pera Wallet’tan bağımsız olarak işlem istekleri başlatabilir. Bu işlemleri onaylayıp imzalamadan önce dikkatlice incelediğinden emin ol.",
+            "warning": "Tüm işlemler geri alınamaz. Bu istekler Pera Wallet’ın kontrolü dışında olduğundan, tanımadığın bir dApp’ten gelen işlemleri asla onaylama."
+        },
+        "arc60_view": {
+            "title": "Kimlik doğrulama isteği",
+            "description": "İmza, bu hesabın kontrolünün sende olduğunu kanıtlar ancak zincir üzerinde herhangi bir eylemi yetkilendirmez.",
+            "domain": "Alan adı",
+            "scope": "Kapsam",
+            "scope_auth": "Kimlik doğrulama",
+            "request_id": "İstek ID",
+            "on_behalf_of": "İmzalayan hesap",
+            "siwa_statement": "Beyan",
+            "siwa_uri": "URI",
+            "siwa_version": "Sürüm",
+            "siwa_chain_id": "Chain ID",
+            "siwa_nonce": "Nonce",
+            "siwa_issued_at": "Oluşturulma zamanı",
+            "siwa_expiration": "Son geçerlilik",
+            "siwa_not_before": "Geçerlilik başlangıcı",
+            "siwa_resources": "Kaynaklar",
+            "siwa_invalid": "Bu kimlik doğrulama isteği hatalı biçimlendirilmiş ve imzalanamaz.",
+            "origin_mismatch": "Bu site, farklı bir alan adına giriş yapmanı istiyor ({{domain}}). Yalnızca güveniyorsan devam et.",
+            "show_details": "Detayları göster",
+            "details_title": "Kimlik doğrulama isteği detayları",
+            "details_description": "Onaylamadan önce bu kimlik doğrulama isteğinin tüm metadata’sını incele."
+        }
+    },
+    "transactions": {
+        "common": {
+            "from": "Gönderen",
+            "to": "Alıcı",
+            "fee": "Ücret",
+            "tx_fee": "İşlem ücretin",
+            "total_fee": "Toplam ücretin",
+            "round": "Round",
+            "amount": "Miktar",
+            "asset": "Varlık",
+            "asset_id": "Varlık ID",
+            "asset_unavailable": "Varlık kullanılamıyor",
+            "date": "Tarih",
+            "note": "İşlem notu",
+            "view_raw_transaction": "JSON’u görüntüle",
+            "view_in_explorer": "Pera Explorer’da görüntüle",
+            "view_asset_url": "Varlık URL’sini görüntüle",
+            "view_note": "Notu görüntüle",
+            "view_metadata": "Metadata’yı görüntüle",
+            "completed": "Tamamlandı",
+            "failed": "Başarısız",
+            "pending": "Beklemede",
+            "raw_transaction": "Ham işlem"
+        },
+        "list_item": {
+            "send": "Gönder",
+            "receive": "Al",
+            "swap": "Swap",
+            "opt_in": "Opt-in",
+            "opt_out": "Opt-out",
+            "asset_config": "Varlık yapılandırması",
+            "asset_freeze": "Varlık dondurma",
+            "app_call": "Uygulama çağrısı",
+            "key_registration": "Anahtar kaydı",
+            "default": "İşlem",
+            "more_impacts": "{{count}} tane daha göster"
+        },
+        "type": {
+            "pay": "Ödeme işlemi",
+            "keyreg": "Anahtar kaydı işlemi",
+            "acfg": "Varlık yapılandırma işlemi",
+            "axfer": "Varlık transfer işlemi",
+            "afrz": "Varlık dondurma işlemi",
+            "appl": "Uygulama çağrısı işlemi",
+            "stpf": "State Proof işlemi",
+            "hb": "Heartbeat işlemi",
+            "unknown": "Bilinmeyen işlem"
+        },
+        "warning": {
+            "title": "Uyarı",
+            "title_cta_group_one": "Potansiyel olarak tehlikeli bir eylem bulundu",
+            "title_cta_group_other": "{{count}} potansiyel olarak tehlikeli eylem bulundu",
+            "title_cta_one": "Potansiyel olarak tehlikeli bir eylem bulundu",
+            "title_cta_other": "{{count}} potansiyel olarak tehlikeli eylem bulundu",
+            "close_group_warning": "Bu işlem grubu hesaplarından birini kapatır ve kalan fonları başka bir adrese gönderir. İmzalamadan önce dikkatlice incele.",
+            "rekey_group_warning": "Bu işlem grubu hesaplarından birini başka bir adrese rekey yapar ve bu süreçte hesabının sahipliğini devreder.",
+            "close_warning": "Bu işlem hesabı kapatır ve kalan fonları şu adrese gönderir: {{address}}",
+            "rekey_warning": "Bu işlem hesabı şu adrese rekey yapar: {{address}}.",
+            "rekey_warning_bold": "Bu, hesabının tam kontrolünü başka bir adrese devreder. İmzalamadan önce dikkatlice incele.",
+            "from_account": "Gönderen: {{address}}",
+            "rekey_confirm_title": "Rekey desteğini etkinleştir",
+            "rekey_confirm_description": "Rekey işlemleri hesabının kontrolünü kaybetmene neden olabilir. Bu işlemi onaylamak için uygulama ayarlarından \"Rekey desteği\" seçeneğini etkinleştirmen gerekiyor.",
+            "rekey_confirm_go_to_settings": "Gelişmiş ayarlara git",
+            "rekey_are_you_sure_title": "Emin misin?",
+            "rekey_are_you_sure_description": "Bu imza, hesaplarının kontrolünü başka bir adrese veren bir rekey işlemi içeriyor. Devam etmeden önce sonuçlarını anladığından emin ol.",
+            "rekey_are_you_sure_continue": "Devam et",
+            "high_fee_warning": "Bu istek, alışılmadık şekilde yüksek bir ağ ücreti ödüyor: {{fee}} ALGO. İmzalamadan önce kaynağa güvendiğinden emin ol.",
+            "asset_freeze_warning": "Bu işlem, şu adrese ait varlıkları dondurur veya dondurmayı kaldırır: {{address}}.",
+            "asset_freeze_group_warning": "Bu işlem grubu, bu gruptaki hesaplardan biri için varlıkları dondurur veya dondurmayı kaldırır. İmzalamadan önce dikkatlice incele.",
+            "asset_freeze_warning_bold": "Bu, hedef hesabın dondurulan varlıkla işlem yapmasını engelleyebilir. İmzalamadan önce dikkatlice incele.",
+            "asset_freeze_confirm_title": "Varlık dondurma desteğini etkinleştir",
+            "asset_freeze_confirm_description": "Varlık dondurma işlemleri, hesapların belirli varlıklarla işlem yapmasını engelleyebilir. Bu işlemi onaylamak için uygulama ayarlarından \"Varlık dondurma desteği\" seçeneğini etkinleştirmen gerekiyor.",
+            "asset_freeze_confirm_go_to_settings": "Gelişmiş ayarlara git",
+            "asset_freeze_are_you_sure_title": "Emin misin?",
+            "asset_freeze_are_you_sure_description": "Bu imza, hedef hesabın belirtilen varlıkla işlem yapmasını engelleyebilecek bir varlık dondurma işlemi içeriyor. Devam etmeden önce sonuçlarını anladığından emin ol.",
+            "asset_freeze_are_you_sure_continue": "Devam et"
+        },
+        "fee_warning": {
+            "title": "Standart dışı ücretler",
+            "body": "Bu işlemin ücretleri standart ağ ücretinden daha yüksek. Bunun nedeni ağ yoğunluğu veya uygulamanın gerektirdiği ek ücretler olabilir."
+        },
+        "quantum_fee": {
+            "title": "Quantum ağ ücreti",
+            "body": "Quantum hesapları daha büyük imzalar kullanır, bu yüzden işlemleri standart hesaplara göre daha yüksek bir ağ ücreti gerektirir.",
+            "adjusted_label": "Ayarlandı",
+            "adjusted_title": "Quantum imzalama için ücret ayarlandı",
+            "adjusted_body": "Bu uygulama {{originalFee}} ALGO ücret talep etti; bu tutar Quantum hesapları için gereken minimumun altında. Ağın işlemi kabul etmesi için Pera ücreti {{adjustedFee}} ALGO’ya yükseltti. Uygulama, ayarlanmış işlemi alacak."
+        },
+        "unknown": {
+            "title": "Desteklenmeyen işlem türü",
+            "body": "Bu işlem türü desteklenmiyor."
+        },
+        "asset_transfer": {
+            "clawback_from": "Clawback yapılan adres"
+        },
+        "asset_config": {
+            "name": "Ad",
+            "unit": "Birim adı",
+            "url": "URL",
+            "total": "Toplam arz",
+            "decimals": "Ondalık basamak",
+            "default_frozen": "Varsayılan olarak dondurulmuş",
+            "manager": "Yönetici",
+            "reserve": "Rezerv",
+            "freeze_addr": "Dondurma adresi",
+            "clawback": "Clawback adresi",
+            "metadata_hash": "Metadata"
+        },
+        "asset_freeze": {
+            "target": "Hedef hesap",
+            "status": "Durum",
+            "frozen": "Donduruldu",
+            "unfrozen": "Dondurulmadı"
+        },
+        "key_reg": {
+            "valid_rounds": "Geçerli round’lar",
+            "key_dilution": "Key dilution",
+            "participation_key": "Katılım anahtarı",
+            "selection_key": "Seçim anahtarı",
+            "status": "Kayıt durumu",
+            "online": "Çevrimiçi",
+            "offline": "Çevrimdışı"
+        },
+        "app_call": {
+            "app_id": "Uygulama ID",
+            "details": "Gelişmiş uygulama detayları",
+            "on_completion": "Tamamlanma eylemi",
+            "args_count": "Argümanlar",
+            "accounts": "Hesap referansları",
+            "foreign_apps": "Harici uygulamalar",
+            "foreign_assets": "Harici varlıklar",
+            "boxes": "Box referansları",
+            "inner_transactions_one": "{{count}} iç işlem",
+            "inner_transactions_other": "{{count}} iç işlem",
+            "inner_transactions_unavailable": "Görüntülemek için internete bağlan"
+        },
+        "group_transactions_one": "{{count}} grup işlemi",
+        "group_transactions_other": "{{count}} grup işlemi",
+        "group": {
+            "group_number": "İşlem grubu",
+            "group_id": "Grup ID: {{groupId}}",
+            "transactions_count_one": "{{count}} işlem",
+            "transactions_count_other": "{{count}} işlem"
+        },
+        "summary": {
+            "payment_to": "Ödeme alıcısı",
+            "opt_in": "{{asset}} varlığı için opt-in, alıcı",
+            "opt_out": "{{asset}} varlığı için opt-out, gönderen",
+            "transfer": "{{asset}} varlığı transferi, alıcı",
+            "clawback": "{{asset}} varlığı clawback, gönderen",
+            "app_id": "Uygulama ID: {{id}}"
+        },
+        "filter": {
+            "title": "Filtre",
+            "all_time": "Tüm zamanlar",
+            "today": "Bugün",
+            "yesterday": "Dün",
+            "last_week": "Geçen hafta",
+            "last_month": "Geçen ay",
+            "custom_range": "Özel aralık"
+        }
+    },
+    "tabbar": {
+        "home": "Anasayfa",
+        "discover": "Discover",
+        "swap": "Swap",
+        "fund": "Para ekle",
+        "menu": "Menü"
+    },
+    "walletconnect": {
+        "request": {
+            "title": "{{name}} hesabına bağlanmak istiyor",
+            "permissions_title_one": "{{count}} izin istendi",
+            "permissions_title_other": "{{count}} izin istendi",
+            "permissions_request_accounts": "Cüzdan adresini ve bakiyelerini görüntüleme",
+            "permissions_sign_transaction": "İşlem imzalama talep etme",
+            "permissions_sign_data": "Serbest veri imzalama talep etme",
+            "accounts_title": "HESAPLARI SEÇ",
+            "success_sheet_title": "{{name}} bağlantısı kuruldu",
+            "success_sheet_body": "Devam etmek ve işlemini tamamlamak için {{name}} uygulamasına geri dön. Bağlı tüm oturumları ilgili ayarlar sayfasında bulabilirsin.",
+            "networks_mainnet": "Mainnet",
+            "networks_testnet": "Testnet",
+            "networks_betanet": "Betanet",
+            "error_sheet_title": "Hata",
+            "error_sheet_body": "WalletConnect isteğin şu hatayla başarısız oldu:",
+            "error_sheet_retry": "İsteği başlattığın dApp’e geri dönerek tekrar dene.",
+            "error_network_mismatch": "Bu uygulama {{requested}} ağında bağlanmak istedi, ancak cüzdanın {{active}} ağında. Ayarlar’dan ağı değiştir ve tekrar dene.",
+            "quantum_fee_delivery_failed": "İstek tamamlanamadı. Bu uygulama, Quantum hesapları için gereken daha yüksek ağ ücretlerini desteklemiyor olabilir."
+        },
+        "connection": {
+            "approve_delivery_failed": "Bağlantıyı onaylamak için dApp’e ulaşılamadı. İnternet bağlantını kontrol et ve tekrar dene."
+        },
+        "settings": {
+            "empty_title": "WalletConnect oturumu yok",
+            "empty_body": "Etkin bir WalletConnect oturumun yok.",
+            "empty_button": "QR tara",
+            "last_active": "Son etkinlik: {{date}}",
+            "created_at": "Bağlantı tarihi: {{date}}",
+            "connected": "Bağlı",
+            "disconnected": "Bağlantı kesildi",
+            "clear_all": "Tüm oturumları sil",
+            "delete_title": "Oturumu sil",
+            "delete_body": "Bu oturumu silmek istediğinden emin misin? Bu işlem etkin oturumunu kaldırır ve bağlı uygulamayla bağlantını keser.",
+            "delete_all_title": "Tüm oturumları sil",
+            "delete_all_body": "Tüm oturumları silmek istediğinden emin misin? Bu işlem etkin tüm oturumlarını kaldırır ve bağlı tüm uygulamalarla bağlantını keser.",
+            "disconnect_failed_title": "Bağlantı kesilemedi",
+            "unknown_peer": "Bilinmiyor",
+            "version": "Bu oturum WalletConnect V{{version}} kullanıyor",
+            "connected_accounts": "Bağlı hesaplar",
+            "permissions": "Gelişmiş izinler",
+            "permissions_info_title": "Gelişmiş izinler",
+            "permissions_info_body": "WalletConnect, cüzdanların ve dApp’lerin güvenli şekilde bağlanmasını ve etkileşim kurmasını sağlayan bir web3 iletişim protokolüdür. WalletConnect her yeni sürümde, üçüncü taraf projelerden gelen işlem isteklerini işlemek, imzalamak ve/veya görüntülemek için yeni yöntemler sunar."
+        }
+    },
+    "staking": {
+        "title": "Algorand’da stake et",
+        "subtitle": "Protokolü güvence altına al ve staking ödülleri kazan!",
+        "error_title": "Staking projeleri yüklenemedi",
+        "error_description": "Lütfen birazdan tekrar dene.",
+        "retry": "Tekrar dene",
+        "empty_title": "Kullanılabilir staking projesi yok",
+        "empty_body": "Şu anda gösterilecek staking projesi yok. Lütfen daha sonra tekrar kontrol et.",
+        "disclaimer": {
+            "title": "Hizmet şartları",
+            "intro": "Pera Wallet, üçüncü taraf staking hizmetlerine erişmeni sağlar. Bu hizmetleri kullandığında, dijital varlıklarını Algorand ağındaki işlem doğrulaması için stake eden bir sağlayıcıyla doğrudan çalışırsın.",
+            "research_warning": "Stake etmeden önce, finansal hedeflerinle ve risk toleransınla uyumlu olduğundan emin olmak için kapsamlı bir araştırma ve analiz yap.",
+            "acknowledgment_prompt": "Staking hizmetlerine erişmek için aşağıdakileri kabul ettiğini ve onayladığını beyan edersin:",
+            "bullet_liability": "Pera, staking hizmetlerini kullanmanı kontrol etmez ve bundan sorumluluk kabul etmez. Staking hizmetleriyle ilgili olası kayıplara ilişkin sorumluluğu açıkça reddediyoruz.",
+            "bullet_interruptions": "Pera, staking işlemlerinin kesintisiz sürmesini garanti edemez. Güncellemeler, ağ değişiklikleri, sağlayıcı hamleleri veya ağ yoğunluğu nedeniyle hizmet kesintileri yaşanabilir.",
+            "bullet_availability": "Pera, herhangi bir dijital varlık için staking’in kullanılabilir olacağını garanti edemez. Bunun mümkün olup olmadığı, blok zinciri kurallarına ve üçüncü taraf sağlayıcı şartlarına bağlıdır.",
+            "bullet_rewards_control": "Pera’nın, Algorand blok zinciri ağı tarafından sağlanan staking ödülleri üzerinde hiçbir kontrolü yoktur.",
+            "bullet_no_advice": "Pera, dijital varlıkların değeri veya uygunluğu hakkında tavsiye ya da öngörü sunmaz. Staking hizmetlerini kullanma kararı tamamen sana aittir.",
+            "bullet_no_custody": "Pera, ödülleri veya varlıkları hiçbir zaman saklamaz ve doğrulama haklarının devredilebildiği Proof-of-Stake ağları üzerinde hiçbir kontrolü yoktur.",
+            "bullet_no_guarantee": "Pera, staking ödülleri alacağını veya belirli bir ödül oranını garanti etmez.",
+            "bullet_provider_failures": "Pera, staking sağlayıcılarının ödülleri aktarmamasından ya da slashing gibi risklerden kaynaklanan kayıplardan sorumlu değildir.",
+            "bullet_no_error_free": "Pera, staking hizmetlerinin kesintisiz veya hatasız çalışmasını, ya da üçüncü tarafların yol açtığı aksaklıkların önlenmesini garanti etmez.",
+            "bullet_user_breaches": "Pera, üçüncü taraf staking sözleşmeleriyle ilgili olarak kullanıcıların yaptığı ihlallerden sorumlu değildir.",
+            "closing": "Staking hizmetlerini kullanmayı seçerek bu koşulları kabul eder ve içerdiği riskleri anladığını beyan edersin.",
+            "terms_agreement": "Devam ederek bu <0>şartları</0> kabul ediyorsun.",
+            "accept": "Kabul et"
+        },
+        "type_liquid": "Liquid staking",
+        "type_pools": "Staking havuzları",
+        "type_delegated": "Delege staking",
+        "help": {
+            "title": "Staking türleri",
+            "liquid_description": "Liquid staking uygulamaları, kullanıcıların likiditelerini korurken Algo’larını stake etmesine olanak tanır. Tipik süreçte kullanıcılar Algo yatırır ve stake edilen Algo’nun sahipliğini ve değerini temsil eden yeni token’lar üretir; bu token’lar <0>DeFi ekosisteminde</0> kullanılabilir.",
+            "pools_description": "Staking havuzları, kişilerin gruplar hâlinde birlikte konsensüse katılmasını sağlar. Kullanıcılar bir doğrulayıcıya Algo stake edebilir ve doğrulayıcının kazandığı ödüllere göre ödül alır. DEX likidite havuzu staking’i gibi seçenekler de mevcuttur.",
+            "delegated_description": "Delege staking, Algo’n cüzdanında kalırken senin adına bir node çalıştıran üçüncü bir taraftan yararlanmak anlamına gelir. Bu, kendi node’unu çalıştırmadan ağı güvence altına almak ve ödül toplamak isteyen kullanıcılar için kullanışlıdır."
+        }
+    },
+    "swap": {
+        "introduction": {
+            "title": "Pera’da swap",
+            "description": "Pera Wallet, varlıkları takas etmenin kolay ve hızlı bir yolunu sunar. P.E.R.A. sayesinde swap talepleri, mevcut en iyi fiyatı yakalamak için Algorand tabanlı birden fazla merkeziyetsiz borsa arasında akıllıca yönlendirilir.",
+            "powered_by": "Destekleyen: ",
+            "powered_by_brand": "P.E.R.A.",
+            "start_swapping": "Swap’a başla",
+            "terms_agreement": "Devam ederek swap partnerimizin <0>Hizmet Şartları</0> belgesini kabul etmiş olursun"
+        },
+        "form": {
+            "swap": "Swap",
+            "insufficient_balance": "Miktar, kullanılabilir bakiyeni aşıyor.",
+            "no_balance_title": "Takas edilecek bir şey yok",
+            "no_balance_body": "Bu hesapta {{unit}} yok.",
+            "percentage_error_title": "Miktar hesaplanamadı",
+            "percentage_error_body": "Lütfen birazdan tekrar dene.",
+            "you_pay": "Ödeyeceğin",
+            "you_receive": "Alacağın",
+            "to": "Hedef",
+            "balance_label": "Bakiye: ",
+            "max": "MAKS",
+            "select_asset": "Seç"
+        },
+        "asset_selection": {
+            "swap_from_title": "Kaynak varlık",
+            "swap_to_title": "Hedef varlık",
+            "search_placeholder": "Ada veya ID’ye göre ara",
+            "no_results_title": "Eşleşen varlık yok",
+            "no_results_body": "Arama terimine uyan varlık bulunamadı"
+        },
+        "configuration": {
+            "title": "Swap ayarları",
+            "apply": "Uygula",
+            "balance_percentage": "Bakiye yüzdesi",
+            "balance_custom_hint": "Özel yüzde belirle",
+            "balance_error": "Bakiye yüzdesi {{min}} ile {{max}} arasında olmalı",
+            "slippage_tolerance": "Kayma toleransı",
+            "slippage_custom_hint": "Özel kayma belirle",
+            "slippage_error": "Kayma {{min}} ile {{max}} arasında olmalı",
+            "primary_currency": "Birincil para birimi",
+            "use_local_currency": "Yerel para birimini kullan",
+            "custom": "Özel",
+            "max": "MAKS"
+        },
+        "quote": {
+            "refreshed_title": "Teklif yenilendi",
+            "refreshed_body": "O teklifin süresi dolmuştu, bu yüzden yeni bir kur aldık. Kontrol edip yeniden onayla.",
+            "rate": "Kur",
+            "price_impact": "Fiyat etkisi",
+            "slippage_tolerance": "Kayma toleransı",
+            "pera_fee": "Pera ücreti",
+            "provider": "Sağlayıcı",
+            "minimum_received": "Minimum alınacak miktar",
+            "confirm_swap": "Swap’ı onayla",
+            "slide_to_confirm": "Onaylamak için kaydır",
+            "high_price_impact_warning": "Bu swap’ın fiyat etkisi yüksek. Beklediğinden belirgin şekilde daha az token alabilirsin.",
+            "quote_error": "Teklifler alınamadı. Lütfen tekrar dene."
+        },
+        "execution": {
+            "error_title": "Swap başarısız",
+            "error_body": "Swap sırasında bir şeyler ters gitti. Lütfen tekrar dene.",
+            "success_title": "Swap tamamlandı",
+            "success_body": "Swap başarıyla tamamlandı: {{fromAsset}} → {{toAsset}}",
+            "user_rejected": "Swap iptal edildi",
+            "pending_cosign_title": "Swap talebi gönderildi",
+            "pending_cosign_body": "Bu swap için bir imza daha gerekiyor. Diğer imzalayan kişi gelen kutusundan onayladığında işlem tamamlanacak.",
+            "quantum_fee_unsupported": "Quantum hesaplar henüz swap yapamaz. Swap ücreti sunucularımız tarafından belirlenir ve Quantum imzanın gerektirdiği daha yüksek ücreti karşılamaz.",
+            "quantum_multisig_unsupported": "Quantum hesaplar paylaşılan bir hesaptan swap yapamaz. Quantum anahtarlar Multisig imzalamaya katılamaz."
+        },
+        "signing": {
+            "source_name": "Swap",
+            "source_description": "Swap’ı tamamlamak için işlemleri onayla"
+        },
+        "info": {
+            "slippage_tolerance": "Beklenen fiyat ile gerçekleşme fiyatı arasındaki maksimum fark. Yüksek tolerans, swap’ın başarılı olma şansını artırır ancak daha az avantajlı bir kur ile sonuçlanabilir.",
+            "price_impact": "İşlem büyüklüğü nedeniyle piyasa fiyatı ile tahmini fiyat arasında oluşan fark. Büyük işlemlerin fiyat etkisi genellikle daha yüksektir."
+        },
+        "provider": {
+            "title_auto": "Sağlayıcı (mevcut en iyi fiyat)",
+            "title_manual": "Sağlayıcı",
+            "change_title": "Sağlayıcıyı değiştir",
+            "apply": "Uygula",
+            "auto_label": "Otomatik",
+            "auto_description": "Mevcut en iyi fiyat"
+        },
+        "history": {
+            "title": "Swap geçmişi",
+            "widget": {
+                "title": "Swap geçmişi",
+                "see_all": "Tümünü gör",
+                "error": "Swap geçmişi yüklenemedi."
+            },
+            "list": {
+                "item": {
+                    "description": "Takas: {{amountIn}} {{unitIn}} → "
+                },
+                "empty": {
+                    "title": "Henüz swap yok",
+                    "body": "Swap geçmişin burada görünecek."
+                },
+                "error": {
+                    "title": "Bir şeyler ters gitti",
+                    "body": "Swap geçmişin yüklenemedi. Lütfen tekrar dene."
+                }
+            }
+        },
+        "top_pairs": {
+            "title": "En popüler 5 swap",
+            "volume_24h": "Hacim (24s)",
+            "error": "En popüler swap’lar yüklenemedi"
+        }
+    },
+    "onramp": {
+        "tabs": {
+            "fund": "Fon ekle",
+            "history": "Geçmiş"
+        },
+        "testnet": {
+            "title": "TestNet’te kullanılamaz",
+            "body": "Cüzdanına fon eklemek yalnızca MainNet’te kullanılabilir. ALGO veya USDC satın almak için MainNet’e geç."
+        },
+        "region": {
+            "unknown": "--",
+            "info_title": "Ülke seçimi",
+            "info_body": "Konumunu <0>{{country}}</0> olarak belirledik. Ülkeyi değiştiremezsin ama bu bilgi yanlışsa VPN’inin açık olup olmadığını kontrol et.",
+            "country_fallback": "mevcut konumun",
+            "info_body_secondary": "Ülkene bağlı olarak bazı kripto veya fiat seçenekleri sınırlı olabilir."
+        },
+        "introduction": {
+            "title": "Fon ekle",
+            "new_chip": "YENİ",
+            "continue": "Devam et",
+            "feature_buy": "Fiat veya kripto ile ALGO ya da USDC satın al",
+            "feature_swap": "Diğer ağlardaki varlıkları Algorand’a takas et",
+            "feature_portal": "On-ramp ve zincirler arası swap işlemleri için tek portal"
+        },
+        "form": {
+            "proceed": "Devam et",
+            "you_pay": "Ödeyeceğin",
+            "you_receive": "Alacağın",
+            "sender_address_optional": "Gönderen adresi (isteğe bağlı)",
+            "enter_sender_address": "{{name}} adresini gir",
+            "provider": "Sağlayıcı",
+            "payment_method": "Ödeme yöntemi",
+            "choose_asset": "Bir varlık seç",
+            "min": "MİN",
+            "max": "MAKS",
+            "no_payment_methods": "Cihazın için kullanılabilir ödeme yöntemi yok.",
+            "amount_below_min": "Miktar {{min}} değerinden büyük olmalı",
+            "amount_above_max": "Miktar {{max}} değerinden küçük olmalı"
+        },
+        "pair_selection": {
+            "title_to": "Hedef",
+            "title_from": "Kaynak",
+            "search": "Ara",
+            "empty": "Kullanılabilir token yok"
+        },
+        "source_selection": {
+            "title": "Kaynak",
+            "search_placeholder": "Fiat veya kripto varlık ara",
+            "filter_all": "Tümü",
+            "filter_fiat": "Fiat",
+            "filter_crypto": "Kripto",
+            "fiat_section": "Fiat",
+            "crypto_section": "Kripto",
+            "see_all_fiat": "Tüm fiat para birimlerini gör",
+            "network_suffix": "{{symbol}} · {{network}} ağı",
+            "empty": "Kullanılabilir varlık yok"
+        },
+        "provider": {
+            "title": "Sağlayıcı seç",
+            "best_offer": "En iyi teklif"
+        },
+        "payment_method": {
+            "title": "Ödeme yöntemi",
+            "apply": "Uygula"
+        },
+        "sender_address": {
+            "title": "Gönderen adresi",
+            "body": "Bu, fonların alıcıya gönderilmesi için kullanılacak adrestir. İsteğe bağlıdır ancak süreci hızlandırabilir ve bu satın alma ile ilgili destek taleplerinde yardımcı olabilir.",
+            "placeholder": "Gönderen adresini gir",
+            "confirm": "Onayla"
+        },
+        "order_review": {
+            "xo_title": "Swap özeti",
+            "pay_in_address": "Ödeme adresi",
+            "send_to_address": "Bu adrese {{amount}} gönder.",
+            "address": "Adres",
+            "address_tag_label": "Adres etiketi / not",
+            "cancel_order": "Siparişi iptal et",
+            "keep_order": "Siparişi sürdür",
+            "cancel_confirm_title": "Emin misin?",
+            "cancel_confirm_body": "Bu işlem, fon ekleme sürecini iptal eder.",
+            "cancel_success": "Sipariş iptal edildi",
+            "need_help": "Siparişinle ilgili yardıma mı ihtiyacın var?",
+            "contact_provider": "{{name}} ile iletişime geç"
+        },
+        "order_details": {
+            "title": "Sipariş detayları",
+            "swapped": "Takas edildi",
+            "order_id": "Sipariş ID",
+            "source_amount": "Kaynak miktarı",
+            "destination_amount": "Hedef miktarı",
+            "network": "Ağ",
+            "payment_method": "Ödeme yöntemi",
+            "created_at": "Oluşturulma tarihi",
+            "exchange_rate": "Gerçekleşen kur",
+            "to_address": "Alıcı adresi"
+        },
+        "terms": {
+            "title": "Şartlar ve koşullar",
+            "updated": "Nisan 2026’da güncellendi",
+            "body": "Algo’nun diğer kripto varlıklarla satın alınmasına imkân veren hizmet, Exodus Movement LLC tarafından işletilen bir servis aracılığıyla sunulur. Bu siparişler yalnızca Exodus tarafından, Exodus’un şartlarına göre gerçekleştirilir. Pera, saklamasız bir cüzdan arayüzü sağlar; swap işlemlerini gerçekleştirmez ya da kontrol etmez. Pera, swap işlemlerinin tarafı değildir ve bu işlemler için varlık saklamaz.",
+            "agreement": "Devam ederek Exodus’un <0>Şartlarını</0> ve <1>Gizlilik Politikasını</1> kabul ediyor, Pera’nın şu belgesini onaylıyorsun: <2>Şartlar.</2>",
+            "accept": "Kabul et ve devam et"
+        },
+        "status": {
+            "pending": "Beklemede",
+            "in_progress": "Devam ediyor",
+            "completed": "Tamamlandı",
+            "failed": "Başarısız",
+            "cancelled": "İptal edildi"
+        },
+        "history": {
+            "filter_all": "Tümü",
+            "for": "karşılığında",
+            "empty_title": "Henüz işlem yok",
+            "empty_body": "Satın alma işlemlerin burada görünecek.",
+            "error_title": "Bir şeyler ters gitti",
+            "error_body": "Satın alma geçmişin yüklenemedi. Lütfen tekrar dene."
+        }
+    },
+    "ledger": {
+        "pair": {
+            "title": "Ledger ile eşleştir",
+            "description": "Lütfen Ledger cihazının kilidinin açık olduğundan ve Bluetooth’un etkin olduğundan emin ol",
+            "cta": "Ledger ile eşleştir",
+            "how_does_it_work": "Nasıl çalışır?",
+            "support_url": "https://support.perawallet.app/en/article/pairing-your-ledger-device-nano-x-stax-and-flex-1lxp9qm/"
+        },
+        "how_does_it_work": {
+            "title": "Ledger ile eşleştir",
+            "step_1": "Ledger cihazının açık olduğundan ve Bluetooth’un etkin olduğundan emin ol.",
+            "step_2": "Algorand uygulamasını (1.2.9 veya üzeri sürüm) Ledger’ına yükle.",
+            "step_3": "Ledger cihazında eşleştirmeyi onayladıktan sonra Algorand uygulamasını aç.",
+            "step_4": "Telefonunda Bluetooth’un etkin olduğundan emin ol."
+        },
+        "connecting": {
+            "title": "Ledger bağlantısı",
+            "subtitle": "Ledger’ın bağlanması bekleniyor.",
+            "cancel": "İptal"
+        },
+        "instructions": {
+            "title": "Ledger cihazını eşleştir",
+            "description": "Ledger cihazını bağlamak için şu adımları izle:",
+            "step_1": "Ledger cihazını aç",
+            "step_2": "Ledger’ında Algorand uygulamasını aç",
+            "step_3": "Ledger cihazını yakınında tut",
+            "continue": "Devam et",
+            "permission_required_title": "Bluetooth izni gerekli",
+            "permission_required_message": "Pera’nın Ledger cihazınla iletişim kurmak için Bluetooth iznine ihtiyacı var. Lütfen Ayarlar’dan etkinleştir.",
+            "usb": {
+                "title": "Ledger’ı USB ile bağla",
+                "description": "Ledger cihazını USB ile bağlamak için şu adımları izle:",
+                "step_1": "Ledger cihazını USB kablosuyla telefonuna bağla",
+                "step_2": "Ledger’ının kilidini aç ve Algorand uygulamasını aç",
+                "step_3": "Telefonun sorarsa USB erişimine izin ver, ardından devam et’e dokun"
+            }
+        },
+        "scan": {
+            "title": "Cihazlar aranıyor",
+            "description": "Bağlanmak için bir Ledger cihazı seç.",
+            "transport_ble": "Bluetooth",
+            "transport_usb": "USB",
+            "retry": "Tekrar tara",
+            "error": "Tarama başarısız oldu. Bluetooth’un etkin olduğundan emin ol ve tekrar dene.",
+            "usb_error": "USB üzerinden Ledger cihazı bulunamadı. Cihazın takılı ve kilidinin açık olduğundan emin ol, sonra tekrar dene.",
+            "location_services_disabled": "Yakındaki Ledger cihazlarını aramak için cihaz ayarlarından Konum’u aç.",
+            "open_location_settings": "Konum ayarlarını aç",
+            "grant_permission": "İzin ver",
+            "open_settings": "Ayarları aç",
+            "web_start_title": "Aramaya hazır",
+            "web_start_body": "Tarayıcın Ledger cihazını seçmeni isteyecek.",
+            "web_start_button": "Ledger ara",
+            "popup_launch_title": "Eşleştirmeye hazır",
+            "popup_launch_body": "Bu işlem, Ledger cihazını arayıp bağlayabileceğin yeni bir tarayıcı sekmesi açar.",
+            "popup_launch_button": "Eşleştirmeyi başlat",
+            "bluetooth": {
+                "off_title": "Bluetooth hatası",
+                "off": "Yakındaki Ledger cihazlarını aramak için cihazında Bluetooth’un etkin olması gerekir.",
+                "unauthorized_title": "Arama hatası",
+                "unauthorized": "Yakındaki Ledger cihazlarını aramak için Bluetooth izninin verilmesi gerekir.",
+                "unsupported_title": "Desteklenmeyen cihaz",
+                "unsupported": "Bağlanmaya çalıştığın cihaz Pera Wallet tarafından desteklenmiyor."
+            }
+        },
+        "fetch_accounts": {
+            "connecting": "{{deviceName}} cihazına bağlanılıyor...",
+            "discovering": "Ledger cihazında hesaplar aranıyor...",
+            "progress": "{{current}}. hesap kontrol ediliyor...",
+            "retry": "Tekrar dene"
+        },
+        "select_accounts": {
+            "title_one": "{{count}} hesap bulundu",
+            "title_other": "{{count}} hesap bulundu",
+            "description": "Bu Ledger cihazı, aşağıdaki hesaplar için işlem imzalayabilir. Pera Wallet’a eklemek istediğin hesapları seç.",
+            "select_all": "Tümünü seç",
+            "already_imported": "Zaten içe aktarıldı",
+            "cta_one": "Seçili hesabı doğrula",
+            "cta_other": "Seçili hesapları doğrula",
+            "cta_done": "Bitti",
+            "find_another_account": "Başka bir hesap bul",
+            "rekeyed_label": "Rekey yapıldı",
+            "rekeyed_account_title": "Rekey yapılmış hesap",
+            "scanning_rekeyed": "Rekey yapılmış hesaplar taranıyor…",
+            "watch_account_label": "İzleme hesabı"
+        },
+        "account_info": {
+            "account_details": "Hesap detayları",
+            "assets": "Varlıklar",
+            "default_title": "Ledger #{{index}}",
+            "can_be_signed_by": "İmzalayabilenler",
+            "can_sign_for": "Şunlar için imzalayabilir",
+            "error": "Hesap bilgileri yüklenemedi.",
+            "retry": "Tekrar dene"
+        },
+        "verify": {
+            "title": "Hesap adreslerini Ledger ile doğrula",
+            "description": "Aşağıdaki hesap adresleri Ledger cihazında görünecek. Cihaz eşleştirmesini tamamlamak için lütfen her adresi dikkatlice karşılaştır ve doğrula.",
+            "awaiting": "Doğrulama bekleniyor",
+            "verified": "Hesap doğrulandı",
+            "add_accounts_one": "Doğrulanan hesabı ekle",
+            "add_accounts_other": "Doğrulanan hesapları ekle",
+            "upgrade_watch_title_one": "İzleme hesabı yükseltilsin mi?",
+            "upgrade_watch_title_other": "İzleme hesapları yükseltilsin mi?",
+            "upgrade_watch_body_one": "Bu adres cüzdanında zaten bir izleme hesabı olarak var. İçe aktarmak, onu işlem imzalayabilen bir Ledger hesabına yükseltir. Adı ve ayarları korunur.",
+            "upgrade_watch_body_other": "Bu adreslerden {{count}} tanesi cüzdanında zaten izleme hesabı olarak var. İçe aktarmak, onları işlem imzalayabilen Ledger hesaplarına yükseltir. Adları ve ayarları korunur.",
+            "upgrade_watch_confirm": "Yükselt"
+        },
+        "signing": {
+            "cancel": "İptal",
+            "retry": "Yeniden dene",
+            "footnote": "Doğrulama Ledger’da devam edecek. Doğrulamayı iptal etmek için Ledger’dan iptal et.",
+            "awaitingApproval": {
+                "title": "Ledger onayı",
+                "body": "Lütfen işlemi {{deviceName}} adlı Ledger cihazında incele ve imzala.",
+                "body_noDevice": "Lütfen işlemi Ledger cihazında incele ve imzala."
+            },
+            "awaitingApprovalData": {
+                "title": "Ledger’ında onayla",
+                "body": "İmza talebini {{deviceName}} adlı Ledger cihazında incele ve onayla.",
+                "body_noDevice": "İmza talebini Ledger cihazında incele ve onayla."
+            },
+            "progress": {
+                "label": "İmzalanıyor: {{current}}/{{total}}…"
+            }
+        },
+        "errors": {
+            "app_not_open": "Algorand uygulaması Ledger cihazında açık değil.",
+            "app_not_open_title": "Algorand uygulamasını aç",
+            "connection_lost": "Ledger cihazıyla bağlantı kesildi.",
+            "connection_lost_title": "Cihazın bağlantısı kesildi",
+            "user_rejected": "İşlem Ledger cihazında reddedildi.",
+            "user_rejected_title": "Cihazda iptal edildi",
+            "bluetooth_disabled": "Bluetooth etkin değil. Lütfen Bluetooth’u etkinleştir ve tekrar dene.",
+            "bluetooth_disabled_title": "Bluetooth kapalı",
+            "bluetooth_permission_title": "İzin gerekli",
+            "bluetooth_permission": "Yakındaki Ledger cihazlarını aramak için Bluetooth tarama izninin verilmesi gerekir.",
+            "scan_timeout_title": "Ledger’ın bulunamadı",
+            "scan_timeout": "Cihazın kilidinin açık olduğundan, yakında olduğundan ve Bluetooth’un etkin olduğundan emin ol.",
+            "connection_failed": "Ledger cihazına bağlanılamadı.",
+            "connection_failed_title": "Bağlantı başarısız",
+            "signing_failed_title": "İmzalama başarısız",
+            "signing_failed": "İşlem imzalanamadı. Lütfen tekrar dene.",
+            "transmission_error_title": "İletim hatası",
+            "transmission_error": "İşlemi Ledger cihazına gönderemedik. Lütfen tekrar dene.",
+            "public_key_read_failed_title": "İletim hatası",
+            "public_key_read_failed": "Ledger cihazından açık anahtarı alamadık. Lütfen tekrar dene.",
+            "network_error_title": "Bağlantı hatası",
+            "network_error": "Bir ağ hatası oluştu. Lütfen tekrar dene.",
+            "unsupported_device_title": "Desteklenmeyen cihaz",
+            "unsupported_device": "Bu Ledger cihazı desteklenmiyor.",
+            "app_outdated_title": "Ledger Algorand uygulamanı güncelle",
+            "app_outdated": "Ledger’ındaki Algorand uygulaması bu talebi imzalamak için çok eski. Ledger Live’ı aç ve Algorand uygulamasını güncelle, sonra tekrar dene.",
+            "timeout": "Ledger cihazın zamanında yanıt vermedi. Lütfen tekrar dene.",
+            "timeout_title": "Talep zaman aşımına uğradı",
+            "interrupted_title": "İmzalama kesintiye uğradı",
+            "interrupted": "Uygulama imzalama sırasında arka plana geçti, bu yüzden oturum güvenlik için durduruldu. Ledger’ına yeniden bağlanıp tekrar imzalamak için yeniden dene.",
+            "address_mismatch": "Ledger cihazındaki adres beklenen adresle eşleşmiyor. Lütfen doğru hesabı seçtiğini doğrula.",
+            "address_mismatch_title": "Adres uyuşmuyor",
+            "retry": "Tekrar dene",
+            "troubleshoot": "Sorun giderme",
+            "troubleshooting_link": "Ledger bağlantı sorunu mu yaşıyorsun?",
+            "device_locked_title": "Ledger kilitli",
+            "device_locked": "Ledger cihazın kilitli. PIN kodunla kilidini aç ve tekrar dene.",
+            "usb_no_device_title": "Ledger bulunamadı",
+            "usb_no_device": "USB üzerinden bağlı bir Ledger cihazı yok. Cihazı tak, kilidini aç ve tekrar dene.",
+            "usb_multiple_devices_title": "Birden fazla Ledger bağlı",
+            "usb_multiple_devices": "USB üzerinden birden fazla Ledger bağlı. Diğerlerinin bağlantısını kes ve tekrar dene — USB yalnızca tek bir cihazla çalışabilir.",
+            "no_accounts_found_title": "Hesap bulunamadı",
+            "no_accounts_found": "Bu Ledger cihazında hiç hesap bulunamadı.",
+            "location_services_disabled_title": "Konum servisleri kapalı",
+            "location_services_disabled": "Yakındaki Ledger cihazlarını aramak için konum servislerinin etkin olması gerekir. Bunları aç ve tekrar dene.",
+            "provider_unavailable_title": "Bağlantı kullanılamıyor",
+            "provider_unavailable": "Hardware wallet bağlantı servisi kullanılamıyor. Pera’yı yeniden başlat ve tekrar dene."
+        },
+        "troubleshooting": {
+            "title": "Ledger bağlantı sorunu mu yaşıyorsun?",
+            "description": "Ledger cihazını eşleştirirken veya kullanırken sorun yaşıyorsan aşağıdaki adımları kontrol et.",
+            "pairing_steps_title": "Eşleştirme adımları",
+            "pairing_step_1": "Ledger cihazının açık olduğundan ve Bluetooth’un etkin olduğundan emin ol.",
+            "pairing_step_2": "Ledger’ında Algorand uygulamasını aç.",
+            "pairing_step_3": "Algorand uygulaması kurulu değilse Ledger Live’dan kur.",
+            "common_issues_title": "Sık görülen sorunlar",
+            "issue_unlocked": "Cihazın kilidinin açık olduğundan, yakında olduğundan ve Bluetooth’un etkin olduğundan emin ol. Sorun devam ederse cihazı telefonunun Bluetooth ayarlarından kaldır ve Pera Wallet talimatlarını izleyerek yeniden eşleştir.",
+            "issue_bluetooth": "Yakındaki Ledger cihazlarını aramak için cihazında Bluetooth’un etkin olması gerekir.",
+            "issue_permissions": "Yakındaki Ledger cihazlarını aramak için Bluetooth tarama izninin verilmesi gerekir.",
+            "issue_unsupported": "Pera; Ledger Nano X, Stax, Flex ve Nano Gen5 cihazlarını destekler.",
+            "done": "Anladım",
+            "tip_unlocked": "Cihazın kilidinin açık olduğundan emin ol",
+            "tip_nearby": "Cihazın yakında olduğundan emin ol",
+            "tip_bluetooth": "Bluetooth’un etkin olduğundan emin ol",
+            "tip_app_open": "Ledger’ında Algorand uygulamasının açık olduğundan emin ol",
+            "tip_repair": "Sorun devam ederse cihazı Ayarlar’dan yeniden eşleştirmeyi dene"
+        },
+        "scan_header": {
+            "having_issues": "Sorun mu yaşıyorsun?"
+        },
+        "default_account_name": "Ledger {{number}}"
+    },
+    "countries": {
+        "AC": "Ascension Adası",
+        "AD": "Andorra",
+        "AE": "Birleşik Arap Emirlikleri",
+        "AF": "Afganistan",
+        "AG": "Antigua ve Barbuda",
+        "AI": "Anguilla",
+        "AL": "Arnavutluk",
+        "AM": "Ermenistan",
+        "AN": "Curaçao",
+        "AO": "Angola",
+        "AQ": "Antarktika",
+        "AR": "Arjantin",
+        "AS": "Amerikan Samoası",
+        "AT": "Avusturya",
+        "AU": "Avustralya",
+        "AW": "Aruba",
+        "AX": "Åland Adaları",
+        "AZ": "Azerbaycan",
+        "BA": "Bosna-Hersek",
+        "BB": "Barbados",
+        "BD": "Bangladeş",
+        "BE": "Belçika",
+        "BF": "Burkina Faso",
+        "BG": "Bulgaristan",
+        "BH": "Bahreyn",
+        "BI": "Burundi",
+        "BJ": "Benin",
+        "BL": "St. Barthélemy",
+        "BM": "Bermuda",
+        "BN": "Brunei",
+        "BO": "Bolivya",
+        "BQ": "Karayip Hollandası",
+        "BR": "Brezilya",
+        "BS": "Bahamalar",
+        "BT": "Butan",
+        "BU": "Myanmar (Burma)",
+        "BV": "Bouvet Adası",
+        "BW": "Botsvana",
+        "BY": "Belarus",
+        "BZ": "Belize",
+        "CA": "Kanada",
+        "CC": "Cocos (Keeling) Adaları",
+        "CD": "Kongo - Kinşasa",
+        "CF": "Orta Afrika Cumhuriyeti",
+        "CG": "Kongo - Brazzavil",
+        "CH": "İsviçre",
+        "CI": "Fildişi Sahili",
+        "CK": "Cook Adaları",
+        "CL": "Şili",
+        "CM": "Kamerun",
+        "CN": "Çin",
+        "CO": "Kolombiya",
+        "CP": "Clipperton Adası",
+        "CQ": "Sark",
+        "CR": "Kosta Rika",
+        "CS": "Sırbistan",
+        "CU": "Küba",
+        "CV": "Cabo Verde",
+        "CW": "Curaçao",
+        "CX": "Christmas Adası",
+        "CY": "Kıbrıs",
+        "CZ": "Çekya",
+        "DD": "Almanya",
+        "DE": "Almanya",
+        "DG": "Diego Garcia",
+        "DJ": "Cibuti",
+        "DK": "Danimarka",
+        "DM": "Dominika",
+        "DO": "Dominik Cumhuriyeti",
+        "DY": "Benin",
+        "DZ": "Cezayir",
+        "EA": "Ceuta ve Melilla",
+        "EC": "Ekvador",
+        "EE": "Estonya",
+        "EG": "Mısır",
+        "EH": "Batı Sahra",
+        "ER": "Eritre",
+        "ES": "İspanya",
+        "ET": "Etiyopya",
+        "EU": "Avrupa Birliği",
+        "EZ": "Euro Bölgesi",
+        "FI": "Finlandiya",
+        "FJ": "Fiji",
+        "FK": "Falkland Adaları",
+        "FM": "Mikronezya",
+        "FO": "Faroe Adaları",
+        "FR": "Fransa",
+        "FX": "Fransa",
+        "GA": "Gabon",
+        "GB": "Birleşik Krallık",
+        "GD": "Grenada",
+        "GE": "Gürcistan",
+        "GF": "Fransız Guyanası",
+        "GG": "Guernsey",
+        "GH": "Gana",
+        "GI": "Cebelitarık",
+        "GL": "Grönland",
+        "GM": "Gambiya",
+        "GN": "Gine",
+        "GP": "Guadeloupe",
+        "GQ": "Ekvator Ginesi",
+        "GR": "Yunanistan",
+        "GS": "Güney Georgia ve Güney Sandwich Adaları",
+        "GT": "Guatemala",
+        "GU": "Guam",
+        "GW": "Gine-Bissau",
+        "GY": "Guyana",
+        "HK": "Hong Kong",
+        "HM": "Heard Adası ve McDonald Adaları",
+        "HN": "Honduras",
+        "HR": "Hırvatistan",
+        "HT": "Haiti",
+        "HU": "Macaristan",
+        "HV": "Burkina Faso",
+        "IC": "Kanarya Adaları",
+        "ID": "Endonezya",
+        "IE": "İrlanda",
+        "IL": "İsrail",
+        "IM": "Man Adası",
+        "IN": "Hindistan",
+        "IO": "Britanya Hint Okyanusu Toprakları",
+        "IQ": "Irak",
+        "IR": "İran",
+        "IS": "İzlanda",
+        "IT": "İtalya",
+        "JE": "Jersey",
+        "JM": "Jamaika",
+        "JO": "Ürdün",
+        "JP": "Japonya",
+        "KE": "Kenya",
+        "KG": "Kırgızistan",
+        "KH": "Kamboçya",
+        "KI": "Kiribati",
+        "KM": "Komorlar",
+        "KN": "St. Kitts ve Nevis",
+        "KP": "Kuzey Kore",
+        "KR": "Güney Kore",
+        "KW": "Kuveyt",
+        "KY": "Cayman Adaları",
+        "KZ": "Kazakistan",
+        "LA": "Laos",
+        "LB": "Lübnan",
+        "LC": "St. Lucia",
+        "LI": "Liechtenstein",
+        "LK": "Sri Lanka",
+        "LR": "Liberya",
+        "LS": "Lesotho",
+        "LT": "Litvanya",
+        "LU": "Lüksemburg",
+        "LV": "Letonya",
+        "LY": "Libya",
+        "MA": "Fas",
+        "MC": "Monako",
+        "MD": "Moldova",
+        "ME": "Karadağ",
+        "MF": "St. Martin",
+        "MG": "Madagaskar",
+        "MH": "Marshall Adaları",
+        "MK": "Kuzey Makedonya",
+        "ML": "Mali",
+        "MM": "Myanmar (Burma)",
+        "MN": "Moğolistan",
+        "MO": "Makao",
+        "MP": "Kuzey Mariana Adaları",
+        "MQ": "Martinik",
+        "MR": "Moritanya",
+        "MS": "Montserrat",
+        "MT": "Malta",
+        "MU": "Mauritius",
+        "MV": "Maldivler",
+        "MW": "Malavi",
+        "MX": "Meksika",
+        "MY": "Malezya",
+        "MZ": "Mozambik",
+        "NA": "Namibya",
+        "NC": "Yeni Kaledonya",
+        "NE": "Nijer",
+        "NF": "Norfolk Adası",
+        "NG": "Nijerya",
+        "NH": "Vanuatu",
+        "NI": "Nikaragua",
+        "NL": "Hollanda",
+        "NO": "Norveç",
+        "NP": "Nepal",
+        "NR": "Nauru",
+        "NU": "Niue",
+        "NZ": "Yeni Zelanda",
+        "OM": "Umman",
+        "PA": "Panama",
+        "PE": "Peru",
+        "PF": "Fransız Polinezyası",
+        "PG": "Papua Yeni Gine",
+        "PH": "Filipinler",
+        "PK": "Pakistan",
+        "PL": "Polonya",
+        "PM": "St. Pierre ve Miquelon",
+        "PN": "Pitcairn Adaları",
+        "PR": "Porto Riko",
+        "PS": "Filistin Bölgeleri",
+        "PT": "Portekiz",
+        "PW": "Palau",
+        "PY": "Paraguay",
+        "QA": "Katar",
+        "QO": "Uzak Okyanusya",
+        "RE": "Réunion",
+        "RH": "Zimbabve",
+        "RO": "Romanya",
+        "RS": "Sırbistan",
+        "RU": "Rusya",
+        "RW": "Ruanda",
+        "SA": "Suudi Arabistan",
+        "SB": "Solomon Adaları",
+        "SC": "Seyşeller",
+        "SD": "Sudan",
+        "SE": "İsveç",
+        "SG": "Singapur",
+        "SH": "St. Helena",
+        "SI": "Slovenya",
+        "SJ": "Svalbard ve Jan Mayen",
+        "SK": "Slovakya",
+        "SL": "Sierra Leone",
+        "SM": "San Marino",
+        "SN": "Senegal",
+        "SO": "Somali",
+        "SR": "Surinam",
+        "SS": "Güney Sudan",
+        "ST": "São Tomé ve Príncipe",
+        "SU": "Rusya",
+        "SV": "El Salvador",
+        "SX": "Sint Maarten",
+        "SY": "Suriye",
+        "SZ": "Esvatini",
+        "TA": "Tristan da Cunha",
+        "TC": "Turks ve Caicos Adaları",
+        "TD": "Çad",
+        "TF": "Fransız Güney Toprakları",
+        "TG": "Togo",
+        "TH": "Tayland",
+        "TJ": "Tacikistan",
+        "TK": "Tokelau",
+        "TL": "Timor-Leste",
+        "TM": "Türkmenistan",
+        "TN": "Tunus",
+        "TO": "Tonga",
+        "TP": "Timor-Leste",
+        "TR": "Türkiye",
+        "TT": "Trinidad ve Tobago",
+        "TV": "Tuvalu",
+        "TW": "Tayvan",
+        "TZ": "Tanzanya",
+        "UA": "Ukrayna",
+        "UG": "Uganda",
+        "UK": "Birleşik Krallık",
+        "UM": "ABD Uzak Adaları",
+        "UN": "Birleşmiş Milletler",
+        "US": "Amerika Birleşik Devletleri",
+        "UY": "Uruguay",
+        "UZ": "Özbekistan",
+        "VA": "Vatikan",
+        "VC": "St. Vincent ve Grenadinler",
+        "VD": "Vietnam",
+        "VE": "Venezuela",
+        "VG": "Britanya Virjin Adaları",
+        "VI": "ABD Virjin Adaları",
+        "VN": "Vietnam",
+        "VU": "Vanuatu",
+        "WF": "Wallis ve Futuna",
+        "WS": "Samoa",
+        "XA": "Sözde aksanlar",
+        "XB": "Pseudo-Bidi",
+        "XK": "Kosova",
+        "YD": "Yemen",
+        "YE": "Yemen",
+        "YT": "Mayotte",
+        "YU": "Sırbistan",
+        "ZA": "Güney Afrika",
+        "ZM": "Zambiya",
+        "ZR": "Kongo - Kinşasa",
+        "ZW": "Zimbabve"
+    },
+    "vault": {
+        "create_password": {
+            "title": "Şifre oluştur",
+            "description": "Pera Wallet uzantını korumak için bir şifre belirle. Uzantıyı her açtığında bu şifreye ihtiyacın olacak.",
+            "password_placeholder": "Şifreyi gir",
+            "confirm_placeholder": "Şifreyi onayla",
+            "submit_button": "Şifre oluştur",
+            "error_too_short": "Şifre en az 8 karakter olmalı",
+            "error_mismatch": "Şifreler eşleşmiyor",
+            "error": "Vault’un oluşturulurken bir şeyler ters gitti. Lütfen tekrar dene."
+        },
+        "unlock": {
+            "title": "Pera Wallet’ın kilidini aç",
+            "description": "Uzantının kilidini açmak için şifreni gir.",
+            "password_placeholder": "Şifreyi gir",
+            "submit_button": "Kilidi aç",
+            "use_passkey": "Passkey kullan",
+            "error_invalid_password": "Hatalı şifre. Lütfen tekrar dene.",
+            "corrupted_error": "Vault verilerin bozulmuş ve kilidi açılamıyor. Uzantıyı sıfırlayıp yedeklemenden geri yüklemen gerekebilir.",
+            "passkey_error": "Passkey ile kilit açma başarısız oldu. Bunun yerine şifreni kullan.",
+            "lockout_countdown": "Çok fazla deneme yapıldı. {{time}} sonra tekrar dene"
+        },
+        "security": {
+            "autolock_title": "Otomatik kilitleme süresi",
+            "autolock_minutes": "{{minutes}} dakika",
+            "lock_now": "Cüzdanı şimdi kilitle",
+            "passkey_title": "Passkey ile kilit açma",
+            "passkey_enable": "Passkey ile kilit açmayı etkinleştir",
+            "passkey_disable": "Passkey ile kilit açmayı devre dışı bırak",
+            "passkey_password_placeholder": "Cüzdan şifresi",
+            "passkey_error": "Passkey ile kilit açma etkinleştirilemedi. Şifreni kontrol et ve tekrar dene.",
+            "passkey_enable_error": "Passkey ile kilit açma etkinleştirilemedi. Lütfen tekrar dene.",
+            "change_password_title": "Şifreyi değiştir",
+            "change_password_current_placeholder": "Mevcut şifre",
+            "change_password_new_placeholder": "Yeni şifre",
+            "change_password_confirm_placeholder": "Yeni şifreyi onayla",
+            "change_password_error_too_short": "Şifre en az 8 karakter olmalı",
+            "change_password_error_mismatch": "Şifreler eşleşmiyor",
+            "change_password_error_invalid_current": "Mevcut şifre hatalı.",
+            "change_password_error_corrupted": "Vault verileri bozulmuş veya desteklenmeyen bir biçimde. Lütfen destek ekibiyle iletişime geç.",
+            "change_password_error_unexpected": "Şifren değiştirilirken bir şeyler ters gitti. Lütfen tekrar dene.",
+            "change_password_success": "Şifre başarıyla değiştirildi.",
+            "change_password_submit": "Şifreyi değiştir"
+        },
+        "approval": {
+            "placeholder": "Onay ekranı — M4’te geliyor."
+        },
+        "expanded": {
+            "redirecting": "Yeni sekmede devam ediliyor…"
+        },
+        "reauth": {
+            "title": "Sen olduğunu doğrula",
+            "confirm_button": "Onayla",
+            "use_passkey": "Passkey kullan",
+            "passkey_description": "Bu site, passkey’inle giriş yapmadan önce kimliğini doğrulamanı istiyor.",
+            "confirm_description": "Bu işlemi onaylamak için kimliğini doğrula.",
+            "passkey_error": "Passkey doğrulaması başarısız oldu. Bunun yerine şifreni kullan."
+        }
+    },
+    "migration": {
+        "splash": {
+            "failure_message_one": "{{count}} hesap taşınamadı",
+            "failure_message_other": "{{count}} hesap taşınamadı",
+            "continue": "Devam et",
+            "do_not_show_again": "Bir daha gösterme"
+        }
+    }
+}

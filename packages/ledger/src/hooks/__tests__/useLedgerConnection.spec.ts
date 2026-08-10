@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { LedgerScanTimeoutError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import { LedgerScanTimeoutError } from '@perawallet/wallet-extension-ledger-shared'
 import { useLedgerConnection } from '../useLedgerConnection'
 import type {
     HardwareWalletTransport,

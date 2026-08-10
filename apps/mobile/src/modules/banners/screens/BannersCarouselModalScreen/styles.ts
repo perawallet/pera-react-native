@@ -11,8 +11,9 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { type EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     root: {
         backgroundColor: theme.colors.bannerContentBg,
     },
@@ -24,7 +25,11 @@ export const useStyles = makeStyles(theme => ({
     },
     closeButton: {
         position: 'absolute',
-        top: theme.spacing.md,
+        // PWScreen only safe-areas its footer, and this screen is presented
+        // full-bleed: on Android that puts y=0 under the status bar, so without
+        // the inset the X rides up into it. iOS modals already start below the
+        // bar, where `insets.top` is 0 and this is a no-op (PERA-4751).
+        top: insets.top + theme.spacing.md,
         right: theme.spacing.lg,
         width: theme.spacing.xxl,
         height: theme.spacing.xxl,

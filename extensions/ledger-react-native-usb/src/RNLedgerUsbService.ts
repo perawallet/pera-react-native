@@ -24,7 +24,7 @@ import {
     LedgerUsbMultipleDevicesError,
     LedgerUsbNoDeviceError,
     createLedgerTransportWrapper,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 type LedgerHIDDescriptor = {
     deviceId?: number | string

@@ -75,6 +75,15 @@ export type KeystoreSigner = {
             credentialId: Uint8Array
             publicKeyXY: Uint8Array
             userHandle: string
+            /**
+             * Human-readable labels captured at registration, carried so a
+             * discoverable-credential ceremony can ASK which identity to
+             * assert instead of silently taking the first match. Optional:
+             * an RP may omit them, and credentials minted before this was
+             * returned have no value to give.
+             */
+            displayName?: string
+            userName?: string
         }>
     >
 }
@@ -92,6 +101,43 @@ export type SigningContext = {
      * only as trustworthy as this field.
      */
     origin: string
+
+    /**
+     * Whether the approval surface verified the user with a factor (vault
+     * password, PIN, biometric) as part of THIS ceremony. Sets the UV bit in
+     * `authenticatorData`.
+     *
+     * A button press is user *presence*, not verification — see
+     * `authenticatorData`'s `userVerified` doc for why relying parties treat
+     * the difference as load-bearing. Defaults to unverified when omitted, so
+     * a transport that forgets to plumb it understates assurance instead of
+     * lying about it.
+     */
+    userVerified?: boolean
+
+    /**
+     * Asked which credential to assert when the RP sent no
+     * `allowCredentials` (a discoverable / "usernameless" request) and this
+     * RP ID has more than one.
+     *
+     * Without it the core takes `candidates[0]`, which signs the user in as
+     * an identity they never chose and gives no indication another was
+     * available. Returning `null` means the user dismissed the choice, which
+     * is a decline — not a licence to fall back to the first.
+     *
+     * Optional so a transport with no UI (or a test) keeps the previous
+     * behaviour explicitly rather than being forced to invent a picker.
+     */
+    selectCredential?: (
+        candidates: DiscoverableCredentialChoice[],
+    ) => Promise<string | null>
+}
+
+/** The subset of a stored credential a picker needs to label a row. */
+export type DiscoverableCredentialChoice = {
+    keyId: string
+    displayName?: string
+    userName?: string
 }
 
 /** WebAuthn §5.1.3: the RP ID must be a registrable suffix of the origin. */
@@ -257,7 +303,7 @@ const idsMatch = (a: Uint8Array, b: Uint8Array): boolean =>
 export const createCredential = async (
     options: PublicKeyCredentialCreationOptions,
     signer: KeystoreSigner,
-    { origin }: SigningContext,
+    { origin, userVerified = false }: SigningContext,
 ): Promise<SerializedCredential> => {
     const rpId = resolveRpId(options.rp.id, origin)
 
@@ -298,6 +344,7 @@ export const createCredential = async (
         attested: true,
         credentialId,
         publicKeyXY: publicKeyPoint,
+        userVerified,
     })
     const attestationObject = attestationObjectNone(authData)
 
@@ -322,7 +369,7 @@ export const createCredential = async (
 export const assertCredential = async (
     options: PublicKeyCredentialRequestOptions,
     signer: KeystoreSigner,
-    { origin }: SigningContext,
+    { origin, userVerified = false, selectCredential }: SigningContext,
 ): Promise<SerializedCredential> => {
     const rpId = resolveRpId(options.rpId, origin)
     const candidates = await signer.listP256Credentials(rpId)
@@ -330,14 +377,32 @@ export const assertCredential = async (
     const allowIds = options.allowCredentials?.map(descriptor =>
         bufferSourceToBytes(descriptor.id),
     )
-    const resolved =
-        allowIds && allowIds.length > 0
-            ? candidates.find(credential =>
-                  allowIds.some(allowed =>
-                      idsMatch(allowed, credential.credentialId),
-                  ),
-              )
-            : candidates[0]
+    const isDiscoverable = !allowIds || allowIds.length === 0
+
+    let resolved
+    if (!isDiscoverable) {
+        resolved = candidates.find(credential =>
+            allowIds.some(allowed =>
+                idsMatch(allowed, credential.credentialId),
+            ),
+        )
+    } else if (candidates.length > 1 && selectCredential) {
+        // Only ask when there is a genuine choice: one candidate has nothing
+        // to disambiguate, and a transport that provided no picker keeps the
+        // previous first-match behaviour rather than failing.
+        const chosenKeyId = await selectCredential(
+            candidates.map(({ keyId, displayName, userName }) => ({
+                keyId,
+                displayName,
+                userName,
+            })),
+        )
+        // Dismissed: a decline, never a silent fallback to candidates[0].
+        if (chosenKeyId === null) throw new NotAllowedError()
+        resolved = candidates.find(c => c.keyId === chosenKeyId)
+    } else {
+        resolved = candidates[0]
+    }
 
     if (!resolved) {
         throw new NotAllowedError()
@@ -348,7 +413,11 @@ export const assertCredential = async (
         bufferSourceToBytes(options.challenge),
         origin,
     )
-    const authData = await authenticatorData({ rpId, attested: false })
+    const authData = await authenticatorData({
+        rpId,
+        attested: false,
+        userVerified,
+    })
     const clientDataHash = sha256(clientDataJSON)
     const signedPayload = concatBytes(authData, clientDataHash)
     const rawSignature = await signer.signP256(resolved.keyId, signedPayload)

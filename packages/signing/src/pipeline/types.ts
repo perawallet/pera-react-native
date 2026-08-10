@@ -169,6 +169,20 @@ export interface SourceMetadata {
     requestId?: string
 
     callbacks?: SourceCallbacks
+
+    /**
+     * Serializable WalletConnect sync-flow delivery context, set only for
+     * WalletConnect requests (identified by a JSON-RPC `payloadId`). Carried to
+     * the multisig-propose transport so it can persist a recovery context on
+     * the handoff, letting a resumed-after-kill handoff answer the dApp without
+     * the in-memory closures. Mirrors `WalletConnectHandoffRecovery`.
+     */
+    handoffDelivery?: {
+        clientId: string
+        payloadId: number
+        indicesToSign: number[]
+        totalLength: number
+    }
 }
 
 /**

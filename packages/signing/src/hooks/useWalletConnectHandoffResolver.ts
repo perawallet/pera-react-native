@@ -20,6 +20,7 @@ import {
 import {
     classifyHandoffPoll,
     resolveHandoffOutcome,
+    type HandoffPeerDelivery,
     type ResolverMessages,
     type TerminalHandoffOutcome,
 } from '../pipeline/classifyHandoffPoll'
@@ -27,9 +28,17 @@ import type { PendingWalletConnectHandoff } from '../pipeline/walletConnectHando
 import { useWalletConnectHandoffsStore } from '../store/walletConnectHandoffsStore'
 import { useHandoffResolver } from './useHandoffResolver'
 
-/** Stable accessor (module-level so the core's dispatch effect isn't churned). */
+/** Stable accessors (module-level so the core's dispatch effect isn't churned). */
 const handoffKey = (handoff: PendingWalletConnectHandoff): string =>
     handoff.signRequestId
+
+const handoffExpiresAt = (detail: SignRequestResponse): number | null => {
+    const expiresAt = new Date(detail.expected_expire_datetime).getTime()
+    return Number.isNaN(expiresAt) ? null : expiresAt
+}
+
+const handoffRegisteredAt = (handoff: PendingWalletConnectHandoff): number =>
+    handoff.registeredAt
 
 export type UseWalletConnectHandoffResolverArgs = {
     /**
@@ -40,6 +49,13 @@ export type UseWalletConnectHandoffResolverArgs = {
     isAppActive: boolean
     /** Localized strings delivered to the dApp on terminal outcomes. */
     messages: ResolverMessages
+    /**
+     * Answers the WC peer, keyed by the handoff's serializable clientId /
+     * payloadId. Injected from the app layer so this hook stays free of any
+     * WalletConnect dependency and works identically for a handoff resumed
+     * after an app kill (no in-memory closures to replay).
+     */
+    delivery: HandoffPeerDelivery
 }
 
 /**
@@ -68,6 +84,7 @@ export type UseWalletConnectHandoffResolverArgs = {
 export const useWalletConnectHandoffResolver = ({
     isAppActive,
     messages,
+    delivery,
 }: UseWalletConnectHandoffResolverArgs): void => {
     // Re-render whenever a handoff is registered / unregistered. The store
     // swaps the `handoffs` dict reference on every change, so the default
@@ -104,9 +121,10 @@ export const useWalletConnectHandoffResolver = ({
                 outcome,
                 handoff,
                 messages,
+                delivery,
                 markConfirmed,
             }),
-        [messages, markConfirmed],
+        [messages, delivery, markConfirmed],
     )
 
     useHandoffResolver<
@@ -119,5 +137,7 @@ export const useWalletConnectHandoffResolver = ({
         poll,
         classify: classifyHandoffPoll,
         resolve,
+        expiresAtOf: handoffExpiresAt,
+        registeredAtOf: handoffRegisteredAt,
     })
 }

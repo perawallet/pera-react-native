@@ -94,7 +94,16 @@ export const WithKeyStore: Extension<KeyStoreExtension> = (
             store: options?.api?.keystore || {
                 /** Generates a new key pair and stores it */
                 generate: (options): Promise<KeyId> => {
-                    log.debug('(extension.ts) Generating Key', options, context)
+                    // Only the shape, never `options.params` — for the
+                    // passkey signer that carries the relying-party origin,
+                    // userHandle, userName and displayName, i.e. browsing and
+                    // identity metadata that has no business in a console or
+                    // (via breadcrumbs) a crash report.
+                    log.debug('(extension.ts) Generating Key', {
+                        type: (options as { type?: unknown })?.type,
+                        algorithm: (options as { algorithm?: unknown })
+                            ?.algorithm,
+                    })
 
                     if (
                         requiresParentKey(options) &&

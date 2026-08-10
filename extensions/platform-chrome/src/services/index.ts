@@ -18,8 +18,9 @@ export {
     ChromeAppIntegrityService,
     ChromeBiometricsService,
     ChromeMigrationService,
-    ChromePushNotificationService,
+    ChromeWalletProvisioningService,
 } from './stubs'
+export { ChromePushNotificationService } from './push-notifications'
 export { ChromeRemoteConfigService } from './remote-config'
 export { ChromeAnalyticsService } from './analytics'
 export { ChromeCrashReportingService } from './crash-reporting'

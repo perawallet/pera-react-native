@@ -78,6 +78,10 @@ export const configSchema = z
         firebaseAppId: z.string(),
         firebaseMeasurementId: z.string(),
 
+        // Firebase Console > Cloud Messaging > Web Push certificates. Public
+        // key; Chrome's push service rejects the SDK's built-in default.
+        firebaseVapidKey: z.string(),
+
         // GA4 Measurement Protocol API secret (GA4 Admin > Data Streams > your
         // web stream > Measurement Protocol API secrets) — distinct from
         // firebaseApiKey. Empty until generated; ChromeAnalyticsService no-ops
@@ -287,6 +291,7 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     // local builds send no analytics.
     firebaseMeasurementId: '',
     gaMeasurementApiSecret: '',
+    firebaseVapidKey: '',
     sentryDsn: '',
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
@@ -434,6 +439,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     firebaseMessagingSenderId: 'FIREBASE_MESSAGING_SENDER_ID',
     firebaseAppId: 'FIREBASE_APP_ID',
     firebaseMeasurementId: 'FIREBASE_MEASUREMENT_ID',
+    firebaseVapidKey: 'FIREBASE_VAPID_KEY',
 
     gaMeasurementApiSecret: 'GA_MEASUREMENT_API_SECRET',
     sentryDsn: 'SENTRY_DSN',
