@@ -27,6 +27,11 @@ export type SwapHandoffResolutionDeps = {
     submitGroup: (rawSignedTransactions: Uint8Array[]) => Promise<string[]>
     /** base64 → raw bytes (for the persisted pre-signed slot transactions). */
     decodeBase64: (base64: string) => Uint8Array
+    /**
+     * Persist the submitted marker (tx ids) on the handoff record the moment
+     * algod accepts, so a crash before cleanup can't re-submit on relaunch.
+     */
+    markSubmitted: (txIds: string[]) => void
     /** PATCH the swap's backend status. */
     updateSwapStatus: (input: {
         swapId: string
@@ -105,7 +110,11 @@ export const resolveSwapHandoffOutcome = async ({
 
     await completeMultisigHandoff({
         outcome,
+        // A crash-recovered record that already landed on chain: the shared
+        // orchestrator replays the post-submit tail instead of re-submitting.
+        alreadySubmittedTxIds: record.submission?.txIds,
         deps: {
+            recordSubmitted: deps.markSubmitted,
             // Interleave each group's pre-signed slots with the assembled
             // bytes and submit, collecting the resulting txIds in order. A
             // missing assembled slot throws here → the shared orchestrator

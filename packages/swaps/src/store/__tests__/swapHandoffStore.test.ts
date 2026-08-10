@@ -79,6 +79,33 @@ describe('swaps/swapHandoffStore', () => {
         expect(Object.keys(result.current.handoffs).sort()).toEqual(['a', 'b'])
     })
 
+    test('markHandoffSubmitted stamps the submission marker on the record', () => {
+        const { result } = renderHook(() => useSwapHandoffStore())
+
+        act(() => {
+            result.current.registerHandoff(makeRecord())
+            result.current.markHandoffSubmitted('req-1', ['txid-1', 'txid-2'])
+        })
+
+        const record = result.current.handoffs['req-1']
+        expect(record.submission?.txIds).toEqual(['txid-1', 'txid-2'])
+        expect(record.submission?.submittedAt).toEqual(expect.any(Number))
+        // The rest of the record is untouched.
+        expect(record.swapIdStr).toBe('42')
+    })
+
+    test('markHandoffSubmitted is a no-op for an unknown sign request', () => {
+        const { result } = renderHook(() => useSwapHandoffStore())
+
+        act(() => {
+            result.current.registerHandoff(makeRecord())
+            result.current.markHandoffSubmitted('missing', ['txid-1'])
+        })
+
+        expect(result.current.handoffs['req-1'].submission).toBeUndefined()
+        expect(Object.keys(result.current.handoffs)).toEqual(['req-1'])
+    })
+
     test('removeHandoff drops only the targeted record', () => {
         const { result } = renderHook(() => useSwapHandoffStore())
 

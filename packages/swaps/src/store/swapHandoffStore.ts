@@ -44,6 +44,20 @@ export const useSwapHandoffStore: UseBoundStore<
                         [record.signRequestId]: record,
                     },
                 })),
+            markHandoffSubmitted: (signRequestId: string, txIds: string[]) =>
+                set(state => {
+                    const record = state.handoffs[signRequestId]
+                    if (!record) return state
+                    return {
+                        handoffs: {
+                            ...state.handoffs,
+                            [signRequestId]: {
+                                ...record,
+                                submission: { txIds, submittedAt: Date.now() },
+                            },
+                        },
+                    }
+                }),
             removeHandoff: (signRequestId: string) =>
                 set(state => {
                     if (!state.handoffs[signRequestId]) return state
