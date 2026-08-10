@@ -641,8 +641,13 @@ export default defineConfig({
                     // when their stores evaluate. Running them here is cheaper
                     // and less brittle than duplicating that environment in
                     // apps/browser, whose own vitest is deliberately minimal.
+                    // `__tests__/` holds the build-config specs (app.config,
+                    // production icons) and is NOT under src/. It ran on the
+                    // default glob until this include was added for the browser
+                    // entry above — keep it listed or those specs go unrun.
                     include: [
                         'src/**/*.{test,spec}.{ts,tsx}',
+                        '__tests__/**/*.{test,spec}.{ts,tsx}',
                         '../browser/src/offscreen/**/*.{test,spec}.{ts,tsx}',
                     ],
                     exclude: [
