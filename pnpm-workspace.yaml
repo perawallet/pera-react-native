@@ -57,7 +57,7 @@ catalog:
   expo: ^57.0.7
   expo-application: ~57.0.2
   expo-device: ~57.0.1
-  expo-local-authentication: ~57.0.1
+  expo-local-authentication: ~57.0.2
   expo-localization: ~57.0.1
   expo-sqlite: ~57.0.1
   falcon-1024: ^0.2.0

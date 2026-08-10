@@ -160,8 +160,8 @@ catalogs:
       specifier: ~57.0.1
       version: 57.0.1
     expo-local-authentication:
-      specifier: ~57.0.1
-      version: 57.0.1
+      specifier: ~57.0.2
+      version: 57.0.2
     expo-localization:
       specifier: ~57.0.1
       version: 57.0.1
@@ -750,7 +750,7 @@ importers:
         version: 57.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       expo-local-authentication:
         specifier: 'catalog:'
-        version: 57.0.1(expo@57.0.11)
+        version: 57.0.2(expo@57.0.11)
       expo-localization:
         specifier: 'catalog:'
         version: 57.0.1(expo@57.0.11)(react@19.2.3)
@@ -1487,7 +1487,7 @@ importers:
         version: 57.0.1(expo@57.0.11)
       expo-local-authentication:
         specifier: 'catalog:'
-        version: 57.0.1(expo@57.0.11)
+        version: 57.0.2(expo@57.0.11)
       expo-localization:
         specifier: 'catalog:'
         version: 57.0.1(expo@57.0.11)(react@19.2.3)
@@ -8431,8 +8431,8 @@ packages:
       react: 19.2.3
       react-native: 0.86.2
 
-  expo-local-authentication@57.0.1:
-    resolution: {integrity: sha512-FrXtuXVBmXmwmvDus0OsFWMdzjYTaLd/ZvvVMKnRjXDKDS+LFG2Sz3r9f3Go0goJdpb/hA09wGwGi8XfW3Aa0w==}
+  expo-local-authentication@57.0.2:
+    resolution: {integrity: sha512-8K4zcrQ5wZkRS1rwEWY8qHbeGVMNh35e9D1VTVKlMHz1O47itW+pW6iBVuqwGFLozN4fRBeEDQH8hu9Gt58YuQ==}
     peerDependencies:
       expo: '*'
 
@@ -11173,7 +11173,7 @@ snapshots:
       '@babel/helper-optimise-call-expression': 7.29.7
       '@babel/helper-replace-supers': 7.29.7(@babel/core@7.29.7)
       '@babel/helper-skip-transparent-expression-wrappers': 7.29.7
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.8
       semver: 6.3.1
     transitivePeerDependencies:
       - supports-color
@@ -11200,14 +11200,14 @@ snapshots:
 
   '@babel/helper-member-expression-to-functions@7.29.7':
     dependencies:
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.8
       '@babel/types': 7.29.8
     transitivePeerDependencies:
       - supports-color
 
   '@babel/helper-module-imports@7.29.7':
     dependencies:
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.8
       '@babel/types': 7.29.8
     transitivePeerDependencies:
       - supports-color
@@ -11241,13 +11241,13 @@ snapshots:
       '@babel/core': 7.29.7
       '@babel/helper-member-expression-to-functions': 7.29.7
       '@babel/helper-optimise-call-expression': 7.29.7
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.8
     transitivePeerDependencies:
       - supports-color
 
   '@babel/helper-skip-transparent-expression-wrappers@7.29.7':
     dependencies:
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.8
       '@babel/types': 7.29.8
     transitivePeerDependencies:
       - supports-color
@@ -13862,7 +13862,7 @@ snapshots:
 
   '@react-native/babel-plugin-codegen@0.86.2(@babel/core@7.29.7)':
     dependencies:
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.8
       '@react-native/codegen': 0.86.2(@babel/core@7.29.7)
     transitivePeerDependencies:
       - '@babel/core'
@@ -15660,7 +15660,7 @@ snapshots:
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
 
-  expo-local-authentication@57.0.1(expo@57.0.11):
+  expo-local-authentication@57.0.2(expo@57.0.11):
     dependencies:
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       invariant: 2.2.4
