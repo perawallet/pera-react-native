@@ -192,6 +192,22 @@ describe('classifyHandoffPoll', () => {
         })
     })
 
+    it('keeps polling when a ready poll is missing signatures for some transactions', async () => {
+        // The backend flipped status before every signature payload was
+        // serialized: the participant's array is non-empty (so the cheap guard
+        // passes) but an index is still below threshold. Must retry, not fail.
+        assembleMock.mockReturnValue({
+            kind: 'insufficient-signatures',
+            txIndex: 1,
+            validCount: 1,
+            threshold: 2,
+        })
+
+        expect(await classifyHandoffPoll(makeDetail(), makeHandoff())).toEqual({
+            kind: 'keep-polling',
+        })
+    })
+
     it('refuses to assemble when the poll bytes differ from the proposed bytes', async () => {
         const outcome = await classifyHandoffPoll(
             makeDetail({

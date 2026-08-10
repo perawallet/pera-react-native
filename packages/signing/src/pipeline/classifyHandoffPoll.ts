@@ -126,8 +126,11 @@ const classifyReadyPoll = async (
     const lists = detail.transaction_lists
 
     // Race-condition guard: the backend can flip status to 'ready' before
-    // every signature payload is serialized in the response. If any 'signed'
-    // participant lacks signatures, keep polling — the next poll catches up.
+    // every signature payload is serialized in the response. A 'signed'
+    // participant with no signatures at all is the cheap-to-detect case —
+    // short-circuit before paying for Ed25519 verifies. A *partially* written
+    // payload is caught below: assembly reports it as 'insufficient-signatures'
+    // and we keep polling for that too.
     for (const list of lists) {
         for (const response of list.responses) {
             if (response.response !== 'signed') continue
@@ -180,6 +183,14 @@ const classifyReadyPoll = async (
                 signatures: response.signatures ?? undefined,
             })) as ParticipantResponse[],
         })
+        // Mid-write race: 'ready' flipped before every signature serialized, so
+        // some index is still below threshold. Not terminal — the next poll
+        // catches up, and the resolver's deadline self-expires a request that
+        // never completes. Hard errors (bad bytes, failed verification) stay
+        // terminal below.
+        if (result.kind === 'insufficient-signatures') {
+            return { kind: 'keep-polling' }
+        }
         if (result.kind === 'error') {
             return {
                 kind: 'error',
