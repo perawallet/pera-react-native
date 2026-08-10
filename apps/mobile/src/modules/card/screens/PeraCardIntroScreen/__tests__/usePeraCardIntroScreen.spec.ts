@@ -12,7 +12,14 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { CardEvent } from '@analytics'
 import { usePeraCardIntroScreen } from '../usePeraCardIntroScreen'
+
+const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+vi.mock('@analytics', async () => {
+    const actual = await vi.importActual<object>('@analytics')
+    return { ...actual, trackEvent: mockTrackEvent }
+})
 
 const mockInfoToast = vi.fn()
 vi.mock('@hooks/useToast', () => ({
@@ -109,6 +116,7 @@ describe('usePeraCardIntroScreen', () => {
         expect(
             mockResetOnboardingProgress.mock.invocationCallOrder[0],
         ).toBeLessThan(mockNavigate.mock.invocationCallOrder[0])
+        expect(mockTrackEvent).toHaveBeenCalledWith(CardEvent.OnboardingCreate)
     })
 
     it('handleAlreadyHaveAccount navigates to the sign-in screen', () => {
@@ -121,6 +129,7 @@ describe('usePeraCardIntroScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('PeraCard', {
             screen: 'CardSignIn',
         })
+        expect(mockTrackEvent).toHaveBeenCalledWith(CardEvent.OnboardingRecover)
     })
 
     it('handleLearnMore opens the Pera Card learn-more url in a webview', () => {

@@ -31,6 +31,7 @@ import {
     type SupportedUsState,
 } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
+import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { CardUsStatePickerContent } from '@modules/card/components/CardUsStatePicker'
@@ -367,6 +368,7 @@ export const useCardOnboardingAddressScreen =
         })
 
         const handleConfirm = () => {
+            trackEvent(CardEvent.CreateVerifyAccountContinue2)
             void submitAddressForm()
         }
 

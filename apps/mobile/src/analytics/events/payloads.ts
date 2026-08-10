@@ -14,6 +14,7 @@ import type { AnalyticsEventName } from './event-names'
 import type { OnboardingRequiredPayloads } from './contexts/onboarding'
 import type { BannersRequiredPayloads } from './contexts/banners'
 import type { AssetDetailsRequiredPayloads } from './contexts/asset-details'
+import type { CardRequiredPayloads } from './contexts/card'
 import type {
     SwapRequiredPayloads,
     SwapOptionalPayloads,
@@ -35,6 +36,7 @@ export interface RequiredEventPayloads
         OnboardingRequiredPayloads,
         BannersRequiredPayloads,
         AssetDetailsRequiredPayloads,
+        CardRequiredPayloads,
         SwapRequiredPayloads,
         WalletConnectRequiredPayloads,
         SettingsRequiredPayloads,

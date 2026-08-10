@@ -16,13 +16,22 @@
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const bootsplashManifest = require('./assets/bootsplash/manifest.json');
-const { versionCodeBase } = require('./package.json');
+const { version: packageVersion, versionCodeBase } = require('./package.json');
 
 // iOS build number / Android versionCode floor. The committed base clears the
 // live store values (in-place update over the native apps, PERA-4451); adding
 // the monotonic CI BUILD_NUMBER keeps each build unique and strictly higher.
 function resolveBuildNumber(env) {
   return versionCodeBase + parseInt(env.BUILD_NUMBER || '0', 10);
+}
+
+// CFBundleShortVersionString / versionName. CI derives APP_VERSION from the git
+// tag; package.json's base (pre-suffix) part is the fallback for local builds.
+// Must stay env-driven: fastlane rewrites the iOS project after prebuild, but
+// Android ships whatever prebuild bakes into build.gradle, so a static value
+// here silently pins every Play release to that number.
+function resolveMarketingVersion(env) {
+  return env.APP_VERSION || packageVersion.split('-')[0];
 }
 
 // Determine app variant based on environment
@@ -106,7 +115,7 @@ function buildAppConfig(env) {
   return {
     name: appNames[variant],
     slug: slugs[variant],
-    version: '7.0.0',
+    version: resolveMarketingVersion(env),
     orientation: 'portrait',
     icon: appIconIos,
     scheme: ['perawallet', 'algorand', 'wc', 'perawallet-wc', 'algorand-wc', 'liquid'],

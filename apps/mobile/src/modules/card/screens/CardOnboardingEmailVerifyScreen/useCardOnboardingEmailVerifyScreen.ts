@@ -15,6 +15,7 @@ import {
     useCardStore,
     useSendEmailVerificationMutation,
 } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCountdown } from '@hooks/useCountdown'
 import { useToast } from '@hooks/useToast'
@@ -84,6 +85,7 @@ export const useCardOnboardingEmailVerifyScreen =
             // Guard against duplicate sends from a double-tap while the request
             // is in flight (the link stays visible until the cooldown restarts).
             if (sendEmailVerification.isPending) return
+            trackEvent(CardEvent.CreateEmailVerifySendAgain)
             const resend = async () => {
                 try {
                     await sendEmailVerification.mutateAsync({
@@ -108,6 +110,7 @@ export const useCardOnboardingEmailVerifyScreen =
             (submittedCode?: string) => {
                 const value = (submittedCode ?? code).trim()
                 if (value.length !== CARD_VERIFICATION_CODE_LENGTH) return
+                trackEvent(CardEvent.CreateEmailVerification)
                 setVerificationCode(value)
                 navigation.navigate('CardOnboardingPassword')
             },

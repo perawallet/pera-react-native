@@ -25,6 +25,7 @@ import type { RemoteConfigService } from './remote-config'
 import type { DatabaseService } from './database'
 import type { CrashReportingService } from './reporting'
 import type { KeyValueStorageService } from './storage'
+import type { WalletProvisioningService } from './wallet-provisioning'
 
 export interface PlatformServices {
     keyValueStorage: KeyValueStorageService
@@ -39,6 +40,7 @@ export interface PlatformServices {
     database: DatabaseService
     hardwareWalletRegistry: HardwareWalletRegistry
     migration: MigrationService
+    walletProvisioning: WalletProvisioningService
 }
 
 /**

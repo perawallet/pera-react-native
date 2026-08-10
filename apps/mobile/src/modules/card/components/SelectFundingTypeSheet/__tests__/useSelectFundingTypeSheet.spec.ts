@@ -15,7 +15,14 @@ import { act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FundingType } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { CardEvent } from '@analytics'
 import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
+
+const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+vi.mock('@analytics', async () => {
+    const actual = await vi.importActual<object>('@analytics')
+    return { ...actual, trackEvent: mockTrackEvent }
+})
 
 const mockSetSelectedFundingType = vi.fn()
 let mockStoredFundingType: FundingType | null = null
@@ -189,6 +196,20 @@ describe('useSelectFundingTypeSheet', () => {
         )
         expect(mockSuccessToast).toHaveBeenCalled()
         expect(mockResolve).toHaveBeenCalledWith('applied')
+        expect(mockTrackEvent).toHaveBeenCalledWith(CardEvent.SelectFundingAuto)
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            CardEvent.SelectFundingApply,
+        )
+    })
+
+    it('tracks the manual option tap', () => {
+        const { result } = renderHook(() => useSelectFundingTypeSheet())
+
+        act(() => result.current.onSelectType(FundingType.Manual))
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            CardEvent.SelectFundingManual,
+        )
     })
 
     it('PIN-gates then disables auto-draw when switching Auto → Manual', async () => {

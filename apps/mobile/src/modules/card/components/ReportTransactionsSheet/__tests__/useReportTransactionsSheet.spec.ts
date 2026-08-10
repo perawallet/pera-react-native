@@ -14,6 +14,13 @@ import { renderHook } from '@test-utils/render'
 import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { CardTransaction } from '@perawallet/wallet-core-card'
+import { CardEvent } from '@analytics'
+
+const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+vi.mock('@analytics', async () => {
+    const actual = await vi.importActual<object>('@analytics')
+    return { ...actual, trackEvent: mockTrackEvent }
+})
 
 const mocks = vi.hoisted(() => ({
     transactions: [] as unknown[],
@@ -81,12 +88,17 @@ describe('useReportTransactionsSheet', () => {
         })
         expect(result.current.isSelected('row_1')).toBe(true)
         expect(result.current.canReport).toBe(true)
+        // Selecting is tracked...
+        expect(mockTrackEvent).toHaveBeenCalledTimes(1)
+        expect(mockTrackEvent).toHaveBeenCalledWith(CardEvent.ReportSusReportTx)
 
         act(() => {
             result.current.onToggle('row_1')
         })
         expect(result.current.isSelected('row_1')).toBe(false)
         expect(result.current.canReport).toBe(false)
+        // ...deselecting is not.
+        expect(mockTrackEvent).toHaveBeenCalledTimes(1)
     })
 
     it('emails the processor ids of the selected transactions and resolves', () => {
@@ -110,6 +122,9 @@ describe('useReportTransactionsSheet', () => {
         expect(args.body).toContain('row_3')
         expect(args.body).not.toContain('auth_1002')
         expect(mocks.resolve).toHaveBeenCalledWith('reported')
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            CardEvent.ReportSusCreateTicket,
+        )
     })
 
     it('does nothing on report with nothing selected', () => {
@@ -121,5 +136,8 @@ describe('useReportTransactionsSheet', () => {
 
         expect(mocks.sendEmail).not.toHaveBeenCalled()
         expect(mocks.resolve).not.toHaveBeenCalled()
+        expect(mockTrackEvent).not.toHaveBeenCalledWith(
+            CardEvent.ReportSusCreateTicket,
+        )
     })
 })

@@ -17,7 +17,7 @@ export const RemoteConfigKeys = {
     fee_pq_multiplier: 'fee_pq_multiplier',
     fee_asset_mbr: 'fee_asset_mbr',
     fee_base_account_mbr: 'fee_base_account_mbr',
-    staking_projects: 'staking_projects',
+    staking_projects_i18n: 'staking_projects_i18n',
     swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
     swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
     enable_motion_lock: 'enable_motion_lock',
@@ -28,6 +28,7 @@ export const RemoteConfigKeys = {
     enable_pera_card: 'enable_pera_card',
     enable_quantum_accounts: 'enable_quantum_accounts',
     enable_card_auto_funding: 'enable_card_auto_funding',
+    enable_card_push_provisioning: 'enable_card_push_provisioning',
     enable_ssl_pinning_pera_api: 'enable_ssl_pinning_pera_api',
     enable_ssl_pinning_algod: 'enable_ssl_pinning_algod',
     enable_language_selection: 'enable_language_selection',
@@ -53,7 +54,7 @@ export const RemoteConfigDefaults: Record<
     fee_asset_mbr: 100_000,
     // Base minimum balance requirement for any account, in µAlgo.
     fee_base_account_mbr: 100_000,
-    staking_projects: '',
+    staking_projects_i18n: '',
     swap_price_impact_low_threshold: 1,
     swap_price_impact_high_threshold: 5,
     enable_motion_lock: false,
@@ -69,6 +70,11 @@ export const RemoteConfigDefaults: Record<
     // UI only; prod is stopped from signing an unpinned program by
     // verifyDelegationProgram, not by this flag.
     enable_card_auto_funding: false,
+    // Native Add to Apple/Google Wallet push provisioning. Kill switch only —
+    // the OS-level gates (Apple entitlement, Google TapAndPay allowlisting)
+    // keep the flow dormant regardless until Pera is accredited, so the flag
+    // can stay on in dev/staging via the hook fallback.
+    enable_card_push_provisioning: false,
     // SSL public-key pinning for perawallet.app API hosts. getBooleanValue only
     // trusts genuinely fetched values, so pinning stays OFF until Firebase has
     // delivered an explicit true at least once (fetched values persist across

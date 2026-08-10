@@ -53,6 +53,7 @@ export const PeraCardDetails = () => {
         isSettingPin,
         onAccountsDetails,
         walletPlatform,
+        showAddToWallet,
         onAddToWallet,
         onReportLostStolen,
         onReportSuspicious,
@@ -115,6 +116,7 @@ export const PeraCardDetails = () => {
                 isFreezing={isFreezing}
                 canToggleFreeze={canToggleFreeze}
                 walletPlatform={walletPlatform}
+                showAddToWallet={showAddToWallet}
                 isSettingPin={isSettingPin}
                 isOffline={isOffline}
                 showCardActions={isReady}

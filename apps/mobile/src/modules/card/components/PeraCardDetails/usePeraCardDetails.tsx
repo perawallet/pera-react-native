@@ -22,6 +22,7 @@ import {
     useSetCardPinMutation,
     type CardIssuanceState,
 } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -30,6 +31,7 @@ import { useNetworkStatus } from '@modules/network'
 import { routeCapabilities } from '@routes/capabilities'
 import { useRequirePinVerification } from '@modules/security'
 import {
+    useAddCardToWallet,
     useCardErrorToast,
     useCardFundingSourcePicker,
     useIsCardAutoFundingActive,
@@ -125,6 +127,9 @@ type UsePeraCardDetailsResult = {
     onAccountsDetails: () => void
     /** Which wallet-provisioning row to show: Apple Wallet on iOS, Google Pay on Android. */
     walletPlatform: WalletPlatform
+    /** False once the card already lives in the OS wallet — the add row must
+     * be hidden then (a Google certification requirement). */
+    showAddToWallet: boolean
     onAddToWallet: () => void
     onReportLostStolen: () => void
     onReportSuspicious: () => void
@@ -239,6 +244,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         }
         // Already fetched earlier this visit: show it without re-fetching.
         if (secureView != null) {
+            trackEvent(CardEvent.DetailsRevealCard)
             setIsRevealed(true)
             return
         }
@@ -246,6 +252,9 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         // re-entry so a same-tick double-tap can't spend two tokens.
         if (isFetchingRevealRef.current) return
         isFetchingRevealRef.current = true
+        // Tracked after the guard (one event per reveal, not per tap) and
+        // only for reveals — hiding is not a tracked action.
+        trackEvent(CardEvent.DetailsRevealCard)
         try {
             const view = await cardDetails.mutateAsync({
                 customCss: SECURE_CARD_IMAGE_CSS,
@@ -301,6 +310,8 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     // the sheet's button owns the pending state; here we only open it.
     // Content-sized sheet (default autoCreateContainer) so it grows to fit.
     const onToggleFreeze = useCallback(() => {
+        // Freezes only — the unfreeze path is tracked by the frozen banner.
+        if (!isFrozen) trackEvent(CardEvent.DetailsFreeze)
         void request({
             contents: isFrozen ? (
                 <UnfreezeCardConfirmationSheet />
@@ -332,6 +343,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         }
     }, [setPin, requirePinVerification, pushWebView, showError])
     const onSetPin = useCallback(() => {
+        trackEvent(CardEvent.DetailsSetPin)
         void submitSetPin()
     }, [submitSetPin])
 
@@ -346,7 +358,10 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         })
     }, [request])
 
-    const onAddToWallet = useCallback(() => {
+    const { canPushProvision, isCardInWallet, startAddCardToWallet } =
+        useAddCardToWallet()
+
+    const openWalletInstructions = useCallback(() => {
         void request({
             contents: <WalletInstructionsSheet platform={walletPlatform} />,
             options: {
@@ -356,6 +371,27 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
             },
         })
     }, [request, walletPlatform])
+
+    // Native push provisioning when the OS + accreditations allow it; the
+    // manual instructions sheet is both the pre-accreditation default and the
+    // fallback when the native flow can't complete. A deliberate user cancel
+    // ('dismissed') shows nothing.
+    const addToWallet = useCallback(async () => {
+        if (!canPushProvision) {
+            openWalletInstructions()
+            return
+        }
+        const outcome = await startAddCardToWallet()
+        if (outcome === 'fallback') openWalletInstructions()
+    }, [canPushProvision, startAddCardToWallet, openWalletInstructions])
+    const onAddToWallet = useCallback(() => {
+        trackEvent(
+            walletPlatform === 'apple'
+                ? CardEvent.DetailsAddToApple
+                : CardEvent.DetailsAddToGoogle,
+        )
+        void addToWallet()
+    }, [addToWallet, walletPlatform])
 
     const { pickFundingSource } = useCardFundingSourcePicker()
     const { mutateAsync: connectFundingSourceAsync } =
@@ -411,10 +447,14 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         }
     }, [performChangeFunding])
     const onChangeFunding = useCallback(() => {
+        trackEvent(CardEvent.DetailsChangeAccount)
         void changeFunding()
     }, [changeFunding])
 
     const onChangeFundingType = useCallback(() => {
+        // Design's event catalog names this `card_home_*` although the switch
+        // lives on the Card Details tab — the only funding-type control in code.
+        trackEvent(CardEvent.HomeFundingType)
         void request({
             contents: <SelectFundingTypeSheet />,
             options: {
@@ -425,6 +465,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     }, [request])
 
     const onReportLostStolen = useCallback(() => {
+        trackEvent(CardEvent.DetailsReportLostCard)
         void request({
             contents: <ReportLostStolenSheet />,
             options: {
@@ -437,7 +478,11 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     // Rejected KYC is terminal, so the notice's only action is support.
     const onContactSupport = useOpenCardSupport()
 
-    const { start: onReportSuspicious } = useReportSuspiciousFlow()
+    const { start: startReportSuspicious } = useReportSuspiciousFlow()
+    const onReportSuspicious = useCallback(() => {
+        trackEvent(CardEvent.DetailsReportSusCard)
+        startReportSuspicious()
+    }, [startReportSuspicious])
 
     return {
         maskedPan: `${PAN_MASK} ${panLast4 ?? PAN_MASK}`,
@@ -467,6 +512,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         isSettingPin: setPin.isPending,
         onAccountsDetails,
         walletPlatform,
+        showAddToWallet: !isCardInWallet,
         onAddToWallet,
         onReportLostStolen,
         onReportSuspicious,

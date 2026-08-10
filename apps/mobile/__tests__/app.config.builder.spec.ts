@@ -18,6 +18,7 @@ const PASSKEY_PLUGIN = '@algorandfoundation/react-native-passkey-autofill'
 type ResolvedConfig = {
     name: string
     slug: string
+    version: string
     scheme: string[]
     ios: {
         bundleIdentifier: string
@@ -393,6 +394,25 @@ describe('buildAppConfig — store versioning floor (WB-5)', () => {
             build({ APP_ENV: 'production', BUILD_NUMBER: '42' }).ios
                 .buildNumber,
         ).toBe(String(base + 42))
+    })
+})
+
+describe('buildAppConfig — marketing version', () => {
+    // Regression guard: this was pinned to a literal '7.0.0'. iOS survived it
+    // because fastlane rewrites the project after prebuild; Android has no such
+    // step, so every Play release shipped as 7.0.0 regardless of the tag.
+    it('takes the marketing version from APP_VERSION', () => {
+        expect(
+            build({ APP_ENV: 'production', APP_VERSION: '8.1.4' }).version,
+        ).toBe('8.1.4')
+    })
+
+    it("falls back to package.json's base version when APP_VERSION is unset", () => {
+        const declared = (pkg as { version: string }).version
+        expect(build({ APP_ENV: 'production' }).version).toBe(
+            declared.split('-')[0],
+        )
+        expect(declared).toContain('-')
     })
 })
 

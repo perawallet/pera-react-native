@@ -101,9 +101,12 @@ updates:
       # expresses that coupling — expo declares `react-native: "*"` — so the
       # resolver cannot catch it, and dyld can't either: it rejects *missing*
       # symbols, not *changed struct layouts*, which instead corrupt the heap at
-      # runtime. 0.86.0 → 0.86.2 did exactly that (PERA-4830): the app died mid-
-      # navigation with a Hermes GC protection fault and a malloc free-list
-      # botch. Moves only when the Expo SDK moves.
+      # runtime.
+      #
+      # Now aligned at 0.86.2 under Expo SDK 57.0.11 / expo-modules-core 57.0.10
+      # (PERA-4834). The pin stays because the coupling is structural, not
+      # because of any one incident: RN and the Expo SDK move together or not at
+      # all. Bump this only as part of an SDK move, with a device launch test.
       - dependency-name: react-native
         update-types:
           - version-update:semver-major
@@ -113,6 +116,12 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: typescript
         update-types: [version-update:semver-major]
+      # Nothing here runs eslint — there is no eslint config in the repo and
+      # every workspace `lint` script is oxlint. `eslint` exists only to satisfy
+      # the peer of the two plugins oxlint loads through `jsPlugins`, and
+      # eslint-plugin-react-native@5.0.0 (the latest) caps that peer at `^9`.
+      # So eslint 10 would buy nothing and cost an unmet peer. Revisit if that
+      # plugin ships a release accepting ^10, or if it stops being loaded.
       - dependency-name: eslint
         update-types: [version-update:semver-major]
       # WalletConnect is pinned to v1 on purpose — the whole @perawallet/wallet-core-walletconnect
@@ -140,11 +149,24 @@ updates:
       # Stay on 27 until jsdom fixes the regression or React DOM changes.
       - dependency-name: jsdom
         update-types: [version-update:semver-major]
-      # Native modules pinned to Expo SDK 57's bundled versions. Expo builds and
-      # tests the SDK against exact versions; bumping any of these independently
-      # (even a patch) drifts from the SDK and risks native/ABI mismatches. They
-      # move only when the Expo SDK moves. reanimated/worklets are a lockstep pair;
+      # Native modules that move as one reviewed set, never individually. Bumping
+      # any of these on its own risks a native/ABI mismatch that no resolver and
+      # no linker will catch. reanimated/worklets are a lockstep pair;
       # nitro-modules is also override-pinned to one ABI for all nitro consumers.
+      #
+      # We run these *ahead* of the versions Expo bundles with SDK 57, on purpose
+      # and for some time. `expo install --check` therefore reports them as
+      # wanting a "downgrade" — that is the expected state here, not a finding,
+      # and it is why that check is not a CI gate. Do not "fix" it by pulling
+      # these back to the SDK's set without a device pass.
+      #
+      # Moved as a set in PERA-4834: reanimated 4.5.3, worklets 0.10.3,
+      # nitro-modules 0.36.5, pager-view 8.0.4, keyboard-controller 1.22.2.
+      # Note worklets stays on the 0.10 line deliberately — expo-modules-core
+      # 57.0.10 peers it at `^0.7.4 || ^0.8.0 || ^0.9.0 || ^0.10.0` and rejects
+      # 0.11.x, while reanimated 4.5.3 accepts `0.10.x - 0.11.x`. Taking the
+      # 0.11 that Dependabot will keep offering installs *both*, which for a
+      # native module means two ABIs in one binary.
       - dependency-name: react-native-reanimated
       - dependency-name: react-native-worklets
       - dependency-name: react-native-nitro-modules
@@ -154,12 +176,13 @@ updates:
       # than at build: with EXPO_USE_PRECOMPILED_MODULES its XCFramework is
       # downloaded prebuilt, so it is linked against whatever
       # expo-modules-core existed when Expo published it — never against ours.
-      # 57.0.2 was built against the module-lifecycle API (didCreate,
-      # didStartListening, didStopListening, willDestroy) that core only gained
-      # in 57.0.9, so pairing it with the 57.0.7 core that expo@57.0.8 pins
-      # aborts in dyld before any JS runs. Nothing catches this: expo-image
-      # declares no dependency on expo-modules-core, and each artifact is
-      # fetched per-package. Pinned exactly, and moves only when the SDK does.
+      # Nothing catches this: expo-image declares no dependency on
+      # expo-modules-core, and each artifact is fetched per-package.
+      #
+      # Now at 57.0.2 against core 57.0.10 (PERA-4834), which is the pairing it
+      # was built for — 57.0.2 needs the module-lifecycle API (didCreate,
+      # didStartListening, didStopListening, willDestroy) that core gained in
+      # 57.0.9. Still pinned exactly, and still moves only when the SDK does.
       - dependency-name: expo-image
 
   # Pin GitHub Actions by SHA; Dependabot rewrites the SHA and updates the

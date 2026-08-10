@@ -80,14 +80,6 @@ export const useWebAppShell = (): UseWebAppShellResult => {
         })
     }, [])
 
-    // Native runs this via provider.initialize() in useAppBootstrap before
-    // anything else; the web shell mirrored the rest of that bootstrap but
-    // dropped this call, so Remote Config never initialized and every
-    // getStringValue served the bundled default — which is why the Staking
-    // screen rendered zero providers (staking_projects defaults to '').
-    // Deliberately NOT gated on isUnlocked: none of crash reporting, remote
-    // config, or analytics needs the master key, and remote config must be
-    // activated before the first screen reads a flag.
     useEffect(() => {
         if (platformInitStarted.current) return
         platformInitStarted.current = true

@@ -45,7 +45,7 @@
         "title": "Konten",
         "sort": "Sortieren",
         "select_title": "Konto auswählen",
-        "select_description": "Wähle ein Konto für den Swap aus"
+        "select_description": "Wähle ein Konto für den Tausch aus"
     },
     "account_sort": {
         "title": "Sortieren",
@@ -240,7 +240,7 @@
             "total_supply_info_body": "Das Gesamtangebot eines Assets wird bei der Erstellung festgelegt und entspricht der Gesamtzahl der erstellten Einheiten des Assets."
         },
         "action_buttons": {
-            "swap": "Swap",
+            "swap": "Tauschen",
             "buy": "Kaufen",
             "send": "Senden",
             "receive": "Empfangen"
@@ -312,7 +312,7 @@
             "sort_oldest_first": "Älteste zuerst"
         },
         "button_panel": {
-            "swap": "Swap",
+            "swap": "Tauschen",
             "send": "Senden",
             "receive": "Empfangen",
             "more": "Mehr"
@@ -939,9 +939,9 @@
             "select_asset_search": "Nach Name oder ID suchen",
             "select_asset_empty_title": "Keine passenden Assets",
             "select_asset_empty_body": "Keine Assets entsprechen deinem Suchbegriff",
-            "swap_success_title": "Swap abgeschlossen",
+            "swap_success_title": "Tausch abgeschlossen",
             "swap_success_body": "Deine Assets wurden in USDC getauscht.",
-            "swap_error_title": "Swap fehlgeschlagen"
+            "swap_error_title": "Tausch fehlgeschlagen"
         },
         "withdraw": {
             "navigation_title": "Auszahlen",
@@ -957,7 +957,7 @@
             "success_body": "{{amount}} USDC ist auf dem Weg zu deinem Konto."
         },
         "confirm_swap": {
-            "navigation_title": "Swap bestätigen",
+            "navigation_title": "Tausch bestätigen",
             "price": "Preis",
             "slippage": "Slippage-Toleranz",
             "price_impact": "Preisauswirkung",
@@ -2177,7 +2177,7 @@
                 "betanet_label": "Algorand BetaNet",
                 "custom_label": "Benutzerdefiniertes Netzwerk",
                 "non_mainnet_warning_title": "Eingeschränkte Unterstützung außerhalb von MainNet",
-                "non_mainnet_warning_body": "MainNet ist das einzige vollständig unterstützte Netzwerk. Funktionen, die auf Pera-Dienste angewiesen sind — Asset-Details, Swap, Kauf, Karte, Staking und Posteingang — sind auf TestNet eingeschränkt und auf BetaNet sowie benutzerdefinierten Nodes nicht verfügbar.",
+                "non_mainnet_warning_body": "MainNet ist das einzige vollständig unterstützte Netzwerk. Funktionen, die auf Pera-Dienste angewiesen sind — Asset-Details, Tauschen, Kauf, Karte, Staking und Posteingang — sind auf TestNet eingeschränkt und auf BetaNet sowie benutzerdefinierten Nodes nicht verfügbar.",
                 "enable_mainnet": "MainNet aktivieren",
                 "enable_testnet": "TestNet aktivieren",
                 "custom_sheet_title": "Benutzerdefiniertes Netzwerk konfigurieren",
@@ -2447,7 +2447,7 @@
         "list_item": {
             "send": "Senden",
             "receive": "Empfangen",
-            "swap": "Swap",
+            "swap": "Tausch",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Asset-Konfiguration",
@@ -2585,8 +2585,8 @@
     "tabbar": {
         "home": "Start",
         "discover": "Entdecken",
-        "swap": "Swap",
-        "fund": "Fund",
+        "swap": "Tauschen",
+        "fund": "Aufladen",
         "menu": "Menü"
     },
     "walletconnect": {
@@ -2673,15 +2673,15 @@
     },
     "swap": {
         "introduction": {
-            "title": "Swap in Pera",
-            "description": "Pera Wallet bietet eine einfache und schnelle Möglichkeit, Assets zu tauschen. Mit P.E.R.A. werden Swap-Anfragen intelligent über mehrere Algorand-basierte dezentrale Börsen geleitet, um den besten verfügbaren Preis zu sichern.",
+            "title": "Tauschen in Pera",
+            "description": "Pera Wallet bietet eine einfache und schnelle Möglichkeit, Assets zu tauschen. Mit P.E.R.A. werden Tauschanfragen intelligent über mehrere Algorand-basierte dezentrale Börsen geleitet, um den besten verfügbaren Preis zu sichern.",
             "powered_by": "Unterstützt von ",
             "powered_by_brand": "P.E.R.A.",
-            "start_swapping": "Swap starten",
-            "terms_agreement": "Durch Fortfahren stimmst du den <0>Nutzungsbedingungen</0> unseres Swap-Partners zu"
+            "start_swapping": "Tauschen starten",
+            "terms_agreement": "Durch Fortfahren stimmst du den <0>Nutzungsbedingungen</0> unseres Tauschpartners zu"
         },
         "form": {
-            "swap": "Swap",
+            "swap": "Tauschen",
             "insufficient_balance": "Der Betrag übersteigt dein verfügbares Guthaben.",
             "no_balance_title": "Nichts zum Tauschen",
             "no_balance_body": "Dieses Konto hält kein {{unit}}.",
@@ -2702,7 +2702,7 @@
             "no_results_body": "Keine Assets entsprechen deinem Suchbegriff"
         },
         "configuration": {
-            "title": "Swap-Einstellungen",
+            "title": "Tauscheinstellungen",
             "apply": "Anwenden",
             "balance_percentage": "Guthabenprozentsatz",
             "balance_custom_hint": "Benutzerdefinierten Prozentsatz festlegen",
@@ -2724,26 +2724,26 @@
             "pera_fee": "Pera-Gebühr",
             "provider": "Anbieter",
             "minimum_received": "Mindestbetrag erhalten",
-            "confirm_swap": "Swap bestätigen",
+            "confirm_swap": "Tausch bestätigen",
             "slide_to_confirm": "Zum Bestätigen wischen",
-            "high_price_impact_warning": "Dieser Swap hat eine hohe Preisauswirkung. Du erhältst möglicherweise deutlich weniger Token als erwartet.",
+            "high_price_impact_warning": "Dieser Tausch hat eine hohe Preisauswirkung. Du erhältst möglicherweise deutlich weniger Token als erwartet.",
             "quote_error": "Angebote konnten nicht abgerufen werden. Bitte versuche es erneut."
         },
         "execution": {
-            "error_title": "Swap fehlgeschlagen",
-            "error_body": "Beim Swap ist ein Fehler aufgetreten. Bitte versuche es erneut.",
-            "success_title": "Swap abgeschlossen",
-            "success_body": "Swap von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
-            "user_rejected": "Swap abgebrochen",
-            "pending_cosign_title": "Swap-Anfrage gesendet",
-            "pending_cosign_body": "Dein Swap benötigt eine weitere Signatur. Er wird abgeschlossen, sobald der andere Signierer ihn in seinem Posteingang genehmigt."
+            "error_title": "Tausch fehlgeschlagen",
+            "error_body": "Beim Tausch ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+            "success_title": "Tausch abgeschlossen",
+            "success_body": "Tausch von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
+            "user_rejected": "Tausch abgebrochen",
+            "pending_cosign_title": "Tauschanfrage gesendet",
+            "pending_cosign_body": "Dein Tausch benötigt eine weitere Signatur. Er wird abgeschlossen, sobald der andere Signierer ihn in seinem Posteingang genehmigt."
         },
         "signing": {
-            "source_name": "Swap",
-            "source_description": "Bestätige Transaktionen, um deinen Swap abzuschließen"
+            "source_name": "Tausch",
+            "source_description": "Bestätige Transaktionen, um deinen Tausch abzuschließen"
         },
         "info": {
-            "slippage_tolerance": "Die maximale Differenz zwischen dem erwarteten Preis und dem Ausführungspreis. Eine höhere Toleranz erhöht die Wahrscheinlichkeit eines erfolgreichen Swaps, kann aber zu einem weniger günstigen Kurs führen.",
+            "slippage_tolerance": "Die maximale Differenz zwischen dem erwarteten Preis und dem Ausführungspreis. Eine höhere Toleranz erhöht die Wahrscheinlichkeit eines erfolgreichen Tauschs, kann aber zu einem weniger günstigen Kurs führen.",
             "price_impact": "Die Differenz zwischen dem Marktpreis und dem geschätzten Preis aufgrund der Handelsgröße. Größere Trades haben typischerweise eine höhere Preisauswirkung."
         },
         "provider": {
@@ -2755,35 +2755,35 @@
             "auto_description": "Bester verfügbarer Preis"
         },
         "history": {
-            "title": "Swap-Verlauf",
+            "title": "Tauschverlauf",
             "widget": {
-                "title": "Swap-Verlauf",
+                "title": "Tauschverlauf",
                 "see_all": "Alle anzeigen",
-                "error": "Swap-Verlauf konnte nicht geladen werden."
+                "error": "Tauschverlauf konnte nicht geladen werden."
             },
             "list": {
                 "item": {
                     "description": "{{amountIn}} {{unitIn}} getauscht gegen "
                 },
                 "empty": {
-                    "title": "Noch keine Swaps",
-                    "body": "Dein Swap-Verlauf wird hier angezeigt."
+                    "title": "Noch keine Tauschvorgänge",
+                    "body": "Dein Tauschverlauf wird hier angezeigt."
                 },
                 "error": {
                     "title": "Etwas ist schiefgelaufen",
-                    "body": "Wir konnten deinen Swap-Verlauf nicht laden. Bitte versuche es erneut."
+                    "body": "Wir konnten deinen Tauschverlauf nicht laden. Bitte versuche es erneut."
                 }
             }
         },
         "top_pairs": {
-            "title": "Top 5 Swaps",
+            "title": "Top 5 Tauschpaare",
             "volume_24h": "Volumen (24H)",
-            "error": "Top-Swaps konnten nicht geladen werden"
+            "error": "Top-Tauschpaare konnten nicht geladen werden"
         }
     },
     "onramp": {
         "tabs": {
-            "fund": "Fund",
+            "fund": "Aufladen",
             "history": "Verlauf"
         },
         "testnet": {
@@ -2798,7 +2798,7 @@
             "info_body_secondary": "Je nach deinem Land können einige Krypto- oder Fiat-Optionen eingeschränkt sein."
         },
         "introduction": {
-            "title": "Fund",
+            "title": "Aufladen",
             "new_chip": "NEU",
             "continue": "Weiter",
             "feature_buy": "ALGO oder USDC mit Fiat oder Krypto kaufen",
@@ -2853,7 +2853,7 @@
             "confirm": "Bestätigen"
         },
         "order_review": {
-            "xo_title": "Swap-Übersicht",
+            "xo_title": "Tauschübersicht",
             "pay_in_address": "Einzahlungsadresse",
             "send_to_address": "Sende {{amount}} an diese Adresse.",
             "address": "Adresse",

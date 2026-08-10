@@ -34,13 +34,6 @@ export class ChromeRemoteConfigService implements RemoteConfigService {
         if (!app) {
             const message =
                 '[pera] Remote Config disabled: no Firebase project configured; serving bundled defaults'
-            // In a local/dev build this is expected. In a staging or
-            // production zip it means the FIREBASE_* build secrets were
-            // missing, and every remote flag then silently serves its bundled
-            // default — `staking_projects: ''` renders an empty Staking
-            // screen that looks like a backend outage rather than a
-            // misconfigured build. A console.warn nobody reads is not enough
-            // signal for that, so a shipped build reports it as a real error.
             if (isDebug) {
                 console.warn(message, { appEnvironment: config.appEnvironment })
             } else {

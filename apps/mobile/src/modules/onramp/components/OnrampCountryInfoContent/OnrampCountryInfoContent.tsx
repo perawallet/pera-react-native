@@ -18,16 +18,25 @@ import { useStyles } from './styles'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 export type OnrampCountryInfoContentProps = {
+    countryCode?: string
     countryName?: string
 }
 
 export const OnrampCountryInfoContent = ({
+    countryCode,
     countryName,
 }: OnrampCountryInfoContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
-    const country = countryName ?? t('onramp.region.country_fallback')
+    // The ramp API only ever returns an English `country_name`, so resolve the
+    // ISO code against the localized bundle first and keep the API string as
+    // the fallback for codes we don't have a translation for.
+    const country = countryCode
+        ? t(`countries.${countryCode.toUpperCase()}`, {
+              defaultValue: countryName ?? countryCode.toUpperCase(),
+          })
+        : (countryName ?? t('onramp.region.country_fallback'))
 
     return (
         <SafeAreaView edges={['bottom']}>

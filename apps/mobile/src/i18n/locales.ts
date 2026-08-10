@@ -14,6 +14,7 @@ import de from './locales/de.json'
 import en from './locales/en.json'
 import es from './locales/es.json'
 import fr from './locales/fr.json'
+import ptBR from './locales/pt-BR.json'
 import tr from './locales/tr.json'
 
 /**
@@ -36,6 +37,7 @@ export const TRANSLATION_BUNDLES: Readonly<
     es,
     fr,
     tr,
+    'pt-BR': ptBR,
 }
 
 export const BASE_LOCALE = 'en'

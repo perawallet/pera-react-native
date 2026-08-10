@@ -13,9 +13,9 @@
 import { describe, it, expect } from 'vitest'
 import { resolveLocale } from '../locales'
 
-// Exercises the full wave-one matrix (design doc §4.1) even though `pt-BR` has
-// no real bundle yet — resolveLocale takes the supported set as a
-// parameter for exactly this reason.
+// Exercises the full wave-one matrix (design doc §4.1). Every locale in it now
+// has a real bundle; resolveLocale still takes the supported set as a parameter
+// because the Remote-Config gate, not this registry, decides what users get.
 const SIX_LOCALES = new Set(['en', 'es', 'de', 'fr', 'tr', 'pt-BR'])
 
 describe('i18n/locales - resolveLocale', () => {

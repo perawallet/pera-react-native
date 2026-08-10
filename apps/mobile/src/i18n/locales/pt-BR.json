@@ -1,0 +1,3473 @@
+{
+    "dapp": {
+        "enable": {
+            "title": "Conectar a este site",
+            "description": "Selecione as contas que você quer compartilhar com este site.",
+            "peer_origin_claim": "O site informa: {{origin}}",
+            "request_origin": "A solicitação veio de {{origin}}",
+            "requester_verified_label": "Aba verificada",
+            "requester_verified_a11y_label": "Verificado: esta solicitação veio da aba do seu navegador",
+            "requester_verified_a11y_origin": "Verificado: esta solicitação veio da aba do seu navegador em {{origin}}",
+            "connect_button": "Conectar",
+            "cancel_button": "Cancelar"
+        },
+        "sign": {
+            "error": {
+                "title": "Não é possível processar esta solicitação",
+                "body": "Este site enviou uma solicitação que a Pera não conseguiu ler. A solicitação foi recusada.",
+                "dismiss": "Fechar"
+            },
+            "network_mismatch": "Esta transação é de uma rede Algorand diferente da rede ativa na sua wallet. Troque de rede em Configurações e tente novamente.",
+            "unsupported_message": "Este site enviou uma solicitação de assinatura de mensagem que a Pera não consegue processar. A solicitação foi recusada.",
+            "unauthorized_signer": "Este site não está autorizado a solicitar uma assinatura para essa conta.",
+            "no_session": "Esta conexão não é mais válida. Reconecte o site e tente novamente."
+        },
+        "passkey": {
+            "create": {
+                "title": "Criar uma passkey para este site"
+            },
+            "get": {
+                "title": "Entrar com uma passkey"
+            },
+            "approve_button": "Continuar",
+            "decline_button": "Cancelar",
+            "error": "A Pera não conseguiu concluir esta solicitação de passkey. A solicitação foi recusada.",
+            "choose": {
+                "title": "Escolha uma passkey",
+                "description": "Você tem mais de uma passkey salva para {{origin}}. Escolha com qual delas quer entrar."
+            }
+        },
+        "approval": {
+            "delivery_failed": "A Pera não conseguiu enviar sua decisão ao site. A extensão entrou em suspensão enquanto esta janela estava aberta. Feche esta janela e faça a solicitação novamente no site."
+        }
+    },
+    "account_menu": {
+        "title": "Contas",
+        "sort": "Ordenar",
+        "select_title": "Selecionar conta",
+        "select_description": "Selecione uma conta para fazer a conversão"
+    },
+    "account_sort": {
+        "title": "Ordenar",
+        "alphabetical_asc": "Ordem alfabética A-Z",
+        "alphabetical_desc": "Ordem alfabética Z-A",
+        "balance_asc": "Menor para maior valor",
+        "balance_desc": "Maior para menor valor",
+        "manual": "Manualmente",
+        "reorganize_manually": "Reorganizar contas manualmente"
+    },
+    "manage_assets": {
+        "title": "Gerenciar ativos",
+        "sort": "Ordenar",
+        "filter": "Filtrar",
+        "remove_assets": "Remover ativos"
+    },
+    "age_gate": {
+        "loading": {
+            "title": "Confirmando idade…"
+        },
+        "declare": {
+            "title": "Confirme sua idade",
+            "body": "Somos obrigados por lei, em algumas jurisdições, a confirmar sua idade para permitir o acesso a certos tipos de conteúdo. Essa informação permanece no seu dispositivo. Confirme se você tem 18 anos ou mais.",
+            "yes": "Tenho 18 anos ou mais",
+            "no": "Tenho menos de 18 anos"
+        },
+        "restricted": {
+            "title": "Conteúdo indisponível",
+            "body": "Devido a exigências legais em algumas jurisdições, este conteúdo está disponível apenas para usuários com 18 anos ou mais.",
+            "retry": "Verificar minha idade novamente"
+        }
+    },
+    "app": {
+        "initialization_failed": {
+            "title": "Falha ao iniciar o app",
+            "body": "Ocorreu um erro ao inicializar o app. Tente reiniciá-lo. Se o problema persistir, entre em contato com o suporte.\n\nSeus fundos estão seguros na blockchain da Algorand.",
+            "retry": "Tentar novamente"
+        }
+    },
+    "asset_sort": {
+        "title": "Ordenar",
+        "balance_desc": "Maior para menor valor",
+        "balance_asc": "Menor para maior valor",
+        "alphabetical_asc": "Ordem alfabética A-Z",
+        "alphabetical_desc": "Ordem alfabética Z-A"
+    },
+    "asset_filter": {
+        "title": "Filtrar ativos",
+        "hide_zero_balance": "Ocultar ativos sem saldo",
+        "hide_zero_balance_description": "Você pode exibir ou ocultar ativos com saldo zero",
+        "display_nfts": "Exibir NFTs na lista de ativos",
+        "display_nfts_description": "Os NFTs serão exibidos na lista de ativos da sua conta",
+        "display_opted_in_nfts": "Exibir NFTs adicionados",
+        "display_opted_in_nfts_description": "Você pode exibir ou ocultar NFTs que foram adicionados, mas que você não possui"
+    },
+    "add_asset": {
+        "title": "Adicionar um ativo",
+        "search_placeholder": "Buscar por nome ou ID do ativo",
+        "no_results": "Nenhum ativo encontrado",
+        "opt_in": {
+            "failed_title": "Falha ao adicionar o ativo",
+            "success_title": "Ativo adicionado",
+            "success_body": "{{assetName}} foi adicionado à sua conta com sucesso",
+            "success_body_generic": "Ativo adicionado à sua conta com sucesso"
+        },
+        "select_account": {
+            "title": "Selecione uma conta",
+            "empty": "Nenhuma conta disponível para adicionar o ativo"
+        },
+        "confirmation": {
+            "title": "Adicionando ativo",
+            "account_label": "Conta",
+            "fee_label": "Taxa da transação",
+            "description": "Antes de interagir com um ativo, você precisa fazer opt-in nele a partir da sua conta. Isso evita que transações de ativos não autorizadas sejam enviadas para você.",
+            "copy_id": "Copiar ID"
+        },
+        "collectible_title": "Adicionar NFT",
+        "collectible_note": "Você precisa fazer opt-in no ASA ID do NFT para poder transferi-lo para a sua wallet. Cole o ASA ID na barra de busca.",
+        "collectible_search_placeholder": "Buscar ID do ativo ou nome do NFT"
+    },
+    "asa_verification_info": {
+        "title": "Verificação de ASA",
+        "body_1": "O Programa de Verificação de ASA (Algorand Standard Asset) da Pera Wallet permite que criadores de ASA sejam verificados automaticamente, comprovando que são os donos do ativo.",
+        "body_2": "O principal objetivo da Verificação de ASA é impedir que um ASA finja ter ligação com um projeto ao qual não pertence e atue como o token dele.",
+        "body_3": "A Verificação de ASA não é um endosso do projeto. Nem a Algorand nem a Pera usariam o processo de verificação para endossar um projeto.",
+        "learn_more": "Saiba mais"
+    },
+    "asset_opt_out": {
+        "title": "Remover ativo",
+        "description": "Você está prestes a remover e fazer opt-out do ativo {{assetName}} com {{accountName}}. Você não poderá transacionar com este ativo a partir desta conta, a menos que faça opt-in nele novamente.",
+        "fee_label": "Taxa da transação",
+        "keep": "Manter",
+        "copy_id": "Copiar ID",
+        "account_label": "Conta",
+        "success": "Ativo removido",
+        "error": "Não foi possível remover o ativo",
+        "opt_out_cta": "Remover"
+    },
+    "remove_assets": {
+        "title": "Remover ativos",
+        "select_all": "Selecionar todos",
+        "deselect_all": "Desmarcar todos",
+        "empty_title": "Nenhum ativo removível",
+        "empty_body": "Somente ativos com saldo zero que não foram criados por você podem ser removidos."
+    },
+    "deeplink": {
+        "error": {
+            "title_generic": "Não foi possível abrir o link",
+            "body_generic": "Não conseguimos processar o link. Tente novamente.",
+            "title_walletconnect": "Falha no WalletConnect",
+            "body_walletconnect": "Não conseguimos conectar ao dApp. A sessão pode ter expirado ou o bridge pode estar inacessível.",
+            "title_keyreg": "Não foi possível preparar o registro de chaves",
+            "body_keyreg": "Não conseguimos criar a transação de registro de chaves.",
+            "body_keyreg_unknown_account": "Este registro de chaves é de uma conta que você não tem nesta wallet. Adicione a conta primeiro e escaneie novamente.",
+            "title_recover": "Não foi possível importar a conta",
+            "body_recover": "Não conseguimos importar a conta a partir deste QR.",
+            "body_recover_duplicate": "Esta conta já está na sua wallet.",
+            "title_timeout": "Demorou muito",
+            "body_timeout": "A solicitação não foi concluída em tempo. Verifique sua conexão e tente novamente."
+        }
+    },
+    "address_actions": {
+        "title": "Endereço de conta escaneado",
+        "send_transaction": "Enviar transação",
+        "send_transaction_subtitle": "Envie ALGO ou ativos para este endereço",
+        "watch_address": "Observar um endereço",
+        "watch_address_subtitle": "Adicionar como conta de observação",
+        "add_contact": "Adicionar novo contato",
+        "add_contact_subtitle": "Salvar este endereço para depois",
+        "edit_contact": "Editar contato",
+        "edit_contact_subtitle": "Atualizar {{name}}"
+    },
+    "address_entry": {
+        "scan_qr": "Escanear código QR",
+        "paste_from_clipboard": "Colar da área de transferência",
+        "invalid_qr_title": "Código QR inválido",
+        "invalid_qr_body": "Este código QR não contém um endereço de wallet",
+        "address": "Endereço",
+        "contacts": "Contatos",
+        "my_accounts": "Contas",
+        "no_accounts_found": "Nenhuma conta encontrada",
+        "no_accounts_body": "Não há contas correspondentes",
+        "search_placeholder": "Endereço da conta, nome NFD ou nome curto",
+        "nfd_results": "NFDomains",
+        "nfd_resolving": "Resolvendo NFD...",
+        "nfd_resolved": "Resolvido de {{name}}"
+    },
+    "arc59": {
+        "requests": {
+            "empty_title": "Nenhuma solicitação de transferência de ativos pendente",
+            "empty_body": "Quando você tiver uma solicitação de transferência de ativos, ela aparecerá aqui. Toque para saber mais sobre este recurso.",
+            "info_title": "Solicitações de transferência de ativos",
+            "info_body": "Este recurso é uma caixa de entrada para sua conta. Outras pessoas podem enviar ativos e NFTs para você, mesmo que você não os tenha adicionado explicitamente. Aqui, você pode aceitar ou recusar as solicitações de transferência de ativos."
+        },
+        "claim": {
+            "reject": "Recusar",
+            "algo_gain": "Você receberá {{amount}} ALGO para compensar os custos do opt-in."
+        }
+    },
+    "asset": {
+        "deleted_label": "(Excluído)"
+    },
+    "asset_details": {
+        "about": {
+            "title": "Sobre {{name}}",
+            "asa_id": "ID do ASA",
+            "creator": "Criador",
+            "url": "URL",
+            "asa_url": "URL do ASA",
+            "show_on": "Ver em",
+            "project_website": "Site do projeto",
+            "open_browser": "Abrir no navegador"
+        },
+        "main_screen": {
+            "holdings_tab": "Posições",
+            "markets_tab": "Mercados"
+        },
+        "markets": {
+            "something_went_wrong_title": "Algo deu errado",
+            "something_went_wrong_body": "Não foi possível carregar os detalhes deste ativo. Verifique sua conexão e tente novamente.",
+            "discover_more": "Ver mais detalhes no Explorar",
+            "title": "Mercados",
+            "stats": "Estatísticas",
+            "price": "Preço",
+            "total_supply": "Fornecimento total",
+            "no_freeze": "Sem congelamento",
+            "no_clawback": "Sem clawback",
+            "description": "Descrição",
+            "social_media": "Redes sociais",
+            "chart_empty_body": "Um gráfico aparecerá aqui quando você tiver histórico de saldo",
+            "total_supply_info_title": "Fornecimento total",
+            "total_supply_info_body": "O fornecimento total de um ativo é definido no momento da criação e corresponde ao total de unidades criadas do ativo."
+        },
+        "action_buttons": {
+            "swap": "Converter",
+            "buy": "Comprar",
+            "send": "Enviar",
+            "receive": "Receber"
+        },
+        "transaction_list": {
+            "title": "Transações",
+            "empty_body": "Nenhuma transação encontrada",
+            "filter": "Filtrar",
+            "csv": "CSV"
+        },
+        "collectible": {
+            "description": "Descrição",
+            "properties": "Propriedades",
+            "creator": "Conta do criador",
+            "asset_id": "ID do ativo",
+            "total_supply": "Fornecimento total",
+            "show_on": "Ver em",
+            "explorer": "Pera Explorer",
+            "share_message": "",
+            "image_copied": "Imagem copiada para a área de transferência",
+            "media_saved": "Salvo na sua biblioteca",
+            "model_3d_mode": "Modo 3D",
+            "media_save_failed": "Não foi possível salvar",
+            "image_copy_failed": "Não foi possível copiar a imagem",
+            "media_permission_denied": "É necessário acesso à biblioteca para salvar a mídia",
+            "not_owner_notice": "Você ainda não é o proprietário deste NFT, mas já fez o opt-in para ele. Agora você pode transferi-lo para sua conta."
+        },
+        "verification_card": {
+            "trusted_title": "ASA confiável",
+            "trusted_description": "Este é um projeto conhecido e consolidado no ecossistema Algorand.",
+            "verified_title": "ASA verificado",
+            "verified_description": "Este ASA foi verificado automaticamente pelo programa de verificação de ASA da Pera.",
+            "suspicious_title": "ASA suspeito",
+            "suspicious_description": "Este ASA foi sinalizado como suspeito pelo programa de verificação de ASA da Pera.",
+            "learn_more": "Saiba mais sobre a verificação de ASA"
+        }
+    },
+    "account_details": {
+        "assets": {
+            "title": "Ativos",
+            "add_asset": "Adicionar ativo",
+            "search_placeholder": "Buscar ativos",
+            "empty_title": "Nenhum ativo",
+            "empty_body": "Você não tem ativos vinculados a esta conta",
+            "nomatch_title": "Nenhum ativo encontrado",
+            "nomatch_body": "Nenhum ativo corresponde à sua busca"
+        },
+        "nfts": {
+            "search_placeholder": "Buscar NFTs",
+            "empty_title": "NFTs",
+            "empty_body": "Boas-vindas à sua galeria de NFTs! Você ainda não tem nenhum NFT. Todos os NFTs disponíveis na sua wallet aparecerão aqui.",
+            "empty_optin": "Adicionar NFT",
+            "nomatch_title": "Nenhum NFT encontrado",
+            "nomatch_body": "Nenhum NFT corresponde à sua busca",
+            "count": "{{count}} NFTs",
+            "count_one": "{{count}} NFT",
+            "manage": "Gerenciar",
+            "manage_title": "Gerenciar NFTs",
+            "sort": "Ordenar",
+            "filter_title": "Filtrar NFTs",
+            "filter": "Filtrar",
+            "filter_opted_in": "Exibir NFTs adicionados",
+            "filter_opted_in_description": "Você pode exibir ou ocultar NFTs que foram adicionados mas não pertencem a você",
+            "filter_watch_accounts": "Exibir NFTs de contas de observação",
+            "filter_watch_accounts_description": "Isso exibe os NFTs das suas contas de observação e também das suas próprias contas",
+            "sort_title_asc": "Nome (A-Z)",
+            "sort_title_desc": "Nome (Z-A)",
+            "sort_newest_first": "Mais recentes primeiro",
+            "sort_oldest_first": "Mais antigos primeiro"
+        },
+        "button_panel": {
+            "swap": "Converter",
+            "send": "Enviar",
+            "receive": "Receber",
+            "more": "Mais"
+        },
+        "watch_button_panel": {
+            "copy_address": "Copiar endereço",
+            "show_qr": "Ver QR",
+            "more": "Mais"
+        },
+        "main_screen": {
+            "no_account_title": "Nenhuma conta selecionada",
+            "no_account_body": "Nenhuma conta está selecionada no momento",
+            "overview_tab": "Visão geral",
+            "nfts_tab": "NFTs",
+            "history_tab": "Histórico"
+        },
+        "no_balance": {
+            "welcome": "Boas-vindas à Pera!",
+            "get_started": "Para começar, deposite ALGO",
+            "buy_algo": "Comprar Algo",
+            "receive": "Receber",
+            "more": "Mais"
+        }
+    },
+    "account_options": {
+        "copy_address": "Copiar endereço",
+        "shared_account_detail": "Detalhes da conta compartilhada ({{count}})",
+        "show_address": "Ver endereço",
+        "view_passphrase_hd": "Ver passphrase da wallet raiz",
+        "view_passphrase_algo25": "Ver passphrase da wallet",
+        "view_passphrase_quantum": "Ver passphrase da conta Quantum",
+        "undo_rekey": "Desfazer rekey",
+        "rekeyed_to": "Rekey feito para",
+        "rekey_to_ledger": "Fazer rekey para conta Ledger",
+        "rekey_to_standard": "Fazer rekey para conta padrão",
+        "rekey_to_shared": "Fazer rekey para conta compartilhada",
+        "export_share_account": "Exportar/compartilhar conta",
+        "scan_rekeyed": "Buscar contas com rekey",
+        "rename_account": "Renomear conta",
+        "mute_notifications": "Silenciar notificações",
+        "unmute_notifications": "Reativar notificações",
+        "remove_account": "Remover conta",
+        "rename_title": "Renomear conta",
+        "rename_label": "Nome da conta",
+        "rename_save": "Concluir",
+        "rename_success": "Conta renomeada",
+        "remove_title": "Remover conta",
+        "remove_message": "Tem certeza de que deseja remover esta conta? Você pode adicioná-la novamente depois.",
+        "remove_watch_message": "Você está prestes a remover esta conta de observação. Isso só a remove da visualização da sua wallet — a conta em si não é afetada.",
+        "remove_confirm": "Remover",
+        "remove_cancel": "Cancelar",
+        "remove_account_success_message": "Conta removida com sucesso.",
+        "notifications_muted": "Notificações silenciadas",
+        "notifications_unmuted": "Notificações reativadas",
+        "backup_warning_title": "Você já fez backup da sua conta?",
+        "backup_warning_message": "Se você não tiver uma cópia da passphrase desta conta e ela não estiver com backup em um dispositivo Ledger nem for gerenciada por uma Auth Account, o acesso a esta conta e aos seus fundos será perdido para sempre.",
+        "backup_warning_continue": "Sim, continuar",
+        "backup_warning_cancel": "Não, manter conta",
+        "remove_rekey_error_title": "Não é possível remover a conta",
+        "remove_rekey_error_message": "Você não pode remover esta conta antes de remover as {{count}} contas com rekey vinculadas a ela"
+    },
+    "account_info": {
+        "min_balance": "Saldo mín.",
+        "see_wallet_structure": "Ver estrutura da wallet",
+        "hide_wallet_structure": "Ocultar estrutura da wallet",
+        "scan_new_addresses": "Buscar novos endereços",
+        "wallet_label": "Wallet nº {{number}}",
+        "main_address": "Endereço principal",
+        "sub_address": "Subendereço",
+        "type_universal_wallet": "Universal Wallet",
+        "type_algo25": "Conta Algo25",
+        "type_watch": "Conta de observação",
+        "type_ledger": "Conta Ledger",
+        "type_multisig": "Conta compartilhada",
+        "type_quantum": "Conta Quantum",
+        "type_rekeyed": "Conta com rekey",
+        "type_rekeyed_transition": "Rekey ({{from}} para {{to}})",
+        "rekey_part_standard": "Padrão",
+        "rekey_part_ledger": "Ledger",
+        "rekey_part_watch": "Observação",
+        "rekey_part_shared": "Conta compartilhada",
+        "rekey_part_quantum": "Quantum",
+        "type_no_auth": "Sem autorização",
+        "type_unknown": "Conta desconhecida"
+    },
+    "account_type_info": {
+        "standard_title": "Conta Algo25",
+        "standard_description": "Sua conta é uma conta Algorand padrão. Ela não passou por rekey e não está associada a um dispositivo Ledger. Ela foi adicionada à sua wallet com as próprias chaves.",
+        "ledger_title": "Conta Ledger",
+        "ledger_description": "Sua conta é uma conta Ledger. Ela foi adicionada à sua wallet diretamente pelo dispositivo de hardware. Todas as transações desta conta precisam ser confirmadas no seu Ledger.",
+        "watch_title": "Conta de observação",
+        "watch_description": "Esta conta não foi adicionada à sua wallet com as próprias chaves. Ela é somente leitura e não pode interagir com outras contas nem autorizar transações.",
+        "no_auth_title": "Sem autorização",
+        "no_auth_description": "Sua conta passou por rekey para uma conta Algorand que não está na sua wallet. Você não pode enviar ativos nem assinar transações.",
+        "rekeyed_standard_title": "Conta com rekey",
+        "rekeyed_standard_description": "Sua conta passou por rekey para outra conta Algorand padrão. As transações desta conta serão autorizadas pela outra conta.",
+        "rekeyed_shared_description": "Sua conta passou por rekey para uma conta compartilhada. As transações desta conta serão autorizadas pela conta compartilhada.",
+        "rekeyed_ledger_description": "Sua conta passou por rekey para uma conta em um dispositivo de hardware Ledger. As transações desta conta precisam ser autorizadas no dispositivo Ledger.",
+        "rekeyed_ledger_to_ledger_description": "Sua conta Ledger passou por rekey para uma conta em outro dispositivo de hardware Ledger. As transações desta conta serão autorizadas pelo outro dispositivo Ledger.",
+        "hd_wallet_title": "Universal Wallet",
+        "hd_wallet_description": "Wallet que permite derivar novas contas, todas usando a mesma chave.",
+        "multisig_title": "Conta compartilhada",
+        "multisig_description": "Sua conta é uma conta compartilhada. As transações desta conta precisam ser aprovadas por vários signatários.",
+        "multisig_no_auth_description": "Esta é uma conta compartilhada, mas nenhuma das contas signatárias está na sua wallet. Você não pode assinar transações por ela. Para assinar, adicione uma das contas signatárias à sua wallet.",
+        "quantum_title": "Conta Quantum",
+        "quantum_description": "Uma conta padrão protegida com criptografia pós-quântica, projetada para manter seus ativos seguros mesmo contra futuros computadores quânticos.",
+        "learn_more": "Saiba mais"
+    },
+    "min_balance_info": {
+        "title": "Saldo mínimo",
+        "description": "O saldo mínimo é a quantidade mínima de Algo que você precisa manter em uma conta. Ele aumenta cada vez que a conta faz opt-in em um smart contract, ASA ou NFT."
+    },
+    "view_passphrase": {
+        "acknowledge": {
+            "title": "Mantenha em segredo. Mantenha em segurança.",
+            "description": "Confirme e reconheça o seguinte:",
+            "row_screen": "Ninguém pode ver a minha tela.",
+            "row_share": "Corro o risco de perder todos os meus fundos se eu compartilhar minha frase de recuperação com alguém.",
+            "row_lose": "Meus fundos serão perdidos permanentemente se eu perder minha frase de recuperação e perder o acesso à minha wallet.",
+            "row_pera": "Funcionários da Pera NUNCA vão pedir minha frase de recuperação.",
+            "cta_reveal": "Revelar passphrase",
+            "cta_cancel": "Cancelar"
+        },
+        "screen": {
+            "title": "Passphrase",
+            "body": "Anote estas palavras na ordem correta, usando os números correspondentes.",
+            "error_title": "Não foi possível obter a passphrase",
+            "error_body": "Algo deu errado. Tente novamente."
+        }
+    },
+    "banners": {
+        "dismiss": "Não mostrar novamente"
+    },
+    "backup": {
+        "banner": {
+            "text": "Você precisa fazer o backup da passphrase",
+            "cta": "Fazer backup agora"
+        },
+        "info": {
+            "title": "Crie um backup da passphrase da sua conta",
+            "body": "Criar um backup da passphrase permitirá que você recupere sua conta. Sem a passphrase, se você perder seu dispositivo, remover a conta ou excluir o app, você pode perder permanentemente o acesso à sua conta Algorand!",
+            "cta": "Entendi"
+        },
+        "write_down": {
+            "title": "Prepare-se para anotar sua passphrase de recuperação",
+            "body": "A única forma de recuperar uma conta Algorand é com esta passphrase de recuperação.",
+            "warning": "Não compartilhe esta passphrase com ninguém, pois ela concede acesso total à sua conta.",
+            "cta": "Tudo pronto, começar"
+        },
+        "mnemonic": {
+            "title": "Passphrase de recuperação",
+            "body": "Anote estas palavras na ordem correta, usando os números correspondentes.",
+            "cta_continue": "Avançar",
+            "error_title": "Não foi possível obter a passphrase",
+            "error_body": "Algo deu errado. Tente novamente."
+        },
+        "verification": {
+            "title": "Verifique o backup da passphrase de recuperação",
+            "select_word": "Selecione a palavra nº {{number}}",
+            "cta_next": "Avançar",
+            "error_message": "As palavras selecionadas estão incorretas"
+        },
+        "success": {
+            "title": "Passphrase verificada",
+            "body": "Guarde esta passphrase de recuperação em um local seguro, acessível somente por você. Não perca esta passphrase de recuperação.",
+            "cta_done": "Concluir"
+        }
+    },
+    "camera": {
+        "handling_code": "Só um momento...",
+        "no_camera_device_found": {
+            "title": "Nenhuma câmera encontrada ou permissões ausentes.",
+            "body": "Verifique nas configurações do sistema se você ativou as permissões de câmera para o app."
+        },
+        "scanner_load_failed": {
+            "title": "Não foi possível carregar o leitor de QR",
+            "body": "Algo deu errado ao abrir a câmera. Tente novamente."
+        },
+        "find_qr": {
+            "title": "Encontre um código QR para escanear"
+        }
+    },
+    "qr_scanner": {
+        "title": "Escanear um código QR",
+        "camera_unavailable": "Câmera indisponível. Cole o código abaixo.",
+        "scan_with_camera": "Abrir o leitor da câmera em uma aba",
+        "paste_label": "Ou cole um payload de QR",
+        "paste_placeholder": "Cole um endereço ou URI do WalletConnect",
+        "paste_submit": "Enviar"
+    },
+    "paste_link": {
+        "title": "Colar um link",
+        "description": "Cole um URI do WalletConnect ou um link da Pera para abri-lo.",
+        "placeholder": "wc:… ou perawallet://…",
+        "submit": "Abrir link",
+        "error_invalid": "Isso não parece um link que a Pera possa abrir.",
+        "error_failed": "A Pera não conseguiu abrir esse link. Confira o link e tente novamente."
+    },
+    "chart": {
+        "one_week": {
+            "label": "1S"
+        },
+        "one_month": {
+            "label": "1M"
+        },
+        "one_year": {
+            "label": "1A"
+        }
+    },
+    "common": {
+        "offline_mode": "Modo offline",
+        "offline_refresh_body": "Você está offline — isso será atualizado automaticamente quando você voltar a ficar online.",
+        "back_online": "De volta online",
+        "network_label": {
+            "mainnet": "MainNet",
+            "testnet": "TestNet",
+            "betanet": "BetaNet",
+            "custom": "Personalizada"
+        },
+        "yes": "Sim",
+        "no": "Não",
+        "enter_stealth_mode": "Ativar modo oculto",
+        "exit_stealth_mode": "Sair do modo oculto",
+        "go_back": {
+            "label": "Voltar"
+        },
+        "base64": {
+            "label": "Base64"
+        },
+        "delete": {
+            "label": "Excluir"
+        },
+        "cancel": {
+            "label": "Cancelar"
+        },
+        "continue": {
+            "label": "Continuar"
+        },
+        "close": {
+            "label": "Fechar"
+        },
+        "ok": {
+            "label": "Ok"
+        },
+        "connect": {
+            "label": "Conectar"
+        },
+        "slide_to_confirm": {
+            "label": "Arraste para confirmar"
+        },
+        "copied_to_clipboard": {
+            "title": "Copiado para a área de transferência",
+            "body": ""
+        },
+        "email_failed": {
+            "title": "Não foi possível abrir o app de e-mail",
+            "body": "Não há nenhum app de e-mail configurado neste aparelho. Você pode escrever direto para {{email}}."
+        },
+        "error": {
+            "title": "Ocorreu um erro",
+            "body": "Parece que algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir."
+        },
+        "retry": {
+            "label": "Tentar novamente"
+        },
+        "hex": {
+            "label": "Hex"
+        },
+        "not_implemented": {
+            "title": "Não implementado",
+            "body": "Esta tela ainda não foi implementada"
+        },
+        "text": {
+            "label": "Texto"
+        },
+        "wealth_chart": {
+            "empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo",
+            "asset_empty_body": "Você verá um gráfico aqui quando tiver histórico de saldo deste ativo nesta conta"
+        },
+        "webview": {
+            "failed_title": "Falha ao carregar a página",
+            "reload": "Recarregar",
+            "failed_body": "Ocorreu um erro ao carregar esta página. Verifique sua conexão com a internet e tente novamente.",
+            "offline_title": "Você está offline",
+            "offline_body": "Esta página não pode ser carregada sem conexão com a internet. Ela será recarregada automaticamente quando você voltar a ficar online.",
+            "unknown_host": "Site desconhecido"
+        },
+        "done": "Pronto",
+        "save": "Salvar",
+        "apply": "Aplicar",
+        "copy": "Copiar",
+        "send": "Enviar"
+    },
+    "contacts": {
+        "edit_contact": {
+            "name_label": "Nome",
+            "address_label": "Endereço",
+            "add_photo": "Adicionar foto",
+            "add_contact": "Adicionar contato",
+            "done": "Concluir",
+            "delete_this": "Excluir este contato",
+            "remove_title": "Excluir contato",
+            "remove_message": "Tem certeza de que deseja excluir este contato?",
+            "remove_confirm": "Sim, excluir contato",
+            "remove_cancel": "Manter"
+        },
+        "add_contact": {
+            "duplicate_address_error": "Já existe um contato para este endereço."
+        },
+        "view_contact": {
+            "no_contact_title": "Nenhum contato encontrado",
+            "no_contact_body": "Parece que algo deu errado. Não foi possível encontrar o contato indicado",
+            "account_address": "Endereço da conta",
+            "nfd_label": "NFDomain"
+        },
+        "list": {
+            "no_contacts_title": "Você ainda não adicionou nenhum contato",
+            "no_contacts_body": "Adicione contatos para enviar ativos com mais rapidez.",
+            "add_contact": "Adicionar contato",
+            "search_placeholder": "Buscar por nome ou endereço",
+            "no_matching_title": "Nenhum contato encontrado",
+            "no_matching_body": "Não há contatos correspondentes.",
+            "qr_sheet_copy": "Copiar endereço",
+            "qr_sheet_share": "Compartilhar endereço",
+            "qr_accessibility_label": "Código QR de {{name}}"
+        }
+    },
+    "errors": {
+        "account": {
+            "title": "Ocorreu um erro ao processar esta conta",
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir.",
+            "generic": "Ocorreu um erro ao processar esta conta.",
+            "no_hd_wallet": "Não foi possível encontrar a Universal Wallet desta conta."
+        },
+        "blockchain": {
+            "generic": "Algo deu errado ao acessar a blockchain."
+        },
+        "algod": {
+            "overspend": {
+                "title": "ALGO insuficiente",
+                "body": "Esta conta não tem ALGO suficiente para cobrir a transação e manter o saldo mínimo. Adicione pelo menos {{missing}} microALGO e tente novamente."
+            },
+            "below_min_balance": {
+                "title": "Abaixo do saldo mínimo",
+                "body": "Esta transação deixaria a conta abaixo do saldo mínimo exigido de {{required}} microALGO."
+            },
+            "missing_opt_in": {
+                "title": "Ativo não aceito",
+                "body": "A conta destinatária não adicionou o ativo {{assetId}}. Peça ao destinatário para adicionar o ativo ou envie pela ASA Inbox."
+            },
+            "duplicate_txn": {
+                "title": "Já enviada",
+                "body": "Esta transação já foi processada pela rede."
+            },
+            "expired_txn": {
+                "title": "Transação expirada",
+                "body": "A janela de validade da transação passou. Tente enviar novamente."
+            },
+            "not_authorized": {
+                "title": "Autoridade de assinatura alterada",
+                "body": "A rede recusou a assinatura porque a autoridade de assinatura desta conta mudou — ela pode ter passado por um rekey recentemente. Aguarde um momento para a wallet sincronizar e tente novamente."
+            },
+            "logic_error": {
+                "title": "O smart contract recusou a transação",
+                "body": "O contrato retornou: {{msg}}"
+            },
+            "logic_eval_error": {
+                "title": "Transação recusada",
+                "body": "O smart contract recusou a transação ({{detail}}). Tente novamente e entre em contato com o suporte se o problema persistir."
+            },
+            "unavailable_resource": {
+                "title": "Transação recusada",
+                "body": "A transação fez referência a um recurso que a rede não conseguiu acessar ({{resourceType}} {{resource}}). Tente novamente e entre em contato com o suporte se o problema persistir."
+            },
+            "group_fee_too_small": {
+                "title": "Taxa de rede muito baixa",
+                "body": "Este grupo de transações pagou {{paid}} microALGO de taxas, mas a rede exige {{required}} microALGO. Tente novamente."
+            },
+            "unknown_node_error": {
+                "title": "A transação falhou",
+                "body": "A rede recusou a transação. Tente novamente ou entre em contato com o suporte se o problema persistir."
+            }
+        },
+        "deeplink": {
+            "invalid_url_title": "Link inválido",
+            "invalid_url_body": "O link detectado não parece ser válido. Verifique o link e tente novamente.",
+            "blocked_origin_title": "Ação bloqueada",
+            "blocked_origin_body": "Este site tentou iniciar uma ação na sua wallet. A Pera só permite isso a partir de sites confiáveis."
+        },
+        "general": {
+            "title": "Ocorreu um erro",
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir."
+        },
+        "network": {
+            "no_connection": {
+                "title": "Você parece estar offline",
+                "body": "Seu dispositivo não está conectado à internet. Verifique sua conexão e tente novamente."
+            },
+            "timeout": {
+                "title": "Isso está demorando mais que o esperado",
+                "body": "Não obtivemos resposta em tempo. Tente novamente."
+            }
+        },
+        "pera_service": {
+            "unavailable": "Os serviços da Pera não estão disponíveis nesta rede. Mude para a MainNet para usar este recurso."
+        },
+        "api": {
+            "generic": {
+                "title": "A solicitação falhou",
+                "body": "Algo deu errado ao buscar os dados. Tente novamente."
+            },
+            "not_found": {
+                "title": "Não encontrado",
+                "body": "Não foi possível encontrar o recurso solicitado."
+            },
+            "unauthorized": {
+                "title": "Sem autorização",
+                "body": "Você não tem autorização para acessar este recurso."
+            },
+            "server_error": {
+                "title": "Erro no servidor",
+                "body": "O servidor encontrou um problema ao processar sua solicitação. Tente novamente."
+            }
+        },
+        "validation": {
+            "generic": "Os dados não parecem ser válidos.",
+            "invalid_address": "O endereço não parece ser válido: {{address}}",
+            "invalid_amount": "O valor não parece ser válido: {{amount}}",
+            "invalid_mnemonic": "A passphrase de recuperação não parece ser válida.",
+            "required_field": "Falta um campo obrigatório: {{field}}"
+        },
+        "transaction": {
+            "title": "Ocorreu um erro ao processar esta transação",
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir."
+        },
+        "kms": {
+            "key_not_found": "Não foi possível encontrar a chave de assinatura desta conta.",
+            "key_access_error": "Não foi possível acessar a chave de assinatura.",
+            "invalid_key": "A chave de assinatura desta conta é inválida.",
+            "generic": "Algo deu errado ao acessar sua chave de assinatura."
+        },
+        "walletconnect": {
+            "title": "Ocorreu um erro ao processar a solicitação de um app",
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir.",
+            "unknown": "Ocorreu um erro desconhecido ao assinar. Verifique o dApp para mais informações.",
+            "invalid_network_body": "Você recebeu uma solicitação de uma rede inválida. Mude sua wallet para a rede correta e tente novamente.",
+            "sign_request_body": "Você recebeu uma solicitação inválida para assinar uma transação. Verifique o app e tente novamente.",
+            "permission_body": "Você recebeu uma solicitação não autorizada de um app. Verifique o app e tente novamente.",
+            "invalid_session_body": "Você recebeu uma solicitação de sessão inválida de um app. Verifique o app e tente novamente.",
+            "connection_timeout_body": "Não foi possível conectar ao WalletConnect para entregar sua transação assinada. Verifique sua conexão e tente novamente.",
+            "session_request_expired_body": "Esta solicitação de conexão expirou. Inicie uma nova conexão pelo dApp e tente novamente."
+        },
+        "signing": {
+            "title": "Ocorreu um erro ao processar a solicitação de assinatura"
+        },
+        "webview": {
+            "invalid_method": "Método inválido {{method}}",
+            "invalid_params": "Parâmetros inválidos. Faltando: {{params}}",
+            "unsupported_url": "URL não compatível: {{url}}"
+        }
+    },
+    "menu": {
+        "title": "Menu",
+        "staking": "Staking",
+        "buy_gift_card": "Comprar cartão-presente",
+        "receive": "Receber",
+        "contacts": "Contatos",
+        "get_help": "Ajuda"
+    },
+    "giftCard": {
+        "intro": {
+            "navigation_title": "Comprar cartões-presente com a Bidali",
+            "title": "Comprar cartões-presente com cripto",
+            "body": "Você pode usar seu saldo em Algo ou USDC para comprar cartões-presente e recargas de celular de milhares de marcas no mundo inteiro!",
+            "buy_gift_cards": "Comprar cartões-presente"
+        },
+        "accountSelection": {
+            "title": "Selecionar conta",
+            "subtitle": "Escolha uma conta para continuar"
+        },
+        "signing": {
+            "source_name": "Bidali",
+            "source_description": "Compra de cartão-presente via Bidali"
+        }
+    },
+    "peraCard": {
+        "account": {
+            "navigation_title": "Pera Card",
+            "linked_to": "Vinculado a {{name}}",
+            "linked_to_fallback": "Vinculado à sua conta",
+            "overview_tab": "Visão geral",
+            "card_details_tab": "Dados do cartão",
+            "balance": "Saldo",
+            "spendable_per_tx": "≈{{amount}} {{currency}} disponível",
+            "spendable_info_title": "Disponível por transação",
+            "spendable_info_body": "O máximo que uma única compra pode usar: o saldo do seu cartão mais os créditos e — com o financiamento automático — até {{limit}} da sua conta vinculada.",
+            "withdraw": "Sacar",
+            "add_funds": "Adicionar fundos",
+            "get_usdc": "Obter USDC",
+            "credits_title": "Créditos",
+            "credits_description": "Seus créditos são valores que você recebe de volta de reembolsos ou transações revertidas.",
+            "cashbacks": "Cashbacks",
+            "refunds": "Reembolsos",
+            "transactions_title": "Transações",
+            "show_all": "Ver tudo",
+            "transactions_empty": "Você ainda não tem transações.",
+            "transaction_fallback": "Transação",
+            "coming_soon_title": "Em breve",
+            "coming_soon_body": "Este recurso ainda não está disponível.",
+            "reveal_card_details": "Mostrar dados do cartão",
+            "hide_card_details": "Ocultar dados do cartão",
+            "issuance_pending_title": "Verificação em análise",
+            "issuance_pending_body": "Seu cartão será emitido automaticamente assim que a verificação de identidade for aprovada.",
+            "issuance_issuing_title": "Seu cartão está sendo emitido",
+            "issuance_issuing_body": "Isso geralmente leva alguns minutos.",
+            "issuance_rejected_title": "Verificação não aprovada",
+            "issuance_rejected_body": "Não conseguimos verificar sua identidade, então não é possível emitir um cartão.",
+            "issuance_rejected_support": "Falar com o suporte",
+            "issuance_failed_title": "Não conseguimos emitir seu cartão",
+            "issuance_failed_body": "Algo deu errado ao solicitar seu cartão.",
+            "issuance_retry": "Tentar novamente",
+            "funding_account": "Conta de financiamento",
+            "no_funding_account": "Nenhuma conta conectada",
+            "connect": "Conectar",
+            "change": "Alterar",
+            "funding_type_label": "Tipo de financiamento",
+            "funding_type_sheet_title": "Selecionar tipo de financiamento",
+            "funding_type_sheet_description": "Escolha como seu cartão é financiado. O financiamento automático cobre compras de até {{limit}} por transação.",
+            "funding_type_apply": "Aplicar",
+            "funding_type_updated_title": "Tipo de financiamento atualizado",
+            "funding_type_updated_body": "Sua preferência de financiamento do cartão foi salva.",
+            "funding_change_requires_manual_title": "Mude primeiro para o financiamento manual",
+            "funding_change_requires_manual_body": "Não é possível alterar a conta conectada enquanto o financiamento automático está ativo. Mude para manual, altere a conta e reative o financiamento automático.",
+            "funding_type_auto_unavailable_hint": "Indisponível para esta conta — ela não pode assinar uma autorização de financiamento automático.",
+            "funding_type_auto_ledger_hint": "Não compatível com contas Ledger. Conecte outra conta para usar o financiamento automático.",
+            "funding_type_auto_coming_soon_hint": "O financiamento automático chega em breve.",
+            "authorize_delegation_title": "Autorizar financiamento automático",
+            "authorize_delegation_body": "Você está autorizando o financiamento automático de até {{limit}} por transação a partir de {{account}}. A Pera assina uma autorização permanente, e você pode voltar para o manual a qualquer momento.",
+            "authorize_delegation_confirm": "Autorizar",
+            "options": "Opções",
+            "accounts_details": "Dados das contas",
+            "add_to_apple_wallet": "Adicionar à Apple Wallet",
+            "add_to_google_pay": "Adicionar ao Google Pay",
+            "set_pin": "Definir código PIN",
+            "freeze_card": "Bloquear cartão",
+            "unfreeze_card": "Desbloquear cartão",
+            "frozen_banner_title": "Cartão bloqueado",
+            "frozen_banner_body": "Seu cartão está bloqueado. Desbloqueie a qualquer momento para continuar usando.",
+            "reactivate_card": "Reativar cartão",
+            "freeze_sheet_title": "Bloquear cartão",
+            "freeze_sheet_body": "Bloqueie seu cartão se ele estiver perdido ou se você quiser impedir temporariamente novas transações. Você pode desbloqueá-lo na hora, quando quiser usá-lo de novo.",
+            "freeze_sheet_confirm": "Bloquear cartão",
+            "unfreeze_sheet_title": "Desbloquear cartão",
+            "unfreeze_sheet_body": "Ao desbloquear seu cartão, ele volta a ser aceito em novas transações. Você pode bloqueá-lo novamente a qualquer momento.",
+            "unfreeze_sheet_confirm": "Desbloquear cartão",
+            "report_lost_stolen": "Informar cartão perdido/roubado",
+            "report_suspicious": "Informar atividade suspeita",
+            "report_lost_sheet_title": "Informar cartão perdido/roubado",
+            "report_lost_sheet_body": "Se você acredita que seu cartão foi perdido ou roubado, vamos bloqueá-lo imediatamente para que não possa ser usado e abrir um e-mail para o suporte da Baanx, que segue daí em diante.",
+            "report_lost_sheet_confirm": "Bloquear cartão e informar",
+            "report_lost_email_subject": "Informar cartão perdido/roubado",
+            "report_lost_email_body": "Olá, suporte da Baanx,\n\nGostaria de informar que meu cartão (terminado em {{panLast4}}) foi perdido ou roubado. O cartão já foi bloqueado pelo aplicativo. Por favor, bloqueiem o cartão e me orientem sobre os próximos passos.\n\nDetalhes adicionais:\n",
+            "report_suspicious_sheet_title": "Informar atividade suspeita",
+            "report_suspicious_sheet_body": "Se você acredita que há atividade suspeita neste cartão, bloqueie o cartão imediatamente antes dos próximos passos.",
+            "report_suspicious_sheet_confirm": "Bloquear cartão",
+            "report_suspicious_frozen_toast_title": "Seu cartão foi bloqueado",
+            "report_suspicious_before_title": "Antes de continuar",
+            "report_suspicious_before_body": "Verifique com familiares ou outros usuários autorizados se eles usaram seu cartão. Se sim, você pode desbloquear seu cartão a qualquer momento para continuar usando. Se não, siga com o registro.",
+            "report_suspicious_before_confirm": "Continuar o registro",
+            "error_title": "Algo deu errado",
+            "error_body": "Tente novamente."
+        },
+        "transactions": {
+            "navigation_title": "Transações",
+            "kind_payment": "Pagamento",
+            "kind_refund": "Reembolso",
+            "kind_deposit": "Depósito",
+            "today": "Hoje",
+            "yesterday": "Ontem",
+            "days_ago": "Há {{days}} dias",
+            "status_pending": "Pendente",
+            "status_declined": "Recusada",
+            "status_reverted": "Revertida",
+            "status_completed": "Concluída",
+            "export_accessibility_label": "Exportar extrato",
+            "error_title": "Não foi possível carregar as transações",
+            "error_body": "Tente novamente.",
+            "retry": "Tentar novamente",
+            "detail_tab_transaction": "Transação",
+            "detail_tab_merchant": "Estabelecimento",
+            "detail_card_number": "Número do cartão",
+            "detail_processed_on": "Processada em",
+            "detail_reference": "Nº de referência",
+            "detail_transaction_hash": "Hash da transação",
+            "detail_fees": "Taxas",
+            "detail_merchant_category": "Categoria",
+            "detail_merchant_type": "Tipo",
+            "merchant_type_in_store": "Na loja",
+            "merchant_type_in_store_with_pin": "Na loja com código PIN",
+            "merchant_type_online": "Online",
+            "merchant_type_atm": "Caixa eletrônico",
+            "mcc_category_subscriptions": "Assinaturas",
+            "mcc_category_food": "Alimentação e bebidas",
+            "mcc_category_travel": "Viagens",
+            "mcc_category_entertainment": "Entretenimento",
+            "mcc_category_health": "Saúde",
+            "mcc_category_atm": "Caixa eletrônico",
+            "mcc_category_utilities": "Contas de consumo",
+            "mcc_category_misc": "Outros",
+            "detail_report": "Informar transação",
+            "detail_open_explorer_accessibility_label": "Ver transação no explorer",
+            "detail_copy_hash_accessibility_label": "Copiar hash da transação",
+            "detail_not_found_title": "Transação não encontrada",
+            "detail_not_found_body": "Esta transação não está mais disponível. Tente novamente.",
+            "report_email_subject": "Informar transação do cartão - {{transactionId}}",
+            "report_email_body": "Olá, suporte da Baanx,\n\nGostaria de informar a(s) seguinte(s) transação(ões) do cartão:\n\nID(s) da transação: {{transactionId}}\nProcessada em: {{processedOn}}\nEstabelecimento: {{merchantName}}\n\nDescrição do problema:\n",
+            "report_transactions_sheet_title": "Informar transações",
+            "report_transactions_sheet_subtitle": "Selecione as transações suspeitas",
+            "report_transactions_recent_label": "Transações recentes",
+            "report_transactions_button": "Informar transações",
+            "report_transactions_email_subject": "Informar transações suspeitas do cartão",
+            "report_transactions_email_body": "Olá, suporte da Baanx,\n\nGostaria de informar as seguintes transações do cartão como suspeitas:\n\nID(s) da transação:\n{{transactionIds}}\n\nDescrição do problema:\n"
+        },
+        "add_funds": {
+            "navigation_title": "Adicionar fundos",
+            "subtitle": "Adicione USDC ou converta ativos para USDC na sua conta Pera vinculada para adicionar mais fundos.",
+            "fund_address": "Endereço de depósito",
+            "amount": "Valor",
+            "balance": "Saldo: {{amount}}",
+            "deposit": "Depositar",
+            "select_asset": "Selecionar ativo",
+            "select_asset_search": "Buscar por nome ou ID",
+            "select_asset_empty_title": "Nenhum ativo encontrado",
+            "select_asset_empty_body": "Nenhum ativo corresponde ao termo buscado",
+            "swap_success_title": "Conversão concluída",
+            "swap_success_body": "Seus ativos foram convertidos para USDC.",
+            "swap_error_title": "Falha na conversão"
+        },
+        "withdraw": {
+            "navigation_title": "Sacar",
+            "subtitle": "Saque USDC do seu Pera Card de volta para a sua conta Pera vinculada.",
+            "to_account": "Para a conta",
+            "amount": "Valor",
+            "balance": "Saldo: {{amount}}",
+            "withdraw": "Sacar",
+            "confirm_title": "Confirmar saque",
+            "confirm_body": "Você está prestes a sacar {{amount}} USDC do seu Pera Card para a conta abaixo.",
+            "confirm_button": "Confirmar",
+            "success_title": "Saque iniciado",
+            "success_body": "{{amount}} USDC está a caminho da sua conta."
+        },
+        "confirm_swap": {
+            "navigation_title": "Confirmar conversão",
+            "price": "Preço",
+            "slippage": "Tolerância de slippage",
+            "price_impact": "Impacto no preço",
+            "minimum_received": "Mínimo recebido",
+            "exchange_fee": "Taxa da exchange",
+            "pera_fee": "Taxa da Pera",
+            "confirm": "Confirmar"
+        },
+        "account_details": {
+            "title": "Dados da conta",
+            "full_name": "Nome completo",
+            "email": "E-mail",
+            "phone": "Telefone",
+            "country": "País",
+            "verification": "Verificação",
+            "kyc_verified": "Verificado",
+            "kyc_pending": "Pendente",
+            "kyc_rejected": "Recusado",
+            "kyc_unverified": "Não iniciado",
+            "value_unavailable": "—"
+        },
+        "wallet_instructions": {
+            "done": "Entendi",
+            "apple_title": "Adicionar à Apple Wallet",
+            "google_title": "Adicionar ao Google Pay",
+            "apple_step_1": "Abra o app Wallet no seu dispositivo",
+            "apple_step_2": "Toque no botão + na tela",
+            "apple_step_3": "Adicione os dados do seu cartão",
+            "apple_step_4": "Siga as instruções de verificação",
+            "apple_step_5": "Pronto — seu cartão está no app Wallet",
+            "google_step_1": "Abra o app Google Pay no seu dispositivo",
+            "google_step_2": "Toque na sua foto de perfil e depois em Pagar com cartão de crédito ou débito",
+            "google_step_3": "Toque em Adicionar cartão de crédito ou débito",
+            "google_step_4": "Toque em Inserir dados manualmente",
+            "google_step_5": "Adicione os dados do seu cartão",
+            "google_step_6": "Siga as instruções de verificação",
+            "google_step_7": "Pronto — assim que seu cartão for verificado, ele estará pronto para usar"
+        },
+        "account_item": {
+            "title": "Conta Pera Card",
+            "subtitle": "Gaste suas criptomoedas",
+            "activate": "Ativar",
+            "status_approved": "Aprovada"
+        },
+        "intro": {
+            "navigation_title": "Pera Card",
+            "title": "Suas criptomoedas,\nprontas para gastar",
+            "body": "Peça seu Pera Card gratuito. Seu offramp mais prático, onde for aceito.",
+            "powered_by": "Com tecnologia de",
+            "learn_more": "Saiba mais",
+            "create_account": "Criar uma conta Baanx",
+            "already_have_account": "Já tenho uma conta"
+        },
+        "sign_in": {
+            "navigation_title": "Entrar",
+            "email_placeholder": "Digite seu endereço de e-mail",
+            "email_invalid": "Digite um endereço de e-mail válido",
+            "password_placeholder": "Digite sua senha",
+            "forgot_password": "Esqueceu a senha?",
+            "submit_button": "Entrar",
+            "invalid_credentials": "E-mail ou senha incorretos",
+            "error_title": "Algo deu errado",
+            "error_body": "Não conseguimos fazer seu login. Tente novamente.",
+            "success_title": "Login realizado",
+            "success_body": "Você entrou na sua conta Pera Card.",
+            "otp_body": "Digite o código de verificação que enviamos para concluir o login.",
+            "otp_invalid": "Esse código não está correto. Tente novamente.",
+            "send_again": "Enviar novamente",
+            "send_again_in": "Enviar novamente em {{count}}s",
+            "coming_soon_title": "Em breve",
+            "coming_soon_body": "A redefinição de senha ainda não está disponível. Volte em breve."
+        },
+        "create_account": {
+            "navigation_title": "Criar conta Baanx",
+            "email_label": "Endereço de e-mail",
+            "email_placeholder": "Digite seu endereço de e-mail",
+            "email_invalid": "Digite um endereço de e-mail válido",
+            "email_taken": "Este e-mail já está cadastrado",
+            "country_label": "País de residência",
+            "country_placeholder": "Selecionar país",
+            "country_required": "Selecione seu país de residência",
+            "confirm_button": "Enviar código",
+            "country_picker_title": "País de residência",
+            "country_search_placeholder": "Buscar países",
+            "country_empty_title": "Nenhum país encontrado",
+            "country_empty_body": "Tente outra busca.",
+            "country_error_title": "Não foi possível carregar os países",
+            "country_error_body": "Verifique sua conexão e tente novamente.",
+            "country_retry": "Tentar novamente",
+            "error_title": "Algo deu errado",
+            "error_body": "Não conseguimos enviar seu e-mail de verificação. Tente novamente.",
+            "already_registered_title": "A conta já existe",
+            "already_registered_body": "Já existe uma conta com este e-mail. Entre para continuar."
+        },
+        "verify_email": {
+            "navigation_title": "Confirme seu e-mail",
+            "body": "Use o código de verificação que acabamos de enviar para {{email}} para confirmar seu endereço de e-mail.",
+            "send_again_in_zero": "Enviar novamente em {{count}} segundos",
+            "send_again_in_one": "Enviar novamente em {{count}} segundo",
+            "send_again_in_other": "Enviar novamente em {{count}} segundos",
+            "send_again": "Enviar novamente",
+            "confirm_button": "Continuar",
+            "code_invalid": "Esse código está incorreto ou expirou. Tente novamente."
+        },
+        "waitlist": {
+            "join_button": "Entrar na lista de espera",
+            "success_title": "Em breve",
+            "success_body": "Avisaremos você quando lançarmos em {{country}}.",
+            "success_action": "Voltar ao início",
+            "error_title": "Algo deu errado",
+            "error_body": "Não conseguimos inscrever você na lista de espera. Tente novamente."
+        },
+        "create_password": {
+            "navigation_title": "Criar uma senha",
+            "password_placeholder": "Digite sua senha",
+            "confirm_placeholder": "Confirme sua senha",
+            "rule_length": "Pelo menos 15 caracteres",
+            "rule_uppercase": "Uma letra maiúscula",
+            "rule_lowercase": "Uma letra minúscula",
+            "rule_number": "Um número",
+            "rule_special": "Um caractere especial",
+            "common_password_hint": "Evite senhas comuns",
+            "passwords_mismatch": "As senhas não coincidem",
+            "marketing_opt_in": "Quero receber comunicações de marketing sobre novidades e ofertas.",
+            "sms_opt_in": "Concordo em receber mensagens de texto por SMS.",
+            "confirm_button": "Continuar"
+        },
+        "verify_phone": {
+            "entry_navigation_title": "Adicione seu telefone",
+            "navigation_title": "Confirme seu telefone",
+            "phone_label": "Número de telefone",
+            "phone_placeholder": "Digite seu número de telefone",
+            "phone_invalid": "Digite um número de telefone válido",
+            "phone_taken": "Este número de telefone já está cadastrado",
+            "phone_helper": "Vamos enviar um código de verificação por SMS para este número.",
+            "calling_code_label": "Código do país",
+            "calling_code_placeholder": "Código",
+            "send_button": "Enviar código",
+            "send_error_title": "Algo deu errado",
+            "send_error_body": "Não conseguimos enviar seu código de verificação. Tente novamente.",
+            "body": "Use o código de verificação que acabamos de enviar para {{phone}} para confirmar seu número de telefone.",
+            "send_again_in_zero": "Enviar novamente em {{count}} segundos",
+            "send_again_in_one": "Enviar novamente em {{count}} segundo",
+            "send_again_in_other": "Enviar novamente em {{count}} segundos",
+            "send_again": "Enviar novamente",
+            "confirm_button": "Continuar",
+            "verify_error_title": "Algo deu errado",
+            "verify_error_body": "Não conseguimos verificar seu número de telefone. Tente novamente.",
+            "code_invalid": "Esse código está incorreto ou expirou. Tente novamente."
+        },
+        "personal_details": {
+            "navigation_title": "Informações pessoais",
+            "first_name_label": "Nome",
+            "first_name_invalid": "Digite seu nome",
+            "last_name_label": "Sobrenome",
+            "last_name_invalid": "Digite seu sobrenome",
+            "dob_label": "Data de nascimento DD/MM/AAAA",
+            "dob_invalid": "Digite uma data válida (DD/MM/AAAA)",
+            "nationality_label": "Nacionalidade",
+            "nationality_placeholder": "Selecionar nacionalidade",
+            "nationality_required": "Selecione sua nacionalidade",
+            "nationality_picker_title": "Nacionalidade",
+            "confirm_button": "Continuar",
+            "error_title": "Algo deu errado",
+            "error_body": "Não conseguimos salvar seus dados. Tente novamente."
+        },
+        "address": {
+            "navigation_title": "Endereço residencial",
+            "country_label": "País de residência",
+            "country_required": "Selecione seu país de residência",
+            "city_label": "Cidade",
+            "city_invalid": "Digite sua cidade",
+            "zip_label": "CEP/código postal",
+            "zip_invalid": "Digite seu CEP/código postal",
+            "address_line1_label": "Endereço linha 1 (rua e número)",
+            "address_line1_invalid": "Digite seu endereço",
+            "address_line2_label": "Endereço linha 2 (apartamento, andar etc.)",
+            "us_state_label": "Estado",
+            "us_state_required": "Selecione seu estado",
+            "us_state_placeholder": "Selecionar estado",
+            "us_state_picker_title": "Estado",
+            "us_state_search_placeholder": "Buscar estados",
+            "us_state_empty_title": "Nenhum estado encontrado",
+            "us_state_empty_body": "Tente outra busca.",
+            "us_state_error_title": "Não foi possível carregar os estados",
+            "us_state_error_body": "Verifique sua conexão e tente novamente.",
+            "us_state_retry": "Tentar novamente",
+            "card_terms": "Li e entendi os <0>Termos e condições</0> de emissão do cartão e os aceito.",
+            "platform_terms": "Li e entendi os <0>Termos e condições</0> da Pera e os aceito.",
+            "confirm_button": "Continuar",
+            "error_title": "Algo deu errado",
+            "error_body": "Não conseguimos salvar seu endereço. Tente novamente.",
+            "already_registered_title": "Cadastro já concluído",
+            "already_registered_body": "Seus dados já estão registrados. Entre para continuar a configuração do seu cartão."
+        },
+        "verification": {
+            "title": "Comece a gastar\non-chain",
+            "callout_title": "Envie seus documentos",
+            "callout_body": "Verifique sua conta para começar a gastar on-chain.",
+            "verify_button": "Verificar sua conta",
+            "logout_button": "Sair",
+            "contact_us": "Se tiver alguma dúvida, não hesite em <0>entrar em contato</0>",
+            "error_title": "Algo deu errado",
+            "error_body": "Não conseguimos iniciar a verificação. Tente novamente.",
+            "open_link_error_body": "Não conseguimos abrir a página de verificação. Tente novamente."
+        },
+        "kyc_required": {
+            "title": "Conclua a verificação da sua identidade",
+            "body": "A verificação da sua identidade ainda não foi concluída. Verifique sua identidade para continuar a solicitação do seu Pera Card.",
+            "verify_button": "Verificar sua conta"
+        },
+        "setup_status": {
+            "title": "Conclua a configuração e comece a gastar on-chain",
+            "documents_title": "Envie seus documentos",
+            "documents_pending_label": "Pendente",
+            "documents_unverified_body": "Verifique sua conta para começar a gastar on-chain.",
+            "documents_verify_button": "Verificar sua conta",
+            "documents_pending_body": "Sua verificação foi enviada. Vamos avisar você por e-mail quando estiver concluída.",
+            "documents_verified_body": "Sua identidade foi verificada.",
+            "documents_rejected_body": "Não conseguimos verificar sua identidade. Entre em contato com o suporte para obter ajuda.",
+            "documents_error_body": "Não conseguimos verificar o status da sua verificação. Tente novamente.",
+            "documents_retry": "Tentar novamente",
+            "details_title": "Informe seus dados",
+            "details_body": "Confirme seus dados e informe seu endereço para prosseguir.",
+            "details_button": "Verificar sua conta",
+            "connect_funds_title": "Conectar fundos",
+            "connect_funds_body": "Conecte uma das suas contas Pera como fonte de financiamento para começar a usar seu Pera Card.",
+            "connect_funds_button": "Conectar uma conta Pera",
+            "funding_type_title": "Selecionar tipo de financiamento",
+            "funding_type_info_title": "Tipos de financiamento",
+            "funding_type_auto_title": "Financiamento automático",
+            "funding_type_auto_description": "Gaste diretamente da sua conta Pera conectada",
+            "funding_type_auto_info": "As compras são pagas direto da sua conta Pera conectada, então não é preciso recarregar nada",
+            "funding_type_manual_title": "Financiamento manual",
+            "funding_type_manual_description": "Recarregue seu cartão antes de gastar",
+            "funding_type_manual_info": "Você mesmo transfere fundos para o cartão, e as compras usam esse saldo",
+            "funding_type_limit_info": "O financiamento automático cobre compras de até {{limit}} por transação; compras maiores usam o saldo do seu cartão",
+            "funding_type_limit_hint": "Até {{limit}} por transação",
+            "funding_type_button": "Criar Pera Card",
+            "create_card_success_title": "Tudo pronto",
+            "create_card_success_body": "Seu Pera Card está a caminho.",
+            "create_card_account_error_title": "Esta conta não pode assinar",
+            "create_card_account_error_body": "A criação do cartão exige uma assinatura que este tipo de conta não fornece. Conecte uma conta Pera padrão como sua fonte de financiamento.",
+            "linked_elsewhere_error_title": "Conta já vinculada",
+            "linked_elsewhere_error_body": "Esta conta já está vinculada a outro perfil do Pera Card. Conecte outra conta como sua fonte de financiamento.",
+            "auto_funding_degraded_title": "Cartão criado",
+            "auto_funding_degraded_body": "Não foi possível ativar o financiamento automático agora, então seu cartão começa com o financiamento manual. Você pode mudar depois nas configurações do cartão."
+        },
+        "signing": {
+            "title": "Vamos começar",
+            "body": "Para criar seu Pera Card, você precisa assinar três grupos de transações. Siga estes passos:",
+            "step_sign_label": "Assine uma solicitação de autenticação para comprovar que a conta vinculada é sua",
+            "step_create_label": "Crie e finalize sua nova conta Pera Card",
+            "step_authorize_label": "Assine o programa de financiamento automático para permitir que o Pera Card gaste da sua conta vinculada",
+            "proceed_button": "Prosseguir"
+        },
+        "auto_funding_signing": {
+            "title": "Solicitação de aprovação de assinatura automática",
+            "body": "Isso permite que seu cartão puxe fundos automaticamente quando necessário, para que você não precise aprovar cada recarga. Você está assinando uma logic sig — uma assinatura pré-autorizada — que permite esse uso automático de fundos da sua conta conectada.",
+            "error_title": "Não foi possível autorizar o financiamento automático",
+            "error_body": "Algo deu errado ao autorizar o financiamento automático. Tente novamente ou cancele para continuar com o financiamento manual (você pode mudar para o automático depois nas configurações do cartão).",
+            "cancel_button": "Cancelar"
+        },
+        "connect_account": {
+            "title": "Escolha a conta do cartão",
+            "subtitle": "Para começar, conecte a wallet que você quer usar para configurar sua conta.",
+            "change": "Alterar"
+        }
+    },
+    "notifications": {
+        "empty_title": "Nenhuma notificação no momento",
+        "empty_body": "Suas transações recentes, solicitações de ativos e outras transações aparecerão aqui"
+    },
+    "messages": {
+        "tabs": {
+            "inbox": "Caixa de entrada",
+            "notifications": "Notificações"
+        },
+        "inbox": {
+            "empty_title": "Nenhuma mensagem pendente",
+            "empty_body": "Você não tem nenhuma mensagem pendente na caixa de entrada",
+            "asa_requests_zero": "{{count}} ativos a receber",
+            "asa_requests_one": "1 ativo a receber",
+            "asa_requests_other": "{{count}} ativos a receber",
+            "multisig_sign": {
+                "title": "<0>Solicitação de assinatura</0> para assinar por {{address}}",
+                "status_pending": "Transação pendente",
+                "status_failed": "Transação com falha",
+                "status_expired": "Transação cancelada",
+                "status_declined": "Transação recusada",
+                "status_confirmed": "Confirmada"
+            },
+            "invitation_title": "<0>Você recebeu um convite</0> para participar de uma conta compartilhada {{address}}",
+            "view_invitation_details": "Ver detalhes do convite"
+        },
+        "claim": {
+            "asset_transfer_requests_title": "Solicitações de transferência de ativos",
+            "asset_transfer_request_title": "Solicitação de transferência de ativo",
+            "senders": "Remetentes",
+            "amount": "Valor",
+            "copy_id": "Copiar ID",
+            "account": "Conta",
+            "reject": "Recusar",
+            "reject_title": "Recusar solicitações",
+            "reject_body": "Se você recusar esta solicitação, o ativo recebido será removido permanentemente de circulação. Ele não será devolvido ao remetente. Em vez disso, você receberá {{algoAmount}} ALGO ao concluir este processo irreversível. Observe que, uma vez recusado, o ativo não poderá ser recuperado.",
+            "reject_cancel": "Cancelar",
+            "processing_title": "Enviando a transação",
+            "processing_subtitle": "Sua transação está sendo processada pela rede Algorand",
+            "success_title": "Operação concluída",
+            "success_subtitle": "Sua transação foi recebida com sucesso pela rede Algorand",
+            "sender_count_more": "+{{count}} mais",
+            "insufficient_algo_claim": "Você não tem ALGO suficiente para receber este ativo. Adicione fundos para cobrir o saldo mínimo exigido.",
+            "insufficient_algo_reject": "Você não tem ALGO suficiente para recusar este ativo. Adicione fundos para cobrir as taxas da transação."
+        }
+    },
+    "multisig": {
+        "create": {
+            "title": "Criar uma\nconta compartilhada",
+            "description": "Escolha as contas que vão compartilhar o controle e assinar transações desta conta.",
+            "accounts_section": "Contas",
+            "accounts_subtitle": "Você precisa adicionar pelo menos duas contas",
+            "add_account": "Adicionar conta",
+            "max_participants": "Você já adicionou o número máximo de participantes"
+        },
+        "introduction": {
+            "title": "Conta compartilhada",
+            "bullet_1": "Segurança reforçada ao exigir várias aprovações. Ideal para contas compartilhadas ou de alto valor.",
+            "bullet_2": "Defina os signatários e as aprovações necessárias por transação.",
+            "bullet_3": "Acompanhe a atividade e as ações dos signatários com segurança.",
+            "continue": "Continuar"
+        },
+        "add_participant": {
+            "title": "Adicionar conta",
+            "cannot_add_multisig_error": "Não é possível adicionar conta compartilhada",
+            "cannot_add_multisig_error_body": "Contas compartilhadas não podem ser adicionadas como participantes de outra conta compartilhada.",
+            "cannot_add_watch_error": "Não é possível adicionar conta de observação",
+            "cannot_add_watch_error_body": "Contas de observação não podem assinar transações, por isso não podem ser participantes de uma conta compartilhada."
+        },
+        "threshold": {
+            "title": "Definir um limiar",
+            "description": "Você precisa definir o número mínimo de contas necessárias para confirmar uma transação.",
+            "number_of_accounts": "Número de contas",
+            "required_signatures": "Limiar",
+            "exceeds_participants": "O limiar ({{threshold}}) não pode ser maior que o número de participantes ({{participantCount}})."
+        },
+        "before_you_create": {
+            "title": "Antes de criar uma conta compartilhada",
+            "warning_participants": "Depois de criar uma conta compartilhada, você não pode alterar os participantes.",
+            "warning_rekey": "Depois de criar uma conta compartilhada, fazer rekey em qualquer uma das contas participantes pode resultar na perda de acesso.",
+            "learn_more": "Saiba mais",
+            "proceed": "Prosseguir",
+            "go_back": "Voltar e editar"
+        },
+        "name": {
+            "title": "Dê um nome à sua conta",
+            "description": "Dê um nome à sua conta para identificá-la facilmente ao usar a Pera Wallet. Esses nomes são armazenados localmente e só podem ser vistos por você.",
+            "default_name": "Conta compartilhada",
+            "finish_button": "Concluir criação da conta",
+            "creating": "Criando conta compartilhada...",
+            "error_title": "Não foi possível criar a conta",
+            "error_name_taken": "Já existe uma conta com este nome.",
+            "duplicate_account_title": "Conta já adicionada",
+            "duplicate_account_body": "Uma conta compartilhada com estes participantes e este limiar já está na sua wallet."
+        },
+        "import": {
+            "title": "Conta compartilhada",
+            "accounts_heading": "Contas ({{count}})",
+            "ignore": "Ignorar",
+            "add_to_accounts": "Adicionar às contas",
+            "already_imported": "Esta conta compartilhada já está na sua wallet.",
+            "loading": "Carregando conta compartilhada…",
+            "error_title": "Não foi possível carregar a conta compartilhada",
+            "error_body": "Verifique sua conexão e tente novamente.",
+            "retry": "Tentar novamente",
+            "address_mismatch_title": "Não foi possível verificar a conta compartilhada",
+            "address_mismatch_body": "O endereço desta conta não corresponde aos seus participantes e ao limiar. O código da conta compartilhada pode ser inválido — peça ao remetente para compartilhá-lo novamente."
+        },
+        "edit_participant": {
+            "title": "Editar endereço",
+            "nickname_label": "Apelido",
+            "address_label": "Endereço da conta",
+            "remove": "Remover endereço",
+            "done": "Concluir"
+        },
+        "detail": {
+            "accounts_title": "Contas ({{count}})"
+        },
+        "info_card": {
+            "number_of_accounts": "Número de contas",
+            "you_included": "Incluindo você",
+            "cannot_sign_warning": "Você não pode assinar — nenhuma das contas signatárias está na sua wallet",
+            "threshold": "Limiar",
+            "threshold_description": "Número mínimo de contas \nnecessárias para confirmar uma transação"
+        },
+        "export": {
+            "title": "Exportar/compartilhar conta",
+            "url_label": "URL de exportação da conta",
+            "copy_url": "Copiar URL",
+            "share_url": "Compartilhar URL"
+        },
+        "invitation": {
+            "sheet_title": "Conta compartilhada",
+            "title": "Convite para conta compartilhada",
+            "accounts_heading": "Contas ({{count}})",
+            "add_to_accounts": "Adicionar às contas",
+            "ignore": "Ignorar",
+            "ignore_error": "Não foi possível ignorar o convite. Tente novamente.",
+            "accept_success": "Conta compartilhada adicionada",
+            "accept_error": "Não foi possível adicionar a conta. Tente novamente.",
+            "already_added": "Esta conta compartilhada já está na sua wallet",
+            "name": {
+                "screen_title": "Conta compartilhada",
+                "title": "Dê um nome à sua conta compartilhada",
+                "description": "Dê um nome à sua conta para identificá-la facilmente ao usar a Pera Wallet. Esses nomes são armazenados localmente e só podem ser vistos por você.",
+                "default_name": "Conta compartilhada",
+                "finish_button": "Concluir",
+                "saving": "Salvando conta compartilhada..."
+            }
+        },
+        "pending_signatures": {
+            "title": "Assinaturas pendentes",
+            "x_of_y": "{{signed}} de {{total}} assinaram",
+            "time_left": "≈ {{time}} restante",
+            "accounts_heading": "Contas",
+            "accounts_subtitle_zero": "Você precisa de pelo menos {{count}} contas para assinar",
+            "accounts_subtitle_one": "Você precisa de pelo menos 1 conta para assinar",
+            "accounts_subtitle_other": "Você precisa de pelo menos {{count}} contas para assinar",
+            "confirmed": "Transação concluída com sucesso",
+            "submitting": "Todas as assinaturas foram coletadas. Enviando transação…",
+            "failed_default": "A transação falhou",
+            "canceled": "Transação cancelada.",
+            "declined": "Transação recusada.",
+            "close": "Fechar",
+            "close_for_now": "Fechar por enquanto",
+            "sign": "Assinar"
+        },
+        "sign_sheet": {
+            "decline": "Recusar"
+        },
+        "decline": {
+            "confirm_title": "Recusar a transação?",
+            "confirm_body": "Se você recusar, esta transação não poderá mais ser assinada por você.",
+            "confirm_action": "Recusar",
+            "keep_signing": "Continuar assinando",
+            "error": {
+                "title": "Não foi possível recusar",
+                "body": "Não conseguimos recusar esta transação. Tente novamente."
+            }
+        },
+        "cancel_transaction": {
+            "button": "Cancelar",
+            "confirm_title": "Cancelar solicitação de transação",
+            "confirm_body": "A solicitação de transação será cancelada. Tem certeza?",
+            "confirm_action": "Sim, cancelar",
+            "keep_waiting": "Continuar aguardando",
+            "error": {
+                "title": "Não foi possível cancelar",
+                "body": "Não conseguimos cancelar esta transação. Tente novamente."
+            }
+        },
+        "sync_sign": {
+            "errors": {
+                "declined": "Solicitação de assinatura Multisig recusada por um participante",
+                "expired": "A solicitação de assinatura Multisig expirou antes de o limiar ser atingido",
+                "failed": "A solicitação de assinatura Multisig falhou",
+                "no_transactions": "A solicitação de assinatura Multisig não contém transações",
+                "assembly_failed": "Falha na montagem do Multisig: {{reason}}",
+                "delivery_failed": "Não foi possível entregar a transação assinada ao dApp"
+            }
+        }
+    },
+    "onboarding": {
+        "import_options": {
+            "title": "Selecione seu tipo de mnemônico",
+            "hd_wallet": {
+                "title": "Universal Wallet",
+                "description": "Wallet que permite derivar novas contas, todas usando o mesmo mnemônico",
+                "chip": "novo"
+            },
+            "algo25": {
+                "title": "ALGO25",
+                "description": "Formato legado, específico do ecossistema Algorand",
+                "chip": "legado",
+                "mnemonic_info": "Chaves mnemônicas de 25 palavras"
+            },
+            "mnemonic_info": "Chaves mnemônicas de 24 palavras"
+        },
+        "import_info": {
+            "title": "Recuperar uma wallet Algorand",
+            "body": "Nas próximas etapas, você vai digitar sua passphrase de recuperação para recuperar uma wallet Algorand. Tenha sua frase de recuperação em mãos antes de começar.",
+            "button": "Recuperar uma wallet Algorand"
+        },
+        "import_account": {
+            "title": "Digite sua passphrase de recuperação",
+            "quantum_title": "Digite sua passphrase Quantum",
+            "quantum_info_note": "Uma passphrase de 25 palavras de uma conta Algorand comum não é uma conta Quantum e não pode ser importada aqui.",
+            "importing": "Importando wallet...",
+            "button": "Recuperar",
+            "failed_title": "Falha na importação",
+            "failed_body": "Ocorreu um erro ao tentar importar sua wallet",
+            "duplicate_account_title": "Conta já adicionada",
+            "duplicate_account_body": "Esta conta já está na sua wallet.",
+            "invalid_mnemonic_title": "Passphrase inválida",
+            "invalid_mnemonic_body": "A passphrase que você colou contém palavras demais.",
+            "insufficient_slots_title": "Passphrase inválida",
+            "insufficient_slots_body": "A passphrase que você colou não cabe nos campos restantes.",
+            "support_options": {
+                "title": "Opções de ajuda",
+                "paste_passphrase": "Colar passphrase completa",
+                "scan_qr": "Escanear código QR",
+                "learn_more": "Saiba mais"
+            }
+        },
+        "searching_accounts": {
+            "title": "Buscando suas contas",
+            "no_new_addresses_title": "Nenhum novo endereço encontrado",
+            "no_new_addresses_body": "Não encontramos nenhum endereço adicional associado a esta wallet."
+        },
+        "create_account": {
+            "processing": "Configurando sua wallet...",
+            "error_title": "Falha ao criar a conta"
+        },
+        "main_screen": {
+            "welcome": "Boas-vindas à \n Pera Wallet",
+            "new_to_algo": "Primeira vez na Algorand?",
+            "create_wallet": "Criar uma nova wallet",
+            "already_have_account": "Já tem uma conta?",
+            "import_account": "Importar uma conta",
+            "privacy_agreement": "Ao criar uma wallet, você concorda com a <0>Política de Privacidade</0> da Pera Wallet"
+        },
+        "terms_sheet": {
+            "title": "Termos e condições",
+            "updated_title": "Termos e condições atualizados",
+            "agree": "Concordo"
+        },
+        "name_account": {
+            "title": "Dê um nome à sua conta",
+            "description": "Dê um nome à sua conta para identificá-la facilmente ao usar a Pera Wallet. Esses nomes são armazenados localmente e só podem ser vistos por você.",
+            "wallet_label": "Wallet nº {{count}}",
+            "finish_button": "Concluir criação da conta"
+        },
+        "import_select_addresses": {
+            "title": "Selecione os endereços a adicionar",
+            "description": "Encontramos {{count}} endereços registrados nesta wallet",
+            "addresses_count": "{{count}} endereços",
+            "select_all": "Selecionar todos",
+            "already_imported": "já importado",
+            "finish_button": "Concluir criação da conta"
+        },
+        "import_rekeyed_addresses": {
+            "title": "{{count}} contas com rekey encontradas",
+            "description_line_1": "Você tem {{count}} contas com rekey. Isso significa que você pode assinar as transações dessas contas com a conta que acabou de adicionar",
+            "description_line_2": "Selecione as contas com rekey que você quer adicionar à sua wallet:",
+            "already_imported": "já importada",
+            "continue": "Escolher contas para adicionar",
+            "skip": "Pular por agora",
+            "fetching": "Buscando contas com rekey...",
+            "rekeyed_account_subtitle": "Conta com rekey",
+            "importing_accounts": "Importando contas...",
+            "info_sheet": {
+                "account_details": "Detalhes da conta",
+                "assets": "Ativos",
+                "can_be_signed_by": "Pode ser assinada por"
+            }
+        },
+        "add_account": {
+            "title": "Adicionar uma\nconta",
+            "add_account_option_title": "Adicionar conta",
+            "add_account_option_description": "Adicione uma nova conta à sua Universal Wallet existente",
+            "import_account_option_title": "Importar conta",
+            "import_account_option_description": "Importe uma conta Algorand existente por diversos métodos",
+            "qr_scan_invalid_title": "Código QR inválido",
+            "qr_scan_invalid_body": "Este código QR não contém um link válido de recuperação de conta",
+            "qr_scan_invalid_mnemonic_title": "Passphrase inválida",
+            "qr_scan_invalid_mnemonic_body": "O código QR escaneado contém uma passphrase com um número inesperado de palavras",
+            "watch_address_option_title": "Observar um endereço",
+            "watch_address_option_description": "Acompanhe um endereço Algorand informando o endereço",
+            "create_universal_wallet_option_title": "Criar uma Universal Wallet",
+            "create_universal_wallet_option_description": "Wallet que permite derivar novas contas, todas usando o mesmo mnemônico de 24 palavras",
+            "create_algo25_option_title": "Criar uma conta Algo25",
+            "create_algo25_option_description": "Formato legado, específico da Algorand",
+            "quantum_account_option_title": "Adicionar conta Quantum",
+            "quantum_account_option_description": "Assinaturas Falcon-1024, protegidas nativamente na Algorand. Suas chaves, agora prontas para a era pós-quântica.",
+            "quantum_account_option_badge": "NOVO",
+            "quantum_account_option_learn_more": "Saiba mais",
+            "quantum_creating_title": "Criando sua conta Quantum…",
+            "terms_and_privacy": "Ao adicionar uma wallet, você concorda com os <0>Termos e Condições</0> e a <1>Política de Privacidade</1> da Pera Wallet",
+            "create_multisig_option_title": "Adicionar conta compartilhada",
+            "create_multisig_option_description": "Crie uma nova conta compartilhada com segurança reforçada, que exige vários signatários",
+            "pera_card_option_title": "Adicionar conta Pera Card",
+            "pera_card_option_description": "Gaste suas criptomoedas no mundo real com o Pera Card",
+            "see_other_options": "Ver outras opções"
+        },
+        "import_account_options": {
+            "title": "Importar uma\nconta",
+            "recover_wallet_title": "Recuperar uma wallet",
+            "recover_wallet_description": "Quero recuperar uma wallet Algorand",
+            "recover_qr_title": "Recuperar uma conta com código QR",
+            "recover_qr_description": "Quero recuperar uma conta Algorand usando um código QR",
+            "pair_ledger_title": "Parear Ledger via Bluetooth",
+            "pair_ledger_description": "Quero recuperar uma conta Algorand protegida pelo meu hardware wallet Ledger via Bluetooth",
+            "pair_ledger_usb_title": "Parear Ledger via USB",
+            "pair_ledger_usb_description": "Quero recuperar uma conta Algorand protegida pelo meu hardware wallet Ledger via cabo USB",
+            "pera_web_title": "Importar do Pera Web",
+            "pera_web_description": "Quero importar contas Algorand do Pera Web",
+            "asb_title": "Algorand Secure Backup",
+            "asb_description": "Quero restaurar minhas contas usando um arquivo Algorand Secure Backup e a chave de 12 palavras",
+            "quantum_title": "Importar conta Quantum",
+            "quantum_description": "Quero importar uma conta Quantum usando sua passphrase de 25 palavras"
+        },
+        "asb_import": {
+            "info": {
+                "title": "Importar do Algorand Secure Backup",
+                "body": "Recupere as contas que você salvou em um arquivo Algorand Secure Backup. Você vai precisar do arquivo de backup e da chave de recuperação de 12 palavras gerada quando o backup foi criado.",
+                "continue": "Continuar"
+            },
+            "backup": {
+                "title": "Selecione seu arquivo de backup",
+                "body": "Para restaurar sua wallet, selecione ou cole seu arquivo de backup.",
+                "pick_file_button": "Selecionar arquivo de backup",
+                "pick_file_button_new_tab": "Abra uma nova aba para selecionar seu arquivo de backup",
+                "paste_button": "Colar texto do arquivo de backup",
+                "continue": "Avançar",
+                "pasted_name": "Backup colado",
+                "errors": {
+                    "title": "Não foi possível carregar o arquivo de backup",
+                    "empty_file": "O arquivo está vazio.",
+                    "not_base64": "O arquivo não está no formato Algorand Secure Backup esperado.",
+                    "malformed_envelope": "O arquivo não é um Algorand Secure Backup válido.",
+                    "unsupported_version": "Este arquivo de backup usa uma versão não compatível.",
+                    "unsupported_suite": "Este arquivo de backup usa um conjunto de criptografia não compatível.",
+                    "invalid_recovery_key": "A chave de recuperação informada não é válida.",
+                    "decryption_failed": "A chave de recuperação não desbloqueou este backup.",
+                    "malformed_payload": "O arquivo de backup não contém nenhuma conta recuperável.",
+                    "empty_clipboard": "Não há nada na área de transferência para colar.",
+                    "read_failed": "Não foi possível ler o arquivo."
+                }
+            },
+            "key": {
+                "title": "Digite sua chave de recuperação de 12 palavras",
+                "body": "Digite a chave de recuperação de 12 palavras gerada quando o arquivo Algorand Secure Backup foi criado.",
+                "continue": "Continuar",
+                "decrypting": "Desbloqueando seu backup…",
+                "too_many_words_title": "Chave de recuperação inválida",
+                "too_many_words_body": "A chave de recuperação que você colou contém palavras demais.",
+                "insufficient_slots_title": "Chave de recuperação inválida",
+                "insufficient_slots_body": "A chave de recuperação que você colou não cabe nos campos restantes.",
+                "errors": {
+                    "title": "Não foi possível desbloquear o backup",
+                    "empty_file": "O arquivo de backup está vazio.",
+                    "not_base64": "O arquivo de backup não é válido.",
+                    "malformed_envelope": "O arquivo de backup não é válido.",
+                    "unsupported_version": "Este arquivo de backup usa uma versão não compatível.",
+                    "unsupported_suite": "Este arquivo de backup usa um conjunto de criptografia não compatível.",
+                    "invalid_recovery_key": "A chave de recuperação de 12 palavras não é válida.",
+                    "decryption_failed": "Essa chave de recuperação não desbloqueia este backup. Verifique cada palavra e tente novamente.",
+                    "malformed_payload": "O backup não continha nenhuma conta recuperável."
+                }
+            },
+            "select": {
+                "title": "Recuperar contas",
+                "body_zero": "{{count}} contas foram encontradas no seu backup. Escolha quais recuperar.",
+                "body_one": "{{count}} conta foi encontrada no seu backup. Escolha quais recuperar.",
+                "body_other": "{{count}} contas foram encontradas no seu backup. Escolha quais recuperar.",
+                "body": "{{count}} contas foram encontradas no seu backup. Escolha quais recuperar.",
+                "count_zero": "{{count}} contas disponíveis",
+                "count_one": "{{count}} conta disponível",
+                "count_other": "{{count}} contas disponíveis",
+                "count": "{{count}} contas disponíveis",
+                "select_all": "Selecionar todas",
+                "already_imported": "Já importada",
+                "continue": "Recuperar contas",
+                "importing": "Recuperando contas…",
+                "errors": {
+                    "title": "Falha na recuperação",
+                    "body": "Não foi possível recuperar algumas contas. Tente novamente."
+                }
+            },
+            "result": {
+                "success_title": "Contas recuperadas",
+                "success_body_zero": "{{count}} contas foram adicionadas à sua wallet.",
+                "success_body_one": "{{count}} conta foi adicionada à sua wallet.",
+                "success_body_other": "{{count}} contas foram adicionadas à sua wallet.",
+                "success_body": "{{count}} contas foram adicionadas à sua wallet.",
+                "partial_title": "Algumas contas recuperadas",
+                "partial_body": "Não foi possível recuperar algumas contas do backup. Você pode tentar novamente com um novo arquivo de backup.",
+                "nothing_new_title": "Nada novo para recuperar",
+                "nothing_new_body": "Todas as contas do backup já estão nesta wallet.",
+                "failed_title": "Falha na recuperação",
+                "failed_body": "Não foi possível recuperar nenhuma conta do backup.",
+                "imported_count_zero": "{{count}} contas recuperadas",
+                "imported_count_one": "{{count}} conta recuperada",
+                "imported_count_other": "{{count}} contas recuperadas",
+                "skipped_count_zero": "{{count}} contas já estão nesta wallet",
+                "skipped_count_one": "{{count}} conta já está nesta wallet",
+                "skipped_count_other": "{{count}} contas já estão nesta wallet",
+                "failed_count_zero": "{{count}} contas não puderam ser recuperadas",
+                "failed_count_one": "{{count}} conta não pôde ser recuperada",
+                "failed_count_other": "{{count}} contas não puderam ser recuperadas",
+                "done": "Concluir"
+            }
+        },
+        "pera_web_import": {
+            "info": {
+                "title": "Importar do Pera Web",
+                "body": "Abra a Pera Web Wallet no seu computador, vá em Transfer Accounts, selecione as contas que você quer importar e escaneie o código QR gerado.",
+                "scan_button": "Escanear código QR",
+                "scanner_title": "Escaneie o código QR\nno Pera Web"
+            },
+            "loading": {
+                "title": "Importando contas do Pera Web…",
+                "fetch_failed_title": "Não foi possível carregar o backup",
+                "decrypt_failed_title": "Não foi possível desbloquear o backup"
+            },
+            "result": {
+                "success_title": "Contas importadas",
+                "success_body_zero": "{{count}} contas foram adicionadas à sua wallet.",
+                "success_body_one": "{{count}} conta foi adicionada à sua wallet.",
+                "success_body_other": "{{count}} contas foram adicionadas à sua wallet.",
+                "success_body": "{{count}} contas foram adicionadas à sua wallet.",
+                "partial_title": "Algumas contas importadas",
+                "partial_body": "Não foi possível importar algumas contas do backup. Tente gerar um novo código QR no Pera Web.",
+                "nothing_new_title": "Nada novo para importar",
+                "nothing_new_body": "Todas as contas do backup já estão nesta wallet.",
+                "failed_title": "Falha na importação",
+                "failed_body": "Não foi possível importar nenhuma conta do backup.",
+                "imported_count_zero": "{{count}} contas importadas",
+                "imported_count_one": "{{count}} conta importada",
+                "imported_count_other": "{{count}} contas importadas",
+                "skipped_count_zero": "{{count}} contas já estão nesta wallet",
+                "skipped_count_one": "{{count}} conta já está nesta wallet",
+                "skipped_count_other": "{{count}} contas já estão nesta wallet",
+                "failed_count_zero": "{{count}} contas não puderam ser importadas",
+                "failed_count_one": "{{count}} conta não pôde ser importada",
+                "failed_count_other": "{{count}} contas não puderam ser importadas",
+                "done": "Concluir"
+            }
+        },
+        "select_hd_wallet": {
+            "title": "Selecionar Universal Wallet",
+            "description": "Crie sua nova conta em uma Universal Wallet que você já tem",
+            "wallet_label": "Wallet nº {{number}}",
+            "account_count_zero": "{{count}} contas",
+            "account_count_one": "{{count}} conta",
+            "account_count_other": "{{count}} contas",
+            "create_new_wallet": "Criar uma nova wallet"
+        },
+        "watch_account": {
+            "info_title": "Conta de observação",
+            "info_description": "Acompanhe a atividade de uma conta sem precisar da passphrase de recuperação. Isso é útil para monitorar ativos guardados em cold storage.",
+            "info_warning": "Se você não tem a passphrase de recuperação correspondente, não envie ativos para esta conta.",
+            "info_button": "Criar conta de observação",
+            "title": "Criar uma conta\nde observação",
+            "description": "Você está criando uma visualização somente leitura de uma conta Algorand.",
+            "address_placeholder": "Endereço da conta ou nome curto",
+            "watch_button": "Criar conta de observação",
+            "invalid_address": "Digite um endereço Algorand válido",
+            "duplicate_address": "Este endereço já foi adicionado à sua wallet"
+        }
+    },
+    "portfolio": {
+        "title": "Valor do portfólio",
+        "show_chart": "Mostrar gráfico",
+        "hide_chart": "Ocultar gráfico",
+        "last_24_hours": "Últimas 24 horas",
+        "last_7_days": "Últimos 7 dias",
+        "last_30_days": "Últimos 30 dias",
+        "last_year": "Último ano",
+        "info": {
+            "title": "Como calculamos o valor do portfólio",
+            "body": "O valor total do portfólio é calculado somando o valor de todos os ativos e do Algo disponíveis nas suas contas, excluindo as contas de observação.\n\nOs valores dos ativos são calculados com base em valores diários obtidos de vários parceiros do ecossistema. Como alguns valores de ativos não estão disponíveis, o valor total do portfólio deve ser considerado uma estimativa."
+        }
+    },
+    "prompts": {
+        "security": {
+            "pin_dont_ask_again": "Não perguntar novamente",
+            "pin_title": "Aumente sua segurança com um código PIN",
+            "pin_description": "Este código PIN de 6 dígitos será necessário para usar a Pera Wallet. Recomendamos criar um código PIN para aumentar a segurança da wallet caso seu celular seja roubado.",
+            "pin_setpin": "Definir código PIN",
+            "pin_notnow": "Agora não"
+        }
+    },
+    "rekey": {
+        "signing": {
+            "source_name": "Rekey de conta",
+            "source_description": "Transação de rekey",
+            "user_rejected_title": "Assinatura cancelada",
+            "user_rejected_body": "Você cancelou a assinatura do rekey. Nenhuma alteração foi feita."
+        },
+        "errors": {
+            "build_failed": {
+                "title": "Não foi possível preparar o rekey"
+            },
+            "signing_failed": {
+                "title": "Não foi possível assinar o rekey"
+            },
+            "submission_failed": {
+                "title": "Não foi possível enviar o rekey"
+            }
+        },
+        "confirm": {
+            "insufficient_fee_balance": "Esta conta não tem ALGO suficiente para cobrir a taxa de {{fee}} ALGO. Adicione ALGO e tente novamente."
+        },
+        "to_standard": {
+            "intro": {
+                "title": "Fazer rekey para conta padrão",
+                "body": "Use a chave privada de outra conta para assinar as transações desta conta.",
+                "learn_more": "Saiba mais",
+                "expect_label": "O que esperar",
+                "expect_1": "As transações futuras só poderão ser assinadas pela conta delegada.",
+                "expect_2": "Esta conta não poderá mais assinar transações.",
+                "expect_3": "A chave pública, os saldos e as configurações da sua conta não vão mudar.",
+                "cta": "Iniciar processo"
+            },
+            "select": {
+                "title": "Selecionar conta",
+                "subtitle": "Escolha a conta para a qual você quer fazer rekey. A conta selecionada aqui será responsável por assinar todas as transações da conta de origem.",
+                "empty": "Nenhuma conta encontrada"
+            },
+            "confirm": {
+                "title": "Confirmar rekey",
+                "body": "Você está prestes a fazer rekey desta conta para outro endereço autorizado. O novo endereço poderá assinar transações em nome dela.",
+                "learn_more": "Saiba mais",
+                "summary_label": "Resumo do rekey",
+                "current_auth_label": "Atualmente com rekey para",
+                "fee_label": "Taxa da transação",
+                "cta": "Confirmar",
+                "replace_warning": {
+                    "title": "O seu rekey anterior será substituído",
+                    "body": "<0>{{currentAuth}}</0> não estará mais autorizado a assinar transações de <1>{{source}}</1>. Certifique-se de entender as implicações disso antes de continuar. <2>Saiba mais</2>",
+                    "confirm": "Confirmar",
+                    "cancel": "Cancelar"
+                }
+            },
+            "success": {
+                "title": "Rekey da conta concluído com sucesso",
+                "body": "O rekey da conta <0>{{source}}</0> foi concluído com sucesso.",
+                "cta": "Concluir"
+            }
+        },
+        "to_shared": {
+            "intro": {
+                "title": "Fazer rekey para conta compartilhada",
+                "body": "Use os signatários de outra conta compartilhada para autorizar as transações desta conta.",
+                "learn_more": "Saiba mais",
+                "expect_label": "O que esperar",
+                "expect_1": "As transações futuras serão assinadas pelos signatários da conta compartilhada escolhida.",
+                "expect_2": "Esta conta não poderá mais assinar transações por conta própria.",
+                "expect_3": "A chave pública, os saldos e as configurações da sua conta não vão mudar.",
+                "cta": "Iniciar processo"
+            },
+            "select": {
+                "title": "Selecionar conta compartilhada",
+                "subtitle": "Escolha a conta compartilhada para a qual você quer fazer rekey. A conta selecionada aqui será responsável por assinar todas as transações da conta de origem.",
+                "empty": "Nenhuma conta compartilhada encontrada. Crie uma conta compartilhada primeiro."
+            },
+            "confirm": {
+                "title": "Confirmar rekey",
+                "body": "Você está prestes a fazer rekey desta conta compartilhada para outra conta compartilhada.",
+                "learn_more": "Saiba mais",
+                "summary_label": "Resumo do rekey",
+                "current_auth_label": "Atualmente com rekey para",
+                "fee_label": "Taxa da transação",
+                "cta": "Confirmar",
+                "replace_warning": {
+                    "title": "O seu rekey anterior será substituído",
+                    "body": "<0>{{currentAuth}}</0> não estará mais autorizado a assinar transações de <1>{{source}}</1>. Certifique-se de entender as implicações disso antes de continuar. <2>Saiba mais</2>",
+                    "confirm": "Confirmar",
+                    "cancel": "Cancelar"
+                }
+            },
+            "success": {
+                "title": "Rekey da conta concluído com sucesso",
+                "body": "O rekey da conta <0>{{source}}</0> foi concluído com sucesso.",
+                "cta": "Concluir"
+            }
+        },
+        "to_ledger": {
+            "intro": {
+                "title": "Fazer rekey para Ledger",
+                "body": "Altere a conta Ledger que assina pela sua wallet.",
+                "learn_more": "Saiba mais",
+                "expect_label": "O que esperar",
+                "expect_1": "As transações futuras serão assinadas pelo seu novo dispositivo Ledger.",
+                "expect_2": "Se você já tiver um dispositivo Ledger vinculado a esta conta, o seu Ledger antigo não estará mais conectado a ela.",
+                "expect_3": "A chave pública, os saldos e as configurações da sua conta não vão mudar.",
+                "expect_4": "Verifique se o Bluetooth está ativado no seu celular",
+                "cta": "Iniciar processo"
+            },
+            "select": {
+                "title": "Selecionar conta Ledger",
+                "subtitle": "Escolha a conta Ledger para a qual você quer fazer rekey. A conta selecionada aqui será responsável por assinar todas as transações da conta de origem.",
+                "empty": "Nenhuma conta Ledger encontrada. Importe uma conta Ledger primeiro."
+            },
+            "confirm": {
+                "title": "Confirmar rekey",
+                "body": "Você está prestes a fazer rekey desta conta. Ela não poderá mais assinar as próprias transações.",
+                "learn_more": "Saiba mais",
+                "summary_label": "Resumo do rekey",
+                "current_auth_label": "Atualmente com rekey para",
+                "fee_label": "Taxa da transação",
+                "cta": "Confirmar",
+                "replace_warning": {
+                    "title": "O seu rekey anterior será substituído",
+                    "body": "<0>{{currentAuth}}</0> não estará mais autorizado a assinar transações de <1>{{source}}</1>. Certifique-se de entender as implicações disso antes de continuar. <2>Saiba mais</2>",
+                    "confirm": "Confirmar",
+                    "cancel": "Cancelar"
+                }
+            },
+            "success": {
+                "title": "Rekey da conta concluído com sucesso",
+                "body": "O rekey da conta <0>{{source}}</0> foi concluído com sucesso.",
+                "cta": "Concluir"
+            }
+        },
+        "rescan": {
+            "title": "Contas com rekey",
+            "subtitle": "Selecione as contas que você quer importar como contas com rekey.",
+            "fetching": "Buscando contas com rekey…",
+            "sweep_fetching": "Escaneando as suas chaves ({{scanned}}/{{total}})…",
+            "partial_failure_notice_zero": "Não foi possível escanear {{count}} chaves — os resultados podem estar incompletos. Tente novamente para escaneá-las.",
+            "partial_failure_notice_one": "Não foi possível escanear 1 chave — os resultados podem estar incompletos. Tente novamente para escaneá-la.",
+            "partial_failure_notice_other": "Não foi possível escanear {{count}} chaves — os resultados podem estar incompletos. Tente novamente para escaneá-las.",
+            "empty_title": "Nenhuma conta com rekey encontrada",
+            "empty_body": "Escaneamos a blockchain e não encontramos nenhuma conta que ainda não tenha sido importada.",
+            "empty_cta": "Continuar",
+            "imported_section": "Já na sua wallet",
+            "candidates_section": "Disponíveis para importar",
+            "select_all": "Selecionar todas",
+            "cta_add": "Adicionar contas",
+            "cta_skip": "Agora não",
+            "error_title": "Falha ao escanear",
+            "error_body": "Não foi possível buscar as contas com rekey. Verifique a sua conexão e tente novamente.",
+            "nothing_imported_title": "Nada importado",
+            "nothing_imported_body": "Não foi possível adicionar as contas selecionadas. Elas podem já estar na sua wallet."
+        },
+        "undo": {
+            "confirm": {
+                "title": "Desfazer rekey",
+                "body": "Você está prestes a desfazer a operação de rekey desta conta. Você vai fazer rekey da conta de volta para ela mesma usando o endereço autorizado dela. <0>Saiba mais</0>",
+                "summary_label": "Desfazer rekey",
+                "current_auth_label": "Atualmente com rekey para",
+                "fee_label": "Taxa da transação",
+                "cta": "Continuar"
+            },
+            "warning": {
+                "title": "O seu rekey anterior será desfeito",
+                "body": "<0>{{currentAuth}}</0> não estará mais autorizado a assinar transações de <1>{{source}}</1>. Certifique-se de entender as implicações disso antes de continuar. <2>Saiba mais</2>",
+                "confirm": "Confirmar",
+                "cancel": "Cancelar"
+            },
+            "no_auth_warning": {
+                "title": "Você perderá a capacidade de assinar",
+                "body": "<1>{{source}}</1> se tornará uma conta somente de observação. Você não poderá mais assinar transações dela nesta wallet, e isso só poderá ser desfeito se você importar a chave privada original. <2>Saiba mais</2>",
+                "confirm": "Sim, desfazer rekey",
+                "cancel": "Cancelar"
+            },
+            "success": {
+                "title": "Rekey desfeito com sucesso",
+                "body": "A conta <0>{{source}}</0> foi revertida ao estado original",
+                "cta": "Concluir"
+            }
+        },
+        "quantum_downgrade_warning": {
+            "title": "Remover a proteção pós-quântica?",
+            "body": "Fazer rekey de <0>{{source}}</0> para <1>{{target}}</1> vai remover a proteção pós-quântica dela. As transações passarão a ser autorizadas por uma chave padrão que não é resistente a ataques quânticos. Isso pode ser revertido fazendo rekey de volta para uma conta pós-quântica.",
+            "confirm": "Continuar",
+            "cancel": "Cancelar"
+        }
+    },
+    "receive_funds": {
+        "account_selection": {
+            "title": "Selecionar conta"
+        },
+        "qrview": {
+            "error_title": "Nenhuma conta selecionada",
+            "error_body": "Nenhuma conta foi selecionada. Selecione uma conta primeiro",
+            "copy_address": "Copiar endereço",
+            "share": "Compartilhar endereço"
+        }
+    },
+    "screens": {
+        "contacts": "Contatos",
+        "edit_contact": "Editar contato",
+        "add_contact": "Novo contato",
+        "settings": "Configurações",
+        "security": "Segurança",
+        "notifications": "Notificações",
+        "wallet_connect": "Wallet Connect",
+        "wallet_connect_details": "Detalhes da conexão",
+        "passkeys": "Passkeys",
+        "connected_sites": "Sites conectados",
+        "connections": "Conexões",
+        "currency": "Moeda",
+        "theme": "Tema",
+        "language": "Idioma",
+        "developer_settings": "Configurações de desenvolvedor",
+        "node_settings": "Configurações do nó",
+        "feature_flags": "Feature flags",
+        "developer_menu": "Opções de desenvolvedor",
+        "manage_cache": "Gerenciar cache",
+        "app_integrity": "Integridade do app",
+        "messages": "Mensagens"
+    },
+    "search": {
+        "title": "Buscar",
+        "screen_title": "Buscar na Pera Wallet",
+        "placeholder": "Buscar na Pera",
+        "empty_prompt_title": "Comece a digitar para buscar",
+        "empty_prompt_body": "Busque em suas contas, contatos e ativos",
+        "show_more": "Mostrar {{count}} mais",
+        "no_results_title": "Nenhum resultado",
+        "no_results_body": "Tente outro termo de busca",
+        "sections": {
+            "accounts": "Contas",
+            "contacts": "Contatos",
+            "assets": "Ativos"
+        },
+        "filter": {
+            "title": "Opções de busca",
+            "accounts": "Incluir contas",
+            "contacts": "Incluir contatos",
+            "assets": "Incluir ativos"
+        }
+    },
+    "security": {
+        "pin": {
+            "setup_title": "Escolha seu\ncódigo PIN de 6 dígitos",
+            "confirm_title": "Digite novamente seu\ncódigo PIN de 6 dígitos",
+            "verify_title": "Digite seu código PIN",
+            "unlock_title": "Digite seu código PIN",
+            "change_old_title": "Digite seu antigo\ncódigo PIN de 6 dígitos",
+            "logging_in": "Entrando"
+        },
+        "lockout": {
+            "title": "O app Pera Wallet está bloqueado",
+            "subtitle": "Muitas tentativas incorretas de código PIN",
+            "tryagain_in": "Tente novamente em",
+            "reset_button": "Redefinir todos os dados"
+        },
+        "biometric": {
+            "enable_prompt_title": "Ativar login com biometria",
+            "unlock_prompt_title": "Desbloquear a Pera Wallet",
+            "cancel_label": "Cancelar"
+        }
+    },
+    "send_funds": {
+        "input_view": {
+            "title": "Enviar {{asset}}"
+        },
+        "add_note": {
+            "done": "Concluir",
+            "placeholder": "Digite sua nota",
+            "button": "+ Adicionar nota",
+            "edit": "Editar nota"
+        },
+        "asset_selection": {
+            "title": "Selecionar ativo",
+            "search_placeholder": "Buscar por nome ou ID do ativo",
+            "no_results_title": "Nenhum ativo encontrado",
+            "no_results_body": "Nenhum ativo corresponde à sua busca"
+        },
+        "bottom_sheet": {
+            "no_account_title": "Nenhuma conta selecionada",
+            "no_account_body": "Nenhuma conta foi selecionada. Selecione uma conta primeiro"
+        },
+        "info": {
+            "title": "Dicas para transacionar",
+            "preamble": "Antes de finalizar sua transação, tenha em mente algumas dicas",
+            "tip_1": "Ao enviar para um endereço pela primeira vez, é útil fazer uma pequena transação de teste antes de enviar um valor alto.",
+            "tip_2": "As exchanges mudam seus endereços de depósito com frequência, e endereços de exchange salvos podem não estar mais em uso. <0>Confirme que você está enviando para o endereço correto</0>",
+            "more_info": "Para mais informações sobre transações, <0>toque aqui</0>",
+            "i_understand": "Entendi"
+        },
+        "input": {
+            "max": "MÁX",
+            "next": "Avançar",
+            "error_title": "Valor inválido",
+            "error_body": "Digite um valor maior que {{min}}.",
+            "exceeds_max_title": "Saldo insuficiente",
+            "exceeds_max_body": "O valor excede seu saldo disponível.",
+            "min_balance_title": "Saldo mínimo",
+            "min_balance_amount": "Com base na configuração da sua conta, seu saldo mínimo é {{minBalance}}.",
+            "min_balance_body": "Ao continuar, o valor da sua transação será ajustado para manter o saldo mínimo exigido pela blockchain Algorand. Você poderá ver essa alteração na próxima etapa.",
+            "rekeyed_min_balance_title": "Saldo mínimo",
+            "rekeyed_min_balance_amount": "Esta conta passou por rekey e precisa manter seu saldo mínimo de {{minBalance}}.",
+            "rekeyed_min_balance_body": "Ao continuar, o valor da sua transação será ajustado para manter o saldo mínimo exigido. Uma conta que passou por rekey não pode ser encerrada."
+        },
+        "destination": {
+            "error_title": "Algo deu errado",
+            "error_body": "Ocorreu um erro inesperado. Tente novamente."
+        },
+        "confirmation": {
+            "edit": "Editar",
+            "title": "Confirmar transação",
+            "amount": "Valor",
+            "account": "Conta",
+            "to": "Para",
+            "fee": "Taxa",
+            "current_balance": "Saldo atual",
+            "note": "Nota",
+            "recipient_below_mbr": {
+                "title": "Valor abaixo do mínimo do destinatário",
+                "body": "O destinatário precisa ter no mínimo {{min}} ALGO após esta transação para atender ao saldo mínimo exigido pela Algorand."
+            }
+        },
+        "processing": {
+            "title": "Enviando a transação",
+            "subtitle": "Sua transação está sendo processada pela rede Algorand.",
+            "title_hardware": "Conectando ao seu dispositivo Ledger",
+            "subtitle_hardware": "Tentando conectar a {{deviceName}}. Verifique se está desbloqueado, dentro do alcance e com o app Algorand aberto.",
+            "subtitle_hardware_noDevice": "Tentando conectar ao seu dispositivo Ledger. Verifique se está desbloqueado, dentro do alcance e com o app Algorand aberto."
+        },
+        "success": {
+            "title": "Transação processada",
+            "asset_transferred_title": "Ativo transferido",
+            "subtitle": "Sua transação foi recebida com sucesso pela rede Algorand",
+            "view_in_explorer": "Ver detalhes da transação no Pera Explorer",
+            "done": "Concluir"
+        },
+        "close_account": {
+            "title": "Encerrar conta",
+            "body": "Esta conta não tem ativos adicionados. Enviar todo o saldo encerrará a conta na rede Algorand.",
+            "confirm": "Encerrar conta e enviar",
+            "warning": "Esta transação encerrará sua conta na rede Algorand.",
+            "success_title": "Conta encerrada",
+            "success_subtitle": "Sua conta foi encerrada na rede Algorand."
+        },
+        "express_send": {
+            "title": "Envio expresso",
+            "body_1": "O destinatário ainda não adicionou este ativo. Como as duas contas estão na sua wallet, a Pera pode fazer o opt-in automaticamente.",
+            "body_2": "A Pera vai combinar as transações em um único grupo atômico para que tudo aconteça de uma só vez.",
+            "how_it_works": "Como funciona",
+            "step_1": "Enviar um pequeno pagamento em ALGO para cobrir a taxa de opt-in do destinatário",
+            "step_2": "Adicionar o ativo à conta do destinatário",
+            "step_3": "Enviar o ativo ao destinatário",
+            "continue": "Continuar",
+            "dont_show_again": "Não mostrar novamente"
+        },
+        "arc59_summary": {
+            "title": "Enviar para a Asset Inbox",
+            "description": "O destinatário não adicionou este ativo. Em vez disso, você pode enviá-lo para a Asset Inbox dele.",
+            "read_more": "Saiba mais",
+            "recipient_label": "Para",
+            "fees_label": "Taxas de protocolo e saldo mínimo",
+            "disclaimer": "A taxa acima será usada para cobrir o saldo mínimo exigido do destinatário. Se o destinatário recusar o ativo, você não receberá nada de volta."
+        },
+        "arc59_warning": {
+            "title": "Aviso",
+            "message": "Antes de enviar estes fundos, confirme que o usuário consegue acessar a Asset Inbox dele:",
+            "confirm": "Entendi",
+            "cancel": "Cancelar",
+            "item1": "Usuários da Pera Wallet",
+            "item2": "Usuários da Lute Wallet",
+            "item3": "Exchanges centralizadas",
+            "item4": "Wallets de contratos inteligentes",
+            "item5": "Exchanges descentralizadas"
+        },
+        "insufficient_balance": {
+            "title": "Saldo mínimo",
+            "message": "Esta conta não tem o saldo mínimo exigido de {{amount}} ALGO para esta operação.",
+            "done": "Concluir"
+        }
+    },
+    "settings": {
+        "currency": {
+            "title": "Moeda principal",
+            "description": "Sua moeda principal é <0>{{preferredCurrency}}</0> e a moeda secundária é <0>{{fallbackCurrency}}</0>.",
+            "search_placeholder": "Buscar",
+            "offline_rate": {
+                "title": "Cotação indisponível offline",
+                "body": "Os valores em {{currency}} não podem ser exibidos até você voltar a ficar online. Sua seleção foi salva."
+            }
+        },
+        "main": {
+            "account_section": "Conta",
+            "security_title": "Segurança",
+            "notifications_title": "Notificações",
+            "scan_rekeyed_title": "Buscar contas com rekey",
+            "wallet_connect_title": "Sessões do WalletConnect",
+            "passkeys_title": "Passkeys",
+            "connected_sites_title": "Sites conectados",
+            "connections_title": "Conexões",
+            "app_preferences_section": "Preferências do app",
+            "currency_title": "Moeda",
+            "theme_title": "Tema",
+            "language_title": "Idioma",
+            "support_section": "Suporte",
+            "rate_title": "Avaliar a Pera Wallet",
+            "terms_title": "Termos e serviços",
+            "privacy_title": "Política de privacidade",
+            "developer_title": "Configurações de desenvolvedor",
+            "remove_all_accounts": "Remover todos os dados e sair",
+            "remove_title": "Excluir todos os dados",
+            "remove_message": "Você está prestes a excluir todos os dados da wallet, incluindo suas contas salvas. Certifique-se de ter as passphrases das suas contas guardadas em outro lugar antes de confirmar. Caso contrário, você não conseguirá restaurar suas contas. Tem certeza de que deseja continuar?",
+            "remove_confirm": "Sim, remover todas as contas e sair",
+            "remove_cancel": "Manter",
+            "remove_success_title": "Seus dados foram excluídos com sucesso",
+            "version_footer": "Pera Wallet versão {{version}} ({{build}})"
+        },
+        "theme": {
+            "system_label": "Padrão do sistema",
+            "light_label": "Claro",
+            "dark_label": "Escuro"
+        },
+        "language": {
+            "system_label": "Padrão do sistema"
+        },
+        "rating": {
+            "title": "Avalie sua experiência",
+            "body": "Como foi sua experiência?"
+        },
+        "developer": {
+            "node_settings_title": "Configurações do nó",
+            "dispenser_title": "Dispensador da Algorand",
+            "node_settings": {
+                "mainnet_label": "Algorand MainNet",
+                "testnet_label": "Algorand TestNet",
+                "betanet_label": "Algorand BetaNet",
+                "custom_label": "Rede personalizada",
+                "non_mainnet_warning_title": "Suporte limitado fora da MainNet",
+                "non_mainnet_warning_body": "A MainNet é a única rede totalmente compatível. Os recursos que dependem dos serviços da Pera — detalhes de ativos, conversão, compra, card, staking e caixa de entrada — são limitados na TestNet e indisponíveis na BetaNet e em nós personalizados.",
+                "enable_mainnet": "Ativar MainNet",
+                "enable_testnet": "Ativar TestNet",
+                "custom_sheet_title": "Configurar rede personalizada",
+                "algod_url_label": "URL do Algod",
+                "indexer_url_label": "URL do Indexer",
+                "algod_token_label": "Token do Algod (opcional)",
+                "indexer_token_label": "Token do Indexer (opcional)",
+                "genesis_hash_label": "Hash do genesis",
+                "genesis_id_label": "ID do genesis",
+                "fetch_from_node": "Buscar do nó",
+                "fetch_failed": "Não foi possível acessar esse nó. Digite os valores manualmente.",
+                "invalid_url": "Digite uma URL http:// ou https:// válida",
+                "genesis_required": "Busque ou digite o hash do genesis",
+                "genesis_id_required": "Busque ou digite o ID do genesis",
+                "save": "Salvar e trocar",
+                "cancel": "Cancelar",
+                "reset": "Restaurar padrões"
+            },
+            "debug_dapp": "Dapp de teste",
+            "manage_cache": "Gerenciar cache",
+            "screen_gallery": "Galeria de telas",
+            "app_integrity": "Integridade do app",
+            "app_integrity_run": "Executar handshake de registro",
+            "app_integrity_verify": "Verificar token",
+            "app_integrity_clear": "Limpar estado salvo",
+            "app_integrity_environment": "Ambiente: {{value}}",
+            "app_integrity_platform": "Plataforma: {{value}}",
+            "app_integrity_supported": "Compatível:",
+            "app_integrity_status": "Status:",
+            "app_integrity_token": "Token: {{value}}",
+            "app_integrity_expiry": "Expiração: {{value}}",
+            "app_integrity_error": "Erro: {{value}}",
+            "app_integrity_verify_label": "Verificação:",
+            "app_integrity_verify_error": "Erro de verificação: {{value}}",
+            "app_integrity_none": "nenhum",
+            "app_integrity_verify_ok": "ok",
+            "app_integrity_verify_failed": "falhou",
+            "refresh_cache": "Atualizar todo o cache",
+            "refresh_cache_success_title": "Cache atualizado",
+            "refresh_cache_success_body": "Todas as contas foram recarregadas e as consultas invalidadas.",
+            "refresh_cache_error_title": "Falha ao atualizar",
+            "refresh_cache_error_body": "Não foi possível atualizar o cache. Consulte os logs para mais detalhes.",
+            "reset_banners": "Redefinir banners",
+            "reset_banners_success_title": "Banners redefinidos",
+            "reset_banners_success_body": "Os banners dispensados aparecerão novamente.",
+            "clear_one_time_flags": "Limpar flags de uso único",
+            "clear_one_time_flags_success_title": "Flags de uso único limpas",
+            "clear_one_time_flags_success_body": "Os avisos e alertas de primeira execução aparecerão novamente.",
+            "taps_to_notify": "O menu de desenvolvedor será ativado em {{remaining}} toques",
+            "developer_menu_enabled": "Menu de desenvolvedor ativado",
+            "overridden": "Sobrescrito",
+            "enabled": "Ativado",
+            "disabled": "Desativado"
+        },
+        "security": {
+            "security_settings_section": "Configurações de segurança",
+            "enable_pin_security": "Ativar código PIN",
+            "change_pin": "Definir / alterar PIN",
+            "enable_biometrics": "Ativar biometria",
+            "antispam_section": "Proteção antispam",
+            "enable_rekey_support": "Ativar suporte a rekey",
+            "enable_rekey_support_description": "Ao ativar isso, você poderá confirmar solicitações de transação para fazer rekey da sua conta. Isso dará o controle da sua conta a outro endereço.",
+            "biometric_error_title": "Falha na autenticação.",
+            "biometric_error_message": "Não foi possível autenticar você. Tente novamente.",
+            "biometric_weak_title": "É necessária uma biometria mais forte",
+            "biometric_weak_message": "A Pera exige uma impressão digital ou outra biometria forte para desbloquear sua wallet. Adicione uma impressão digital nas configurações de biometria do seu aparelho e ative esta opção novamente.",
+            "advanced_security_settings": "Configurações avançadas de segurança",
+            "enable_asset_freeze_support": "Ativar congelamento de ativos",
+            "enable_asset_freeze_support_description": "Ao ativar isso, você poderá confirmar solicitações de transação para congelar ou descongelar ativos nas contas. Isso pode impedir que a conta afetada faça transações com o ativo indicado.",
+            "shake_to_lock": "Agitar para bloquear",
+            "shake_to_lock_description": "Bloqueia a wallet automaticamente quando você agita ou sacode o celular com força. Útil se o celular for arrancado da sua mão ou se você quiser uma forma rápida de bloquear de qualquer tela.",
+            "shake_to_lock_info_title": "Agitar para bloquear",
+            "shake_to_lock_info_body": "Quando esta opção está ativada, a Pera detecta movimentos bruscos com o sensor de movimento do celular enquanto você tem a wallet aberta. Uma sacudida forte ou um movimento brusco bloqueia a wallet na hora, então você pode agitar o celular para bloqueá-la com rapidez. Requer o PIN ativado.",
+            "shake_to_lock_requires_pin": "Ative o PIN para usar este recurso.",
+            "duress_pin": "PIN de emergência",
+            "duress_pin_description": "Um PIN alternativo que apaga a wallet silenciosamente quando é digitado na tela de bloqueio. Os dados apagados não podem ser recuperados — verifique se você tem um backup da sua passphrase de recuperação antes de ativar isso.",
+            "duress_pin_info_title": "PIN de emergência",
+            "duress_pin_info_body": "Configure um PIN alternativo que você possa digitar sob coação. Se algum dia você digitá-lo na tela de bloqueio em vez do seu PIN real, a Pera excluirá silenciosamente todas as suas contas e as substituirá por uma wallet nova e vazia, para parecer que você simplesmente não tem fundos. Você pode manter a biometria ativada, se quiser — sob coação, cancele a solicitação biométrica e digite o PIN de emergência manualmente. O PIN de emergência precisa ser diferente do seu PIN normal.\n\nImportante: um apagamento de emergência é permanente. Tudo o que estiver salvo apenas neste aparelho (contas das quais você não tem backup em outro lugar) não poderá ser recuperado depois. Certifique-se de ter salvo sua passphrase de recuperação antes de ativar isso.",
+            "duress_pin_requires_pin": "Ative o PIN para usar este recurso.",
+            "duress_pin_matches_regular": "Seu PIN de emergência precisa ser diferente do seu PIN normal."
+        },
+        "notifications": {
+            "push_notifications": "Notificações push",
+            "account_notifications": "Mostrar notificações de",
+            "no_accounts": "Nenhuma conta encontrada.",
+            "no_accounts_body": "Nenhuma conta encontrada. Adicione uma conta para gerenciar as preferências de notificação."
+        },
+        "passkeys": {
+            "empty_title": "Ainda não há passkeys",
+            "disabled_body_ios": "Guarde suas passkeys de qualquer site diretamente na sua Pera Wallet e use-as para entrar com TouchID ou FaceID.",
+            "disabled_body_android": "Guarde suas passkeys de qualquer site diretamente na sua Pera Wallet e use-as para entrar com impressão digital ou reconhecimento facial.",
+            "disabled_info_header": "Ativar passkeys",
+            "disabled_info_body_ios": "Você pode ativar as passkeys para a Pera Wallet em Ajustes do sistema > Geral > Preenchimento automático e senhas",
+            "disabled_info_body_android": "Você pode ativar as passkeys para a Pera Wallet em Configurações do sistema > Senhas, passkeys e contas",
+            "disabled_cta": "Abrir configurações",
+            "last_used": "Último uso",
+            "last_used_today": "Hoje",
+            "last_used_never": "Nunca",
+            "username": "Nome de usuário",
+            "remove_title": "Remover passkey",
+            "remove_body": "Você está prestes a remover esta passkey. Tem certeza de que deseja continuar?",
+            "remove_confirm": "Remover",
+            "remove_cancel": "Manter",
+            "loading": "Verificando passkeys...",
+            "error_title": "Algo deu errado",
+            "error_body": "Tente novamente.",
+            "error_cta": "Dispensar",
+            "liquid_protocol_placeholder_title": "Liquid Auth",
+            "liquid_protocol_placeholder_body": "O suporte ao protocolo Liquid Auth chega em breve.",
+            "biometric_warning_title": "Bloqueio de tela necessário",
+            "biometric_warning_body": "As passkeys precisam de um bloqueio de tela — impressão digital, reconhecimento facial ou PIN, padrão ou senha do aparelho — configurado neste aparelho para serem salvas com segurança e usadas para entrar. Adicione um nas configurações do seu aparelho.",
+            "biometric_required_body": "Você não pode usar passkeys até que haja um bloqueio de tela (impressão digital, reconhecimento facial ou PIN, padrão ou senha do aparelho) configurado neste aparelho. Adicione um nas configurações do seu aparelho e escaneie novamente.",
+            "biometric_required_dismiss": "Entendi",
+            "hd_wallet_warning_title": "É necessária uma Universal Wallet",
+            "hd_wallet_warning_body": "As passkeys são derivadas da passphrase de recuperação de uma Universal Wallet. Crie ou recupere uma Universal Wallet neste aparelho para usar passkeys.",
+            "hd_wallet_required_body": "Você não pode usar passkeys até ter uma Universal Wallet neste aparelho. Crie ou recupere uma e escaneie novamente.",
+            "hd_wallet_required_dismiss": "Entendi",
+            "interception_toggle_title": "Preenchimento de passkeys",
+            "interception_toggle_body_enabled": "A Pera Wallet pode salvar e oferecer passkeys para os sites em que você entra.",
+            "interception_toggle_body_disabled": "Ative isso para que a Pera Wallet possa salvar e oferecer passkeys para os sites em que você entra."
+        },
+        "connected_sites": {
+            "empty_title": "Nenhum site conectado",
+            "empty_body": "Os sites aos quais você conectar sua wallet aparecerão aqui.",
+            "accounts_count": "{{count}} contas",
+            "accounts_count_one": "{{count}} conta",
+            "revoke_title": "Desconectar site",
+            "revoke_body": "{{origin}} não terá mais acesso às suas contas conectadas. Você pode reconectar a qualquer momento pelo site.",
+            "revoke_confirm": "Desconectar",
+            "revoke_cancel": "Cancelar"
+        },
+        "connections": {
+            "empty_title": "Nenhuma conexão",
+            "empty_body": "Suas sessões do WalletConnect e sites conectados aparecerão aqui.",
+            "badge_wallet_connect": "WalletConnect",
+            "badge_dapp": "Dapp"
+        }
+    },
+    "signing": {
+        "view_details": "Ver detalhes da transação",
+        "balance_impact": {
+            "receive_title": "Você vai receber",
+            "spend_title": "Você vai gastar",
+            "analyzing": "Analisando transação…",
+            "unavailable": "Não foi possível prever o impacto no saldo — revise os detalhes da transação com atenção antes de assinar.",
+            "entire_balance": "Todo o saldo de {{unit}}",
+            "closes_balance": "Todo o seu saldo restante será enviado",
+            "new_asset": "Novo ativo criado por esta transação"
+        },
+        "arbitrary_data_view": {
+            "body": "Solicitação de assinatura de dados",
+            "details_title": "Detalhes da assinatura arbitrária",
+            "show_details": "Mostrar detalhes",
+            "on_behalf_of": "Assinando em nome de",
+            "data_label": "Dados a serem assinados",
+            "untrusted_message_label": "Mensagem exibida (não faz parte do que você assina)",
+            "binary_warning_title": "Os dados não são texto legível",
+            "binary_warning_body": "Os dados a assinar não são texto legível, então os bytes brutos aparecem em hexadecimal. Aprove somente se você confia neste aplicativo."
+        },
+        "arbitrary_data_details": {
+            "unnamed": "Alguém",
+            "description": "Uma solicitação de assinatura de dados pede que você assine dados arbitrários. Serviços costumam usar isso para verificar a propriedade de uma conta, e não gera taxas.",
+            "from": "Assinando com",
+            "to": "Solicitado por",
+            "amount": "Valor",
+            "fee": "Taxa",
+            "message": "Mensagem",
+            "message_untrusted_note": "Fornecido pelo app. Este texto não é o que será assinado.",
+            "data": "Dados assinados"
+        },
+        "transaction_view": {
+            "invalid_title": "Transação inválida",
+            "invalid_body": "Não parece haver uma transação válida",
+            "transaction_failed_title": "Falha na assinatura"
+        },
+        "transactions": {
+            "title": "Revisar transações",
+            "title_one": "Revisar transação",
+            "title_many": "Revisar transações",
+            "multiple_transactions_title": "Várias transações",
+            "transactions_count_zero": "{{count}} transações",
+            "transactions_count_one": "{{count}} transação",
+            "transactions_count_other": "{{count}} transações",
+            "details": "Detalhes da transação",
+            "signing_with": "Conta de assinatura"
+        },
+        "external_transaction": {
+            "pill_label": "Assinada",
+            "sheet_title": "Outro signatário",
+            "sheet_body": "Esta transação já foi assinada ou será assinada por outra parte. Ela aparece aqui apenas para mostrar o contexto completo.",
+            "sheet_dismiss": "Entendi",
+            "detail_callout_title": "Outro signatário",
+            "detail_callout_body": "Esta transação já foi assinada ou será assinada por outra parte. Ela aparece aqui apenas para mostrar o contexto completo."
+        },
+        "unknown_request_type": {
+            "title": "Tipo de solicitação desconhecido",
+            "body": "O tipo de solicitação é desconhecido."
+        },
+        "signing_completed": {
+            "transaction_title": "Transação em processamento",
+            "transaction_body": "Sua transação foi enviada e está sendo processada.",
+            "data_title": "Assinatura de dados concluída",
+            "data_body": "Seus dados foram assinados e enviados ao aplicativo solicitante."
+        },
+        "signing_failed": {
+            "title": "Falha na assinatura",
+            "body": "Não foi possível concluir esta solicitação de assinatura. O aplicativo solicitante foi notificado."
+        },
+        "cannot_sign": {
+            "title": "Você não pode assinar por esta conta",
+            "body": "Esta é uma conta compartilhada e nenhuma das contas signatárias está na sua wallet. Adicione uma conta signatária para assinar transações por ela.",
+            "rekeyed_auth_missing_body": "Esta conta passou por rekey para {{authAddress}}, que não está nesta wallet, então ela não pode assinar transações. Importe a conta de autorização para assinar por ela.",
+            "rekeyed_auth_watch_body": "Esta conta passou por rekey para uma conta de observação, que não possui chave de assinatura. Importe a chave da conta de autorização para assinar por ela."
+        },
+        "transaction_request_faq": {
+            "title": "Perguntas frequentes sobre solicitações de transação",
+            "body": "Aplicativos externos, também chamados de dApps, podem iniciar solicitações de transação de forma independente da Pera Wallet. Revise essas transações com atenção antes de aprovar e assinar.",
+            "warning": "Todas as transações são irreversíveis. Como essas solicitações estão fora do controle da Pera Wallet, nunca aprove transações de um dApp que você não conhece."
+        },
+        "arc60_view": {
+            "title": "Solicitação de autenticação",
+            "description": "A assinatura comprova que você controla esta conta, mas não autoriza nenhuma ação on-chain.",
+            "domain": "Domínio",
+            "scope": "Escopo",
+            "scope_auth": "Autenticação",
+            "request_id": "ID da solicitação",
+            "on_behalf_of": "Assinando com",
+            "siwa_statement": "Declaração",
+            "siwa_uri": "URI",
+            "siwa_version": "Versão",
+            "siwa_chain_id": "Chain ID",
+            "siwa_nonce": "Nonce",
+            "siwa_issued_at": "Emitido em",
+            "siwa_expiration": "Expira em",
+            "siwa_not_before": "Não antes de",
+            "siwa_resources": "Recursos",
+            "siwa_invalid": "Esta solicitação de autenticação está malformada e não pode ser assinada.",
+            "origin_mismatch": "Este site está pedindo que você entre em outro domínio ({{domain}}). Continue somente se você confia nele.",
+            "show_details": "Mostrar detalhes",
+            "details_title": "Detalhes da solicitação de autenticação",
+            "details_description": "Revise todos os metadados desta solicitação de autenticação antes de aprovar."
+        }
+    },
+    "transactions": {
+        "common": {
+            "from": "De",
+            "to": "Para",
+            "fee": "Taxa",
+            "tx_fee": "Sua taxa de transação",
+            "total_fee": "Sua taxa total",
+            "round": "Round",
+            "amount": "Valor",
+            "asset": "Ativo",
+            "asset_id": "ID do ativo",
+            "asset_unavailable": "Ativo indisponível",
+            "date": "Data",
+            "note": "Nota da transação",
+            "view_raw_transaction": "Ver JSON",
+            "view_in_explorer": "Ver no Pera Explorer",
+            "view_asset_url": "Ver URL do ativo",
+            "view_note": "Ver nota",
+            "view_metadata": "Ver metadados",
+            "completed": "Concluída",
+            "failed": "Falhou",
+            "pending": "Pendente",
+            "raw_transaction": "Transação bruta"
+        },
+        "list_item": {
+            "send": "Enviar",
+            "receive": "Receber",
+            "swap": "Converter",
+            "opt_in": "Opt-in",
+            "opt_out": "Opt-out",
+            "asset_config": "Configuração de ativo",
+            "asset_freeze": "Congelamento de ativo",
+            "app_call": "Chamada de app",
+            "key_registration": "Registro de chave",
+            "default": "Transação",
+            "more_impacts": "Mostrar mais {{count}}"
+        },
+        "type": {
+            "pay": "Transação de pagamento",
+            "keyreg": "Transação de registro de chave",
+            "acfg": "Transação de configuração de ativo",
+            "axfer": "Transação de transferência de ativo",
+            "afrz": "Transação de congelamento de ativo",
+            "appl": "Transação de chamada de aplicativo",
+            "stpf": "Transação State Proof",
+            "hb": "Transação heartbeat",
+            "unknown": "Transação desconhecida"
+        },
+        "warning": {
+            "title": "Aviso",
+            "title_cta_group_zero": "{{count}} ações potencialmente perigosas encontradas",
+            "title_cta_group_one": "Ação potencialmente perigosa encontrada",
+            "title_cta_group_other": "{{count}} ações potencialmente perigosas encontradas",
+            "title_cta_zero": "{{count}} ações potencialmente perigosas encontradas",
+            "title_cta_one": "Ação potencialmente perigosa encontrada",
+            "title_cta_other": "{{count}} ações potencialmente perigosas encontradas",
+            "close_group_warning": "Este grupo de transações fecha uma das suas contas e envia os fundos restantes para outro endereço. Revise com atenção antes de assinar.",
+            "rekey_group_warning": "Este grupo de transações faz rekey de uma das suas contas para outro endereço, transferindo a propriedade da sua conta nesse processo.",
+            "close_warning": "Esta transação fecha a conta e envia os fundos restantes para o seguinte endereço: {{address}}",
+            "rekey_warning": "Esta transação faz rekey da conta para o seguinte endereço: {{address}}.",
+            "rekey_warning_bold": "Isso transfere o controle total da sua conta para outro endereço. Revise com atenção antes de assinar.",
+            "from_account": "De: {{address}}",
+            "rekey_confirm_title": "Ativar suporte a rekey",
+            "rekey_confirm_description": "Transações de rekey podem fazer você perder o controle da sua conta. Para confirmar esta transação, você precisa ativar o \"Suporte a rekey\" nas configurações do app.",
+            "rekey_confirm_go_to_settings": "Ir para configurações avançadas",
+            "rekey_are_you_sure_title": "Tem certeza?",
+            "rekey_are_you_sure_description": "Esta assinatura inclui uma transação de rekey, que dá a outro endereço o controle das suas contas. Confirme que você entende as consequências antes de continuar.",
+            "rekey_are_you_sure_continue": "Continuar",
+            "high_fee_warning": "Esta solicitação paga uma taxa de rede muito acima do normal, de {{fee}} ALGO. Confirme que você confia na origem antes de assinar.",
+            "asset_freeze_warning": "Esta transação congela ou descongela ativos do seguinte endereço: {{address}}.",
+            "asset_freeze_group_warning": "Este grupo de transações congela ou descongela ativos de uma das contas do grupo. Revise com atenção antes de assinar.",
+            "asset_freeze_warning_bold": "Isso pode impedir que a conta de destino movimente o ativo congelado. Revise com atenção antes de assinar.",
+            "asset_freeze_confirm_title": "Ativar suporte a congelamento de ativos",
+            "asset_freeze_confirm_description": "Transações de congelamento de ativos podem impedir que contas movimentem ativos específicos. Para confirmar esta transação, você precisa ativar o \"Suporte a congelamento de ativos\" nas configurações do app.",
+            "asset_freeze_confirm_go_to_settings": "Ir para configurações avançadas",
+            "asset_freeze_are_you_sure_title": "Tem certeza?",
+            "asset_freeze_are_you_sure_description": "Esta assinatura inclui uma transação de congelamento de ativo, que pode impedir que a conta de destino movimente o ativo especificado. Confirme que você entende as consequências antes de continuar.",
+            "asset_freeze_are_you_sure_continue": "Continuar"
+        },
+        "fee_warning": {
+            "title": "Taxas fora do padrão",
+            "body": "As taxas desta transação são maiores que a taxa de rede padrão. Isso pode ocorrer por congestionamento da rede ou por taxas adicionais exigidas pelo aplicativo."
+        },
+        "quantum_fee": {
+            "title": "Taxa de rede Quantum",
+            "body": "Contas Quantum usam assinaturas maiores, então suas transações exigem uma taxa de rede mais alta que a de contas padrão.",
+            "adjusted_label": "Ajustada",
+            "adjusted_title": "Taxa ajustada para assinatura Quantum",
+            "adjusted_body": "Este app solicitou uma taxa de {{originalFee}} ALGO, abaixo do mínimo para contas Quantum. A Pera aumentou a taxa para {{adjustedFee}} ALGO para que a rede aceite a transação. O app receberá a transação ajustada."
+        },
+        "unknown": {
+            "title": "Tipo de transação não suportado",
+            "body": "Este tipo de transação não é suportado."
+        },
+        "asset_transfer": {
+            "clawback_from": "Clawback de"
+        },
+        "asset_config": {
+            "name": "Nome",
+            "unit": "Nome da unidade",
+            "url": "URL",
+            "total": "Fornecimento total",
+            "decimals": "Casas decimais",
+            "default_frozen": "Congelado por padrão",
+            "manager": "Manager",
+            "reserve": "Reserve",
+            "freeze_addr": "Endereço de congelamento",
+            "clawback": "Endereço de clawback",
+            "metadata_hash": "Metadados"
+        },
+        "asset_freeze": {
+            "target": "Conta de destino",
+            "status": "Status",
+            "frozen": "Congelado",
+            "unfrozen": "Descongelado"
+        },
+        "key_reg": {
+            "valid_rounds": "Rounds válidos",
+            "key_dilution": "Diluição de chave",
+            "participation_key": "Chave de participação",
+            "selection_key": "Chave de seleção",
+            "status": "Status do registro",
+            "online": "Online",
+            "offline": "Offline"
+        },
+        "app_call": {
+            "app_id": "ID do aplicativo",
+            "details": "Detalhes avançados do aplicativo",
+            "on_completion": "On completion",
+            "args_count": "Argumentos",
+            "accounts": "Referências de contas",
+            "foreign_apps": "Apps externos",
+            "foreign_assets": "Ativos externos",
+            "boxes": "Referências de boxes",
+            "inner_transactions_zero": "{{count}} transações internas",
+            "inner_transactions_one": "{{count}} transação interna",
+            "inner_transactions_other": "{{count}} transações internas",
+            "inner_transactions_unavailable": "Conecte-se à internet para visualizar"
+        },
+        "group_transactions_zero": "{{count}} transações em grupo",
+        "group_transactions_one": "{{count}} transação em grupo",
+        "group_transactions_other": "{{count}} transações em grupo",
+        "group": {
+            "group_number": "Grupo de transações",
+            "group_id": "ID do grupo: {{groupId}}",
+            "transactions_count_zero": "{{count}} transações",
+            "transactions_count_one": "{{count}} transação",
+            "transactions_count_other": "{{count}} transações"
+        },
+        "summary": {
+            "payment_to": "Pagamento para",
+            "opt_in": "Opt-in do ativo {{asset}} para",
+            "opt_out": "Opt-out do ativo {{asset}} de",
+            "transfer": "Transferência do ativo {{asset}} para",
+            "clawback": "Clawback do ativo {{asset}} de",
+            "app_id": "ID do aplicativo: {{id}}"
+        },
+        "filter": {
+            "title": "Filtrar",
+            "all_time": "Todo o período",
+            "today": "Hoje",
+            "yesterday": "Ontem",
+            "last_week": "Semana passada",
+            "last_month": "Mês passado",
+            "custom_range": "Período personalizado"
+        }
+    },
+    "tabbar": {
+        "home": "Início",
+        "discover": "Explorar",
+        "swap": "Converter",
+        "fund": "Depositar",
+        "menu": "Menu"
+    },
+    "walletconnect": {
+        "request": {
+            "title": "{{name}} quer se conectar à sua conta",
+            "permissions_title_zero": "{{count}} permissões solicitadas",
+            "permissions_title_one": "{{count}} permissão solicitada",
+            "permissions_title_other": "{{count}} permissões solicitadas",
+            "permissions_request_accounts": "Ver o endereço e os saldos da sua wallet",
+            "permissions_sign_transaction": "Solicitar assinatura de transações",
+            "permissions_sign_data": "Solicitar assinatura de dados arbitrários",
+            "accounts_title": "SELECIONAR CONTAS",
+            "success_sheet_title": "Conexão estabelecida com {{name}}",
+            "success_sheet_body": "Volte para {{name}} para continuar e concluir sua operação. Você encontra todas as sessões conectadas na página de configurações dedicada.",
+            "networks_mainnet": "Mainnet",
+            "networks_testnet": "Testnet",
+            "networks_betanet": "Betanet",
+            "error_sheet_title": "Erro",
+            "error_sheet_body": "Sua solicitação do WalletConnect falhou com o seguinte erro:",
+            "error_sheet_retry": "Tente novamente voltando ao dApp onde você iniciou a solicitação.",
+            "error_network_mismatch": "Este app pediu para conectar em {{requested}}, mas a sua wallet está em {{active}}. Mude de rede nas configurações e tente novamente.",
+            "quantum_fee_delivery_failed": "Não foi possível concluir a solicitação. Este app pode não suportar as taxas de rede mais altas exigidas por contas Quantum."
+        },
+        "connection": {
+            "approve_delivery_failed": "Não foi possível contatar o dApp para confirmar a conexão. Verifique sua conexão com a internet e tente novamente."
+        },
+        "settings": {
+            "empty_title": "Nenhuma sessão do WalletConnect",
+            "empty_body": "Você não tem nenhuma sessão ativa do WalletConnect.",
+            "empty_button": "Escanear QR",
+            "last_active": "Última atividade em {{date}}",
+            "created_at": "Conectado em {{date}}",
+            "connected": "Conectado",
+            "disconnected": "Desconectado",
+            "clear_all": "Excluir todas as sessões",
+            "delete_title": "Excluir sessão",
+            "delete_body": "Tem certeza de que quer excluir esta sessão? Isso vai remover sua sessão ativa e desconectar você do app conectado.",
+            "delete_all_title": "Excluir todas as sessões",
+            "delete_all_body": "Tem certeza de que quer excluir todas as sessões? Isso vai remover todas as suas sessões ativas e desconectar você de todos os apps conectados.",
+            "disconnect_failed_title": "Não foi possível desconectar",
+            "unknown_peer": "Desconhecido",
+            "version": "Esta sessão usa o WalletConnect V{{version}}",
+            "connected_accounts": "Conectado com",
+            "permissions": "Permissões avançadas",
+            "permissions_info_title": "Permissões avançadas",
+            "permissions_info_body": "O WalletConnect é um protocolo de comunicação para web3 que permite que wallets e dApps se conectem e interajam com segurança. Em cada nova versão, o WalletConnect traz novas formas de tratar, assinar e/ou exibir solicitações de transação vindas de projetos de terceiros."
+        }
+    },
+    "staking": {
+        "title": "Faça staking na Algorand",
+        "subtitle": "Ajude a proteger o protocolo e receba recompensas de staking!",
+        "error_title": "Não foi possível carregar os projetos de staking",
+        "error_description": "Tente novamente em instantes.",
+        "retry": "Tentar novamente",
+        "empty_title": "Nenhum projeto de staking disponível",
+        "empty_body": "Não há projetos de staking para exibir agora. Volte mais tarde.",
+        "disclaimer": {
+            "title": "Termos de serviço",
+            "intro": "A Pera Wallet dá acesso a serviços de staking de terceiros. Ao usar esses serviços, você lida diretamente com um provedor que faz staking dos seus ativos digitais para a validação de transações na rede Algorand.",
+            "research_warning": "Antes de fazer staking, pesquise e analise a fundo para garantir que a decisão esteja alinhada aos seus objetivos financeiros e à sua tolerância a risco.",
+            "acknowledgment_prompt": "Para acessar os serviços de staking, você declara estar ciente e de acordo com o seguinte:",
+            "bullet_liability": "A Pera não controla nem assume responsabilidade pelo seu uso dos serviços de staking. Nós nos isentamos expressamente de responsabilidade por eventuais perdas relacionadas aos serviços de staking.",
+            "bullet_interruptions": "A Pera não pode garantir operações de staking ininterruptas. Interrupções do serviço podem ocorrer por atualizações, mudanças na rede, ações do provedor ou congestionamento.",
+            "bullet_availability": "A Pera não pode assegurar a disponibilidade de staking para um ativo digital específico. A viabilidade depende das regras da blockchain e dos termos do provedor terceirizado.",
+            "bullet_rewards_control": "A Pera não tem controle sobre as recompensas de staking fornecidas pela rede blockchain Algorand.",
+            "bullet_no_advice": "A Pera não oferece recomendações nem previsões sobre o valor ou a adequação de ativos digitais. A decisão de usar os serviços de staking é sua.",
+            "bullet_no_custody": "A Pera nunca assume a custódia de recompensas ou ativos e não tem controle sobre redes Proof-of-Stake em que direitos de validação possam ser delegados.",
+            "bullet_no_guarantee": "A Pera não garante que você receberá recompensas de staking nem taxas de recompensa específicas.",
+            "bullet_provider_failures": "A Pera não se responsabiliza por falhas do provedor de staking em transferir recompensas nem por perdas decorrentes de riscos como slashing.",
+            "bullet_no_error_free": "A Pera não garante o funcionamento ininterrupto ou sem erros dos serviços de staking, nem a prevenção de interrupções causadas por terceiros.",
+            "bullet_user_breaches": "A Pera não é responsável por violações cometidas por usuários em relação a acordos de staking com terceiros.",
+            "closing": "Ao optar por usar os serviços de staking, você reconhece estas condições e compreende os riscos inerentes.",
+            "terms_agreement": "Ao continuar, você concorda com estes <0>termos</0>.",
+            "accept": "Aceitar"
+        },
+        "type_liquid": "Liquid staking",
+        "type_pools": "Pools de staking",
+        "type_delegated": "Staking delegado",
+        "help": {
+            "title": "Tipos de staking",
+            "liquid_description": "Aplicativos de liquid staking permitem que os usuários façam staking dos seus Algo mantendo a liquidez. Normalmente, o processo pede que o usuário deposite Algo e receba novos tokens que representam a propriedade e o valor do Algo em staking, e que podem ser usados em todo o <0>ecossistema DeFi</0>.",
+            "pools_description": "Pools de staking permitem que grupos de pessoas participem do consenso em conjunto. Os usuários podem fazer staking de Algo em um validador e ser recompensados com base nas recompensas desse validador. Também há opções como staking em pools de liquidez de DEX.",
+            "delegated_description": "No staking delegado, um terceiro opera um node em seu nome, enquanto seu Algo permanece na sua wallet o tempo todo. É uma opção para quem quer ajudar a proteger a rede e receber recompensas, mas não tem o conhecimento nem os recursos para operar o próprio node."
+        }
+    },
+    "swap": {
+        "introduction": {
+            "title": "Converter na Pera",
+            "description": "A Pera Wallet oferece uma forma rápida e fácil de converter ativos. Com o P.E.R.A., as solicitações de conversão são roteadas de forma inteligente entre várias exchanges descentralizadas baseadas em Algorand para garantir o melhor preço disponível.",
+            "powered_by": "Com tecnologia ",
+            "powered_by_brand": "P.E.R.A.",
+            "start_swapping": "Começar a converter",
+            "terms_agreement": "Ao continuar, você concorda com os <0>Termos de Serviço</0> do nosso parceiro de swap"
+        },
+        "form": {
+            "swap": "Converter",
+            "insufficient_balance": "O valor excede seu saldo disponível.",
+            "no_balance_title": "Nada para converter",
+            "no_balance_body": "Esta conta não possui {{unit}}.",
+            "percentage_error_title": "Não foi possível calcular o valor",
+            "percentage_error_body": "Tente novamente em instantes.",
+            "you_pay": "Você paga",
+            "you_receive": "Você recebe",
+            "to": "Para",
+            "balance_label": "Saldo: ",
+            "max": "MÁX",
+            "select_asset": "Selecionar"
+        },
+        "asset_selection": {
+            "swap_from_title": "Converter de",
+            "swap_to_title": "Converter para",
+            "search_placeholder": "Buscar por nome ou ID",
+            "no_results_title": "Nenhum ativo encontrado",
+            "no_results_body": "Nenhum ativo corresponde à sua busca"
+        },
+        "configuration": {
+            "title": "Configurações de conversão",
+            "apply": "Aplicar",
+            "balance_percentage": "Porcentagem do saldo",
+            "balance_custom_hint": "Definir porcentagem personalizada",
+            "balance_error": "A porcentagem do saldo deve estar entre {{min}} e {{max}}",
+            "slippage_tolerance": "Tolerância de slippage",
+            "slippage_custom_hint": "Definir slippage personalizado",
+            "slippage_error": "O slippage deve estar entre {{min}} e {{max}}",
+            "primary_currency": "Moeda principal",
+            "use_local_currency": "Usar moeda local",
+            "custom": "Personalizado",
+            "max": "MÁX"
+        },
+        "quote": {
+            "refreshed_title": "Cotação atualizada",
+            "refreshed_body": "Aquela cotação expirou, então buscamos uma nova taxa de câmbio. Confira e confirme novamente.",
+            "rate": "Taxa de câmbio",
+            "price_impact": "Impacto no preço",
+            "slippage_tolerance": "Tolerância de slippage",
+            "pera_fee": "Taxa da Pera",
+            "provider": "Provedor",
+            "minimum_received": "Mínimo recebido",
+            "confirm_swap": "Confirmar conversão",
+            "slide_to_confirm": "Arraste para confirmar",
+            "high_price_impact_warning": "Esta conversão tem um impacto alto no preço. Você pode receber bem menos tokens do que o esperado.",
+            "quote_error": "Não foi possível obter cotações. Tente novamente."
+        },
+        "execution": {
+            "error_title": "Falha na conversão",
+            "error_body": "Algo deu errado durante a conversão. Tente novamente.",
+            "success_title": "Conversão concluída",
+            "success_body": "Conversão de {{fromAsset}} para {{toAsset}} concluída com sucesso",
+            "user_rejected": "Conversão cancelada",
+            "pending_cosign_title": "Solicitação de conversão enviada",
+            "pending_cosign_body": "Sua conversão precisa de outra assinatura. Ela será concluída quando o outro signatário aprovar na caixa de entrada dele."
+        },
+        "signing": {
+            "source_name": "Converter",
+            "source_description": "Confirme as transações para concluir sua conversão"
+        },
+        "info": {
+            "slippage_tolerance": "A diferença máxima entre o preço esperado e o preço de execução. Uma tolerância maior aumenta a chance de a conversão dar certo, mas pode resultar em uma taxa de câmbio menos favorável.",
+            "price_impact": "A diferença entre o preço de mercado e o preço estimado devido ao tamanho da operação. Operações maiores costumam ter um impacto maior no preço."
+        },
+        "provider": {
+            "title_auto": "Provedor (melhor preço disponível)",
+            "title_manual": "Provedor",
+            "change_title": "Alterar provedor",
+            "apply": "Aplicar",
+            "auto_label": "Auto",
+            "auto_description": "Melhor preço disponível"
+        },
+        "history": {
+            "title": "Histórico de conversões",
+            "widget": {
+                "title": "Histórico de conversões",
+                "see_all": "Ver tudo",
+                "error": "Não foi possível carregar o histórico de conversões."
+            },
+            "list": {
+                "item": {
+                    "description": "Converteu {{amountIn}} {{unitIn}} por "
+                },
+                "empty": {
+                    "title": "Nenhuma conversão ainda",
+                    "body": "Seu histórico de conversões aparecerá aqui."
+                },
+                "error": {
+                    "title": "Algo deu errado",
+                    "body": "Não foi possível carregar seu histórico de conversões. Tente novamente."
+                }
+            }
+        },
+        "top_pairs": {
+            "title": "Top 5 conversões",
+            "volume_24h": "Volume (24h)",
+            "error": "Não foi possível carregar as principais conversões"
+        }
+    },
+    "onramp": {
+        "tabs": {
+            "fund": "Depositar",
+            "history": "Histórico"
+        },
+        "testnet": {
+            "title": "Indisponível na TestNet",
+            "body": "Adicionar fundos à sua wallet só está disponível na MainNet. Mude para a MainNet para comprar ALGO ou USDC."
+        },
+        "region": {
+            "unknown": "--",
+            "info_title": "Seleção de país",
+            "info_body": "Identificamos sua localização como <0>{{country}}</0>. Você não pode alterar o país, mas se isso estiver incorreto, verifique se sua VPN está ativada.",
+            "country_fallback": "sua localização atual",
+            "info_body_secondary": "Com base no seu país, algumas opções de cripto ou fiat podem ser limitadas."
+        },
+        "introduction": {
+            "title": "Depositar",
+            "new_chip": "NOVO",
+            "continue": "Continuar",
+            "feature_buy": "Compre ALGO ou USDC com fiat ou cripto",
+            "feature_swap": "Troque ativos de outras redes por ativos no Algorand",
+            "feature_portal": "Um único portal para on-ramps e swaps cross-chain"
+        },
+        "form": {
+            "proceed": "Prosseguir",
+            "you_pay": "Você paga",
+            "you_receive": "Você recebe",
+            "sender_address_optional": "Endereço do remetente (opcional)",
+            "enter_sender_address": "Digite seu endereço {{name}}",
+            "provider": "Provedor",
+            "payment_method": "Método de pagamento",
+            "choose_asset": "Escolha um ativo",
+            "min": "MÍN",
+            "max": "MÁX",
+            "no_payment_methods": "Nenhum método de pagamento disponível para seu dispositivo.",
+            "amount_below_min": "O valor deve ser maior que {{min}}",
+            "amount_above_max": "O valor deve ser menor que {{max}}"
+        },
+        "pair_selection": {
+            "title_to": "Para",
+            "title_from": "De",
+            "search": "Buscar",
+            "empty": "Nenhum token disponível"
+        },
+        "source_selection": {
+            "title": "De",
+            "search_placeholder": "Buscar ativos fiat ou cripto",
+            "filter_all": "Todos",
+            "filter_fiat": "Fiat",
+            "filter_crypto": "Cripto",
+            "fiat_section": "Fiat",
+            "crypto_section": "Cripto",
+            "see_all_fiat": "Ver todas as moedas fiat",
+            "network_suffix": "{{symbol}} · rede {{network}}",
+            "empty": "Nenhum ativo disponível"
+        },
+        "provider": {
+            "title": "Selecionar provedor",
+            "best_offer": "Melhor oferta"
+        },
+        "payment_method": {
+            "title": "Método de pagamento",
+            "apply": "Aplicar"
+        },
+        "sender_address": {
+            "title": "Endereço do remetente",
+            "body": "Este é o endereço que será usado para enviar os fundos ao destinatário. É opcional, mas pode agilizar o processo e ajudar em caso de dúvidas de suporte relacionadas a esta compra.",
+            "placeholder": "Digite seu endereço de remetente",
+            "confirm": "Confirmar"
+        },
+        "order_review": {
+            "xo_title": "Revisão da conversão",
+            "pay_in_address": "Endereço de pagamento",
+            "send_to_address": "Envie {{amount}} para este endereço.",
+            "address": "Endereço",
+            "address_tag_label": "Tag do endereço / memo",
+            "cancel_order": "Cancelar pedido",
+            "keep_order": "Manter pedido",
+            "cancel_confirm_title": "Tem certeza?",
+            "cancel_confirm_body": "Isso cancelará o processo de adicionar fundos.",
+            "cancel_success": "Pedido cancelado",
+            "need_help": "Precisa de ajuda com seu pedido?",
+            "contact_provider": "Falar com {{name}}"
+        },
+        "order_details": {
+            "title": "Detalhes do pedido",
+            "swapped": "Convertido",
+            "order_id": "ID do pedido",
+            "source_amount": "Valor de origem",
+            "destination_amount": "Valor de destino",
+            "network": "Rede",
+            "payment_method": "Método de pagamento",
+            "created_at": "Criado em",
+            "exchange_rate": "Taxa de câmbio efetiva",
+            "to_address": "Endereço de destino"
+        },
+        "terms": {
+            "title": "Termos e condições",
+            "updated": "Atualizado em abril de 2026",
+            "body": "O serviço que permite a compra de Algo com outros ativos cripto é fornecido por meio de um serviço operado pela Exodus Movement LLC. Esses pedidos são executados exclusivamente pela Exodus, sob os termos da Exodus. A Pera fornece uma interface de wallet não custodial e não executa nem controla conversões. A Pera não é parte das transações de conversão nem custodia ativos para elas.",
+            "agreement": "Ao continuar, você concorda com os <0>Termos</0> e a <1>Política de Privacidade</1> da Exodus e, quanto à Pera, reconhece os <2>Termos.</2>",
+            "accept": "Aceitar e continuar"
+        },
+        "status": {
+            "pending": "Pendente",
+            "in_progress": "Em andamento",
+            "completed": "Concluído",
+            "failed": "Falhou",
+            "cancelled": "Cancelado"
+        },
+        "history": {
+            "filter_all": "Todos",
+            "for": "por",
+            "empty_title": "Nenhuma transação ainda",
+            "empty_body": "Suas transações de compra aparecerão aqui.",
+            "error_title": "Algo deu errado",
+            "error_body": "Não foi possível carregar seu histórico de compras. Tente novamente."
+        }
+    },
+    "ledger": {
+        "pair": {
+            "title": "Emparelhar com Ledger",
+            "description": "Verifique se o seu Ledger está desbloqueado e com o Bluetooth ativado",
+            "cta": "Emparelhar com Ledger",
+            "how_does_it_work": "Como funciona?",
+            "support_url": "https://support.perawallet.app/en/article/pairing-your-ledger-device-nano-x-stax-and-flex-1lxp9qm/"
+        },
+        "how_does_it_work": {
+            "title": "Emparelhar com Ledger",
+            "step_1": "Verifique se o seu dispositivo Ledger está ligado e com o Bluetooth ativado.",
+            "step_2": "Instale o app Algorand (versão 1.2.9 ou posterior) no seu Ledger.",
+            "step_3": "Depois de confirmar o emparelhamento no seu dispositivo Ledger, abra o app Algorand.",
+            "step_4": "Verifique se o Bluetooth está ativado no seu celular."
+        },
+        "connecting": {
+            "title": "Conexão com o Ledger",
+            "subtitle": "Aguardando a conexão do Ledger.",
+            "cancel": "Cancelar"
+        },
+        "instructions": {
+            "title": "Emparelhar dispositivo Ledger",
+            "description": "Siga estas etapas para conectar o seu dispositivo Ledger:",
+            "step_1": "Ligue o seu dispositivo Ledger",
+            "step_2": "Abra o app Algorand no seu Ledger",
+            "step_3": "Mantenha o seu dispositivo Ledger por perto",
+            "continue": "Continuar",
+            "permission_required_title": "Permissão de Bluetooth necessária",
+            "permission_required_message": "A Pera precisa da permissão de Bluetooth para se comunicar com o seu dispositivo Ledger. Ative-a nas configurações.",
+            "usb": {
+                "title": "Conectar o Ledger via USB",
+                "description": "Siga estas etapas para conectar o seu dispositivo Ledger via USB:",
+                "step_1": "Conecte o seu dispositivo Ledger ao celular com um cabo USB",
+                "step_2": "Desbloqueie o seu Ledger e abra o app Algorand",
+                "step_3": "Permita o acesso USB se o celular pedir e toque em continuar"
+            }
+        },
+        "scan": {
+            "title": "Buscando dispositivos",
+            "description": "Selecione um dispositivo Ledger para conectar.",
+            "transport_ble": "Bluetooth",
+            "transport_usb": "USB",
+            "retry": "Buscar novamente",
+            "error": "Falha na busca. Verifique se o Bluetooth está ativado e tente novamente.",
+            "usb_error": "Nenhum dispositivo Ledger encontrado via USB. Verifique se ele está conectado e desbloqueado e tente novamente.",
+            "location_services_disabled": "Ative a localização nas configurações do dispositivo para buscar dispositivos Ledger próximos.",
+            "open_location_settings": "Abrir configurações de localização",
+            "grant_permission": "Conceder permissão",
+            "open_settings": "Abrir configurações",
+            "web_start_title": "Pronto para buscar",
+            "web_start_body": "O seu navegador vai pedir que você selecione o seu dispositivo Ledger.",
+            "web_start_button": "Buscar Ledger",
+            "popup_launch_title": "Pronto para emparelhar",
+            "popup_launch_body": "Isso abre uma nova aba do navegador onde você pode buscar e conectar o seu dispositivo Ledger.",
+            "popup_launch_button": "Iniciar emparelhamento",
+            "bluetooth": {
+                "off_title": "Erro de Bluetooth",
+                "off": "O Bluetooth precisa estar ativado no seu dispositivo para buscar dispositivos Ledger próximos.",
+                "unauthorized_title": "Erro na busca",
+                "unauthorized": "É preciso conceder a permissão de Bluetooth para buscar Ledgers próximos.",
+                "unsupported_title": "Dispositivo não compatível",
+                "unsupported": "O dispositivo ao qual você está tentando se conectar não é compatível com a Pera Wallet."
+            }
+        },
+        "fetch_accounts": {
+            "connecting": "Conectando a {{deviceName}}...",
+            "discovering": "Buscando contas no seu dispositivo Ledger...",
+            "progress": "Verificando a conta {{current}}...",
+            "retry": "Tentar novamente"
+        },
+        "select_accounts": {
+            "title_zero": "{{count}} contas encontradas",
+            "title_one": "{{count}} conta encontrada",
+            "title_other": "{{count}} contas encontradas",
+            "description": "Este dispositivo Ledger pode assinar transações das contas a seguir. Selecione as contas para adicionar à sua Pera Wallet.",
+            "select_all": "Selecionar todas",
+            "already_imported": "Já importada",
+            "cta_zero": "Verificar contas selecionadas",
+            "cta_one": "Verificar conta selecionada",
+            "cta_other": "Verificar contas selecionadas",
+            "cta_done": "Concluir",
+            "find_another_account": "Encontrar outra conta",
+            "rekeyed_label": "Com rekey",
+            "rekeyed_account_title": "Conta com rekey",
+            "scanning_rekeyed": "Escaneando contas com rekey…",
+            "watch_account_label": "Conta de observação"
+        },
+        "account_info": {
+            "account_details": "Detalhes da conta",
+            "assets": "Ativos",
+            "default_title": "Ledger #{{index}}",
+            "can_be_signed_by": "Pode ser assinada por",
+            "can_sign_for": "Pode assinar por estas",
+            "error": "Não foi possível carregar as informações da conta.",
+            "retry": "Tentar novamente"
+        },
+        "verify": {
+            "title": "Verificar endereços das contas pelo Ledger",
+            "description": "Os endereços das contas a seguir serão exibidos no seu dispositivo Ledger. Compare e verifique cuidadosamente cada endereço para concluir o emparelhamento do dispositivo.",
+            "awaiting": "Aguardando verificação",
+            "verified": "Conta verificada",
+            "add_accounts_zero": "Adicionar contas verificadas",
+            "add_accounts_one": "Adicionar conta verificada",
+            "add_accounts_other": "Adicionar contas verificadas",
+            "upgrade_watch_title_zero": "Atualizar contas de observação?",
+            "upgrade_watch_title_one": "Atualizar conta de observação?",
+            "upgrade_watch_title_other": "Atualizar contas de observação?",
+            "upgrade_watch_body_zero": "{{count}} desses endereços já estão na sua wallet como contas de observação. Ao importá-los, eles serão atualizados para contas Ledger capazes de assinar transações. Os nomes e as configurações serão mantidos.",
+            "upgrade_watch_body_one": "Este endereço já está na sua wallet como conta de observação. Ao importá-lo, ele será atualizado para uma conta Ledger capaz de assinar transações. O nome e as configurações serão mantidos.",
+            "upgrade_watch_body_other": "{{count}} desses endereços já estão na sua wallet como contas de observação. Ao importá-los, eles serão atualizados para contas Ledger capazes de assinar transações. Os nomes e as configurações serão mantidos.",
+            "upgrade_watch_confirm": "Atualizar"
+        },
+        "signing": {
+            "cancel": "Cancelar",
+            "retry": "Tentar novamente",
+            "footnote": "A verificação continuará no Ledger. Para cancelar a verificação, cancele no Ledger.",
+            "awaitingApproval": {
+                "title": "Aprovação no Ledger",
+                "body": "Revise e assine a transação no seu dispositivo Ledger {{deviceName}}.",
+                "body_noDevice": "Revise e assine a transação no seu dispositivo Ledger."
+            },
+            "awaitingApprovalData": {
+                "title": "Aprovar no seu Ledger",
+                "body": "Revise e aprove a solicitação de assinatura no seu dispositivo Ledger {{deviceName}}.",
+                "body_noDevice": "Revise e aprove a solicitação de assinatura no seu dispositivo Ledger."
+            },
+            "progress": {
+                "label": "Assinando {{current}} de {{total}}…"
+            }
+        },
+        "errors": {
+            "app_not_open": "O app Algorand não está aberto no seu dispositivo Ledger.",
+            "app_not_open_title": "Abra o app Algorand",
+            "connection_lost": "A conexão com o dispositivo Ledger foi perdida.",
+            "connection_lost_title": "Dispositivo desconectado",
+            "user_rejected": "A operação foi recusada no dispositivo Ledger.",
+            "user_rejected_title": "Cancelado no dispositivo",
+            "bluetooth_disabled": "O Bluetooth não está ativado. Ative o Bluetooth e tente novamente.",
+            "bluetooth_disabled_title": "Bluetooth desativado",
+            "bluetooth_permission_title": "Permissão necessária",
+            "bluetooth_permission": "É preciso conceder a permissão de busca via Bluetooth para buscar Ledgers próximos.",
+            "scan_timeout_title": "Não encontramos o seu Ledger",
+            "scan_timeout": "Verifique se o dispositivo está desbloqueado, por perto e com o Bluetooth ativado.",
+            "connection_failed": "Não foi possível conectar ao dispositivo Ledger.",
+            "connection_failed_title": "Falha na conexão",
+            "signing_failed_title": "Falha na assinatura",
+            "signing_failed": "Não foi possível assinar a transação. Tente novamente.",
+            "transmission_error_title": "Erro de transmissão",
+            "transmission_error": "Não conseguimos enviar a transação para o dispositivo Ledger. Tente novamente.",
+            "public_key_read_failed_title": "Erro de transmissão",
+            "public_key_read_failed": "Não conseguimos receber a chave pública do seu dispositivo Ledger. Tente novamente.",
+            "network_error_title": "Erro de conexão",
+            "network_error": "Ocorreu um erro de rede. Tente novamente.",
+            "unsupported_device_title": "Dispositivo não compatível",
+            "unsupported_device": "Este dispositivo Ledger não é compatível.",
+            "app_outdated_title": "Atualize o app Algorand do seu Ledger",
+            "app_outdated": "O app Algorand do seu Ledger é muito antigo para assinar esta solicitação. Abra o Ledger Live, atualize o app Algorand e tente novamente.",
+            "timeout": "O seu dispositivo Ledger não respondeu em tempo. Tente novamente.",
+            "timeout_title": "Tempo esgotado",
+            "interrupted_title": "A assinatura foi interrompida",
+            "interrupted": "O app foi para o segundo plano durante a assinatura, então a sessão foi encerrada por segurança. Tente novamente para reconectar ao seu Ledger e assinar.",
+            "address_mismatch": "O endereço no seu dispositivo Ledger não corresponde ao endereço esperado. Verifique se você selecionou a conta correta.",
+            "address_mismatch_title": "Endereço divergente",
+            "retry": "Tentar novamente",
+            "troubleshoot": "Solucionar problemas",
+            "troubleshooting_link": "Problemas de conexão com o Ledger?",
+            "device_locked_title": "Ledger bloqueado",
+            "device_locked": "O seu dispositivo Ledger está bloqueado. Desbloqueie-o com o código PIN e tente novamente.",
+            "usb_no_device_title": "Nenhum Ledger encontrado",
+            "usb_no_device": "Nenhum dispositivo Ledger está conectado via USB. Conecte-o, desbloqueie-o e tente novamente.",
+            "usb_multiple_devices_title": "Vários Ledgers conectados",
+            "usb_multiple_devices": "Mais de um Ledger está conectado via USB. Desconecte os outros e tente novamente — o USB só funciona com um único dispositivo.",
+            "no_accounts_found_title": "Nenhuma conta encontrada",
+            "no_accounts_found": "Nenhuma conta foi encontrada neste dispositivo Ledger.",
+            "location_services_disabled_title": "Localização desativada",
+            "location_services_disabled": "Os serviços de localização precisam estar ativados para buscar dispositivos Ledger próximos. Ative-os e tente novamente.",
+            "provider_unavailable_title": "Conexão indisponível",
+            "provider_unavailable": "O serviço de conexão com hardware wallet está indisponível. Reinicie a Pera e tente novamente."
+        },
+        "troubleshooting": {
+            "title": "Problemas de conexão com o Ledger?",
+            "description": "Se você está com problemas para emparelhar ou usar o seu dispositivo Ledger, confira as etapas abaixo.",
+            "pairing_steps_title": "Etapas de emparelhamento",
+            "pairing_step_1": "Verifique se o seu dispositivo Ledger está ligado e com o Bluetooth ativado.",
+            "pairing_step_2": "Abra o app Algorand no seu Ledger.",
+            "pairing_step_3": "Se o app Algorand não estiver instalado, instale-o pelo Ledger Live.",
+            "common_issues_title": "Problemas comuns",
+            "issue_unlocked": "Verifique se o dispositivo está desbloqueado, por perto e com o Bluetooth ativado. Se o problema persistir, remova o dispositivo das configurações de Bluetooth do celular e emparelhe novamente seguindo as instruções da Pera Wallet.",
+            "issue_bluetooth": "O Bluetooth precisa estar ativado no seu dispositivo para buscar dispositivos Ledger próximos.",
+            "issue_permissions": "É preciso conceder a permissão de busca via Bluetooth para buscar Ledgers próximos.",
+            "issue_unsupported": "A Pera é compatível com Ledger Nano X, Stax, Flex e Nano Gen5.",
+            "done": "Entendi",
+            "tip_unlocked": "Verifique se o dispositivo está desbloqueado",
+            "tip_nearby": "Verifique se o dispositivo está por perto",
+            "tip_bluetooth": "Verifique se o Bluetooth está ativado",
+            "tip_app_open": "Verifique se o app Algorand está aberto no seu Ledger",
+            "tip_repair": "Se o problema persistir, tente emparelhar o dispositivo novamente nas configurações"
+        },
+        "scan_header": {
+            "having_issues": "Com problemas?"
+        },
+        "default_account_name": "Ledger {{number}}"
+    },
+    "countries": {
+        "AC": "Ilha de Ascensão",
+        "AD": "Andorra",
+        "AE": "Emirados Árabes Unidos",
+        "AF": "Afeganistão",
+        "AG": "Antígua e Barbuda",
+        "AI": "Anguilla",
+        "AL": "Albânia",
+        "AM": "Armênia",
+        "AN": "Curaçao",
+        "AO": "Angola",
+        "AQ": "Antártida",
+        "AR": "Argentina",
+        "AS": "Samoa Americana",
+        "AT": "Áustria",
+        "AU": "Austrália",
+        "AW": "Aruba",
+        "AX": "Ilhas Åland",
+        "AZ": "Azerbaijão",
+        "BA": "Bósnia e Herzegovina",
+        "BB": "Barbados",
+        "BD": "Bangladesh",
+        "BE": "Bélgica",
+        "BF": "Burquina Faso",
+        "BG": "Bulgária",
+        "BH": "Bahrein",
+        "BI": "Burundi",
+        "BJ": "Benin",
+        "BL": "São Bartolomeu",
+        "BM": "Bermudas",
+        "BN": "Brunei",
+        "BO": "Bolívia",
+        "BQ": "Países Baixos Caribenhos",
+        "BR": "Brasil",
+        "BS": "Bahamas",
+        "BT": "Butão",
+        "BU": "Mianmar (Birmânia)",
+        "BV": "Ilha Bouvet",
+        "BW": "Botsuana",
+        "BY": "Belarus",
+        "BZ": "Belize",
+        "CA": "Canadá",
+        "CC": "Ilhas Cocos (Keeling)",
+        "CD": "Congo - Kinshasa",
+        "CF": "República Centro-Africana",
+        "CG": "Congo - Brazzaville",
+        "CH": "Suíça",
+        "CI": "Costa do Marfim",
+        "CK": "Ilhas Cook",
+        "CL": "Chile",
+        "CM": "Camarões",
+        "CN": "China",
+        "CO": "Colômbia",
+        "CP": "Ilha de Clipperton",
+        "CQ": "Sark",
+        "CR": "Costa Rica",
+        "CS": "Sérvia",
+        "CU": "Cuba",
+        "CV": "Cabo Verde",
+        "CW": "Curaçao",
+        "CX": "Ilha Christmas",
+        "CY": "Chipre",
+        "CZ": "Tchéquia",
+        "DD": "Alemanha",
+        "DE": "Alemanha",
+        "DG": "Diego Garcia",
+        "DJ": "Djibuti",
+        "DK": "Dinamarca",
+        "DM": "Dominica",
+        "DO": "República Dominicana",
+        "DY": "Benin",
+        "DZ": "Argélia",
+        "EA": "Ceuta e Melilla",
+        "EC": "Equador",
+        "EE": "Estônia",
+        "EG": "Egito",
+        "EH": "Saara Ocidental",
+        "ER": "Eritreia",
+        "ES": "Espanha",
+        "ET": "Etiópia",
+        "EU": "União Europeia",
+        "EZ": "Zona do Euro",
+        "FI": "Finlândia",
+        "FJ": "Fiji",
+        "FK": "Ilhas Malvinas",
+        "FM": "Micronésia",
+        "FO": "Ilhas Faroe",
+        "FR": "França",
+        "FX": "França",
+        "GA": "Gabão",
+        "GB": "Reino Unido",
+        "GD": "Granada",
+        "GE": "Geórgia",
+        "GF": "Guiana Francesa",
+        "GG": "Guernsey",
+        "GH": "Gana",
+        "GI": "Gibraltar",
+        "GL": "Groenlândia",
+        "GM": "Gâmbia",
+        "GN": "Guiné",
+        "GP": "Guadalupe",
+        "GQ": "Guiné Equatorial",
+        "GR": "Grécia",
+        "GS": "Geórgia do Sul e Ilhas Sandwich do Sul",
+        "GT": "Guatemala",
+        "GU": "Guam",
+        "GW": "Guiné-Bissau",
+        "GY": "Guiana",
+        "HK": "Hong Kong",
+        "HM": "Ilhas Heard e McDonald",
+        "HN": "Honduras",
+        "HR": "Croácia",
+        "HT": "Haiti",
+        "HU": "Hungria",
+        "HV": "Burquina Faso",
+        "IC": "Ilhas Canárias",
+        "ID": "Indonésia",
+        "IE": "Irlanda",
+        "IL": "Israel",
+        "IM": "Ilha de Man",
+        "IN": "Índia",
+        "IO": "Território Britânico do Oceano Índico",
+        "IQ": "Iraque",
+        "IR": "Irã",
+        "IS": "Islândia",
+        "IT": "Itália",
+        "JE": "Jersey",
+        "JM": "Jamaica",
+        "JO": "Jordânia",
+        "JP": "Japão",
+        "KE": "Quênia",
+        "KG": "Quirguistão",
+        "KH": "Camboja",
+        "KI": "Quiribati",
+        "KM": "Comores",
+        "KN": "São Cristóvão e Névis",
+        "KP": "Coreia do Norte",
+        "KR": "Coreia do Sul",
+        "KW": "Kuwait",
+        "KY": "Ilhas Cayman",
+        "KZ": "Cazaquistão",
+        "LA": "Laos",
+        "LB": "Líbano",
+        "LC": "Santa Lúcia",
+        "LI": "Liechtenstein",
+        "LK": "Sri Lanka",
+        "LR": "Libéria",
+        "LS": "Lesoto",
+        "LT": "Lituânia",
+        "LU": "Luxemburgo",
+        "LV": "Letônia",
+        "LY": "Líbia",
+        "MA": "Marrocos",
+        "MC": "Mônaco",
+        "MD": "Moldova",
+        "ME": "Montenegro",
+        "MF": "São Martinho",
+        "MG": "Madagascar",
+        "MH": "Ilhas Marshall",
+        "MK": "Macedônia do Norte",
+        "ML": "Mali",
+        "MM": "Mianmar (Birmânia)",
+        "MN": "Mongólia",
+        "MO": "Macau",
+        "MP": "Ilhas Marianas do Norte",
+        "MQ": "Martinica",
+        "MR": "Mauritânia",
+        "MS": "Montserrat",
+        "MT": "Malta",
+        "MU": "Maurício",
+        "MV": "Maldivas",
+        "MW": "Malawi",
+        "MX": "México",
+        "MY": "Malásia",
+        "MZ": "Moçambique",
+        "NA": "Namíbia",
+        "NC": "Nova Caledônia",
+        "NE": "Níger",
+        "NF": "Ilha Norfolk",
+        "NG": "Nigéria",
+        "NH": "Vanuatu",
+        "NI": "Nicarágua",
+        "NL": "Países Baixos",
+        "NO": "Noruega",
+        "NP": "Nepal",
+        "NR": "Nauru",
+        "NU": "Niue",
+        "NZ": "Nova Zelândia",
+        "OM": "Omã",
+        "PA": "Panamá",
+        "PE": "Peru",
+        "PF": "Polinésia Francesa",
+        "PG": "Papua-Nova Guiné",
+        "PH": "Filipinas",
+        "PK": "Paquistão",
+        "PL": "Polônia",
+        "PM": "São Pedro e Miquelão",
+        "PN": "Ilhas Pitcairn",
+        "PR": "Porto Rico",
+        "PS": "Territórios palestinos",
+        "PT": "Portugal",
+        "PW": "Palau",
+        "PY": "Paraguai",
+        "QA": "Catar",
+        "QO": "Oceania Remota",
+        "RE": "Reunião",
+        "RH": "Zimbábue",
+        "RO": "Romênia",
+        "RS": "Sérvia",
+        "RU": "Rússia",
+        "RW": "Ruanda",
+        "SA": "Arábia Saudita",
+        "SB": "Ilhas Salomão",
+        "SC": "Seicheles",
+        "SD": "Sudão",
+        "SE": "Suécia",
+        "SG": "Singapura",
+        "SH": "Santa Helena",
+        "SI": "Eslovênia",
+        "SJ": "Svalbard e Jan Mayen",
+        "SK": "Eslováquia",
+        "SL": "Serra Leoa",
+        "SM": "San Marino",
+        "SN": "Senegal",
+        "SO": "Somália",
+        "SR": "Suriname",
+        "SS": "Sudão do Sul",
+        "ST": "São Tomé e Príncipe",
+        "SU": "Rússia",
+        "SV": "El Salvador",
+        "SX": "Sint Maarten",
+        "SY": "Síria",
+        "SZ": "Essuatíni",
+        "TA": "Tristão da Cunha",
+        "TC": "Ilhas Turcas e Caicos",
+        "TD": "Chade",
+        "TF": "Territórios Franceses do Sul",
+        "TG": "Togo",
+        "TH": "Tailândia",
+        "TJ": "Tadjiquistão",
+        "TK": "Tokelau",
+        "TL": "Timor-Leste",
+        "TM": "Turcomenistão",
+        "TN": "Tunísia",
+        "TO": "Tonga",
+        "TP": "Timor-Leste",
+        "TR": "Turquia",
+        "TT": "Trinidad e Tobago",
+        "TV": "Tuvalu",
+        "TW": "Taiwan",
+        "TZ": "Tanzânia",
+        "UA": "Ucrânia",
+        "UG": "Uganda",
+        "UK": "Reino Unido",
+        "UM": "Ilhas Menores Distantes dos EUA",
+        "UN": "Nações Unidas",
+        "US": "Estados Unidos",
+        "UY": "Uruguai",
+        "UZ": "Uzbequistão",
+        "VA": "Cidade do Vaticano",
+        "VC": "São Vicente e Granadinas",
+        "VD": "Vietnã",
+        "VE": "Venezuela",
+        "VG": "Ilhas Virgens Britânicas",
+        "VI": "Ilhas Virgens Americanas",
+        "VN": "Vietnã",
+        "VU": "Vanuatu",
+        "WF": "Wallis e Futuna",
+        "WS": "Samoa",
+        "XA": "Pseudoacentos",
+        "XB": "Pseudo-Bidi",
+        "XK": "Kosovo",
+        "YD": "Iêmen",
+        "YE": "Iêmen",
+        "YT": "Mayotte",
+        "YU": "Sérvia",
+        "ZA": "África do Sul",
+        "ZM": "Zâmbia",
+        "ZR": "Congo - Kinshasa",
+        "ZW": "Zimbábue"
+    },
+    "vault": {
+        "create_password": {
+            "title": "Criar uma senha",
+            "description": "Defina uma senha para proteger sua extensão da Pera Wallet. Você precisará dela cada vez que abrir a extensão.",
+            "password_placeholder": "Digite a senha",
+            "confirm_placeholder": "Confirme a senha",
+            "submit_button": "Criar senha",
+            "error_too_short": "A senha deve ter pelo menos 8 caracteres",
+            "error_mismatch": "As senhas não coincidem",
+            "error": "Algo deu errado ao criar seu Vault. Tente novamente."
+        },
+        "unlock": {
+            "title": "Desbloquear a Pera Wallet",
+            "description": "Digite sua senha para desbloquear a extensão.",
+            "password_placeholder": "Digite a senha",
+            "submit_button": "Desbloquear",
+            "use_passkey": "Usar passkey",
+            "error_invalid_password": "Senha incorreta. Tente novamente.",
+            "corrupted_error": "Os dados do seu Vault estão corrompidos e não podem ser desbloqueados. Talvez seja necessário redefinir a extensão e restaurar a partir do seu backup.",
+            "passkey_error": "Falha ao desbloquear com passkey. Use sua senha.",
+            "lockout_countdown": "Muitas tentativas. Tente novamente em {{time}}"
+        },
+        "security": {
+            "autolock_title": "Bloqueio automático após",
+            "autolock_minutes": "{{minutes}} minutos",
+            "lock_now": "Bloquear a wallet agora",
+            "passkey_title": "Desbloqueio com passkey",
+            "passkey_enable": "Ativar desbloqueio com passkey",
+            "passkey_disable": "Desativar desbloqueio com passkey",
+            "passkey_password_placeholder": "Senha da wallet",
+            "passkey_error": "Não foi possível ativar o desbloqueio com passkey. Verifique sua senha e tente novamente.",
+            "passkey_enable_error": "Não foi possível ativar o desbloqueio com passkey. Tente novamente.",
+            "change_password_title": "Alterar senha",
+            "change_password_current_placeholder": "Senha atual",
+            "change_password_new_placeholder": "Nova senha",
+            "change_password_confirm_placeholder": "Confirme a nova senha",
+            "change_password_error_too_short": "A senha deve ter pelo menos 8 caracteres",
+            "change_password_error_mismatch": "As senhas não coincidem",
+            "change_password_error_invalid_current": "A senha atual está incorreta.",
+            "change_password_error_corrupted": "Os dados do Vault estão corrompidos ou têm um formato não compatível. Entre em contato com o suporte.",
+            "change_password_error_unexpected": "Algo deu errado ao alterar sua senha. Tente novamente.",
+            "change_password_success": "Senha alterada com sucesso.",
+            "change_password_submit": "Alterar senha"
+        },
+        "approval": {
+            "placeholder": "Área de aprovação — chegando no M4."
+        },
+        "expanded": {
+            "redirecting": "Continuando em uma nova aba…"
+        },
+        "reauth": {
+            "title": "Confirme que é você",
+            "confirm_button": "Confirmar",
+            "use_passkey": "Usar passkey",
+            "passkey_description": "Este site exige que você verifique sua identidade antes de entrar com a sua passkey.",
+            "confirm_description": "Verifique sua identidade para confirmar esta ação.",
+            "passkey_error": "A verificação da passkey falhou. Use sua senha em vez disso."
+        }
+    },
+    "migration": {
+        "splash": {
+            "failure_message_zero": "Não foi possível migrar {{count}} contas",
+            "failure_message_one": "Não foi possível migrar {{count}} conta",
+            "failure_message_other": "Não foi possível migrar {{count}} contas",
+            "continue": "Continuar",
+            "do_not_show_again": "Não mostrar novamente"
+        }
+    }
+}

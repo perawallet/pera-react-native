@@ -16,6 +16,7 @@ import {
     useCardStatusQuery,
     useIsCardUnfreezing,
 } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { UnfreezeCardConfirmationSheet } from '../UnfreezeCardConfirmationSheet'
 
@@ -38,6 +39,7 @@ export const useCardFrozenBanner = (): UseCardFrozenBannerResult => {
 
     // Unfreezing is confirmed AND executed inside the sheet; here we only open it.
     const onReactivate = useCallback(() => {
+        trackEvent(CardEvent.FreezeReactivate)
         void request({
             contents: <UnfreezeCardConfirmationSheet />,
             options: {
