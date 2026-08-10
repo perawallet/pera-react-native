@@ -45,6 +45,8 @@ export const PendingSignaturesContent = () => {
         failReason,
         signers,
         handleClose,
+        hasLoadError,
+        handleRetryLoad,
         canSign,
         handleSign,
         handleSignParticipant,
@@ -216,7 +218,7 @@ export const PendingSignaturesContent = () => {
             }
         >
             <PWView style={styles.body}>
-                {!signRequest && (
+                {!signRequest && !hasLoadError && (
                     <PWView
                         style={styles.loadingContainer}
                         testID='pending_signatures_loading_indicator'
@@ -224,6 +226,31 @@ export const PendingSignaturesContent = () => {
                         <ActivityIndicator
                             size='large'
                             color={theme.colors.textGray}
+                        />
+                    </PWView>
+                )}
+
+                {hasLoadError && (
+                    <PWView
+                        style={styles.errorContainer}
+                        testID='pending_signatures_error_state'
+                    >
+                        <PWIcon
+                            name='warning'
+                            size='lg'
+                            variant='error'
+                        />
+                        <PWText
+                            variant='body'
+                            style={styles.errorText}
+                        >
+                            {t('multisig.pending_signatures.load_error')}
+                        </PWText>
+                        <PWButton
+                            variant='secondary'
+                            title={t('multisig.pending_signatures.retry')}
+                            onPress={handleRetryLoad}
+                            testID='pending_signatures_retry_button'
                         />
                     </PWView>
                 )}

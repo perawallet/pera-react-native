@@ -155,8 +155,18 @@ const buildSignRequest = (
     ...overrides,
 })
 
-const mockQueryReturn = (data: Optional<MultisigSignRequest>) => {
-    useSignRequestDetailQueryMock.mockReturnValue({ data, isLoading: false })
+const refetchMock = vi.fn()
+
+const mockQueryReturn = (
+    data: Optional<MultisigSignRequest>,
+    { isError = false }: { isError?: boolean } = {},
+) => {
+    useSignRequestDetailQueryMock.mockReturnValue({
+        data,
+        isLoading: false,
+        isError,
+        refetch: refetchMock,
+    })
 }
 
 const buildAccount = (address: string): WalletAccount => ({
@@ -178,6 +188,7 @@ describe('usePendingSignaturesContent', () => {
         addSignRequestMock.mockClear()
         buildCosignArgsMock.mockClear()
         mockDismiss.mockClear()
+        refetchMock.mockClear()
     })
 
     it('derives signedCount, signer rows and waiting banner for a pending request', () => {
@@ -348,6 +359,46 @@ describe('usePendingSignaturesContent', () => {
 
         const c = result.current.signers.find(s => s.address === 'C')
         expect(c?.status).toBe('pending')
+    })
+
+    describe('load error (request cannot be fetched)', () => {
+        it('flags hasLoadError when the query errors before any data arrives', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(undefined, { isError: true })
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+
+            expect(result.current.hasLoadError).toBe(true)
+        })
+
+        it('does not flag hasLoadError while still loading without an error', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(undefined)
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+
+            expect(result.current.hasLoadError).toBe(false)
+        })
+
+        it('keeps showing loaded data when a later poll errors (no error state over stale data)', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(buildSignRequest(), { isError: true })
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+
+            expect(result.current.hasLoadError).toBe(false)
+            expect(result.current.signRequest).not.toBeNull()
+        })
+
+        it('handleRetryLoad refetches the sign request', () => {
+            usePendingSignaturesSheetStore.setState({ signRequestId: 'sr-1' })
+            mockQueryReturn(undefined, { isError: true })
+
+            const { result } = renderHook(() => usePendingSignaturesContent())
+            result.current.handleRetryLoad()
+
+            expect(refetchMock).toHaveBeenCalledTimes(1)
+        })
     })
 
     it('handleClose clears the signRequestId in the store and dismisses the sheet', () => {

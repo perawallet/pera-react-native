@@ -1392,6 +1392,8 @@
             "confirmed": "Transacción completada correctamente",
             "submitting": "Todas las firmas recogidas. Enviando la transacción…",
             "failed_default": "La transacción falló",
+            "load_error": "No se pudo cargar esta transacción. Es posible que haya caducado o se haya eliminado.",
+            "retry": "Volver a intentar",
             "canceled": "Transacción cancelada.",
             "declined": "Transacción rechazada.",
             "close": "Cerrar",

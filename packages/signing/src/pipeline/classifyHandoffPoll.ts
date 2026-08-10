@@ -374,10 +374,20 @@ const deliverReady = async (
     delivery: HandoffPeerDelivery,
     markConfirmed: ResolveHandoffOutcomeArgs['markConfirmed'],
 ): Promise<void> => {
+    // QA DIAGNOSTIC — remove before commit.
+    console.warn('[QA] deliverReady', {
+        signRequestId: handoff.signRequestId,
+        hasCallbacks: !!handoff.callbacks?.approveSignedBytes,
+        hasRecovery: !!handoff.recovery,
+        clientId: handoff.recovery?.clientId,
+    })
     try {
         if (handoff.callbacks?.approveSignedBytes) {
             // Live path: the closure owns the result-array construction.
             await handoff.callbacks.approveSignedBytes(assembledBytes)
+            console.warn('[QA] delivered via callbacks', {
+                signRequestId: handoff.signRequestId,
+            }) // QA DIAGNOSTIC — remove before commit.
         } else if (handoff.recovery) {
             // Resumed WC handoff: rebuild the result the closure would have.
             const result = buildWalletConnectSignResult(
@@ -390,10 +400,16 @@ const deliverReady = async (
                 handoff.recovery.payloadId,
                 result,
             )
+            console.warn('[QA] delivered via recovery', {
+                signRequestId: handoff.signRequestId,
+            }) // QA DIAGNOSTIC — remove before commit.
         } else {
             // Rehydrated non-WC handoff: no closure and no recovery context —
             // the originating transport is gone, so the bytes can't be
             // delivered. Nothing to do but drop the entry.
+            console.warn('[QA] no delivery channel', {
+                signRequestId: handoff.signRequestId,
+            }) // QA DIAGNOSTIC — remove before commit.
             logTerminalError(handoff, 'no delivery channel for resumed handoff')
             walletConnectHandoffs.unregister(handoff.signRequestId)
             return
@@ -402,12 +418,20 @@ const deliverReady = async (
         // Delivery failed (e.g. a dropped WC session). Fall through to `error`
         // so the dApp sees a rejection — it gets the generic localized message;
         // the raw error is kept for our logs only.
+        console.warn('[QA] delivery FAILED', {
+            signRequestId: handoff.signRequestId,
+            error: error instanceof Error ? error.message : String(error),
+        }) // QA DIAGNOSTIC — remove before commit.
         logTerminalError(handoff, messages.deliveryFailed, error)
         await deliverErrorToPeer(handoff, delivery, messages.deliveryFailed)
         walletConnectHandoffs.unregister(handoff.signRequestId)
         return
     }
 
+    // QA DIAGNOSTIC — remove before commit.
+    console.warn('[QA] markConfirmed reached', {
+        signRequestId: handoff.signRequestId,
+    })
     // Best-effort: tell the backend the wallet delivered, so it doesn't also
     // broadcast for `type: 'sync'` requests. A failure is non-fatal — the
     // dApp already has the signed bytes — but worth logging.
