@@ -40,6 +40,7 @@
     "@algorandfoundation/react-native-passkey-autofill": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@craftzdog/react-native-buffer": "^6.1.1",
+    "@expensify/react-native-wallet": "^0.1.22",
     "@expo/app-integrity": "catalog:",
     "@gorhom/bottom-sheet": "^5.2.8",
     "@hookform/resolvers": "^5.4.0",
