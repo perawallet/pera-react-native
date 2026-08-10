@@ -25,11 +25,11 @@ catalog:
   "@noble/hashes": ^1.8.0
   "@notifee/react-native": ^9.1.8
   "@playwright/test": ^1.53.0
-  "@react-native-firebase/analytics": ^25.1.0
-  "@react-native-firebase/app": ^25.1.0
-  "@react-native-firebase/crashlytics": ^25.1.0
-  "@react-native-firebase/messaging": ^25.1.0
-  "@react-native-firebase/remote-config": ^25.1.0
+  "@react-native-firebase/analytics": ^26.0.0
+  "@react-native-firebase/app": ^26.0.0
+  "@react-native-firebase/crashlytics": ^26.0.0
+  "@react-native-firebase/messaging": ^26.0.0
+  "@react-native-firebase/remote-config": ^26.0.0
   "@scure/base": 2.2.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
@@ -57,7 +57,7 @@ catalog:
   expo: ^57.0.7
   expo-application: ~57.0.2
   expo-device: ~57.0.1
-  expo-local-authentication: ~57.0.1
+  expo-local-authentication: ~57.0.2
   expo-localization: ~57.0.1
   expo-sqlite: ~57.0.1
   falcon-1024: ^0.2.0
@@ -68,7 +68,7 @@ catalog:
   oxfmt: ^0.61.0
   react: 19.2.3
   react-dom: 19.2.3
-  react-native: 0.86.0
+  react-native: 0.86.2
   react-native-mmkv: ^4.2.0
   react-native-quick-base64: ^3.0.0
   react-native-ssl-public-key-pinning: ^1.2.6
@@ -142,7 +142,6 @@ overrides:
   '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
   '@expo/dom-webview': ~57.0.1
   '@grpc/grpc-js@<1.9.16': 1.9.16
-  '@react-native/metro-config': 0.86.0
   '@xmldom/xmldom': 0.8.13
   bn.js@4: 4.12.3
   # GHSA-rgw5-rvv9-x895 is patched per major line, not by one version: the 1.x
@@ -189,8 +188,8 @@ overrides:
   protobufjs@7: 7.6.5
   react: 19.2.3
   react-dom: 19.2.3
-  react-native: 0.86.0
-  react-native-nitro-modules: 0.35.9
+  react-native: 0.86.2
+  react-native-nitro-modules: 0.36.5
   react-native-quick-base64: ^3.0.0
   react-native-quick-crypto: ^1.0.17
   shell-quote@<1.9.0: 1.9.0
