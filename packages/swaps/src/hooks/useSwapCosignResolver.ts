@@ -86,6 +86,9 @@ export const useSwapCosignResolver = ({
     const { markConfirmed } = useMarkSignRequestsConfirmedMutation()
 
     const handoffsMap = useSwapHandoffStore(s => s.handoffs)
+    const markHandoffSubmitted = useSwapHandoffStore(
+        s => s.markHandoffSubmitted,
+    )
     const removeHandoff = useSwapHandoffStore(s => s.removeHandoff)
 
     const handoffs = useMemo(() => Object.values(handoffsMap), [handoffsMap])
@@ -109,13 +112,26 @@ export const useSwapCosignResolver = ({
     )
 
     const classify = useCallback(
-        (detail: SignRequestResponse, handoff: SwapHandoffRecord) =>
-            classifyHandoffPoll(detail, {
+        (detail: SignRequestResponse, handoff: SwapHandoffRecord) => {
+            // Crash-recovered record whose group already landed on chain: skip
+            // classification entirely — no signature re-verification, and no
+            // stall if the backend has pruned payloads or moved the request to
+            // a post-submit status. The resolver's already-submitted branch
+            // ignores the outcome (and these empty bytes) and just replays the
+            // post-submit tail.
+            if (handoff.submission) {
+                return Promise.resolve({
+                    kind: 'ready' as const,
+                    assembledBytes: [],
+                })
+            }
+            return classifyHandoffPoll(detail, {
                 multisigAddress: handoff.multisigAddress,
                 msigMetadata: handoff.msigMetadata,
                 expectedRawTransactionsBase64:
                     handoff.expectedRawTransactionsBase64,
-            }),
+            })
+        },
         [],
     )
 
@@ -137,6 +153,8 @@ export const useSwapCosignResolver = ({
                 deps: {
                     submitGroup: bytes =>
                         submitRawSignedTransactionGroup(algorandClient, bytes),
+                    markSubmitted: txIds =>
+                        markHandoffSubmitted(handoff.signRequestId, txIds),
                     decodeBase64: decodeFromBase64,
                     updateSwapStatus,
                     markConfirmed,
@@ -164,6 +182,7 @@ export const useSwapCosignResolver = ({
             deviceId,
             updateSwapStatus,
             markConfirmed,
+            markHandoffSubmitted,
             removeHandoff,
             reportError,
         ],

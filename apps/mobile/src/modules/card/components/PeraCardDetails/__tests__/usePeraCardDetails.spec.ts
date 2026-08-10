@@ -11,7 +11,7 @@
  */
 
 import { renderHook } from '@test-utils/render'
-import { act } from '@testing-library/react'
+import { act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -43,6 +43,9 @@ const mocks = vi.hoisted(() => ({
     authorizeDelegation: vi.fn(),
     cancelDelegation: vi.fn(),
     canDelegate: vi.fn(),
+    canPushProvision: false,
+    isCardInWallet: false,
+    startAddCardToWallet: vi.fn(),
 }))
 
 const mutationResult = (
@@ -177,6 +180,11 @@ vi.mock('../../../hooks', async () => ({
     useAuthorizeCardDelegation: () => ({
         authorizeDelegation: mocks.authorizeDelegation,
     }),
+    useAddCardToWallet: () => ({
+        canPushProvision: mocks.canPushProvision,
+        isCardInWallet: mocks.isCardInWallet,
+        startAddCardToWallet: mocks.startAddCardToWallet,
+    }),
 }))
 
 import { FundingType } from '@perawallet/wallet-core-card'
@@ -225,6 +233,9 @@ describe('usePeraCardDetails', () => {
         mocks.authorizeDelegation.mockImplementation(
             passThroughAuthorizeDelegation,
         )
+        mocks.canPushProvision = false
+        mocks.isCardInWallet = false
+        mocks.startAddCardToWallet.mockResolvedValue('fallback')
     })
 
     it('masks the PAN with the last 4 when known', () => {
@@ -665,6 +676,64 @@ describe('usePeraCardDetails', () => {
 
         expect(mocks.request).toHaveBeenCalledTimes(1)
         expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
+        expect(mocks.startAddCardToWallet).not.toHaveBeenCalled()
+    })
+
+    it('runs native provisioning instead of the sheet when supported', async () => {
+        mocks.canPushProvision = true
+        mocks.startAddCardToWallet.mockResolvedValue('added')
+        const { result } = renderHook(() => usePeraCardDetails())
+
+        act(() => {
+            result.current.onAddToWallet()
+        })
+
+        await waitFor(() =>
+            expect(mocks.startAddCardToWallet).toHaveBeenCalledTimes(1),
+        )
+        expect(mocks.request).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the instructions sheet when the native flow cannot complete', async () => {
+        mocks.canPushProvision = true
+        mocks.startAddCardToWallet.mockResolvedValue('fallback')
+        const { result } = renderHook(() => usePeraCardDetails())
+
+        act(() => {
+            result.current.onAddToWallet()
+        })
+
+        await waitFor(() => expect(mocks.request).toHaveBeenCalledTimes(1))
+        expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
+    })
+
+    it('shows nothing more after the user cancels the native flow', async () => {
+        mocks.canPushProvision = true
+        mocks.startAddCardToWallet.mockResolvedValue('dismissed')
+        const { result } = renderHook(() => usePeraCardDetails())
+
+        act(() => {
+            result.current.onAddToWallet()
+        })
+
+        await waitFor(() =>
+            expect(mocks.startAddCardToWallet).toHaveBeenCalledTimes(1),
+        )
+        expect(mocks.request).not.toHaveBeenCalled()
+    })
+
+    it('hides the Add to Wallet row once the card is in the OS wallet', () => {
+        mocks.isCardInWallet = true
+
+        const { result } = renderHook(() => usePeraCardDetails())
+
+        expect(result.current.showAddToWallet).toBe(false)
+    })
+
+    it('shows the Add to Wallet row while the card is not in the OS wallet', () => {
+        const { result } = renderHook(() => usePeraCardDetails())
+
+        expect(result.current.showAddToWallet).toBe(true)
     })
 
     it('resolves a single wallet-provisioning platform', () => {
