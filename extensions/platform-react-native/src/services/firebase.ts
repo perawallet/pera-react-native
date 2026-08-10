@@ -11,7 +11,7 @@
  */
 
 import {
-    type FirebaseCrashlyticsTypes,
+    type Crashlytics,
     getCrashlytics,
     recordError,
     setCrashlyticsCollectionEnabled,
@@ -23,7 +23,7 @@ import {
     type RemoteConfig,
 } from '@react-native-firebase/remote-config'
 import {
-    type FirebaseMessagingTypes,
+    type Messaging,
     getInitialNotification,
     getMessaging,
     getToken,
@@ -111,9 +111,9 @@ export class RNFirebaseService
 {
     remoteConfig: RemoteConfig | null = null
     private remoteConfigInitInFlight: Promise<void> | null = null
-    messaging: FirebaseMessagingTypes.Module | null = null
+    messaging: Messaging | null = null
     analytics: Analytics | null = null
-    crashlytics: FirebaseCrashlyticsTypes.Module | null = null
+    crashlytics: Crashlytics | null = null
 
     // Single listener (the app registers one at the root). A cold-start tap
     // resolves during init, before the app mounts its listener, so the payload
