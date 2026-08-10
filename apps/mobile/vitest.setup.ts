@@ -99,6 +99,14 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
         // Unit tests never call into the registry so providing an empty one is safe.
         hardwareWalletRegistry:
             require('@perawallet/wallet-core-hardware-wallet').createHardwareWalletRegistry(),
+        // Dormant defaults: card push provisioning reports unavailable, so
+        // suites exercise today's manual-instructions fallback.
+        walletProvisioning: {
+            checkWalletAvailability: vi.fn().mockResolvedValue(false),
+            getCardStatusBySuffix: vi.fn().mockResolvedValue('not found'),
+            addCardToAppleWallet: vi.fn().mockResolvedValue('canceled'),
+            addCardToGoogleWallet: vi.fn().mockResolvedValue('canceled'),
+        },
     }),
     getPlatformServices: () => ({
         keyValueStorage: {

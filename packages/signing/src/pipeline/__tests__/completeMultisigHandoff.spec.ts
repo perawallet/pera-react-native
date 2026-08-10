@@ -27,6 +27,7 @@ const makeDeps = (): {
     [K in keyof MultisigHandoffCompletionDeps]: ReturnType<typeof vi.fn>
 } => ({
     submit: vi.fn().mockResolvedValue(['txid-1']),
+    recordSubmitted: vi.fn(),
     markConfirmed: vi.fn().mockResolvedValue(undefined),
     decline: vi.fn().mockResolvedValue(undefined),
     removeHandoff: vi.fn(),
@@ -45,10 +46,12 @@ describe('completeMultisigHandoff', () => {
 
     const run = (
         outcome: Parameters<typeof completeMultisigHandoff>[0]['outcome'],
+        alreadySubmittedTxIds?: string[],
     ) =>
         completeMultisigHandoff({
             outcome,
             deps: deps as unknown as MultisigHandoffCompletionDeps,
+            alreadySubmittedTxIds,
         })
 
     test('ready: submits, records the tx ids, marks confirmed, then cleans up', async () => {
@@ -74,6 +77,78 @@ describe('completeMultisigHandoff', () => {
         expect(deps.decline).toHaveBeenCalledTimes(1)
         expect(deps.onFailed).toHaveBeenCalledTimes(1)
         expect(deps.onSubmitted).not.toHaveBeenCalled()
+        // Nothing was submitted, so nothing must be durably marked as such.
+        expect(deps.recordSubmitted).not.toHaveBeenCalled()
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+    })
+
+    test('ready: durably records the submission before any other post-submit effect', async () => {
+        await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
+
+        expect(deps.recordSubmitted).toHaveBeenCalledWith(['txid-1'])
+        // Marker first: a crash during the (network) status calls must find it.
+        expect(deps.recordSubmitted.mock.invocationCallOrder[0]).toBeLessThan(
+            deps.onSubmitted.mock.invocationCallOrder[0],
+        )
+        expect(deps.recordSubmitted.mock.invocationCallOrder[0]).toBeLessThan(
+            deps.markConfirmed.mock.invocationCallOrder[0],
+        )
+    })
+
+    test('ready: a throwing recordSubmitted is best-effort — never routes to the failure path', async () => {
+        deps.recordSubmitted.mockImplementationOnce(() => {
+            throw new Error('storage full')
+        })
+
+        await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
+
+        expect(deps.onSubmitted).toHaveBeenCalledWith(['txid-1'])
+        expect(deps.markConfirmed).toHaveBeenCalledTimes(1)
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+        expect(deps.reportError).not.toHaveBeenCalled()
+        expect(deps.onFailed).not.toHaveBeenCalled()
+    })
+
+    test('already submitted: replays the post-submit tail, never submits again', async () => {
+        await run({ kind: 'ready', assembledBytes: [ASSEMBLED] }, [
+            'txid-persisted',
+        ])
+
+        expect(deps.submit).not.toHaveBeenCalled()
+        expect(deps.recordSubmitted).not.toHaveBeenCalled()
+        expect(deps.onSubmitted).toHaveBeenCalledWith(['txid-persisted'])
+        expect(deps.markConfirmed).toHaveBeenCalledTimes(1)
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+        expect(deps.reportError).not.toHaveBeenCalled()
+        expect(deps.onFailed).not.toHaveBeenCalled()
+    })
+
+    test('already submitted: overrides a post-crash soft-reject — the swap is on chain', async () => {
+        // The backend may have expired the request after the crash (it never
+        // got mark-confirmed); that must not fail a landed swap.
+        await run({ kind: 'soft-reject', reason: 'expired' }, [
+            'txid-persisted',
+        ])
+
+        expect(deps.onSoftRejected).not.toHaveBeenCalled()
+        expect(deps.onSubmitted).toHaveBeenCalledWith(['txid-persisted'])
+        expect(deps.markConfirmed).toHaveBeenCalledTimes(1)
+        expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+    })
+
+    test('already submitted: overrides a post-crash backend failure — never declines', async () => {
+        await run(
+            {
+                kind: 'error',
+                reason: { kind: 'backend-failed', displayReason: null },
+            },
+            ['txid-persisted'],
+        )
+
+        expect(deps.onFailed).not.toHaveBeenCalled()
+        expect(deps.decline).not.toHaveBeenCalled()
+        expect(deps.reportError).not.toHaveBeenCalled()
+        expect(deps.onSubmitted).toHaveBeenCalledWith(['txid-persisted'])
         expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
     })
 

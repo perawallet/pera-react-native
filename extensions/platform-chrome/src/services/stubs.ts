@@ -25,6 +25,9 @@ import {
     type MigrationService,
     type MigrationStepVersions,
     type SimulateLegacyDatabaseArgs,
+    type WalletProvisioningCardStatus,
+    type WalletProvisioningService,
+    type WalletProvisioningTokenizationStatus,
 } from '@perawallet/wallet-extension-platform'
 
 /**
@@ -98,4 +101,23 @@ export class ChromeMigrationService implements MigrationService {
     async setCompletedStepVersions(
         _versions: MigrationStepVersions,
     ): Promise<void> {}
+}
+
+/**
+ * OS-wallet push provisioning doesn't exist in a browser extension, so the
+ * probes report permanently unavailable and the add flows reject.
+ */
+export class ChromeWalletProvisioningService implements WalletProvisioningService {
+    async checkWalletAvailability(): Promise<boolean> {
+        return false
+    }
+    async getCardStatusBySuffix(): Promise<WalletProvisioningCardStatus> {
+        return 'not found'
+    }
+    async addCardToAppleWallet(): Promise<WalletProvisioningTokenizationStatus> {
+        throw new Error('Wallet provisioning is unavailable on web')
+    }
+    async addCardToGoogleWallet(): Promise<WalletProvisioningTokenizationStatus> {
+        throw new Error('Wallet provisioning is unavailable on web')
+    }
 }

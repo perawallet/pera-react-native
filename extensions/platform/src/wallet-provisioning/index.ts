@@ -10,20 +10,4 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-extension-platform'
-
-export * from './app-integrity'
-export * from './analytics'
-export * from './age-gate'
-export * from './biometrics'
-export * from './database'
-export * from './device'
-export * from './hardware-wallet'
-export * from './migration'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './storage'
-export * from './wallet-provisioning'
 export * from './models'
-export * from './test-utils'

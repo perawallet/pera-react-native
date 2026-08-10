@@ -472,6 +472,9 @@ importers:
       '@craftzdog/react-native-buffer':
         specifier: ^6.1.1
         version: 6.1.2(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+      '@expensify/react-native-wallet':
+        specifier: ^0.1.22
+        version: 0.1.22(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       '@expo/app-integrity':
         specifier: 'catalog:'
         version: 57.0.0(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
@@ -1440,6 +1443,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
+      '@expensify/react-native-wallet':
+        specifier: ^0.1.22
+        version: 0.1.22(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       '@expo/app-integrity':
         specifier: 'catalog:'
         version: 57.0.0(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
@@ -5268,6 +5274,12 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
+
+  '@expensify/react-native-wallet@0.1.22':
+    resolution: {integrity: sha512-VOsODIWOVVqSEjtLadpZOdI0xlmtRIMnITjYlaYxhbnuEzGGEoql/Az9LuKv+xE3uZm0HMRARhSNc28WjOxKgQ==}
+    peerDependencies:
+      react: 19.2.3
+      react-native: 0.86.2
 
   '@expo/app-integrity@57.0.0':
     resolution: {integrity: sha512-UmD8vF7z50AO5gQFq7Wp5mlmHubvewcTV7P9PKQ6F1KVh6D0QRnE74baumtqij4YbBqdKVJGzFO/DMJESD5UiA==}
@@ -12215,6 +12227,11 @@ snapshots:
   '@exodus/bytes@1.15.1(@noble/hashes@2.2.0)':
     optionalDependencies:
       '@noble/hashes': 2.2.0
+
+  '@expensify/react-native-wallet@0.1.22(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      react: 19.2.3
+      react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
 
   '@expo/app-integrity@57.0.0(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))':
     dependencies:
