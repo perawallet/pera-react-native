@@ -48,6 +48,7 @@ import {
     classifyHandoffPoll,
     errorReasonToMessage,
     resolveHandoffOutcome,
+    type HandoffPeerDelivery,
     type ResolverMessages,
 } from '../classifyHandoffPoll'
 
@@ -82,9 +83,15 @@ const makeHandoff = (
         error: vi.fn().mockResolvedValue(undefined),
         reject: vi.fn().mockResolvedValue(undefined),
     },
-    source: { type: 'walletconnect' },
+    sourceType: 'walletconnect',
     registeredAt: Date.now(),
     ...overrides,
+})
+
+const makeDelivery = (): HandoffPeerDelivery => ({
+    deliverResult: vi.fn().mockResolvedValue(undefined),
+    deliverSoftReject: vi.fn().mockResolvedValue(undefined),
+    deliverError: vi.fn().mockResolvedValue(undefined),
 })
 
 // Minimal `with-signatures` detail — cast since the test controls the shape
@@ -182,6 +189,22 @@ describe('classifyHandoffPoll', () => {
         expect(await classifyHandoffPoll(makeDetail(), makeHandoff())).toEqual({
             kind: 'error',
             reason: { kind: 'assembly-failed', detail: 'bad subsig' },
+        })
+    })
+
+    it('keeps polling when a ready poll is missing signatures for some transactions', async () => {
+        // The backend flipped status before every signature payload was
+        // serialized: the participant's array is non-empty (so the cheap guard
+        // passes) but an index is still below threshold. Must retry, not fail.
+        assembleMock.mockReturnValue({
+            kind: 'insufficient-signatures',
+            txIndex: 1,
+            validCount: 1,
+            threshold: 2,
+        })
+
+        expect(await classifyHandoffPoll(makeDetail(), makeHandoff())).toEqual({
+            kind: 'keep-polling',
         })
     })
 
@@ -387,10 +410,11 @@ describe('resolveHandoffOutcome', () => {
             outcome: { kind: 'ready', assembledBytes },
             handoff,
             messages,
+            delivery: makeDelivery(),
             markConfirmed,
         })
 
-        expect(handoff.callbacks.approveSignedBytes).toHaveBeenCalledWith(
+        expect(handoff.callbacks?.approveSignedBytes).toHaveBeenCalledWith(
             assembledBytes,
         )
         expect(markConfirmed).toHaveBeenCalledWith({
@@ -398,7 +422,7 @@ describe('resolveHandoffOutcome', () => {
             deviceId: 'device-1',
             signRequestIds: [SIGN_REQUEST_ID],
         })
-        expect(handoff.callbacks.error).not.toHaveBeenCalled()
+        expect(handoff.callbacks?.error).not.toHaveBeenCalled()
         expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
     })
 
@@ -411,20 +435,26 @@ describe('resolveHandoffOutcome', () => {
             outcome: { kind: 'ready', assembledBytes: [new Uint8Array([1])] },
             handoff,
             messages,
+            delivery: makeDelivery(),
             markConfirmed,
         })
 
-        expect(handoff.callbacks.approveSignedBytes).toHaveBeenCalled()
-        expect(handoff.callbacks.error).not.toHaveBeenCalled()
+        expect(handoff.callbacks?.approveSignedBytes).toHaveBeenCalled()
+        expect(handoff.callbacks?.error).not.toHaveBeenCalled()
         expect(loggerWarnMock).toHaveBeenCalled()
         expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
     })
 
     it('errors when delivering the signed bytes to the dApp fails', async () => {
-        const handoff = makeHandoff()
-        handoff.callbacks.approveSignedBytes = vi
-            .fn()
-            .mockRejectedValue(new Error('session dropped'))
+        const handoff = makeHandoff({
+            callbacks: {
+                approveSignedBytes: vi
+                    .fn()
+                    .mockRejectedValue(new Error('session dropped')),
+                error: vi.fn().mockResolvedValue(undefined),
+                reject: vi.fn().mockResolvedValue(undefined),
+            },
+        })
         walletConnectHandoffs.register(handoff)
         const markConfirmed = vi.fn().mockResolvedValue(undefined)
 
@@ -432,11 +462,12 @@ describe('resolveHandoffOutcome', () => {
             outcome: { kind: 'ready', assembledBytes: [new Uint8Array([1])] },
             handoff,
             messages,
+            delivery: makeDelivery(),
             markConfirmed,
         })
 
         // The dApp gets the generic localized message, not the raw WC error.
-        expect(handoff.callbacks.error).toHaveBeenCalledWith(
+        expect(handoff.callbacks?.error).toHaveBeenCalledWith(
             new Error('msg.delivery_failed'),
         )
         // The raw error is kept for diagnostics.
@@ -456,14 +487,15 @@ describe('resolveHandoffOutcome', () => {
             outcome: { kind: 'soft-reject', reason: 'declined' },
             handoff,
             messages,
+            delivery: makeDelivery(),
             markConfirmed: vi.fn(),
         })
 
-        expect(handoff.callbacks.reject).toHaveBeenCalledWith({
+        expect(handoff.callbacks?.reject).toHaveBeenCalledWith({
             kind: 'softReject',
             error: new Error('msg.declined'),
         })
-        expect(handoff.callbacks.error).not.toHaveBeenCalled()
+        expect(handoff.callbacks?.error).not.toHaveBeenCalled()
         expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
     })
 
@@ -475,10 +507,11 @@ describe('resolveHandoffOutcome', () => {
             outcome: { kind: 'soft-reject', reason: 'expired' },
             handoff,
             messages,
+            delivery: makeDelivery(),
             markConfirmed: vi.fn(),
         })
 
-        expect(handoff.callbacks.reject).toHaveBeenCalledWith({
+        expect(handoff.callbacks?.reject).toHaveBeenCalledWith({
             kind: 'softReject',
             error: new Error('msg.expired'),
         })
@@ -495,10 +528,11 @@ describe('resolveHandoffOutcome', () => {
             },
             handoff,
             messages,
+            delivery: makeDelivery(),
             markConfirmed: vi.fn(),
         })
 
-        expect(handoff.callbacks.error).toHaveBeenCalledWith(
+        expect(handoff.callbacks?.error).toHaveBeenCalledWith(
             new Error('msg.assembly_failed:bad subsig'),
         )
         expect(loggerWarnMock).toHaveBeenCalledWith(
@@ -508,5 +542,90 @@ describe('resolveHandoffOutcome', () => {
             }),
         )
         expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
+    })
+
+    // Rehydrated after an app kill: no in-memory closures, so delivery falls
+    // back to the serializable WalletConnect `recovery` context.
+    describe('resumed handoff (no callbacks, recovery only)', () => {
+        const recovery = {
+            clientId: 'wc-client-1',
+            payloadId: 42,
+            indicesToSign: [1],
+            totalLength: 3,
+        }
+
+        it('rebuilds the WC result and delivers via recovery on ready', async () => {
+            const handoff = makeHandoff({ callbacks: undefined, recovery })
+            walletConnectHandoffs.register(handoff)
+            const delivery = makeDelivery()
+            const markConfirmed = vi.fn().mockResolvedValue(undefined)
+
+            await resolveHandoffOutcome({
+                outcome: {
+                    kind: 'ready',
+                    assembledBytes: [new Uint8Array([1, 2, 3])],
+                },
+                handoff,
+                messages,
+                delivery,
+                markConfirmed,
+            })
+
+            expect(delivery.deliverResult).toHaveBeenCalledTimes(1)
+            const [clientId, payloadId, result] = vi.mocked(
+                delivery.deliverResult,
+            ).mock.calls[0]
+            expect(clientId).toBe('wc-client-1')
+            expect(payloadId).toBe(42)
+            // Null-padded to totalLength, assembled bytes at the signable slot.
+            expect(result).toEqual([null, expect.any(String), null])
+            expect(markConfirmed).toHaveBeenCalled()
+            expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
+        })
+
+        it('soft-rejects via recovery when there are no callbacks', async () => {
+            const handoff = makeHandoff({ callbacks: undefined, recovery })
+            walletConnectHandoffs.register(handoff)
+            const delivery = makeDelivery()
+
+            await resolveHandoffOutcome({
+                outcome: { kind: 'soft-reject', reason: 'expired' },
+                handoff,
+                messages,
+                delivery,
+                markConfirmed: vi.fn(),
+            })
+
+            expect(delivery.deliverSoftReject).toHaveBeenCalledWith(
+                'wc-client-1',
+                42,
+                new Error('msg.expired'),
+            )
+            expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
+        })
+
+        it('cleans up without delivering when neither callbacks nor recovery exist', async () => {
+            // A rehydrated non-WalletConnect handoff: nothing to deliver to.
+            const handoff = makeHandoff({
+                callbacks: undefined,
+                recovery: undefined,
+            })
+            walletConnectHandoffs.register(handoff)
+            const delivery = makeDelivery()
+
+            await resolveHandoffOutcome({
+                outcome: {
+                    kind: 'ready',
+                    assembledBytes: [new Uint8Array([1, 2, 3])],
+                },
+                handoff,
+                messages,
+                delivery,
+                markConfirmed: vi.fn(),
+            })
+
+            expect(delivery.deliverResult).not.toHaveBeenCalled()
+            expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
+        })
     })
 })

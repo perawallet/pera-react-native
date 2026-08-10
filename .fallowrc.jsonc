@@ -15,7 +15,7 @@
     // Web-only native-module stubs resolved by metro.config.js via
     // `path.resolve(webShimsRoot, ...)` string lookups (webStubs/polyfillMap),
     // not a static import fallow's graph can follow.
-    "apps/extension/web-shims/**"
+    "apps/browser/web-shims/**"
   ],
 
   // Test infrastructure the runner (vitest) resolves by convention, never imported.

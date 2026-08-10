@@ -17,7 +17,38 @@ import { act, render, screen, fireEvent } from '@test-utils/render'
 // so a bare '../PWBottomSheet' specifier would load the gorhom-based native
 // module instead (as the native PWBottomSheet.spec.tsx does the mirror of
 // this by importing '../PWBottomSheet' directly).
-import { PWBottomSheet, type PWBottomSheetSize } from '../PWBottomSheet.web'
+import {
+    PWBottomSheet,
+    bottomSheetNotifier,
+    type PWBottomSheetSize,
+} from '../PWBottomSheet.web'
+
+// The global setup mock renders NotifierWrapper as a plain View and drops the
+// ref — which is the one thing this file needs to observe, since a null
+// bottomSheetNotifier is what makes in-sheet toasts fall back to the buried
+// app-level notifier. Re-mock locally with the real component's shape:
+// children plus a ref-bearing root.
+vi.mock('react-native-notifier', async () => {
+    const ReactActual = await vi.importActual<typeof import('react')>('react')
+    return {
+        NotifierWrapper: ReactActual.forwardRef(
+            ({ children }: { children?: React.ReactNode }, ref) => {
+                ReactActual.useImperativeHandle(ref, () => ({
+                    showNotification: vi.fn(),
+                    hideNotification: vi.fn(),
+                }))
+                return ReactActual.createElement(
+                    ReactActual.Fragment,
+                    null,
+                    children,
+                )
+            },
+        ),
+        NotifierRoot: ({ children }: { children?: React.ReactNode }) =>
+            children ?? null,
+        Notifier: { showNotification: vi.fn(), hideNotification: vi.fn() },
+    }
+})
 
 // Capture the props handed to the style hook so size branches can be
 // asserted on the isFixed flag they produce rather than real style values.
@@ -254,5 +285,23 @@ describe('PWBottomSheet.web', () => {
             stage.contains(screen.getByTestId('pw-bottom-sheet-backdrop')),
         ).toBe(true)
         expect(stage.contains(screen.getByTestId('my-sheet'))).toBe(true)
+    })
+
+    // react-native-web portals the Modal to document.body, ABOVE the app-level
+    // NotifierWrapper in AppShell.web. Callers that pass
+    // `notifier: bottomSheetNotifier.current` (signing errors, send-confirm
+    // errors, broadcast failures) fall back to that buried global notifier when
+    // this ref is null — painting behind the open sheet, i.e. invisible exactly
+    // when they matter most.
+    it('populates bottomSheetNotifier while the sheet is open', () => {
+        expect(bottomSheetNotifier.current).toBeNull()
+
+        render(
+            <PWBottomSheet isVisible={true}>
+                <Text>Sheet Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(bottomSheetNotifier.current).not.toBeNull()
     })
 })

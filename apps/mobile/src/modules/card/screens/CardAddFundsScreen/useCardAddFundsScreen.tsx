@@ -30,6 +30,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import { useNavigation } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { trackEvent, CardEvent, AnalyticsMetadataKey } from '@analytics'
 import { useNumberPadAmount } from '@components/NumberPad'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardSelectAssetContent } from '../../components/CardSelectAssetContent'
@@ -139,6 +140,9 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
             },
         })
         if (!assetId) return
+        trackEvent(CardEvent.AddFundsCurrency, {
+            [AnalyticsMetadataKey.AssetId]: assetId,
+        })
         setPickedAssetId(assetId)
         setAmount(null)
     }, [requestBottomSheet, setAmount])
@@ -164,6 +168,7 @@ export const useCardAddFundsScreen = (): UseCardAddFundsScreenResult => {
     const showComingSoon = useCardComingSoonToast()
 
     const handleDeposit = useCallback(() => {
+        trackEvent(CardEvent.AddFundsDeposit)
         // USDC → gated deposit-to-card (no Baanx backend yet → coming-soon).
         if (isUsdc) {
             // isUsdc being true already implies a non-null usdcAssetId; this

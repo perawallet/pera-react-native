@@ -36,6 +36,7 @@ export const SwapForm = () => {
         selectedQuote,
         providerSelectionMode,
         canSwap,
+        hasInsufficientBalance,
         isLocalCurrencyInput,
         handlePayAmountChange,
         handleSwapDirection,
@@ -88,6 +89,20 @@ export const SwapForm = () => {
                     selectionMode={providerSelectionMode}
                     onPress={handleOpenProvider}
                 />
+            )}
+
+            {hasInsufficientBalance && (
+                <PWView
+                    style={styles.errorContainer}
+                    testID='swap_insufficient_balance'
+                >
+                    <PWText
+                        variant='body'
+                        style={styles.errorText}
+                    >
+                        {t('swap.form.insufficient_balance')}
+                    </PWText>
+                </PWView>
             )}
 
             {isQuoteError && (

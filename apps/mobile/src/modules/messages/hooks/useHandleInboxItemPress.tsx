@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import type { ASAInbox, InboxItem } from '@perawallet/wallet-core-messages'
 import type { MultiSigAccount } from '@perawallet/wallet-core-multisig'
-import { useAppNavigation } from '@hooks/useAppNavigation'
+import { pushScreen } from '@hooks/deeplink/navigateToScreen'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { useHandleMultisigSignTap } from '@modules/multisig/hooks/useHandleMultisigSignTap'
@@ -43,8 +43,11 @@ export type UseHandleInboxItemPressResult = (item: InboxItem) => void
  * resolving a multisig notification to its matching inbox item — so both
  * entry points share one code path instead of routing through a store.
  */
+// Navigation goes through `pushScreen` (the global navigationRef) rather than
+// `useAppNavigation`: `useNotificationDeeplinkListener` reaches this hook from
+// RootComponent, which sits above NavigationContainer, so `useNavigation` has
+// no context there and throws during render on every launch.
 export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
-    const { push } = useAppNavigation()
     const { errorToast } = useToast()
     const handleMultisigSignTap = useHandleMultisigSignTap()
     const { request: requestBottomSheet } = useBottomSheet()
@@ -68,13 +71,13 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
                 )
 
             if (result === 'accept') {
-                push('Messages', {
+                pushScreen('Messages', {
                     screen: 'MultisigInvitationName',
                     params: { invitation },
                 })
             }
         },
-        [requestBottomSheet, push],
+        [requestBottomSheet],
     )
 
     return useCallback(
@@ -82,7 +85,7 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
             switch (item.type) {
                 case 'asa_inbox': {
                     const asaInbox = item.data as ASAInbox
-                    push('Messages', {
+                    pushScreen('Messages', {
                         screen: 'AssetTransferRequests',
                         params: { item: asaInbox },
                     })
@@ -104,6 +107,6 @@ export const useHandleInboxItemPress = (): UseHandleInboxItemPressResult => {
                 }
             }
         },
-        [push, errorToast, handleMultisigSignTap, openInvitationDetail],
+        [errorToast, handleMultisigSignTap, openInvitationDetail],
     )
 }

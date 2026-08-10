@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
+import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardFreezeAction } from '../../hooks'
 import { CardConfirmationSheet } from '../CardConfirmationSheet'
@@ -23,6 +25,17 @@ export const FreezeCardConfirmationSheet = () => {
     const { t } = useLanguage()
     const { isFreezing, onConfirm, onClose } = useCardFreezeAction()
 
+    // Tracked here, not in useCardFreezeAction — the action hook is shared
+    // with the lost/stolen and report-suspicious sheets, which have their own events.
+    const handleConfirm = useCallback(() => {
+        trackEvent(CardEvent.FreezeCard)
+        onConfirm()
+    }, [onConfirm])
+    const handleClose = useCallback(() => {
+        trackEvent(CardEvent.FreezeClose)
+        onClose()
+    }, [onClose])
+
     return (
         <CardConfirmationSheet
             header={<CardBadgeGlyph size='lg' />}
@@ -30,8 +43,8 @@ export const FreezeCardConfirmationSheet = () => {
             body={t('peraCard.account.freeze_sheet_body')}
             confirmLabel={t('peraCard.account.freeze_sheet_confirm')}
             isPending={isFreezing}
-            onConfirm={onConfirm}
-            onClose={onClose}
+            onConfirm={handleConfirm}
+            onClose={handleClose}
             testID='freeze_card_confirmation_sheet'
             confirmTestID='freeze_confirm_button'
             closeTestID='freeze_close_button'

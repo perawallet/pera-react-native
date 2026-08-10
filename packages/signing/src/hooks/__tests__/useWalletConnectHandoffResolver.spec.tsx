@@ -64,6 +64,14 @@ const messages: ResolverMessages = {
         `multisig.sync_sign.errors.assembly_failed:${reason}`,
 }
 
+// Injected peer delivery — this suite stubs `resolveHandoffOutcome`, so these
+// are pass-through no-ops that only satisfy the hook's required arg.
+const delivery = {
+    deliverResult: vi.fn().mockResolvedValue(undefined),
+    deliverSoftReject: vi.fn().mockResolvedValue(undefined),
+    deliverError: vi.fn().mockResolvedValue(undefined),
+}
+
 const makeHandoff = (signRequestId: string): PendingWalletConnectHandoff => ({
     signRequestId,
     multisigAddress: 'MSIG_ADDR',
@@ -72,7 +80,7 @@ const makeHandoff = (signRequestId: string): PendingWalletConnectHandoff => ({
     deviceId: 'device-1',
     network: 'testnet',
     callbacks: {},
-    source: { type: 'walletconnect' },
+    sourceType: 'walletconnect',
     registeredAt: Date.now(),
 })
 
@@ -112,6 +120,7 @@ describe('useWalletConnectHandoffResolver', () => {
                 useWalletConnectHandoffResolver({
                     isAppActive: true,
                     messages,
+                    delivery,
                 }),
             { wrapper },
         )
@@ -137,6 +146,7 @@ describe('useWalletConnectHandoffResolver', () => {
                 useWalletConnectHandoffResolver({
                     isAppActive: true,
                     messages,
+                    delivery,
                 }),
             { wrapper },
         )
@@ -148,6 +158,7 @@ describe('useWalletConnectHandoffResolver', () => {
             outcome,
             handoff,
             messages,
+            delivery,
             markConfirmed: mocks.markConfirmed,
         })
     })
@@ -161,6 +172,7 @@ describe('useWalletConnectHandoffResolver', () => {
                 useWalletConnectHandoffResolver({
                     isAppActive: true,
                     messages,
+                    delivery,
                 }),
             { wrapper },
         )
@@ -179,6 +191,7 @@ describe('useWalletConnectHandoffResolver', () => {
                 useWalletConnectHandoffResolver({
                     isAppActive: false,
                     messages,
+                    delivery,
                 }),
             { wrapper },
         )
@@ -193,6 +206,7 @@ describe('useWalletConnectHandoffResolver', () => {
                 useWalletConnectHandoffResolver({
                     isAppActive: true,
                     messages,
+                    delivery,
                 }),
             { wrapper },
         )
@@ -226,6 +240,7 @@ describe('useWalletConnectHandoffResolver', () => {
                 useWalletConnectHandoffResolver({
                     isAppActive: true,
                     messages,
+                    delivery,
                 }),
             { wrapper },
         )

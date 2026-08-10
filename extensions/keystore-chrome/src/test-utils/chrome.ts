@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { vi } from 'vitest'
+
 type StorageChanges = Record<string, { oldValue?: unknown; newValue?: unknown }>
 type ChangeListener = (changes: StorageChanges, areaName: string) => void
 type AlarmListener = (alarm: chrome.alarms.Alarm) => void
@@ -93,9 +95,10 @@ export const createChromeFake = (): ChromeFake => {
             }
             emit(changes, 'session')
         },
-        setAccessLevel: async (): Promise<void> => {
-            // No-op for testing
-        },
+        // A spy, not a bare no-op: session storage holds the decrypted master
+        // key, so "did we actually restrict it to trusted contexts" is worth
+        // asserting rather than assuming.
+        setAccessLevel: vi.fn(async (): Promise<void> => {}),
     }
 
     const fake = {

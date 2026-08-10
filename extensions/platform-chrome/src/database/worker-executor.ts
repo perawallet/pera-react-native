@@ -17,6 +17,22 @@ type WorkerResponse =
     | { id: number; ok: true; rows: unknown[][] }
     | { id: number; ok: false; error: string }
 
+// Startup failure announced by the worker itself — see db-worker.ts. A failed
+// sqlite/OPFS init raises no 'error' event, so without this the worker would
+// look alive while answering nothing, and the death-driven recovery path
+// (host un-ready -> offscreen self-close -> recreate) would never run.
+type WorkerFatal = { fatal: true; error: string }
+
+const isWorkerFatal = (value: unknown): value is WorkerFatal =>
+    typeof value === 'object' &&
+    value !== null &&
+    (value as WorkerFatal).fatal === true
+
+// Generous: real queries are milliseconds, and OPFS contention can stall a
+// call briefly during migrations. This is a liveness backstop for a wedged
+// worker, not a performance budget.
+const REQUEST_TIMEOUT_MS = 30_000
+
 /** Correlates request/response pairs with the db worker by id. */
 export const createWorkerExecutor = (worker: Worker): SqlExecutor => {
     let nextId = 1
@@ -48,7 +64,14 @@ export const createWorkerExecutor = (worker: Worker): SqlExecutor => {
     }
 
     worker.addEventListener('message', event => {
-        const response = (event as MessageEvent).data as WorkerResponse
+        const data = (event as MessageEvent).data as unknown
+        if (isWorkerFatal(data)) {
+            handleWorkerCrash(
+                new Error(`db worker failed to start: ${data.error}`),
+            )
+            return
+        }
+        const response = data as WorkerResponse
         const entry = pending.get(response?.id)
         if (!entry) return
         pending.delete(response.id)
@@ -73,7 +96,31 @@ export const createWorkerExecutor = (worker: Worker): SqlExecutor => {
                 return
             }
             const id = nextId++
-            pending.set(id, { resolve, reject })
+            // A worker wedged inside a long or contended sqlite call emits no
+            // 'error' event, so without a deadline the caller waits forever
+            // and `pending` grows without bound. The offscreen host's own
+            // initializeDatabase awaits this directly (unlike the proxied
+            // paths, which have their own withTimeout), so an unbounded wait
+            // here means the host never reports ready and nothing recovers.
+            const timer = setTimeout(() => {
+                if (!pending.delete(id)) return
+                reject(
+                    new Error(
+                        `db worker request timed out after ${REQUEST_TIMEOUT_MS}ms`,
+                    ),
+                )
+            }, REQUEST_TIMEOUT_MS)
+            const settle = {
+                resolve: (rows: unknown[][]) => {
+                    clearTimeout(timer)
+                    resolve(rows)
+                },
+                reject: (error: Error) => {
+                    clearTimeout(timer)
+                    reject(error)
+                },
+            }
+            pending.set(id, settle)
             worker.postMessage({ ...message, id })
         })
 

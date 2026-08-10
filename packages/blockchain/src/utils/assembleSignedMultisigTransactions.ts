@@ -69,6 +69,18 @@ export type AssembleSignedMultisigParams = {
 
 export type AssembleSignedMultisigResult =
     | { kind: 'success'; signedTransactionsBytes: Uint8Array[] }
+    /**
+     * A transaction index has fewer valid signatures than the threshold.
+     * Distinct from `error` because it's retryable: the backend can flip a
+     * request to `ready` before every signature payload is serialized, so a
+     * poll-driven caller should treat this as "not yet", not a hard failure.
+     */
+    | {
+          kind: 'insufficient-signatures'
+          txIndex: number
+          validCount: number
+          threshold: number
+      }
     | { kind: 'error'; reason: string }
 
 /** Header for `{ msig, txn }` — see `assembleSignedMultisigTransactions`. */
@@ -270,8 +282,10 @@ export const assembleSignedMultisigTransactions = async (
         // contribute zero signatures here; missing arrays count as zero.
         if (validCount < threshold) {
             return {
-                kind: 'error',
-                reason: `Transaction ${txIndex}: not enough valid signatures (${validCount}/${threshold})`,
+                kind: 'insufficient-signatures',
+                txIndex,
+                validCount,
+                threshold,
             }
         }
 

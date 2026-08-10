@@ -29,6 +29,7 @@ vi.mock('../../api/onboarding', async () => ({
 }))
 
 import { useOnboardingKycGate } from '../useOnboardingKycGate'
+import { cardQueryKeys } from '../querykeys'
 
 let queryClient: QueryClient
 const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -47,6 +48,19 @@ const renderGate = () =>
     renderHook(() => useOnboardingKycGate({ onboardingId: ONBOARDING_ID }), {
         wrapper,
     })
+
+// `isKycRequired` is false both before the first fetch and for an accepted
+// record, so waiting on it does not prove the record landed — a refusal issued
+// off the back of it would race the fetch instead of following it. Wait on the
+// cache entry, which only exists once the query has resolved.
+const waitForFetchedRecord = () =>
+    waitFor(() =>
+        expect(
+            queryClient.getQueryData(
+                cardQueryKeys.onboardingDetails('testnet', ONBOARDING_ID),
+            ),
+        ).toBeDefined(),
+    )
 
 describe('useOnboardingKycGate', () => {
     beforeEach(() => {
@@ -92,7 +106,8 @@ describe('useOnboardingKycGate', () => {
     it('keeps blocking after a refusal even though PENDING normally proceeds', async () => {
         fetchOnboardingDetails.mockResolvedValue(record('PENDING'))
         const { result } = renderGate()
-        await waitFor(() => expect(result.current.isKycRequired).toBe(false))
+        await waitForFetchedRecord()
+        expect(result.current.isKycRequired).toBe(false)
 
         act(() => {
             result.current.markServerRefused()
@@ -104,7 +119,8 @@ describe('useOnboardingKycGate', () => {
     it('ignores a cached VERIFIED that predates the refusal', async () => {
         fetchOnboardingDetails.mockResolvedValue(record('VERIFIED'))
         const { result } = renderGate()
-        await waitFor(() => expect(result.current.isKycRequired).toBe(false))
+        await waitForFetchedRecord()
+        expect(result.current.isKycRequired).toBe(false)
 
         act(() => {
             result.current.markServerRefused()
@@ -118,7 +134,8 @@ describe('useOnboardingKycGate', () => {
     it('reopens the step once a newer fetch reports VERIFIED', async () => {
         fetchOnboardingDetails.mockResolvedValue(record('PENDING'))
         const { result } = renderGate()
-        await waitFor(() => expect(result.current.isKycRequired).toBe(false))
+        await waitForFetchedRecord()
+        expect(result.current.isKycRequired).toBe(false)
 
         act(() => {
             result.current.markServerRefused()

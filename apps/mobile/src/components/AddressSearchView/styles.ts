@@ -71,5 +71,26 @@ export const useStyles = makeStyles(theme => {
             paddingVertical: theme.spacing.xl,
             alignItems: 'center',
         },
+        pasteRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.lg,
+            marginBottom: theme.spacing.sm,
+            padding: theme.spacing.lg,
+            borderRadius: theme.borderRadius.md,
+            backgroundColor: theme.colors.layerGrayLightest,
+            borderWidth: theme.borders.sm,
+            borderColor: theme.colors.layerGrayLighter,
+            ...theme.shadows.sm,
+        },
+        pasteRowText: {
+            // The address wraps rather than truncates, so the text column has to
+            // shrink instead of pushing the icon off the row.
+            flex: 1,
+            gap: theme.spacing.xs,
+        },
+        pasteRowLabel: {
+            color: theme.colors.textGray,
+        },
     }
 })

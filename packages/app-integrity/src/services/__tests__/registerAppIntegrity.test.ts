@@ -21,7 +21,7 @@ vi.mock('../../api/integrity', () => ({
 
 const providerMock = {
     deviceInfo: {
-        getDeviceID: vi.fn().mockResolvedValue('device-1'),
+        getDeviceInstallationID: vi.fn().mockResolvedValue('device-1'),
         getDevicePlatform: vi.fn().mockReturnValue('android'),
         getAppEnvironment: vi.fn().mockReturnValue('production'),
         isStoreBuild: vi.fn().mockReturnValue(true),

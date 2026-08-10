@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 import { ChromeKeyValueStorageService } from '../key-value-storage'
 
@@ -24,8 +24,49 @@ describe('ChromeKeyValueStorageService', () => {
         service = new ChromeKeyValueStorageService()
     })
 
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
     it('throws on read before hydrate()', () => {
         expect(() => service.getItem('foo')).toThrow(/hydrate/)
+    })
+
+    // The interface is synchronous, so the write is fire-and-forget. Swallowing
+    // the rejection would leave the cache serving a value that never reached
+    // disk — invisible until a restart.
+    it('reports a failed write instead of swallowing it', async () => {
+        await service.hydrate()
+        const consoleError = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {})
+        vi.spyOn(fake.chrome.storage.local, 'set').mockRejectedValue(
+            new Error('QUOTA_BYTES quota exceeded'),
+        )
+
+        service.setItem('foo', 'super-secret-value')
+        await vi.waitFor(() => expect(consoleError).toHaveBeenCalled())
+
+        const logged = JSON.stringify(consoleError.mock.calls)
+        expect(logged).toContain('kv:foo')
+        // The persisted query cache lives under this prefix; values must never
+        // reach logs or telemetry.
+        expect(logged).not.toContain('super-secret-value')
+    })
+
+    it('reports a failed delete instead of swallowing it', async () => {
+        await service.hydrate()
+        const consoleError = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {})
+        vi.spyOn(fake.chrome.storage.local, 'remove').mockRejectedValue(
+            new Error('storage unavailable'),
+        )
+
+        service.removeItem('foo')
+        await vi.waitFor(() => expect(consoleError).toHaveBeenCalled())
+
+        expect(JSON.stringify(consoleError.mock.calls)).toContain('kv:foo')
     })
 
     it('round-trips items synchronously after hydrate', async () => {
@@ -46,7 +87,7 @@ describe('ChromeKeyValueStorageService', () => {
 
     it('hydrates existing kv: entries and ignores foreign keys', async () => {
         fake.data.set('kv:existing', 'value')
-        fake.data.set('device:id', 'not-kv')
+        fake.data.set('device:installation-id', 'not-kv')
         await service.hydrate()
         expect(service.getItem('existing')).toBe('value')
         expect(service.getAllKeys()).toEqual(['existing'])

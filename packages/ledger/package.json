@@ -1,40 +1,41 @@
 {
-  "name": "@perawallet/wallet-core-ledger",
-  "private": true,
-  "version": "0.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+    "name": "@perawallet/wallet-core-ledger",
+    "private": true,
+    "version": "0.0.0",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite build --watch",
+        "test": "vitest run",
+        "test:unit": "vitest run",
+        "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+    },
+    "dependencies": {
+        "@babel/runtime": "catalog:",
+        "@perawallet/wallet-core-hardware-wallet": "workspace:*",
+        "@perawallet/wallet-core-shared": "workspace:*",
+        "@perawallet/wallet-extension-ledger-react-native": "workspace:*",
+        "@perawallet/wallet-extension-ledger-shared": "workspace:*",
+        "@perawallet/wallet-extension-provider": "workspace:*",
+        "react": "catalog:",
+        "zustand": "catalog:"
+    },
+    "devDependencies": {
+        "@perawallet/wallet-core-devtools": "workspace:*",
+        "@testing-library/react": "catalog:",
+        "@types/react": "catalog:",
+        "react-dom": "catalog:",
+        "typescript": "catalog:",
+        "vite": "catalog:",
+        "vite-plugin-dts": "catalog:",
+        "vitest": "catalog:"
     }
-  },
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
-    "test": "vitest run",
-    "test:unit": "vitest run",
-    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
-  },
-  "dependencies": {
-    "@babel/runtime": "catalog:",
-    "@perawallet/wallet-core-hardware-wallet": "workspace:*",
-    "@perawallet/wallet-core-shared": "workspace:*",
-    "@perawallet/wallet-extension-ledger-react-native": "workspace:*",
-    "@perawallet/wallet-extension-provider": "workspace:*",
-    "react": "catalog:",
-    "zustand": "catalog:"
-  },
-  "devDependencies": {
-    "@perawallet/wallet-core-devtools": "workspace:*",
-    "@testing-library/react": "catalog:",
-    "@types/react": "catalog:",
-    "react-dom": "catalog:",
-    "typescript": "catalog:",
-    "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
-    "vitest": "catalog:"
-  }
 }

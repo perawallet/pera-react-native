@@ -4,7 +4,12 @@
             "title": "Mit dieser Website verbinden",
             "description": "Wähle die Konten aus, die du mit dieser Website teilen möchtest.",
             "connect_button": "Verbinden",
-            "cancel_button": "Abbrechen"
+            "cancel_button": "Abbrechen",
+            "peer_origin_claim": "Website gibt an: {{origin}}",
+            "request_origin": "Anfrage kam von {{origin}}",
+            "requester_verified_label": "Verifizierter Tab",
+            "requester_verified_a11y_label": "Verifiziert: Diese Anfrage kam aus deinem Browser-Tab",
+            "requester_verified_a11y_origin": "Verifiziert: Diese Anfrage kam aus deinem Browser-Tab unter {{origin}}"
         },
         "sign": {
             "error": {
@@ -14,7 +19,8 @@
             },
             "network_mismatch": "Diese Transaktion ist für ein anderes Algorand-Netzwerk als das aktive Netzwerk deines Wallets bestimmt. Wechsle das Netzwerk in den Einstellungen und versuche es erneut.",
             "unsupported_message": "Diese Website hat eine Anfrage zum Signieren einer Nachricht gesendet, die Pera nicht verarbeiten kann. Die Anfrage wurde abgelehnt.",
-            "unauthorized_signer": "Diese Website ist nicht berechtigt, eine Signatur für dieses Konto anzufordern."
+            "unauthorized_signer": "Diese Website ist nicht berechtigt, eine Signatur für dieses Konto anzufordern.",
+            "no_session": "Diese Verbindung ist nicht mehr gültig. Verbinde die Website erneut und versuche es noch einmal."
         },
         "passkey": {
             "create": {
@@ -25,14 +31,21 @@
             },
             "approve_button": "Weiter",
             "decline_button": "Abbrechen",
-            "error": "Pera konnte diese Passkey-Anfrage nicht abschließen. Die Anfrage wurde abgelehnt."
+            "error": "Pera konnte diese Passkey-Anfrage nicht abschließen. Die Anfrage wurde abgelehnt.",
+            "choose": {
+                "title": "Passkey auswählen",
+                "description": "Für {{origin}} sind mehrere Passkeys gespeichert. Wähle den Passkey aus, mit dem du dich anmelden möchtest."
+            }
+        },
+        "approval": {
+            "delivery_failed": "Pera konnte deine Entscheidung nicht an die Website übermitteln. Die Erweiterung wurde in den Ruhezustand versetzt, während dieses Fenster geöffnet war. Schließe dieses Fenster und starte die Anfrage erneut über die Website."
         }
     },
     "account_menu": {
         "title": "Konten",
         "sort": "Sortieren",
         "select_title": "Konto auswählen",
-        "select_description": "Wähle ein Konto für den Swap aus"
+        "select_description": "Wähle ein Konto für den Tausch aus"
     },
     "account_sort": {
         "title": "Sortieren",
@@ -167,6 +180,7 @@
     },
     "address_entry": {
         "scan_qr": "QR-Code scannen",
+        "paste_from_clipboard": "Aus Zwischenablage einfügen",
         "invalid_qr_title": "Ungültiger QR-Code",
         "invalid_qr_body": "Dieser QR-Code enthält keine Wallet-Adresse",
         "address": "Adresse",
@@ -226,7 +240,7 @@
             "total_supply_info_body": "Das Gesamtangebot eines Assets wird bei der Erstellung festgelegt und entspricht der Gesamtzahl der erstellten Einheiten des Assets."
         },
         "action_buttons": {
-            "swap": "Swap",
+            "swap": "Tauschen",
             "buy": "Kaufen",
             "send": "Senden",
             "receive": "Empfangen"
@@ -298,7 +312,7 @@
             "sort_oldest_first": "Älteste zuerst"
         },
         "button_panel": {
-            "swap": "Swap",
+            "swap": "Tauschen",
             "send": "Senden",
             "receive": "Empfangen",
             "more": "Mehr"
@@ -667,7 +681,7 @@
             },
             "group_fee_too_small": {
                 "title": "Netzwerkgebühr zu niedrig",
-                "body": "Diese Transaktionsgruppe hat {{paid}} µALGO an Gebühren gezahlt, das Netzwerk verlangt jedoch {{required}} µALGO. Bitte versuche es erneut."
+                "body": "Diese Transaktionsgruppe hat {{paid}} microALGO an Gebühren gezahlt, das Netzwerk verlangt jedoch {{required}} microALGO. Bitte versuche es erneut."
             },
             "unknown_node_error": {
                 "title": "Transaktion fehlgeschlagen",
@@ -925,9 +939,9 @@
             "select_asset_search": "Nach Name oder ID suchen",
             "select_asset_empty_title": "Keine passenden Assets",
             "select_asset_empty_body": "Keine Assets entsprechen deinem Suchbegriff",
-            "swap_success_title": "Swap abgeschlossen",
+            "swap_success_title": "Tausch abgeschlossen",
             "swap_success_body": "Deine Assets wurden in USDC getauscht.",
-            "swap_error_title": "Swap fehlgeschlagen"
+            "swap_error_title": "Tausch fehlgeschlagen"
         },
         "withdraw": {
             "navigation_title": "Auszahlen",
@@ -943,7 +957,7 @@
             "success_body": "{{amount}} USDC ist auf dem Weg zu deinem Konto."
         },
         "confirm_swap": {
-            "navigation_title": "Swap bestätigen",
+            "navigation_title": "Tausch bestätigen",
             "price": "Preis",
             "slippage": "Slippage-Toleranz",
             "price_impact": "Preisauswirkung",
@@ -1577,7 +1591,8 @@
                     "malformed_payload": "Die Backup-Datei enthält keine wiederherstellbaren Konten.",
                     "empty_clipboard": "In der Zwischenablage befindet sich nichts zum Einfügen.",
                     "read_failed": "Die Datei konnte nicht gelesen werden."
-                }
+                },
+                "pick_file_button_new_tab": "Neuen Tab öffnen, um deine Backup-Datei auszuwählen"
             },
             "key": {
                 "title": "Gib deinen 12-Wort-Wiederherstellungsschlüssel ein",
@@ -2150,7 +2165,7 @@
                 "betanet_label": "Algorand BetaNet",
                 "custom_label": "Benutzerdefiniertes Netzwerk",
                 "non_mainnet_warning_title": "Eingeschränkte Unterstützung außerhalb von MainNet",
-                "non_mainnet_warning_body": "MainNet ist das einzige vollständig unterstützte Netzwerk. Funktionen, die auf Pera-Dienste angewiesen sind — Asset-Details, Swap, Kauf, Karte, Staking und Posteingang — sind auf TestNet eingeschränkt und auf BetaNet sowie benutzerdefinierten Nodes nicht verfügbar.",
+                "non_mainnet_warning_body": "MainNet ist das einzige vollständig unterstützte Netzwerk. Funktionen, die auf Pera-Dienste angewiesen sind — Asset-Details, Tauschen, Kauf, Karte, Staking und Posteingang — sind auf TestNet eingeschränkt und auf BetaNet sowie benutzerdefinierten Nodes nicht verfügbar.",
                 "enable_mainnet": "MainNet aktivieren",
                 "enable_testnet": "TestNet aktivieren",
                 "custom_sheet_title": "Benutzerdefiniertes Netzwerk konfigurieren",
@@ -2420,7 +2435,7 @@
         "list_item": {
             "send": "Senden",
             "receive": "Empfangen",
-            "swap": "Swap",
+            "swap": "Tausch",
             "opt_in": "Opt-in",
             "opt_out": "Opt-out",
             "asset_config": "Asset-Konfiguration",
@@ -2558,8 +2573,8 @@
     "tabbar": {
         "home": "Start",
         "discover": "Entdecken",
-        "swap": "Swap",
-        "fund": "Fund",
+        "swap": "Tauschen",
+        "fund": "Aufladen",
         "menu": "Menü"
     },
     "walletconnect": {
@@ -2578,7 +2593,9 @@
             "error_sheet_title": "Fehler",
             "error_sheet_body": "Deine WalletConnect-Anfrage ist mit folgendem Fehler fehlgeschlagen:",
             "error_sheet_retry": "Bitte versuche es erneut, indem du zur dApp zurückkehrst, bei der du die Anfrage gestellt hast.",
-            "quantum_fee_delivery_failed": "Die Anfrage konnte nicht abgeschlossen werden. Diese App unterstützt möglicherweise nicht die höheren Netzwerkgebühren, die für Quantum-Konten erforderlich sind."
+            "quantum_fee_delivery_failed": "Die Anfrage konnte nicht abgeschlossen werden. Diese App unterstützt möglicherweise nicht die höheren Netzwerkgebühren, die für Quantum-Konten erforderlich sind.",
+            "networks_betanet": "Betanet",
+            "error_network_mismatch": "Diese App wollte sich mit {{requested}} verbinden, dein Wallet ist aber auf {{active}}. Wechsle das Netzwerk in den Einstellungen und versuche es erneut."
         },
         "connection": {
             "approve_delivery_failed": "Die dApp konnte nicht erreicht werden, um die Verbindung zu bestätigen. Überprüfe deine Internetverbindung und versuche es erneut."
@@ -2601,7 +2618,8 @@
             "connected_accounts": "Verbunden mit",
             "permissions": "Erweiterte Berechtigungen",
             "permissions_info_title": "Erweiterte Berechtigungen",
-            "permissions_info_body": "WalletConnect ist ein Kommunikationsprotokoll für Web3, das es Wallets und dApps ermöglicht, sich sicher zu verbinden und zu interagieren. Mit jeder neuen Version führt WalletConnect neue Möglichkeiten ein, Transaktionsanfragen von Drittanbieter-Projekten zu handhaben, zu signieren und/oder anzuzeigen."
+            "permissions_info_body": "WalletConnect ist ein Kommunikationsprotokoll für Web3, das es Wallets und dApps ermöglicht, sich sicher zu verbinden und zu interagieren. Mit jeder neuen Version führt WalletConnect neue Möglichkeiten ein, Transaktionsanfragen von Drittanbieter-Projekten zu handhaben, zu signieren und/oder anzuzeigen.",
+            "disconnect_failed_title": "Trennen nicht möglich"
         }
     },
     "staking": {
@@ -2638,20 +2656,21 @@
             "title": "Staking-Arten",
             "liquid_description": "Liquid-Staking-Anwendungen ermöglichen es Nutzern, ihr Algo zu staken und dabei liquide zu bleiben. Beim typischen Ablauf zahlen Nutzer Algo ein und prägen neue Token, die Eigentum und Wert des gestakten Algo repräsentieren und im gesamten <0>DeFi-Ökosystem</0> verwendet werden können.",
             "pools_description": "Staking-Pools ermöglichen es Gruppen von Personen, gemeinsam am Konsens teilzunehmen. Nutzer können Algo bei einem Validator staken und werden basierend auf den Validator-Prämien belohnt. Optionen wie DEX-Liquiditätspool-Staking sind ebenfalls verfügbar.",
-            "delegated_description": "Delegiertes Staking bedeutet, dass ein Drittanbieter in deinem Namen einen Node betreibt, während dein Algo in deinem Wallet bleibt. Dies ist nützlich für Nutzer, die das Netzwerk sichern und Prämien sammeln möchten, ohne einen eigenen Node zu betreiben."
+            "delegated_description": "Delegiertes Staking bedeutet, dass ein Drittanbieter in deinem Namen einen Node betreibt, während dein Algo jederzeit in deinem Wallet bleibt. Das ist eine Option für Nutzer, die dabei helfen möchten, das Netzwerk zu sichern und Prämien zu sammeln, aber nicht über das Wissen oder die Ressourcen verfügen, um einen eigenen Node zu betreiben."
         }
     },
     "swap": {
         "introduction": {
-            "title": "Swap in Pera",
-            "description": "Pera Wallet bietet eine einfache und schnelle Möglichkeit, Assets zu tauschen. Mit P.E.R.A. werden Swap-Anfragen intelligent über mehrere Algorand-basierte dezentrale Börsen geleitet, um den besten verfügbaren Preis zu sichern.",
+            "title": "Tauschen in Pera",
+            "description": "Pera Wallet bietet eine einfache und schnelle Möglichkeit, Assets zu tauschen. Mit P.E.R.A. werden Tauschanfragen intelligent über mehrere Algorand-basierte dezentrale Börsen geleitet, um den besten verfügbaren Preis zu sichern.",
             "powered_by": "Unterstützt von ",
             "powered_by_brand": "P.E.R.A.",
-            "start_swapping": "Swap starten",
-            "terms_agreement": "Durch Fortfahren stimmst du den <0>Nutzungsbedingungen</0> unseres Swap-Partners zu"
+            "start_swapping": "Tauschen starten",
+            "terms_agreement": "Durch Fortfahren stimmst du den <0>Nutzungsbedingungen</0> unseres Tauschpartners zu"
         },
         "form": {
-            "swap": "Swap",
+            "swap": "Tauschen",
+            "insufficient_balance": "Der Betrag übersteigt dein verfügbares Guthaben.",
             "no_balance_title": "Nichts zum Tauschen",
             "no_balance_body": "Dieses Konto hält kein {{unit}}.",
             "percentage_error_title": "Betrag konnte nicht berechnet werden",
@@ -2671,7 +2690,7 @@
             "no_results_body": "Keine Assets entsprechen deinem Suchbegriff"
         },
         "configuration": {
-            "title": "Swap-Einstellungen",
+            "title": "Tauscheinstellungen",
             "apply": "Anwenden",
             "balance_percentage": "Guthabenprozentsatz",
             "balance_custom_hint": "Benutzerdefinierten Prozentsatz festlegen",
@@ -2693,28 +2712,28 @@
             "pera_fee": "Pera-Gebühr",
             "provider": "Anbieter",
             "minimum_received": "Mindestbetrag erhalten",
-            "confirm_swap": "Swap bestätigen",
+            "confirm_swap": "Tausch bestätigen",
             "slide_to_confirm": "Zum Bestätigen wischen",
-            "high_price_impact_warning": "Dieser Swap hat eine hohe Preisauswirkung. Du erhältst möglicherweise deutlich weniger Token als erwartet.",
+            "high_price_impact_warning": "Dieser Tausch hat eine hohe Preisauswirkung. Du erhältst möglicherweise deutlich weniger Token als erwartet.",
             "quote_error": "Angebote konnten nicht abgerufen werden. Bitte versuche es erneut."
         },
         "execution": {
-            "error_title": "Swap fehlgeschlagen",
-            "error_body": "Beim Swap ist ein Fehler aufgetreten. Bitte versuche es erneut.",
-            "success_title": "Swap abgeschlossen",
-            "success_body": "Swap von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
-            "user_rejected": "Swap abgebrochen",
-            "pending_cosign_title": "Swap-Anfrage gesendet",
-            "pending_cosign_body": "Dein Swap benötigt eine weitere Signatur. Er wird abgeschlossen, sobald der andere Signierer ihn in seinem Posteingang genehmigt.",
-            "quantum_fee_unsupported": "Quantum-Konten können noch nicht swappen. Die Swap-Gebühr wird von unseren Servern festgelegt und deckt die höhere Gebühr nicht ab, die eine Quantum-Signatur benötigt.",
-            "quantum_multisig_unsupported": "Quantum-Konten können nicht aus einem Gemeinschaftskonto swappen. Quantum-Schlüssel können nicht an der Multisignatur-Signierung teilnehmen."
+            "error_title": "Tausch fehlgeschlagen",
+            "error_body": "Beim Tausch ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+            "success_title": "Tausch abgeschlossen",
+            "success_body": "Tausch von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
+            "user_rejected": "Tausch abgebrochen",
+            "pending_cosign_title": "Tauschanfrage gesendet",
+            "pending_cosign_body": "Dein Tausch benötigt eine weitere Signatur. Er wird abgeschlossen, sobald der andere Signierer ihn in seinem Posteingang genehmigt.",
+            "quantum_fee_unsupported": "Quantum-Konten können noch nicht tauschen. Die Tauschgebühr wird von unseren Servern festgelegt und deckt die höhere Gebühr nicht ab, die eine Quantum-Signatur benötigt.",
+            "quantum_multisig_unsupported": "Quantum-Konten können nicht aus einem Gemeinschaftskonto tauschen. Quantum-Schlüssel können nicht an der Multisignatur-Signierung teilnehmen."
         },
         "signing": {
-            "source_name": "Swap",
-            "source_description": "Bestätige Transaktionen, um deinen Swap abzuschließen"
+            "source_name": "Tausch",
+            "source_description": "Bestätige Transaktionen, um deinen Tausch abzuschließen"
         },
         "info": {
-            "slippage_tolerance": "Die maximale Differenz zwischen dem erwarteten Preis und dem Ausführungspreis. Eine höhere Toleranz erhöht die Wahrscheinlichkeit eines erfolgreichen Swaps, kann aber zu einem weniger günstigen Kurs führen.",
+            "slippage_tolerance": "Die maximale Differenz zwischen dem erwarteten Preis und dem Ausführungspreis. Eine höhere Toleranz erhöht die Wahrscheinlichkeit eines erfolgreichen Tauschs, kann aber zu einem weniger günstigen Kurs führen.",
             "price_impact": "Die Differenz zwischen dem Marktpreis und dem geschätzten Preis aufgrund der Handelsgröße. Größere Trades haben typischerweise eine höhere Preisauswirkung."
         },
         "provider": {
@@ -2726,35 +2745,35 @@
             "auto_description": "Bester verfügbarer Preis"
         },
         "history": {
-            "title": "Swap-Verlauf",
+            "title": "Tauschverlauf",
             "widget": {
-                "title": "Swap-Verlauf",
+                "title": "Tauschverlauf",
                 "see_all": "Alle anzeigen",
-                "error": "Swap-Verlauf konnte nicht geladen werden."
+                "error": "Tauschverlauf konnte nicht geladen werden."
             },
             "list": {
                 "item": {
                     "description": "{{amountIn}} {{unitIn}} getauscht gegen "
                 },
                 "empty": {
-                    "title": "Noch keine Swaps",
-                    "body": "Dein Swap-Verlauf wird hier angezeigt."
+                    "title": "Noch keine Tauschvorgänge",
+                    "body": "Dein Tauschverlauf wird hier angezeigt."
                 },
                 "error": {
                     "title": "Etwas ist schiefgelaufen",
-                    "body": "Wir konnten deinen Swap-Verlauf nicht laden. Bitte versuche es erneut."
+                    "body": "Wir konnten deinen Tauschverlauf nicht laden. Bitte versuche es erneut."
                 }
             }
         },
         "top_pairs": {
-            "title": "Top 5 Swaps",
+            "title": "Top 5 Tauschpaare",
             "volume_24h": "Volumen (24H)",
-            "error": "Top-Swaps konnten nicht geladen werden"
+            "error": "Top-Tauschpaare konnten nicht geladen werden"
         }
     },
     "onramp": {
         "tabs": {
-            "fund": "Fund",
+            "fund": "Aufladen",
             "history": "Verlauf"
         },
         "testnet": {
@@ -2769,7 +2788,7 @@
             "info_body_secondary": "Je nach deinem Land können einige Krypto- oder Fiat-Optionen eingeschränkt sein."
         },
         "introduction": {
-            "title": "Fund",
+            "title": "Aufladen",
             "new_chip": "NEU",
             "continue": "Weiter",
             "feature_buy": "ALGO oder USDC mit Fiat oder Krypto kaufen",
@@ -2824,7 +2843,7 @@
             "confirm": "Bestätigen"
         },
         "order_review": {
-            "xo_title": "Swap-Übersicht",
+            "xo_title": "Tauschübersicht",
             "pay_in_address": "Einzahlungsadresse",
             "send_to_address": "Sende {{amount}} an diese Adresse.",
             "address": "Adresse",
@@ -3399,10 +3418,15 @@
             "placeholder": "Genehmigungsoberfläche — kommt in M4."
         },
         "expanded": {
-            "onboarding_title": "In einem vollständigen Tab einrichten",
-            "onboarding_body": "Die Wallet-Einrichtung öffnet sich in einem vollständigen Browser-Tab, damit du deine Wiederherstellungsphrase sicher sichern kannst.",
-            "onboarding_cta": "In einem neuen Tab fortfahren",
             "redirecting": "Wird in einem neuen Tab fortgesetzt…"
+        },
+        "reauth": {
+            "title": "Bestätige, dass du es bist",
+            "confirm_button": "Bestätigen",
+            "use_passkey": "Passkey verwenden",
+            "passkey_description": "Diese Website verlangt, dass du deine Identität bestätigst, bevor du dich mit deinem Passkey anmeldest.",
+            "confirm_description": "Bestätige deine Identität, um diese Aktion auszuführen.",
+            "passkey_error": "Passkey-Verifizierung fehlgeschlagen. Verwende stattdessen dein Passwort."
         }
     },
     "migration": {
@@ -3412,5 +3436,13 @@
             "continue": "Weiter",
             "do_not_show_again": "Nicht erneut anzeigen"
         }
+    },
+    "paste_link": {
+        "title": "Link einfügen",
+        "description": "Füge eine WalletConnect-URI oder einen Pera-Link ein, um ihn zu öffnen.",
+        "placeholder": "wc:… oder perawallet://…",
+        "submit": "Link öffnen",
+        "error_invalid": "Das scheint kein Link zu sein, den Pera öffnen kann.",
+        "error_failed": "Pera konnte diesen Link nicht öffnen. Überprüfe ihn und versuche es erneut."
     }
 }

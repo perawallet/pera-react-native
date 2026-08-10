@@ -21,14 +21,14 @@ import type {
     LedgerTransportProvider,
     LedgerTransport,
     LedgerDevice,
-} from './types'
+} from '@perawallet/wallet-extension-ledger-shared'
 import {
     classifyLedgerError,
     LedgerBluetoothDisabledError,
     LedgerPermissionDeniedError,
-} from './errors'
-import { resolveDeviceModel } from './constants'
-import { createLedgerTransportWrapper } from './transport-wrapper'
+} from '@perawallet/wallet-extension-ledger-shared'
+import { resolveDeviceModel } from '@perawallet/wallet-extension-ledger-shared'
+import { createLedgerTransportWrapper } from '@perawallet/wallet-extension-ledger-shared'
 
 /** Unrecognized values fall back to `unknown`. */
 const BLE_STATE_MAP: Record<string, HardwareWalletAdapterState> = {

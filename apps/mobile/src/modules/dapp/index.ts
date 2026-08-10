@@ -15,6 +15,6 @@
 // mirrors AppShell.web.tsx's own `./AppShell.web` convention for a file with
 // no native twin.
 export { DappRequestRoutes } from './routes/DappRequestRoutes.web'
-export { useDappRequest } from './hooks/useDappRequest'
+export { useDappRequest } from './hooks/useDappRequest.web'
 export { EnableRequestScreen } from './screens/EnableRequestScreen'
 export { SignRequestApprovalScreen } from './screens/SignRequestApprovalScreen'

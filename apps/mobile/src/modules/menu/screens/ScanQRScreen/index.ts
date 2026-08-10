@@ -10,4 +10,8 @@
  limitations under the License
  */
 
-export { ScanQRScreen } from './ScanQRScreen'
+// Web-only screen: registered solely in WebMainRoutes, and it renders
+// QRScannerContent.web. Named with the explicit `.web` suffix because tsc has
+// no platform-suffix resolution — which also means this barrel resolves only
+// in a web build. Nothing native may import it.
+export { ScanQRScreen } from './ScanQRScreen.web'

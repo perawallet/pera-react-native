@@ -231,7 +231,7 @@ describe('assembleSignedMultisigTransactions', () => {
         }
     })
 
-    test('errors when threshold is not met', async () => {
+    test('reports insufficient-signatures when threshold is not met', async () => {
         const result = await assembleSignedMultisigTransactions({
             rawTransactionsBase64: [FAKE_TX_B64],
             participantAddresses: [ADDR_1, ADDR_2, ADDR_3],
@@ -244,10 +244,12 @@ describe('assembleSignedMultisigTransactions', () => {
             ],
         })
 
-        expect(result.kind).toBe('error')
-        if (result.kind === 'error') {
-            expect(result.reason).toMatch(/not enough valid signatures/i)
-        }
+        expect(result).toEqual({
+            kind: 'insufficient-signatures',
+            txIndex: 0,
+            validCount: 2,
+            threshold: 3,
+        })
     })
 
     test('treats all-zero signatures as missing (sanity filter)', async () => {
@@ -262,10 +264,12 @@ describe('assembleSignedMultisigTransactions', () => {
             ],
         })
 
-        expect(result.kind).toBe('error')
-        if (result.kind === 'error') {
-            expect(result.reason).toMatch(/not enough valid signatures.*1\/2/i)
-        }
+        expect(result).toEqual({
+            kind: 'insufficient-signatures',
+            txIndex: 0,
+            validCount: 1,
+            threshold: 2,
+        })
     })
 
     test('treats null per-txn signatures as missing', async () => {
@@ -280,11 +284,50 @@ describe('assembleSignedMultisigTransactions', () => {
             ],
         })
 
-        expect(result.kind).toBe('error')
-        if (result.kind === 'error') {
-            // Second transaction has only 1 of 2 signatures.
-            expect(result.reason).toMatch(/Transaction 1.*1\/2/i)
-        }
+        // Second transaction has only 1 of 2 signatures.
+        expect(result).toEqual({
+            kind: 'insufficient-signatures',
+            txIndex: 1,
+            validCount: 1,
+            threshold: 2,
+        })
+    })
+
+    test('assembles despite a null entry when the index still meets threshold', async () => {
+        // A null is a legitimate final state ("didn't sign this index"), not
+        // only a mid-write artifact — it must not block assembly at threshold.
+        const result = await assembleSignedMultisigTransactions({
+            rawTransactionsBase64: [FAKE_TX_B64, FAKE_TX_B64],
+            participantAddresses: [ADDR_1, ADDR_2],
+            version: 1,
+            threshold: 1,
+            responses: [
+                buildResponse(ADDR_1, 'signed', [SIG_1, null]),
+                buildResponse(ADDR_2, 'signed', [null, SIG_2]),
+            ],
+        })
+
+        expect(result.kind).toBe('success')
+        if (result.kind !== 'success') return
+        expect(result.signedTransactionsBytes).toHaveLength(2)
+    })
+
+    test('treats a signatures array shorter than the transaction list as missing entries', async () => {
+        // Mid-write poll race: the backend serialized only the first entry.
+        const result = await assembleSignedMultisigTransactions({
+            rawTransactionsBase64: [FAKE_TX_B64, FAKE_TX_B64],
+            participantAddresses: [ADDR_1, ADDR_2],
+            version: 1,
+            threshold: 1,
+            responses: [buildResponse(ADDR_1, 'signed', [SIG_1])],
+        })
+
+        expect(result).toEqual({
+            kind: 'insufficient-signatures',
+            txIndex: 1,
+            validCount: 0,
+            threshold: 1,
+        })
     })
 
     test('treats malformed base64 signatures as missing', async () => {
@@ -299,10 +342,12 @@ describe('assembleSignedMultisigTransactions', () => {
             ],
         })
 
-        expect(result.kind).toBe('error')
-        if (result.kind === 'error') {
-            expect(result.reason).toMatch(/not enough valid signatures.*1\/2/i)
-        }
+        expect(result).toEqual({
+            kind: 'insufficient-signatures',
+            txIndex: 0,
+            validCount: 1,
+            threshold: 2,
+        })
     })
 
     test('rejects invalid base64 raw transaction', async () => {

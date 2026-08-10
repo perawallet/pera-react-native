@@ -122,6 +122,11 @@ export const createNativePasskeyWriter = (): NativePasskeyWriter => {
         const masterKey = await resolveMasterKey()
         storage.set(
             params.credentialId,
+            // 2-arg native call, no AAD — safe only because migratePasskeys
+            // never runs on web today (ChromeMigrationService.hasLegacyData()
+            // is false and getLegacyData() throws, see stubs.ts). If web
+            // migration becomes real, this needs the keyId arg or it writes
+            // an entry no reader can open.
             encryptData(
                 masterKey,
                 encode(

@@ -24,6 +24,39 @@ const BASE_POLL_INTERVAL_MS = 3000
 const ERROR_POLL_INTERVAL_MS = 30_000
 
 /**
+ * Longest a handoff is polled with no terminal status before the client
+ * self-expires it. Only a backstop: the backend's authoritative per-request
+ * `expected_expire_datetime` (via {@link UseHandoffResolverArgs.expiresAtOf})
+ * is the real deadline whenever the backend has answered even once, so this
+ * fixed cap effectively bites only when the backend never responds at all. Set
+ * above the ~1h Algorand transaction-validity window that already bounds a
+ * signable request, so it never pre-empts a legitimately slow multi-party sign.
+ */
+const FALLBACK_DEADLINE_MS = 60 * 60_000
+
+/**
+ * The wall-clock ms at which a still-unresolved handoff should self-expire: the
+ * backend's authoritative expiry when known, else a fixed fallback measured
+ * from registration. `min` so a pathologically long backend expiry can't defeat
+ * the fallback. Returns null when neither bound is available (accessors unset),
+ * i.e. deadline enforcement is opt-in per consumer.
+ */
+export const resolveHandoffDeadline = ({
+    expiresAt,
+    registeredAt,
+    fallbackMs = FALLBACK_DEADLINE_MS,
+}: {
+    expiresAt: number | null
+    registeredAt: number | null
+    fallbackMs?: number
+}): number | null => {
+    const fallback = registeredAt === null ? null : registeredAt + fallbackMs
+    if (expiresAt === null) return fallback
+    if (fallback === null) return expiresAt
+    return Math.min(expiresAt, fallback)
+}
+
+/**
  * The per-handoff poll a consumer supplies: the `with-signatures` request
  * (endpoint + params) plus its enablement gate. The cadence (a stateless
  * two-tier backoff) and cache policy are owned by the resolver, not here.
@@ -53,12 +86,27 @@ export type UseHandoffResolverArgs<TItem, TRaw, TDetail> = {
      * Deliver / complete a terminal outcome exactly once. Receives the poll
      * `detail` too, for consumers that need a field the registry record does
      * not carry (e.g. the swap resolver reads the proposer address from it).
+     * `detail` is `undefined` for a fallback-fired deadline (see
+     * {@link registeredAtOf}) where the backend never returned a poll body.
      */
     resolve: (
         outcome: TerminalHandoffOutcome,
         item: TItem,
-        detail: TDetail,
+        detail: TDetail | undefined,
     ) => void | Promise<void>
+    /**
+     * The request's authoritative expiry (wall-clock ms) read from the latest
+     * poll `detail`, or null when absent/unparseable. Enables the client-side
+     * deadline: past it, an unresolved handoff self-expires to a clean
+     * `soft-reject`. Omit to disable deadline enforcement.
+     */
+    expiresAtOf?: (detail: TDetail) => number | null
+    /**
+     * Registration timestamp (wall-clock ms) of a handoff, anchoring the fixed
+     * fallback deadline that bounds a handoff whose backend never responds.
+     * Omit to disable the fallback.
+     */
+    registeredAtOf?: (item: TItem) => number
     /**
      * When set (together with {@link networkOf}), only handoffs on this network
      * are driven — others wait until the active network switches back. Consumers
@@ -89,6 +137,8 @@ export const useHandoffResolver = <TItem, TRaw, TDetail>({
     resolve,
     activeNetwork,
     networkOf,
+    expiresAtOf,
+    registeredAtOf,
 }: UseHandoffResolverArgs<TItem, TRaw, TDetail>): void => {
     // Opt-in active-network filter. Without it, every handoff is driven on its
     // own captured network (the WalletConnect behavior).
@@ -146,6 +196,29 @@ export const useHandoffResolver = <TItem, TRaw, TDetail>({
             if (resolvedRef.current.has(key)) return
 
             const detail = result.data as TDetail | undefined
+
+            // Client-side wall-clock cap. Nothing terminalizes a handoff if the
+            // backend never emits a terminal status (a dropped dApp session, or
+            // a request left pending past its expiry), so self-expire it to a
+            // clean `soft-reject` once the deadline passes. Checked before the
+            // `!detail` guard so a backend that never returns a body still
+            // resolves via the registration fallback. Latency is one poll
+            // interval — the effect re-runs on every poll (≤3s healthy, ≤30s
+            // erroring); acceptable for an already-overdue request.
+            const deadline = resolveHandoffDeadline({
+                expiresAt: detail && expiresAtOf ? expiresAtOf(detail) : null,
+                registeredAt: registeredAtOf ? registeredAtOf(item) : null,
+            })
+            if (deadline !== null && Date.now() >= deadline) {
+                resolvedRef.current.add(key)
+                void resolve(
+                    { kind: 'soft-reject', reason: 'expired' },
+                    item,
+                    detail,
+                )
+                return
+            }
+
             if (!detail) return
 
             // Claim BEFORE awaiting classification, which yields to the JS
@@ -181,5 +254,5 @@ export const useHandoffResolver = <TItem, TRaw, TDetail>({
                 await resolve(outcome, item, detail)
             })()
         })
-    }, [results, active, keyOf, classify, resolve])
+    }, [results, active, keyOf, classify, resolve, expiresAtOf, registeredAtOf])
 }

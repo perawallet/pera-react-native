@@ -45,6 +45,51 @@ export type PendingApproval =
           message: Record<string, unknown>
           approvedAddresses: string[]
       }
+    | {
+          kind: 'wc-connect'
+          requestId: string
+          // dApp-asserted `peerMeta.url` origin — the WalletConnect
+          // handshake's own claim, which a page can forge.
+          origin: string
+          faviconUrl?: string
+          clientId: string
+          chainId: number
+          // dApp-asserted display metadata, for the same header mobile's
+          // ConnectionView renders. Display only.
+          peerName?: string
+          peerIcons?: string[]
+          permissions?: string[]
+          // Browser-verified origin of the tab that requested this pairing
+          // (see `WcControlMessage`'s `pair.requesterOrigin` doc comment).
+          // Absent for user-initiated pairings. Never conflate with
+          // `origin` above — different trust levels.
+          requesterOrigin?: string
+      }
+    | {
+          kind: 'wc-sign'
+          requestId: string
+          origin: string
+          faviconUrl?: string
+          clientId: string
+          wcRequestId: number
+          method: 'algo_signTxn' | 'algo_signData'
+          payload: unknown
+      }
+    | {
+          // Notification-only: a handshake the offscreen host already refused,
+          // shown so the user learns why (see `WcApprovalRequestMessage`'s
+          // `wc-error` doc comment). There is no decision to make — the
+          // surface's single button just settles this entry so the window
+          // closes, and the router discards whatever it settles with.
+          kind: 'wc-error'
+          requestId: string
+          origin: string
+          faviconUrl?: string
+          clientId: string
+          reason: 'network-mismatch'
+          requestedChainId?: number
+          activeNetwork: string
+      }
     | ({
           kind: 'passkey-create'
           // Optional on every kind (see 'enable' above) so code that reads
@@ -65,6 +110,57 @@ export type PendingApproval =
 // open* method's promise executor, not here.
 type Settle = (decision: unknown) => void
 
+// Deliberately generous: a well-behaved dApp has one approval in flight at a
+// time, and two tabs of the same site is the only ordinary reason to exceed
+// it. See assertCapacity for what these bound.
+const MAX_PENDING_APPROVALS_PER_ORIGIN = 3
+const MAX_PENDING_APPROVALS = 8
+
+// How long a toolbar-popup approval may go unclaimed before it is treated as
+// dismissed. Comfortably longer than a popup's first paint plus one message
+// round-trip, and far shorter than a user deliberating.
+const POPUP_CLAIM_TIMEOUT_MS = 5000
+
+/**
+ * Which approval kinds each decision message may settle.
+ *
+ * `get-approval` and the two universal rejects are omitted deliberately: they
+ * are valid for every kind. Everything else carries a decision shape that only
+ * one family of approvals can consume.
+ */
+const DECISION_KINDS: Record<string, readonly PendingApproval['kind'][]> = {
+    'resolve-approval': ['enable', 'wc-connect'],
+    'resolve-sign-transactions': ['sign-transactions'],
+    'resolve-sign-message': ['sign-message'],
+    'resolve-wc-sign': ['wc-sign'],
+    'resolve-passkey': ['passkey-create', 'passkey-get'],
+    'reject-passkey': ['passkey-create', 'passkey-get'],
+}
+
+const isDecisionKindAllowed = (
+    // Undefined reaches here from a malformed message; the switch below
+    // answers those with 'unknown kind', so let them through unconstrained.
+    messageKind: string | undefined,
+    approvalKind: PendingApproval['kind'],
+): boolean => {
+    const allowed = messageKind ? DECISION_KINDS[messageKind] : undefined
+    // Not a decision message (get-approval, reject-approval) — unconstrained.
+    if (!allowed) return true
+    return allowed.includes(approvalKind)
+}
+
+/**
+ * Thrown when an approval cannot be registered — the caps above, or a
+ * requestId that is already pending. Callers surface it to the dApp as a
+ * declined request rather than opening a surface for it.
+ */
+export class ApprovalRejectedError extends Error {
+    constructor(message: string) {
+        super(message)
+        this.name = 'ApprovalRejectedError'
+    }
+}
+
 export class ApprovalWindowBridge
     implements Arc0027ApprovalOpener, PasskeyApprovalOpener
 {
@@ -75,12 +171,24 @@ export class ApprovalWindowBridge
             settle: Settle
             windowId?: number
             surface?: 'popup' | 'window'
+            // Set once the toolbar popup has fetched this approval via
+            // get-current-approval — see the unclaimed sweep below.
+            claimed?: boolean
+            unclaimedTimer?: ReturnType<typeof setTimeout>
         }
     >()
     private readonly windowToRequest = new Map<number, string>()
     // Ids we are about to close ourselves via finish() -> windows.remove().
     // The resulting onRemoved must be ignored, not mistaken for a user close.
     private readonly selfClosedWindowIds = new Set<number>()
+    // Holds the requestId currently awaiting tryOpenActionPopup()'s result,
+    // so a second request racing in during that gap also routes to the
+    // window instead of contending for the same popup attempt. This is
+    // DELIBERATELY separate from `surface: 'popup'` on the pending entry —
+    // that field must only ever mean "the popup genuinely opened", since
+    // get-current-approval trusts it to decide what to advertise. See
+    // openViaPopupOrWindow.
+    private popupAttemptRequestId: string | null = null
 
     constructor(private readonly chromeLike: typeof chrome = chrome) {}
 
@@ -132,6 +240,66 @@ export class ApprovalWindowBridge
         return decision
     }
 
+    async openWcConnect(ctx: {
+        requestId: string
+        origin: string
+        faviconUrl?: string
+        clientId: string
+        chainId: number
+        peerName?: string
+        peerIcons?: string[]
+        permissions?: string[]
+        requesterOrigin?: string
+    }): Promise<{ approvedAddresses: string[] } | null> {
+        const decision = this.awaitApproval<{ approvedAddresses: string[] }>({
+            ...ctx,
+            kind: 'wc-connect',
+        })
+        await this.openViaPopupOrWindow(ctx.requestId)
+        return decision
+    }
+
+    async openWcSign(ctx: {
+        requestId: string
+        origin: string
+        faviconUrl?: string
+        clientId: string
+        wcRequestId: number
+        method: 'algo_signTxn' | 'algo_signData'
+        payload: unknown
+    }): Promise<{ result: unknown } | null> {
+        const decision = this.awaitApproval<{ result: unknown }>({
+            ...ctx,
+            kind: 'wc-sign',
+        })
+        await this.openViaPopupOrWindow(ctx.requestId)
+        return decision
+    }
+
+    /**
+     * Opens the notification-only WalletConnect error surface. Resolves when
+     * the user acknowledges it (or the window closes), which is what the
+     * caller uses to know the surface is gone — offscreen holds at most one
+     * open at a time so a page cannot spam windows by repeatedly pairing on
+     * the wrong network.
+     */
+    async openWcError(ctx: {
+        requestId: string
+        origin: string
+        faviconUrl?: string
+        clientId: string
+        reason: 'network-mismatch'
+        requestedChainId?: number
+        activeNetwork: string
+    }): Promise<void> {
+        const settled = this.awaitApproval<unknown>({
+            ...ctx,
+            kind: 'wc-error',
+        })
+        await this.openViaPopupOrWindow(ctx.requestId)
+        await settled
+    }
+
     async openPasskeyCreate(
         ctx: PasskeyCreateApprovalContext,
     ): Promise<PasskeyDecision> {
@@ -161,12 +329,59 @@ export class ApprovalWindowBridge
     // path) matching that approval's `kind` — with the exact `T | null` shape
     // this method's caller declares — so the cast back to `T | null` is safe.
     private awaitApproval<T>(approval: PendingApproval): Promise<T | null> {
+        // A colliding requestId used to overwrite the entry outright, which
+        // left the previous `settle` unreachable — its open* promise never
+        // settled and the request it belonged to was answered by nobody, for
+        // the life of the worker. Reachable via the derived WC ids
+        // (`wc-wc-sign-${wcRequestId}-${clientId}`) when a peer retries a
+        // request id. The ARC-0027 path is covered upstream by the core
+        // router's in-flight map; this is the bridge's own guard.
+        const existing = this.pending.get(approval.requestId)
+        if (existing) {
+            throw new ApprovalRejectedError(
+                `An approval for '${approval.requestId}' is already pending`,
+            )
+        }
+        this.assertCapacity(approval.origin)
         return new Promise<T | null>(resolve => {
             this.pending.set(approval.requestId, {
                 approval,
                 settle: resolve as Settle,
             })
         })
+    }
+
+    /**
+     * Bounds how many approval surfaces one page can force open at once.
+     *
+     * Every pending approval past the first becomes a real OS window
+     * (`openViaPopupOrWindow` reserves the single toolbar-popup slot and
+     * routes the rest to `windows.create`). `enable` needs no prior
+     * permission and the core router only de-dupes on `origin::requestId`, so
+     * a page that varies the request id could otherwise bury the desktop with
+     * a loop of a few hundred, recoverable only by force-quitting the
+     * browser. The offscreen WC host already guards its own error surface
+     * this way; this is the same protection for the shared bridge.
+     *
+     * The limits sit far above real use — a dApp needs one approval at a
+     * time, and the per-origin allowance only exists so two tabs of the same
+     * site aren't blocked by each other.
+     */
+    private assertCapacity(origin: string): void {
+        if (this.pending.size >= MAX_PENDING_APPROVALS) {
+            throw new ApprovalRejectedError(
+                'Too many approval requests are already open',
+            )
+        }
+        let forOrigin = 0
+        for (const entry of this.pending.values()) {
+            if (entry.approval.origin === origin) forOrigin++
+        }
+        if (forOrigin >= MAX_PENDING_APPROVALS_PER_ORIGIN) {
+            throw new ApprovalRejectedError(
+                `Too many approval requests are already open for ${origin}`,
+            )
+        }
     }
 
     // Shared by every open* method: every approval kind prefers the toolbar
@@ -177,28 +392,67 @@ export class ApprovalWindowBridge
         // At most one popup-surface approval may be in flight at a time —
         // get-current-approval has no requestId to disambiguate by, so a
         // second one would race the first for the popup. Route it straight
-        // to the window instead.
-        const popupInFlight = [...this.pending.values()].some(
-            e => e.surface === 'popup',
-        )
-        if (popupInFlight) {
+        // to the window instead. The reservation must cover BOTH a genuinely
+        // popup-surfaced entry and an attempt still awaiting
+        // tryOpenActionPopup's result (see popupAttemptRequestId), so a
+        // second request racing in mid-attempt can't also try to open the
+        // popup.
+        const popupSlotTaken =
+            [...this.pending.values()].some(e => e.surface === 'popup') ||
+            this.popupAttemptRequestId !== null
+        if (popupSlotTaken) {
             await this.openApprovalWindow(requestId)
             return
         }
-        // Mark 'popup' before the await settles (not after) so a second
-        // request racing in while tryOpenActionPopup is still in flight
-        // also sees this one as occupying the popup, and so
-        // get-current-approval can find this entry the instant it's asked.
-        const entry = this.pending.get(requestId)
-        if (entry) entry.surface = 'popup'
-        // Fall back to the dedicated window only if openPopup is unavailable
-        // (older Chrome) or the browser refuses it (e.g. no user gesture).
-        const usedPopup = await this.tryOpenActionPopup()
-        if (!usedPopup) {
-            const e = this.pending.get(requestId)
-            if (e) e.surface = 'window'
-            await this.openApprovalWindow(requestId)
+        // Reserve the slot for the duration of the attempt WITHOUT marking
+        // this entry's surface as 'popup' yet: chrome.action.openPopup()
+        // only resolves once the toolbar popup has completed its first
+        // load, and rejects if the popup is dismissed before that happens
+        // — so until it resolves true there is no guarantee a popup exists
+        // at all. Advertising 'popup' before that's known would let
+        // get-current-approval report a toolbar popup that never opened.
+        // `surface` only flips to 'popup' once tryOpenActionPopup has
+        // genuinely resolved true, below.
+        this.popupAttemptRequestId = requestId
+        let usedPopup = false
+        try {
+            usedPopup = await this.tryOpenActionPopup()
+        } finally {
+            // Always release the reservation on every exit path (including a
+            // throw from tryOpenActionPopup, which currently can't happen
+            // since it catches internally, but must not silently leak the
+            // reservation if that ever changes) — finish() also releases it
+            // (see below) for the case where the approval settles while this
+            // attempt is still unsettled.
+            this.popupAttemptRequestId = null
         }
+        if (usedPopup) {
+            const entry = this.pending.get(requestId)
+            if (entry) {
+                entry.surface = 'popup'
+                // The toolbar popup emits no windows.onRemoved, so a user who
+                // dismisses it before its get-current-approval round-trip
+                // resolves leaves nothing to clean the entry up: the request
+                // is orphaned AND the single popup slot is burned for the rest
+                // of the worker's life, forcing every later approval into a
+                // separate window. Claiming cancels this; not claiming settles
+                // it as a rejection, which is what a dismissal means anyway.
+                entry.unclaimedTimer = setTimeout(() => {
+                    if (this.pending.get(requestId) !== entry) return
+                    if (entry.claimed) return
+                    this.finish(requestId, null)
+                }, POPUP_CLAIM_TIMEOUT_MS)
+            }
+            return
+        }
+        // Fall back to the dedicated window only if openPopup is unavailable
+        // (older Chrome) or tryOpenActionPopup's own await rejected/resolved
+        // false — observed behaviour is that openPopup resolves once the
+        // toolbar popup completes its first load and rejects if the popup is
+        // dismissed before that, not that it requires a recent user gesture
+        // (a reviewer called it from the service worker with no gesture at
+        // all and it resolved).
+        await this.openApprovalWindow(requestId)
     }
 
     // Opens the dedicated fallback window at approval.html and registers its
@@ -227,9 +481,12 @@ export class ApprovalWindowBridge
         }
     }
 
-    // Best-effort: chrome.action.openPopup requires a recent user gesture and
-    // isn't available on older Chrome, so a rejection/absence is expected,
-    // not exceptional — callers fall back to the dedicated window.
+    // Best-effort: chrome.action.openPopup isn't available on older Chrome,
+    // and — per the observed behaviour documented on openViaPopupOrWindow's
+    // reservation comment above — it rejects if the toolbar popup is
+    // dismissed before completing its first load. Either way a
+    // rejection/absence is expected, not exceptional — callers fall back to
+    // the dedicated window.
     private async tryOpenActionPopup(): Promise<boolean> {
         // Cast away the (options?, callback) overloads: chrome.action.openPopup
         // is a plain namespace function (no `this` binding), so TS's .call()
@@ -260,6 +517,7 @@ export class ApprovalWindowBridge
             signature?: string
             credential?: SerializedCredential
             reason?: string
+            result?: unknown
         }
         if (msg?.scope !== DAPP_APPROVAL_SCOPE) return false
         if (!isTrustedExtensionPageSender(sender, this.chromeLike)) {
@@ -274,7 +532,15 @@ export class ApprovalWindowBridge
             // (surface: 'window') must be skipped here.
             let current: PendingApproval | null = null
             for (const e of this.pending.values()) {
-                if (e.surface === 'popup') current = e.approval
+                if (e.surface !== 'popup') continue
+                current = e.approval
+                // The popup is alive and has taken ownership — stand down the
+                // unclaimed sweep armed in openViaPopupOrWindow.
+                e.claimed = true
+                if (e.unclaimedTimer !== undefined) {
+                    clearTimeout(e.unclaimedTimer)
+                    e.unclaimedTimer = undefined
+                }
             }
             sendResponse(current)
             return true
@@ -284,6 +550,21 @@ export class ApprovalWindowBridge
             : undefined
         if (!entry) {
             sendResponse({ ok: false, error: 'unknown request' })
+            return true
+        }
+        // The decision shape must match the approval it is settling. Without
+        // this, a `resolve-approval` carrying a `wc-sign` requestId settles
+        // openWcSign's promise with `{approvedAddresses: []}`, and the WC
+        // router then posts `{ok: true, result: undefined}` — a SUCCESSFUL
+        // algo_signTxn response with no signature. Only our own extension
+        // pages can reach this today, so it is a soundness gap rather than a
+        // live exploit, but `Settle`'s deliberate `unknown` widening is what
+        // removed the compiler's ability to catch it.
+        if (!isDecisionKindAllowed(msg.kind, entry.approval.kind)) {
+            sendResponse({
+                ok: false,
+                error: `'${msg.kind}' cannot settle a '${entry.approval.kind}' approval`,
+            })
             return true
         }
         switch (msg.kind) {
@@ -305,6 +586,11 @@ export class ApprovalWindowBridge
             }
             case 'resolve-sign-message': {
                 this.finish(msg.requestId!, { signature: msg.signature ?? '' })
+                sendResponse({ ok: true })
+                return true
+            }
+            case 'resolve-wc-sign': {
+                this.finish(msg.requestId!, { result: msg.result })
                 sendResponse({ ok: true })
                 return true
             }
@@ -358,6 +644,18 @@ export class ApprovalWindowBridge
         const entry = this.pending.get(requestId)
         if (!entry) return
         this.pending.delete(requestId)
+        // Settled by any route (decision, window close, or the sweep itself) —
+        // the unclaimed timer has nothing left to guard.
+        if (entry.unclaimedTimer !== undefined) {
+            clearTimeout(entry.unclaimedTimer)
+        }
+        // The approval can settle (e.g. a fast reject) while its own popup
+        // attempt is still unsettled — release the reservation here too, not
+        // just in openViaPopupOrWindow's `finally`, so it can't outlive the
+        // approval it was reserved for.
+        if (this.popupAttemptRequestId === requestId) {
+            this.popupAttemptRequestId = null
+        }
         if (entry.surface === 'window' && typeof entry.windowId === 'number') {
             this.windowToRequest.delete(entry.windowId)
             this.selfClosedWindowIds.add(entry.windowId)

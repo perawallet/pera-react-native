@@ -93,6 +93,7 @@ export const NameAccountForm = ({
                                 variant='secondary'
                                 size='sm'
                                 onPress={() => onChangeText('')}
+                                dismissKeyboardOnPress={false}
                                 containerStyle={styles.clearButton}
                                 testID='name_account_clear_button'
                             />

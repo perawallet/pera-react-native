@@ -27,7 +27,16 @@ export interface DeviceInfoService {
     getAppPackage(): string
     getAppBuild(): string
     getAppVersion(): string
-    getDeviceID(): Promise<string>
+    /**
+     * Stable per-install identifier: iOS `identifierForVendor`, the Android ID,
+     * or a stored UUID on web. Resettable by the user (reinstall, factory
+     * reset, clearing storage) — treat it as a handle, not a hard identity.
+     *
+     * Not the backend device row id (`useDeviceID` in
+     * `@perawallet/wallet-core-device`), which is server-assigned, per-network,
+     * and recreated whenever the server stops recognising it.
+     */
+    getDeviceInstallationID(): Promise<string>
     getDeviceModel(): string
     getDevicePlatform(): DevicePlatform
     getDeviceOSVersion(): string

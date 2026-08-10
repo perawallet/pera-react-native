@@ -35,10 +35,11 @@ export default defineConfig({
     ],
     build: {
         lib: {
-            entry: {
-                index: resolve(__dirname, 'src/index.ts'),
-                protocol: resolve(__dirname, 'src/protocol.ts'),
-            },
+            // The `protocol` entry moved out to
+            // @perawallet/wallet-extension-ledger-shared, which the two web
+            // transports now depend on directly instead of reaching through a
+            // package named "react-native".
+            entry: { index: resolve(__dirname, 'src/index.ts') },
             formats: ['es'],
         },
         rollupOptions: {
@@ -54,6 +55,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-extension-platform',
+                '@perawallet/wallet-extension-ledger-shared',
                 'buffer',
             ],
         },

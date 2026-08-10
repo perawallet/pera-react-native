@@ -21,7 +21,7 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { formatTime } from '@perawallet/wallet-core-shared'
-import { useUnlockScreen } from './useUnlockScreen'
+import { useUnlockScreen } from './useUnlockScreen.web'
 import { useStyles } from './styles'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
@@ -32,6 +32,7 @@ export const UnlockScreen = (): React.JSX.Element => {
     const {
         password,
         isSubmitting,
+        isPasskeyPending,
         hasError,
         hasCorruptedVaultError,
         hasPasskeyError,
@@ -133,7 +134,11 @@ export const UnlockScreen = (): React.JSX.Element => {
                             testID='unlock-passkey'
                             variant='secondary'
                             title={t('vault.unlock.use_passkey')}
-                            isDisabled={isSubmitting || lockoutSeconds > 0}
+                            isDisabled={
+                                isPasskeyPending ||
+                                isSubmitting ||
+                                lockoutSeconds > 0
+                            }
                             onPress={() => void handlePasskeyUnlock()}
                         />
                     )}

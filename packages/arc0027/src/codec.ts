@@ -56,6 +56,39 @@ export const isArc0027Request = (
     return parsed !== null && parsed.type === 'request'
 }
 
+/**
+ * Loose namespace match: an `arc0027:<anything>:request` envelope carrying an
+ * id, whether or not the method is one we implement.
+ *
+ * This exists to separate two cases a single boolean conflated. A message that
+ * isn't ours at all must be ignored silently — the page bus carries everyone's
+ * traffic. But a message addressed to `arc0027:` naming a method we don't
+ * implement is ours to answer, and dropping it left the caller's promise
+ * pending forever, with no timeout, because the responder bailed before it had
+ * armed one. That is reachable from ordinary mistakes: the ARC-0027 spec's own
+ * method names (`getProviders`, `signTxns`, `postTxns`) differ from the
+ * avm-web-provider names implemented here, so a dApp written against the spec
+ * text hangs rather than being told the method is unsupported.
+ */
+export const isArc0027NamespacedRequest = (
+    value: unknown,
+): value is { id: string; reference: string } => {
+    if (typeof value !== 'object' || value === null) return false
+    const v = value as Record<string, unknown>
+    if (typeof v.id !== 'string' || typeof v.reference !== 'string')
+        return false
+    const parts = v.reference.split(':')
+    return (
+        parts.length === 3 &&
+        parts[0] === ARC0027_NAMESPACE &&
+        parts[2] === 'request'
+    )
+}
+
+/** The method segment of a namespaced reference, for error messages. */
+export const referenceMethod = (reference: string): string =>
+    reference.split(':')[1] ?? 'unknown'
+
 // Response ids are fresh (crypto.randomUUID) so a response is never confused
 // with the request it answers; correlation is via `requestId`.
 const freshId = (): string => globalThis.crypto.randomUUID()

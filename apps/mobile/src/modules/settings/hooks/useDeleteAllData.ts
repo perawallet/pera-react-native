@@ -11,17 +11,16 @@
  */
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { clearDatabase } from '@perawallet/wallet-core-database'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { clearAllStores, logger } from '@perawallet/wallet-core-shared'
-import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import {
     getProvider,
     clearKeystore,
 } from '@perawallet/wallet-extension-provider'
+import { useWalletConnectSessionsControl } from '@modules/walletconnect/hooks/useWalletConnectSessionsControl'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
@@ -48,8 +47,7 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
     const queryClient = useQueryClient()
     const { mutateAsync: deleteDevices } = useDeleteDeviceMutation()
     const { savePin } = usePinCode()
-    const { network } = useNetwork()
-    const { deleteAllSessions } = useWalletConnect(network)
+    const { deleteAllSessions } = useWalletConnectSessionsControl()
 
     const wipeAllUserData = useCallback(async () => {
         // 1. Abort in-flight queries before we destroy their data sources.

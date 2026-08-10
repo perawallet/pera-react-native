@@ -238,6 +238,8 @@ const { mockWcConnect, mockWaitForSessionOutcome } = vi.hoisted(() => ({
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: mockWcConnect }),
     waitForSessionOutcome: mockWaitForSessionOutcome,
+    // Real value from packages/walletconnect/src/constants.ts.
+    WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
 }))
 
 const {
@@ -287,6 +289,10 @@ const { mockRouteCapabilities } = vi.hoisted(() => ({
         peraCard: true,
         giftCards: true,
         inAppWebView: true,
+        // Native map has Discover registered; these tests exercise the
+        // success path. The gate's own off case is covered separately in
+        // useDiscoverPathDeeplink.spec.ts.
+        discoverTab: true,
     },
 }))
 

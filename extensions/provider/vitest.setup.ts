@@ -44,7 +44,7 @@ const mockPlatformServices = {
         },
     },
     remoteConfig: {
-        initializeRemoteConfig() {},
+        async initializeRemoteConfig() {},
         getStringValue(_: string, f?: string) {
             return f ?? ''
         },
@@ -75,7 +75,7 @@ const mockPlatformServices = {
         async close() {},
     },
     deviceInfo: {
-        getDeviceID() {
+        getDeviceInstallationID() {
             return Promise.resolve('testID')
         },
         getDeviceModel() {

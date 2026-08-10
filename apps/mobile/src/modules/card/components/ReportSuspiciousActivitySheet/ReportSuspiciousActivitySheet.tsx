@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
+import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardFreezeAction } from '../../hooks'
 import { CardBadgeGlyph } from '../CardBadgeGlyph'
@@ -22,6 +24,11 @@ import { CardConfirmationSheet } from '../CardConfirmationSheet'
 export const ReportSuspiciousActivitySheet = () => {
     const { t } = useLanguage()
     const { isFreezing, onConfirm, onClose } = useCardFreezeAction()
+
+    const handleClose = useCallback(() => {
+        trackEvent(CardEvent.ReportSusClose)
+        onClose()
+    }, [onClose])
 
     return (
         <CardConfirmationSheet
@@ -36,7 +43,7 @@ export const ReportSuspiciousActivitySheet = () => {
             confirmLabel={t('peraCard.account.report_suspicious_sheet_confirm')}
             isPending={isFreezing}
             onConfirm={onConfirm}
-            onClose={onClose}
+            onClose={handleClose}
             testID='report_suspicious_activity_sheet'
             confirmTestID='report_suspicious_freeze_button'
             closeTestID='report_suspicious_close_button'

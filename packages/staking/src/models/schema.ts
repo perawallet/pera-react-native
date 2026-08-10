@@ -14,6 +14,13 @@ import { z } from 'zod'
 
 const nonEmptyString = z.string().trim().min(1)
 
+/**
+ * Every locale in `staking_projects_i18n` resolves here when it has no entry of
+ * its own. Matches `BASE_LOCALE` in the app's i18n registry, duplicated rather
+ * than imported because packages/* must not depend on apps/mobile.
+ */
+export const STAKING_FALLBACK_LOCALE = 'en'
+
 const stakingTypeSchema = z.enum(['liquid', 'pools', 'delegated'])
 
 const stakingProjectInfoSchema = z.object({
@@ -38,6 +45,25 @@ export const stakingProjectsConfigSchema = z
 export type StakingType = z.infer<typeof stakingTypeSchema>
 
 export type StakingProjectInfo = z.infer<typeof stakingProjectInfoSchema>
+
+/**
+ * The localized shape of `staking_projects_i18n`: locale tag → that locale's
+ * project array.
+ *
+ * `en` is required. It is the fallback every other locale resolves to, so a
+ * payload without it would leave the Staking screen empty for any locale the
+ * backend hadn't translated yet — better to reject it here, where the hook
+ * turns it into a visible error state, than to ship silence.
+ */
+export const stakingProjectsI18nConfigSchema = z
+    .record(z.string().trim().min(1), stakingProjectsConfigSchema)
+    .refine(byLocale => Object.hasOwn(byLocale, STAKING_FALLBACK_LOCALE), {
+        message: `staking_projects_i18n must include a "${STAKING_FALLBACK_LOCALE}" locale to fall back to`,
+    })
+
+export type StakingProjectsI18nConfig = z.infer<
+    typeof stakingProjectsI18nConfigSchema
+>
 
 const stakingProjectTvlSchema = z.object({
     tvl_in_algo: z.string().nullable(),

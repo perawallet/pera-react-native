@@ -33,6 +33,9 @@
       "@modules/*": [
         "./src/modules/*"
       ],
+      "@browser/*": [
+        "../browser/src/*"
+      ],
       "@assets/*": [
         "./assets/*"
       ],

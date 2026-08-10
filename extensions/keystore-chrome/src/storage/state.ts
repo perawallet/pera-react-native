@@ -24,7 +24,12 @@ import {
 import { clearBuffer } from '@algorandfoundation/wallet-provider'
 import { base64url } from '@scure/base'
 import type { Store } from '@tanstack/store'
-import { decryptData, encryptData, readMasterKey } from './crypto'
+import {
+    decryptData,
+    encryptData,
+    isLegacyPayload,
+    readMasterKey,
+} from './crypto'
 import type { AuthenticationOptions } from '../types'
 import { storage } from './chrome-storage'
 
@@ -51,7 +56,19 @@ export async function fetchSecret<T>({
             key = await readMasterKey(options)
             isInternalKey = true
         }
-        return decode(decryptData(key, encryptedData)) as T
+        const plaintext = decryptData(key, encryptedData, keyId)
+        // Re-seal entries written before AAD binding, now that the plaintext
+        // and master key are both in hand. Best-effort: a storage failure must
+        // not turn a successful read into a failed one — the caller keeps its
+        // secret and the next read retries. See crypto.ts's aadFor.
+        if (isLegacyPayload(encryptedData)) {
+            try {
+                await storage.set(keyId, encryptData(key, plaintext, keyId))
+            } catch {
+                // Intentionally swallowed — see above.
+            }
+        }
+        return decode(plaintext) as T
     } finally {
         if (isInternalKey && key) {
             clearBuffer(key)
@@ -101,7 +118,10 @@ export async function commit({
         // Never allow the master key to touch memory longer than needed.
         // Divergence from RN source: storage.set is awaited — chrome.storage is
         // async where MMKV was synchronous; a failed write must fail the commit.
-        await storage.set(keyData.id, encryptData(masterKey, encode(keyData)))
+        await storage.set(
+            keyData.id,
+            encryptData(masterKey, encode(keyData), keyData.id),
+        )
         // remove the private keys from keyData
         // oxlint-disable-next-line
         const { privateKey, seed, ...keyState } = keyData as any

@@ -15,12 +15,16 @@ import {
     rawTransactionsMatch,
     type ParticipantResponse,
 } from '@perawallet/wallet-core-blockchain'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
+import { buildWalletConnectSignResult } from '../utils/buildWalletConnectSignResult'
 import {
     walletConnectHandoffs,
     type PendingWalletConnectHandoff,
 } from './walletConnectHandoffs'
-import type { RejectReason } from './types'
 
 /**
  * Mirrors a subset of multisig's `HandoffPollDetail`, redeclared structurally to
@@ -122,8 +126,11 @@ const classifyReadyPoll = async (
     const lists = detail.transaction_lists
 
     // Race-condition guard: the backend can flip status to 'ready' before
-    // every signature payload is serialized in the response. If any 'signed'
-    // participant lacks signatures, keep polling — the next poll catches up.
+    // every signature payload is serialized in the response. A 'signed'
+    // participant with no signatures at all is the cheap-to-detect case —
+    // short-circuit before paying for Ed25519 verifies. A *partially* written
+    // payload is caught below: assembly reports it as 'insufficient-signatures'
+    // and we keep polling for that too.
     for (const list of lists) {
         for (const response of list.responses) {
             if (response.response !== 'signed') continue
@@ -176,6 +183,14 @@ const classifyReadyPoll = async (
                 signatures: response.signatures ?? undefined,
             })) as ParticipantResponse[],
         })
+        // Mid-write race: 'ready' flipped before every signature serialized, so
+        // some index is still below threshold. Not terminal — the next poll
+        // catches up, and the resolver's deadline self-expires a request that
+        // never completes. Hard errors (bad bytes, failed verification) stay
+        // terminal below.
+        if (result.kind === 'insufficient-signatures') {
+            return { kind: 'keep-polling' }
+        }
         if (result.kind === 'error') {
             return {
                 kind: 'error',
@@ -206,10 +221,40 @@ export const errorReasonToMessage = (
     }
 }
 
+/**
+ * How the resolver answers the WalletConnect peer. Injected from the app layer
+ * so this pipeline module carries no WalletConnect dependency, and keyed by the
+ * serializable {@link PendingWalletConnectHandoff.clientId} / `payloadId` so it
+ * works for a rehydrated (post-kill) handoff that has no in-memory closures.
+ * All three are best-effort: a peer whose session is gone (WC v1 keeps no
+ * pending request across a kill) simply no-ops.
+ */
+export type HandoffPeerDelivery = {
+    /** `approveRequest` with the assembled result array. May throw (dead session). */
+    deliverResult: (
+        clientId: string,
+        payloadId: number,
+        result: Nullable<string>[],
+    ) => Promise<void>
+    /** Clean soft-reject (decline / expired) — no connection-error banner. */
+    deliverSoftReject: (
+        clientId: string,
+        payloadId: number,
+        error: Error,
+    ) => Promise<void>
+    /** Terminal error reject, raising the connection-error banner. */
+    deliverError: (
+        clientId: string,
+        payloadId: number,
+        error: Error,
+    ) => Promise<void>
+}
+
 type ResolveHandoffOutcomeArgs = {
     outcome: TerminalHandoffOutcome
     handoff: PendingWalletConnectHandoff
     messages: ResolverMessages
+    delivery: HandoffPeerDelivery
     /** Best-effort backend notification; a rejection is logged, not surfaced. */
     markConfirmed: (input: {
         network: Network
@@ -219,7 +264,14 @@ type ResolveHandoffOutcomeArgs = {
 }
 
 /**
- * Delivers a terminal outcome and clears the registry entry, once per handoff.
+ * Delivers a terminal outcome to the peer and clears the registry entry, once
+ * per handoff.
+ *
+ * Hybrid delivery: the live session uses the transport-agnostic `callbacks`
+ * closures (any source); a handoff resumed after an app kill has none, so it
+ * falls back to the serializable WalletConnect `recovery` context via the
+ * injected {@link HandoffPeerDelivery}. A rehydrated non-WC handoff has neither
+ * and can only be cleaned up.
  *
  * On `ready`, `markConfirmed` is best-effort — the dApp already has the bytes —
  * but a failure to deliver falls through to `error` so it sees a rejection.
@@ -229,6 +281,7 @@ export const resolveHandoffOutcome = async ({
     outcome,
     handoff,
     messages,
+    delivery,
     markConfirmed,
 }: ResolveHandoffOutcomeArgs): Promise<void> => {
     switch (outcome.kind) {
@@ -237,6 +290,7 @@ export const resolveHandoffOutcome = async ({
                 outcome.assembledBytes,
                 handoff,
                 messages,
+                delivery,
                 markConfirmed,
             )
             return
@@ -246,17 +300,70 @@ export const resolveHandoffOutcome = async ({
                 outcome.reason === 'declined'
                     ? messages.declined
                     : messages.expired
-            await notifySoftReject(handoff.callbacks.reject, message)
+            await deliverSoftRejectToPeer(handoff, delivery, message)
             walletConnectHandoffs.unregister(handoff.signRequestId)
             return
         }
         case 'error': {
             const message = errorReasonToMessage(outcome.reason, messages)
             logTerminalError(handoff, message)
-            await notifyPeer(handoff.callbacks.error, message)
+            await deliverErrorToPeer(handoff, delivery, message)
             walletConnectHandoffs.unregister(handoff.signRequestId)
             return
         }
+    }
+}
+
+/**
+ * Clean soft-reject (decline / expired) — no connection-error banner. Prefers
+ * the live closure; falls back to WC `recovery` for a resumed handoff. A
+ * missing channel (rehydrated non-WC) is a no-op. Swallows failures — the
+ * handoff resolves regardless.
+ */
+const deliverSoftRejectToPeer = async (
+    handoff: PendingWalletConnectHandoff,
+    delivery: HandoffPeerDelivery,
+    message: string,
+): Promise<void> => {
+    const error = new Error(message)
+    try {
+        if (handoff.callbacks?.reject) {
+            await handoff.callbacks.reject({ kind: 'softReject', error })
+        } else if (handoff.recovery) {
+            await delivery.deliverSoftReject(
+                handoff.recovery.clientId,
+                handoff.recovery.payloadId,
+                error,
+            )
+        }
+    } catch {
+        // Peer notification failing is non-fatal.
+    }
+}
+
+/**
+ * Terminal error reject (raises the connection-error banner). Same
+ * closure-then-`recovery` fallback and swallow semantics as
+ * {@link deliverSoftRejectToPeer}.
+ */
+const deliverErrorToPeer = async (
+    handoff: PendingWalletConnectHandoff,
+    delivery: HandoffPeerDelivery,
+    message: string,
+): Promise<void> => {
+    const error = new Error(message)
+    try {
+        if (handoff.callbacks?.error) {
+            await handoff.callbacks.error(error)
+        } else if (handoff.recovery) {
+            await delivery.deliverError(
+                handoff.recovery.clientId,
+                handoff.recovery.payloadId,
+                error,
+            )
+        }
+    } catch {
+        // Peer notification failing is non-fatal.
     }
 }
 
@@ -264,16 +371,39 @@ const deliverReady = async (
     assembledBytes: Uint8Array[],
     handoff: PendingWalletConnectHandoff,
     messages: ResolverMessages,
+    delivery: HandoffPeerDelivery,
     markConfirmed: ResolveHandoffOutcomeArgs['markConfirmed'],
 ): Promise<void> => {
     try {
-        await handoff.callbacks.approveSignedBytes?.(assembledBytes)
+        if (handoff.callbacks?.approveSignedBytes) {
+            // Live path: the closure owns the result-array construction.
+            await handoff.callbacks.approveSignedBytes(assembledBytes)
+        } else if (handoff.recovery) {
+            // Resumed WC handoff: rebuild the result the closure would have.
+            const result = buildWalletConnectSignResult(
+                assembledBytes,
+                handoff.recovery.indicesToSign,
+                handoff.recovery.totalLength,
+            )
+            await delivery.deliverResult(
+                handoff.recovery.clientId,
+                handoff.recovery.payloadId,
+                result,
+            )
+        } else {
+            // Rehydrated non-WC handoff: no closure and no recovery context —
+            // the originating transport is gone, so the bytes can't be
+            // delivered. Nothing to do but drop the entry.
+            logTerminalError(handoff, 'no delivery channel for resumed handoff')
+            walletConnectHandoffs.unregister(handoff.signRequestId)
+            return
+        }
     } catch (error) {
-        // approveRequest failed (e.g. a dropped WC session). Fall through to
-        // `error` so the dApp sees a rejection — it gets the generic
-        // localized message; the raw error is kept for our logs only.
+        // Delivery failed (e.g. a dropped WC session). Fall through to `error`
+        // so the dApp sees a rejection — it gets the generic localized message;
+        // the raw error is kept for our logs only.
         logTerminalError(handoff, messages.deliveryFailed, error)
-        await notifyPeer(handoff.callbacks.error, messages.deliveryFailed)
+        await deliverErrorToPeer(handoff, delivery, messages.deliveryFailed)
         walletConnectHandoffs.unregister(handoff.signRequestId)
         return
     }
@@ -297,34 +427,6 @@ const deliverReady = async (
     walletConnectHandoffs.unregister(handoff.signRequestId)
 }
 
-/** Invokes a dApp callback with the message, swallowing any rejection. */
-const notifyPeer = async (
-    callback: ((error: Error) => Promise<void>) | undefined,
-    message: string,
-): Promise<void> => {
-    try {
-        await callback?.(new Error(message))
-    } catch {
-        // The peer callback (WC rejectRequest) failing is non-fatal — the
-        // handoff is resolved regardless.
-    }
-}
-
-/**
- * Invokes the source's `reject` callback with a `softReject` reason.
- * Mirrors `notifyPeer`'s rejection-swallowing semantics.
- */
-const notifySoftReject = async (
-    reject: ((reason?: RejectReason) => Promise<void>) | undefined,
-    message: string,
-): Promise<void> => {
-    try {
-        await reject?.({ kind: 'softReject', error: new Error(message) })
-    } catch {
-        // The peer callback failing is non-fatal — handoff is resolved regardless.
-    }
-}
-
 /**
  * An assembly mismatch is a crypto fault worth surfacing, not just handing to
  * the dApp. `cause` is logged but never sent onward.
@@ -340,7 +442,7 @@ const logTerminalError = (
 
     logger.warn('WC multisig handoff resolved with error', {
         signRequestId: handoff.signRequestId,
-        sourceType: handoff.source.type,
+        sourceType: handoff.sourceType,
         message,
         cause: causeText,
     })

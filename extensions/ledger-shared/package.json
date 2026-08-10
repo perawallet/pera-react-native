@@ -1,0 +1,38 @@
+{
+    "name": "@perawallet/wallet-extension-ledger-shared",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite build --watch",
+        "test": "vitest run",
+        "test:unit": "vitest run",
+        "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+    },
+    "dependencies": {
+        "@algorandfoundation/ledger-algorand-js": "catalog:",
+        "@ledgerhq/devices": "^8.13.0",
+        "@ledgerhq/errors": "catalog:",
+        "@perawallet/wallet-core-hardware-wallet": "workspace:*",
+        "@perawallet/wallet-core-shared": "workspace:*",
+        "buffer": "catalog:"
+    },
+    "devDependencies": {
+        "@perawallet/wallet-core-devtools": "workspace:*",
+        "@types/node": "catalog:",
+        "@types/web-bluetooth": "catalog:",
+        "typescript": "catalog:",
+        "vite": "catalog:",
+        "vite-plugin-dts": "catalog:",
+        "vitest": "catalog:"
+    }
+}

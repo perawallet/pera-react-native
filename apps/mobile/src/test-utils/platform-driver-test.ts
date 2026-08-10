@@ -33,6 +33,7 @@ import {
     type PlatformServices,
     type PushNotificationService,
     type RemoteConfigService,
+    type WalletProvisioningService,
 } from '@perawallet/wallet-extension-platform'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { testDatabaseService } from './sqlite-database'
@@ -76,7 +77,7 @@ const buildServices = (): PlatformServices => {
     }
 
     const remoteConfig: RemoteConfigService = {
-        initializeRemoteConfig() {},
+        async initializeRemoteConfig() {},
         getStringValue: (_key, fallback) => fallback ?? '',
         getBooleanValue: (_key, fallback) => fallback ?? false,
         getNumberValue: (_key, fallback) => fallback ?? 0,
@@ -104,7 +105,7 @@ const buildServices = (): PlatformServices => {
         getAppPackage: () => 'com.test.perawallet',
         getAppBuild: () => '1',
         getAppVersion: () => '0.0.0-test',
-        getDeviceID: async () => 'test-device-id',
+        getDeviceInstallationID: async () => 'test-device-id',
         getDeviceModel: () => 'TestDevice',
         getDevicePlatform: () => DevicePlatforms.web,
         getDeviceOSVersion: () => '0',
@@ -124,6 +125,19 @@ const buildServices = (): PlatformServices => {
             attestation: 'test-attestation',
             keyId: 'test-key-id',
         }),
+    }
+
+    // Dormant defaults: push provisioning reports unavailable, so flow tests
+    // exercise today's manual-instructions fallback.
+    const walletProvisioning: WalletProvisioningService = {
+        checkWalletAvailability: async () => false,
+        getCardStatusBySuffix: async () => 'not found',
+        addCardToAppleWallet: async () => {
+            throw new Error('Wallet provisioning is unavailable in tests')
+        },
+        addCardToGoogleWallet: async () => {
+            throw new Error('Wallet provisioning is unavailable in tests')
+        },
     }
 
     const migration: MigrationService = {
@@ -157,6 +171,7 @@ const buildServices = (): PlatformServices => {
         appIntegrity,
         hardwareWalletRegistry: createHardwareWalletRegistry(),
         migration,
+        walletProvisioning,
     }
 }
 

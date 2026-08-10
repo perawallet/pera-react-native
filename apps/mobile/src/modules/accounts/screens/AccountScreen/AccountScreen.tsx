@@ -33,6 +33,10 @@ import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
 import { HomeBannersStrip } from '@modules/banners'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useCallback } from 'react'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { PasteLinkContent } from '@modules/menu/components/PasteLinkContent'
+import { routeCapabilities } from '@routes/capabilities'
 
 const AnimatedPWView = Animated.createAnimatedComponent(PWView)
 
@@ -51,6 +55,19 @@ export const AccountScreen = () => {
     const { banners: visibleBanners } = useVisibleBanners()
     const hasHomeBanner = visibleBanners.length > 0
     const { animatedCornerStyle } = useAccountScreenAnimation(hasHomeBanner)
+    const { request: requestBottomSheet } = useBottomSheet()
+
+    const openPasteLink = useCallback(() => {
+        trackEvent(HomeEvent.PasteLink)
+        void requestBottomSheet({
+            contents: <PasteLinkContent />,
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
+        })
+    }, [requestBottomSheet])
 
     if (!account) {
         return (
@@ -92,15 +109,25 @@ export const AccountScreen = () => {
                     right={
                         <PWView style={styles.iconBarSection}>
                             <AccountHeaderMenu testID='account_screen_dropdown' />
-                            <PWTouchableOpacity
-                                onPress={() => {
-                                    trackEvent(HomeEvent.QrScan)
-                                    scannerState.open()
-                                }}
-                                testID='account_screen_qr_scanner_button'
-                            >
-                                <PWIcon name='camera' />
-                            </PWTouchableOpacity>
+                            {routeCapabilities.qrScanner && (
+                                <PWTouchableOpacity
+                                    onPress={() => {
+                                        trackEvent(HomeEvent.QrScan)
+                                        scannerState.open()
+                                    }}
+                                    testID='account_screen_qr_scanner_button'
+                                >
+                                    <PWIcon name='camera' />
+                                </PWTouchableOpacity>
+                            )}
+                            {routeCapabilities.deepLinkPaste && (
+                                <PWTouchableOpacity
+                                    onPress={openPasteLink}
+                                    testID='account_screen_paste_link_button'
+                                >
+                                    <PWIcon name='link' />
+                                </PWTouchableOpacity>
+                            )}
                             <NotificationsIcon testID='account_screen_notifications' />
                         </PWView>
                     }
@@ -112,12 +139,14 @@ export const AccountScreen = () => {
                     />
                 </PWView>
             </AnimatedPWView>
-            <QRScannerView
-                isVisible={scannerState.isOpen}
-                onSuccess={scannerState.close}
-                onClose={scannerState.close}
-                animationType='slide'
-            />
+            {routeCapabilities.qrScanner && (
+                <QRScannerView
+                    isVisible={scannerState.isOpen}
+                    onSuccess={scannerState.close}
+                    onClose={scannerState.close}
+                    animationType='slide'
+                />
+            )}
             <PromptContainer />
         </PWView>
     )

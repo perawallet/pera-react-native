@@ -11,6 +11,10 @@
  */
 
 export {
+    useAddCardToWallet,
+    type AddCardToWalletOutcome,
+} from './useAddCardToWallet'
+export {
     useCardOnboardingLogout,
     type UseCardOnboardingLogoutResult,
 } from './useCardOnboardingLogout'

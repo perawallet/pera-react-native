@@ -21,14 +21,9 @@ import {
 import type { DappPermission } from '@perawallet/wallet-extension-platform-chrome'
 
 const mockRequestBottomSheet = vi.fn()
-const { mockShowError } = vi.hoisted(() => ({ mockShowError: vi.fn() }))
 
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequestBottomSheet }),
-}))
-
-vi.mock('@hooks/useErrorToast', () => ({
-    useErrorToast: () => ({ showError: mockShowError }),
 }))
 
 vi.mock('@components/ConfirmActionContent', () => ({
@@ -37,6 +32,11 @@ vi.mock('@components/ConfirmActionContent', () => ({
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
+}))
+
+const mockShowError = vi.fn()
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowError }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -127,6 +127,33 @@ describe('useConnectionsSettingsScreen', () => {
         expect(result.current.isLoading).toBe(false)
     })
 
+    // `WalletConnectConnection.createdAt` is typed `Date` but persisted via
+    // `createJSONStorage` with no reviver, so a rehydrated store hands this
+    // hook an ISO *string* at runtime. `(b.connectedAt?.getTime() ?? 0)`
+    // used to throw the moment the unified list had ≥2 rows including ≥1 WC
+    // row with such a string — reproduced here without mocking storage, by
+    // handing the hook exactly that shape directly.
+    it('sorts without throwing when a WalletConnect row carries a rehydrated string createdAt', () => {
+        ;(useWalletConnect as Mock).mockReturnValue({
+            connections: [
+                {
+                    ...walletConnectConnection,
+                    createdAt: '2026-01-01T00:00:00.000Z' as unknown as Date,
+                },
+            ],
+            disconnect: mockDisconnect,
+        })
+
+        expect(() =>
+            renderHook(() => useConnectionsSettingsScreen()),
+        ).not.toThrow()
+
+        const { result } = renderHook(() => useConnectionsSettingsScreen())
+        expect(result.current.connections).toHaveLength(2)
+        expect(result.current.connections[0].kind).toBe('dapp')
+        expect(result.current.connections[1].kind).toBe('walletconnect')
+    })
+
     it('exposes a stable keyExtractor unique per kind', () => {
         const { result } = renderHook(() => useConnectionsSettingsScreen())
         const [dappRow, wcRow] = result.current.connections
@@ -183,6 +210,28 @@ describe('useConnectionsSettingsScreen', () => {
         expect(mockDisconnect).not.toHaveBeenCalled()
     })
 
+    // A rejected disconnect send must surface to the user instead of
+    // failing silently (row stays, no signal) and leaving an unhandled
+    // promise rejection.
+    it('surfaces a toast when disconnect rejects for a WalletConnect row', async () => {
+        const disconnectError = new Error('no offscreen document')
+        mockDisconnect.mockRejectedValueOnce(disconnectError)
+        mockRequestBottomSheet.mockResolvedValueOnce(true)
+        const { result } = renderHook(() => useConnectionsSettingsScreen())
+        const wcRow = result.current.connections.find(
+            connection => connection.kind === 'walletconnect',
+        )
+
+        result.current.handleRevoke(wcRow!)
+
+        await waitFor(() =>
+            expect(mockShowError).toHaveBeenCalledWith(
+                disconnectError,
+                'walletconnect.settings.disconnect_failed_title',
+            ),
+        )
+    })
+
     it('does not revoke when the user cancels the confirm sheet', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce(undefined)
         const { result } = renderHook(() => useConnectionsSettingsScreen())
@@ -209,28 +258,6 @@ describe('useConnectionsSettingsScreen', () => {
         })
 
         expect(result.current.scannerState.isOpen).toBe(true)
-    })
-
-    it('reports a failed WalletConnect revoke instead of swallowing it', async () => {
-        const error = new Error('relay down')
-        mockDisconnect.mockRejectedValue(error)
-
-        const { result } = renderHook(() => useConnectionsSettingsScreen())
-
-        const walletConnectEntry = result.current.connections.find(
-            connection => connection.kind === 'walletconnect',
-        )
-
-        await act(async () => {
-            walletConnectEntry?.onRevoke()
-        })
-
-        await waitFor(() =>
-            expect(mockShowError).toHaveBeenCalledWith(
-                error,
-                'common.error.title',
-            ),
-        )
     })
 
     it('reports a failed dapp revoke instead of swallowing it', async () => {

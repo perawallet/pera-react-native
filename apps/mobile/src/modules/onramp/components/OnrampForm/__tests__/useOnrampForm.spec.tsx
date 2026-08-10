@@ -243,6 +243,18 @@ const xoOrder: RampOrder = {
     status: 'pending',
 }
 
+// Real /v1/ramp/quotes/ 400 body; the single-quoted JSON leaf in
+// non_field_errors[0] carries the provider limits.
+const buildBelowMinQuoteError = (leaf: string) => ({
+    type: 'SourceAmountIsTooLow',
+    fallback_message: 'Amount is too low.',
+    detail: { non_field_errors: [leaf] },
+})
+
+const belowMinQuoteError = buildBelowMinQuoteError(
+    "{'message': 'Source amount is below the minimum allowed, which is 600.00.', 'min_amount': '600.00', 'max_amount': '5000.00'}",
+)
+
 describe('useOnrampForm', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -470,8 +482,105 @@ describe('useOnrampForm', () => {
             await vi.advanceTimersByTimeAsync(500)
         })
 
-        expect(result.current.limits?.min.toString()).toBe('10')
+        expect(result.current.limits?.min?.toString()).toBe('10')
         expect(result.current.errorMessage).toBeTruthy()
+    })
+
+    it('exposes Meld limits and the below-min copy when the seeded quote fails', async () => {
+        mockCreateQuote.mockRejectedValue(belowMinQuoteError)
+
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+
+        // Meld pairs seed the amount to '100' on mount, so the failing quote
+        // fires without any typing.
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+
+        expect(result.current.errorMessage).toBe('onramp.form.amount_below_min')
+        expect(result.current.limits?.min?.toString()).toBe('600')
+        expect(result.current.limits?.max?.toString()).toBe('5000')
+    })
+
+    it('re-quotes at the minimum and clears the error after a MIN tap', async () => {
+        mockCreateQuote.mockRejectedValueOnce(belowMinQuoteError)
+
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+        expect(result.current.errorMessage).toBe('onramp.form.amount_below_min')
+
+        mockCreateQuote.mockResolvedValue([
+            makeMeldQuote({
+                quoteId: 'm-min',
+                sourceAmount: new Decimal(600),
+            }),
+        ])
+
+        // The pill calls onSetSourceAmount with limits.min.toString().
+        const min = result.current.limits?.min?.toString() ?? ''
+        act(() => {
+            result.current.setSourceAmount(min)
+        })
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+
+        expect(mockCreateQuote).toHaveBeenLastCalledWith(
+            expect.objectContaining({ sourceAmount: 600 }),
+        )
+        expect(result.current.errorMessage).toBeNull()
+        // Limits stay sticky after success so the pill remains available.
+        expect(result.current.limits?.min?.toString()).toBe('600')
+    })
+
+    it('exposes a min-only limit with a null max', async () => {
+        mockCreateQuote.mockRejectedValue(
+            buildBelowMinQuoteError(
+                "{'message': 'Too low.', 'min_amount': '600.00'}",
+            ),
+        )
+
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+
+        expect(result.current.limits?.min?.toString()).toBe('600')
+        expect(result.current.limits?.max).toBeNull()
+    })
+
+    it('falls back to the flattened message when the limits are unparseable', async () => {
+        // The apostrophe corrupts the single-quote normalisation.
+        mockCreateQuote.mockRejectedValue(
+            buildBelowMinQuoteError("{'message': 'isn't parseable'}"),
+        )
+
+        const { result } = renderHook(() => useOnrampForm(meldPair))
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+
+        expect(result.current.limits).toBeNull()
+        expect(result.current.errorMessage).toBe('Amount is too low.')
+    })
+
+    it('clears Meld limits when the pair changes', async () => {
+        mockCreateQuote.mockRejectedValue(belowMinQuoteError)
+
+        const { result, rerender } = renderHook(
+            ({ pair }: { pair: RampPair }) => useOnrampForm(pair),
+            { initialProps: { pair: meldPair } },
+        )
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(500)
+        })
+        expect(result.current.limits?.min?.toString()).toBe('600')
+
+        rerender({ pair: xoPair })
+
+        expect(result.current.limits).toBeNull()
     })
 
     it('calls ensureOptIn BEFORE createRampOrder on confirm', async () => {

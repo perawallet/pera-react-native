@@ -13,6 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 const transportListenMock = vi.hoisted(() => vi.fn())
+const transportListMock = vi.hoisted(() => vi.fn())
 const transportOpenMock = vi.hoisted(() => vi.fn())
 const transportRequestMock = vi.hoisted(() => vi.fn())
 const transportIsSupportedMock = vi.hoisted(() => vi.fn())
@@ -37,6 +38,7 @@ const algorandSignDataMock = vi.hoisted(() => vi.fn())
 vi.mock('@ledgerhq/hw-transport-webhid', () => {
     Object.assign(TransportWebHIDMock, {
         listen: transportListenMock,
+        list: transportListMock,
         open: transportOpenMock,
         request: transportRequestMock,
         isSupported: transportIsSupportedMock,
@@ -57,7 +59,7 @@ import { LedgerWebUsbService } from '../LedgerWebUsbService'
 import {
     LedgerSigningError,
     LedgerUserRejectedError,
-} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+} from '@perawallet/wallet-extension-ledger-shared'
 
 const NANO_S_PLUS_DEVICE = {
     vendorId: 0x2c_97,
@@ -94,6 +96,7 @@ const scanAndConnect = async (
 describe('LedgerWebUsbService', () => {
     beforeEach(() => {
         transportListenMock.mockReset()
+        transportListMock.mockReset()
         transportOpenMock.mockReset()
         transportRequestMock.mockReset()
         transportIsSupportedMock.mockReset()
@@ -105,6 +108,7 @@ describe('LedgerWebUsbService', () => {
         algorandSignDataMock.mockReset()
         transportOpenMock.mockResolvedValue({ close: transportCloseMock })
         transportRequestMock.mockResolvedValue({ close: transportCloseMock })
+        transportListMock.mockResolvedValue([])
     })
 
     test('declares manufacturer "ledger" and transportType "usb"', () => {
@@ -192,12 +196,57 @@ describe('LedgerWebUsbService', () => {
         expect(typeof transport.disconnect).toBe('function')
     })
 
-    test('connect falls back to request() (shows the device picker) when the id was not scanned in this session', async () => {
+    // The approval window (approval.html) is its own document, so it gets a
+    // fresh service whose scan cache is empty — nothing scans there. Falling
+    // straight through to request() asks for a user gesture the signing
+    // pipeline no longer has by the time it reaches connect(), so signing
+    // died with no device prompt. Already-permitted devices must come back
+    // from getDevices() (TransportWebHID.list), which needs no gesture.
+    test('connect re-resolves an already-permitted device via list() when nothing was scanned in this document', async () => {
         const provider = new LedgerWebUsbService().createTransportProvider()
-        await provider.connect('unknown-id')
+        transportListMock.mockResolvedValue([NANO_S_PLUS_DEVICE])
+
+        const transport = await provider.connect(
+            `${NANO_S_PLUS_DEVICE.vendorId}:${NANO_S_PLUS_DEVICE.productId}`,
+        )
+
+        expect(transportOpenMock).toHaveBeenCalledWith(NANO_S_PLUS_DEVICE)
+        expect(transportRequestMock).not.toHaveBeenCalled()
+        expect(typeof transport.signTransaction).toBe('function')
+    })
+
+    test('connect reuses an already-open permitted device rather than reopening it', async () => {
+        const alreadyOpenDevice = { ...NANO_S_PLUS_DEVICE, opened: true }
+        const provider = new LedgerWebUsbService().createTransportProvider()
+        transportListMock.mockResolvedValue([alreadyOpenDevice])
+
+        await provider.connect(
+            `${NANO_S_PLUS_DEVICE.vendorId}:${NANO_S_PLUS_DEVICE.productId}`,
+        )
+
+        expect(TransportWebHIDMock).toHaveBeenCalledWith(alreadyOpenDevice)
+        expect(transportOpenMock).not.toHaveBeenCalled()
+    })
+
+    test('connect falls back to request() (shows the device picker) when the id is not among the permitted devices', async () => {
+        const provider = new LedgerWebUsbService().createTransportProvider()
+        transportListMock.mockResolvedValue([NANO_S_PLUS_DEVICE])
+
+        await provider.connect('9999:9999')
 
         expect(transportRequestMock).toHaveBeenCalled()
         expect(transportOpenMock).not.toHaveBeenCalled()
+    })
+
+    test('connect still falls back to request() when list() is unavailable', async () => {
+        const provider = new LedgerWebUsbService().createTransportProvider()
+        transportListMock.mockRejectedValue(
+            new Error('navigator.hid is not supported'),
+        )
+
+        await provider.connect('unknown-id')
+
+        expect(transportRequestMock).toHaveBeenCalled()
     })
 
     test('wrapped transport.getAddress delegates to AlgorandApp and returns public-key bytes', async () => {

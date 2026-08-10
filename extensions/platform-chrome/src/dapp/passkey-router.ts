@@ -20,6 +20,7 @@
 // page's real `navigator.credentials`, which rejects with its own SecurityError.
 import { resolveRpId } from '@perawallet/wallet-core-passkeys/webauthn'
 import { type PasskeyApprovalOpener } from './passkey-opener'
+import { isSecureDappOrigin } from './secure-origin'
 import {
     isWebauthnRelayMessage,
     type WebauthnCeremonyRequest,
@@ -61,9 +62,12 @@ export class PasskeyRouter {
 
         // Browser-stamped, never page-asserted — see this file's header
         // comment and webauthn-router-protocol.ts's note on the request's
-        // own (untrusted) `origin` field.
+        // own (untrusted) `origin` field. Insecure origins decline here (and
+        // the content script then falls through to the page's real
+        // navigator.credentials, which refuses outside a secure context on
+        // its own) — see secure-origin.ts for why the scheme is load-bearing.
         const origin = sender?.origin
-        if (!origin || origin === 'null' || !/^https?:\/\//.test(origin)) {
+        if (!isSecureDappOrigin(origin)) {
             sendResponse(DECLINE)
             return true
         }

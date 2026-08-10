@@ -25,33 +25,10 @@ import {
     type MigrationService,
     type MigrationStepVersions,
     type SimulateLegacyDatabaseArgs,
-    type NotificationOpenListener,
-    type PushNotificationInitResult,
-    type PushNotificationService,
-    type PushTokenRefreshListener,
+    type WalletProvisioningCardStatus,
+    type WalletProvisioningService,
+    type WalletProvisioningTokenizationStatus,
 } from '@perawallet/wallet-extension-platform'
-
-const noop = (): void => undefined
-
-export class ChromePushNotificationService implements PushNotificationService {
-    // Chrome ≥116 supports MV3 web push, but the backend only accepts FCM
-    // tokens today — flip this once that lands.
-    isSupported(): boolean {
-        return false
-    }
-    async initializeNotifications(): Promise<PushNotificationInitResult> {
-        return { token: undefined, unsubscribe: noop }
-    }
-    async getPushToken(): Promise<string | undefined> {
-        return undefined
-    }
-    addTokenRefreshListener(_listener: PushTokenRefreshListener) {
-        return noop
-    }
-    addNotificationOpenListener(_listener: NotificationOpenListener) {
-        return noop
-    }
-}
 
 /**
  * Chrome has no OS-level biometric API, so this stub always reports
@@ -124,4 +101,23 @@ export class ChromeMigrationService implements MigrationService {
     async setCompletedStepVersions(
         _versions: MigrationStepVersions,
     ): Promise<void> {}
+}
+
+/**
+ * OS-wallet push provisioning doesn't exist in a browser extension, so the
+ * probes report permanently unavailable and the add flows reject.
+ */
+export class ChromeWalletProvisioningService implements WalletProvisioningService {
+    async checkWalletAvailability(): Promise<boolean> {
+        return false
+    }
+    async getCardStatusBySuffix(): Promise<WalletProvisioningCardStatus> {
+        return 'not found'
+    }
+    async addCardToAppleWallet(): Promise<WalletProvisioningTokenizationStatus> {
+        throw new Error('Wallet provisioning is unavailable on web')
+    }
+    async addCardToGoogleWallet(): Promise<WalletProvisioningTokenizationStatus> {
+        throw new Error('Wallet provisioning is unavailable on web')
+    }
 }

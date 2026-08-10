@@ -50,6 +50,7 @@ export {
     classifyHandoffPoll,
     resolveHandoffOutcome,
     errorReasonToMessage,
+    type HandoffPeerDelivery,
     type HandoffPollDetail,
     type HandoffAssemblyContext,
     type ResolverMessages,

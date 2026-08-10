@@ -43,6 +43,15 @@ export const cardQueryKeys = {
         [MODULE_PREFIX, 'internal-wallets', { network }] as const,
     externalWallets: (network: Network) =>
         [MODULE_PREFIX, 'external-wallets', { network }] as const,
+    // OS-wallet push provisioning state is device-local, so these two are
+    // deliberately not keyed by network.
+    walletProvisioningAvailability: [
+        MODULE_PREFIX,
+        'wallet-provisioning',
+        'availability',
+    ] as const,
+    walletProvisioningStatus: (panLast4: Nullable<string>) =>
+        [MODULE_PREFIX, 'wallet-provisioning', 'status', { panLast4 }] as const,
 }
 
 // Stable mutation keys so the same logical operation is recognised as a single

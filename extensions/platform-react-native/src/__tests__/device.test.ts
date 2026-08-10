@@ -76,9 +76,9 @@ describe('RNDeviceInfoStorageService', () => {
         service = new RNDeviceInfoStorageService()
     })
 
-    describe('getDeviceID', () => {
+    describe('getDeviceInstallationID', () => {
         it('returns unique device ID from DeviceInfo', async () => {
-            const deviceId = await service.getDeviceID()
+            const deviceId = await service.getDeviceInstallationID()
             expect(deviceId).toBe('unique-device-id')
             const { getIosIdForVendorAsync } = await import('expo-application')
             expect(getIosIdForVendorAsync).toHaveBeenCalled()

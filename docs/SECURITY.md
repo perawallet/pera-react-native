@@ -30,6 +30,37 @@ Environment variables and API keys should be in `.env` files, not hardcoded.
 | Addresses          | Any storage        | Safe    |
 | Transaction hashes | Any storage        | Safe    |
 
+## Known limitation: changing the vault password does not rotate the key
+
+On the browser extension, `changePassword` re-wraps the **same** 32-byte master key under a key
+derived from the new password. It changes who can open the vault going forward; it does not change
+what is inside it.
+
+So it is not a remedy for a suspected compromise. An attacker who already extracted the master key,
+or who holds a copy of the old `vault:wrapped-master-key` blob together with the old password, is
+unaffected by a password change. The passkey (PRF) blob likewise keeps wrapping the unchanged key —
+correct for continuity, but it means that path is not invalidated either.
+
+**Rotating the master key would not fix this either, so don't build it.** Re-wrapping under a fresh
+master key re-encrypts the _same plaintext_: the entries hold the actual private keys and seeds, and
+those values do not change. Work the cases through and the benefit disappears —
+
+- An attacker who read the master key out of `chrome.storage.session` also had the plaintext at that
+  moment (they needed the ciphertexts to use it, and both live in the same profile). They already
+  have the private keys; re-wrapping copies they've taken achieves nothing.
+- An attacker holding a stale storage dump plus the old password decrypts _their_ copy with _their_
+  blob. Nothing we do to ours touches theirs.
+- Rotation only helps if someone holds the master key but not the ciphertexts and expects to obtain
+  them later — which needs them to have read session storage but not local storage in the same
+  profile. That is not a realistic split.
+
+Key rotation is valuable when a wrapping key can leak while the data stays sealed. That does not
+apply here: the master key only ever exists in memory alongside the plaintext it protects, so a
+master-key compromise implies a plaintext compromise.
+
+The only real remedy is to change the private keys — generate a new wallet and move the funds. Advise
+that, not a password change and not rotation.
+
 ## Supply Chain
 
 Review dependency updates carefully — supply chain attacks are real. The

@@ -25,9 +25,16 @@ vi.mock('react-native', () => ({
 }))
 
 // Mock Firebase modules with simple implementations
-const { mockGetValue, mockFetchAndActivate } = vi.hoisted(() => ({
+const {
+    mockGetValue,
+    mockFetchAndActivate,
+    mockSetConfigSettings,
+    mockSetDefaults,
+} = vi.hoisted(() => ({
     mockGetValue: vi.fn(),
     mockFetchAndActivate: vi.fn().mockResolvedValue(true),
+    mockSetConfigSettings: vi.fn().mockResolvedValue(undefined),
+    mockSetDefaults: vi.fn().mockResolvedValue(null),
 }))
 
 vi.mock('@react-native-firebase/crashlytics', () => ({
@@ -37,7 +44,10 @@ vi.mock('@react-native-firebase/crashlytics', () => ({
 }))
 
 vi.mock('@react-native-firebase/remote-config', () => ({
-    getRemoteConfig: vi.fn(() => ({})),
+    getRemoteConfig: vi.fn(() => ({
+        setConfigSettings: mockSetConfigSettings,
+        setDefaults: mockSetDefaults,
+    })),
     fetchAndActivate: mockFetchAndActivate,
     getValue: mockGetValue,
 }))
@@ -113,6 +123,56 @@ describe('RNFirebaseService', () => {
                     service.initializeRemoteConfig(),
                 ).resolves.not.toThrow()
             })
+
+            // Both native writes must land before the fetch. Assigning the
+            // `settings`/`defaultConfig` properties instead dispatched the fetch
+            // first, and native setDefaults then reset the config database and
+            // cancelled the in-flight request — so no fetch ever succeeded and
+            // every key served its bundled default (PERA-4836).
+            it('completes both native config writes before fetching', async () => {
+                const order: string[] = []
+                mockSetConfigSettings.mockImplementationOnce(async () => {
+                    order.push('setConfigSettings')
+                })
+                mockSetDefaults.mockImplementationOnce(async () => {
+                    order.push('setDefaults')
+                    return null
+                })
+                mockFetchAndActivate.mockImplementationOnce(async () => {
+                    order.push('fetchAndActivate')
+                    return true
+                })
+
+                await service.initializeRemoteConfig()
+
+                expect(order).toEqual([
+                    'setConfigSettings',
+                    'setDefaults',
+                    'fetchAndActivate',
+                ])
+            })
+
+            // A second concurrent fetch makes Firebase cancel the in-flight one.
+            it('shares one fetch between concurrent callers, then allows a later refetch', async () => {
+                await Promise.all([
+                    service.initializeRemoteConfig(),
+                    service.initializeRemoteConfig(),
+                ])
+                expect(mockFetchAndActivate).toHaveBeenCalledTimes(1)
+
+                await service.initializeRemoteConfig()
+                expect(mockFetchAndActivate).toHaveBeenCalledTimes(2)
+            })
+
+            it('seeds the bundled defaults so unfetched keys still resolve', async () => {
+                await service.initializeRemoteConfig()
+
+                expect(mockSetDefaults).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        staking_projects_i18n: expect.any(String),
+                    }),
+                )
+            })
         })
 
         describe('getStringValue', () => {
@@ -126,7 +186,7 @@ describe('RNFirebaseService', () => {
                     asBoolean: () => true,
                     asNumber: () => 42,
                 } as any)
-                const result = service.getStringValue('welcome_message')
+                const result = service.getStringValue('active_locales')
                 expect(result).toBe('mock-string-value')
             })
 
@@ -137,7 +197,7 @@ describe('RNFirebaseService', () => {
                     asNumber: () => 42,
                 } as any)
                 const result = service.getStringValue(
-                    'welcome_message',
+                    'active_locales',
                     'fallback',
                 )
                 expect(result).toBe('mock-string-value')
@@ -148,7 +208,7 @@ describe('RNFirebaseService', () => {
                     throw new Error('no value')
                 })
                 const result = service.getStringValue(
-                    'welcome_message',
+                    'active_locales',
                     'fallback',
                 )
                 expect(result).toBe('fallback')
@@ -158,7 +218,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getStringValue('welcome_message')
+                const result = service.getStringValue('active_locales')
                 expect(result).toBe('')
             })
         })
@@ -175,7 +235,7 @@ describe('RNFirebaseService', () => {
                     asNumber: () => 42,
                     getSource: () => 'remote',
                 } as any)
-                const result = service.getBooleanValue('welcome_message')
+                const result = service.getBooleanValue('enable_pera_card')
                 expect(result).toEqual(true)
             })
 
@@ -186,7 +246,10 @@ describe('RNFirebaseService', () => {
                     asNumber: () => 42,
                     getSource: () => 'remote',
                 } as any)
-                const result = service.getBooleanValue('welcome_message', false)
+                const result = service.getBooleanValue(
+                    'enable_pera_card',
+                    false,
+                )
                 expect(result).toEqual(true)
             })
 
@@ -194,7 +257,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getBooleanValue('welcome_message', true)
+                const result = service.getBooleanValue('enable_pera_card', true)
                 expect(result).toEqual(true)
             })
 
@@ -202,7 +265,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getBooleanValue('welcome_message')
+                const result = service.getBooleanValue('enable_pera_card')
                 expect(result).toEqual(false)
             })
 
@@ -251,7 +314,7 @@ describe('RNFirebaseService', () => {
                     asBoolean: () => true,
                     asNumber: () => 42,
                 } as any)
-                const result = service.getNumberValue('welcome_message')
+                const result = service.getNumberValue('fee_min_txn_fee')
                 expect(result).toEqual(42)
             })
 
@@ -261,7 +324,7 @@ describe('RNFirebaseService', () => {
                     asBoolean: () => true,
                     asNumber: () => 42,
                 } as any)
-                const result = service.getNumberValue('welcome_message', 100)
+                const result = service.getNumberValue('fee_min_txn_fee', 100)
                 expect(result).toEqual(42)
             })
 
@@ -269,7 +332,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getNumberValue('welcome_message', 100)
+                const result = service.getNumberValue('fee_min_txn_fee', 100)
                 expect(result).toEqual(100)
             })
 
@@ -277,7 +340,7 @@ describe('RNFirebaseService', () => {
                 vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
-                const result = service.getNumberValue('welcome_message')
+                const result = service.getNumberValue('fee_min_txn_fee')
                 expect(result).toEqual(0)
             })
         })
@@ -519,7 +582,9 @@ describe('RNFirebaseService', () => {
                     },
                 })
 
-                expect(listener).toHaveBeenCalledWith('pera://deeplink')
+                expect(listener).toHaveBeenCalledWith(
+                    expect.objectContaining({ url: 'pera://deeplink' }),
+                )
             })
 
             it('routes a foreground ACTION_PRESS tap to the notification-open listener', async () => {
@@ -542,7 +607,42 @@ describe('RNFirebaseService', () => {
                     },
                 })
 
-                expect(listener).toHaveBeenCalledWith('pera://action')
+                expect(listener).toHaveBeenCalledWith(
+                    expect.objectContaining({ url: 'pera://action' }),
+                )
+            })
+
+            it('forwards type and account_address for a multisig push that carries no deeplink url', async () => {
+                mockNotifee.requestPermission.mockResolvedValue({
+                    authorizationStatus: 1, //AUTHORIZED
+                })
+                const listener = vi.fn()
+                service.addNotificationOpenListener(listener)
+                await service.initializeNotifications()
+
+                const onForegroundEventCallback = (
+                    notifee.onForegroundEvent as any
+                ).mock.calls[0][0] as (event: any) => Promise<void>
+
+                await onForegroundEventCallback({
+                    type: 0, // EventType.PRESS
+                    detail: {
+                        notification: {
+                            data: {
+                                type: 'multisig-new-sign-request',
+                                account_address: 'MSIG_ADDR',
+                            },
+                        },
+                    },
+                })
+
+                // The sign-request push has no `url`; routing must still fire so
+                // the app can resolve it by type.
+                expect(listener).toHaveBeenCalledWith({
+                    url: undefined,
+                    type: 'multisig-new-sign-request',
+                    accountAddress: 'MSIG_ADDR',
+                })
             })
 
             it('should handle onForegroundEvent callback for unknown event type', async () => {

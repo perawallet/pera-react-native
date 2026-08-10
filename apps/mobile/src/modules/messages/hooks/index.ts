@@ -12,6 +12,11 @@
 
 export { useNotificationPress } from './useNotificationPress'
 export {
+    getMultisigIntentKind,
+    useHandleMultisigNotification,
+    type MultisigIntentKind,
+} from './useHandleMultisigNotification'
+export {
     useHandleInboxItemPress,
     type UseHandleInboxItemPressResult,
 } from './useHandleInboxItemPress'
