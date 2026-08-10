@@ -33,6 +33,7 @@ import {
     type PlatformServices,
     type PushNotificationService,
     type RemoteConfigService,
+    type WalletProvisioningService,
 } from '@perawallet/wallet-extension-platform'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { testDatabaseService } from './sqlite-database'
@@ -126,6 +127,19 @@ const buildServices = (): PlatformServices => {
         }),
     }
 
+    // Dormant defaults: push provisioning reports unavailable, so flow tests
+    // exercise today's manual-instructions fallback.
+    const walletProvisioning: WalletProvisioningService = {
+        checkWalletAvailability: async () => false,
+        getCardStatusBySuffix: async () => 'not found',
+        addCardToAppleWallet: async () => {
+            throw new Error('Wallet provisioning is unavailable in tests')
+        },
+        addCardToGoogleWallet: async () => {
+            throw new Error('Wallet provisioning is unavailable in tests')
+        },
+    }
+
     const migration: MigrationService = {
         hasLegacyData: async () => false,
         getLegacyData: async () => {
@@ -157,6 +171,7 @@ const buildServices = (): PlatformServices => {
         appIntegrity,
         hardwareWalletRegistry: createHardwareWalletRegistry(),
         migration,
+        walletProvisioning,
     }
 }
 

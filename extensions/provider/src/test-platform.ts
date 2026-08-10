@@ -28,6 +28,7 @@ import {
     type PlatformServices,
     type PushNotificationService,
     type RemoteConfigService,
+    type WalletProvisioningService,
 } from '@perawallet/wallet-extension-platform'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
@@ -47,6 +48,7 @@ export type TestPlatformOverrides = Partial<{
     deviceInfo: DeviceInfoService
     hardwareWalletRegistry: HardwareWalletRegistry
     migration: MigrationService
+    walletProvisioning: WalletProvisioningService
 }>
 
 /**
@@ -210,6 +212,17 @@ export const buildTestPlatform = (
         hardwareWalletRegistry:
             overrides.hardwareWalletRegistry ?? defaultHardwareWalletRegistry,
         migration: overrides.migration ?? createStubMigrationService(),
+        // Dormant defaults: push provisioning reports unavailable.
+        walletProvisioning: overrides.walletProvisioning ?? {
+            checkWalletAvailability: async () => false,
+            getCardStatusBySuffix: async () => 'not found',
+            addCardToAppleWallet: async () => {
+                throw new Error('Wallet provisioning is unavailable in tests')
+            },
+            addCardToGoogleWallet: async () => {
+                throw new Error('Wallet provisioning is unavailable in tests')
+            },
+        },
     }
 }
 
