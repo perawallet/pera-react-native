@@ -263,6 +263,41 @@ describe('migrateKeystoreLayout', () => {
         )
     })
 
+    // The k/ bucket is plaintext; an HD seed reaching it would sit unencrypted
+    // on disk. canary.13's own commit() strips `seed` for exactly this reason.
+    it('never writes a seed into the plaintext metadata bucket', async () => {
+        await writeCanary13Record(store, {
+            ...algo25Record('key-1'),
+            seed: new Uint8Array(32).fill(9),
+        } as Partial<KeyData> & { id: string })
+
+        await migrateKeystoreLayout(deps())
+
+        const metadata = store.get('k/key-1')!
+        expect(metadata).not.toContain(
+            base64.encode(new Uint8Array(32).fill(9)),
+        )
+        expect(decode(metadata)).not.toHaveProperty('seed')
+    })
+
+    // canary.13's importSeed stores the seed in `privateKey`, but a record
+    // carrying only `seed` must still yield usable material, not a watch-only.
+    it('seals a seed-only record as its material', async () => {
+        await writeCanary13Record(store, {
+            id: 'seed-1',
+            type: 'seed',
+            algorithm: 'raw',
+            extractable: true,
+            seed: new Uint8Array(32).fill(9),
+        } as Partial<KeyData> & { id: string })
+
+        const result = await migrateKeystoreLayout(deps())
+
+        expect(result).toEqual({ migrated: 1, skipped: 0, failed: 0 })
+        const recovered = await openData(MASTER_KEY, store.get('m/seed-1')!)
+        expect(base64.decode(recovered)).toEqual(new Uint8Array(32).fill(9))
+    })
+
     // A fresh install has no Keychain master key; reading one would throw.
     it('does not read the master key when there is nothing to migrate', async () => {
         store.set('k/key-1', JSON.stringify({ id: 'key-1' }))

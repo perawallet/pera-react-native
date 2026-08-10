@@ -127,12 +127,20 @@ export const migrateKeystoreLayout = async (
             }
 
             const record = deps.decode(await deps.openData(masterKey, raw))
-            const { privateKey, ...metadata } = record
+            // `seed` is untyped but real: both versions' `commit` strip it
+            // alongside `privateKey`, and both `decode` revivers rebuild it. It
+            // must never reach `k/`, which is plaintext. Where a record carries
+            // only a seed it *is* the material — canary.13's `importSeed` puts
+            // the seed in `privateKey`, so the two never hold different secrets.
+            const { privateKey, seed, ...metadata } = record as KeyData & {
+                seed?: Uint8Array
+            }
+            const material = privateKey ?? seed
 
-            if (privateKey) {
+            if (material) {
                 deps.storage.set(
                     MATERIAL_PREFIX + record.id,
-                    await deps.sealData(masterKey, base64.encode(privateKey)),
+                    await deps.sealData(masterKey, base64.encode(material)),
                 )
             }
             deps.storage.set(METADATA_PREFIX + record.id, deps.encode(metadata))
@@ -141,7 +149,7 @@ export const migrateKeystoreLayout = async (
                 !(await isMigrationDurable(
                     deps,
                     record.id,
-                    privateKey,
+                    material,
                     masterKey,
                 ))
             ) {
