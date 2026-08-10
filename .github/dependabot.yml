@@ -149,11 +149,16 @@ updates:
       # Stay on 27 until jsdom fixes the regression or React DOM changes.
       - dependency-name: jsdom
         update-types: [version-update:semver-major]
-      # Native modules pinned to Expo SDK 57's bundled versions. Expo builds and
-      # tests the SDK against exact versions; bumping any of these independently
-      # (even a patch) drifts from the SDK and risks native/ABI mismatches. They
-      # move only when the Expo SDK moves. reanimated/worklets are a lockstep pair;
+      # Native modules that move as one reviewed set, never individually. Bumping
+      # any of these on its own risks a native/ABI mismatch that no resolver and
+      # no linker will catch. reanimated/worklets are a lockstep pair;
       # nitro-modules is also override-pinned to one ABI for all nitro consumers.
+      #
+      # We run these *ahead* of the versions Expo bundles with SDK 57, on purpose
+      # and for some time. `expo install --check` therefore reports them as
+      # wanting a "downgrade" — that is the expected state here, not a finding,
+      # and it is why that check is not a CI gate. Do not "fix" it by pulling
+      # these back to the SDK's set without a device pass.
       #
       # Moved as a set in PERA-4834: reanimated 4.5.3, worklets 0.10.3,
       # nitro-modules 0.36.5, pager-view 8.0.4, keyboard-controller 1.22.2.
