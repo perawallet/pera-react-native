@@ -30,6 +30,7 @@ import { useNetworkStatus } from '@modules/network'
 import { routeCapabilities } from '@routes/capabilities'
 import { useRequirePinVerification } from '@modules/security'
 import {
+    useAddCardToWallet,
     useCardErrorToast,
     useCardFundingSourcePicker,
     useIsCardAutoFundingActive,
@@ -125,6 +126,9 @@ type UsePeraCardDetailsResult = {
     onAccountsDetails: () => void
     /** Which wallet-provisioning row to show: Apple Wallet on iOS, Google Pay on Android. */
     walletPlatform: WalletPlatform
+    /** False once the card already lives in the OS wallet — the add row must
+     * be hidden then (a Google certification requirement). */
+    showAddToWallet: boolean
     onAddToWallet: () => void
     onReportLostStolen: () => void
     onReportSuspicious: () => void
@@ -346,7 +350,10 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         })
     }, [request])
 
-    const onAddToWallet = useCallback(() => {
+    const { canPushProvision, isCardInWallet, startAddCardToWallet } =
+        useAddCardToWallet()
+
+    const openWalletInstructions = useCallback(() => {
         void request({
             contents: <WalletInstructionsSheet platform={walletPlatform} />,
             options: {
@@ -356,6 +363,22 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
             },
         })
     }, [request, walletPlatform])
+
+    // Native push provisioning when the OS + accreditations allow it; the
+    // manual instructions sheet is both the pre-accreditation default and the
+    // fallback when the native flow can't complete. A deliberate user cancel
+    // ('dismissed') shows nothing.
+    const addToWallet = useCallback(async () => {
+        if (!canPushProvision) {
+            openWalletInstructions()
+            return
+        }
+        const outcome = await startAddCardToWallet()
+        if (outcome === 'fallback') openWalletInstructions()
+    }, [canPushProvision, startAddCardToWallet, openWalletInstructions])
+    const onAddToWallet = useCallback(() => {
+        void addToWallet()
+    }, [addToWallet])
 
     const { pickFundingSource } = useCardFundingSourcePicker()
     const { mutateAsync: connectFundingSourceAsync } =
@@ -467,6 +490,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         isSettingPin: setPin.isPending,
         onAccountsDetails,
         walletPlatform,
+        showAddToWallet: !isCardInWallet,
         onAddToWallet,
         onReportLostStolen,
         onReportSuspicious,

@@ -27,6 +27,9 @@ type CardOptionsSectionProps = {
     canToggleFreeze: boolean
     /** iOS shows Apple Wallet, Android shows Google Pay — only one provisioning row. */
     walletPlatform: WalletPlatform
+    /** Hides the wallet row once the card is already in the OS wallet
+     * (a Google certification requirement). */
+    showAddToWallet: boolean
     isSettingPin: boolean
     /** Disables the set-PIN and freeze rows (offline-unsafe); report rows stay
      * active since they're pure navigation. */
@@ -49,6 +52,7 @@ export const CardOptionsSection = ({
     isFreezing,
     canToggleFreeze,
     walletPlatform,
+    showAddToWallet,
     isSettingPin,
     isOffline = false,
     showCardActions,
@@ -84,36 +88,42 @@ export const CardOptionsSection = ({
                     <>
                         <PWDivider />
 
-                        {walletPlatform === 'apple' ? (
-                            <CardOptionRow
-                                iconElement={
-                                    <AppleWalletIcon
-                                        width={theme.spacing.xl}
-                                        height={theme.spacing.xl}
-                                        color={theme.colors.textMain}
+                        {showAddToWallet ? (
+                            <>
+                                {walletPlatform === 'apple' ? (
+                                    <CardOptionRow
+                                        iconElement={
+                                            <AppleWalletIcon
+                                                width={theme.spacing.xl}
+                                                height={theme.spacing.xl}
+                                                color={theme.colors.textMain}
+                                            />
+                                        }
+                                        label={t(
+                                            'peraCard.account.add_to_apple_wallet',
+                                        )}
+                                        onPress={onAddToWallet}
+                                        testID='pera_card_apple_wallet_row'
                                     />
-                                }
-                                label={t(
-                                    'peraCard.account.add_to_apple_wallet',
+                                ) : (
+                                    <CardOptionRow
+                                        iconElement={
+                                            <GooglePayIcon
+                                                width={theme.spacing.xl}
+                                                height={theme.spacing.xl}
+                                            />
+                                        }
+                                        label={t(
+                                            'peraCard.account.add_to_google_pay',
+                                        )}
+                                        onPress={onAddToWallet}
+                                        testID='pera_card_google_pay_row'
+                                    />
                                 )}
-                                onPress={onAddToWallet}
-                                testID='pera_card_apple_wallet_row'
-                            />
-                        ) : (
-                            <CardOptionRow
-                                iconElement={
-                                    <GooglePayIcon
-                                        width={theme.spacing.xl}
-                                        height={theme.spacing.xl}
-                                    />
-                                }
-                                label={t('peraCard.account.add_to_google_pay')}
-                                onPress={onAddToWallet}
-                                testID='pera_card_google_pay_row'
-                            />
-                        )}
 
-                        <PWDivider />
+                                <PWDivider />
+                            </>
+                        ) : null}
 
                         <CardOptionRow
                             icon='locked'

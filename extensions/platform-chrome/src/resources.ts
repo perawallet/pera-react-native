@@ -23,6 +23,7 @@ import {
     ChromeMigrationService,
     ChromePushNotificationService,
     ChromeRemoteConfigService,
+    ChromeWalletProvisioningService,
 } from './services'
 import { keyValueStorage } from './key-value-singleton'
 
@@ -41,6 +42,7 @@ export const platformServices: PlatformServices = {
     appIntegrity: new ChromeAppIntegrityService(),
     hardwareWalletRegistry: createHardwareWalletRegistry(),
     migration: new ChromeMigrationService(),
+    walletProvisioning: new ChromeWalletProvisioningService(),
 }
 
 export const getPlatformServices = (): PlatformServices => platformServices
