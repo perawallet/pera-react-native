@@ -298,6 +298,43 @@ describe('migrateKeystoreLayout', () => {
         expect(base64.decode(recovered)).toEqual(new Uint8Array(32).fill(9))
     })
 
+    // Observed on device: an HD-derived record embeds its parent under
+    // `metadata.rootKey`, privateKey included. canary.13 sealed the whole
+    // record so that was safe; k/ is plaintext, so it must not survive.
+    it('strips key material nested inside metadata', async () => {
+        const rootSecret = new Uint8Array(64).fill(11)
+        await writeCanary13Record(store, {
+            id: 'derived-1',
+            type: 'hd-derived-ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(4),
+            metadata: {
+                parentKeyId: 'root-1',
+                rootKey: {
+                    id: 'root-1',
+                    type: 'hd-root-key',
+                    privateKey: rootSecret,
+                },
+            },
+        } as Partial<KeyData> & { id: string })
+
+        await migrateKeystoreLayout(deps())
+
+        const raw = store.get('k/derived-1')!
+        expect(raw).not.toContain(base64.encode(rootSecret))
+        const metadata = decode(raw) as KeyData & {
+            metadata?: { rootKey?: Record<string, unknown> }
+        }
+        expect(metadata.metadata?.rootKey).not.toHaveProperty('privateKey')
+        // Non-secret structure must survive so the record stays usable.
+        expect(metadata.metadata?.rootKey).toMatchObject({
+            id: 'root-1',
+            type: 'hd-root-key',
+        })
+        expect(metadata.publicKey).toEqual(new Uint8Array(32).fill(4))
+    })
+
     // A fresh install has no Keychain master key; reading one would throw.
     it('does not read the master key when there is nothing to migrate', async () => {
         store.set('k/key-1', JSON.stringify({ id: 'key-1' }))

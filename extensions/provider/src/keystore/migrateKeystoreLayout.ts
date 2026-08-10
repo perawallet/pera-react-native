@@ -55,6 +55,34 @@ export type KeystoreLayoutMigrationResult = {
 const isLegacyEntry = (key: string): boolean =>
     !key.startsWith(METADATA_PREFIX) && !key.startsWith(MATERIAL_PREFIX)
 
+/** Field names that carry raw key material anywhere in a record. */
+const SECRET_FIELDS = new Set(['privateKey', 'seed', 'key'])
+
+/**
+ * Strips key material from every depth of a record, not just the top level.
+ *
+ * canary.13 sealed the *whole* record, so nesting material inside `metadata` was
+ * safe at rest — and it does: an HD-derived key carries its parent under
+ * `metadata.rootKey`, `privateKey` included. canary.14 keeps `k/` in plaintext,
+ * so copying `metadata` verbatim would write an HD wallet's root private key to
+ * disk unencrypted. Nothing is lost: each key's own material is sealed under
+ * `m/<id>`, so the embedded copy is redundant.
+ */
+const withoutSecrets = <T>(value: T): T => {
+    if (Array.isArray(value)) {
+        return value.map(withoutSecrets) as unknown as T
+    }
+    // Uint8Array is an object but must survive intact (e.g. `publicKey`).
+    if (value instanceof Uint8Array || value === null) return value
+    if (typeof value !== 'object') return value
+
+    return Object.fromEntries(
+        Object.entries(value as Record<string, unknown>)
+            .filter(([field]) => !SECRET_FIELDS.has(field))
+            .map(([field, nested]) => [field, withoutSecrets(nested)]),
+    ) as T
+}
+
 /**
  * Reads both new buckets back through the same helpers the engine uses, so a
  * truncated or unreadable write is caught while the canary.13 entry is still on
@@ -143,7 +171,10 @@ export const migrateKeystoreLayout = async (
                     await deps.sealData(masterKey, base64.encode(material)),
                 )
             }
-            deps.storage.set(METADATA_PREFIX + record.id, deps.encode(metadata))
+            deps.storage.set(
+                METADATA_PREFIX + record.id,
+                deps.encode(withoutSecrets(metadata)),
+            )
 
             if (
                 !(await isMigrationDurable(
