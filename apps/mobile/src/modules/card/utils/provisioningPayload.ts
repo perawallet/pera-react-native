@@ -11,9 +11,9 @@
  */
 
 import type {
-    AndroidCardData,
-    IOSEncryptPayload,
-} from '@expensify/react-native-wallet'
+    WalletProvisioningApplePayload,
+    WalletProvisioningUserAddress,
+} from '@perawallet/wallet-extension-platform'
 
 /**
  * Raised while the Baanx provisioning-payload endpoints don't exist yet
@@ -41,7 +41,7 @@ export type GoogleProvisioningPayload = {
     /** Base64 opaque payment card blob from the issuer. */
     opaquePaymentCard: string
     cardHolderName: string
-    userAddress: AndroidCardData['userAddress']
+    userAddress: WalletProvisioningUserAddress
 }
 
 // TODO(card): implement against the backend proxy for Baanx's provisioning
@@ -49,7 +49,7 @@ export type GoogleProvisioningPayload = {
 // is unreachable anyway (no Apple entitlement / TapAndPay allowlisting).
 export const fetchAppleProvisioningPayload = (
     _request: AppleProvisioningPayloadRequest,
-): Promise<IOSEncryptPayload> =>
+): Promise<WalletProvisioningApplePayload> =>
     Promise.reject(new ProvisioningPayloadUnavailableError())
 
 export const fetchGoogleProvisioningPayload =

@@ -63,17 +63,6 @@ export default defineConfig({
                 ),
             },
             {
-                // @expensify/react-native-wallet resolves its TurboModule and
-                // constructs a NativeEventEmitter at import time — neither
-                // exists in jsdom. The stub answers "wallet unavailable" so
-                // suites exercise the manual-instructions fallback.
-                find: '@expensify/react-native-wallet',
-                replacement: path.resolve(
-                    __dirname,
-                    './src/test-utils/react-native-wallet-stub.ts',
-                ),
-            },
-            {
                 // `@perawallet/walletconnect` (WC v1 fork) opens a relay
                 // socket on construction — no good in jsdom. Route every
                 // consumer (including the deep

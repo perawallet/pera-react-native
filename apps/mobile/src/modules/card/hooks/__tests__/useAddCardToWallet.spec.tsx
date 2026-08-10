@@ -19,22 +19,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mocks = vi.hoisted(() => ({
     isEnabled: true,
     isIOS: true,
+    isWalletAvailable: true as boolean | undefined,
+    walletCardStatus: 'not found' as string | undefined,
     panLast4: '2234' as string | null,
     cardUser: null as { firstName?: string; lastName?: string } | null,
-    checkWalletAvailability: vi.fn(),
-    getCardStatusBySuffix: vi.fn(),
     addCardToAppleWallet: vi.fn(),
     addCardToGoogleWallet: vi.fn(),
     fetchApplePayload: vi.fn(),
     fetchGooglePayload: vi.fn(),
 }))
 
-vi.mock('../../utils/walletProvisioning', () => ({
-    isNativeWalletSupported: true,
-    checkWalletAvailability: mocks.checkWalletAvailability,
-    getCardStatusBySuffix: mocks.getCardStatusBySuffix,
-    addCardToAppleWallet: mocks.addCardToAppleWallet,
-    addCardToGoogleWallet: mocks.addCardToGoogleWallet,
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        walletProvisioning: {
+            addCardToAppleWallet: mocks.addCardToAppleWallet,
+            addCardToGoogleWallet: mocks.addCardToGoogleWallet,
+        },
+    }),
 }))
 
 vi.mock('../../utils/provisioningPayload', async () => {
@@ -68,6 +69,12 @@ vi.mock('@perawallet/wallet-core-card', async () => {
             selector: (state: { lastKnownPanLast4: string | null }) => unknown,
         ) => selector({ lastKnownPanLast4: mocks.panLast4 }),
         useCardUserQuery: () => ({ data: mocks.cardUser }),
+        useWalletProvisioningAvailabilityQuery: () => ({
+            data: mocks.isWalletAvailable,
+        }),
+        useWalletProvisioningStatusQuery: () => ({
+            data: mocks.walletCardStatus,
+        }),
     }
 })
 
@@ -90,63 +97,53 @@ describe('useAddCardToWallet', () => {
         queryClient = createTestQueryClient()
         mocks.isEnabled = true
         mocks.isIOS = true
+        mocks.isWalletAvailable = true
+        mocks.walletCardStatus = 'not found'
         mocks.panLast4 = '2234'
         mocks.cardUser = { firstName: 'Ada', lastName: 'Lovelace' }
-        mocks.checkWalletAvailability.mockResolvedValue(true)
-        mocks.getCardStatusBySuffix.mockResolvedValue('not found')
         mocks.addCardToAppleWallet.mockResolvedValue('success')
         mocks.addCardToGoogleWallet.mockResolvedValue('success')
         mocks.fetchApplePayload.mockRejectedValue(new Error('not built yet'))
         mocks.fetchGooglePayload.mockRejectedValue(new Error('not built yet'))
     })
 
-    it('reports unsupported without touching the module when the flag is off', async () => {
+    it('reports unsupported when the flag is off even if the wallet is available', () => {
         mocks.isEnabled = false
 
         const { result } = renderAddCardToWallet()
 
-        await waitFor(() => expect(result.current.canPushProvision).toBe(false))
-        expect(mocks.checkWalletAvailability).not.toHaveBeenCalled()
-    })
-
-    it('reports unsupported when the OS wallet is unavailable', async () => {
-        mocks.checkWalletAvailability.mockResolvedValue(false)
-
-        const { result } = renderAddCardToWallet()
-
-        await waitFor(() =>
-            expect(mocks.checkWalletAvailability).toHaveBeenCalled(),
-        )
         expect(result.current.canPushProvision).toBe(false)
     })
 
-    it('treats an availability check failure as unavailable', async () => {
-        mocks.checkWalletAvailability.mockRejectedValue(
-            new Error('module not linked'),
-        )
+    it('reports unsupported when the OS wallet is unavailable', () => {
+        mocks.isWalletAvailable = false
 
         const { result } = renderAddCardToWallet()
 
-        await waitFor(() =>
-            expect(mocks.checkWalletAvailability).toHaveBeenCalled(),
-        )
         expect(result.current.canPushProvision).toBe(false)
     })
 
-    it('supports provisioning when the flag is on and the wallet is available', async () => {
+    it('reports unsupported while availability is still unknown', () => {
+        mocks.isWalletAvailable = undefined
+
         const { result } = renderAddCardToWallet()
 
-        await waitFor(() => expect(result.current.canPushProvision).toBe(true))
+        expect(result.current.canPushProvision).toBe(false)
+    })
+
+    it('supports provisioning when the flag is on and the wallet is available', () => {
+        const { result } = renderAddCardToWallet()
+
+        expect(result.current.canPushProvision).toBe(true)
         expect(result.current.isCardInWallet).toBe(false)
     })
 
-    it('flags a card that is already in the wallet', async () => {
-        mocks.getCardStatusBySuffix.mockResolvedValue('active')
+    it('flags a card that is already in the wallet', () => {
+        mocks.walletCardStatus = 'active'
 
         const { result } = renderAddCardToWallet()
 
-        await waitFor(() => expect(result.current.isCardInWallet).toBe(true))
-        expect(mocks.getCardStatusBySuffix).toHaveBeenCalledWith('2234')
+        expect(result.current.isCardInWallet).toBe(true)
     })
 
     it('falls back immediately when provisioning is unsupported', async () => {
@@ -163,7 +160,6 @@ describe('useAddCardToWallet', () => {
     it('falls back when the pan suffix is unknown', async () => {
         mocks.panLast4 = null
         const { result } = renderAddCardToWallet()
-        await waitFor(() => expect(result.current.canPushProvision).toBe(true))
 
         const outcome = await result.current.startAddCardToWallet()
 
@@ -173,7 +169,6 @@ describe('useAddCardToWallet', () => {
 
     it('runs the Apple flow with the card data and reports added', async () => {
         const { result } = renderAddCardToWallet()
-        await waitFor(() => expect(result.current.canPushProvision).toBe(true))
 
         let outcome: string | undefined
         await act(async () => {
@@ -194,7 +189,6 @@ describe('useAddCardToWallet', () => {
 
     it('wires the Apple issuer callback to the payload fetcher', async () => {
         const { result } = renderAddCardToWallet()
-        await waitFor(() => expect(result.current.canPushProvision).toBe(true))
 
         await act(async () => {
             await result.current.startAddCardToWallet()
@@ -218,7 +212,6 @@ describe('useAddCardToWallet', () => {
     it('reports dismissed when the user cancels the Apple flow', async () => {
         mocks.addCardToAppleWallet.mockResolvedValue('canceled')
         const { result } = renderAddCardToWallet()
-        await waitFor(() => expect(result.current.canPushProvision).toBe(true))
 
         let outcome: string | undefined
         await act(async () => {
@@ -233,7 +226,6 @@ describe('useAddCardToWallet', () => {
             new Error('provisioning failed'),
         )
         const { result } = renderAddCardToWallet()
-        await waitFor(() => expect(result.current.canPushProvision).toBe(true))
 
         let outcome: string | undefined
         await act(async () => {
@@ -246,7 +238,6 @@ describe('useAddCardToWallet', () => {
     it('falls back on Android while the Google payload endpoint is missing', async () => {
         mocks.isIOS = false
         const { result } = renderAddCardToWallet()
-        await waitFor(() => expect(result.current.canPushProvision).toBe(true))
 
         let outcome: string | undefined
         await act(async () => {
@@ -275,7 +266,6 @@ describe('useAddCardToWallet', () => {
             userAddress,
         })
         const { result } = renderAddCardToWallet()
-        await waitFor(() => expect(result.current.canPushProvision).toBe(true))
 
         let outcome: string | undefined
         await act(async () => {

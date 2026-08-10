@@ -11,36 +11,28 @@
  */
 
 import { useCallback } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { TokenizationStatus } from '@expensify/react-native-wallet'
-import { useCardStore, useCardUserQuery } from '@perawallet/wallet-core-card'
+import { useQueryClient } from '@tanstack/react-query'
+import type { WalletProvisioningTokenizationStatus } from '@perawallet/wallet-extension-platform'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    cardQueryKeys,
+    useCardStore,
+    useCardUserQuery,
+    useWalletProvisioningAvailabilityQuery,
+    useWalletProvisioningStatusQuery,
+} from '@perawallet/wallet-core-card'
 import { useIsCardPushProvisioningEnabled } from '@hooks/useIsCardPushProvisioningEnabled'
 import { isIOS } from '../../../platform/utils'
 import {
     fetchAppleProvisioningPayload,
     fetchGoogleProvisioningPayload,
 } from '../utils/provisioningPayload'
-import {
-    addCardToAppleWallet,
-    addCardToGoogleWallet,
-    checkWalletAvailability,
-    getCardStatusBySuffix,
-    isNativeWalletSupported,
-} from '../utils/walletProvisioning'
 
 // TODO(card): confirm the card network with Baanx before certification.
 const CARD_NETWORK = 'MASTERCARD'
 // Shown in the OS wallet sheet as the card's display name — a product name,
 // deliberately not localised.
 const CARD_DESCRIPTION = 'Pera Card'
-
-const availabilityQueryKey = [
-    'card',
-    'wallet-provisioning',
-    'availability',
-] as const
-const walletCardStatusQueryKey = (panLast4: string | null) =>
-    ['card', 'wallet-provisioning', 'status', { panLast4 }] as const
 
 export type AddCardToWalletOutcome = 'added' | 'dismissed' | 'fallback'
 
@@ -61,11 +53,11 @@ type UseAddCardToWalletResult = {
 
 const startGoogleAdd = async (
     panLast4: string,
-): Promise<TokenizationStatus> => {
+): Promise<WalletProvisioningTokenizationStatus> => {
     // Google needs the issuer's opaque payment card blob up front (unlike
     // Apple, where the issuer payload is requested mid-flow via callback).
     const payload = await fetchGoogleProvisioningPayload()
-    return addCardToGoogleWallet({
+    return getProvider().walletProvisioning.addCardToGoogleWallet({
         network: payload.network,
         opaquePaymentCard: payload.opaquePaymentCard,
         cardHolderName: payload.cardHolderName,
@@ -79,22 +71,13 @@ export const useAddCardToWallet = (): UseAddCardToWalletResult => {
     const isEnabled = useIsCardPushProvisioningEnabled()
     const panLast4 = useCardStore(state => state.lastKnownPanLast4)
 
-    const availabilityQuery = useQuery({
-        queryKey: availabilityQueryKey,
-        queryFn: checkWalletAvailability,
-        enabled: isEnabled && isNativeWalletSupported,
-        // Availability flips with build entitlements/allowlisting, not at
-        // runtime — one check per session is enough.
-        staleTime: Infinity,
-        retry: false,
+    const availabilityQuery = useWalletProvisioningAvailabilityQuery({
+        enabled: isEnabled,
     })
     const canPushProvision = isEnabled && (availabilityQuery.data ?? false)
 
-    const walletCardStatusQuery = useQuery({
-        queryKey: walletCardStatusQueryKey(panLast4),
-        queryFn: () => getCardStatusBySuffix(panLast4 ?? ''),
-        enabled: canPushProvision && panLast4 != null,
-        retry: false,
+    const walletCardStatusQuery = useWalletProvisioningStatusQuery(panLast4, {
+        enabled: canPushProvision,
     })
     const isCardInWallet = walletCardStatusQuery.data === 'active'
 
@@ -110,7 +93,7 @@ export const useAddCardToWallet = (): UseAddCardToWalletResult => {
             if (!canPushProvision || panLast4 == null) return 'fallback'
             try {
                 const status = isIOS()
-                    ? await addCardToAppleWallet(
+                    ? await getProvider().walletProvisioning.addCardToAppleWallet(
                           {
                               network: CARD_NETWORK,
                               cardHolderName,
@@ -129,14 +112,15 @@ export const useAddCardToWallet = (): UseAddCardToWalletResult => {
                     // The OS wallet now holds the card — refresh the status so
                     // the add entry point hides.
                     void queryClient.invalidateQueries({
-                        queryKey: walletCardStatusQueryKey(panLast4),
+                        queryKey:
+                            cardQueryKeys.walletProvisioningStatus(panLast4),
                     })
                     return 'added'
                 }
                 return status === 'canceled' ? 'dismissed' : 'fallback'
             } catch {
-                // Payload endpoint missing, SDK not allowlisted, module not
-                // linked… every failure routes to the manual instructions.
+                // Payload endpoint missing, provisioning rejected mid-flow…
+                // every failure routes to the manual instructions.
                 return 'fallback'
             }
         }, [canPushProvision, panLast4, cardHolderName, queryClient])
