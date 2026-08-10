@@ -22,6 +22,7 @@ import {
     useSetCardPinMutation,
     type CardIssuanceState,
 } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -243,6 +244,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         }
         // Already fetched earlier this visit: show it without re-fetching.
         if (secureView != null) {
+            trackEvent(CardEvent.DetailsRevealCard)
             setIsRevealed(true)
             return
         }
@@ -250,6 +252,9 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         // re-entry so a same-tick double-tap can't spend two tokens.
         if (isFetchingRevealRef.current) return
         isFetchingRevealRef.current = true
+        // Tracked after the guard (one event per reveal, not per tap) and
+        // only for reveals — hiding is not a tracked action.
+        trackEvent(CardEvent.DetailsRevealCard)
         try {
             const view = await cardDetails.mutateAsync({
                 customCss: SECURE_CARD_IMAGE_CSS,
@@ -305,6 +310,8 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     // the sheet's button owns the pending state; here we only open it.
     // Content-sized sheet (default autoCreateContainer) so it grows to fit.
     const onToggleFreeze = useCallback(() => {
+        // Freezes only — the unfreeze path is tracked by the frozen banner.
+        if (!isFrozen) trackEvent(CardEvent.DetailsFreeze)
         void request({
             contents: isFrozen ? (
                 <UnfreezeCardConfirmationSheet />
@@ -336,6 +343,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         }
     }, [setPin, requirePinVerification, pushWebView, showError])
     const onSetPin = useCallback(() => {
+        trackEvent(CardEvent.DetailsSetPin)
         void submitSetPin()
     }, [submitSetPin])
 
@@ -377,8 +385,13 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         if (outcome === 'fallback') openWalletInstructions()
     }, [canPushProvision, startAddCardToWallet, openWalletInstructions])
     const onAddToWallet = useCallback(() => {
+        trackEvent(
+            walletPlatform === 'apple'
+                ? CardEvent.DetailsAddToApple
+                : CardEvent.DetailsAddToGoogle,
+        )
         void addToWallet()
-    }, [addToWallet])
+    }, [addToWallet, walletPlatform])
 
     const { pickFundingSource } = useCardFundingSourcePicker()
     const { mutateAsync: connectFundingSourceAsync } =
@@ -434,10 +447,14 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
         }
     }, [performChangeFunding])
     const onChangeFunding = useCallback(() => {
+        trackEvent(CardEvent.DetailsChangeAccount)
         void changeFunding()
     }, [changeFunding])
 
     const onChangeFundingType = useCallback(() => {
+        // Design's event catalog names this `card_home_*` although the switch
+        // lives on the Card Details tab — the only funding-type control in code.
+        trackEvent(CardEvent.HomeFundingType)
         void request({
             contents: <SelectFundingTypeSheet />,
             options: {
@@ -448,6 +465,7 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     }, [request])
 
     const onReportLostStolen = useCallback(() => {
+        trackEvent(CardEvent.DetailsReportLostCard)
         void request({
             contents: <ReportLostStolenSheet />,
             options: {
@@ -460,7 +478,11 @@ export const usePeraCardDetails = (): UsePeraCardDetailsResult => {
     // Rejected KYC is terminal, so the notice's only action is support.
     const onContactSupport = useOpenCardSupport()
 
-    const { start: onReportSuspicious } = useReportSuspiciousFlow()
+    const { start: startReportSuspicious } = useReportSuspiciousFlow()
+    const onReportSuspicious = useCallback(() => {
+        trackEvent(CardEvent.DetailsReportSusCard)
+        startReportSuspicious()
+    }, [startReportSuspicious])
 
     return {
         maskedPan: `${PAN_MASK} ${panLast4 ?? PAN_MASK}`,

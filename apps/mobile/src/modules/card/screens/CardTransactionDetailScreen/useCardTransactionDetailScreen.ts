@@ -17,6 +17,7 @@ import {
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
+import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendEmail } from '@hooks/useSendEmail'
 import { type PeraCardAccountStackParamList } from '../../routes/types'
@@ -79,6 +80,7 @@ export const useCardTransactionDetailScreen =
 
         const onReportTransaction = useCallback(() => {
             if (!transaction) return
+            trackEvent(CardEvent.TransactionsReportTx)
 
             // Support needs the processor reference; fall back to our row id.
             const reportedId = transaction.transactionId || transaction.id

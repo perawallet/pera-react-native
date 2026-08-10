@@ -28,7 +28,7 @@ type ConnectFundsRowProps = {
     isRegistrationComplete: boolean
     connectedAccount: Optional<WalletAccount>
     connectedAddress: Nullable<string>
-    onConnectAccount: () => void
+    onConnectAccount: (source: 'connect' | 'change') => void
 }
 
 /** Checklist row 3 — "Connect Funds": inactive → active → connected. */
@@ -73,7 +73,7 @@ export const ConnectFundsRow = ({
                     )}
                     <PWText
                         variant='linkPositive'
-                        onPress={onConnectAccount}
+                        onPress={() => onConnectAccount('change')}
                         testID='card-onboarding-status-change-account'
                     >
                         {t('peraCard.connect_account.change')}
@@ -95,7 +95,7 @@ export const ConnectFundsRow = ({
                 <PWButton
                     variant='primary'
                     title={t('peraCard.setup_status.connect_funds_button')}
-                    onPress={onConnectAccount}
+                    onPress={() => onConnectAccount('connect')}
                     style={styles.detailsButton}
                     testID='card-onboarding-status-connect-cta'
                 />

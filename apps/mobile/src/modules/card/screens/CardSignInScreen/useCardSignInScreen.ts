@@ -22,6 +22,7 @@ import {
     useSendLoginOtpMutation,
     type SignInFormValues,
 } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -243,6 +244,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
                 void performLogin(email, password, code)
                 return
             }
+            trackEvent(CardEvent.RecoverSignIn)
             void handleSubmit(({ email, password }) =>
                 performLogin(email, password),
             )()
@@ -264,6 +266,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
     }, [otpUserId, sendOtp.isPending, login.isPending, requestOtpCode])
 
     const handleForgotPassword = useCallback(() => {
+        trackEvent(CardEvent.RecoverForgotPassword)
         // TODO(card): wire to the real forgot-password flow once designed.
         infoToast(
             t('peraCard.sign_in.coming_soon_title'),

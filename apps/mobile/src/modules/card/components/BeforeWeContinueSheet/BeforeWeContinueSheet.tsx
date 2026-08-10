@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { trackEvent, CardEvent } from '@analytics'
 import { PWIcon } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -40,8 +41,14 @@ export const BeforeWeContinueSheet = () => {
                 'peraCard.account.report_suspicious_before_confirm',
             )}
             closeLabel={t('common.cancel.label')}
-            onConfirm={() => resolve('continue')}
-            onClose={dismiss}
+            onConfirm={() => {
+                trackEvent(CardEvent.ReportSusFileReport)
+                resolve('continue')
+            }}
+            onClose={() => {
+                trackEvent(CardEvent.ReportSusCancel)
+                dismiss()
+            }}
             testID='report_suspicious_before_continue_sheet'
             confirmTestID='report_suspicious_continue_button'
             closeTestID='report_suspicious_cancel_button'

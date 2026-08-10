@@ -31,6 +31,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { apiSlippageToPercent } from '@perawallet/wallet-core-swaps'
 import { type Maybe } from '@perawallet/wallet-core-shared'
+import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { type PeraCardFlowParamList } from '../../routes/types'
@@ -176,6 +177,9 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
     )
 
     const handleConfirm = useCallback(() => {
+        // Design allows `card_getUSDC_confirm` for this screen too, but the
+        // Get-USDC flow isn't built — this screen is only reachable from Add Funds.
+        trackEvent(CardEvent.AddFundsConfirm)
         void executeSwap().then(outcome => {
             if (outcome.kind === 'success') {
                 successToast(

@@ -28,6 +28,7 @@ import {
     type PersonalDetailsFormValues,
     type SupportedCountry,
 } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { useCardErrorToast } from '@modules/card/hooks'
@@ -258,6 +259,7 @@ export const useCardOnboardingPersonalDetailsScreen =
         )
 
         const handleConfirm = () => {
+            trackEvent(CardEvent.CreateVerifyAccountContinue)
             void submitDetails()
         }
 
