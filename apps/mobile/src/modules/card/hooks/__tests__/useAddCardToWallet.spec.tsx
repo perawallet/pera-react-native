@@ -13,7 +13,7 @@
 import React, { type ReactNode } from 'react'
 import { QueryClientProvider, type QueryClient } from '@tanstack/react-query'
 import { createTestQueryClient, renderHook } from '@test-utils/render'
-import { act, waitFor } from '@testing-library/react'
+import { act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
