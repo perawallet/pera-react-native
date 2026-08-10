@@ -232,7 +232,6 @@ overrides:
   '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
   '@expo/dom-webview': ~57.0.1
   '@grpc/grpc-js@<1.9.16': 1.9.16
-  '@react-native/metro-config': 0.86.0
   '@xmldom/xmldom': 0.8.13
   bn.js@4: 4.12.3
   brace-expansion@1: 1.1.18
@@ -6767,7 +6766,7 @@ packages:
     engines: {node: ^20.19.4 || ^22.13.0 || ^24.3.0 || >= 25.0.0}
     peerDependencies:
       '@react-native-community/cli': '*'
-      '@react-native/metro-config': 0.86.0
+      '@react-native/metro-config': 0.86.2
     peerDependenciesMeta:
       '@react-native-community/cli':
         optional: true
@@ -10127,7 +10126,7 @@ packages:
     resolution: {integrity: sha512-JhE6IxDf6iabC0qu3+TAKA4v9RlluXmoIngPQX7/QUByf75lfrsHZ6/dQhyjEWnp1EEQiwzz8Cpew140ZcewDw==}
     peerDependencies:
       '@babel/core': '*'
-      '@react-native/metro-config': 0.86.0
+      '@react-native/metro-config': '*'
       react: 19.2.3
       react-native: 0.86.0
 

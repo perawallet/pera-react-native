@@ -142,7 +142,6 @@ overrides:
   '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
   '@expo/dom-webview': ~57.0.1
   '@grpc/grpc-js@<1.9.16': 1.9.16
-  '@react-native/metro-config': 0.86.0
   '@xmldom/xmldom': 0.8.13
   bn.js@4: 4.12.3
   # GHSA-rgw5-rvv9-x895 is patched per major line, not by one version: the 1.x
