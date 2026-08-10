@@ -222,11 +222,20 @@ export interface SwapHandoffRecord {
     expectedRawTransactionsBase64: string[]
     /** Epoch ms when registered; used for ordering / staleness only. */
     registeredAt: number
+    /**
+     * Set (durably) the moment algod accepts the group(s), before any other
+     * post-submit side effect. Its presence means the swap is on chain: a
+     * relaunch after a crash must replay the post-submit tail instead of
+     * re-submitting — algod would reject the duplicate and the landed swap
+     * would be flipped to "failed".
+     */
+    submission?: { txIds: string[]; submittedAt: number }
 }
 
 export type SwapHandoffState = BaseStoreState & {
     /** Pending shared-account swap handoffs, keyed by signRequestId. */
     handoffs: Record<string, SwapHandoffRecord>
     registerHandoff: (record: SwapHandoffRecord) => void
+    markHandoffSubmitted: (signRequestId: string, txIds: string[]) => void
     removeHandoff: (signRequestId: string) => void
 }

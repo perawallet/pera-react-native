@@ -30,6 +30,14 @@ export type MultisigHandoffCompletionDeps = {
      * a throw here is treated as a terminal submission failure.
      */
     submit: (assembledBytes: Uint8Array[]) => Promise<string[]>
+    /**
+     * Durably record a successful submission (with its tx ids) the moment
+     * `submit` resolves, before any other post-submit side effect — the
+     * consumer persists it so a crash between submission and cleanup can't
+     * re-submit on relaunch (see `alreadySubmittedTxIds`). Synchronous by
+     * design: a local store write, not a network call. Best-effort.
+     */
+    recordSubmitted?: (txIds: string[]) => void
     /** Best-effort: tell the backend the wallet submitted, so it won't broadcast. */
     markConfirmed: () => Promise<void>
     /**
@@ -76,10 +84,30 @@ const FALLBACK_ERROR_MESSAGE = 'Multisig sign request could not be completed'
 export const completeMultisigHandoff = async ({
     outcome,
     deps,
+    alreadySubmittedTxIds,
 }: {
     outcome: TerminalHandoffOutcome
     deps: MultisigHandoffCompletionDeps
+    /**
+     * Tx ids persisted by `recordSubmitted` in a previous session. When set,
+     * the transactions are already on chain: never submit again (algod would
+     * reject the duplicate and the failure path would flip a landed swap to
+     * "failed"), and ignore whatever the poll now says — a post-crash
+     * `expired`/`failed` status just means mark-confirmed never made it.
+     * Only the best-effort post-submit tail is replayed.
+     */
+    alreadySubmittedTxIds?: string[]
 }): Promise<void> => {
+    if (alreadySubmittedTxIds) {
+        await runBestEffort(
+            () => deps.onSubmitted(alreadySubmittedTxIds),
+            'status update',
+        )
+        await runBestEffort(() => deps.markConfirmed(), 'mark-confirmed')
+        deps.removeHandoff()
+        return
+    }
+
     if (outcome.kind === 'soft-reject') {
         await runBestEffort(
             () => deps.onSoftRejected(outcome.reason),
@@ -98,6 +126,12 @@ export const completeMultisigHandoff = async ({
     // outcome.kind === 'ready'
     try {
         const txIds = await deps.submit(outcome.assembledBytes)
+        // The group is on chain from here — nothing below may reach the
+        // failure path, including a throwing marker write.
+        await runBestEffort(
+            async () => deps.recordSubmitted?.(txIds),
+            'record-submitted',
+        )
         await runBestEffort(() => deps.onSubmitted(txIds), 'status update')
         // Non-fatal: the transactions are already on chain.
         await runBestEffort(() => deps.markConfirmed(), 'mark-confirmed')

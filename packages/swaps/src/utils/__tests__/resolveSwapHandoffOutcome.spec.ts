@@ -47,6 +47,7 @@ const makeDeps = (): {
     [K in keyof SwapHandoffResolutionDeps]: ReturnType<typeof vi.fn>
 } => ({
     submitGroup: vi.fn().mockResolvedValue(['txid-1']),
+    markSubmitted: vi.fn(),
     decodeBase64: vi.fn().mockReturnValue(PRESIGNED_BYTES),
     updateSwapStatus: vi.fn().mockResolvedValue(undefined),
     markConfirmed: vi.fn().mockResolvedValue(undefined),
@@ -74,6 +75,79 @@ describe('resolveSwapHandoffOutcome', () => {
             PRESIGNED_BYTES,
             ASSEMBLED_BYTES,
         ])
+    })
+
+    test('ready: persists the submitted marker with the collected txIds', async () => {
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'ready', assembledBytes: [ASSEMBLED_BYTES] },
+            record: makeRecord(),
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        expect(deps.markSubmitted).toHaveBeenCalledWith(['txid-1'])
+        // Durable marker before the (network) status update — a crash in
+        // between must not re-submit on relaunch.
+        expect(deps.markSubmitted.mock.invocationCallOrder[0]).toBeLessThan(
+            deps.updateSwapStatus.mock.invocationCallOrder[0],
+        )
+    })
+
+    test('ready: a submission failure never persists the submitted marker', async () => {
+        deps.submitGroup.mockRejectedValueOnce(new Error('algod 400'))
+
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'ready', assembledBytes: [ASSEMBLED_BYTES] },
+            record: makeRecord(),
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        expect(deps.markSubmitted).not.toHaveBeenCalled()
+    })
+
+    test('already submitted (crash recovery): replays in_progress with the persisted txIds, never re-submits', async () => {
+        const record = makeRecord({
+            submission: { txIds: ['txid-persisted'], submittedAt: 2 },
+        })
+
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'ready', assembledBytes: [ASSEMBLED_BYTES] },
+            record,
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        expect(deps.submitGroup).not.toHaveBeenCalled()
+        expect(deps.updateSwapStatus).toHaveBeenCalledWith({
+            swapId: '42',
+            data: {
+                status: 'in_progress',
+                submitted_transaction_ids: ['txid-persisted'],
+                swap_version: 'v2',
+            },
+        })
+        expect(deps.markConfirmed).toHaveBeenCalledTimes(1)
+        expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
+    })
+
+    test('already submitted: a post-crash expired poll must not flip the landed swap to failed', async () => {
+        const record = makeRecord({
+            submission: { txIds: ['txid-persisted'], submittedAt: 2 },
+        })
+
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'soft-reject', reason: 'expired' },
+            record,
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        expect(deps.submitGroup).not.toHaveBeenCalled()
+        expect(deps.updateSwapStatus).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({ status: 'in_progress' }),
+            }),
+        )
+        expect(deps.reportError).not.toHaveBeenCalled()
+        expect(deps.declineSignRequest).not.toHaveBeenCalled()
+        expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
     })
 
     test('ready: marks the swap in_progress with collected txIds', async () => {

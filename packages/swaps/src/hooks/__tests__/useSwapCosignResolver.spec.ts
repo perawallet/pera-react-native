@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
     useHandoffResolver: vi.fn(),
     resolveSwapHandoffOutcome: vi.fn(),
     useUpdateSwapStatusMutation: vi.fn(),
+    markHandoffSubmitted: vi.fn(),
     removeHandoff: vi.fn(),
     handoffs: {} as Record<string, SwapHandoffRecord>,
 }))
@@ -63,6 +64,7 @@ vi.mock('../../store', () => ({
     useSwapHandoffStore: (selector: (s: unknown) => unknown) =>
         selector({
             handoffs: mocks.handoffs,
+            markHandoffSubmitted: mocks.markHandoffSubmitted,
             removeHandoff: mocks.removeHandoff,
         }),
 }))
@@ -188,6 +190,38 @@ describe('swaps/useSwapCosignResolver', () => {
             msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B'] },
             expectedRawTransactionsBase64: ['cmF3'],
         })
+    })
+
+    it('short-circuits classification for an already-submitted record', async () => {
+        const handoff = makeRecord({
+            submission: { txIds: ['txid-1'], submittedAt: 2 },
+        })
+        mocks.handoffs = { 'req-1': handoff }
+
+        render()
+
+        // The group is on chain; re-verifying signatures (or stalling on a
+        // pruned poll body) is pointless — resolve immediately.
+        const outcome = await config().classify({ id: 'req-1' }, handoff)
+        expect(outcome).toEqual({ kind: 'ready', assembledBytes: [] })
+        expect(mocks.classifyHandoffPoll).not.toHaveBeenCalled()
+    })
+
+    it('persists the submitted marker through the store action', async () => {
+        const handoff = makeRecord()
+        mocks.handoffs = { 'req-1': handoff }
+
+        render()
+
+        config().resolve({ kind: 'ready', assembledBytes: [] }, handoff, {
+            proposer_address: 'PROPOSER',
+        })
+        const { deps } = mocks.resolveSwapHandoffOutcome.mock.calls[0][0]
+
+        deps.markSubmitted(['txid-1'])
+        expect(mocks.markHandoffSubmitted).toHaveBeenCalledWith('req-1', [
+            'txid-1',
+        ])
     })
 
     it('resolves a terminal outcome through resolveSwapHandoffOutcome with the record', () => {
