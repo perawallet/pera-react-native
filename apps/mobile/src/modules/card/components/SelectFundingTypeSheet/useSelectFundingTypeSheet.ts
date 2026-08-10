@@ -17,6 +17,7 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useRequirePinVerification } from '@modules/security'
 import { useLanguage } from '@hooks/useLanguage'
@@ -176,12 +177,22 @@ export const useSelectFundingTypeSheet =
         ])
 
         const onApply = useCallback(() => {
+            trackEvent(CardEvent.SelectFundingApply)
             void apply()
         }, [apply])
 
+        const onSelectType = useCallback((type: FundingType) => {
+            trackEvent(
+                type === FundingType.Auto
+                    ? CardEvent.SelectFundingAuto
+                    : CardEvent.SelectFundingManual,
+            )
+            setSelectedType(type)
+        }, [])
+
         return {
             selectedType,
-            onSelectType: setSelectedType,
+            onSelectType,
             isAutoDisabled,
             isAutoFundingEnabled,
             isLedgerAccount: isLedgerConnected,

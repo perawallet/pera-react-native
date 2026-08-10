@@ -14,6 +14,7 @@ import { useCallback } from 'react'
 import { Linking } from 'react-native'
 import { config } from '@perawallet/wallet-core-config'
 import { useCardStore } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
@@ -29,6 +30,7 @@ export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
     const navigation = useAppNavigation()
 
     const handleCreateAccount = useCallback(() => {
+        trackEvent(CardEvent.OnboardingCreate)
         // Starting a new sign-up: clear any leftover onboarding progress from a
         // prior run so the setup checklist re-locks until this run completes.
         useCardStore.getState().resetOnboardingProgress()
@@ -39,6 +41,7 @@ export const usePeraCardIntroScreen = (): UsePeraCardIntroScreenResult => {
     }, [navigation])
 
     const handleAlreadyHaveAccount = useCallback(() => {
+        trackEvent(CardEvent.OnboardingRecover)
         navigation.navigate('PeraCard', { screen: 'CardSignIn' })
     }, [navigation])
 

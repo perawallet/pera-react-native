@@ -20,6 +20,7 @@ import {
     useVerifyEmailMutation,
     type PasswordSetFormValues,
 } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import { useCardErrorToast } from '@modules/card/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
@@ -180,6 +181,7 @@ export const useCardOnboardingPasswordScreen =
         })
 
         const handleConfirm = () => {
+            trackEvent(CardEvent.CreatePassword)
             void submitPassword()
         }
 

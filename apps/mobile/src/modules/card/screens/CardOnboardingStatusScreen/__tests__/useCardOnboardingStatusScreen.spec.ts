@@ -16,6 +16,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { FundingType, OnboardingStep } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { CardEvent } from '@analytics'
+
+const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+vi.mock('@analytics', async () => {
+    const actual = await vi.importActual<object>('@analytics')
+    return { ...actual, trackEvent: mockTrackEvent }
+})
 
 const mockSetOnboardingStep = vi.fn()
 const mockSetConnectedFundingSourceAddress = vi.fn()
@@ -441,7 +448,7 @@ describe('useCardOnboardingStatusScreen', () => {
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
-            result.current.handleConnectAccount()
+            result.current.handleConnectAccount('connect')
         })
 
         await waitFor(() =>
@@ -458,7 +465,7 @@ describe('useCardOnboardingStatusScreen', () => {
         const { result } = renderHook(() => useCardOnboardingStatusScreen())
 
         act(() => {
-            result.current.handleConnectAccount()
+            result.current.handleConnectAccount('connect')
         })
 
         await act(async () => {})
@@ -482,6 +489,58 @@ describe('useCardOnboardingStatusScreen', () => {
         })
 
         expect(result.current.selectedFundingType).toBe(FundingType.Manual)
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            CardEvent.CreateCardManualFunding,
+        )
+
+        act(() => {
+            result.current.handleSelectFundingType(FundingType.Auto)
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            CardEvent.CreateCardAutoFunding,
+        )
+    })
+
+    it('tracks connect vs change through the source argument', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockPickFundingSource.mockResolvedValue(null)
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleConnectAccount('connect')
+        })
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            CardEvent.CreateConnectWallet,
+        )
+
+        act(() => {
+            result.current.handleConnectAccount('change')
+        })
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            CardEvent.CreateCardChangeAccount,
+        )
+        // The picker resolved without an account, so no selection event fires.
+        await act(async () => {})
+        expect(mockTrackEvent).not.toHaveBeenCalledWith(
+            CardEvent.CreateVerifyAccountSelect,
+        )
+    })
+
+    it('tracks the account selection once the picker resolves', async () => {
+        mockOnboardingStep = OnboardingStep.Completed
+        mockPickFundingSource.mockResolvedValue(account('ADDR1', 'hdWallet'))
+        const { result } = renderHook(() => useCardOnboardingStatusScreen())
+
+        act(() => {
+            result.current.handleConnectAccount('connect')
+        })
+
+        await waitFor(() =>
+            expect(mockTrackEvent).toHaveBeenCalledWith(
+                CardEvent.CreateVerifyAccountSelect,
+            ),
+        )
     })
 
     it('navigates to the signing screen with the selected funding type when the account can sign', () => {

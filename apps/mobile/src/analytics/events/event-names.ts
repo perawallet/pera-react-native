@@ -15,6 +15,7 @@ import type { OnboardingEvent } from './contexts/onboarding'
 import type { HomeEvent } from './contexts/home'
 import type { BannersEvent } from './contexts/banners'
 import type { AccountDetailsEvent } from './contexts/account-details'
+import type { CardEvent } from './contexts/card'
 import type { AssetDetailsEvent } from './contexts/asset-details'
 import type { SwapEvent } from './contexts/swap'
 import type { OnrampEvent } from './contexts/onramp'
@@ -43,6 +44,7 @@ export type AnalyticsEventName =
     | HomeEvent
     | BannersEvent
     | AccountDetailsEvent
+    | CardEvent
     | AssetDetailsEvent
     | SwapEvent
     | OnrampEvent

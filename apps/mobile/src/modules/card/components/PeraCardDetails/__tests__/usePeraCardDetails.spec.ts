@@ -14,6 +14,12 @@ import { renderHook } from '@test-utils/render'
 import { act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
+vi.mock('@analytics', async () => {
+    const actual = await vi.importActual<object>('@analytics')
+    return { ...actual, trackEvent: mockTrackEvent }
+})
+
 const mocks = vi.hoisted(() => ({
     panLast4: null as string | null,
     fundingAddress: null as string | null,
@@ -189,6 +195,7 @@ vi.mock('../../../hooks', async () => ({
 
 import { FundingType } from '@perawallet/wallet-core-card'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { CardEvent } from '@analytics'
 import { passThroughAuthorizeDelegation } from '@test-utils/cardDelegation'
 import { ReportSuspiciousActivitySheet } from '../../ReportSuspiciousActivitySheet'
 import { usePeraCardDetails } from '../usePeraCardDetails'
@@ -293,12 +300,17 @@ describe('usePeraCardDetails', () => {
         expect(result.current.secureImageUrl).toBe(SECURE_VIEW.imageUrl)
         expect(result.current.isCardOpen).toBe(true)
 
+        // The reveal is tracked; hides must not be (asserted below).
+        expect(mockTrackEvent).toHaveBeenCalledTimes(1)
+        expect(mockTrackEvent).toHaveBeenCalledWith(CardEvent.DetailsRevealCard)
+
         // Hiding flips closed but keeps the fetched image cached.
         await act(async () => {
             await result.current.onToggleReveal()
         })
         expect(result.current.isCardOpen).toBe(false)
         expect(result.current.secureImageUrl).toBe(SECURE_VIEW.imageUrl)
+        expect(mockTrackEvent).toHaveBeenCalledTimes(1)
 
         // Re-reveal is instant: no second fetch and no pending state.
         await act(async () => {
@@ -307,6 +319,7 @@ describe('usePeraCardDetails', () => {
         expect(mocks.cardDetailsMutateAsync).toHaveBeenCalledTimes(1)
         expect(result.current.isCardOpen).toBe(true)
         expect(result.current.isRevealing).toBe(false)
+        expect(mockTrackEvent).toHaveBeenCalledTimes(2)
     })
 
     it('ignores a second reveal tap while the first token request is in flight', async () => {
@@ -327,8 +340,10 @@ describe('usePeraCardDetails', () => {
             result.current.onToggleReveal()
         })
 
-        // Only one single-use token is spent despite the double-tap.
+        // Only one single-use token is spent despite the double-tap, and the
+        // ignored tap must not inflate the analytics count either.
         expect(mocks.cardDetailsMutateAsync).toHaveBeenCalledTimes(1)
+        expect(mockTrackEvent).toHaveBeenCalledTimes(1)
 
         // Settle the in-flight request, then unmount to clear the load timeout.
         await act(async () => {
@@ -535,6 +550,8 @@ describe('usePeraCardDetails', () => {
         expect(mocks.request.mock.calls[0][0]).toHaveProperty('contents')
         expect(mocks.freezeMutateAsync).not.toHaveBeenCalled()
         expect(mocks.unfreezeMutateAsync).not.toHaveBeenCalled()
+        expect(mockTrackEvent).toHaveBeenCalledWith(CardEvent.DetailsFreeze)
+        mockTrackEvent.mockClear()
 
         mocks.status = 'FROZEN'
         rerender()
@@ -547,9 +564,10 @@ describe('usePeraCardDetails', () => {
             await result.current.onToggleFreeze()
         })
         // Frozen → opens the unfreeze confirmation sheet; the unfreeze runs
-        // inside it, not here.
+        // inside it, not here. Unfreezing is not a tracked freeze.
         expect(mocks.request).toHaveBeenCalledTimes(2)
         expect(mocks.unfreezeMutateAsync).not.toHaveBeenCalled()
+        expect(mockTrackEvent).not.toHaveBeenCalledWith(CardEvent.DetailsFreeze)
     })
 
     it('allows the freeze toggle for an active or frozen card', () => {

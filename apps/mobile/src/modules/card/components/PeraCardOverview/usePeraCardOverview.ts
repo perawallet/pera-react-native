@@ -20,6 +20,7 @@ import {
     useCardStore,
     useCardTransactionsQuery,
 } from '@perawallet/wallet-core-card'
+import { trackEvent, CardEvent } from '@analytics'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useCardComingSoonToast, useIsCardAutoFundingActive } from '../../hooks'
 import {
@@ -101,14 +102,23 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
     const showComingSoon = useCardComingSoonToast()
 
     const onAddFunds = useCallback(() => {
+        trackEvent(CardEvent.HomeAddFunds)
         navigation.navigate('CardAddFunds')
     }, [navigation])
 
     const onWithdraw = useCallback(() => {
+        trackEvent(CardEvent.HomeWithdraw)
         navigation.navigate('CardWithdraw')
     }, [navigation])
 
+    const onGetUsdc = useCallback(() => {
+        // Still tracked while the flow is a coming-soon stub — demand signal.
+        trackEvent(CardEvent.HomeGetUsdc)
+        showComingSoon()
+    }, [showComingSoon])
+
     const onShowAllTransactions = useCallback(() => {
+        trackEvent(CardEvent.HomeShowAll)
         navigation.navigate('CardTransactions')
     }, [navigation])
 
@@ -131,7 +141,7 @@ export const usePeraCardOverview = (): UsePeraCardOverviewResult => {
         isLoadingTransactions: isLoading,
         onWithdraw,
         onAddFunds,
-        onGetUsdc: showComingSoon,
+        onGetUsdc,
         onShowAllTransactions,
         onPressTransaction,
         onCreditPress: showComingSoon,

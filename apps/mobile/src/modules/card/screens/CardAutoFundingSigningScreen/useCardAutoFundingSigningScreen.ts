@@ -19,6 +19,7 @@ import {
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
+import { trackEvent, CardEvent } from '@analytics'
 import {
     useAutoDrawSwitch,
     useCardErrorToast,
@@ -85,6 +86,7 @@ export const useCardAutoFundingSigningScreen =
         const handleApprove = useCallback(() => {
             if (isPending) return
 
+            trackEvent(CardEvent.CreateFinalizeTxConfirm)
             const run = async () => {
                 setIsPending(true)
                 setError(null)
@@ -137,6 +139,7 @@ export const useCardAutoFundingSigningScreen =
         ])
 
         const handleReject = useCallback(() => {
+            trackEvent(CardEvent.CreateFinalizeTxCancel)
             // The card was already created in Step 2 — declining here
             // degrades to Manual funding rather than discarding it.
             finish(FundingType.Manual, true)

@@ -16,6 +16,7 @@ import {
     type CardTransaction,
 } from '@perawallet/wallet-core-card'
 import { config } from '@perawallet/wallet-core-config'
+import { trackEvent, CardEvent } from '@analytics'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendEmail } from '@hooks/useSendEmail'
@@ -51,20 +52,28 @@ export const useReportTransactionsSheet =
             [selectedIds],
         )
 
-        const onToggle = useCallback((id: string) => {
-            setSelectedIds(previous => {
-                const next = new Set(previous)
-                if (next.has(id)) {
-                    next.delete(id)
-                } else {
-                    next.add(id)
+        const onToggle = useCallback(
+            (id: string) => {
+                // Selections only — deselecting is not a tracked action.
+                if (!selectedIds.has(id)) {
+                    trackEvent(CardEvent.ReportSusReportTx)
                 }
-                return next
-            })
-        }, [])
+                setSelectedIds(previous => {
+                    const next = new Set(previous)
+                    if (next.has(id)) {
+                        next.delete(id)
+                    } else {
+                        next.add(id)
+                    }
+                    return next
+                })
+            },
+            [selectedIds],
+        )
 
         const onReport = useCallback(() => {
             if (selectedIds.size === 0) return
+            trackEvent(CardEvent.ReportSusCreateTicket)
             // Support needs the processor reference; fall back to our row id
             // (same rule as the single-transaction report).
             const transactionIds = transactions

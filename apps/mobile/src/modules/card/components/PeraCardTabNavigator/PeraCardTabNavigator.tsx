@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { trackEvent, CardEvent } from '@analytics'
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
 import { useLanguage } from '@hooks/useLanguage'
 import { PeraCardOverview } from '../PeraCardOverview'
@@ -26,7 +27,19 @@ export const PeraCardTabNavigator = () => {
     const { t } = useLanguage()
 
     return (
-        <Tab.Navigator>
+        <Tab.Navigator
+            screenListeners={({ route, navigation }) => ({
+                tabPress: () => {
+                    // Re-tapping the focused tab is not a switch.
+                    if (navigation.isFocused()) return
+                    trackEvent(
+                        route.name === 'CardDetails'
+                            ? CardEvent.HomeCardDetailsTab
+                            : CardEvent.HomeOverviewTab,
+                    )
+                },
+            })}
+        >
             <Tab.Screen
                 name='Overview'
                 options={{ title: t('peraCard.account.overview_tab') }}

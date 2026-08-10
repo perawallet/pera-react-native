@@ -27,6 +27,7 @@ import {
 } from '@perawallet/wallet-core-card'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
+import { trackEvent, CardEvent, AnalyticsMetadataKey } from '@analytics'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { CardCountryPickerContent } from '@modules/card/components/CardCountryPicker'
 import { CardWaitlistSuccessContent } from '@modules/card/components/CardWaitlistSuccessContent'
@@ -117,6 +118,9 @@ export const useCardOnboardingEmailScreen =
                     options: { size: 'full', autoCreateContainer: false },
                 })
                 if (country) {
+                    trackEvent(CardEvent.CreateCountrySelect, {
+                        [AnalyticsMetadataKey.CountryId]: country.iso3166alpha2,
+                    })
                     setSelectedCountry(country)
                     setValue('countryIso', country.iso3166alpha2, {
                         shouldValidate: true,
@@ -154,6 +158,7 @@ export const useCardOnboardingEmailScreen =
         })
 
         const handleConfirm = () => {
+            trackEvent(CardEvent.CreateConfirmEmail)
             void submitEmail()
         }
 
