@@ -58,29 +58,53 @@ const isLegacyEntry = (key: string): boolean =>
 /** Field names that carry raw key material anywhere in a record. */
 const SECRET_FIELDS = new Set(['privateKey', 'seed', 'key'])
 
+/** Material lifted out of a record, addressed by the id it belongs to. */
+type LiftedMaterial = { id: string; bytes: Uint8Array }
+
 /**
- * Strips key material from every depth of a record, not just the top level.
+ * Lifts key material out of a record at every depth, returning the plaintext-safe
+ * remainder plus everything that has to be sealed instead.
  *
  * canary.13 sealed the *whole* record, so nesting material inside `metadata` was
  * safe at rest — and it does: an HD-derived key carries its parent under
  * `metadata.rootKey`, `privateKey` included. canary.14 keeps `k/` in plaintext,
  * so copying `metadata` verbatim would write an HD wallet's root private key to
- * disk unencrypted. Nothing is lost: each key's own material is sealed under
- * `m/<id>`, so the embedded copy is redundant.
+ * disk unencrypted.
+ *
+ * Material is never discarded on the way out: each nested carrier names the id it
+ * belongs to, so the bytes are re-sealed under that id's `m/` entry rather than
+ * dropped. `ownerId` is the id inherited from the enclosing object, so a bare
+ * `{ privateKey }` with no `id` of its own is still attributed correctly.
  */
-const withoutSecrets = <T>(value: T): T => {
+const liftSecrets = <T>(
+    value: T,
+    ownerId: string | undefined,
+    lifted: LiftedMaterial[],
+): T => {
     if (Array.isArray(value)) {
-        return value.map(withoutSecrets) as unknown as T
+        return value.map(item =>
+            liftSecrets(item, ownerId, lifted),
+        ) as unknown as T
     }
     // Uint8Array is an object but must survive intact (e.g. `publicKey`).
     if (value instanceof Uint8Array || value === null) return value
     if (typeof value !== 'object') return value
 
-    return Object.fromEntries(
-        Object.entries(value as Record<string, unknown>)
-            .filter(([field]) => !SECRET_FIELDS.has(field))
-            .map(([field, nested]) => [field, withoutSecrets(nested)]),
-    ) as T
+    const entries = Object.entries(value as Record<string, unknown>)
+    const id = entries.find(([field]) => field === 'id')?.[1]
+    const scopeId = typeof id === 'string' ? id : ownerId
+
+    const kept: [string, unknown][] = []
+    for (const [field, nested] of entries) {
+        if (SECRET_FIELDS.has(field)) {
+            if (nested instanceof Uint8Array && scopeId) {
+                lifted.push({ id: scopeId, bytes: nested })
+            }
+            continue
+        }
+        kept.push([field, liftSecrets(nested, scopeId, lifted)])
+    }
+    return Object.fromEntries(kept) as T
 }
 
 /**
@@ -160,20 +184,32 @@ export const migrateKeystoreLayout = async (
             // must never reach `k/`, which is plaintext. Where a record carries
             // only a seed it *is* the material — canary.13's `importSeed` puts
             // the seed in `privateKey`, so the two never hold different secrets.
-            const { privateKey, seed, ...metadata } = record as KeyData & {
-                seed?: Uint8Array
-            }
-            const material = privateKey ?? seed
+            const lifted: LiftedMaterial[] = []
+            const metadata = liftSecrets(record, record.id, lifted)
+            const material = lifted.find(entry => entry.id === record.id)?.bytes
 
-            if (material) {
+            // Every secret goes straight into the sealed bucket, addressed by the
+            // id that owns it — including ones lifted out of nested metadata, so
+            // material is re-protected rather than discarded. An id already
+            // sealed by its own record is left alone: that entry is the
+            // authority, and an embedded copy must never overwrite it.
+            for (const entry of lifted) {
+                const materialKey = MATERIAL_PREFIX + entry.id
+                if (
+                    entry.id !== record.id &&
+                    deps.storage.getString(materialKey)
+                ) {
+                    continue
+                }
                 deps.storage.set(
-                    MATERIAL_PREFIX + record.id,
-                    await deps.sealData(masterKey, base64.encode(material)),
+                    materialKey,
+                    await deps.sealData(masterKey, base64.encode(entry.bytes)),
                 )
             }
+
             deps.storage.set(
                 METADATA_PREFIX + record.id,
-                deps.encode(withoutSecrets(metadata)),
+                deps.encode(metadata as KeyData),
             )
 
             if (

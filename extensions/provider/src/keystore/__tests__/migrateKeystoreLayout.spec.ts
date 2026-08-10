@@ -335,6 +335,52 @@ describe('migrateKeystoreLayout', () => {
         expect(metadata.publicKey).toEqual(new Uint8Array(32).fill(4))
     })
 
+    // Lifting material out of metadata must protect it, not discard it.
+    it('seals material lifted out of metadata under the id that owns it', async () => {
+        const rootSecret = new Uint8Array(64).fill(11)
+        await writeCanary13Record(store, {
+            id: 'derived-1',
+            type: 'hd-derived-ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            metadata: {
+                rootKey: {
+                    id: 'root-1',
+                    type: 'hd-root-key',
+                    privateKey: rootSecret,
+                },
+            },
+        } as Partial<KeyData> & { id: string })
+
+        await migrateKeystoreLayout(deps())
+
+        const sealed = store.get('m/root-1')
+        expect(sealed).toBeDefined()
+        expect(base64.decode(await openData(MASTER_KEY, sealed!))).toEqual(
+            rootSecret,
+        )
+    })
+
+    // The record that owns an id is the authority on its material; an embedded
+    // copy encountered later must never overwrite it.
+    it('does not let an embedded copy overwrite an id’s own sealed material', async () => {
+        const real = new Uint8Array(32).fill(1)
+        const stale = new Uint8Array(64).fill(12)
+        await writeCanary13Record(store, algo25Record('root-1'))
+        await writeCanary13Record(store, {
+            id: 'derived-1',
+            type: 'hd-derived-ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            metadata: { rootKey: { id: 'root-1', privateKey: stale } },
+        } as Partial<KeyData> & { id: string })
+
+        await migrateKeystoreLayout(deps())
+
+        const sealed = await openData(MASTER_KEY, store.get('m/root-1')!)
+        expect(base64.decode(sealed)).toEqual(real)
+    })
+
     // A fresh install has no Keychain master key; reading one would throw.
     it('does not read the master key when there is nothing to migrate', async () => {
         store.set('k/key-1', JSON.stringify({ id: 'key-1' }))
