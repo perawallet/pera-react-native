@@ -29,7 +29,7 @@ import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
 import {
-    type AccountBalanceHistoryItem,
+    type AccountAssetBalanceHistoryItem,
     useAccountAssetBalanceQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -57,7 +57,7 @@ export const AssetHoldings = ({
     const styles = useStyles()
     const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
-        useChartInteraction<AccountBalanceHistoryItem>()
+        useChartInteraction<AccountAssetBalanceHistoryItem>()
 
     useEffect(() => {
         onSwipeEnabledChange?.(!selectedPoint)
@@ -73,7 +73,7 @@ export const AssetHoldings = ({
 
     const cryptoAmount = useMemo(() => {
         const currentCrypto = selectedPoint
-            ? selectedPoint.algoValue
+            ? selectedPoint.amount
             : (assetHolding?.amount ?? new Decimal(0))
         return currentCrypto
     }, [assetHolding, selectedPoint])
