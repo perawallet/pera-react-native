@@ -15,9 +15,11 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import {
     AccountTypes,
+    LaunchAccountModes,
     type AccountsState,
     type AccountSortMode,
     type HardwareWalletDetails,
+    type LaunchAccountMode,
     type WalletAccount,
     type WatchAccount,
 } from '../models'
@@ -37,6 +39,8 @@ const initialState = {
     selectedAccountAddress: null as Nullable<string>,
     sortMode: 'manual' as AccountSortMode,
     manualAccountOrder: [] as string[],
+    launchAccountMode: LaunchAccountModes.lastUsed as LaunchAccountMode,
+    launchAccountAddress: null as Nullable<string>,
     // Session-only (not persisted): null until the first network switch is
     // applied; while null, rekey writes treat their own network as active —
     // syncs only ever run on the active network, so this matches reality.
@@ -91,6 +95,20 @@ export const useAccountsStore: UseBoundStore<
                     .map(a => a.address)
                     .filter(addr => !prunedOrder.includes(addr))
                 set({ manualAccountOrder: [...prunedOrder, ...newAddresses] })
+
+                // A launch pin whose account is gone would leave the Launch
+                // Settings screen pointing at nothing, so revert it here rather
+                // than tolerating a dangling address until the next cold start.
+                const { launchAccountMode, launchAccountAddress } = get()
+                if (
+                    launchAccountMode === LaunchAccountModes.specific &&
+                    !accountAddresses.has(launchAccountAddress ?? '')
+                ) {
+                    set({
+                        launchAccountMode: LaunchAccountModes.lastUsed,
+                        launchAccountAddress: null,
+                    })
+                }
             },
             setSelectedAccountAddress: (address: Nullable<string>) => {
                 const accounts = get().accounts
@@ -104,6 +122,35 @@ export const useAccountsStore: UseBoundStore<
             },
             setSortMode: (mode: AccountSortMode) => {
                 set({ sortMode: mode })
+            },
+            setLaunchAccountPreference: (
+                mode: LaunchAccountMode,
+                address?: Nullable<string>,
+            ) => {
+                if (mode === LaunchAccountModes.lastUsed) {
+                    set({
+                        launchAccountMode: mode,
+                        launchAccountAddress: null,
+                    })
+                    return
+                }
+
+                const accounts = get().accounts
+                if (!address || !accounts.find(a => a.address === address)) {
+                    logger.warn(
+                        `Attempted to pin launch account ${address}, but it does not exist in accounts list.`,
+                    )
+                    return
+                }
+                set({ launchAccountMode: mode, launchAccountAddress: address })
+            },
+            applyLaunchAccountPreference: () => {
+                const { launchAccountMode, launchAccountAddress, accounts } =
+                    get()
+                if (launchAccountMode !== LaunchAccountModes.specific) return
+                if (!accounts.find(a => a.address === launchAccountAddress))
+                    return
+                set({ selectedAccountAddress: launchAccountAddress })
             },
             setManualAccountOrder: (order: string[]) => {
                 set({ manualAccountOrder: order })
@@ -256,6 +303,8 @@ export const useAccountsStore: UseBoundStore<
                 selectedAccountAddress: state.selectedAccountAddress,
                 sortMode: state.sortMode,
                 manualAccountOrder: state.manualAccountOrder,
+                launchAccountMode: state.launchAccountMode,
+                launchAccountAddress: state.launchAccountAddress,
             }),
         },
     ),

@@ -123,11 +123,16 @@ describe('useSettingsOptions', () => {
         expect(settingsOptions[1].title).toBe(
             'settings.main.app_preferences_section',
         )
-        expect(settingsOptions[1].items).toHaveLength(2)
+        expect(settingsOptions[1].items).toHaveLength(3)
         expect(settingsOptions[1].items[0]).toEqual({
             route: 'CurrencySettings',
             icon: 'dollar',
             title: 'settings.main.currency_title',
+        })
+        expect(settingsOptions[1].items[2]).toEqual({
+            route: 'LaunchSettings',
+            icon: 'house',
+            title: 'settings.main.launch_title',
         })
 
         // Support Section
@@ -165,6 +170,7 @@ describe('useSettingsOptions', () => {
             expect(appPreferences?.items.map(item => item.route)).toEqual([
                 'CurrencySettings',
                 'ThemeSettings',
+                'LaunchSettings',
             ])
         })
 
@@ -181,9 +187,10 @@ describe('useSettingsOptions', () => {
             expect(appPreferences?.items.map(item => item.route)).toEqual([
                 'CurrencySettings',
                 'ThemeSettings',
+                'LaunchSettings',
                 'LanguageSettings',
             ])
-            expect(appPreferences?.items[2]).toEqual({
+            expect(appPreferences?.items[3]).toEqual({
                 route: 'LanguageSettings',
                 icon: 'globe',
                 title: 'settings.main.language_title',

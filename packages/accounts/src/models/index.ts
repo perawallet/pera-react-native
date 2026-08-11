@@ -14,6 +14,7 @@ import type {
     WalletAccount,
     AccountSortMode,
     HardwareWalletDetails,
+    LaunchAccountMode,
 } from './accounts'
 import type {
     BaseStoreState,
@@ -37,10 +38,29 @@ export type AccountsState = BaseStoreState & {
      * writes treat their own network as the active one.
      */
     activeRekeyNetwork: Nullable<Network>
+    /** Which account a cold start selects. See `applyLaunchAccountPreference`. */
+    launchAccountMode: LaunchAccountMode
+    /** Only meaningful under `LaunchAccountModes.specific`; null otherwise. */
+    launchAccountAddress: Nullable<string>
     getSelectedAccount: () => Nullable<WalletAccount>
     setAccounts: (accounts: WalletAccount[]) => void
     setSelectedAccountAddress: (address: Nullable<string>) => void
     setSortMode: (mode: AccountSortMode) => void
+    /**
+     * Set both halves of the launch preference together, so mode and address
+     * can never disagree. `lastUsed` clears the address; `specific` refuses an
+     * address that is not a current account.
+     */
+    setLaunchAccountPreference: (
+        mode: LaunchAccountMode,
+        address?: Nullable<string>,
+    ) => void
+    /**
+     * Apply the launch preference to `selectedAccountAddress`. Cold start only
+     * — called from app bootstrap once the store has rehydrated, never on
+     * foreground. No-ops under `lastUsed` or when the pin no longer resolves.
+     */
+    applyLaunchAccountPreference: () => void
     setManualAccountOrder: (order: string[]) => void
     /**
      * Record the auth-addr observed for `address` on `network`, and update
