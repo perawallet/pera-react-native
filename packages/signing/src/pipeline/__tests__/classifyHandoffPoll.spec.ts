@@ -628,4 +628,134 @@ describe('resolveHandoffOutcome', () => {
             expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
         })
     })
+
+    // A terminal failure leaves the proposer's backend record non-terminal —
+    // and the inbox reads backend status — so the resolver best-effort cancels
+    // it. Only failure paths cancel: a delivered `ready` is the success case,
+    // and `declined` means the backend is already terminal.
+    describe('backend cancel (cancelRequest)', () => {
+        it('cancels the backend request on an error outcome', async () => {
+            const handoff = makeHandoff()
+            walletConnectHandoffs.register(handoff)
+            const cancelRequest = vi.fn().mockResolvedValue(undefined)
+
+            await resolveHandoffOutcome({
+                outcome: {
+                    kind: 'error',
+                    reason: { kind: 'no-transactions' },
+                },
+                handoff,
+                messages,
+                delivery: makeDelivery(),
+                markConfirmed: vi.fn(),
+                cancelRequest,
+            })
+
+            expect(cancelRequest).toHaveBeenCalledTimes(1)
+            expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
+        })
+
+        it('cancels the backend request on an expired soft-reject', async () => {
+            const handoff = makeHandoff()
+            walletConnectHandoffs.register(handoff)
+            const cancelRequest = vi.fn().mockResolvedValue(undefined)
+
+            await resolveHandoffOutcome({
+                outcome: { kind: 'soft-reject', reason: 'expired' },
+                handoff,
+                messages,
+                delivery: makeDelivery(),
+                markConfirmed: vi.fn(),
+                cancelRequest,
+            })
+
+            expect(cancelRequest).toHaveBeenCalledTimes(1)
+            expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
+        })
+
+        it('does not cancel on a declined soft-reject', async () => {
+            const handoff = makeHandoff()
+            walletConnectHandoffs.register(handoff)
+            const cancelRequest = vi.fn().mockResolvedValue(undefined)
+
+            await resolveHandoffOutcome({
+                outcome: { kind: 'soft-reject', reason: 'declined' },
+                handoff,
+                messages,
+                delivery: makeDelivery(),
+                markConfirmed: vi.fn(),
+                cancelRequest,
+            })
+
+            expect(cancelRequest).not.toHaveBeenCalled()
+        })
+
+        it('does not cancel on a successfully delivered ready outcome', async () => {
+            const handoff = makeHandoff()
+            walletConnectHandoffs.register(handoff)
+            const cancelRequest = vi.fn().mockResolvedValue(undefined)
+
+            await resolveHandoffOutcome({
+                outcome: {
+                    kind: 'ready',
+                    assembledBytes: [new Uint8Array([1])],
+                },
+                handoff,
+                messages,
+                delivery: makeDelivery(),
+                markConfirmed: vi.fn().mockResolvedValue(undefined),
+                cancelRequest,
+            })
+
+            expect(cancelRequest).not.toHaveBeenCalled()
+        })
+
+        it('cancels when delivering the signed bytes to the dApp fails', async () => {
+            const handoff = makeHandoff({
+                callbacks: {
+                    approveSignedBytes: vi
+                        .fn()
+                        .mockRejectedValue(new Error('session dropped')),
+                    error: vi.fn().mockResolvedValue(undefined),
+                    reject: vi.fn().mockResolvedValue(undefined),
+                },
+            })
+            walletConnectHandoffs.register(handoff)
+            const cancelRequest = vi.fn().mockResolvedValue(undefined)
+
+            await resolveHandoffOutcome({
+                outcome: {
+                    kind: 'ready',
+                    assembledBytes: [new Uint8Array([1])],
+                },
+                handoff,
+                messages,
+                delivery: makeDelivery(),
+                markConfirmed: vi.fn(),
+                cancelRequest,
+            })
+
+            expect(cancelRequest).toHaveBeenCalledTimes(1)
+            expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
+        })
+
+        it('still resolves when the cancel itself rejects', async () => {
+            const handoff = makeHandoff()
+            walletConnectHandoffs.register(handoff)
+            const cancelRequest = vi.fn().mockRejectedValue(new Error('503'))
+
+            await resolveHandoffOutcome({
+                outcome: { kind: 'soft-reject', reason: 'expired' },
+                handoff,
+                messages,
+                delivery: makeDelivery(),
+                markConfirmed: vi.fn(),
+                cancelRequest,
+            })
+
+            expect(handoff.callbacks?.reject).toHaveBeenCalled()
+            expect(loggerWarnMock).toHaveBeenCalled()
+            expect(walletConnectHandoffs.get(SIGN_REQUEST_ID)).toBeUndefined()
+        })
+    })
 })
