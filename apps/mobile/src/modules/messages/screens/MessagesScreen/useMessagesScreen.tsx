@@ -11,13 +11,9 @@
  */
 
 import type { MessagesStackParamList } from '@modules/messages/routes'
-import {
-    type RouteProp,
-    useFocusEffect,
-    useRoute,
-} from '@react-navigation/native'
+import { type RouteProp, useRoute } from '@react-navigation/native'
 import { useCallback, useMemo, useState } from 'react'
-import { useInboxStatus } from '@perawallet/wallet-core-messages'
+import { useInboxQuery, useInboxStatus } from '@perawallet/wallet-core-messages'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { NotificationSettingsContent } from '@modules/messages/components/NotificationSettingsContent'
 import type { MessagesTabsParamsList } from './MessagesScreen'
@@ -26,10 +22,22 @@ export const useMessagesScreen = () => {
     const route = useRoute<RouteProp<MessagesStackParamList, 'MessagesHome'>>()
 
     const initialTab = route.params?.initialTab
-    const [activeTab, setActiveTab] = useState<keyof MessagesTabsParamsList>(
-        initialTab ?? 'Inbox',
-    )
     const { hasUnreadInboxItems, hasUnreadNotifications } = useInboxStatus()
+    const { data: inboxItems } = useInboxQuery()
+
+    // Decided once at mount: the navigator only reads initialRouteName on its
+    // first render, and the inbox query is subscribed app-wide (RootComponent),
+    // so its cache is already settled by the time this screen mounts.
+    const [initialRouteName] = useState<keyof MessagesTabsParamsList>(() => {
+        if (initialTab) return initialTab
+        if (!inboxItems?.length) return 'Notifications'
+        if (!hasUnreadInboxItems && hasUnreadNotifications) {
+            return 'Notifications'
+        }
+        return 'Inbox'
+    })
+    const [activeTab, setActiveTab] =
+        useState<keyof MessagesTabsParamsList>(initialRouteName)
     const { request: requestBottomSheet } = useBottomSheet()
 
     const openSettingsModal = useCallback(() => {
@@ -52,14 +60,8 @@ export const useMessagesScreen = () => {
         [hasUnreadNotifications, activeTab],
     )
 
-    useFocusEffect(() => {
-        if (!hasUnreadInboxItems && hasUnreadNotifications && !initialTab) {
-            setActiveTab('Notifications')
-        }
-    })
-
     return {
-        initialTab,
+        initialRouteName,
         openSettingsModal,
         activeTab,
         setActiveTab,
