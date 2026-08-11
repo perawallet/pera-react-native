@@ -45,6 +45,7 @@ const mocks = vi.hoisted(() => {
         provider,
         keystoreReady: vi.fn(),
         runKeystoreLayoutMigration: vi.fn(),
+        runQuantumMaterialRepair: vi.fn(),
         reconcileKeystore: vi.fn(),
         getProvider: vi.fn(() => provider),
         initializeDatabase: vi.fn(),
@@ -71,6 +72,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     getKeystore: () => ({ ready: mocks.keystoreReady() }),
     getProvider: mocks.getProvider,
     runKeystoreLayoutMigration: mocks.runKeystoreLayoutMigration,
+    runQuantumMaterialRepair: mocks.runQuantumMaterialRepair,
     reconcileKeystore: mocks.reconcileKeystore,
 }))
 
@@ -191,6 +193,10 @@ describe('useAppBootstrap', () => {
             skipped: 0,
             failed: 0,
         })
+        mocks.runQuantumMaterialRepair.mockResolvedValue({
+            repaired: 0,
+            failed: 0,
+        })
         mocks.reconcileKeystore.mockResolvedValue(undefined)
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedAlgoAsset.mockResolvedValue(undefined)
@@ -299,6 +305,25 @@ describe('useAppBootstrap', () => {
         })
 
         expect(mocks.reconcileKeystore).not.toHaveBeenCalled()
+    })
+
+    // A quantum account minted before custody moved into the keystore has a
+    // child with no sealed material, and there is nothing to migrate on a
+    // keystore that is already in the canary.14 layout.
+    it('repairs quantum key material even when no records were migrated', async () => {
+        mocks.runQuantumMaterialRepair.mockResolvedValue({
+            repaired: 1,
+            failed: 0,
+        })
+        vi.useFakeTimers()
+        renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.runQuantumMaterialRepair).toHaveBeenCalledTimes(1)
+        expect(mocks.reconcileKeystore).toHaveBeenCalledTimes(1)
     })
 
     // An unreadable master key with canary.13 records still on disk must not

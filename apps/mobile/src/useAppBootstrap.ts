@@ -39,6 +39,7 @@ import {
     getProvider,
     reconcileKeystore,
     runKeystoreLayoutMigration,
+    runQuantumMaterialRepair,
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
@@ -195,13 +196,23 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                     .ready.then(async () => {
                         const { migrated, failed } =
                             await runKeystoreLayoutMigration()
-                        if (migrated === 0 && failed === 0) return
+                        if (migrated > 0 || failed > 0) {
+                            logger.info('Keystore layout migrated', {
+                                migrated,
+                                failed,
+                            })
+                            await reconcileKeystore()
+                        }
 
-                        logger.info('Keystore layout migrated', {
-                            migrated,
-                            failed,
-                        })
-                        await reconcileKeystore()
+                        // Runs on every launch, not just after a migration: a
+                        // quantum account minted before custody moved into the
+                        // keystore has a child with no sealed material, and it
+                        // would fail only at submit time, after signing.
+                        const repair = await runQuantumMaterialRepair()
+                        if (repair.repaired > 0 || repair.failed > 0) {
+                            logger.info('Quantum key material repaired', repair)
+                            await reconcileKeystore()
+                        }
                     })
                     .catch(err => {
                         logger.error('Keystore hydration failed', {

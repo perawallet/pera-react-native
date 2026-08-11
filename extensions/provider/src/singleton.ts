@@ -29,6 +29,10 @@ import {
     migrateKeystoreLayout,
     type KeystoreLayoutMigrationResult,
 } from './keystore/migrateKeystoreLayout'
+import {
+    repairQuantumMaterial,
+    type QuantumMaterialRepairResult,
+} from './keystore/repairQuantumMaterial'
 import { METADATA_PREFIX } from './keystore/prefixes'
 import { PeraProvider } from './pera-provider'
 
@@ -168,6 +172,28 @@ export const runKeystoreLayoutMigration =
                 sealData(subtle as unknown as SubtleCrypto, key, data),
             encode,
             decode,
+        })
+
+/**
+ * Binds {@link repairQuantumMaterial} to the live keystore. Must run after the
+ * engine has hydrated, since it works off the reactive key snapshot.
+ */
+export const runQuantumMaterialRepair =
+    (): Promise<QuantumMaterialRepairResult> =>
+        repairQuantumMaterial({
+            keys: () => keystoreStore.state.keys,
+            storage: keystoreStorage,
+            regenerate: async (childId, parentKeyId) => {
+                // `parentKeyId` (not the seed itself): the engine resolves the
+                // parent through the driver, so the seed never reaches JS.
+                await keystore.generate({
+                    type: 'falcon-1024',
+                    algorithm: 'Falcon-1024',
+                    extractable: false,
+                    keyUsages: ['sign', 'verify'],
+                    params: { parentKeyId, id: childId },
+                })
+            },
         })
 
 /**
