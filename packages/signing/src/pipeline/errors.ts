@@ -140,9 +140,13 @@ export class HardwareSigningAbortedError extends PipelineError {
  * Transport failed to deliver signed data
  */
 export class TransportError extends PipelineError {
-    constructor(message: string, originalError?: Error) {
+    constructor(
+        message: string,
+        originalError?: Error,
+        options?: { retryable?: boolean },
+    ) {
         super(`Transport failed: ${message}`, originalError, {
-            retryable: true,
+            retryable: options?.retryable ?? true,
         })
     }
 }

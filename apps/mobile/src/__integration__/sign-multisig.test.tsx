@@ -51,6 +51,7 @@ import {
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 
@@ -128,6 +129,11 @@ describe('Flow: multisig signing review (propose)', () => {
             }),
         )
         useAccountsStore.getState().setAccounts([])
+        // The propose transport requires a registered device id before it
+        // creates the backend sign-request (handoff precondition).
+        useDeviceStore.getState().resetState()
+        useDeviceStore.getState().setDeviceID('mainnet', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
         // Seed the participant's key, then register both it and the multisig
         // account so the wallet can sign for the multisig.
         await seedAlgo25Signer()

@@ -53,6 +53,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { mockAlgodAccountInformation } from '@perawallet/wallet-core-blockchain/test-handlers'
+import { useDeviceStore } from '@perawallet/wallet-core-device'
 
 import { REKEY_TARGET_ADDRESS } from './__fixtures__/onboarding'
 
@@ -149,6 +150,11 @@ describe('Flow: signing review for a sender rekeyed to a held multisig', () => {
             }),
         )
         useAccountsStore.getState().setAccounts([])
+        // The propose transport requires a registered device id before it
+        // creates the backend sign-request (handoff precondition).
+        useDeviceStore.getState().resetState()
+        useDeviceStore.getState().setDeviceID('mainnet', 'test-device-id')
+        useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
         await seedAlgo25Signer()
         useAccountsStore
             .getState()

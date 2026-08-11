@@ -694,7 +694,7 @@ describe('createMultisigProposeTransport', () => {
         },
     )
 
-    test('throws and surfaces error via WC callback when msig metadata missing', async () => {
+    test('missing msig metadata fails before the create, notifies the peer, and is non-retryable', async () => {
         const proposeSignRequest = vi.fn().mockResolvedValue({
             signRequestId: 'wc-handoff',
             status: 'pending',
@@ -704,13 +704,25 @@ describe('createMultisigProposeTransport', () => {
             msigMetadata: null,
         })
 
-        await expect(
-            transport.send(
+        const thrown = await transport
+            .send(
                 transactionResult,
                 { type: 'walletconnect', callbacks: { error } },
                 'JOINT_ADDR',
-            ),
-        ).rejects.toThrow(TransportError)
+            )
+            .then(
+                () => null,
+                e => e as TransportError,
+            )
+
+        expect(thrown).toBeInstanceOf(TransportError)
+        // A retry would create a duplicate-prone flow for a programmer error
+        // that retrying cannot fix.
+        expect(thrown?.metadata.retryable).toBe(false)
+        // The whole point of the precondition: no backend record is created
+        // that could be orphaned (nothing registered => the resolver would
+        // never cancel it).
+        expect(proposeSignRequest).not.toHaveBeenCalled()
 
         await Promise.resolve()
         await Promise.resolve()
@@ -718,7 +730,7 @@ describe('createMultisigProposeTransport', () => {
         expect(walletConnectHandoffs.list()).toEqual([])
     })
 
-    test('throws and surfaces error via WC callback when device id missing', async () => {
+    test('missing device id fails before the create, keeps the peer request alive, and is retryable', async () => {
         const proposeSignRequest = vi.fn().mockResolvedValue({
             signRequestId: 'wc-handoff',
             status: 'pending',
@@ -728,17 +740,28 @@ describe('createMultisigProposeTransport', () => {
             deviceId: 'omit',
         })
 
-        await expect(
-            transport.send(
+        const thrown = await transport
+            .send(
                 transactionResult,
                 { type: 'walletconnect', callbacks: { error } },
                 'JOINT_ADDR',
-            ),
-        ).rejects.toThrow(TransportError)
+            )
+            .then(
+                () => null,
+                e => e as TransportError,
+            )
+
+        expect(thrown).toBeInstanceOf(TransportError)
+        // Transient (device re-registration / network switch): Retry can
+        // succeed once registration completes, and nothing was created.
+        expect(thrown?.metadata.retryable).toBe(true)
+        expect(proposeSignRequest).not.toHaveBeenCalled()
 
         await Promise.resolve()
         await Promise.resolve()
-        expect(error).toHaveBeenCalled()
+        // Not notified: erroring the WC request would kill the very request a
+        // successful Retry still needs to deliver to.
+        expect(error).not.toHaveBeenCalled()
         expect(walletConnectHandoffs.list()).toEqual([])
     })
 })

@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { HardwareWalletError, SigningError } from '../errors'
+import { HardwareWalletError, SigningError, TransportError } from '../errors'
 
 describe('pipeline error retryable flags', () => {
     it('marks unsupported_data_type hardware errors as non-retryable', () => {
@@ -37,6 +37,14 @@ describe('pipeline error retryable flags', () => {
         expect(new SigningError('x').metadata.retryable).toBe(true)
         expect(
             new SigningError('x', undefined, { retryable: false }).metadata
+                .retryable,
+        ).toBe(false)
+    })
+
+    it('TransportError accepts a retryable override and defaults to retryable', () => {
+        expect(new TransportError('x').metadata.retryable).toBe(true)
+        expect(
+            new TransportError('x', undefined, { retryable: false }).metadata
                 .retryable,
         ).toBe(false)
     })
