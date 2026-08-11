@@ -112,7 +112,7 @@ describe('useSingleAssetDetailsQuery', () => {
                 name: 'Algo',
                 unitName: 'ALGO',
                 decimals: 6,
-                totalSupply: new Decimal('10000000000000000000'),
+                totalSupply: new Decimal('10000000000000000'),
                 creator: { address: '' },
             })
 

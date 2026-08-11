@@ -2838,7 +2838,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         name: 'Algo',
         unitName: 'ALGO',
         decimals: 6,
-        totalSupply: '10000000000000000000',
+        totalSupply: '10000000000000000',
         creator: { address: '' },
         peraMetadata: {
             isDeleted: false,

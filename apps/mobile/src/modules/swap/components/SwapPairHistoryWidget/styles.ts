@@ -31,11 +31,13 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         minWidth: 0,
     },
+    // Bleeds the list to the screen edges; must mirror the SwapForm
+    // formContainer's paddingHorizontal token.
     list: {
-        marginHorizontal: -theme.spacing.xl,
+        marginHorizontal: -theme.spacing.lg,
     },
     listContent: {
-        paddingHorizontal: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.lg,
     },
     separator: {
         width: theme.spacing.sm,
