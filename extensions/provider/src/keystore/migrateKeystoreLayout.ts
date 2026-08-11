@@ -70,12 +70,23 @@ const SECRET_FIELDS = new Set(['privateKey', 'seed', 'key'])
  * `privateKeyEnc`, which is not a `Uint8Array` and so would be dropped rather
  * than re-sealed. Leave them alone until the provider moves to this layout.
  */
+const PASSKEY_CREDENTIAL_TYPES: ReadonlySet<string> = new Set([
+    // What the provider writes today (`saveCredential`).
+    'hd-derived-p256',
+    // Older provider builds wrote this, and its read path still accepts it
+    // (`keyType != "hd-derived-p256" && keyType != "xhd-derived-p256"`). Nothing
+    // in this repo writes it, so it is unreachable here in theory — but the cost
+    // of being wrong is a destroyed passkey, and the cost of covering it is a
+    // set entry.
+    'xhd-derived-p256',
+])
+
 const isPasskeyCredential = (record: KeyData): boolean => {
     const metadata = record.metadata as
         | { origin?: unknown; userHandle?: unknown }
         | undefined
     return (
-        record.type === 'hd-derived-p256' &&
+        PASSKEY_CREDENTIAL_TYPES.has(record.type) &&
         typeof metadata?.origin === 'string' &&
         typeof metadata?.userHandle === 'string'
     )

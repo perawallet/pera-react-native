@@ -545,6 +545,21 @@ describe('migrateKeystoreLayout', () => {
             expect(store.has('m/cred-1')).toBe(false)
         })
 
+        // The provider's read path accepts this legacy type alongside the one it
+        // writes, so a record left by an older build must be skipped too.
+        it('also skips the legacy xhd-derived-p256 credential type', async () => {
+            await writeCanary13Record(store, {
+                ...passkeyRecord('cred-legacy'),
+                type: 'xhd-derived-p256',
+            })
+
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result).toEqual({ migrated: 0, skipped: 1, failed: 0 })
+            expect(store.has('cred-legacy')).toBe(true)
+            expect(store.has('m/cred-legacy')).toBe(false)
+        })
+
         it("still migrates the wallet's own records alongside one", async () => {
             await writeCanary13Record(store, passkeyRecord('cred-1'))
             await writeCanary13Record(store, algo25Record('key-1'))
