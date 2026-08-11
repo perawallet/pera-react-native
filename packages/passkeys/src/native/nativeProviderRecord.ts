@@ -63,7 +63,14 @@ export type NativeProviderEnvelope = {
 const toStandardBase64 = (bytes: Uint8Array): string =>
     btoa(String.fromCharCode(...bytes))
 
-const fromStandardBase64 = (value: string): Uint8Array =>
+/**
+ * Exported so the bootstrap can decode the keystore's sealed material without
+ * pulling `@scure/base` into this package. That dependency has to be bundled
+ * into `dist/` rather than externalised, and getting that wrong takes down the
+ * browser extension's service worker at module-eval — the package root reaches
+ * the web bundle even though this module is Android-only.
+ */
+export const fromStandardBase64 = (value: string): Uint8Array =>
     Uint8Array.from(atob(value), char => char.charCodeAt(0))
 
 const toBase64Url = (value: string): string =>

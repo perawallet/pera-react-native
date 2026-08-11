@@ -43,7 +43,6 @@ export default defineConfig({
                 'react/jsx-runtime',
                 '@algorandfoundation/keystore-core',
                 '@algorandfoundation/react-native-keystore',
-                '@scure/base',
                 '@tanstack/react-query',
                 '@tanstack/store',
                 '@perawallet/wallet-core-shared',

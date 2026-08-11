@@ -3341,9 +3341,6 @@ importers:
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider
-      '@scure/base':
-        specifier: 'catalog:'
-        version: 2.2.0
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)

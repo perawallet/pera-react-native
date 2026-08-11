@@ -11,8 +11,15 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { base64 } from '@scure/base'
 import { openNativeProviderRecord } from '../../native/nativeProviderRecord'
+
+// Standard base64, matching `@scure/base`'s `base64` — restated locally rather
+// than imported so this package needs no bundler-visible dependency for it.
+const base64 = {
+    encode: (bytes: Uint8Array): string => btoa(String.fromCharCode(...bytes)),
+    decode: (value: string): Uint8Array =>
+        Uint8Array.from(atob(value), char => char.charCodeAt(0)),
+}
 
 const MASTER_KEY = Buffer.alloc(32, 7)
 const IV_LENGTH = 12

@@ -18,10 +18,10 @@ import {
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
 import type { KeyData } from '@algorandfoundation/keystore-core'
-import { base64 } from '@scure/base'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { PasskeyAutofillService } from '@perawallet/wallet-extension-passkey-autofill'
 import {
+    fromStandardBase64,
     openNativeProviderRecord,
     sealNativeProviderRecord,
     toNativeByteArray,
@@ -219,7 +219,9 @@ const readRootMaterial = async (
     try {
         // A fresh copy per call: the keystore's crypto helpers wipe the
         // master-key buffer they are handed.
-        return base64.decode(
+        // The driver seals `base64.encode(material.bytes)`, so what comes back
+        // out is standard base64 of the raw bytes.
+        return fromStandardBase64(
             await openData(subtle(), Uint8Array.from(masterKey), sealed),
         )
     } catch (err) {
