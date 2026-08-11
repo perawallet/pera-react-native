@@ -14,25 +14,31 @@ import { useContext } from 'react'
 import { useTheme } from '@rneui/themed'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
+import { PWScreenNestedContext } from './nestedContext'
 
 export type UsePWScreenInsetsResult = {
     bottomInset: number
-    isInTabNavigator: boolean
+    isBottomHandledOutside: boolean
 }
 
 /**
- * Effective bottom inset for a screen body. Returns 0 inside a bottom-tab
- * navigator, whose tab bar already clears the home indicator (adding inset
- * would double-pad).
+ * Effective bottom inset for a screen body. Returns 0 when something outside
+ * the screen already clears the home indicator: a bottom-tab navigator's tab
+ * bar, or an enclosing `PWScreen` whose body padding wraps this one (adding
+ * inset would double-pad).
  */
 export const usePWScreenInsets = (): UsePWScreenInsetsResult => {
     const insets = useSafeAreaInsets()
     const { theme } = useTheme()
     const tabBarHeight = useContext(BottomTabBarHeightContext)
-    const isInTabNavigator = tabBarHeight !== undefined
+    const isNestedInPWScreen = useContext(PWScreenNestedContext)
+    const isBottomHandledOutside =
+        tabBarHeight !== undefined || isNestedInPWScreen
 
     return {
-        bottomInset: isInTabNavigator ? 0 : insets.bottom + theme.spacing.lg,
-        isInTabNavigator,
+        bottomInset: isBottomHandledOutside
+            ? 0
+            : insets.bottom + theme.spacing.lg,
+        isBottomHandledOutside,
     }
 }

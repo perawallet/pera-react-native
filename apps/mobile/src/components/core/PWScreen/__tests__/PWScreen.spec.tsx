@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 
 import { PWScreen } from '../PWScreen'
+import { usePWScreenInsets } from '../usePWScreenInsets'
 import { PWInBottomSheetContext } from '../../PWBottomSheet/inSheetContext'
 
 describe('PWScreen', () => {
@@ -64,6 +65,23 @@ describe('PWScreen', () => {
             </PWScreen>,
         )
         expect(screen.getByTestId('child-list')).toBeTruthy()
+    })
+
+    it('marks descendants as nested so an inner PWScreen skips its bottom inset', () => {
+        const InsetProbe = () => {
+            const { bottomInset, isBottomHandledOutside } = usePWScreenInsets()
+            return (
+                <Text>{`${isBottomHandledOutside ? 'nested' : 'root'}:${bottomInset}`}</Text>
+            )
+        }
+
+        render(
+            <PWScreen testID='outer'>
+                <InsetProbe />
+            </PWScreen>,
+        )
+
+        expect(screen.getByText('nested:0')).toBeTruthy()
     })
 
     it('renders inside a tab navigator without crashing', () => {
