@@ -58,6 +58,15 @@ vi.mock('@perawallet/wallet-extension-passkey-autofill', () => ({
     WithPasskeyAutofill: () => ({ passkeyAutofill: {} }),
 }))
 
+// Unmocked, this extension builds a real keystore-web engine whenever no
+// `api.keystore` is injected, and its IndexedDB driver has no `globalThis
+// .indexedDB` to open under vitest — an unhandled rejection rather than a
+// failure, so it would poison the run without failing this test. The subject
+// here is the Ledger registry.
+vi.mock('@algorandfoundation/keystore-web', () => ({
+    WithKeyStore: () => ({ key: { store: {} } }),
+}))
+
 import { PeraProvider } from '../pera-provider.web'
 
 describe('pera-provider.web', () => {

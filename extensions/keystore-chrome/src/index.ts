@@ -19,7 +19,6 @@
 // package self-contained without forcing "chrome" back onto every consumer.
 /// <reference types="chrome" />
 
-export * from './canary14-unsupported'
 export * from './errors'
 export * from './extension'
 export * from './storage'

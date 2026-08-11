@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@algorandfoundation/keystore-core": "catalog:",
+    "@algorandfoundation/keystore-web": "catalog:",
     "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
     "@scure/base": "catalog:",

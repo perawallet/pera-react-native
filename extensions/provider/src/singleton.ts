@@ -13,27 +13,16 @@
 import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
 import type { HookCollection } from 'before-after-hook'
-import type { Key, KeyStoreState } from '@algorandfoundation/keystore-core'
+import type { KeyStoreState } from '@algorandfoundation/keystore-core'
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
-import {
-    decode,
-    encode,
-    openData,
-    readMasterKey,
-    sealData,
-    storage as keystoreStorage,
-} from '@algorandfoundation/react-native-keystore'
-import { subtle } from 'react-native-quick-crypto'
 import { createPeraKeystore } from './keystore/createKeystore'
 import {
-    migrateKeystoreLayout,
-    type KeystoreLayoutMigrationResult,
-} from './keystore/migrateKeystoreLayout'
-import {
-    repairQuantumMaterial,
-    type QuantumMaterialRepairResult,
-} from './keystore/repairQuantumMaterial'
-import { METADATA_PREFIX } from './keystore/prefixes'
+    readPersistedKeys,
+    runLayoutMigration,
+    runMaterialRepair,
+} from './keystore/maintenance'
+import type { KeystoreLayoutMigrationResult } from './keystore/migrateKeystoreLayout'
+import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
 import { PeraProvider } from './pera-provider'
 
 const keystoreStore = new Store<KeyStoreState>({
@@ -114,25 +103,6 @@ export const clearKeystore = async (): Promise<void> => {
 }
 
 /**
- * `null` on a missing or unreadable entry, so a caller can skip it rather than
- * abort a whole reconcile pass.
- */
-const decodeKeyEntry = (key: string): Key | null => {
-    const raw = keystoreStorage.getString(key)
-    if (!raw) return null
-
-    try {
-        return decode(raw) as Key
-    } catch (err) {
-        console.error(
-            `[provider] keystore decode: failed to decode entry ${key}`,
-            err,
-        )
-        return null
-    }
-}
-
-/**
  * Re-seeds the store to pick up out-of-process writes. The Android passkey
  * credential provider runs in its own process and writes straight to the MMKV
  * namespace — both new keys and metadata updates on existing ones — and nothing
@@ -145,44 +115,25 @@ const decodeKeyEntry = (key: string): Key | null => {
  * bucket as plaintext and only material under `m/` is sealed.
  */
 export const reconcileKeystore = async (): Promise<void> => {
-    const keys = keystoreStorage
-        .getAllKeys()
-        .filter(key => key.startsWith(METADATA_PREFIX))
-        .map(decodeKeyEntry)
-        .filter((key): key is Key => key !== null)
+    const keys = readPersistedKeys()
 
     if (keys.length === 0) return
 
     keystoreStore.setState(state => ({ ...state, keys }))
 }
 
-/**
- * Binds {@link migrateKeystoreLayout} to the live keystore package. Kept here
- * because this module already owns the package's native imports; the migration
- * itself stays dependency-free so it can be tested off device.
- */
+/** Runs the canary.13 → canary.14 storage-layout migration. Native-only. */
 export const runKeystoreLayoutMigration =
-    (): Promise<KeystoreLayoutMigrationResult> =>
-        migrateKeystoreLayout({
-            storage: keystoreStorage,
-            readMasterKey: () => readMasterKey(),
-            openData: (key, payload) =>
-                openData(subtle as unknown as SubtleCrypto, key, payload),
-            sealData: (key, data) =>
-                sealData(subtle as unknown as SubtleCrypto, key, data),
-            encode,
-            decode,
-        })
+    (): Promise<KeystoreLayoutMigrationResult> => runLayoutMigration()
 
 /**
- * Binds {@link repairQuantumMaterial} to the live keystore. Must run after the
+ * Re-mints Falcon children that never had sealed material. Must run after the
  * engine has hydrated, since it works off the reactive key snapshot.
  */
 export const runQuantumMaterialRepair =
     (): Promise<QuantumMaterialRepairResult> =>
-        repairQuantumMaterial({
+        runMaterialRepair({
             keys: () => keystoreStore.state.keys,
-            storage: keystoreStorage,
             regenerate: async (childId, parentKeyId) => {
                 // `parentKeyId` (not the seed itself): the engine resolves the
                 // parent through the driver, so the seed never reaches JS.

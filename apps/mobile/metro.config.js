@@ -298,12 +298,14 @@ const customResolveRequest = (context, moduleName, platform) => {
     // (extensions/keystore-chrome). Native keeps the real
     // react-native-keystore (Keychain + MMKV).
     //
-    // The surfaces are NO LONGER equivalent: the app moved to
-    // react-native-keystore canary.14 while this port still implements
-    // canary.12, so the engine factory and the WebCrypto seal helpers are
-    // missing. src/canary14-unsupported.ts stubs them to throw a message
-    // naming the cause. Web is knowingly broken until the port is replaced by
-    // @algorandfoundation/keystore-web.
+    // This alias no longer covers key storage. The two surfaces stopped being
+    // equivalent when the app moved to canary.14 — the port implements
+    // canary.12 and has no engine factory — so the web build gets its engine
+    // from @algorandfoundation/keystore-web instead, via the `.web.ts` files
+    // beside extensions/provider's createKeystore and keystore/maintenance.
+    // What still resolves here is everything the extension owns and the RN
+    // package happens to share a name with: the password vault, auto-lock,
+    // passkey unlock and the WebAuthn signer.
     if (
         platform === 'web' &&
         moduleName === '@algorandfoundation/react-native-keystore'
