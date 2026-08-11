@@ -309,7 +309,8 @@
             "sort_title_asc": "Nome (A-Z)",
             "sort_title_desc": "Nome (Z-A)",
             "sort_newest_first": "Mais recentes primeiro",
-            "sort_oldest_first": "Mais antigos primeiro"
+            "sort_oldest_first": "Mais antigos primeiro",
+            "sort_recently_added": "Adicionados recentemente"
         },
         "button_panel": {
             "swap": "Converter",

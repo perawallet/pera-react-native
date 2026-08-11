@@ -2954,6 +2954,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             discoverRekeyedAccounts: vi.fn(),
         })),
         useAccountBalancesQuery: vi.fn(() => ({ data: [], isPending: false })),
+        useAccountOptInRoundsQuery: vi.fn(() => ({
+            optInRounds: new Map(),
+            isPending: false,
+        })),
         useSelectedAccount: vi.fn(() => null),
         useSelectedAccountAddress: vi.fn(() => ({
             selectedAccountAddress: null,

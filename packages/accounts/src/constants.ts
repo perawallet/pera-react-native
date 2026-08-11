@@ -14,6 +14,10 @@ import { type ImportAccountType } from './models'
 
 export const KEY_DOMAIN = 'pera.accounts'
 
+// Max holdings per indexer page (account-syncer fallback path and the
+// opt-in-rounds read share it).
+export const HOLDINGS_PAGE_LIMIT = 1000
+
 export const MNEMONIC_WORD_COUNT: Record<ImportAccountType, number> = {
     hdWallet: 24,
     algo25: 25,

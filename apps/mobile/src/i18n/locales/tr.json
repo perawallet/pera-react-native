@@ -309,7 +309,8 @@
             "sort_title_asc": "Ad (A-Z)",
             "sort_title_desc": "Ad (Z-A)",
             "sort_newest_first": "Yeniden eskiye",
-            "sort_oldest_first": "Eskiden yeniye"
+            "sort_oldest_first": "Eskiden yeniye",
+            "sort_recently_added": "Son eklenenler"
         },
         "button_panel": {
             "swap": "Swap",

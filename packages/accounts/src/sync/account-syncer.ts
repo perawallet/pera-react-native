@@ -26,6 +26,7 @@ import {
 // Imported directly (not via the hooks barrel) to avoid a module cycle:
 // hooks/useEnsureAccountEnriched imports from this file.
 import { invalidateAccountQueriesForAddresses } from '../hooks/querykeys'
+import { HOLDINGS_PAGE_LIMIT } from '../constants'
 import { useAccountsStore } from '../store'
 import {
     ALGO_ASSET_ID,
@@ -34,9 +35,6 @@ import {
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
-
-// Max holdings per indexer page, used by the large-account fallback path.
-export const HOLDINGS_PAGE_LIMIT = 1000
 
 // algod rejects a full account read with HTTP 400 once total resources exceed
 // MaxAPIResourcesPerAccount (default 1000). Below that, one call returns balance

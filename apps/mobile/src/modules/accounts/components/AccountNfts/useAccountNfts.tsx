@@ -17,6 +17,7 @@ import { type PWFlatList } from '@components/core'
 import {
     useSelectedAccount,
     useAccountBalancesQuery,
+    useAccountOptInRoundsQuery,
     useCanSignWith,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -35,6 +36,7 @@ import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
 import { NftFilterContent } from '../NftFilterContent'
 import { NftSortContent } from '../NftSortContent'
 import { ManageNftsContent, type ManageNftsAction } from '../ManageNftsContent'
+import { sortCollectibles } from './sortCollectibles'
 
 type UseAccountNftsResult = {
     collectibles: CollectibleDisplayItem[]
@@ -61,51 +63,6 @@ type UseAccountNftsResult = {
     flatListRef: React.MutableRefObject<React.ComponentRef<
         typeof PWFlatList
     > | null>
-}
-
-const getCollectibleName = (item: CollectibleDisplayItem): string =>
-    (item.collectible?.title ?? item.asset.name ?? '').toLowerCase()
-
-const sortCollectibles = (
-    items: CollectibleDisplayItem[],
-    mode: CollectibleSortMode,
-): CollectibleDisplayItem[] => {
-    const sorted = [...items]
-
-    switch (mode) {
-        case 'titleAsc': {
-            sorted.sort((a, b) =>
-                getCollectibleName(a).localeCompare(getCollectibleName(b)),
-            )
-            break
-        }
-        case 'titleDesc': {
-            sorted.sort((a, b) =>
-                getCollectibleName(b).localeCompare(getCollectibleName(a)),
-            )
-            break
-        }
-        case 'newestFirst': {
-            sorted.sort((a, b) => {
-                const aId = BigInt(a.assetId)
-                const bId = BigInt(b.assetId)
-                if (aId === bId) return 0
-                return aId < bId ? 1 : -1
-            })
-            break
-        }
-        case 'oldestFirst': {
-            sorted.sort((a, b) => {
-                const aId = BigInt(a.assetId)
-                const bId = BigInt(b.assetId)
-                if (aId === bId) return 0
-                return aId < bId ? -1 : 1
-            })
-            break
-        }
-    }
-
-    return sorted
 }
 
 export const useAccountNfts = (): UseAccountNftsResult => {
@@ -194,6 +151,11 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         account ? [account] : [],
     )
 
+    const { optInRounds } = useAccountOptInRoundsQuery(
+        account?.address,
+        sortMode === 'recentlyAdded',
+    )
+
     const refreshAddresses = useMemo(
         () => (account?.address ? [account.address] : []),
         [account?.address],
@@ -249,7 +211,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             })
         }
 
-        const sorted = sortCollectibles(items, sortMode)
+        const sorted = sortCollectibles(items, sortMode, optInRounds)
 
         if (!debouncedSearchFilter) {
             return sorted
@@ -267,7 +229,14 @@ export const useAccountNfts = (): UseAccountNftsResult => {
                 collectionName.includes(searchTerm)
             )
         })
-    }, [balanceData, assets, debouncedSearchFilter, sortMode, showOptedIn])
+    }, [
+        balanceData,
+        assets,
+        debouncedSearchFilter,
+        sortMode,
+        showOptedIn,
+        optInRounds,
+    ])
 
     const handlePress = useCallback(
         (item: CollectibleDisplayItem) => {
