@@ -25,9 +25,12 @@
  * guard exists for is a workspace package drifting off the override, which is
  * exactly an `importers:` fact.
  *
- * Why this exists: the workspace pins `algosdk` to Joe Polny's PQ-capable
- * fork via a bare-name `overrides: algosdk: 'npm:@joe-p/algosdk@...'` entry
- * in `pnpm-workspace.yaml` (see that file's `SWAP-BACK:` comment). That
+ * Why this exists: the workspace pins `algosdk` to a PQ-capable build via a
+ * bare-name `overrides: algosdk:` entry in `pnpm-workspace.yaml` (see that
+ * file's `SWAP-BACK:` comment). Both override forms this repo has used are
+ * understood here — a `file:` spec pointing at the vendored upstream build in
+ * `libs/` (current), and an `npm:` alias to a differently-named package
+ * (previously `@joe-p/algosdk`). That
  * override is NOT reliably honored for every importer: pnpm's peer-dependency
  * auto-install step resolves an unmet peer (e.g. `@algorandfoundation/
  * algokit-utils`'s `algosdk` peer) by searching that importer's OWN
@@ -59,17 +62,46 @@ const LOCKFILE_PATH = join(ROOT, 'pnpm-lock.yaml')
 const WORKSPACE_PATH = join(ROOT, 'pnpm-workspace.yaml')
 
 /** Matches `algosdk@1.2.3`, `'algosdk@1.2.3'`, `@joe-p/algosdk@3.7.0-beta.1`,
- * etc. — any resolved-package token whose name is exactly "algosdk" or ends
- * in "/algosdk", immediately followed by "@<version>". Deliberately does NOT
+ * `algosdk@file:libs/algosdk-3.7.0-beta.1.tgz`, etc. — any resolved-package
+ * token whose name is exactly "algosdk" or ends in "/algosdk", immediately
+ * followed by "@<version>". Deliberately does NOT
  * match plain `algosdk: ^3.5.2` peerDependency *declarations* (no `@version`
  * suffix directly on the name in those lines) or `algosdk: 3.6.0` specifier
  * lines in isolation — only tokens where the version is fused onto the name
- * with "@", which is how pnpm renders a *resolved* identity everywhere
- * (import block `version:` fields, peer suffixes in parens, and the
- * top-level `packages:` catalog keys).
+ * with "@", which is how pnpm renders a *resolved* identity in peer suffixes
+ * in parens and top-level `packages:` catalog keys.
+ *
+ * The version class admits ":" and "/" so a `file:` resolution is captured
+ * whole. Truncating it at the colon would collapse every distinct tarball to
+ * the same `algosdk@file` identity, which would compare equal to the expected
+ * identity no matter which tarball was actually resolved. ")" is excluded, so
+ * a peer suffix stops at its closing paren. The tarball's own FILENAME is not
+ * matched: "algosdk" there is followed by "-", not "@".
  */
 const ALGOSDK_IDENTITY_PATTERN =
-    /(?:^|[^\w@/.-])((?:@[\w.-]+\/)?algosdk)@([\w.-]+)/g
+    /(?:^|[^\w@/.-])((?:@[\w.-]+\/)?algosdk)@([\w.:/-]+)/g
+
+/** Matches a direct `algosdk` dependency inside one importer block, capturing
+ * its resolved `version:`. A `file:` resolution renders that field as a bare
+ * `file:libs/...` — with no `algosdk@` prefix fused onto it — so the identity
+ * pattern above cannot see it, and without this the guard would only observe
+ * importers that happen to also pull algosdk in as an algokit-utils peer.
+ */
+const DIRECT_ALGOSDK_DEPENDENCY_PATTERN =
+    /^ {6}algosdk:\n(?:^ {8}\S.*\n)*?^ {8}version: (.+)$/gm
+
+/**
+ * Normalizes an importer's resolved `version:` field into a full identity.
+ *
+ * An `npm:` alias override renders the aliased package's whole identity in that
+ * field (`@joe-p/algosdk@3.7.0-beta.2`), while a registry or `file:` resolution
+ * renders only the version (`3.6.0`, `file:libs/algosdk-3.7.0-beta.1.tgz`) and
+ * needs the name prepended to be comparable with a peer suffix.
+ */
+function identityFromResolvedVersion(version) {
+    const value = version.trim().replace(/^['"]|['"]$/g, '')
+    return /^(?:@[\w.-]+\/)?[\w.-]+@/.test(value) ? value : `algosdk@${value}`
+}
 
 /** Fails loudly with a one-line reason. Never returns. */
 function fail(message) {
@@ -86,13 +118,18 @@ function readFileOrFail(path, label) {
 }
 
 /**
- * Extracts the alias target pnpm-workspace.yaml's `overrides.algosdk` entry
- * points at, e.g. `npm:@joe-p/algosdk@3.7.0-beta.1` -> `@joe-p/algosdk@3.7.0-beta.1`.
- * Returns `null` if there's no override configured for `algosdk` (in which
- * case the check still runs, just without an "expected identity" to compare
- * against — it can still catch a lockfile with more than one resolution).
+ * Extracts the identity pnpm-workspace.yaml's `overrides.algosdk` entry pins,
+ * e.g. `npm:@joe-p/algosdk@3.7.0-beta.1` -> `@joe-p/algosdk@3.7.0-beta.1`, or
+ * `file:./libs/algosdk-3.7.0-beta.1.tgz` ->
+ * `algosdk@file:libs/algosdk-3.7.0-beta.1.tgz` (pnpm drops the leading `./`
+ * when it renders the resolution).
+ *
+ * Returns `null` only when `algosdk` has no override at all — the swap-back
+ * state, where the catalog range governs. The check still runs then, just
+ * without an "expected identity" to compare against; it can still catch a
+ * lockfile with more than one resolution.
  */
-function findConfiguredAlgosdkAlias(workspaceYaml) {
+function findConfiguredAlgosdkIdentity(workspaceYaml) {
     const overridesBlockMatch = workspaceYaml.match(
         /^overrides:\n((?:^[ \t]+.*\n?)*)/m,
     )
@@ -104,8 +141,14 @@ function findConfiguredAlgosdkAlias(workspaceYaml) {
     if (!algosdkLine) return null
     const value = algosdkLine.replace(/^\s*algosdk:\s*/, '').trim()
     const unquoted = value.replace(/^['"]|['"]$/g, '')
+
     const npmAliasMatch = unquoted.match(/^npm:(.+)$/)
-    return npmAliasMatch ? npmAliasMatch[1] : null
+    if (npmAliasMatch) return npmAliasMatch[1]
+
+    const fileSpecMatch = unquoted.match(/^file:(.+)$/)
+    if (fileSpecMatch) return `algosdk@file:${fileSpecMatch[1].replace(/^\.\//, '')}`
+
+    return null
 }
 
 /**
@@ -150,7 +193,7 @@ function splitImportersSection(lockfileYaml) {
 function main() {
     const lockfileYaml = readFileOrFail(LOCKFILE_PATH, 'pnpm-lock.yaml')
     const workspaceYaml = readFileOrFail(WORKSPACE_PATH, 'pnpm-workspace.yaml')
-    const expectedIdentity = findConfiguredAlgosdkAlias(workspaceYaml)
+    const expectedIdentity = findConfiguredAlgosdkIdentity(workspaceYaml)
 
     const importers = splitImportersSection(lockfileYaml)
 
@@ -162,6 +205,11 @@ function main() {
         for (const match of body.matchAll(ALGOSDK_IDENTITY_PATTERN)) {
             const identity = `${match[1]}@${match[2]}`
             seenInThisImporter.add(identity)
+        }
+        for (const match of body.matchAll(
+            DIRECT_ALGOSDK_DEPENDENCY_PATTERN,
+        )) {
+            seenInThisImporter.add(identityFromResolvedVersion(match[1]))
         }
         for (const identity of seenInThisImporter) {
             if (!identityToImporters.has(identity)) {

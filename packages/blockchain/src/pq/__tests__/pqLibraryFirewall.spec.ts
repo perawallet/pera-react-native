@@ -26,9 +26,10 @@ import { describe, it, expect } from 'vitest'
 // interim PQ libraries behind a swap seam so they can later be replaced with
 // official Algorand code via a one-module change. See
 // docs/QUANTUM_PQ_INTEGRATION.md. `@joe-p/algosdk` is no longer one of the
-// forbidden specifiers: it is now installed under the official `algosdk`
-// package name (see pnpm-workspace.yaml), so application code imports
-// `algosdk` everywhere, including in the former Seam B. Only the Falcon
+// forbidden specifiers, and is no longer installed at all: the PQ transaction
+// surface now comes from official `algosdk` itself (a vendored build of
+// upstream v3.7.0-beta.1 — see pnpm-workspace.yaml), so application code
+// imports `algosdk` everywhere, including in the former Seam B. Only the Falcon
 // libraries (`@joe-p/react-native-falcon`, WASM `falcon-1024`), which still
 // have no official counterpart, remain confined to Seam A. The quote class
 // includes backticks so template-literal dynamic imports (e.g.
@@ -39,9 +40,9 @@ const FORBIDDEN_SPECIFIER_PATTERN =
     /[`'"](@joe-p\/react-native-falcon|falcon-1024(\/[^'"`]*)?)[`'"]/
 
 // Seam A (pure crypto) is the sole remaining sanctioned home for these
-// imports. `@joe-p/algosdk` is no longer forbidden anywhere — it is now
-// installed under the official `algosdk` name (see pnpm-workspace.yaml), so
-// Seam B (packages/blockchain/src/pq) no longer needs an allowlist entry.
+// imports. `@joe-p/algosdk` is no longer forbidden anywhere — the PQ surface
+// ships in official `algosdk` (see pnpm-workspace.yaml), so Seam B
+// (packages/blockchain/src/pq) no longer needs an allowlist entry.
 const ALLOWLISTED_SEAM_DIRS = ['packages/kms/src/crypto/pq']
 
 // Scanned roots. `tools/` is deliberately NOT scanned and is an accepted blind
@@ -143,7 +144,7 @@ describe('PQ library import firewall', () => {
         expect(findViolations(files)).toEqual([])
     })
 
-    it('no longer forbids algosdk, which is now the official name for the fork', () => {
+    it('no longer forbids algosdk, which now ships the PQ surface itself', () => {
         expect(FORBIDDEN_SPECIFIER_PATTERN.test("from 'algosdk'")).toBe(false)
         expect(FORBIDDEN_SPECIFIER_PATTERN.test("from '@joe-p/algosdk'")).toBe(
             false,

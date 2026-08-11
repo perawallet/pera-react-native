@@ -25,10 +25,11 @@ import {
 
 /**
  * The resolved `algosdk` must be a post-quantum-capable build. Today that is
- * satisfied by aliasing the package to `@joe-p/algosdk`; once official algosdk
- * 3.7.0 ships with `pqsig`, the alias is dropped and this test keeps passing
- * unchanged. If someone points the specifier back at a pre-3.7 official
- * release, this fails loudly instead of silently losing PQ support.
+ * satisfied by a vendored build of upstream `v3.7.0-beta.1` (see
+ * tools/vendor-algosdk.sh); once official algosdk 3.7.0 is published, the
+ * override is dropped and this test keeps passing unchanged. If someone points
+ * the specifier back at a pre-3.7 official release, this fails loudly instead
+ * of silently losing PQ support.
  */
 describe('resolved algosdk PQ capability', () => {
     it('exposes the scheme-agnostic PQ signer surface', () => {

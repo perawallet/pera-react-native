@@ -8,17 +8,25 @@ Algorand support for `pqsig` transactions and Falcon signing is not yet
 mainline. The Falcon libraries are confined behind one swap seam so they can
 be replaced with official Algorand code later via a one-module change.
 
-The `algosdk` prerelease is **not a private fork**: `@joe-p/algosdk` is a
-build of the `feat/pq` branch in the official `algorand/js-algorand-sdk`
-repo, published under a personal scope only because upstream hasn't released
-it. It tracks upstream PR #1102 (`feat/pq` → `main`, still draft), with PR
-#1115 (consensus v42) stacked on top. Its divergence from official `3.6.0` is
-~600 lines across 16 files. It is installed under the official `algosdk`
-package name via a pnpm catalog alias + global override in
-`pnpm-workspace.yaml`, so application code (including Seam B below) imports
-plain `algosdk`; its swap point is a workspace-config change described there
-(see the `SWAP-BACK:` comment and "Swap-back procedure" below), not a
-source-level import.
+The `algosdk` prerelease is **not a fork at all**: it is official upstream
+code, built from the `v3.7.0-beta.1` tag of `algorand/js-algorand-sdk`. PR
+#1102 (the `pqsig` field plus the scheme-agnostic PQ signer surface) is now
+**merged** upstream and released on that tag, which is v3.6.0 plus seven
+commits — PQ signature support and the removal of the retired `dryrun`
+endpoint. This replaces the earlier `@joe-p/algosdk` alias, a build of the
+same PR while it was still a draft; the merged tag is strictly ahead of it
+(it adds `addressFromPQSig`, `PQ_SALT_MAX` and `LogicSig.clearSignatures`).
+
+The tag is not published to npm, and pnpm cannot install it as a git
+dependency: the tag ships no build output, and pnpm refuses to run a
+git-hosted package's build step regardless of `onlyBuiltDependencies` or
+`dangerouslyAllowAllBuilds`, so a git spec yields a package with no entry
+points. `tools/vendor-algosdk.sh` therefore builds the tag from source and
+packs it into `libs/`, and a single `overrides` entry in
+`pnpm-workspace.yaml` points the whole tree at that tarball. Application code
+(including Seam B below) imports plain `algosdk`; the swap point is a
+workspace-config change described there (see the `SWAP-BACK:` comment and
+"Swap-back procedure" below), not a source-level import.
 
 ## Seam A — PQ crypto provider (`packages/kms/src/crypto/pq/`)
 
@@ -40,10 +48,10 @@ Pure crypto, with no SDK or address coupling:
 
 ## Seam B — PQ transaction adapter (`packages/blockchain/src/pq/`)
 
-Imports the PQ signer surface from plain `algosdk` (resolved to the fork via
-the `pnpm-workspace.yaml` alias described in Purpose above). This module
-names no third-party specifier and is no longer part of the PQ library
-firewall (see Enforcement below):
+Imports the PQ signer surface from plain `algosdk` (resolved to the vendored
+upstream build via the `pnpm-workspace.yaml` override described in Purpose
+above). This module names no third-party specifier and is no longer part of the
+PQ library firewall (see Enforcement below):
 
 - `deriveQuantumAddress(publicKey, schemeId?)` — derives the quantum account
   address for a PQ scheme (defaults to Falcon-1024; scheme-agnostic — see
@@ -67,19 +75,26 @@ Key contracts:
   `HashRep` is exactly that domain-prefixed encoding. Falcon hashes
   internally, so pre-hashing changes the message and the node rejects the
   signature with `falcon verify failed`.
-  **The node is the authority here, not the interim `algosdk` build.**
-  `3.7.0-beta.1` had `addressWithSignersFromRawPQSigner` hand a raw signer
-  `sha512_256(txn.bytesToSign())`, which no `pqsig`-capable algod accepts;
-  this branch briefly signed that preimage and a differential test pinned the
-  parity, which is exactly how a wrong preimage shipped silently — no node
-  verified `pqsig`, so nothing caught it. `3.7.0-beta.2` signs
-  `bytesToSign()` verbatim, so the SDK and the node now agree and
-  `quantumAdapter.spec.ts` asserts full byte-parity (signature included,
-  since this Falcon build is deterministic) rather than envelope-only. That
-  parity is the regression pin: if a later build reintroduces a pre-hash, it
-  fails. **Whatever signs on the other side of this seam (KMS, hardware,
-  etc.) must sign `pqSigningDigest(txn)`, which is `txn.bytesToSign()`
-  verbatim.**
+  **The node is the authority here, not the SDK build.** Beware a version-string
+  collision: the retired `@joe-p/algosdk@3.7.0-beta.1` publish (a build of PR
+  #1102 while it was still a draft) is **not** upstream's identically-numbered
+  `v3.7.0-beta.1` tag (the merged PR, which is what `libs/` now vendors). Only
+  that fork publish had the bug below.
+
+    The fork's `3.7.0-beta.1` had `addressWithSignersFromRawPQSigner` hand a raw
+    signer `sha512_256(txn.bytesToSign())`, which no `pqsig`-capable algod
+    accepts; this branch briefly signed that preimage and a differential test
+    pinned the parity, which is exactly how a wrong preimage shipped silently — no
+    node verified `pqsig`, so nothing caught it. Both `@joe-p/algosdk@3.7.0-beta.2`
+    and the upstream tag now vendored sign `bytesToSign()` verbatim
+    (`src/pq-signer.ts`), so the SDK and the node now agree and
+    `quantumAdapter.spec.ts` asserts full byte-parity (signature included,
+    since this Falcon build is deterministic) rather than envelope-only. That
+    parity is the regression pin: if a later build reintroduces a pre-hash, it
+    fails. **Whatever signs on the other side of this seam (KMS, hardware,
+    etc.) must sign `pqSigningDigest(txn)`, which is `txn.bytesToSign()`
+    verbatim.**
+
 - Rekey (`sgnr`) is derived automatically by `assemblePQSignedTransaction`
   whenever the transaction's sender differs from the address the PQ key
   authorizes; no explicit sender override is threaded through today.
@@ -89,9 +104,9 @@ takes a `Transaction` and `assemblePQSignedTransaction` returns a
 `SignedTransaction` — only the signature itself (the `PQSignature.signature`
 field) is raw bytes.
 
-**Official swap:** change the `algosdk` catalog entry (and its matching
-`overrides` entry) in `pnpm-workspace.yaml` from the fork alias to the
-official release — no changes to this module are required. Quantum
+**Official swap:** point the `algosdk` catalog entry in `pnpm-workspace.yaml` at
+the published release and delete its `overrides` entry — no changes to this
+module are required. Quantum
 transactions already assemble as plain `SignedTransaction`s with `pqsig` set
 (see PQ-023 below), so there is no byte-threading left to delete when `pqsig`
 becomes mainline.
@@ -100,22 +115,21 @@ becomes mainline.
 
 1. **Official crypto lib** — implement a new `PQSignatureProvider` and change
    the `getPQProvider` factory line (Seam A). One module.
-2. **Official algosdk with `pqsig`** — change the `algosdk` catalog entry (and
-   its matching `overrides` entry) in `pnpm-workspace.yaml` from the fork
-   alias to the official release, per the `SWAP-BACK:` comment there. No
-   **source** file changes are required — quantum transactions already assemble
-   as plain `SignedTransaction`s with `pqsig` set (Seam B, PQ-023 below), so
-   there is no byte-threading to remove. Two further **workspace-config** edits
-   are: remove the now-dead `@joe-p/algosdk` entry from
-   `minimumReleaseAgeExclude` (that entry matches by resolved package name, so
-   it covers the `algosdk` alias too — there is no separate `algosdk` entry),
-   and remove the matching `algosdk` `overrides` entry. Expect a brand-new
-   official 3.7.0 to sit inside the 7-day `minimumReleaseAge` window for its
-   first week; wait the window out rather than adding a carveout for a package
-   that no longer needs one.
+2. **Official published algosdk with `pqsig`** — when 3.7.0 reaches npm, set
+   the `algosdk` catalog entry in `pnpm-workspace.yaml` to `^3.7.0` and delete
+   its `overrides` entry, per the `SWAP-BACK:` comment there. That override is
+   the only thing pinning the vendored build, so removing it hands resolution
+   back to the catalog range. No **source** file changes are required —
+   quantum transactions already assemble as plain `SignedTransaction`s with
+   `pqsig` set (Seam B, PQ-023 below), so there is no byte-threading to remove,
+   and `algosdkPqSupport.spec.ts` keeps passing unchanged (it fails loudly if
+   the resolved build ever loses the PQ surface). Then delete `libs/` and
+   `tools/vendor-algosdk.sh`. Expect a brand-new official 3.7.0 to sit inside
+   the 7-day `minimumReleaseAge` window for its first week; wait the window out
+   rather than adding a carveout for a package that no longer needs one.
 
 Seam A's source files carry a `// SWAP:` marker pointing back here; the
-algosdk fork's swap point lives in the `SWAP-BACK:` comment in
+vendored algosdk's swap point lives in the `SWAP-BACK:` comment in
 `pnpm-workspace.yaml` instead.
 
 ## Enforcement
@@ -124,8 +138,8 @@ algosdk fork's swap point lives in the `SWAP-BACK:` comment in
 `.ts`/`.tsx` file under `packages/` and `apps/` and fails CI if
 `@joe-p/react-native-falcon` or `falcon-1024` (including a deep import like
 `falcon-1024/wasm`) appears outside the one remaining seam directory,
-`packages/kms/src/crypto/pq` (Seam A). `algosdk`/`@joe-p/algosdk` is not part
-of this forbidden pattern. It also asserts that seam's `wasmFalconProvider.ts`
+`packages/kms/src/crypto/pq` (Seam A). `algosdk` is not part of this forbidden
+pattern — the PQ transaction surface now ships in official `algosdk` itself. It also asserts that seam's `wasmFalconProvider.ts`
 still imports `falcon-1024`, so a silent rename can't make the guard vacuous.
 
 It is a **grep over shipped source, not a proof**, and it has three
@@ -281,10 +295,12 @@ signature }`. `schemeId` selects the wire scheme (`PQSchemeId`); the address
   domain-prefixed msgpack encoding itself, NOT a digest of it. This is the one
   fact in this document with the highest cost if it drifts, and it did drift:
   until 2026-07-30 this seam signed `sha512_256(txn.bytesToSign())` (the
-  convention of `algosdk` `3.7.0-beta.1`) and a differential test pinned that
-  parity, so nothing caught it while no node verified `pqsig`. The first
-  `pqsig`-capable algod rejected every such signature with `falcon verify
-failed`. `3.7.0-beta.2` corrected the SDK to sign `bytesToSign()`, which is
+  convention of the retired `@joe-p/algosdk@3.7.0-beta.1` publish — NOT
+  upstream's identically-numbered tag, which is unaffected) and a differential
+  test pinned that parity, so nothing caught it while no node verified `pqsig`.
+  The first `pqsig`-capable algod rejected every such signature with `falcon
+verify failed`. Later SDK builds — `@joe-p/algosdk@3.7.0-beta.2` and the
+  upstream `v3.7.0-beta.1` tag now vendored — sign `bytesToSign()`, which is
   why byte-parity is now assertable again. See Seam B's
   "Key contracts" above for the upstream source that settles it. Whatever signs
   on the other side of Seam B (KMS, hardware, etc.) must sign
