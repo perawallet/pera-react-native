@@ -12,6 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import nacl from 'tweetnacl'
 import type { Optional } from '@perawallet/wallet-core-shared'
 
 const mockSeedFromMnemonic = vi.fn()
@@ -114,7 +115,8 @@ describe('useAlgo25', () => {
                 })
             })
 
-            expect(mockKeyStoreImport).toHaveBeenCalledTimes(1)
+            // Two imports: the seed, then its Ed25519 signing child.
+            expect(mockKeyStoreImport).toHaveBeenCalledTimes(2)
             const arg = mockKeyStoreImport.mock.calls[0][0]
             expect(arg).toMatchObject({
                 id: 'my-key',
@@ -131,9 +133,52 @@ describe('useAlgo25', () => {
             expect(arg.metadata.pera.createdAt).toBeDefined()
         })
 
-        test('mints the ed25519 sign child via keyStore.generate with deterministic id and parentKeyId=seedId', async () => {
+        test('imports the ed25519 sign child keyed to the seed, not a fresh random key', async () => {
             const fakeSeed = new Uint8Array(32).fill(1)
             mockSeedFromMnemonic.mockReturnValue(fakeSeed)
+            mockEncodeAddress.mockReturnValue('ADDR')
+            // Both the expectations and the recorded call have to be captured
+            // before `createAlgo25Key` zeroes the seed buffer in its finally —
+            // the child rides that same reference.
+            const expectedSeed = Array.from(fakeSeed)
+            const expectedPublicKey = Array.from(
+                nacl.sign.keyPair.fromSeed(fakeSeed).publicKey,
+            )
+            const seen: Array<Record<string, any>> = []
+            mockKeyStoreImport.mockImplementation(async (data: any) => {
+                seen.push({
+                    ...data,
+                    privateKey:
+                        data.privateKey && Uint8Array.from(data.privateKey),
+                    publicKey:
+                        data.publicKey && Uint8Array.from(data.publicKey),
+                })
+                return data.id
+            })
+
+            const { result } = renderHook(() => useAlgo25())
+            await act(async () => {
+                await result.current.createAlgo25Key({
+                    id: 'my-key',
+                    mnemonic: 'test mnemonic',
+                })
+            })
+
+            const child = seen.find(d => d.id === algo25SignKeyId('my-key'))
+            expect(child).toMatchObject({
+                type: 'ed25519',
+                algorithm: 'EdDSA',
+                metadata: { parentKeyId: 'my-key' },
+            })
+            // The whole point: the child's keypair must be THIS seed's, or the
+            // account's address and its signing key drift apart and every
+            // transaction it signs is invalid.
+            expect(Array.from(child!.privateKey)).toEqual(expectedSeed)
+            expect(Array.from(child!.publicKey)).toEqual(expectedPublicKey)
+        })
+
+        test('does not mint the sign child through generate', async () => {
+            mockSeedFromMnemonic.mockReturnValue(new Uint8Array(32).fill(1))
             mockEncodeAddress.mockReturnValue('ADDR')
 
             const { result } = renderHook(() => useAlgo25())
@@ -144,16 +189,9 @@ describe('useAlgo25', () => {
                 })
             })
 
-            expect(mockKeyStoreGenerate).toHaveBeenCalledWith({
-                type: 'ed25519',
-                algorithm: 'EdDSA',
-                extractable: true,
-                keyUsages: ['sign'],
-                params: {
-                    id: algo25SignKeyId('my-key'),
-                    parentKeyId: 'my-key',
-                },
-            })
+            // canary.14's `generateEd25519` ignores `parentKeyId` and mints a
+            // random keypair, silently decoupling the key from the address.
+            expect(mockKeyStoreGenerate).not.toHaveBeenCalled()
         })
 
         test('generates a uuid id when not provided', async () => {
@@ -169,10 +207,13 @@ describe('useAlgo25', () => {
             expect(keyResult!.seedKey.id).toBe('mock-uuid-v7')
         })
 
-        test('rolls back the seed if ed25519 generation fails', async () => {
+        test('rolls back the seed if the ed25519 child fails to import', async () => {
             mockSeedFromMnemonic.mockReturnValue(new Uint8Array(32))
             mockEncodeAddress.mockReturnValue('ADDR')
-            mockKeyStoreGenerate.mockRejectedValueOnce(new Error('boom'))
+            // First import is the seed; the second is the signing child.
+            mockKeyStoreImport
+                .mockResolvedValueOnce('my-key')
+                .mockRejectedValueOnce(new Error('boom'))
 
             const { result } = renderHook(() => useAlgo25())
             await expect(
