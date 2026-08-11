@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePinCode, useSecurityStore } from '@perawallet/wallet-core-security'
+import { useBottomSheetStore } from '@modules/bottom-sheet'
 import {
     clearAccountsStore,
     useDeleteAllData,
@@ -41,23 +42,33 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         state => state.lockRequestVersion,
     )
     const setAppLockActive = useSecurityStore(state => state.setAppLockActive)
+    const setPresentationHeld = useBottomSheetStore(
+        state => state.setPresentationHeld,
+    )
 
     const [isLocked, setIsLocked] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
     const [isChecking, setIsChecking] = useState(false)
 
-    // Mirror the guard overlay into the security store so UI drivers outside
-    // this component (e.g. the sign-request sheet driver) can hold new
-    // presentation while the overlay covers the app — otherwise a sheet
-    // presents into the covered layer and "pops in" the moment the PIN is
-    // accepted (PERA-4743).
+    // Mirror the guard overlay outward: the bottom-sheet hold is what keeps
+    // ALL sheets from painting into the covered layer and "popping in" the
+    // moment the PIN is accepted (PERA-4743) — BottomSheetManager reads it
+    // directly. The security-store flag stays mirrored for any non-sheet
+    // consumer.
     const isGuardActive = isLocked || isChecking || !isInitialized
     useEffect(() => {
         setAppLockActive(isGuardActive)
-    }, [setAppLockActive, isGuardActive])
-    // Never leave the flag stuck on if the guard unmounts (route-tree swap) —
-    // a stale `true` would hold sign sheets forever.
-    useEffect(() => () => setAppLockActive(false), [setAppLockActive])
+        setPresentationHeld(isGuardActive)
+    }, [setAppLockActive, setPresentationHeld, isGuardActive])
+    // Never leave the flags stuck on if the guard unmounts (route-tree swap) —
+    // a stale `true` would hold sheets forever.
+    useEffect(
+        () => () => {
+            setAppLockActive(false)
+            setPresentationHeld(false)
+        },
+        [setAppLockActive, setPresentationHeld],
+    )
     const appState = useRef<AppStateValue>(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
     const isForegroundCheckInFlight = useRef(false)

@@ -15,9 +15,8 @@ import { renderHook } from '@testing-library/react'
 import { usePendingSignaturesSheetStore } from '../../../stores/usePendingSignaturesSheetStore'
 import { usePendingSignaturesSheetDriver } from '../usePendingSignaturesSheetDriver'
 
-const { requestBottomSheetMock, appLockState } = vi.hoisted(() => ({
+const { requestBottomSheetMock } = vi.hoisted(() => ({
     requestBottomSheetMock: vi.fn(() => new Promise(() => {})),
-    appLockState: { current: false },
 }))
 
 vi.mock('@modules/bottom-sheet', () => ({
@@ -29,20 +28,16 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-security', () => ({
-    useSecurityStore: (
-        selector: (state: { isAppLockActive: boolean }) => boolean,
-    ) => selector({ isAppLockActive: appLockState.current }),
-}))
-
 vi.mock('../../PendingSignaturesContent', () => ({
     PendingSignaturesContent: () => null,
 }))
 
+// App-lock behavior is NOT tested here on purpose: the hold lives in
+// BottomSheetManager's usePresentableRequests (PERA-4743, centralized), so
+// this driver requests unconditionally.
 describe('usePendingSignaturesSheetDriver', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        appLockState.current = false
         usePendingSignaturesSheetStore.getState().resetState()
     })
 
@@ -50,31 +45,6 @@ describe('usePendingSignaturesSheetDriver', () => {
         usePendingSignaturesSheetStore.getState().openSheet('sr-1')
 
         renderHook(() => usePendingSignaturesSheetDriver())
-
-        expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
-    })
-
-    // PERA-4743 parity: a sheet presented while AutoLockGuard's overlay covers
-    // the app surfaces the instant the PIN is accepted ("entered my PIN, then
-    // the TX appeared") — reachable from an untrusted push, on the money path.
-    it('holds the sheet while the app is locked', () => {
-        appLockState.current = true
-        usePendingSignaturesSheetStore.getState().openSheet('sr-1')
-
-        renderHook(() => usePendingSignaturesSheetDriver())
-
-        expect(requestBottomSheetMock).not.toHaveBeenCalled()
-    })
-
-    it('presents the held sheet once the app unlocks', () => {
-        appLockState.current = true
-        usePendingSignaturesSheetStore.getState().openSheet('sr-1')
-
-        const { rerender } = renderHook(() => usePendingSignaturesSheetDriver())
-        expect(requestBottomSheetMock).not.toHaveBeenCalled()
-
-        appLockState.current = false
-        rerender()
 
         expect(requestBottomSheetMock).toHaveBeenCalledTimes(1)
     })

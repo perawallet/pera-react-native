@@ -11,7 +11,6 @@
  */
 
 import React, { useEffect, useRef } from 'react'
-import { useSecurityStore } from '@perawallet/wallet-core-security'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { usePendingSignaturesSheetStore } from '../../stores/usePendingSignaturesSheetStore'
 import { PendingSignaturesContent } from '../PendingSignaturesContent'
@@ -19,6 +18,10 @@ import { PendingSignaturesContent } from '../PendingSignaturesContent'
 /**
  * Presents the multisig pending-signatures sheet whenever the store holds a
  * sign request id. The multisig analogue of `useSignRequestDriver`.
+ *
+ * No app-lock gate here: BottomSheetManager holds every sheet's presentation
+ * while the lock overlay is up (PERA-4743), so requesting while locked is
+ * safe — the sheet paints only after unlock.
  */
 export const usePendingSignaturesSheetDriver = () => {
     const signRequestId = usePendingSignaturesSheetStore(
@@ -26,11 +29,6 @@ export const usePendingSignaturesSheetDriver = () => {
     )
     const closeSheet = usePendingSignaturesSheetStore(state => state.closeSheet)
     const { request: requestBottomSheet } = useBottomSheet()
-    // While AutoLockGuard's overlay covers the app, hold NEW presentations:
-    // a sheet opened under the lock overlay surfaces the instant the PIN is
-    // accepted, which read as "entered my PIN, then the TX appeared" in the
-    // field (PERA-4743). The flag flip on unlock re-runs the effect.
-    const isAppLockActive = useSecurityStore(s => s.isAppLockActive)
     // Track open-state, not the id, so a signRequestId change while the sheet
     // is open re-renders its content instead of stacking a second sheet.
     const isSheetOpenRef = useRef(false)
@@ -38,7 +36,6 @@ export const usePendingSignaturesSheetDriver = () => {
     useEffect(() => {
         if (!signRequestId) return
         if (isSheetOpenRef.current) return
-        if (isAppLockActive) return
         isSheetOpenRef.current = true
         void (async () => {
             await requestBottomSheet<void>({
@@ -57,5 +54,5 @@ export const usePendingSignaturesSheetDriver = () => {
             isSheetOpenRef.current = false
             closeSheet()
         })()
-    }, [signRequestId, isAppLockActive, requestBottomSheet, closeSheet])
+    }, [signRequestId, requestBottomSheet, closeSheet])
 }
