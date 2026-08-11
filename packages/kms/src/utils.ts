@@ -91,11 +91,23 @@ const seedMetadata = (key: Key): SeedMetadata =>
     (key.metadata ?? {}) as SeedMetadata
 
 /**
+ * A bip39 wallet's root is stored as `hd-root-key` — canary.14's
+ * `deriveFromSeed` rejects any parent that is not typed that way — but it is
+ * still the entry that owns the scheme and the recovery material, so it counts
+ * as a root here alongside the `seed` types.
+ */
+const SEED_BEARING_TYPES: ReadonlySet<string> = new Set([
+    'seed',
+    'hd-seed',
+    'hd-root-key',
+])
+
+/**
  * `null` for anything that isn't a recognised wallet root — derived children,
  * secret-key entries — which must not be treated as one.
  */
 export const seedSchemeOf = (key: Key): SeedScheme | null => {
-    if (key.type !== 'seed' && key.type !== 'hd-seed') return null
+    if (!SEED_BEARING_TYPES.has(key.type)) return null
     const scheme = seedMetadata(key).scheme
     if (
         scheme === SeedScheme.Bip39 ||
