@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Key, KeyId, Seed } from '@algorandfoundation/keystore-core'
+import type { Key, KeyData, KeyId } from '@algorandfoundation/keystore-core'
 import {
     BIP32DerivationType,
     KeyContext,
@@ -54,24 +54,14 @@ export const useHDWallet = () => {
         const metadata = buildSeedMetadata({ scheme: SeedScheme.Bip39 })
 
         try {
-            // `extractable: true` is required: the 96-byte XHD root must stay
-            // re-exportable to reconstruct the BIP-39 mnemonic for
-            // non-custodial recovery. Derived child keys are minted
-            // `extractable: false`.
-            //
-            // This flag is NOT the at-rest protection — entries persist as
-            // AES-256-GCM ciphertext under a master key in the OS keystore, and
-            // `keyStore.export` is gated by `checkAccess` and unreachable from
-            // dApp JS. Flipping it to `false` would break recovery without
-            // hardening storage.
-            //
-            // Known gaps, tracked separately: iOS mirrors the master key into
-            // App-Group UserDefaults unwrapped (Android wraps it with a
-            // hardware key), and `checkAccess` is fail-open for a seed with no
-            // ACL entries.
-            const seed: Omit<Seed, 'id'> & { id: string } = {
+            // These bytes are the 96-byte XHD extended root key, not a BIP-39
+            // seed: `deriveFromSeed` injects them straight into the
+            // BIP32-Ed25519 shim, and it rejects any parent not typed
+            // `hd-root-key`. The mnemonic is rebuilt from the entropy child
+            // below, never from these bytes.
+            const rootKeyData: KeyData = {
                 id: keyId,
-                type: 'seed',
+                type: 'hd-root-key',
                 algorithm: 'raw',
                 extractable: true,
                 keyUsages: ['deriveKey', 'deriveBits'],
@@ -79,7 +69,7 @@ export const useHDWallet = () => {
                 metadata,
             }
 
-            await keyStore.import(seed, 'raw')
+            await keyStore.import(rootKeyData, 'raw')
 
             // Entropy lives in a separate `secret-key` child, not in the seed
             // metadata, so it never leaks through the seed's reactive snapshot
@@ -107,7 +97,7 @@ export const useHDWallet = () => {
         return {
             seedKey: {
                 id: keyId,
-                type: 'seed',
+                type: 'hd-root-key',
                 algorithm: 'raw',
                 extractable: true,
                 metadata,
