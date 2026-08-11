@@ -249,9 +249,9 @@ export const clear = async ({
     store.setState((s: KeyStoreState) => ({ ...s, keys: [] }))
 }
 
-// Used by secrets.withSecret via `getProvider().key.store.export(id)`.
 // Returns the full KeyData including privateKey — caller is expected to zero
-// the bytes after use.
+// the bytes after use. Note the real canary.14 `export` returns public
+// metadata ONLY; secrets are read back through `secrets.get` instead.
 const exportKey = async (id: string): Promise<KeyData> => {
     const entry = keyData.get(id)
     if (!entry) throw new Error(`Key not found: ${id}`)
@@ -510,6 +510,49 @@ const createKeyStoreApi = (
         },
         async remove(id: string, _ctx?: unknown): Promise<void> {
             await removeKey({ store: reactiveStore, keyId: id })
+        },
+        // Secrets are the one entry kind the engine reads back in plaintext,
+        // so they get their own channel rather than riding `export`.
+        secrets: {
+            async put(
+                value: Uint8Array | string,
+                options?: { id?: string; metadata?: Record<string, unknown> },
+                _ctx?: unknown,
+            ): Promise<string> {
+                const id = options?.id ?? newDerivedKeyId()
+                const bytes =
+                    typeof value === 'string'
+                        ? new TextEncoder().encode(value)
+                        : Uint8Array.from(value)
+                await commit({
+                    store: reactiveStore,
+                    keyData: {
+                        id,
+                        type: 'secret-key',
+                        algorithm: 'raw',
+                        extractable: true,
+                        keyUsages: [],
+                        privateKey: bytes,
+                        metadata: { storage: 'bytes', ...options?.metadata },
+                    } as KeyData,
+                })
+                return id
+            },
+            async get(id: string, _ctx?: unknown): Promise<Uint8Array> {
+                const entry = keyData.get(id)
+                if (!entry?.privateKey)
+                    throw new Error(`Secret not found: ${id}`)
+                // Defensive copy: the caller zeroes these bytes after use.
+                return Uint8Array.from(entry.privateKey)
+            },
+            async remove(id: string, _ctx?: unknown): Promise<void> {
+                await removeKey({ store: reactiveStore, keyId: id })
+            },
+            async list(): Promise<Key[]> {
+                return reactiveStore.state.keys.filter(
+                    k => k.type === 'secret-key',
+                )
+            },
         },
         // canary.14 puts `ctx` LAST: `sign(id, data, algorithm?, ctx?)`. Keep
         // the arity — a caller written against the old `(id, ctx, data)` order
