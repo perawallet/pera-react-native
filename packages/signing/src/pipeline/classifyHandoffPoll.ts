@@ -261,6 +261,18 @@ type ResolveHandoffOutcomeArgs = {
         deviceId: string
         signRequestIds: string[]
     }) => Promise<void>
+    /**
+     * Best-effort cancel of the proposer's own backend sign request, called on
+     * terminal failures (`error`, including a failed delivery of assembled
+     * bytes, and `soft-reject`/`expired`). Nothing else terminalizes the
+     * backend record when the dApp is gone, and the pending inbox reads
+     * backend status — without this the request sits at pending/submitting
+     * forever. NOT called on a delivered `ready` (success) or on
+     * `soft-reject`/`declined` (a participant decline is already terminal on
+     * the backend). Injected so this pipeline module stays free of the
+     * multisig API; a rejection is logged, not surfaced.
+     */
+    cancelRequest?: () => Promise<void>
 }
 
 /**
@@ -283,6 +295,7 @@ export const resolveHandoffOutcome = async ({
     messages,
     delivery,
     markConfirmed,
+    cancelRequest,
 }: ResolveHandoffOutcomeArgs): Promise<void> => {
     switch (outcome.kind) {
         case 'ready': {
@@ -292,6 +305,7 @@ export const resolveHandoffOutcome = async ({
                 messages,
                 delivery,
                 markConfirmed,
+                cancelRequest,
             )
             return
         }
@@ -301,6 +315,11 @@ export const resolveHandoffOutcome = async ({
                     ? messages.declined
                     : messages.expired
             await deliverSoftRejectToPeer(handoff, delivery, message)
+            // 'declined' is already terminal on the backend; 'expired' is a
+            // client-side deadline the backend may never mirror.
+            if (outcome.reason === 'expired') {
+                await cancelBackendRequest(handoff, cancelRequest)
+            }
             walletConnectHandoffs.unregister(handoff.signRequestId)
             return
         }
@@ -308,9 +327,30 @@ export const resolveHandoffOutcome = async ({
             const message = errorReasonToMessage(outcome.reason, messages)
             logTerminalError(handoff, message)
             await deliverErrorToPeer(handoff, delivery, message)
+            await cancelBackendRequest(handoff, cancelRequest)
             walletConnectHandoffs.unregister(handoff.signRequestId)
             return
         }
+    }
+}
+
+/**
+ * Best-effort: if the backend is unreachable or the caller had no proposer
+ * address to build the cancel with, the orphaned record can still linger —
+ * the handoff itself resolves regardless.
+ */
+const cancelBackendRequest = async (
+    handoff: PendingWalletConnectHandoff,
+    cancelRequest?: () => Promise<void>,
+): Promise<void> => {
+    if (!cancelRequest) return
+    try {
+        await cancelRequest()
+    } catch (error) {
+        logger.warn('WC multisig handoff backend cancel failed (non-fatal)', {
+            signRequestId: handoff.signRequestId,
+            error: error instanceof Error ? error.message : String(error),
+        })
     }
 }
 
@@ -373,6 +413,7 @@ const deliverReady = async (
     messages: ResolverMessages,
     delivery: HandoffPeerDelivery,
     markConfirmed: ResolveHandoffOutcomeArgs['markConfirmed'],
+    cancelRequest?: () => Promise<void>,
 ): Promise<void> => {
     try {
         if (handoff.callbacks?.approveSignedBytes) {
@@ -401,9 +442,12 @@ const deliverReady = async (
     } catch (error) {
         // Delivery failed (e.g. a dropped WC session). Fall through to `error`
         // so the dApp sees a rejection — it gets the generic localized message;
-        // the raw error is kept for our logs only.
+        // the raw error is kept for our logs only. The dApp never got the
+        // bytes, so cancel the backend record too or the inbox item is
+        // orphaned at pending/submitting.
         logTerminalError(handoff, messages.deliveryFailed, error)
         await deliverErrorToPeer(handoff, delivery, messages.deliveryFailed)
+        await cancelBackendRequest(handoff, cancelRequest)
         walletConnectHandoffs.unregister(handoff.signRequestId)
         return
     }

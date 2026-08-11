@@ -20,9 +20,11 @@ const mocks = vi.hoisted(() => ({
     classifyHandoffPoll: vi.fn(),
     resolveHandoffOutcome: vi.fn(),
     markConfirmed: vi.fn(),
+    addSignature: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-multisig', () => ({
+    addSignature: mocks.addSignature,
     getSignRequestsWithSignatures: mocks.getSignRequestsWithSignatures,
     getSignRequestsWithSignaturesQueryKey: (
         network: string,
@@ -160,6 +162,86 @@ describe('useWalletConnectHandoffResolver', () => {
             messages,
             delivery,
             markConfirmed: mocks.markConfirmed,
+            cancelRequest: expect.any(Function),
+        })
+    })
+
+    // The injected cancelRequest closure is the only thing that terminalizes
+    // the proposer's backend record on a failed handoff (the inbox reads
+    // backend status), so verify it wires the poll's proposer address through
+    // to a 'declined' addSignature call.
+    describe('cancelRequest closure', () => {
+        const resolveArgsOf = (call: number) =>
+            mocks.resolveHandoffOutcome.mock.calls[call][0] as {
+                cancelRequest: () => Promise<void>
+            }
+
+        it('declines the proposer request read from the poll detail', async () => {
+            mocks.getSignRequestsWithSignatures.mockResolvedValue([
+                { id: 'sr-1', proposer_address: 'PROPOSER_ADDR' },
+            ])
+            mocks.classifyHandoffPoll.mockReturnValue({
+                kind: 'error',
+                reason: { kind: 'no-transactions' },
+            })
+            useWalletConnectHandoffsStore
+                .getState()
+                .register(makeHandoff('sr-1'))
+
+            renderHook(
+                () =>
+                    useWalletConnectHandoffResolver({
+                        isAppActive: true,
+                        messages,
+                        delivery,
+                    }),
+                { wrapper },
+            )
+
+            await waitFor(() =>
+                expect(mocks.resolveHandoffOutcome).toHaveBeenCalledTimes(1),
+            )
+
+            await resolveArgsOf(0).cancelRequest()
+
+            expect(mocks.addSignature).toHaveBeenCalledWith('testnet', 'sr-1', [
+                {
+                    address: 'PROPOSER_ADDR',
+                    response: 'declined',
+                    device_id: 'device-1',
+                },
+            ])
+        })
+
+        it('skips the decline when the poll never returned a proposer address', async () => {
+            mocks.getSignRequestsWithSignatures.mockResolvedValue([
+                { id: 'sr-1' },
+            ])
+            mocks.classifyHandoffPoll.mockReturnValue({
+                kind: 'error',
+                reason: { kind: 'no-transactions' },
+            })
+            useWalletConnectHandoffsStore
+                .getState()
+                .register(makeHandoff('sr-1'))
+
+            renderHook(
+                () =>
+                    useWalletConnectHandoffResolver({
+                        isAppActive: true,
+                        messages,
+                        delivery,
+                    }),
+                { wrapper },
+            )
+
+            await waitFor(() =>
+                expect(mocks.resolveHandoffOutcome).toHaveBeenCalledTimes(1),
+            )
+
+            await resolveArgsOf(0).cancelRequest()
+
+            expect(mocks.addSignature).not.toHaveBeenCalled()
         })
     })
 

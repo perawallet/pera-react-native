@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import {
+    addSignature,
     getSignRequestsWithSignatures,
     getSignRequestsWithSignaturesQueryKey,
     useMarkSignRequestsConfirmedMutation,
@@ -116,14 +117,35 @@ export const useWalletConnectHandoffResolver = ({
         (
             outcome: TerminalHandoffOutcome,
             handoff: PendingWalletConnectHandoff,
-        ) =>
-            resolveHandoffOutcome({
+            detail: SignRequestResponse | undefined,
+        ) => {
+            // Proposer address from the poll — the only local participant
+            // allowed to cancel the request on a terminal failure. Absent when
+            // a client-side deadline fires with no poll body: the cancel is
+            // best-effort and simply skipped below.
+            const proposerAddress = detail?.proposer_address ?? undefined
+
+            return resolveHandoffOutcome({
                 outcome,
                 handoff,
                 messages,
                 delivery,
                 markConfirmed,
-            }),
+                // Decline the proposer's own request (decline = the final
+                // word) so the pending inbox item goes terminal instead of
+                // sitting orphaned when the dApp session is gone.
+                cancelRequest: async () => {
+                    if (!proposerAddress) return
+                    await addSignature(handoff.network, handoff.signRequestId, [
+                        {
+                            address: proposerAddress,
+                            response: 'declined',
+                            device_id: handoff.deviceId,
+                        },
+                    ])
+                },
+            })
+        },
         [messages, delivery, markConfirmed],
     )
 
