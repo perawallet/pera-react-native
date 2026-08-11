@@ -173,12 +173,12 @@ becomes mainline.
    the 7-day `minimumReleaseAge` window for its first week; wait the window out
    rather than adding a carveout for a package that no longer needs one.
 
-**The keystore family removes neither fork.** Adopting
+**The keystore family shortens neither step.** Adopting
 `@algorandfoundation/react-native-keystore` / `keystore-core` moved custody of
 the Falcon private key, and nothing else: the keystore stops at the signature
 boundary and ships no `pqsig` field, no PQ address encoding and no transaction
-assembly. It therefore does not shorten step 2, and it does not remove
-`@joe-p/react-native-falcon` or `falcon-1024` either — canary.14 declares both
+assembly, so it does nothing for step 2. Nor does it remove
+`@joe-p/react-native-falcon` or `falcon-1024` (step 1) — canary.14 declares both
 as optional peers and loads them as its own Falcon binding.
 
 Seam A's source files carry a `// SWAP:` marker pointing back here; the
@@ -333,10 +333,16 @@ re-opens them and adds one item that nothing in CI can cover.
    prompts are more frequent; suppression now depends on the OS via
    `authenticationValidityDuration`, which needs a `react-native-keychain@10`
    patch that upstream ships unapplied and this work deliberately did not add.
-9. Upgrading an existing dev install shows an **empty wallet** — expected, not
-   a bug. canary.14 changed the MMKV layout from a bare `<keyId>` blob to
-   `m/<id>` (sealed material) + `k/<id>` (metadata), and the app is unreleased
-   so no migration was written. Re-onboard.
+9. Upgrade an existing canary.13 install in place — do not reinstall, or the
+   one interesting path goes untested. canary.14 changed the MMKV layout from a
+   bare `<keyId>` blob to `m/<id>` (sealed material) + `k/<id>` (metadata), and
+   `extensions/provider/src/keystore/migrateKeystoreLayout.ts` re-indexes,
+   re-seals and re-labels the old records on first launch. Confirm the boot log
+   reports every account (`Keystore layout migrated`, `failed: 0`) and that a
+   quantum account minted before keystore custody is re-minted from its parent
+   (`Quantum key material repaired`) — that account holds a public key only,
+   because signing used to re-derive from the seed each time, so a migration
+   alone cannot fix it.
 
 ### Known broken / deferred after the canary.14 migration
 
@@ -354,6 +360,14 @@ re-opens them and adds one item that nothing in CI can cover.
   reads and writes `m/`/`k/`-prefixed ids shaped `{iv, content}`. The two ends
   no longer meet. This is externally blocked on an upstream release and must be
   raised with the library authors; it is not fixable from this repo.
+  It is, however, actively **destroyable** from this repo, which is why
+  `migrateKeystoreLayout` skips those records instead of migrating them: the
+  provider uses the same MMKV instance (`PASSKEYS_MMKV_ID = "keystore"`) and the
+  same `app-secret` master key, so its credentials decrypt as ordinary
+  canary.13 entries. Migrating one deletes the bare id the provider reads back
+  by and drops its biometric-wrapped `privateKeyEnc`, which is an object rather
+  than key bytes. They are identified by `type: 'hd-derived-p256'` plus
+  `metadata.origin` and `metadata.userHandle`.
 - **`bootstrapPasskeyAutofill`'s `configureHdRootKey` is effectively a no-op.**
   It resolves the HD root through `fetchSecret`, which reads bare ids that the
   canary.14 driver never writes. It does not throw — it simply finds nothing.
