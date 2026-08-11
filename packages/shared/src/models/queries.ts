@@ -13,7 +13,7 @@
 import { type Network } from './base-types'
 
 export type RequestConfiguration<TData = unknown> = {
-    backend: 'algod' | 'indexer' | 'pera'
+    backend: 'algod' | 'indexer' | 'pera' | 'backup'
     network: Network
     url?: string
     method: 'GET' | 'PUT' | 'PATCH' | 'POST' | 'DELETE'

@@ -35,6 +35,7 @@ export default defineConfig({
                 '@algorandfoundation/algokit-utils',
                 'algosdk',
                 '@noble/hashes',
+                '@noble/hashes/hkdf.js',
                 '@noble/hashes/hmac.js',
                 '@noble/hashes/sha2.js',
                 '@perawallet/wallet-core-accounts',

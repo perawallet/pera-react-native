@@ -28,6 +28,11 @@ import CheckIcon from '@assets/icons/check.svg'
 import ChevronDownIcon from '@assets/icons/chevron-down.svg'
 import ChevronLeftIcon from '@assets/icons/chevron-left.svg'
 import ChevronRightIcon from '@assets/icons/chevron-right.svg'
+import CloudCheckIcon from '@assets/icons/cloud-check.svg'
+import CloudDownloadIcon from '@assets/icons/cloud-download.svg'
+import CloudOffIcon from '@assets/icons/cloud-off.svg'
+import CloudUploadIcon from '@assets/icons/cloud-upload.svg'
+import CloudXIcon from '@assets/icons/cloud-x.svg'
 import CodeIcon from '@assets/icons/code.svg'
 import ContactsIcon from '@assets/icons/contacts.svg'
 import CopyIcon from '@assets/icons/copy.svg'
@@ -186,6 +191,11 @@ export const ICON_LIBRARY = {
     'chevron-down': ChevronDownIcon,
     'chevron-left': ChevronLeftIcon,
     'chevron-right': ChevronRightIcon,
+    'cloud-check': CloudCheckIcon,
+    'cloud-download': CloudDownloadIcon,
+    'cloud-off': CloudOffIcon,
+    'cloud-upload': CloudUploadIcon,
+    'cloud-x': CloudXIcon,
     contacts: ContactsIcon,
     copy: CopyIcon,
     code: CodeIcon,

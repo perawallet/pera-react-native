@@ -116,6 +116,7 @@ export const configSchema = z
         onrampSupportEmail: z.email(),
         /** Baanx support inbox for card transaction reports (bare address, no `mailto:`). */
         cardSupportEmail: z.email(),
+        backupBaseUrl: z.url(),
         supportBaseUrl: z.url(),
         termsOfServiceUrl: z.url(),
         privacyPolicyUrl: z.url(),
@@ -303,6 +304,7 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     mainnetDispenserUrl: '',
     onrampSupportEmail: 'support@xoswap.com',
     cardSupportEmail: 'support@baanx.com',
+    backupBaseUrl: 'https://staging.backup.perawallet.app/',
     supportBaseUrl: 'https://support.perawallet.app/',
     termsOfServiceUrl: 'https://perawallet.app/terms-and-services/',
     privacyPolicyUrl: 'https://perawallet.app/privacy-policy/',
@@ -453,6 +455,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     mainnetDispenserUrl: 'MAINNET_DISPENSER_URL',
     onrampSupportEmail: 'ONRAMP_SUPPORT_EMAIL',
     cardSupportEmail: 'CARD_SUPPORT_EMAIL',
+    backupBaseUrl: 'BACKUP_BASE_URL',
     supportBaseUrl: 'SUPPORT_BASE_URL',
     termsOfServiceUrl: 'TERMS_OF_SERVICE_URL',
     privacyPolicyUrl: 'PRIVACY_POLICY_URL',

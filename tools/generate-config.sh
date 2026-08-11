@@ -32,7 +32,7 @@ fi
 # schema guard in main.ts also catches this, but only when the config module is
 # first imported — by then the artifact is already built and signed.
 if [ "${APP_ENV:-}" == "production" ]; then
-  for var in MAINNET_BACKEND_URL TESTNET_BACKEND_URL; do
+  for var in MAINNET_BACKEND_URL TESTNET_BACKEND_URL BACKUP_BASE_URL; do
     value="${!var:-}"
     if [ -z "$value" ]; then
       echo "ERROR: $var is unset in a production build — it would fall back to the staging default." >&2
@@ -140,6 +140,7 @@ append_config "MAINNET_EXPLORER_URL" "mainnetExplorerUrl" "string"
 append_config "TESTNET_EXPLORER_URL" "testnetExplorerUrl" "string"
 
 # Base URLs
+append_config "BACKUP_BASE_URL" "backupBaseUrl" "string"
 append_config "SUPPORT_BASE_URL" "supportBaseUrl" "string"
 append_config "TOS_URL" "termsOfServiceUrl" "string"
 append_config "PRIVACY_POLICY_URL" "privacyPolicyUrl" "string"

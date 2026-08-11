@@ -11,7 +11,7 @@
  */
 
 // Host-agnostic presentation for a confirm/acknowledge panel: icon, title,
-// message and up to two buttons. Split out of ConfirmActionContent so the same
+// message and up to three buttons. Split out of ConfirmActionContent so the same
 // visuals can render OUTSIDE a bottom sheet — ConfirmActionContent calls
 // `useBottomSheetResult()`, which THROWS without a BottomSheetIdContext, so it
 // cannot be used on the extension's approval page (its own top-level document,
@@ -40,10 +40,13 @@ export type ConfirmActionLayoutProps = {
     message?: ReactNode
     confirmLabel?: string
     cancelLabel?: string
+    tertiaryLabel?: string
     onConfirm: () => void
     onCancel: () => void
+    onTertiary?: () => void
     confirmVariant?: PWButtonProps['variant']
     cancelVariant?: PWButtonProps['variant']
+    tertiaryVariant?: PWButtonProps['variant']
     buttonPaddingStyle?: PWButtonProps['paddingStyle']
     testID?: string
     confirmTestID?: string
@@ -57,10 +60,13 @@ export const ConfirmActionLayout = ({
     message,
     confirmLabel,
     cancelLabel,
+    tertiaryLabel,
     onConfirm,
     onCancel,
+    onTertiary,
     confirmVariant = 'primary',
     cancelVariant = 'secondary',
+    tertiaryVariant = 'errorLink',
     buttonPaddingStyle,
     testID,
     confirmTestID,
@@ -119,6 +125,14 @@ export const ConfirmActionLayout = ({
                             onPress={onCancel}
                             paddingStyle={buttonPaddingStyle}
                             testID={cancelTestID}
+                        />
+                    )}
+                    {!!tertiaryLabel && (
+                        <PWButton
+                            variant={tertiaryVariant}
+                            title={tertiaryLabel}
+                            onPress={onTertiary}
+                            paddingStyle={buttonPaddingStyle}
                         />
                     )}
                 </PWView>

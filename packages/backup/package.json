@@ -41,6 +41,7 @@
     "vitest": "catalog:",
     "@types/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "@testing-library/react": "catalog:"
+    "@testing-library/react": "catalog:",
+    "msw": "catalog:"
   }
 }
