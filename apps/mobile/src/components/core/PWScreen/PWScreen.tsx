@@ -36,6 +36,7 @@ import { useTheme } from '@rneui/themed'
 import { NavigationContext } from '@react-navigation/native'
 import { PWView } from '../PWView'
 import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
+import { PWScreenNestedContext } from './nestedContext'
 import { usePWScreenInsets } from './usePWScreenInsets'
 import { useStyles, type HorizontalPaddingMode } from './styles'
 
@@ -76,7 +77,7 @@ export const PWScreen = ({
     testID,
 }: PWScreenProps) => {
     const { theme } = useTheme()
-    const { bottomInset, isInTabNavigator } = usePWScreenInsets()
+    const { bottomInset, isBottomHandledOutside } = usePWScreenInsets()
     const isKeyboardVisible = useKeyboardState(state => state.isVisible)
     const navigation = useContext(NavigationContext)
     // Inside a sheet a plain/keyboard-aware ScrollView silently fails to scroll
@@ -107,7 +108,7 @@ export const PWScreen = ({
     // When the keyboard lifts the footer, drop its safe-area edge so it sits
     // flush above the keyboard instead of leaving a home-indicator gap.
     const footerEdges =
-        isInTabNavigator || isKeyboardVisible ? [] : (['bottom'] as const)
+        isBottomHandledOutside || isKeyboardVisible ? [] : (['bottom'] as const)
 
     const renderedHeader =
         header == null ? null : <PWView style={styles.header}>{header}</PWView>
@@ -176,14 +177,16 @@ export const PWScreen = ({
         // KeyboardAwareScrollView keeps the focused field visible; the sticky
         // footer rides the keyboard via KeyboardStickyView — no KAV needed.
         return (
-            <PWView
-                style={[styles.root, style]}
-                testID={testID}
-            >
-                {renderedHeader}
-                {renderedBody}
-                {renderedScrollFooter}
-            </PWView>
+            <PWScreenNestedContext.Provider value={true}>
+                <PWView
+                    style={[styles.root, style]}
+                    testID={testID}
+                >
+                    {renderedHeader}
+                    {renderedBody}
+                    {renderedScrollFooter}
+                </PWView>
+            </PWScreenNestedContext.Provider>
         )
     }
 
@@ -191,19 +194,23 @@ export const PWScreen = ({
     // PWFlatList). `behavior='padding'` shrinks the container as the keyboard
     // opens, lifting the fixed body and its footer above it.
     return (
-        <PWView
-            style={[styles.root, style]}
-            testID={testID}
-        >
-            <KeyboardAvoidingView
-                style={styles.keyboardView}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? bottomInset : 0}
+        <PWScreenNestedContext.Provider value={true}>
+            <PWView
+                style={[styles.root, style]}
+                testID={testID}
             >
-                {renderedHeader}
-                {renderedBody}
-                {renderedFixedFooter}
-            </KeyboardAvoidingView>
-        </PWView>
+                <KeyboardAvoidingView
+                    style={styles.keyboardView}
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    keyboardVerticalOffset={
+                        Platform.OS === 'ios' ? bottomInset : 0
+                    }
+                >
+                    {renderedHeader}
+                    {renderedBody}
+                    {renderedFixedFooter}
+                </KeyboardAvoidingView>
+            </PWView>
+        </PWScreenNestedContext.Provider>
     )
 }
