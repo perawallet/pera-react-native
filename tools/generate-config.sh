@@ -149,6 +149,11 @@ append_config "DEMO_DAPP_URL" "peraDemoDappUrl" "string"
 append_config "DEBUG_ENABLED" "debugEnabled" "boolean"
 append_config "PROFILING_ENABLED" "profilingEnabled" "boolean"
 append_config "POLLING_ENABLED" "pollingEnabled" "boolean"
+# Web app-integrity rollout (browser extension). The runtime env-loader reads
+# these too, but the extension bundle resolves config from generatedEnv at build
+# time, so they must be baked here or the flags can never be turned on in a build.
+append_config "WEB_INTEGRITY_MINT_ENABLED" "webIntegrityMintEnabled" "boolean"
+append_config "WEB_INTEGRITY_BEARER_ENABLED" "webIntegrityBearerEnabled" "boolean"
 # e2e-only: disables FLAG_SECURE so Appium/BrowserStack can drive the app.
 # Set ONLY in the e2e build job — never in store-submission builds.
 append_config "DISABLE_SCREEN_CAPTURE_PREVENTION" "disableScreenCapturePrevention" "boolean"
