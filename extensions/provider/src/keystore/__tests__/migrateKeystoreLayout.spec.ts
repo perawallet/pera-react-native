@@ -390,6 +390,131 @@ describe('migrateKeystoreLayout', () => {
         expect(readMasterKey).not.toHaveBeenCalled()
     })
 
+    // Re-indexing alone is not enough: `sign` dispatches on `type` and reads
+    // `metadata.signAlgorithm`, `format` and `metadata.bip44Path`. A record
+    // that keeps canary.13's spelling decodes fine and then throws inside the
+    // host `importKey` at signing time — a wallet that shows a balance it
+    // cannot spend.
+    describe('canary.14 record vocabulary', () => {
+        const metadataOf = (id: string): KeyData =>
+            decode(store.get(`k/${id}`)!)
+
+        it('relabels a canary.13 falcon child to the canary.14 key type', async () => {
+            await writeCanary13Record(store, {
+                id: 'q-1',
+                type: 'falcon1024',
+                algorithm: 'raw',
+                extractable: false,
+                privateKey: new Uint8Array(64).fill(5),
+                metadata: { parentKeyId: 'seed-q' },
+            })
+
+            await migrateKeystoreLayout(deps())
+
+            expect(metadataOf('q-1')).toMatchObject({
+                type: 'falcon-1024',
+                algorithm: 'Falcon-1024',
+            })
+        })
+
+        it('rewrites a raw ed25519 secret key as pkcs8 with a signAlgorithm', async () => {
+            const seed = new Uint8Array(32).fill(1)
+            await writeCanary13Record(store, {
+                id: 'a-1',
+                type: 'ed25519',
+                algorithm: 'EdDSA',
+                format: 'raw',
+                extractable: false,
+                // libsodium's 64-byte secret key: seed || public.
+                privateKey: new Uint8Array([
+                    ...seed,
+                    ...new Uint8Array(32).fill(2),
+                ]),
+                metadata: { parentKeyId: 'seed-a' },
+            })
+
+            await migrateKeystoreLayout(deps())
+
+            expect(metadataOf('a-1')).toMatchObject({
+                format: 'pkcs8',
+                metadata: {
+                    signAlgorithm: { name: 'Ed25519' },
+                    storage: 'bytes',
+                },
+            })
+            const material = base64.decode(
+                await openData(MASTER_KEY, store.get('m/a-1')!),
+            )
+            expect(material).toHaveLength(48)
+            expect(material.slice(16)).toEqual(seed)
+        })
+
+        it('promotes a bip39 seed record to an hd-root-key', async () => {
+            await writeCanary13Record(store, {
+                id: 'r-1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                privateKey: new Uint8Array(96).fill(3),
+                metadata: { scheme: 'bip39' },
+            })
+
+            await migrateKeystoreLayout(deps())
+
+            expect(metadataOf('r-1')).toMatchObject({
+                type: 'hd-root-key',
+                metadata: { scheme: 'bip39' },
+            })
+        })
+
+        it('leaves algo25 and quantum seed records as seeds', async () => {
+            await writeCanary13Record(store, {
+                id: 's-1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                privateKey: new Uint8Array(32).fill(6),
+                metadata: { scheme: 'algo25' },
+            })
+            await writeCanary13Record(store, {
+                id: 's-2',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                privateKey: new Uint8Array(32).fill(7),
+                metadata: { scheme: 'quantum' },
+            })
+
+            await migrateKeystoreLayout(deps())
+
+            expect(metadataOf('s-1').type).toBe('seed')
+            expect(metadataOf('s-2').type).toBe('seed')
+        })
+
+        it('fills in bip44Path and derivationType for an hd-derived child', async () => {
+            await writeCanary13Record(store, {
+                id: 'd-1',
+                type: 'hd-derived-ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                publicKey: new Uint8Array(32).fill(7),
+                metadata: {
+                    path: "m/44'/283'/0'/0/0",
+                    derivation: 9,
+                    parentKeyId: 'r-1',
+                },
+            })
+
+            await migrateKeystoreLayout(deps())
+
+            expect(metadataOf('d-1').metadata).toMatchObject({
+                bip44Path: [0x80_00_00_2c, 0x80_00_01_1b, 0x80_00_00_00, 0, 0],
+                derivationType: 9,
+                storage: 'none',
+            })
+        })
+    })
+
     // A material write that lands unreadable must not cost the canary.13 copy.
     it('keeps the canary.13 entry when the new buckets fail to read back', async () => {
         await writeCanary13Record(store, algo25Record('key-1'))

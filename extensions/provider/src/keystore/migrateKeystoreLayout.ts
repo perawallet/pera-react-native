@@ -107,6 +107,100 @@ const liftSecrets = <T>(
     return Object.fromEntries(kept) as T
 }
 
+/** canary.13's spelling of the Falcon child type; canary.14 uses `falcon-1024`. */
+const LEGACY_FALCON_TYPE = 'falcon1024'
+
+/** PKCS#8 DER header for an Ed25519 private key, per keystore-core. */
+const ED25519_PKCS8_PREFIX = new Uint8Array([
+    0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70,
+    0x04, 0x22, 0x04, 0x20,
+])
+
+/** Length of libsodium's Ed25519 secret key: 32-byte seed || 32-byte public. */
+const LIBSODIUM_SECRET_KEY_LENGTH = 64
+
+const toPkcs8 = (seed: Uint8Array): Uint8Array => {
+    const pkcs8 = new Uint8Array(ED25519_PKCS8_PREFIX.length + seed.length)
+    pkcs8.set(ED25519_PKCS8_PREFIX, 0)
+    pkcs8.set(seed, ED25519_PKCS8_PREFIX.length)
+    return pkcs8
+}
+
+/** Mirrors keystore-core's `parsePath`: apostrophe/h marks a hardened segment. */
+const parseBip44Path = (path: string): number[] =>
+    path
+        .replace(/^m\/?/, '')
+        .split('/')
+        .filter(part => part.length > 0)
+        .map(part => {
+            const hardened = part.endsWith("'") || part.endsWith('h')
+            const index = Number.parseInt(part.replace(/['h]$/, ''), 10)
+            return hardened ? index + 0x80_00_00_00 : index
+        })
+
+/**
+ * Rewrites a canary.13 record into canary.14's vocabulary.
+ *
+ * Re-indexing the storage keys is not enough. `sign` dispatches on `type` and
+ * reads `metadata.signAlgorithm`, `format` and — for XHD children —
+ * `metadata.bip44Path`. A record that keeps canary.13's spelling decodes fine
+ * and then throws inside the host `importKey`, so the wallet renders a balance
+ * it cannot spend: `falcon1024` misses the `falcon-1024` case and falls to the
+ * default branch, where `signAlgorithm` defaults to `{ name: 'EdDSA' }` — a JWK
+ * `alg` value, not a WebCrypto algorithm name.
+ */
+const normalizeForCanary14 = (
+    record: KeyData,
+    material: Uint8Array | undefined,
+): { metadata: KeyData; material: Uint8Array | undefined } => {
+    const metadata: KeyData = {
+        ...record,
+        metadata: { ...(record.metadata ?? {}) },
+    }
+    const meta = metadata.metadata as Record<string, unknown>
+    let bytes = material
+
+    if (record.type === LEGACY_FALCON_TYPE) {
+        metadata.type = 'falcon-1024'
+        metadata.algorithm = 'Falcon-1024'
+    }
+
+    if (record.type === 'seed' && meta.scheme === 'bip39') {
+        // These bytes are the 96-byte XHD extended root, not a BIP39 seed, and
+        // `deriveFromSeed` rejects any parent not typed `hd-root-key`. `scheme`
+        // stays put: kms reads it to pick the wallet kind, and core branches
+        // only on `type` here.
+        metadata.type = 'hd-root-key'
+    }
+
+    if (
+        record.type === 'ed25519' &&
+        bytes?.length === LIBSODIUM_SECRET_KEY_LENGTH
+    ) {
+        // canary.13 stored the libsodium secret key raw; canary.14 re-imports
+        // material through the host Subtle, which takes PKCS#8.
+        bytes = toPkcs8(bytes.slice(0, 32))
+        metadata.format = 'pkcs8'
+        meta.signAlgorithm = { name: 'Ed25519' }
+    }
+
+    if (record.type === 'hd-derived-ed25519') {
+        // canary.13 recorded `path`/`derivation`; `sign` reads the parsed
+        // `bip44Path` and `derivationType`, and silently derives from
+        // `undefined` segments without them.
+        if (typeof meta.path === 'string' && meta.bip44Path === undefined) {
+            meta.bip44Path = parseBip44Path(meta.path)
+        }
+        if (meta.derivationType === undefined) {
+            meta.derivationType = meta.derivation
+        }
+    }
+
+    meta.storage = bytes ? 'bytes' : 'none'
+
+    return { metadata, material: bytes }
+}
+
 /**
  * Reads both new buckets back through the same helpers the engine uses, so a
  * truncated or unreadable write is caught while the canary.13 entry is still on
@@ -185,8 +279,12 @@ export const migrateKeystoreLayout = async (
             // only a seed it *is* the material — canary.13's `importSeed` puts
             // the seed in `privateKey`, so the two never hold different secrets.
             const lifted: LiftedMaterial[] = []
-            const metadata = liftSecrets(record, record.id, lifted)
-            const material = lifted.find(entry => entry.id === record.id)?.bytes
+            const stripped = liftSecrets(record, record.id, lifted)
+            const own = lifted.find(entry => entry.id === record.id)?.bytes
+            const { metadata, material } = normalizeForCanary14(
+                stripped as KeyData,
+                own,
+            )
 
             // Every secret goes straight into the sealed bucket, addressed by the
             // id that owns it — including ones lifted out of nested metadata, so
@@ -201,16 +299,18 @@ export const migrateKeystoreLayout = async (
                 ) {
                     continue
                 }
+                // The record's own material may have been re-encoded above
+                // (raw Ed25519 secret key -> PKCS#8); nested copies pass
+                // through untouched.
+                const bytes = entry.id === record.id ? material : entry.bytes
+                if (!bytes) continue
                 deps.storage.set(
                     materialKey,
-                    await deps.sealData(masterKey, base64.encode(entry.bytes)),
+                    await deps.sealData(masterKey, base64.encode(bytes)),
                 )
             }
 
-            deps.storage.set(
-                METADATA_PREFIX + record.id,
-                deps.encode(metadata as KeyData),
-            )
+            deps.storage.set(METADATA_PREFIX + record.id, deps.encode(metadata))
 
             if (
                 !(await isMigrationDurable(
