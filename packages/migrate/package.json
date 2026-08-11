@@ -33,6 +33,7 @@
         "@perawallet/wallet-core-device": "workspace:*",
         "@perawallet/wallet-core-kms": "workspace:*",
         "@perawallet/wallet-core-messages": "workspace:*",
+        "@perawallet/wallet-core-passkeys": "workspace:*",
         "@perawallet/wallet-core-remote-config": "workspace:*",
         "@perawallet/wallet-core-security": "workspace:*",
         "@perawallet/wallet-core-settings": "workspace:*",

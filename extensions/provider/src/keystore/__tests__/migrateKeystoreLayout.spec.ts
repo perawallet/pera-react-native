@@ -589,6 +589,90 @@ describe('migrateKeystoreLayout', () => {
         })
     })
 
+    // The HD root is a wallet key, so unlike a credential it must migrate — but
+    // `getHdRootSecret` reads it back at the bare id, and the canary.13 entry is
+    // already in the format the provider parses. Deleting it leaves every
+    // upgrading user able to authenticate and unable to create a new passkey.
+    describe('the HD root the credential provider derives from', () => {
+        const rootRecord = (id: string) => ({
+            id,
+            type: 'hd-root-key' as const,
+            algorithm: 'raw',
+            extractable: true,
+            keyUsages: ['deriveKey', 'deriveBits'],
+            privateKey: new Uint8Array(96).fill(5),
+            metadata: { scheme: 'bip39' },
+        })
+
+        it('migrates it into k/ and m/ but keeps the bare entry as the provider shadow', async () => {
+            await writeCanary13Record(store, rootRecord('root-1'))
+
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result).toEqual({ migrated: 1, skipped: 0, failed: 0 })
+            expect(store.has('k/root-1')).toBe(true)
+            expect(store.has('m/root-1')).toBe(true)
+            expect(store.has('root-1')).toBe(true)
+        })
+
+        it('keeps the shadow across repeated runs rather than dropping it as a leftover', async () => {
+            await writeCanary13Record(store, rootRecord('root-1'))
+            await migrateKeystoreLayout(deps())
+
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result).toEqual({ migrated: 0, skipped: 1, failed: 0 })
+            expect(store.has('root-1')).toBe(true)
+        })
+
+        // A bip39 root arrives typed `seed` and is promoted during migration;
+        // the exemption has to key off the promoted type, not the stored one.
+        it('keeps the shadow for a root still typed seed on disk', async () => {
+            await writeCanary13Record(store, {
+                id: 'root-2',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                privateKey: new Uint8Array(96).fill(6),
+                metadata: { scheme: 'bip39' },
+            })
+
+            await migrateKeystoreLayout(deps())
+
+            expect(store.has('root-2')).toBe(true)
+        })
+
+        // Deliberately over-inclusive: this must cover every type
+        // `configureHdRootKey` would select, and the two live in different
+        // packages. Keeping one shadow too many costs a redundant ciphertext
+        // phase 3 sweeps up; keeping one too few costs the provider a boot.
+        it('shadows any seed-bearing record, not only the promoted root type', async () => {
+            await writeCanary13Record(store, {
+                id: 'seed-1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                privateKey: new Uint8Array(32).fill(6),
+                metadata: { scheme: 'algo25' },
+            })
+
+            await migrateKeystoreLayout(deps())
+
+            expect(store.has('k/seed-1')).toBe(true)
+            expect(store.has('seed-1')).toBe(true)
+        })
+
+        // Non-root wallet keys are re-indexed and dropped as before; the
+        // exemption must not quietly become "never delete anything".
+        it('still drops the bare entry for a record that is not a root', async () => {
+            await writeCanary13Record(store, algo25Record('key-1'))
+
+            await migrateKeystoreLayout(deps())
+
+            expect(store.has('key-1')).toBe(false)
+        })
+    })
+
     // A material write that lands unreadable must not cost the canary.13 copy.
     it('keeps the canary.13 entry when the new buckets fail to read back', async () => {
         await writeCanary13Record(store, algo25Record('key-1'))

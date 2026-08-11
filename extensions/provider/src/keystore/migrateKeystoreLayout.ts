@@ -92,6 +92,27 @@ const isPasskeyCredential = (record: KeyData): boolean => {
     )
 }
 
+/**
+ * Types the Android credential provider can be pointed at as its derivation
+ * root. `getHdRootSecret` reads that record back at its **bare id**, and the
+ * canary.13 entry already sitting there is in the format it parses — so the
+ * root migrates into `k/`+`m/` like any wallet key but keeps its bare copy as
+ * the provider's shadow. Deleting it leaves every upgrading user able to
+ * authenticate with existing passkeys and unable to create a new one.
+ *
+ * Deliberately the same superset `configureHdRootKey` scans
+ * (`@perawallet/wallet-core-passkeys`), which is the authority on which id the
+ * provider is actually given. The two cannot share a constant without a package
+ * cycle, so this errs wide on purpose: one shadow too many is a redundant
+ * ciphertext phase 3 removes, one too few is a boot the provider cannot derive.
+ */
+const HD_ROOT_SHADOW_TYPES: ReadonlySet<string> = new Set([
+    'hd-root-key',
+    'xhd-root-key',
+    'hd-seed',
+    'seed',
+])
+
 /** Material lifted out of a record, addressed by the id it belongs to. */
 type LiftedMaterial = { id: string; bytes: Uint8Array }
 
@@ -293,9 +314,19 @@ export const migrateKeystoreLayout = async (
     for (const id of legacyIds) {
         try {
             // A previous run wrote the new buckets and died before the cleanup;
-            // the canary.13 copy is redundant, not a second key.
-            if (deps.storage.getString(METADATA_PREFIX + id)) {
-                deps.storage.remove(id)
+            // the canary.13 copy is redundant, not a second key. Unless it is
+            // the root's shadow, which every later run must leave alone.
+            const migratedMetadata = deps.storage.getString(
+                METADATA_PREFIX + id,
+            )
+            if (migratedMetadata) {
+                if (
+                    !HD_ROOT_SHADOW_TYPES.has(
+                        deps.decode(migratedMetadata).type,
+                    )
+                ) {
+                    deps.storage.remove(id)
+                }
                 result.skipped += 1
                 continue
             }
@@ -366,7 +397,11 @@ export const migrateKeystoreLayout = async (
                 continue
             }
 
-            deps.storage.remove(id)
+            // The root's bare entry stays put as the credential provider's
+            // shadow; everything else is now redundant.
+            if (!HD_ROOT_SHADOW_TYPES.has(metadata.type)) {
+                deps.storage.remove(id)
+            }
             result.migrated += 1
         } catch (err) {
             console.error(

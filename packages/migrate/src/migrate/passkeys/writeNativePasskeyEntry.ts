@@ -13,11 +13,13 @@
 import { Platform } from 'react-native'
 import { subtle as quickCryptoSubtle } from 'react-native-quick-crypto'
 import {
-    encode,
     readMasterKey,
-    sealData,
     storage,
 } from '@algorandfoundation/react-native-keystore'
+import {
+    sealNativeProviderRecord,
+    toNativeByteArray,
+} from '@perawallet/wallet-core-passkeys/native'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 
 export const nativePasskeyEntryExists = (credentialId: string): boolean =>
@@ -60,8 +62,8 @@ const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
     extractable: false,
     keyUsages: ['sign'],
     name: `Passkey: ${params.origin}`,
-    privateKey: params.privateKey,
-    publicKey: params.publicKeySpkiDer,
+    privateKey: toNativeByteArray(params.privateKey),
+    publicKey: toNativeByteArray(params.publicKeySpkiDer),
     metadata: {
         origin: params.origin,
         // userHandle is platform-overloaded: Android's picker renders it as the
@@ -103,6 +105,10 @@ export type NativePasskeyWriter = ((
  * keystore's `importKey`/`generate` helpers: both force a random key id and
  * re-derive a different keypair instead of persisting the one we supply.
  *
+ * The envelope comes from `sealNativeProviderRecord`, never the keystore's own
+ * `sealData`/`encode` — under canary.14 those are wrong on two axes and both
+ * fail silently. See `packages/passkeys/src/native/nativeProviderRecord.ts`.
+ *
  * A failed fetch isn't cached, so a later write retries rather than inheriting a
  * poisoned key.
  */
@@ -125,14 +131,10 @@ export const createNativePasskeyWriter = (
         const masterKey = await resolveMasterKey()
         storage.set(
             params.credentialId,
-            await sealData(
+            await sealNativeProviderRecord(
                 subtle,
                 masterKey,
-                encode(
-                    buildKeystoreKeyData(params) as Parameters<
-                        typeof encode
-                    >[0],
-                ),
+                buildKeystoreKeyData(params),
             ),
         )
     }

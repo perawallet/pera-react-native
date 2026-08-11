@@ -11,14 +11,21 @@
  */
 
 import {
-    fetchSecret,
+    decode,
     MasterKeyNotFoundError,
+    openData,
     readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
 import type { KeyData } from '@algorandfoundation/keystore-core'
+import { base64 } from '@scure/base'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { PasskeyAutofillService } from '@perawallet/wallet-extension-passkey-autofill'
+import {
+    openNativeProviderRecord,
+    sealNativeProviderRecord,
+    toNativeByteArray,
+} from '../native/nativeProviderRecord'
 
 export interface BootstrapPasskeyAutofillOptions {
     /** Required. The service registered on the provider. */
@@ -33,15 +40,26 @@ export interface BootstrapPasskeyAutofillOptions {
     }
 }
 
-/** The keystore driver's metadata bucket; ids are stored prefixed. */
+/** The canary.14 driver's two buckets: plaintext metadata, sealed material. */
 const METADATA_PREFIX = 'k/'
+const MATERIAL_PREFIX = 'm/'
 
+/**
+ * Kept in step with `HD_ROOT_SHADOW_TYPES` in the provider extension's
+ * `migrateKeystoreLayout`, which exempts these records' bare-id copies from
+ * deletion. This list is the authority — it decides which id the credential
+ * provider is actually handed.
+ */
 const HD_ROOT_KEY_TYPES = new Set<string>([
     'hd-root-key',
     'xhd-root-key',
     'hd-seed',
     'seed',
 ])
+
+// canary.14's own `fetchSecret`/`commit` reach for the same global, so this is
+// the subtle the keystore's sealed payloads were written with.
+const subtle = (): SubtleCrypto => globalThis.crypto.subtle
 
 /**
  * `storeDisabled` is the expected state when the user hasn't enabled Pera as
@@ -159,70 +177,138 @@ const runBootstrap = async (
 }
 
 /**
- * Decrypts every entry to find the seed — keystore hydration scoped to the
- * single key the autofill subsystem needs.
+ * The wallet root, found by scanning the plaintext `k/` bucket. No material is
+ * decrypted and no biometric prompt is raised to answer "which key is it".
  */
+const findHdRootMetadata = (): KeyData | null => {
+    let scanned = 0
+    for (const key of keystoreStorage.getAllKeys()) {
+        if (!key.startsWith(METADATA_PREFIX)) continue
+        const raw = keystoreStorage.getString(key)
+        if (!raw) continue
+        scanned += 1
+        try {
+            const record = decode(raw) as KeyData
+            if (HD_ROOT_KEY_TYPES.has(record.type)) return record
+        } catch (err) {
+            logger.warn('Skipping an unreadable keystore metadata entry', {
+                step: 'findHdRootMetadata',
+                key,
+                err: String(err),
+            })
+        }
+    }
+
+    logger.warn(
+        scanned === 0
+            ? 'Keystore MMKV is empty; passkey autofill has no HD root key to derive from'
+            : 'No HD root key found in keystore; passkey autofill will not be able to derive credentials',
+        { keyCount: scanned, lookingFor: Array.from(HD_ROOT_KEY_TYPES) },
+    )
+    return null
+}
+
+/** `null` when the root carries no sealed material, or it cannot be opened. */
+const readRootMaterial = async (
+    rootId: string,
+    masterKey: Buffer,
+): Promise<Uint8Array | null> => {
+    const sealed = keystoreStorage.getString(MATERIAL_PREFIX + rootId)
+    if (!sealed) return null
+
+    try {
+        // A fresh copy per call: the keystore's crypto helpers wipe the
+        // master-key buffer they are handed.
+        return base64.decode(
+            await openData(subtle(), Uint8Array.from(masterKey), sealed),
+        )
+    } catch (err) {
+        logger.warn('HD root material could not be opened', {
+            step: 'readRootMaterial',
+            err: String(err),
+        })
+        return null
+    }
+}
+
+/**
+ * Mirrors the root into the bare-id record the Android credential provider
+ * reads (`getHdRootSecret` -> `mmkv.decodeString(hdRootKeyId)`).
+ *
+ * The provider is a separate process still on the pre-canary.14 layout, so it
+ * cannot see `k/`+`m/` at all. This is the dual-write phase 2 exists for: same
+ * bytes, same derivation, so every credential already on the device keeps
+ * reproducing. Phase 3 deletes this copy once the provider reads `m/` itself.
+ *
+ * Write-only-when-needed rather than unconditionally: a canary.13 install
+ * already holds a working record here, and rewriting it every launch would be
+ * churn. An unreadable one is replaced, which makes the sync self-healing.
+ */
+const syncNativeProviderHdRoot = async (
+    rootId: string,
+    seed: Uint8Array,
+    masterKey: Buffer,
+): Promise<void> => {
+    const masterKeyBytes = Uint8Array.from(masterKey)
+    const existing = keystoreStorage.getString(rootId)
+    if (existing) {
+        const readable = await openNativeProviderRecord(
+            subtle(),
+            masterKeyBytes,
+            existing,
+        ).then(
+            () => true,
+            () => false,
+        )
+        if (readable) return
+    }
+
+    keystoreStorage.set(
+        rootId,
+        await sealNativeProviderRecord(subtle(), masterKeyBytes, {
+            id: rootId,
+            type: 'hd-root-key',
+            algorithm: 'raw',
+            // `optJSONArray("seed")` is what the provider reaches for first.
+            seed: toNativeByteArray(seed),
+        }),
+    )
+}
+
 const configureHdRootKey = async (
     service: PasskeyAutofillService,
     masterKey: Buffer,
 ): Promise<void> => {
-    const keyIds = keystoreStorage
-        .getAllKeys()
-        .filter(key => key.startsWith(METADATA_PREFIX))
-        .map(key => key.slice(METADATA_PREFIX.length))
-    if (keyIds.length === 0) {
-        logger.warn(
-            'Keystore MMKV is empty; passkey autofill has no HD root key to derive from',
-        )
-        return
-    }
+    const hdRoot = findHdRootMetadata()
+    if (!hdRoot) return
 
-    // `fetchSecret` zeroes the master-key buffer it's given, so pass a fresh
-    // copy per call.
-    const secrets = await Promise.all(
-        keyIds.map(keyId =>
-            fetchSecret<KeyData>({
-                keyId,
-                options: { masterKey: Buffer.from(masterKey) },
-            }).catch(() => null),
-        ),
-    )
+    // Wired before the material is touched: a canary.13 install already has a
+    // readable bare-id record, so the provider can derive from it even if this
+    // process cannot open `m/`.
+    await service
+        .setHdRootKeyId(hdRoot.id)
+        .catch(err => logger.error(err as Error, { step: 'setHdRootKeyId' }))
+
+    const seed = await readRootMaterial(hdRoot.id, masterKey)
+    if (!seed) return
 
     try {
-        const hdRootSecret = secrets.find(
-            (s): s is KeyData => s !== null && HD_ROOT_KEY_TYPES.has(s.type),
+        await syncNativeProviderHdRoot(hdRoot.id, seed, masterKey).catch(err =>
+            logger.error(err as Error, { step: 'syncNativeProviderHdRoot' }),
         )
-
-        if (!hdRootSecret) {
-            logger.warn(
-                'No HD root key found in keystore; passkey autofill will not be able to derive credentials',
-                {
-                    keyCount: keyIds.length,
-                    keyTypes: secrets.map(s => s?.type ?? 'undecryptable'),
-                    lookingFor: Array.from(HD_ROOT_KEY_TYPES),
-                },
-            )
-            return
-        }
-
-        await service
-            .setHdRootKeyId(hdRootSecret.id)
-            .catch(err =>
-                logger.error(err as Error, { step: 'setHdRootKeyId' }),
-            )
 
         // Current builds don't implement setDerivedMainKey, so skip
         // materializing a non-zeroable secret string for a call that would no-op.
         // Lights up automatically once native support lands.
-        if (hdRootSecret.privateKey && service.supportsDerivedMainKey) {
-            const pk = hdRootSecret.privateKey
-            // A Buffer *view*, not `Buffer.from(pk)` — that would allocate a
-            // second copy of the private key that nothing zeroes. The view
-            // shares the backing store, so the wipe below covers it.
-            const derived =
-                pk instanceof Uint8Array
-                    ? Buffer.from(pk.buffer, pk.byteOffset, pk.byteLength)
-                    : Buffer.from(pk)
+        if (service.supportsDerivedMainKey) {
+            // A Buffer *view*, not `Buffer.from(seed)` — that would allocate a
+            // second copy of the root that nothing zeroes. The view shares the
+            // backing store, so the wipe below covers it.
+            const derived = Buffer.from(
+                seed.buffer,
+                seed.byteOffset,
+                seed.byteLength,
+            )
             await service
                 .setDerivedMainKey(derived.toString('hex'))
                 .catch(err =>
@@ -230,12 +316,7 @@ const configureHdRootKey = async (
                 )
         }
     } finally {
-        // Zero every decrypted private key we pulled into memory.
-        for (const secret of secrets) {
-            if (secret?.privateKey instanceof Uint8Array) {
-                secret.privateKey.fill(0)
-            }
-        }
+        seed.fill(0)
     }
 }
 

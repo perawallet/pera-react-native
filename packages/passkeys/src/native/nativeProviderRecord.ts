@@ -45,7 +45,7 @@
  * prevent.
  */
 
-/** AES-GCM parameters the provider's `encryptData`/`decodeKeyData` assume. */
+/** AES-GCM parameters the provider's Kotlin seal/open path assumes. */
 const IV_BYTE_LENGTH = 12
 const GCM_TAG_BYTE_LENGTH = 16
 

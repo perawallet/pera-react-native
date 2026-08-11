@@ -46,20 +46,21 @@ canary.13 wrote exactly what the provider reads:
 So the installed base has working credential records **and** a working HD root,
 all at bare ids in a format canary.14 neither writes nor reads.
 
-### The regression this branch would ship
+### The regression phase 2 prevents
+
+Left unfixed, this branch would ship two independent breakages:
 
 `migrateKeystoreLayout` skips credential records (good) but the **HD root is a
-wallet key**, so it migrates to `k/`+`m/` and the bare record is deleted.
-`getHdRootSecret` then returns `null` for every existing user: assertions keep
-working (the provider stores each credential's private key), but **no new
-passkey can ever be created**. This must not ship without the phase-2 fix below
-in the same release.
+wallet key**, so it migrated to `k/`+`m/` and deleted the bare record.
+`getHdRootSecret` would then return `null` for every existing user: assertions
+keep working (the provider stores each credential's private key), but **no new
+passkey could ever be created**.
 
-`configureHdRootKey` is independently broken — it resolves through
+`configureHdRootKey` was independently broken — it resolved through
 `fetchSecret`, which reads a bare id canary.14 never writes, so
-`setHdRootKeyId` is never called at all.
+`setHdRootKeyId` was never called at all.
 
-## Phase 2 — make it work now (not yet implemented)
+## Phase 2 — make it work now (implemented)
 
 **Do not introduce a purpose-scoped passkey root.** An earlier draft of this
 plan recommended one; with an installed base it is the wrong trade. Existing
@@ -74,23 +75,42 @@ The approach is **dual-write**: the wallet root lives under `k/`+`m/` for the
 keystore _and_ keeps a bare-id shadow copy in the provider's format. Same bytes,
 same derivation, so nothing about the installed base changes.
 
-1. **Fix `createNativePasskeyWriter`** (`packages/migrate/.../
-writeNativePasskeyEntry.ts`) to use `sealNativeProviderRecord` and
-   `toNativeByteArray` instead of the keystore's `sealData`/`encode`. Without
-   this, a Pera 6 → Pera 7 migration running on a canary.14 build writes
-   credentials the provider cannot read — and unlike the root, these are
-   _created_ wrong rather than moved, so no later migration can recover them.
-2. **Keep a bare-id shadow of the HD root.** The layout migration must not leave
-   the provider without one. Either exempt the root from deletion, or re-write
-   it via `sealNativeProviderRecord` immediately after migrating it — the second
-   is preferable because it is idempotent and self-healing on every boot.
-3. **Fix `configureHdRootKey`** to resolve the root through `k/`+`m/` rather
-   than `fetchSecret`'s bare-id read, then `setHdRootKeyId(rootId)`.
+1. **`createNativePasskeyWriter`** (`packages/migrate/.../
+writeNativePasskeyEntry.ts`) seals through `sealNativeProviderRecord` and
+   `toNativeByteArray`, not the keystore's `sealData`/`encode`. Without this, a
+   Pera 6 → Pera 7 migration on a canary.14 build writes credentials the
+   provider cannot read — and unlike the root, these are _created_ wrong rather
+   than moved, so no later migration can recover them.
+2. **The HD root keeps a bare-id shadow**, from two directions:
+    - `migrateKeystoreLayout` migrates the root into `k/`+`m/` like any wallet
+      key but leaves its bare entry in place (`HD_ROOT_SHADOW_TYPES`). The
+      canary.13 record already sitting there is in the format the provider
+      parses, so the shipped bytes are preserved rather than rewritten.
+    - `syncNativeProviderHdRoot` (below) writes one when it is absent — a fresh
+      install whose root was only ever created under canary.14, or a device that
+      already upgraded on a build without the exemption. It also replaces one
+      that no longer decrypts, so the sync is self-healing on every launch.
 
-Verify on a real device by upgrading an existing canary.13 install in place — a
-fresh install will not exercise the case that matters. Both must hold
+    The two type lists must agree. `HD_ROOT_KEY_TYPES` here is the authority (it
+    decides which id the provider is handed); the migration's copy errs wide on
+    purpose, because one shadow too many is a redundant ciphertext phase 3
+    removes and one too few is a boot the provider cannot derive from.
+
+3. **`configureHdRootKey`** resolves the root by scanning the plaintext `k/`
+   bucket, unseals only that record's `m/` material, then `setHdRootKeyId`.
+   It no longer decrypts every key in the store to find one.
+
+Verified on a real device by upgrading an existing canary.13 install in place —
+a fresh install does not exercise the case that matters. Both must hold
 afterwards: an existing credential still authenticates, **and** a new credential
 can still be created.
+
+### Why not a purpose-scoped root
+
+See the paragraph above: existing credentials derive from the wallet root.
+Nothing here changes which bytes a credential derives from — that is the whole
+safety property, and it is why the shadow is the _same_ material rather than a
+new one.
 
 ## Phase 3 — adopt the upstream fix without losing keys
 
@@ -108,7 +128,10 @@ migrating them.
 
 The bare-id root shadow from phase 2 is deleted in this phase too, and only
 here: once the provider reads `m/`, the duplicate is redundant, and removing it
-is the security improvement phase 2 deliberately deferred.
+is the security improvement phase 2 deliberately deferred. Three things go at
+the same time — `syncNativeProviderHdRoot`, `HD_ROOT_SHADOW_TYPES` in
+`migrateKeystoreLayout`, and the shadows already on disk — and the last of those
+is what needs the write→verify→delete treatment.
 
 What the migration must handle, all of it covered by the fixtures in
 `__tests__/nativeProviderRecord.spec.ts`:

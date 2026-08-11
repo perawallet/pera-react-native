@@ -33,6 +33,7 @@ export default defineConfig({
             entry: {
                 index: resolve(__dirname, 'src/index.ts'),
                 webauthn: resolve(__dirname, 'src/webauthn.ts'),
+                native: resolve(__dirname, 'src/native.ts'),
             },
             formats: ['es'],
         },
@@ -42,6 +43,7 @@ export default defineConfig({
                 'react/jsx-runtime',
                 '@algorandfoundation/keystore-core',
                 '@algorandfoundation/react-native-keystore',
+                '@scure/base',
                 '@tanstack/react-query',
                 '@tanstack/store',
                 '@perawallet/wallet-core-shared',
