@@ -28,36 +28,69 @@ holding on to:
   credential be regenerated from the seed alone. Changing the root gives that up
   for credentials minted before the change.
 
-## Current state
+## Production reality — read this first
 
-Broken, and the breakage is silent on both sides:
+**Pera 7 has shipped to end users on canary.13, and passkeys work there.** This
+is not a greenfield problem; every decision below is constrained by data already
+on user devices.
 
-- `bootstrapPasskeyAutofill`'s `configureHdRootKey` resolves keys through
-  `fetchSecret`, which reads a **bare** id (`storage.getString(keyId)`) that
-  canary.14 never writes. Every lookup returns `null`, so `setHdRootKeyId` is
-  never called.
-- Even with the id registered, the provider's `getHdRootSecret` reads
-  `keystoreMMKV.decodeString(hdRootKeyId)` — also a bare id, also absent.
+canary.13 wrote exactly what the provider reads:
 
-So no credential can be created or asserted. Existing credential records are
-untouched and still readable by the provider; nothing has been lost.
+|                 | canary.13 (shipped)          | canary.14 (this branch) | provider needs            |
+| --------------- | ---------------------------- | ----------------------- | ------------------------- |
+| envelope        | `{iv, tag, content}`         | `{iv, content}`         | `{iv, tag, content}`      |
+| `Uint8Array`    | `Array.from(v)` number array | `{"$u8": "<b64>"}`      | number array              |
+| inner plaintext | base64url of JSON            | raw JSON                | base64url (raw tolerated) |
+| location        | bare id                      | `k/` + `m/`             | bare id                   |
+
+So the installed base has working credential records **and** a working HD root,
+all at bare ids in a format canary.14 neither writes nor reads.
+
+### The regression this branch would ship
+
+`migrateKeystoreLayout` skips credential records (good) but the **HD root is a
+wallet key**, so it migrates to `k/`+`m/` and the bare record is deleted.
+`getHdRootSecret` then returns `null` for every existing user: assertions keep
+working (the provider stores each credential's private key), but **no new
+passkey can ever be created**. This must not ship without the phase-2 fix below
+in the same release.
+
+`configureHdRootKey` is independently broken — it resolves through
+`fetchSecret`, which reads a bare id canary.14 never writes, so
+`setHdRootKeyId` is never called at all.
 
 ## Phase 2 — make it work now (not yet implemented)
 
-1. **Fix `configureHdRootKey`** to resolve the HD root through the `k/`+`m/`
-   layout instead of `fetchSecret`'s bare-id read.
-2. **Derive a purpose-scoped passkey root** from the wallet root rather than
-   handing the provider the wallet root itself, mirroring what
-   `extensions/keystore-chrome`'s web adapter already does with its
-   `ROOT_KEY_PURPOSE` marker. A compromise of the shadow record below then
-   exposes passkey credentials only, never Algorand signing keys.
-3. **Write that scoped root as a shadow record** at its bare id via
-   `sealNativeProviderRecord`, and register it with `setHdRootKeyId`.
+**Do not introduce a purpose-scoped passkey root.** An earlier draft of this
+plan recommended one; with an installed base it is the wrong trade. Existing
+credentials were derived from the **wallet root**, so a scoped root would break
+seed-recovery for them, and any credential whose record was lost would re-derive
+to a different keypair that the relying party rejects. The security argument is
+also weaker than it looks: the same bytes have to be readable by the provider
+either way, and they are already at a bare id on every shipped device. Moving
+root material under `m/` is a phase-3 win, once the provider can read it there.
 
-The scoped root is a deliberate trade: it costs seed-recovery of credentials
-minted before it (see above). Confirm that is acceptable before shipping it —
-if passkey-recovery-from-seed is a product guarantee, the provider needs to
-record which root each credential came from instead.
+The approach is **dual-write**: the wallet root lives under `k/`+`m/` for the
+keystore _and_ keeps a bare-id shadow copy in the provider's format. Same bytes,
+same derivation, so nothing about the installed base changes.
+
+1. **Fix `createNativePasskeyWriter`** (`packages/migrate/.../
+writeNativePasskeyEntry.ts`) to use `sealNativeProviderRecord` and
+   `toNativeByteArray` instead of the keystore's `sealData`/`encode`. Without
+   this, a Pera 6 → Pera 7 migration running on a canary.14 build writes
+   credentials the provider cannot read — and unlike the root, these are
+   _created_ wrong rather than moved, so no later migration can recover them.
+2. **Keep a bare-id shadow of the HD root.** The layout migration must not leave
+   the provider without one. Either exempt the root from deletion, or re-write
+   it via `sealNativeProviderRecord` immediately after migrating it — the second
+   is preferable because it is idempotent and self-healing on every boot.
+3. **Fix `configureHdRootKey`** to resolve the root through `k/`+`m/` rather
+   than `fetchSecret`'s bare-id read, then `setHdRootKeyId(rootId)`.
+
+Verify on a real device by upgrading an existing canary.13 install in place — a
+fresh install will not exercise the case that matters. Both must hold
+afterwards: an existing credential still authenticates, **and** a new credential
+can still be created.
 
 ## Phase 3 — adopt the upstream fix without losing keys
 
@@ -72,6 +105,10 @@ dropping it.
 Until then, `migrateKeystoreLayout` **skips** provider records — skips, never
 consumes. That is what keeps phase 3 possible, so do not "tidy" it into
 migrating them.
+
+The bare-id root shadow from phase 2 is deleted in this phase too, and only
+here: once the provider reads `m/`, the duplicate is redundant, and removing it
+is the security improvement phase 2 deliberately deferred.
 
 What the migration must handle, all of it covered by the fixtures in
 `__tests__/nativeProviderRecord.spec.ts`:
