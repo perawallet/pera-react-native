@@ -11,13 +11,13 @@
  */
 
 import { useEffect } from 'react'
-import { useBottomSheetStack } from '../../hooks/useBottomSheetStack'
 import { useBlockHardwareBackWhileSheetOpen } from '../../hooks/useBlockHardwareBackWhileSheetOpen'
 import { useBottomSheetStore } from '../../store/bottomSheetStore'
 import { BottomSheetHost } from '../BottomSheetHost'
+import { usePresentableRequests } from './usePresentableRequests'
 
 export const BottomSheetManager = () => {
-    const { requests } = useBottomSheetStack()
+    const requests = usePresentableRequests()
     const registerBottomSheetHost = useBottomSheetStore(
         s => s.registerBottomSheetHost,
     )

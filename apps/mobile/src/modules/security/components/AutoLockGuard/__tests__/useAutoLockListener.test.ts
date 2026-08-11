@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useAutoLockListener } from '../useAutoLockListener'
+import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import {
     clearAccountsStore,
@@ -66,6 +67,7 @@ describe('useAutoLockListener', () => {
         vi.clearAllMocks()
         appStateChangeHandler = null
         securityStoreState.lockRequestVersion = 0
+        useBottomSheetStore.setState({ isPresentationHeld: false })
         mockCheckPinEnabled.mockResolvedValue(false)
         mockCheckAutoLock.mockResolvedValue(false)
         ;(usePinCode as Mock).mockReturnValue({
@@ -148,6 +150,55 @@ describe('useAutoLockListener', () => {
             unmount()
 
             expect(lastMirroredValue()).toBe(false)
+        })
+    })
+
+    // The bottom-sheet hold is what actually keeps sheets from painting under
+    // the lock overlay (PERA-4743) — BottomSheetManager reads it directly, so
+    // the guard must mirror its overlay state there too.
+    describe('mirroring the guard overlay into the bottom-sheet hold', () => {
+        const heldValue = () =>
+            useBottomSheetStore.getState().isPresentationHeld
+
+        it('holds while checking, releases once init resolves unlocked', async () => {
+            const { result } = renderHook(() => useAutoLockListener())
+
+            expect(heldValue()).toBe(true)
+
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+            expect(heldValue()).toBe(false)
+        })
+
+        it('holds while locked, releases after unlock', async () => {
+            mockCheckPinEnabled.mockResolvedValue(true)
+
+            const { result } = renderHook(() => useAutoLockListener())
+
+            await waitFor(() => {
+                expect(result.current.isLocked).toBe(true)
+            })
+            expect(heldValue()).toBe(true)
+
+            act(() => {
+                result.current.unlock()
+            })
+            expect(heldValue()).toBe(false)
+        })
+
+        it('releases the hold on unmount so sheets never wedge', async () => {
+            mockCheckPinEnabled.mockResolvedValue(true)
+
+            const { result, unmount } = renderHook(() => useAutoLockListener())
+            await waitFor(() => {
+                expect(result.current.isLocked).toBe(true)
+            })
+            expect(heldValue()).toBe(true)
+
+            unmount()
+
+            expect(heldValue()).toBe(false)
         })
     })
 
