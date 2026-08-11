@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AppState } from 'react-native'
 import { useTranslation } from 'react-i18next'
-import { useBottomSheet } from '@modules/bottom-sheet'
 import {
     useWalletConnectHandoffResolver,
     type HandoffPeerDelivery,
@@ -25,44 +24,12 @@ import {
     deliverRejectInBackground,
 } from '@perawallet/wallet-core-walletconnect'
 import { useMultisigProposeListener } from '../../hooks/useMultisigProposeListener'
-import { usePendingSignaturesSheetStore } from '../../stores/usePendingSignaturesSheetStore'
-import { PendingSignaturesContent } from '../PendingSignaturesContent'
+import { usePendingSignaturesSheetDriver } from './usePendingSignaturesSheetDriver'
 
 export const MultisigOverlays = () => {
     useMultisigProposeListener()
     useResolverWiring()
-
-    const signRequestId = usePendingSignaturesSheetStore(
-        state => state.signRequestId,
-    )
-    const closeSheet = usePendingSignaturesSheetStore(state => state.closeSheet)
-    const { request: requestBottomSheet } = useBottomSheet()
-    // Track open-state, not the id, so a signRequestId change while the sheet
-    // is open re-renders its content instead of stacking a second sheet.
-    const isSheetOpenRef = useRef(false)
-
-    useEffect(() => {
-        if (!signRequestId) return
-        if (isSheetOpenRef.current) return
-        isSheetOpenRef.current = true
-        void (async () => {
-            await requestBottomSheet<void>({
-                contents: <PendingSignaturesContent />,
-                options: {
-                    // Fixed snap point, not 'auto': the signers list is
-                    // `flex: 1` (0 natural height), so 'auto' would collapse
-                    // the sheet to header + footer.
-                    size: 'modal',
-                    enablePanDownToClose: true,
-                    autoCreateContainer: false,
-                },
-            })
-            // Dismissed — clear the open flag and the id; the next
-            // openSheet() re-fires this effect with a fresh value.
-            isSheetOpenRef.current = false
-            closeSheet()
-        })()
-    }, [signRequestId, requestBottomSheet, closeSheet])
+    usePendingSignaturesSheetDriver()
 
     return null
 }
