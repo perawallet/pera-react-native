@@ -221,7 +221,7 @@ catalogs:
       version: 5.0.14
 
 overrides:
-  algosdk: npm:@joe-p/algosdk@3.7.0-beta.2
+  algosdk: file:./libs/algosdk-3.7.0-beta.1.tgz
   '@algorandfoundation/keystore': 1.0.0-canary.17
   '@algorandfoundation/keystore-core': 1.0.0-canary.1
   '@algorandfoundation/react-native-keystore': 1.0.0-canary.14
@@ -283,7 +283,7 @@ importers:
     devDependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -294,8 +294,8 @@ importers:
         specifier: 'catalog:'
         version: 4.1.10(vitest@4.1.10)
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       eslint:
         specifier: 'catalog:'
         version: 9.39.5
@@ -430,8 +430,8 @@ importers:
         specifier: 'catalog:'
         version: 6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.0(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       esbuild:
         specifier: 'catalog:'
         version: 0.28.1
@@ -461,7 +461,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
         version: 1.0.0-canary.22(patch_hash=76df881bcdaf8ad4fa7bbe5bd8ba54fb64cc02a81b142a50f406627d5122cfb8)(@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(expo-build-properties@57.0.9(expo@57.0.11))(expo@57.0.11)(falcon-1024@0.2.0)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -697,8 +697,8 @@ importers:
         specifier: 'catalog:'
         version: 5.101.2(@tanstack/react-query@5.101.2(react@19.2.3))(react@19.2.3)
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       buffer:
         specifier: 'catalog:'
         version: 6.0.3
@@ -1623,7 +1623,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -1670,8 +1670,8 @@ importers:
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -1891,7 +1891,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -1911,8 +1911,8 @@ importers:
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -1928,7 +1928,7 @@ importers:
     devDependencies:
       '@algorandfoundation/algokit-client-generator':
         specifier: 6.0.1
-        version: 6.0.1(@algorandfoundation/algokit-utils@9.2.0(@joe-p/algosdk@3.7.0-beta.2))(@joe-p/algosdk@3.7.0-beta.2)
+        version: 6.0.1(@algorandfoundation/algokit-utils@9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz))(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -2037,7 +2037,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -2072,8 +2072,8 @@ importers:
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -2107,7 +2107,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -2136,8 +2136,8 @@ importers:
         specifier: 'catalog:'
         version: 2.2.0
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -2241,7 +2241,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -2270,8 +2270,8 @@ importers:
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -2329,7 +2329,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -2361,8 +2361,8 @@ importers:
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -2816,7 +2816,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.1
         version: 1.0.0-canary.1(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
@@ -2845,8 +2845,8 @@ importers:
         specifier: 'catalog:'
         version: 2.2.0
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -3017,7 +3017,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@algorandfoundation/dp256':
         specifier: 1.1.0
         version: 1.1.0
@@ -3085,8 +3085,8 @@ importers:
         specifier: 'catalog:'
         version: 2.2.0
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -3242,7 +3242,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -3265,8 +3265,8 @@ importers:
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
@@ -3697,7 +3697,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -3714,8 +3714,8 @@ importers:
         specifier: 'catalog:'
         version: 5.101.2(@tanstack/react-query@5.101.2(react@19.2.3))(react@19.2.3)
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       base32-encode:
         specifier: ^2.0.0
         version: 2.0.0
@@ -3791,7 +3791,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -3838,8 +3838,8 @@ importers:
         specifier: 'catalog:'
         version: 6.1.0(@types/react@19.2.17)(react@19.2.3)(xstate@5.32.0)
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       canonify:
         specifier: ^2.1.1
         version: 2.1.1
@@ -4062,7 +4062,7 @@ importers:
     devDependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
+        version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -4073,8 +4073,8 @@ importers:
         specifier: 'catalog:'
         version: 19.2.17
       algosdk:
-        specifier: npm:@joe-p/algosdk@3.7.0-beta.2
-        version: '@joe-p/algosdk@3.7.0-beta.2'
+        specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
+        version: file:libs/algosdk-3.7.0-beta.1.tgz
       jsdom:
         specifier: 'catalog:'
         version: 27.4.0(@noble/hashes@2.2.0)
@@ -4171,6 +4171,7 @@ packages:
 
   '@algorandfoundation/algokit-client-generator@6.0.1':
     resolution: {integrity: sha512-9IMblhFK7BX8vC5R9txb9wWwQTW1ThzraBWwzhk4niE0kZMzYIh5ZD+WVUxg+zTtwK66ziQVU1NO/v9Q8pEyzw==}
+    version: 6.0.1
     engines: {node: '>=20.0'}
     hasBin: true
     peerDependencies:
@@ -4179,6 +4180,7 @@ packages:
 
   '@algorandfoundation/algokit-utils@9.2.0':
     resolution: {integrity: sha512-jILpK3PlSJ55crS8+Dl7iIiADEj/VowokTGSVEEneDG41XM3jMmogGVpCNipBil/YAGC2eh2yc4l9iHnfQdT/g==}
+    version: 9.2.0
     engines: {node: '>=20.0'}
     peerDependencies:
       algosdk: ^3.5.2
@@ -6247,10 +6249,6 @@ packages:
     resolution: {integrity: sha512-u3UPsIilWKOM3F9CXtrG8LEJmNxwoCQC/XVj4IKYXvvpx7QIi/Kg1LI5uDmDpKlac62NUtX7eLjRh+jVZcLOzw==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
 
-  '@joe-p/algosdk@3.7.0-beta.2':
-    resolution: {integrity: sha512-W09B8ByuwxtL5Q0YUbYkKMmu8UVVb/ee5+2h/BAq25ti3px7wx9O7k5ZJmOI0XJQNyHp4ziunlZDWzwDmvkZOw==}
-    engines: {node: '>=18.0.0'}
-
   '@joe-p/react-native-falcon@0.1.0':
     resolution: {integrity: sha512-WD4/nndBoq4bgH2K9b77mIkFHkrAxqW2ry8Lb/qZ+kKG/YKUQpyKFdPj/l5Gwm+VUhaARetXT5J6sXNaIMBmkQ==}
     peerDependencies:
@@ -7584,6 +7582,11 @@ packages:
   algorand-msgpack@1.1.0:
     resolution: {integrity: sha512-08k7pBQnkaUB5p+jL7f1TRaUIlTSDE0cesFu1mD7llLao+1cAhtvvZmGE3OnisTd0xOn118QMw74SRqddqaYvw==}
     engines: {node: '>= 14'}
+
+  algosdk@file:libs/algosdk-3.7.0-beta.1.tgz:
+    resolution: {integrity: sha512-WKkfdzZJGGyCa9dylyFDCLzxg2e1SdDYDmS/vjEaPvNd8k6fJDkhvmOYlPiEd6q8HYp4vceu5XZuEMIstCGHhA==, tarball: file:libs/algosdk-3.7.0-beta.1.tgz}
+    version: 3.7.0-beta.1
+    engines: {node: '>=18.0.0'}
 
   anser@1.4.10:
     resolution: {integrity: sha512-hCv9AqTQ8ycjpSd3upOJd7vFwW1JaoYQ7tpham03GJ1ca8/65rqn0RpaWpItOAd6ylW9wAw6luXYPJIyPFVOww==}
@@ -11060,18 +11063,18 @@ snapshots:
 
   '@acemir/cssom@0.9.31': {}
 
-  '@algorandfoundation/algokit-client-generator@6.0.1(@algorandfoundation/algokit-utils@9.2.0(@joe-p/algosdk@3.7.0-beta.2))(@joe-p/algosdk@3.7.0-beta.2)':
+  '@algorandfoundation/algokit-client-generator@6.0.1(@algorandfoundation/algokit-utils@9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz))(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)':
     dependencies:
-      '@algorandfoundation/algokit-utils': 9.2.0(@joe-p/algosdk@3.7.0-beta.2)
-      algosdk: '@joe-p/algosdk@3.7.0-beta.2'
+      '@algorandfoundation/algokit-utils': 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
+      algosdk: file:libs/algosdk-3.7.0-beta.1.tgz
       chalk: 5.6.2
       change-case: 5.4.4
       commander: 14.0.3
       jsonschema: 1.5.0
 
-  '@algorandfoundation/algokit-utils@9.2.0(@joe-p/algosdk@3.7.0-beta.2)':
+  '@algorandfoundation/algokit-utils@9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)':
     dependencies:
-      algosdk: '@joe-p/algosdk@3.7.0-beta.2'
+      algosdk: file:libs/algosdk-3.7.0-beta.1.tgz
       buffer: 6.0.3
 
   '@algorandfoundation/dp256@1.1.0':
@@ -13522,17 +13525,6 @@ snapshots:
       '@types/yargs': 17.0.35
       chalk: 4.1.2
 
-  '@joe-p/algosdk@3.7.0-beta.2':
-    dependencies:
-      algorand-msgpack: 1.1.0
-      hi-base32: 0.5.1
-      js-sha256: 0.9.0
-      js-sha3: 0.8.0
-      js-sha512: 0.8.0
-      json-bigint: 1.0.0
-      tweetnacl: 1.0.3
-      vlq: 2.0.4
-
   '@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)':
     dependencies:
       react: 19.2.3
@@ -14104,7 +14096,9 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 
@@ -14681,7 +14675,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.0(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+      vitest: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.0(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
 
   '@vitest/expect@4.1.10':
     dependencies:
@@ -14817,6 +14811,17 @@ snapshots:
   algo-msgpack-with-bigint@2.1.1: {}
 
   algorand-msgpack@1.1.0: {}
+
+  algosdk@file:libs/algosdk-3.7.0-beta.1.tgz:
+    dependencies:
+      algorand-msgpack: 1.1.0
+      hi-base32: 0.5.1
+      js-sha256: 0.9.0
+      js-sha3: 0.8.0
+      js-sha512: 0.8.0
+      json-bigint: 1.0.0
+      tweetnacl: 1.0.3
+      vlq: 2.0.4
 
   anser@1.4.10: {}
 
