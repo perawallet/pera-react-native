@@ -32,7 +32,7 @@ export const MessagesScreen = () => {
     const styles = useStyles()
 
     const {
-        initialTab,
+        initialRouteName,
         openSettingsModal,
         activeTab,
         setActiveTab,
@@ -59,7 +59,7 @@ export const MessagesScreen = () => {
                 <MessagesSpotBanners />
             </PWView>
             <Tab.Navigator
-                initialRouteName={initialTab}
+                initialRouteName={initialRouteName}
                 screenListeners={{
                     state: e => {
                         const state = e.data?.state
