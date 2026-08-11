@@ -97,6 +97,44 @@ describe('useAccountIcon', () => {
         })
     })
 
+    // The Ledger info sheet forces `rekeyedSignable` on a synthetic account whose
+    // auth Ledger is not in the store, so `useRekeyAccount` resolves nothing and
+    // the glyph fell back to the turquoise standard one (PERA-4403).
+    it('uses the supplied auth type when the auth account is not in the store', () => {
+        vi.mocked(isRekeyedAccount).mockReturnValue(false)
+        vi.mocked(useCanSignWith).mockReturnValue(false)
+        vi.mocked(useRekeyAccount).mockReturnValue(null)
+
+        const { result } = renderHook(() =>
+            useAccountIcon(account(AccountTypes.watch), {
+                displayState: 'rekeyedSignable',
+                authType: AccountTypes.hardware,
+            }),
+        )
+
+        expect(result.current).toEqual({
+            name: 'accounts/glyph/rekeyed-ledger',
+            variant: 'accountPurple',
+        })
+    })
+
+    it('still falls back to the standard glyph with no auth type to go on', () => {
+        vi.mocked(isRekeyedAccount).mockReturnValue(false)
+        vi.mocked(useCanSignWith).mockReturnValue(false)
+        vi.mocked(useRekeyAccount).mockReturnValue(null)
+
+        const { result } = renderHook(() =>
+            useAccountIcon(account(AccountTypes.watch), {
+                displayState: 'rekeyedSignable',
+            }),
+        )
+
+        expect(result.current).toEqual({
+            name: 'accounts/glyph/rekeyed-standard',
+            variant: 'accountTurquoise',
+        })
+    })
+
     it('returns the noauth glyph for an unsignable rekeyed account', () => {
         vi.mocked(isRekeyedAccount).mockReturnValue(true)
         vi.mocked(useCanSignWith).mockReturnValue(false)

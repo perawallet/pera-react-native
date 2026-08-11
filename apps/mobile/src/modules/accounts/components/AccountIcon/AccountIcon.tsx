@@ -13,7 +13,10 @@
 import { type ViewStyle } from 'react-native'
 import { type SvgProps } from 'react-native-svg'
 
-import { type WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    type AccountType,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { PWRoundIcon, type PWRoundIconSize } from '@components/core/PWRoundIcon'
 import { useAccountIcon, type AccountDisplayState } from './useAccountIcon'
 
@@ -34,6 +37,11 @@ export type AccountIconProps = {
      * (e.g. import previews).
      */
     displayState?: AccountDisplayState
+    /**
+     * Type of the auth account, for a forced `displayState` on a synthetic
+     * account whose auth address is not in the store yet.
+     */
+    authType?: AccountType
     // Extends SvgProps for source-compat with existing call sites, but only
     // `style` and `testID` are forwarded to PWRoundIcon; other SvgProps
     // (color/fill/width/onPress) are intentionally ignored — the account
@@ -55,10 +63,15 @@ export const AccountIcon = (props: AccountIconProps) => {
         size = 'md',
         ignoreRekey,
         displayState,
+        authType,
         style,
         testID,
     } = props
-    const glyph = useAccountIcon(account, { ignoreRekey, displayState })
+    const glyph = useAccountIcon(account, {
+        ignoreRekey,
+        displayState,
+        authType,
+    })
 
     if (!glyph) return <></>
 
