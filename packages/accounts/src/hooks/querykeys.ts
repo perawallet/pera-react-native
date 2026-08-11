@@ -77,6 +77,13 @@ export const getOnChainAccountInformationQueryKey = (
     network: Network,
 ) => [MODULE_PREFIX, 'on-chain-account-information', { address, network }]
 
+// The { address } payload keeps this key inside the sync tick's scoped
+// invalidation, so a fresh opt-in reorders the gallery on the next sync.
+export const getAccountOptInRoundsQueryKey = (
+    address: string,
+    network: Network,
+) => [MODULE_PREFIX, 'opt-in-rounds', { address, network }]
+
 export const getRekeyedAddressesQueryKey = (
     address: string,
     network: Network,

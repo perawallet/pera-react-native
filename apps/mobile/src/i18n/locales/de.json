@@ -309,7 +309,8 @@
             "sort_title_asc": "Name (A-Z)",
             "sort_title_desc": "Name (Z-A)",
             "sort_newest_first": "Neueste zuerst",
-            "sort_oldest_first": "Älteste zuerst"
+            "sort_oldest_first": "Älteste zuerst",
+            "sort_recently_added": "Zuletzt hinzugefügt"
         },
         "button_panel": {
             "swap": "Tauschen",

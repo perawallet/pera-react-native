@@ -50,10 +50,12 @@ describe('useNftSortContent', () => {
     it('writes the draft to the store only on commit', () => {
         const { result } = renderHook(() => useNftSortContent())
 
-        act(() => result.current.handleSortModeChange('titleAsc'))
+        act(() => result.current.handleSortModeChange('recentlyAdded'))
         act(() => result.current.commitChanges())
 
         expect(h.state.setCollectibleSortMode).toHaveBeenCalledTimes(1)
-        expect(h.state.setCollectibleSortMode).toHaveBeenCalledWith('titleAsc')
+        expect(h.state.setCollectibleSortMode).toHaveBeenCalledWith(
+            'recentlyAdded',
+        )
     })
 })

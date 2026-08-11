@@ -17,6 +17,7 @@ export const CollectibleSortModes = {
     titleDesc: 'titleDesc',
     newestFirst: 'newestFirst',
     oldestFirst: 'oldestFirst',
+    recentlyAdded: 'recentlyAdded',
 } as const
 
 export type CollectibleSortMode =

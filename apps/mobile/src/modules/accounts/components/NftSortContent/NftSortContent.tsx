@@ -56,6 +56,11 @@ export const NftSortContent = (_: NftSortContentProps = {}) => {
                 onPress={() => handleSortModeChange('oldestFirst')}
             />
             <PWRadioButton
+                title={t('account_details.nfts.sort_recently_added')}
+                isSelected={sortMode === 'recentlyAdded'}
+                onPress={() => handleSortModeChange('recentlyAdded')}
+            />
+            <PWRadioButton
                 title={t('account_details.nfts.sort_title_asc')}
                 isSelected={sortMode === 'titleAsc'}
                 onPress={() => handleSortModeChange('titleAsc')}

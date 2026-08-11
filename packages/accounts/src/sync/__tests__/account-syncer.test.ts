@@ -12,11 +12,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
-import {
-    fetchAndPersistAccount,
-    ensureAccountFetched,
-    HOLDINGS_PAGE_LIMIT,
-} from '../account-syncer'
+import { fetchAndPersistAccount, ensureAccountFetched } from '../account-syncer'
+import { HOLDINGS_PAGE_LIMIT } from '../../constants'
 
 // algosdk v9 exposes fluent builders: `algod.accountInformation(addr).do()`
 // and `indexer.lookupAccountAssets(addr).limit(n).nextToken(t).do()`. These

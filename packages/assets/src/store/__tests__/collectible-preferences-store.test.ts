@@ -56,13 +56,13 @@ describe('useCollectiblePreferencesStore', () => {
         const { result } = renderHook(() => useCollectiblePreferencesStore())
 
         act(() => {
-            result.current.setCollectibleSortMode('titleDesc')
+            result.current.setCollectibleSortMode('recentlyAdded')
             result.current.setGalleryLayout('list')
             result.current.setShowOptedIn(true)
             result.current.setShowWatchAccounts(true)
         })
 
-        expect(result.current.collectibleSortMode).toBe('titleDesc')
+        expect(result.current.collectibleSortMode).toBe('recentlyAdded')
         expect(result.current.galleryLayout).toBe('list')
         expect(result.current.showOptedIn).toBe(true)
         expect(result.current.showWatchAccounts).toBe(true)

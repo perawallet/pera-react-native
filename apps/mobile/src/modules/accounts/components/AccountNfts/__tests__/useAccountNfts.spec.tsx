@@ -74,6 +74,7 @@ const mockUseSelectedAccount = vi.fn()
 const mockUseAccountBalancesQuery = vi.fn()
 const mockUseCanSignWith = vi.fn()
 const mockUseAllAccounts = vi.fn()
+const mockUseAccountOptInRoundsQuery = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -88,6 +89,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             mockUseAccountBalancesQuery(...args),
         useAllAccounts: (...args: unknown[]) => mockUseAllAccounts(...args),
         useCanSignWith: (...args: unknown[]) => mockUseCanSignWith(...args),
+        useAccountOptInRoundsQuery: (...args: unknown[]) =>
+            mockUseAccountOptInRoundsQuery(...args),
     }
 })
 
@@ -177,6 +180,10 @@ describe('useAccountNfts', () => {
         mockUseSelectedAccount.mockReturnValue(mockAccount)
         mockUseAllAccounts.mockReturnValue([mockAccount])
         mockUseCanSignWith.mockReturnValue(true)
+        mockUseAccountOptInRoundsQuery.mockReturnValue({
+            optInRounds: new Map<string, number>(),
+            isPending: false,
+        })
 
         mockUseAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map([
@@ -265,6 +272,92 @@ describe('useAccountNfts', () => {
 
         expect(result.current.collectibles[0].assetId).toBe('100')
         expect(result.current.collectibles[1].assetId).toBe('200')
+    })
+
+    it('sorts collectibles by opt-in round descending for recentlyAdded', () => {
+        mockSortMode = 'recentlyAdded'
+        mockUseAccountOptInRoundsQuery.mockReturnValue({
+            optInRounds: new Map([
+                ['100', 1000],
+                ['200', 5000],
+            ]),
+            isPending: false,
+        })
+
+        const { result } = renderHook(() => useAccountNfts())
+
+        expect(result.current.collectibles.map(c => c.assetId)).toEqual([
+            '200',
+            '100',
+        ])
+    })
+
+    it('puts collectibles without an opt-in round last, newest asset ID first', () => {
+        mockSortMode = 'recentlyAdded'
+        mockUseAccountBalancesQuery.mockReturnValue({
+            accountBalances: new Map([
+                [
+                    mockAccount.address,
+                    {
+                        assetBalances: [
+                            {
+                                assetId: '100',
+                                amount: new Decimal(1),
+                                algoValue: new Decimal(0),
+                            },
+                            {
+                                assetId: '200',
+                                amount: new Decimal(1),
+                                algoValue: new Decimal(0),
+                            },
+                            {
+                                assetId: '400',
+                                amount: new Decimal(1),
+                                algoValue: new Decimal(0),
+                            },
+                        ],
+                    },
+                ],
+            ]),
+            isPending: false,
+        })
+        mockUseAssetsQuery.mockReturnValue({
+            data: new Map<string, PeraAsset>([
+                ['100', makeCollectibleAsset('100', 'Cool NFT')],
+                ['200', makeCollectibleAsset('200', 'Another NFT')],
+                ['400', makeCollectibleAsset('400', 'Third NFT')],
+            ]),
+        })
+        // Only asset 100 has a round (e.g. while the query is mid-load or the
+        // indexer omitted entries): rounded items first, the rest fall back to
+        // asset-ID-descending after them.
+        mockUseAccountOptInRoundsQuery.mockReturnValue({
+            optInRounds: new Map([['100', 1000]]),
+            isPending: false,
+        })
+
+        const { result } = renderHook(() => useAccountNfts())
+
+        expect(result.current.collectibles.map(c => c.assetId)).toEqual([
+            '100',
+            '400',
+            '200',
+        ])
+    })
+
+    it('enables the opt-in rounds query only for the recentlyAdded mode', () => {
+        renderHook(() => useAccountNfts())
+        expect(mockUseAccountOptInRoundsQuery).toHaveBeenLastCalledWith(
+            mockAccount.address,
+            false,
+        )
+
+        mockSortMode = 'recentlyAdded'
+        renderHook(() => useAccountNfts())
+        expect(mockUseAccountOptInRoundsQuery).toHaveBeenLastCalledWith(
+            mockAccount.address,
+            true,
+        )
     })
 
     it('calls store setter when setSortMode is invoked', () => {
