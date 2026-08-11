@@ -58,6 +58,29 @@ const isLegacyEntry = (key: string): boolean =>
 /** Field names that carry raw key material anywhere in a record. */
 const SECRET_FIELDS = new Set(['privateKey', 'seed', 'key'])
 
+/**
+ * True for a passkey written by the Android credential provider, which shares
+ * this MMKV instance (`PASSKEYS_MMKV_ID = "keystore"`) and this master key but
+ * is a *different process* on the older bare-id layout.
+ *
+ * Those records look exactly like canary.13 keystore entries — same seal, same
+ * encoding — so the migration would happily re-index one and delete the bare
+ * key the provider reads back by (`mmkv.decodeString(credentialId)`),
+ * destroying a working passkey. They also carry the biometric-wrapped
+ * `privateKeyEnc`, which is not a `Uint8Array` and so would be dropped rather
+ * than re-sealed. Leave them alone until the provider moves to this layout.
+ */
+const isPasskeyCredential = (record: KeyData): boolean => {
+    const metadata = record.metadata as
+        | { origin?: unknown; userHandle?: unknown }
+        | undefined
+    return (
+        record.type === 'hd-derived-p256' &&
+        typeof metadata?.origin === 'string' &&
+        typeof metadata?.userHandle === 'string'
+    )
+}
+
 /** Material lifted out of a record, addressed by the id it belongs to. */
 type LiftedMaterial = { id: string; bytes: Uint8Array }
 
@@ -273,6 +296,14 @@ export const migrateKeystoreLayout = async (
             }
 
             const record = deps.decode(await deps.openData(masterKey, raw))
+
+            // Owned by another process on the old layout — re-indexing it would
+            // delete the key that process reads back by.
+            if (isPasskeyCredential(record)) {
+                result.skipped += 1
+                continue
+            }
+
             // `seed` is untyped but real: both versions' `commit` strip it
             // alongside `privateKey`, and both `decode` revivers rebuild it. It
             // must never reach `k/`, which is plaintext. Where a record carries

@@ -515,6 +515,65 @@ describe('migrateKeystoreLayout', () => {
         })
     })
 
+    // The Android credential provider shares this MMKV instance and this master
+    // key, but is a separate process still on the bare-id layout. Its records
+    // are indistinguishable from canary.13 keystore entries by shape alone.
+    describe('passkeys owned by the credential provider', () => {
+        const passkeyRecord = (id: string) => ({
+            id,
+            type: 'hd-derived-p256',
+            algorithm: 'P256',
+            extractable: false,
+            keyUsages: ['sign'],
+            publicKey: new Uint8Array(33).fill(4),
+            metadata: {
+                origin: 'https://example.com',
+                userHandle: 'dXNlcg',
+                userId: 'user-1',
+                count: 0,
+            },
+        })
+
+        it('leaves the bare entry in place so the provider can still read it', async () => {
+            await writeCanary13Record(store, passkeyRecord('cred-1'))
+
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result).toEqual({ migrated: 0, skipped: 1, failed: 0 })
+            expect(store.has('cred-1')).toBe(true)
+            expect(store.has('k/cred-1')).toBe(false)
+            expect(store.has('m/cred-1')).toBe(false)
+        })
+
+        it("still migrates the wallet's own records alongside one", async () => {
+            await writeCanary13Record(store, passkeyRecord('cred-1'))
+            await writeCanary13Record(store, algo25Record('key-1'))
+
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result).toEqual({ migrated: 1, skipped: 1, failed: 0 })
+            expect(store.has('k/key-1')).toBe(true)
+            expect(store.has('cred-1')).toBe(true)
+        })
+
+        // A dp256 key without the provider's origin/userHandle is ours.
+        it('does not mistake a plain hd-derived-p256 key for a passkey', async () => {
+            await writeCanary13Record(store, {
+                id: 'p256-1',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                extractable: false,
+                privateKey: new Uint8Array(32).fill(8),
+                metadata: { parentKeyId: 'main-1' },
+            })
+
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result).toEqual({ migrated: 1, skipped: 0, failed: 0 })
+            expect(store.has('k/p256-1')).toBe(true)
+        })
+    })
+
     // A material write that lands unreadable must not cost the canary.13 copy.
     it('keeps the canary.13 entry when the new buckets fail to read back', async () => {
         await writeCanary13Record(store, algo25Record('key-1'))
