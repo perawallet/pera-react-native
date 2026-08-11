@@ -40,16 +40,18 @@ export const ProviderSelectionItem = ({
             testID={testID}
             containerStyle={styles.item}
         >
-            <PWView style={styles.itemLeft}>
-                {left}
-                <PWText
-                    variant='body'
-                    style={styles.itemLabel}
-                >
-                    {label}
-                </PWText>
+            <PWView style={styles.itemRow}>
+                <PWView style={styles.itemLeft}>
+                    {left}
+                    <PWText
+                        variant='body'
+                        style={styles.itemLabel}
+                    >
+                        {label}
+                    </PWText>
+                </PWView>
+                <PWView style={styles.itemRight}>{right}</PWView>
             </PWView>
-            <PWView style={styles.itemRight}>{right}</PWView>
         </PWRadioButton>
     )
 }
