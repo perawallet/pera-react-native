@@ -24,7 +24,10 @@ import Animated, {
     runOnJS,
 } from 'react-native-reanimated'
 import { useStyles } from './styles'
-import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
+import {
+    EXPANDABLE_PANEL_ANIMATION_DURATION,
+    EXPANDABLE_PANEL_ANIMATION_EASING,
+} from '@constants/ui'
 
 export type ExpandablePanelProps = {
     isExpanded: boolean
@@ -64,7 +67,10 @@ export const ExpandablePanel = ({
         const targetOpacity = isExpanded ? 1 : 0
         animatedHeight.value = withTiming(
             targetHeight,
-            { duration: EXPANDABLE_PANEL_ANIMATION_DURATION },
+            {
+                duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
+                easing: EXPANDABLE_PANEL_ANIMATION_EASING,
+            },
             finished => {
                 'worklet'
                 if (finished && onStateChangeEnd) {
@@ -74,6 +80,7 @@ export const ExpandablePanel = ({
         )
         animatedOpacity.value = withTiming(targetOpacity, {
             duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
+            easing: EXPANDABLE_PANEL_ANIMATION_EASING,
         })
     }, [isExpanded, height, animatedHeight, animatedOpacity, onStateChangeEnd])
 
