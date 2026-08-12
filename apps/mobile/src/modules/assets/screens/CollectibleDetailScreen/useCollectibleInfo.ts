@@ -17,6 +17,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { formatWithUnits } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useClipboard } from '@hooks/useClipboard'
 import { useWebView } from '@modules/webview'
 import { routeCapabilities } from '@routes/capabilities'
 
@@ -25,6 +26,7 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
     const { network } = useNetwork()
     const config = getNetworkConfig(network)
     const { navigate } = useAppNavigation()
+    const { copyToClipboard } = useClipboard()
 
     // Same gate every other external link in the app uses (e.g.
     // useSettingsScreen's help-center links): the in-app webview bottom
@@ -63,6 +65,17 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
         openExternalLink(`${config.explorerUrl}/asset/${asset.assetId}`)
     }, [asset.assetId, openExternalLink, config.explorerUrl])
 
+    // Copies the full address — the row shows it truncated.
+    const onCreatorLongPressed = useCallback(
+        () => void copyToClipboard(asset.creator.address),
+        [copyToClipboard, asset.creator.address],
+    )
+
+    const onAssetIdLongPressed = useCallback(
+        () => void copyToClipboard(String(asset.assetId)),
+        [copyToClipboard, asset.assetId],
+    )
+
     const { amount: totalSupplyAmount, unit: totalSupplyUnit } =
         formatWithUnits(toWholeUnits(asset.totalSupply, asset))
 
@@ -72,7 +85,9 @@ export const useCollectibleInfo = (asset: PeraAsset) => {
         // than opening the schemeless relative paths the interpolations would
         // otherwise produce.
         onCreatorPressed: config.explorerUrl ? creatorPressed : undefined,
+        onCreatorLongPressed,
         onAssetIdPressed,
+        onAssetIdLongPressed,
         onOpenExplorer: config.explorerUrl ? openExplorer : undefined,
         totalSupplyAmount,
         totalSupplyUnit,

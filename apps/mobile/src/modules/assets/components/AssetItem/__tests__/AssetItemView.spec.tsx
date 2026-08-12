@@ -10,11 +10,17 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@test-utils/render'
 import { PWText } from '@components/core'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { AssetItemView } from '../AssetItemView'
+
+const mockCopyToClipboard = vi.fn()
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
+}))
 
 const asset: DisplayableAsset = {
     assetId: '123',
@@ -24,6 +30,10 @@ const asset: DisplayableAsset = {
 }
 
 describe('AssetItemView', () => {
+    beforeEach(() => {
+        mockCopyToClipboard.mockClear()
+    })
+
     it('renders the asset name, subtitle and the right slot', () => {
         render(
             <AssetItemView
@@ -78,6 +88,46 @@ describe('AssetItemView', () => {
         )
         expect(screen.queryByText('TST - 123')).toBeNull()
         expect(screen.getByTestId('deleted-label')).toBeTruthy()
+    })
+
+    it('copies the asset id on a long press anywhere on the row', () => {
+        render(
+            <AssetItemView
+                asset={asset}
+                copyableAssetId
+            />,
+        )
+
+        // The setup mock maps onLongPress to onContextMenu.
+        fireEvent.contextMenu(screen.getByTestId('asset_row_123'))
+
+        expect(mockCopyToClipboard).toHaveBeenCalledWith('123')
+    })
+
+    it('never copies for the ALGO row, even with copyableAssetId', () => {
+        const algo: DisplayableAsset = {
+            assetId: '0',
+            name: 'Algo',
+            unitName: 'ALGO',
+        }
+        render(
+            <AssetItemView
+                asset={algo}
+                copyableAssetId
+            />,
+        )
+
+        fireEvent.contextMenu(screen.getByTestId('asset_row_0'))
+
+        expect(mockCopyToClipboard).not.toHaveBeenCalled()
+    })
+
+    it('does not copy when copyableAssetId is off', () => {
+        render(<AssetItemView asset={asset} />)
+
+        fireEvent.contextMenu(screen.getByTestId('asset_row_123'))
+
+        expect(mockCopyToClipboard).not.toHaveBeenCalled()
     })
 
     it('uses the collectible title and collection name for collectibles', () => {

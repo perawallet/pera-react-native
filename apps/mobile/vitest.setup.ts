@@ -833,6 +833,7 @@ vi.mock('@components/core', () => {
         PWTouchableOpacity: ({
             children,
             onPress,
+            onLongPress,
             testID,
             isDisabled,
             disabled,
@@ -847,6 +848,8 @@ vi.mock('@components/core', () => {
                     ...props,
                     'aria-label': accessibilityLabel,
                     onClick: onPress,
+                    // DOM stand-in for long press; fire with fireEvent.contextMenu.
+                    onContextMenu: onLongPress,
                     role: 'button',
                     disabled: isDisabled ?? disabled,
                     // Prefer testID, then accessibilityIdentifier for deterministic test ids.
@@ -1150,6 +1153,7 @@ vi.mock('react-native', () => {
             .mockImplementation(
                 ({
                     onPress,
+                    onLongPress,
                     children,
                     activeOpacity,
                     testID,
@@ -1166,6 +1170,8 @@ vi.mock('react-native', () => {
                             ...props,
                             'aria-label': accessibilityLabel,
                             onClick: onPress,
+                            // DOM stand-in for long press; fire with fireEvent.contextMenu.
+                            onContextMenu: onLongPress,
                             ...(testID
                                 ? { 'data-testid': testID, testid: testID }
                                 : {}),

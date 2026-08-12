@@ -10,13 +10,23 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import {
     PeraAssetType,
     type DisplayableAsset,
 } from '@perawallet/wallet-core-assets'
-import { isAlgoAssetId, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isAlgoAssetId,
+    type Nullable,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
+import { useClipboard } from '@hooks/useClipboard'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
+
+type UseAssetItemViewOptions = {
+    copyableAssetId?: boolean
+}
 
 type UseAssetItemViewResult = {
     isCollectible: boolean
@@ -27,11 +37,16 @@ type UseAssetItemViewResult = {
     secondaryText: string
     verificationIcon: Nullable<IconName>
     iconShape: 'circle' | 'square'
+    /** Row-level long-press copy. Undefined when copying is off or the asset
+     *  is ALGO — its id (0) is never what the user wants on the clipboard. */
+    onCopyAssetId: Optional<() => void>
 }
 
 export const useAssetItemView = (
     asset: DisplayableAsset,
+    options?: UseAssetItemViewOptions,
 ): UseAssetItemViewResult => {
+    const { copyToClipboard } = useClipboard()
     const meta = asset.peraMetadata
     const isAlgo = isAlgoAssetId(asset.assetId)
     const isCollectible = meta?.type === PeraAssetType.collectible
@@ -66,6 +81,11 @@ export const useAssetItemView = (
           ? `${subtitleLeading} - ${asset.assetId}`
           : asset.assetId
 
+    const copyAssetId = useCallback(
+        () => void copyToClipboard(String(asset.assetId)),
+        [copyToClipboard, asset.assetId],
+    )
+
     return {
         isCollectible,
         isAlgo,
@@ -75,5 +95,7 @@ export const useAssetItemView = (
         secondaryText,
         verificationIcon,
         iconShape: isCollectible ? 'square' : 'circle',
+        onCopyAssetId:
+            options?.copyableAssetId && !isAlgo ? copyAssetId : undefined,
     }
 }

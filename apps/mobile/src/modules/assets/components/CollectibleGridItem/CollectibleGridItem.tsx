@@ -26,6 +26,7 @@ const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
         verificationIconName,
         title,
         collectionLabel,
+        handleLongPress,
     } = useCollectibleItem({ item, onPress })
 
     return (
@@ -33,6 +34,7 @@ const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
             testID={`collectible_row_${item.assetId}`}
             style={styles.container}
             onPress={onPress}
+            onLongPress={handleLongPress}
         >
             <PWView style={styles.imageContainer}>
                 <CollectibleThumbnail

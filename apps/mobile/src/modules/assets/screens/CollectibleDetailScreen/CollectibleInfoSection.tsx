@@ -40,7 +40,9 @@ export const CollectibleInfoSection = ({
     const { t } = useLanguage()
     const {
         onCreatorPressed,
+        onCreatorLongPressed,
         onAssetIdPressed,
+        onAssetIdLongPressed,
         onOpenExplorer,
         totalSupplyAmount,
         totalSupplyUnit,
@@ -53,6 +55,8 @@ export const CollectibleInfoSection = ({
                     <PWTouchableOpacity
                         style={styles.infoRow}
                         onPress={onCreatorPressed}
+                        onLongPress={onCreatorLongPressed}
+                        accessibilityHint='Long press to copy'
                     >
                         <PWText
                             variant='body'
@@ -79,6 +83,8 @@ export const CollectibleInfoSection = ({
             <PWTouchableOpacity
                 style={styles.infoRow}
                 onPress={onAssetIdPressed}
+                onLongPress={onAssetIdLongPressed}
+                accessibilityHint='Long press to copy'
             >
                 <PWText
                     variant='body'

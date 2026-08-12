@@ -17,6 +17,12 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useCollectibleItem } from '../useCollectibleItem'
 import type { CollectibleDisplayItem } from '@modules/assets/types/collectible'
 
+const mockCopyToClipboard = vi.fn()
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
+}))
+
 vi.mock('@perawallet/wallet-core-assets', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-assets')
@@ -115,5 +121,16 @@ describe('useCollectibleItem', () => {
 
         expect(result.current.hasBalance).toBe(false)
         expect(result.current.showAmount).toBe(false)
+    })
+
+    it('copies the asset id on long press', () => {
+        mockCopyToClipboard.mockClear()
+        const { result } = renderHook(() =>
+            useCollectibleItem({ item: buildItem() }),
+        )
+
+        result.current.handleLongPress()
+
+        expect(mockCopyToClipboard).toHaveBeenCalledWith('12345')
     })
 })
