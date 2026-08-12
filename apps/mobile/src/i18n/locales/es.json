@@ -1953,6 +1953,7 @@
         "edit_contact": "Editar contacto",
         "add_contact": "Nuevo contacto",
         "settings": "Ajustes",
+        "launch_settings": "Ajustes de inicio",
         "security": "Seguridad",
         "notifications": "Notificaciones",
         "wallet_connect": "Wallet Connect",
@@ -2153,6 +2154,7 @@
             "app_preferences_section": "Preferencias de la app",
             "currency_title": "Moneda",
             "theme_title": "Tema",
+            "launch_title": "Ajustes de inicio",
             "language_title": "Idioma",
             "support_section": "Soporte",
             "rate_title": "Valorar Pera Wallet",
@@ -2171,6 +2173,13 @@
             "system_label": "Predeterminado del sistema",
             "light_label": "Claro",
             "dark_label": "Oscuro"
+        },
+        "launch": {
+            "account_section": "Selección de cuenta",
+            "last_used_label": "Última cuenta utilizada",
+            "last_used_description": "Pera se abre en la última cuenta que usaste.",
+            "specific_label": "Una cuenta específica",
+            "specific_description": "Pera se abre siempre en la cuenta que elijas."
         },
         "language": {
             "system_label": "Predeterminado del sistema"

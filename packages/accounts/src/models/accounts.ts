@@ -160,3 +160,13 @@ export const AccountSortModes = {
 
 export type AccountSortMode =
     (typeof AccountSortModes)[keyof typeof AccountSortModes]
+
+export const LaunchAccountModes = {
+    /** Whichever account was active when the app was last closed. */
+    lastUsed: 'lastUsed',
+    /** A user-pinned account, re-selected on every cold start. */
+    specific: 'specific',
+} as const
+
+export type LaunchAccountMode =
+    (typeof LaunchAccountModes)[keyof typeof LaunchAccountModes]

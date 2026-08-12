@@ -1953,6 +1953,7 @@
         "edit_contact": "Kişiyi düzenle",
         "add_contact": "Yeni kişi ekle",
         "settings": "Ayarlar",
+        "launch_settings": "Başlangıç ayarları",
         "security": "Güvenlik",
         "notifications": "Bildirimler",
         "wallet_connect": "Wallet Connect",
@@ -2153,6 +2154,7 @@
             "app_preferences_section": "Uygulama tercihleri",
             "currency_title": "Para birimi",
             "theme_title": "Tema",
+            "launch_title": "Başlangıç ayarları",
             "language_title": "Dil",
             "support_section": "Destek",
             "rate_title": "Pera Wallet’i değerlendir",
@@ -2171,6 +2173,13 @@
             "system_label": "Sistem varsayılanı",
             "light_label": "Açık",
             "dark_label": "Koyu"
+        },
+        "launch": {
+            "account_section": "Hesap seçimi",
+            "last_used_label": "Son kullanılan hesap",
+            "last_used_description": "Pera, en son kullandığın hesapla açılır.",
+            "specific_label": "Belirli bir hesap",
+            "specific_description": "Pera her seferinde seçtiğin hesapla açılır."
         },
         "language": {
             "system_label": "Sistem varsayılanı"
