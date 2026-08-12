@@ -19,7 +19,10 @@ import {
     type Network,
 } from '@perawallet/wallet-core-shared'
 
-import { type AccountBalanceHistoryResponse } from '../models'
+import {
+    type AccountAssetBalanceHistoryResponse,
+    type AccountBalanceHistoryResponse,
+} from '../models'
 import { HOLDINGS_PAGE_LIMIT } from '../constants'
 
 export type OnChainAccountInformationResponse = Awaited<
@@ -93,12 +96,12 @@ export const fetchAccountAssetBalanceHistory = async (
     period: HistoryPeriod,
     currency: string,
     network: Network,
-): Promise<AccountBalanceHistoryResponse> => {
+): Promise<AccountAssetBalanceHistoryResponse> => {
     const endpointPath = getAccountAssetBalanceHistoryEndpointPath(
         address,
         assetId,
     )
-    const response = await queryClient<AccountBalanceHistoryResponse>({
+    const response = await queryClient<AccountAssetBalanceHistoryResponse>({
         backend: 'pera',
         network,
         method: 'GET',

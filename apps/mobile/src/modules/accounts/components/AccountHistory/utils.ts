@@ -10,42 +10,10 @@
  limitations under the License
  */
 
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import {
     TransactionFilter,
     type CustomDateRange,
 } from '../TransactionsFilterContent'
-import {
-    formatISODate,
-    formatDisplayDate,
-    parseRoundTime,
-} from '@perawallet/wallet-core-shared'
-import type { TransactionSection } from './useAccountHistory'
-
-/**
- * Groups transactions by date into sections.
- */
-export const groupTransactionsByDate = (
-    transactions: TransactionHistoryItem[],
-): TransactionSection[] => {
-    const groups: Record<string, TransactionHistoryItem[]> = {}
-
-    transactions.forEach(tx => {
-        const dateKey = formatISODate(parseRoundTime(tx.roundTime))
-        if (!groups[dateKey]) {
-            groups[dateKey] = []
-        }
-        groups[dateKey].push(tx)
-    })
-
-    return Object.entries(groups)
-        .sort(([a], [b]) => b.localeCompare(a)) // Sort by date descending
-        .map(([date, data]) => ({
-            date,
-            title: formatDisplayDate(date),
-            data,
-        }))
-}
 
 /**
  * Helper to get start/end dates for filters

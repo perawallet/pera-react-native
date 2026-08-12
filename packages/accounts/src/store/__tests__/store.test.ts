@@ -12,6 +12,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { act } from '@testing-library/react'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { WalletAccount } from '../../models'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -679,6 +680,180 @@ describe('services/accounts/store', () => {
 
             expect(updated).toBe(false)
             expect(useAccountsStore.getState().accounts[0].type).toBe('watch')
+        })
+    })
+
+    describe('launch account preference', () => {
+        const alice: WalletAccount = {
+            id: '1',
+            name: 'Alice',
+            type: 'algo25',
+            address: 'ALICE-ADDR',
+            canSign: true,
+        }
+        const bob: WalletAccount = {
+            id: '2',
+            name: 'Bob',
+            type: 'algo25',
+            address: 'BOB-ADDR',
+            canSign: true,
+        }
+
+        beforeEach(() => {
+            // The mock persist storage outlives vi.resetModules(), so a pin set
+            // by an earlier test rehydrates into this one. Every assertion here
+            // is about a transition from a known state, so reset explicitly.
+            useAccountsStore.getState().resetState()
+            useAccountsStore.getState().setAccounts([alice, bob])
+        })
+
+        test('defaults to lastUsed with no pinned address', () => {
+            const { launchAccountMode, launchAccountAddress } =
+                useAccountsStore.getState()
+
+            expect(launchAccountMode).toBe('lastUsed')
+            expect(launchAccountAddress).toBeNull()
+        })
+
+        test('pins a specific account', () => {
+            useAccountsStore
+                .getState()
+                .setLaunchAccountPreference('specific', 'BOB-ADDR')
+
+            const { launchAccountMode, launchAccountAddress } =
+                useAccountsStore.getState()
+            expect(launchAccountMode).toBe('specific')
+            expect(launchAccountAddress).toBe('BOB-ADDR')
+        })
+
+        test('refuses to pin an address that is not a known account', () => {
+            useAccountsStore
+                .getState()
+                .setLaunchAccountPreference('specific', 'GHOST-ADDR')
+
+            const { launchAccountMode, launchAccountAddress } =
+                useAccountsStore.getState()
+            expect(launchAccountMode).toBe('lastUsed')
+            expect(launchAccountAddress).toBeNull()
+        })
+
+        test('refuses to pin specific mode with no address at all', () => {
+            useAccountsStore.getState().setLaunchAccountPreference('specific')
+
+            expect(useAccountsStore.getState().launchAccountMode).toBe(
+                'lastUsed',
+            )
+        })
+
+        test('switching back to lastUsed clears the pinned address', () => {
+            useAccountsStore
+                .getState()
+                .setLaunchAccountPreference('specific', 'BOB-ADDR')
+
+            useAccountsStore.getState().setLaunchAccountPreference('lastUsed')
+
+            const { launchAccountMode, launchAccountAddress } =
+                useAccountsStore.getState()
+            expect(launchAccountMode).toBe('lastUsed')
+            expect(launchAccountAddress).toBeNull()
+        })
+
+        test('reverts to lastUsed when the pinned account is removed', () => {
+            useAccountsStore
+                .getState()
+                .setLaunchAccountPreference('specific', 'BOB-ADDR')
+
+            useAccountsStore.getState().setAccounts([alice])
+
+            const { launchAccountMode, launchAccountAddress } =
+                useAccountsStore.getState()
+            expect(launchAccountMode).toBe('lastUsed')
+            expect(launchAccountAddress).toBeNull()
+        })
+
+        test('keeps the pin when an unrelated account is removed', () => {
+            useAccountsStore
+                .getState()
+                .setLaunchAccountPreference('specific', 'BOB-ADDR')
+
+            useAccountsStore.getState().setAccounts([bob])
+
+            const { launchAccountMode, launchAccountAddress } =
+                useAccountsStore.getState()
+            expect(launchAccountMode).toBe('specific')
+            expect(launchAccountAddress).toBe('BOB-ADDR')
+        })
+
+        test('applyLaunchAccountPreference selects the pinned account', () => {
+            useAccountsStore.getState().setSelectedAccountAddress('ALICE-ADDR')
+            useAccountsStore
+                .getState()
+                .setLaunchAccountPreference('specific', 'BOB-ADDR')
+
+            useAccountsStore.getState().applyLaunchAccountPreference()
+
+            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+                'BOB-ADDR',
+            )
+        })
+
+        test('applyLaunchAccountPreference leaves lastUsed selection alone', () => {
+            useAccountsStore.getState().setSelectedAccountAddress('BOB-ADDR')
+
+            useAccountsStore.getState().applyLaunchAccountPreference()
+
+            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+                'BOB-ADDR',
+            )
+        })
+
+        // The launch fields were added without bumping the persist version, on
+        // the theory that zustand's default shallow merge leaves absent keys at
+        // their initial-state values. This asserts that rather than trusting
+        // it: seed storage with exactly what a pre-PERA-4855 build wrote, and
+        // require the upgrade to be a no-op for existing users.
+        test('rehydrates a pre-launch-preference payload without a migration', async () => {
+            const legacyPayload = {
+                state: {
+                    accounts: [alice, bob],
+                    selectedAccountAddress: 'BOB-ADDR',
+                    sortMode: 'alphabeticalAsc',
+                    manualAccountOrder: ['BOB-ADDR', 'ALICE-ADDR'],
+                },
+                version: 0,
+            }
+            getProvider().keyValueStorage.setItem(
+                'accounts-store',
+                JSON.stringify(legacyPayload),
+            )
+
+            vi.resetModules()
+            const module = await import('../store')
+            await module.useAccountsStore.persist.rehydrate()
+
+            const state = module.useAccountsStore.getState()
+            expect(state.accounts).toEqual([alice, bob])
+            expect(state.selectedAccountAddress).toBe('BOB-ADDR')
+            expect(state.sortMode).toBe('alphabeticalAsc')
+            expect(state.manualAccountOrder).toEqual(['BOB-ADDR', 'ALICE-ADDR'])
+            expect(state.launchAccountMode).toBe('lastUsed')
+            expect(state.launchAccountAddress).toBeNull()
+        })
+
+        test('applyLaunchAccountPreference ignores a pin that no longer resolves', () => {
+            // Reaches past setLaunchAccountPreference's guard to simulate state
+            // rehydrated from a build where the account still existed.
+            useAccountsStore.setState({
+                launchAccountMode: 'specific',
+                launchAccountAddress: 'GHOST-ADDR',
+                selectedAccountAddress: 'ALICE-ADDR',
+            })
+
+            useAccountsStore.getState().applyLaunchAccountPreference()
+
+            expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+                'ALICE-ADDR',
+            )
         })
     })
 })

@@ -303,7 +303,7 @@ describe('transaction repository', () => {
         expect(result[0].balanceImpacts).toEqual([])
     })
 
-    it('supports beforeRoundTime pagination', async () => {
+    it('supports atOrBeforeRoundTime pagination', async () => {
         await upsertTransactions({
             db,
             items: [
@@ -319,10 +319,34 @@ describe('transaction repository', () => {
             db,
             accountAddress: 'ACCT1',
             network: 'mainnet',
-            beforeRoundTime: 2500,
+            atOrBeforeRoundTime: 2500,
         })
 
         expect(result.map(r => r.id)).toEqual(['TX2', 'TX1'])
+    })
+
+    // The cursor is inclusive so an atomic group straddling a page edge isn't
+    // silently dropped; the caller filters the ids it already holds.
+    it('includes transactions exactly at the cursor round time', async () => {
+        await upsertTransactions({
+            db,
+            items: [
+                makeTx({ id: 'TX1', roundTime: 1000 }),
+                makeTx({ id: 'TX2', roundTime: 2000 }),
+                makeTx({ id: 'TX3', roundTime: 2000 }),
+            ],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        const result = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+            atOrBeforeRoundTime: 2000,
+        })
+
+        expect(result.map(r => r.id).sort()).toEqual(['TX1', 'TX2', 'TX3'])
     })
 
     describe('date range filtering', () => {

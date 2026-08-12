@@ -838,6 +838,127 @@ describe('useWalletConnectHandlers', () => {
             ).toThrow(WalletConnectInvalidSessionError)
         })
 
+        it('accepts a signer that is the rekeyAddress of a session account', () => {
+            // use-wallet v5 resolves the ARC-60 signer to the connected
+            // account's auth address, which is never in session.accounts.
+            ;(canSignArbitraryData as any).mockReturnValue(true)
+            ;(useAllAccounts as any).mockReturnValue([
+                {
+                    address: 'addr1',
+                    name: 'Rekeyed',
+                    type: 'standard',
+                    rekeyAddress: 'auth-addr',
+                },
+                { address: 'auth-addr', name: 'Auth', type: 'standard' },
+            ])
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            result.current.handleSignData(
+                connector,
+                Networks.mainnet,
+                null,
+                arc60Payload({ signer: 'auth-addr' }),
+            )
+
+            expect(mockAddSignRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'arc60',
+                    stdSigData: expect.objectContaining({
+                        signer: 'auth-addr',
+                    }),
+                }),
+            )
+        })
+
+        it('rejects a signer that is only the rekeyAddress of a non-session account', () => {
+            ;(useAllAccounts as any).mockReturnValue([
+                { address: 'addr1', name: 'Connected', type: 'standard' },
+                {
+                    address: 'other-addr',
+                    name: 'Not connected',
+                    type: 'standard',
+                    rekeyAddress: 'auth-addr',
+                },
+                { address: 'auth-addr', name: 'Auth', type: 'standard' },
+            ])
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            expect(() =>
+                result.current.handleSignData(
+                    connector,
+                    Networks.mainnet,
+                    null,
+                    arc60Payload({ signer: 'auth-addr' }),
+                ),
+            ).toThrow('Invalid signer')
+        })
+
+        it('rejects a rekey-resolved signer whose account is not in the wallet', () => {
+            // Session check passes via the rekey chain, but the auth account
+            // itself was never imported — capability check must still refuse.
+            ;(useAllAccounts as any).mockReturnValue([
+                {
+                    address: 'addr1',
+                    name: 'Rekeyed',
+                    type: 'standard',
+                    rekeyAddress: 'auth-addr',
+                },
+            ])
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            expect(() =>
+                result.current.handleSignData(
+                    connector,
+                    Networks.mainnet,
+                    null,
+                    arc60Payload({ signer: 'auth-addr' }),
+                ),
+            ).toThrow('Signer cannot sign ARC-60 payloads')
+        })
+
+        it('legacy arbitrary-data path does not follow rekeys', () => {
+            // Off-chain legacy signing has no auth-addr lookup — the dApp
+            // verifies against the requested account's own pubkey — so the
+            // rekey acceptance is deliberately ARC-60-only.
+            ;(useAllAccounts as any).mockReturnValue([
+                {
+                    address: 'addr1',
+                    name: 'Rekeyed',
+                    type: 'standard',
+                    rekeyAddress: 'auth-addr',
+                },
+                { address: 'auth-addr', name: 'Auth', type: 'standard' },
+            ])
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            expect(() =>
+                result.current.handleSignData(
+                    connector,
+                    Networks.mainnet,
+                    null,
+                    {
+                        id: 7,
+                        params: [
+                            {
+                                message: 'Sign me',
+                                data: 'somedata',
+                                chainId: 4160,
+                                signer: 'auth-addr',
+                            },
+                        ],
+                    },
+                ),
+            ).toThrow('Invalid signer')
+        })
+
         it('throws WalletConnectInvalidSessionError for Ledger accounts', () => {
             signingAccountsState.current = [
                 {

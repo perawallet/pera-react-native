@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type AssetPrices } from '../models'
 import { getAssetPricesQueryKey } from './querykeys'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useStableIdList } from '@perawallet/wallet-core-shared'
 import { getAssetPricesByIds } from '../db'
 
 type UseAssetPricesQueryResult = {
@@ -32,14 +33,10 @@ export const useAssetPricesQuery = (
 ): UseAssetPricesQueryResult => {
     const { network } = useNetwork()
 
-    // Keep a stable reference to ids — only update when the actual content changes.
-    // This prevents query recomputation when callers pass a new array with the same values.
-    const idsKey = ids.join(',')
-    const idsRef = useRef({ ids, key: idsKey })
-    if (idsKey !== idsRef.current.key) {
-        idsRef.current = { ids, key: idsKey }
-    }
-    const stableIds = idsRef.current.ids
+    // Keep a stable reference to ids — only update when the actual content
+    // changes. This prevents query recomputation when callers pass a new array
+    // with the same values.
+    const stableIds = useStableIdList(ids)
 
     const query = useQuery({
         queryKey: getAssetPricesQueryKey(stableIds, network),

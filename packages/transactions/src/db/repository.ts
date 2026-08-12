@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { eq, and, desc, lt, gte, sql, notExists } from 'drizzle-orm'
+import { eq, and, desc, lt, lte, gte, sql, notExists } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type {
@@ -211,7 +211,12 @@ type GetTransactionHistoryParams = {
     network: string
     assetId?: string
     limit?: number
-    beforeRoundTime?: number
+    /**
+     * Cursor for keyset pagination: only include txs at or before this round
+     * time. Inclusive because an atomic group shares one round time and can
+     * straddle a page edge — the caller drops the ids it already holds.
+     */
+    atOrBeforeRoundTime?: number
     /** Optional: only include txs on/after this date (YYYY-MM-DD, inclusive) */
     afterTime?: string
     /** Optional: only include txs on/before this date (YYYY-MM-DD, inclusive) */
@@ -224,7 +229,7 @@ export async function getTransactionHistory({
     network,
     assetId,
     limit = 25,
-    beforeRoundTime,
+    atOrBeforeRoundTime,
     afterTime,
     beforeTime,
 }: GetTransactionHistoryParams): Promise<TransactionHistoryItem[]> {
@@ -239,9 +244,9 @@ export async function getTransactionHistory({
         )
     }
 
-    if (beforeRoundTime !== undefined) {
+    if (atOrBeforeRoundTime !== undefined) {
         conditions.push(
-            lt(AccountTransactionsSchema.roundTime, beforeRoundTime),
+            lte(AccountTransactionsSchema.roundTime, atOrBeforeRoundTime),
         )
     }
 

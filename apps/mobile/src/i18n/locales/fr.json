@@ -1953,6 +1953,7 @@
         "edit_contact": "Modifier le contact",
         "add_contact": "Nouveau contact",
         "settings": "Paramètres",
+        "launch_settings": "Paramètres de démarrage",
         "security": "Sécurité",
         "notifications": "Notifications",
         "wallet_connect": "Wallet Connect",
@@ -2153,6 +2154,7 @@
             "app_preferences_section": "Préférences de l’app",
             "currency_title": "Devise",
             "theme_title": "Thème",
+            "launch_title": "Paramètres de démarrage",
             "language_title": "Langue",
             "support_section": "Assistance",
             "rate_title": "Noter Pera Wallet",
@@ -2171,6 +2173,13 @@
             "system_label": "Paramètre système",
             "light_label": "Clair",
             "dark_label": "Sombre"
+        },
+        "launch": {
+            "account_section": "Sélection du compte",
+            "last_used_label": "Dernier compte utilisé",
+            "last_used_description": "Pera s’ouvre sur le dernier compte que vous avez utilisé.",
+            "specific_label": "Un compte spécifique",
+            "specific_description": "Pera s’ouvre à chaque fois sur le compte que vous choisissez."
         },
         "language": {
             "system_label": "Paramètre système"
