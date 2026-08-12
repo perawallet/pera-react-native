@@ -128,6 +128,50 @@ const HD_ROOT_SHADOW_TYPES: ReadonlySet<string> = new Set([
     'seed',
 ])
 
+const SEALED_ENVELOPE_FIELDS: ReadonlySet<string> = new Set([
+    'iv',
+    'tag',
+    'content',
+])
+
+/**
+ * True for a sealed envelope our own encoder could not have written.
+ *
+ * `@scure/base`'s `base64.encode` always pads, so every payload the keystore
+ * writes decodes cleanly. The iOS credential provider seals with Foundation's
+ * encoder and emits **unpadded** base64 — well-formed JSON that `openData`
+ * rejects (`padding: invalid, string should have whole number of bytes`) before
+ * the record can be typed, which is why `isPasskeyCredential` never sees it.
+ *
+ * The distinction earns its keep: a record of ours that fails to open must keep
+ * counting as a failure so the stamp is withheld and a later run retries, while
+ * a foreign one never becomes readable and would withhold the stamp forever.
+ */
+const isForeignEnvelope = (raw: string): boolean => {
+    let parsed: unknown
+    try {
+        parsed = JSON.parse(raw)
+    } catch {
+        return false
+    }
+    if (typeof parsed !== 'object' || parsed === null) return false
+
+    const sealedFields = Object.entries(
+        parsed as Record<string, unknown>,
+    ).filter(([field]) => SEALED_ENVELOPE_FIELDS.has(field))
+    if (sealedFields.length === 0) return false
+
+    return sealedFields.some(([, value]) => {
+        if (typeof value !== 'string') return true
+        try {
+            base64.decode(value)
+            return false
+        } catch {
+            return true
+        }
+    })
+}
+
 /** Material lifted out of a record, addressed by the id it belongs to. */
 type LiftedMaterial = { id: string; bytes: Uint8Array }
 
@@ -382,7 +426,26 @@ export const migrateKeystoreLayout = async (
                 continue
             }
 
-            const record = deps.decode(await deps.openData(masterKey, raw))
+            // Reading is its own step so a foreign record can be told apart
+            // from one of ours that failed. The iOS credential provider's
+            // records throw here — before `isPasskeyCredential` below could
+            // recognise them — and no retry will ever change that, so treating
+            // them as failures withholds the stamp for good and makes every
+            // launch re-read the Keychain master key to fail again. Nothing is
+            // written or removed for this id, so the owning process still reads
+            // it back exactly where it left it. Anything else rethrows and is
+            // counted a failure, unchanged.
+            let record: KeyData
+            try {
+                record = deps.decode(await deps.openData(masterKey, raw))
+            } catch (err) {
+                if (!isForeignEnvelope(raw)) throw err
+                console.warn(
+                    `[provider] keystore layout migration: entry ${id} was not written by this keystore; leaving it untouched`,
+                )
+                result.skipped += 1
+                continue
+            }
 
             // Owned by another process on the old layout — re-indexing it would
             // delete the key that process reads back by.

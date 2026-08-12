@@ -22,6 +22,7 @@ import {
     migrateKeystoreLayout,
     type KeystoreLayoutMigrationDeps,
 } from '../migrateKeystoreLayout'
+import { MATERIAL_PREFIX, METADATA_PREFIX } from '../prefixes'
 
 // The keystore package cannot be imported off device — it pulls in
 // react-native-quick-crypto, whose entry point node cannot parse. These stand-ins
@@ -708,6 +709,54 @@ describe('migrateKeystoreLayout', () => {
 
             expect(result).toEqual({ migrated: 1, skipped: 0, failed: 0 })
             expect(store.has('k/p256-1')).toBe(true)
+        })
+    })
+
+    // The type-based guard above only works on a record this pass can decrypt
+    // and decode. The iOS provider seals with its own encoder and writes
+    // UNPADDED base64, which `openData` rejects outright — so its records throw
+    // before they can be classified, observed on device as
+    // `entry swdyhOn0…= left unmigrated [Error: padding: invalid…]`.
+    describe('an entry this pass cannot read', () => {
+        const IOS_CREDENTIAL_ID = 'swdyhOn0NVGTv+haYcAHIPsCSudyr56t6oEFNeIaim0='
+
+        beforeEach(() => {
+            store.set(
+                IOS_CREDENTIAL_ID,
+                JSON.stringify({
+                    iv: 'PooaBTuDCIcrH1OK',
+                    tag: '5NiQHZWGynEtDVZUwROBGg==',
+                    content: 'KV/fHQVc7/w8/0WTT2yKhQS5cPAKBIjzdVrWToV2D8s',
+                }),
+            )
+        })
+
+        it('leaves it on disk so the process that owns it keeps working', async () => {
+            await migrateKeystoreLayout(deps())
+
+            expect(store.has(IOS_CREDENTIAL_ID)).toBe(true)
+            expect(store.has(METADATA_PREFIX + IOS_CREDENTIAL_ID)).toBe(false)
+            expect(store.has(MATERIAL_PREFIX + IOS_CREDENTIAL_ID)).toBe(false)
+        })
+
+        // Unreadable is terminal, not transient: retrying buys nothing, and
+        // counting it as a failure strands the stamp so every launch re-reads
+        // the Keychain master key and fails again.
+        it('does not block the version stamp', async () => {
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result.failed).toBe(0)
+            expect(store.get(LAYOUT_VERSION_KEY)).toBe(String(LAYOUT_VERSION))
+        })
+
+        it('does not stop a real record beside it from migrating', async () => {
+            await writeCanary13Record(store, algo25Record('key-1'))
+
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result.migrated).toBe(1)
+            expect(store.has('k/key-1')).toBe(true)
+            expect(store.get(LAYOUT_VERSION_KEY)).toBe(String(LAYOUT_VERSION))
         })
     })
 
