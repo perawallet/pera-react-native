@@ -19,6 +19,33 @@ import {
 } from './constants'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+export const isWalletConnectScheme = (url: string): boolean => {
+    const normalizedUrl = normalizeUrl(url)
+    return (
+        normalizedUrl.startsWith(`${WC_SCHEME}:`) ||
+        normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`) ||
+        normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)
+    )
+}
+
+/**
+ * The dApp SDK's "return-to-wallet" focus signal (`wc://?browser=…`): a
+ * wc-schemed URL with no `<topic>@<version>` segment and no wrapped `uri=`
+ * param. It exists only to foreground the wallet — the actual request rides
+ * the already-open socket — so it must never surface an error. Anything
+ * wc-schemed that fails to parse but ISN'T a focus hint is a failed pairing
+ * the user should hear about.
+ */
+export const isWalletConnectFocusHint = (url: string): boolean => {
+    if (!isWalletConnectScheme(url)) return false
+    const normalizedUrl = normalizeUrl(url)
+    if (/[?&]uri=/.test(normalizedUrl)) return false
+    const beforeQuery = normalizedUrl
+        .replace(/^[a-z0-9-]+:(\/\/)?/, '')
+        .split('?')[0]
+    return !/@\d/.test(beforeQuery)
+}
+
 /**
  * Parse WalletConnect URIs: wc://, perawallet-wc://, or algorand-wc://
  * These are NOT parsed, just wrapped and normalized for the WalletConnect library to handle
@@ -37,14 +64,38 @@ export const parseWalletConnectUri = (
     }
 
     let wcUri = normalizedUrl
+    let browserName: string | undefined
     // Wrapper format: wc://wc?uri=wc%3A... or perawallet-wc://wc?uri=wc%3A...
-    // The actual WC URI is URL-encoded in the 'uri' query param
-    const uriMatch = normalizedUrl.match(/[?&]uri=([^&]+)/)
+    // The actual WC URI is URL-encoded in the 'uri' query param. Captured to
+    // end-of-string, NOT to the next '&': hand-rolled dApp redirects often
+    // skip the encoding, and a [^&]+ capture would silently drop the inner
+    // URI's own `key=` param — a guaranteed pairing timeout. The wrapper's
+    // own params (`@perawallet/connect` appends browser / singleAccount /
+    // selectedAccount after the uri) are bounded off explicitly instead.
+    const uriMatch = normalizedUrl.match(/[?&]uri=(.+)$/)
     if (uriMatch) {
+        const bounded = uriMatch[1].replace(
+            /&(?:browser|singleAccount|selectedAccount)=.*$/,
+            '',
+        )
         try {
-            wcUri = decodeURIComponent(uriMatch[1])
+            wcUri = decodeURIComponent(bounded)
         } catch {
             return null
+        }
+        // The iOS @perawallet/connect wrapper appends the initiating
+        // browser after the encoded uri; keep it so the connection
+        // success sheet can deep-link back to that browser. Scoped to
+        // the wrapper form — a `browser` param inside a raw WC URI
+        // belongs to the WC client, not to us.
+        const browserMatch = normalizedUrl.match(/[?&]browser=([^&]+)/)
+        if (browserMatch) {
+            try {
+                browserName = decodeURIComponent(browserMatch[1])
+            } catch {
+                // Malformed encoding only costs the return CTA,
+                // never the pairing itself.
+            }
         }
     } else if (normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`)) {
         // Legacy format: perawallet-wc:topic@1?...  →  wc:topic@1?...
@@ -77,5 +128,6 @@ export const parseWalletConnectUri = (
         type: DeeplinkType.WALLET_CONNECT,
         sourceUrl: url,
         uri: wcUri,
+        browserName,
     }
 }

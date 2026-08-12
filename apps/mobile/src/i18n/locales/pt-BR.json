@@ -157,6 +157,8 @@
             "body_generic": "Não conseguimos processar o link. Tente novamente.",
             "title_walletconnect": "Falha no WalletConnect",
             "body_walletconnect": "Não conseguimos conectar ao dApp. A sessão pode ter expirado ou o bridge pode estar inacessível.",
+            "title_wc_unsupported": "Link de conexão não suportado",
+            "body_wc_unsupported": "O Pera não consegue usar este link do WalletConnect. Reconecte a partir do dApp e tente novamente.",
             "title_keyreg": "Não foi possível preparar o registro de chaves",
             "body_keyreg": "Não conseguimos criar a transação de registro de chaves.",
             "body_keyreg_unknown_account": "Este registro de chaves é de uma conta que você não tem nesta wallet. Adicione a conta primeiro e escaneie novamente.",
@@ -2632,6 +2634,9 @@
         "menu": "Menu"
     },
     "walletconnect": {
+        "pairing": {
+            "connecting": "Conectando ao dApp..."
+        },
         "request": {
             "title": "{{name}} quer se conectar à sua conta",
             "permissions_title_zero": "{{count}} permissões solicitadas",
@@ -2643,6 +2648,8 @@
             "accounts_title": "SELECIONAR CONTAS",
             "success_sheet_title": "Conexão estabelecida com {{name}}",
             "success_sheet_body": "Volte para {{name}} para continuar e concluir sua operação. Você encontra todas as sessões conectadas na página de configurações dedicada.",
+            "success_sheet_return_to_dapp": "Voltar para {{name}}",
+            "success_sheet_return_to_dapp_generic": "Voltar para o dApp",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
             "networks_betanet": "Betanet",

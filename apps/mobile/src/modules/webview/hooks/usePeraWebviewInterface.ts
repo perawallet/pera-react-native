@@ -356,7 +356,7 @@ export const usePeraWebviewInterface = (
                     const uri = message.params!.uri as string
 
                     if (parseDeeplink(uri)) {
-                        void handleDeepLink(uri, false, 'deeplink')
+                        void handleDeepLink(uri, false, 'in-app')
                         return
                     }
 
@@ -908,7 +908,9 @@ export const usePeraWebviewInterface = (
             // bounded like the deeplink path so the page gets a readable error
             // rather than silence.
             void (async () => {
-                const result = await pair(parsed.uri)
+                const result = await pair(parsed.uri, {
+                    origin: { source: 'in-app' },
+                })
                 if (result.type === 'connect-failed') {
                     logger.error('[webview/wc] connect failed', {
                         error: result.error,

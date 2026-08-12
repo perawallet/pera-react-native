@@ -227,6 +227,12 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: mockConnect }),
+    waitForSessionOutcome: vi.fn(async () => ({ type: 'session' })),
+    abandonPairing: vi.fn(),
+    // Real values from packages/walletconnect/src/constants.ts.
+    WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
+    WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS: 15_000,
+    WC_LATE_SESSION_GRACE_MS: 60_000,
 }))
 
 vi.mock('@modules/webview/hooks', () => ({
@@ -301,6 +307,7 @@ vi.mock('react-native', () => ({
         getInitialURL: vi.fn(),
         addEventListener: vi.fn(() => ({ remove: vi.fn() })),
     },
+    Platform: { OS: 'ios' },
 }))
 
 // Test fixtures derived from /Users/williambeaumont/Documents/deeplinks.csv.

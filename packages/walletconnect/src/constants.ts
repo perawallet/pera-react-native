@@ -51,6 +51,26 @@ export const SESSION_REQUEST_TTL_MS = 5 * 60 * 1000
  */
 export const WC_SESSION_OUTCOME_TIMEOUT_MS = 8000
 
+/**
+ * Outcome budget for pairings that arrive via an OS deep link from a mobile
+ * browser. That path pays for an app switch the 8s default never sees: a
+ * fresh WSS handshake to the bridge, the topic subscribe, and the bridge
+ * replaying the dApp's queued `session_request` — possibly on a device that
+ * just cold-started (the clock can also run behind the PIN screen). QR and
+ * in-app-browser pairings keep the 8s default; they pair from a warm,
+ * foregrounded app.
+ */
+export const WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS = 15_000
+
+/**
+ * After a pairing outcome times out, how much longer a late
+ * `session_request` is still honored before the pairing connector is
+ * abandoned (`abandonPairing`). Within the grace, a straggler session still
+ * opens the approval sheet; past it, nothing may ever pop — the request TTL
+ * alone would otherwise let a ghost sheet appear minutes later.
+ */
+export const WC_LATE_SESSION_GRACE_MS = 60_000
+
 export {
     MAX_DATA_SIGN_REQUESTS,
     MAX_TRANSACTION_SIGN_REQUESTS,

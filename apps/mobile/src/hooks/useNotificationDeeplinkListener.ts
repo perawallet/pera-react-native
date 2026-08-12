@@ -52,7 +52,7 @@ export const useNotificationDeeplinkListener = () => {
                     return
                 }
                 if (payload.url && isValidDeepLink(payload.url)) {
-                    void handleDeepLink(payload.url, false, 'deeplink')
+                    void handleDeepLink(payload.url, false, 'notification')
                 }
             })
 

@@ -28,7 +28,9 @@ import {
 import { StackActions } from '@react-navigation/native'
 import { parseDeeplink } from '../deeplink/parser'
 import { DeeplinkType } from '../deeplink/types'
-import { Linking } from 'react-native'
+import { Linking, Platform } from 'react-native'
+import { useReturnToDappStore } from '@modules/walletconnect/stores/useReturnToDappStore'
+import { usePairingProgressStore } from '@modules/walletconnect/stores/usePairingProgressStore'
 import {
     useImportAccount,
     setPendingImportMnemonic,
@@ -226,20 +228,25 @@ vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
 // The pairing outcome wait lives in the walletconnect package (its store
 // subscription is covered by the package's own sessionOutcome spec) — the
 // deeplink tests only pin which outcome drives which callback.
-const { mockWcConnect, mockWaitForSessionOutcome } = vi.hoisted(() => ({
-    mockWcConnect: vi.fn(async () => 'pairing-client'),
-    mockWaitForSessionOutcome: vi.fn(
-        async (): Promise<{ type: string; error?: Error }> => ({
-            type: 'session',
-        }),
-    ),
-}))
+const { mockWcConnect, mockWaitForSessionOutcome, mockAbandonPairing } =
+    vi.hoisted(() => ({
+        mockWcConnect: vi.fn(async () => 'pairing-client'),
+        mockWaitForSessionOutcome: vi.fn(
+            async (): Promise<{ type: string; error?: Error }> => ({
+                type: 'session',
+            }),
+        ),
+        mockAbandonPairing: vi.fn(),
+    }))
 
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: mockWcConnect }),
     waitForSessionOutcome: mockWaitForSessionOutcome,
-    // Real value from packages/walletconnect/src/constants.ts.
+    abandonPairing: mockAbandonPairing,
+    // Real values from packages/walletconnect/src/constants.ts.
     WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
+    WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS: 15_000,
+    WC_LATE_SESSION_GRACE_MS: 60_000,
 }))
 
 const {
@@ -349,9 +356,10 @@ vi.mock('@modules/transactions/hooks', () => ({
     },
 }))
 
-const { mockInfoToast, mockErrorToast } = vi.hoisted(() => ({
+const { mockInfoToast, mockErrorToast, mockHideToast } = vi.hoisted(() => ({
     mockInfoToast: vi.fn(),
     mockErrorToast: vi.fn(),
+    mockHideToast: vi.fn(),
 }))
 
 vi.mock('../useToast', () => ({
@@ -359,6 +367,7 @@ vi.mock('../useToast', () => ({
         showToast: vi.fn(),
         errorToast: mockErrorToast,
         infoToast: mockInfoToast,
+        hideToast: mockHideToast,
     })),
 }))
 
@@ -368,6 +377,7 @@ vi.mock('react-native', () => ({
         addEventListener: vi.fn(() => ({ remove: vi.fn() })),
         openURL: vi.fn(async () => undefined),
     },
+    Platform: { OS: 'ios' },
 }))
 
 describe('useDeepLink', () => {
@@ -488,6 +498,16 @@ describe('useDeepLink', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
+    it('returns stable handler identities across rerenders so the Linking subscription never churns', () => {
+        const { result, rerender } = renderHook(() => useDeepLink())
+        const first = result.current
+
+        rerender()
+
+        expect(result.current.handleDeepLink).toBe(first.handleDeepLink)
+        expect(result.current.isValidDeepLink).toBe(first.isValidDeepLink)
+    })
+
     it('treats a new WalletConnect session_request as success', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.WALLET_CONNECT,
@@ -583,6 +603,289 @@ describe('useDeepLink', () => {
         expect(onError).toHaveBeenCalledTimes(1)
         expect(onSuccess).not.toHaveBeenCalled()
         expect(onConnectionError).not.toHaveBeenCalled()
+    })
+
+    describe('WalletConnect return-to-dapp gating', () => {
+        const wcDeeplink = (browserName?: string) => ({
+            type: DeeplinkType.WALLET_CONNECT,
+            uri: 'wc:123',
+            sourceUrl: 'perawallet-wc://wc?uri=wc%3A123',
+            browserName,
+        })
+
+        beforeEach(() => {
+            useReturnToDappStore.getState().resetState()
+            usePairingProgressStore.getState().resetState()
+            mockWaitForSessionOutcome.mockResolvedValueOnce({
+                type: 'session',
+            })
+        })
+
+        it('records a return context for an OS deep link that names the browser (iOS wrapper)', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink('chrome'))
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet-wc://wc?uri=wc%3A123',
+                    false,
+                    'deeplink',
+                )
+            })
+
+            expect(
+                useReturnToDappStore.getState().returnContexts[
+                    'pairing-client'
+                ],
+            ).toMatchObject({
+                origin: 'external-browser',
+                browserName: 'chrome',
+            })
+        })
+
+        it('records an external-browser origin without a browser name when the wrapper named none', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink(undefined))
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'wc:123?bridge=x&key=y',
+                    false,
+                    'deeplink',
+                )
+            })
+
+            const context =
+                useReturnToDappStore.getState().returnContexts['pairing-client']
+            expect(context).toMatchObject({ origin: 'external-browser' })
+            expect(context.browserName).toBeUndefined()
+        })
+
+        it('records a context on Android even without a browser name (raw wc: intent)', async () => {
+            const platform = Platform as { OS: string }
+            const originalOS = platform.OS
+            platform.OS = 'android'
+            try {
+                ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink(undefined))
+                const { result } = renderHook(() => useDeepLink())
+
+                await act(async () => {
+                    await result.current.handleDeepLink(
+                        'wc:123?bridge=x&key=y',
+                        false,
+                        'deeplink',
+                    )
+                })
+
+                expect(
+                    useReturnToDappStore.getState().returnContexts[
+                        'pairing-client'
+                    ],
+                ).toBeDefined()
+            } finally {
+                platform.OS = originalOS
+            }
+        })
+
+        it('records a qr origin for a QR-scanned pairing', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink('chrome'))
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet-wc://wc?uri=wc%3A123',
+                    false,
+                    'qr',
+                )
+            })
+
+            expect(
+                useReturnToDappStore.getState().returnContexts[
+                    'pairing-client'
+                ],
+            ).toMatchObject({ origin: 'qr' })
+        })
+
+        it('gives an OS deep-link pairing the extended 15s outcome budget', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink('chrome'))
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet-wc://wc?uri=wc%3A123',
+                    false,
+                    'deeplink',
+                )
+            })
+
+            expect(mockWaitForSessionOutcome).toHaveBeenCalledWith(
+                'pairing-client',
+                15_000,
+            )
+        })
+
+        it('keeps the 8s outcome budget for QR pairings', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink(undefined))
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'wc:123?bridge=x&key=y',
+                    false,
+                    'qr',
+                )
+            })
+
+            expect(mockWaitForSessionOutcome).toHaveBeenCalledWith(
+                'pairing-client',
+                8000,
+            )
+        })
+
+        it('shows the pairing overlay for the whole deep-link outcome wait and clears it after', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink('chrome'))
+            mockWaitForSessionOutcome.mockReset()
+            // Captured, not asserted inline: a throw inside the mock would be
+            // swallowed by handleDeepLink's own catch and the test would pass
+            // without the feature.
+            let countDuringWait = -1
+            mockWaitForSessionOutcome.mockImplementationOnce(async () => {
+                countDuringWait =
+                    usePairingProgressStore.getState().pendingCount
+                return { type: 'session' }
+            })
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet-wc://wc?uri=wc%3A123',
+                    false,
+                    'deeplink',
+                )
+            })
+
+            expect(countDuringWait).toBe(1)
+            expect(usePairingProgressStore.getState().pendingCount).toBe(0)
+        })
+
+        it('clears the pairing overlay even when the pairing times out', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink('chrome'))
+            mockWaitForSessionOutcome.mockReset()
+            mockWaitForSessionOutcome.mockResolvedValueOnce({
+                type: 'timeout',
+            })
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet-wc://wc?uri=wc%3A123',
+                    false,
+                    'deeplink',
+                )
+            })
+
+            expect(usePairingProgressStore.getState().pendingCount).toBe(0)
+        })
+
+        it('never shows the pairing overlay for QR pairings (the scanner has its own)', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink(undefined))
+            mockWaitForSessionOutcome.mockReset()
+            let countDuringWait = -1
+            mockWaitForSessionOutcome.mockImplementationOnce(async () => {
+                countDuringWait =
+                    usePairingProgressStore.getState().pendingCount
+                return { type: 'session' }
+            })
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'wc:123?bridge=x&key=y',
+                    false,
+                    'qr',
+                )
+            })
+
+            expect(countDuringWait).toBe(0)
+            expect(usePairingProgressStore.getState().pendingCount).toBe(0)
+        })
+
+        it('hides the timeout toast when a late session_request lands within the grace window', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink('chrome'))
+            mockWaitForSessionOutcome.mockReset()
+            mockWaitForSessionOutcome
+                .mockResolvedValueOnce({ type: 'timeout' })
+                .mockResolvedValueOnce({ type: 'session' })
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet-wc://wc?uri=wc%3A123',
+                    false,
+                    'deeplink',
+                )
+            })
+            // Flush the fire-and-forget grace watcher.
+            await act(async () => {
+                await Promise.resolve()
+            })
+
+            expect(mockWaitForSessionOutcome).toHaveBeenNthCalledWith(
+                2,
+                'pairing-client',
+                60_000,
+            )
+            expect(mockHideToast).toHaveBeenCalledTimes(1)
+            expect(mockAbandonPairing).not.toHaveBeenCalled()
+        })
+
+        it('abandons the pairing when the grace window expires with no session', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink('chrome'))
+            mockWaitForSessionOutcome.mockReset()
+            mockWaitForSessionOutcome
+                .mockResolvedValueOnce({ type: 'timeout' })
+                .mockResolvedValueOnce({ type: 'timeout' })
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet-wc://wc?uri=wc%3A123',
+                    false,
+                    'deeplink',
+                )
+            })
+            await act(async () => {
+                await Promise.resolve()
+            })
+
+            expect(mockAbandonPairing).toHaveBeenCalledWith('pairing-client')
+            expect(mockHideToast).not.toHaveBeenCalled()
+            // The return context dies with the abandoned pairing.
+            expect(
+                useReturnToDappStore.getState().returnContexts[
+                    'pairing-client'
+                ],
+            ).toBeUndefined()
+        })
+
+        it('records an in-app origin for a webview-dispatched pairing', async () => {
+            ;(parseDeeplink as Mock).mockReturnValue(wcDeeplink('chrome'))
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'wc:123?bridge=x&key=y',
+                    false,
+                    'in-app',
+                )
+            })
+
+            expect(
+                useReturnToDappStore.getState().returnContexts[
+                    'pairing-client'
+                ],
+            ).toMatchObject({ origin: 'in-app' })
+        })
     })
 
     it('should open send-funds bottom sheet for ALGO_TRANSFER deeplink', async () => {

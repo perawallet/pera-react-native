@@ -149,10 +149,20 @@ export const useToast = () => {
         [showToast],
     )
 
+    /**
+     * Hides the currently visible toast (no-op when none is up). For flows
+     * that discover their own error toast became stale — e.g. a WC pairing
+     * that recovers after its timeout toast was shown.
+     */
+    const hideToast = useCallback((notifier?: NotifierRoot) => {
+        ;(notifier ?? Notifier).hideNotification()
+    }, [])
+
     return {
         showToast,
         infoToast,
         errorToast,
         successToast,
+        hideToast,
     }
 }

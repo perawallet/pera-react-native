@@ -42,6 +42,7 @@ import {
     AnalyticsMetadataKey,
 } from '@analytics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useReturnToDappStore } from '../../stores/useReturnToDappStore'
 
 export type ConnectionViewProps = {
     request: WalletConnectSessionRequest
@@ -80,6 +81,7 @@ export const ConnectionView = ({
         // rejectSession — a dead socket must never trap the user here.
         void rejectSession(request.clientId)
         removeSessionRequest(request)
+        useReturnToDappStore.getState().clearReturnContext(request.clientId)
     }
 
     const handleConnect = async () => {

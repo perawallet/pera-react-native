@@ -157,6 +157,8 @@
             "body_generic": "Bağlantıyı işleyemedik. Lütfen tekrar dene.",
             "title_walletconnect": "WalletConnect başarısız oldu",
             "body_walletconnect": "dApp’e bağlanamadık. Oturumun süresi dolmuş ya da köprüye ulaşılamıyor olabilir.",
+            "title_wc_unsupported": "Bağlantı linki desteklenmiyor",
+            "body_wc_unsupported": "Bu WalletConnect linki Pera tarafından kullanılamıyor. Lütfen dApp üzerinden yeniden bağlanmayı dene.",
             "title_keyreg": "Anahtar kaydı hazırlanamadı",
             "body_keyreg": "Anahtar kaydı işlemini oluşturamadık.",
             "body_keyreg_unknown_account": "Bu anahtar kaydı, bu cüzdanda bulunmayan bir hesaba ait. Önce hesabı ekle, sonra tekrar tara.",
@@ -2610,6 +2612,9 @@
         "menu": "Menü"
     },
     "walletconnect": {
+        "pairing": {
+            "connecting": "dApp bağlantısı kuruluyor..."
+        },
         "request": {
             "title": "{{name}} hesabına bağlanmak istiyor",
             "permissions_title_one": "{{count}} izin istendi",
@@ -2620,6 +2625,8 @@
             "accounts_title": "HESAPLARI SEÇ",
             "success_sheet_title": "{{name}} bağlantısı kuruldu",
             "success_sheet_body": "Devam etmek ve işlemini tamamlamak için {{name}} uygulamasına geri dön. Bağlı tüm oturumları ilgili ayarlar sayfasında bulabilirsin.",
+            "success_sheet_return_to_dapp": "{{name}} uygulamasına geri dön",
+            "success_sheet_return_to_dapp_generic": "Uygulamaya geri dön",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
             "networks_betanet": "Betanet",

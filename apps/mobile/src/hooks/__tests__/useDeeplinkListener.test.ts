@@ -13,13 +13,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
-const { mockHandleDeepLink, mockGetInitialURL, urlListeners } = vi.hoisted(
-    () => ({
-        mockHandleDeepLink: vi.fn(),
-        mockGetInitialURL: vi.fn(),
-        urlListeners: [] as Array<(event: { url: string }) => void>,
-    }),
-)
+const {
+    mockHandleDeepLink,
+    mockGetInitialURL,
+    mockIsValidDeepLink,
+    mockShowError,
+    urlListeners,
+} = vi.hoisted(() => ({
+    mockHandleDeepLink: vi.fn(),
+    mockGetInitialURL: vi.fn(),
+    mockIsValidDeepLink: vi.fn(() => true),
+    mockShowError: vi.fn(),
+    urlListeners: [] as Array<(event: { url: string }) => void>,
+}))
 
 vi.mock('react-native', () => ({
     Linking: {
@@ -41,8 +47,12 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 vi.mock('../useDeepLink', () => ({
     useDeepLink: () => ({
         handleDeepLink: mockHandleDeepLink,
-        isValidDeepLink: () => true,
+        isValidDeepLink: mockIsValidDeepLink,
     }),
+}))
+
+vi.mock('../deeplink/handlers/useDeeplinkErrorHandler', () => ({
+    useDeeplinkErrorHandler: () => mockShowError,
 }))
 
 import {
@@ -58,6 +68,7 @@ describe('useDeeplinkListener', () => {
         urlListeners.length = 0
         resetDeeplinkListenerStateForTesting()
         mockGetInitialURL.mockResolvedValue(null)
+        mockIsValidDeepLink.mockReturnValue(true)
     })
 
     afterEach(() => {
@@ -95,5 +106,73 @@ describe('useDeeplinkListener', () => {
         }
 
         expect(mockHandleDeepLink).toHaveBeenCalledTimes(1)
+    })
+
+    describe('unsupported wc: URIs (PERA-4856)', () => {
+        const WC_V2_URL = 'wc:abc@2?relay-protocol=irn&symKey=ff'
+
+        beforeEach(() => {
+            mockIsValidDeepLink.mockReturnValue(false)
+        })
+
+        it('toasts an informative error once for an unparseable wc: URI across all mounted listeners', () => {
+            renderHook(() => useDeeplinkListener())
+            renderHook(() => useDeeplinkListener())
+            renderHook(() => useDeeplinkListener())
+
+            for (const listener of urlListeners) {
+                listener({ url: WC_V2_URL })
+            }
+
+            expect(mockShowError).toHaveBeenCalledTimes(1)
+            expect(mockShowError).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    variant: 'walletconnect_unsupported',
+                }),
+            )
+            expect(mockHandleDeepLink).not.toHaveBeenCalled()
+        })
+
+        it('stays silent for a bridge-less focus hint (return-to-wallet signal)', () => {
+            renderHook(() => useDeeplinkListener())
+
+            for (const listener of urlListeners) {
+                listener({ url: 'wc://?browser=Android%20Browser' })
+            }
+
+            expect(mockShowError).not.toHaveBeenCalled()
+            expect(mockHandleDeepLink).not.toHaveBeenCalled()
+        })
+
+        it('stays silent for invalid non-wc URLs (unchanged behavior)', () => {
+            renderHook(() => useDeeplinkListener())
+
+            for (const listener of urlListeners) {
+                listener({ url: 'https://not-a-deeplink.example' })
+            }
+
+            expect(mockShowError).not.toHaveBeenCalled()
+            expect(mockHandleDeepLink).not.toHaveBeenCalled()
+        })
+
+        it('toasts once for a repeated unparseable wc: URI within the dedupe window', () => {
+            renderHook(() => useDeeplinkListener())
+
+            urlListeners[0]({ url: WC_V2_URL })
+            urlListeners[0]({ url: WC_V2_URL })
+
+            expect(mockShowError).toHaveBeenCalledTimes(1)
+        })
+
+        it('toasts for an unparseable wc: launch URL on cold start', async () => {
+            vi.useFakeTimers()
+            mockGetInitialURL.mockResolvedValue(WC_V2_URL)
+
+            renderHook(() => useDeeplinkListener())
+            await vi.runAllTimersAsync()
+
+            expect(mockShowError).toHaveBeenCalledTimes(1)
+            expect(mockHandleDeepLink).not.toHaveBeenCalled()
+        })
     })
 })

@@ -146,7 +146,7 @@ describe('useNotificationPress', () => {
         expect(mockHandleDeepLink).toHaveBeenCalledWith(
             notification.url,
             true,
-            'deeplink',
+            'notification',
         )
     })
 
@@ -283,7 +283,7 @@ describe('useNotificationPress', () => {
         expect(mockHandleDeepLink).toHaveBeenCalledWith(
             notification.url,
             true,
-            'deeplink',
+            'notification',
         )
     })
 })

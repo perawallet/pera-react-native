@@ -14,6 +14,7 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type {
     WalletConnectConnection,
+    WalletConnectDappOrigin,
     WalletConnectSessionRequest,
     WalletConnectStore,
 } from '../models'
@@ -30,6 +31,7 @@ const initialState = {
     walletConnectConnections: [] as WalletConnectConnection[],
     sessionRequests: [] as WalletConnectSessionRequest[],
     connectionError: null as Nullable<Error>,
+    dappOrigins: {} as Record<string, WalletConnectDappOrigin>,
 }
 
 export const useWalletConnectStore: UseBoundStore<
@@ -46,6 +48,34 @@ export const useWalletConnectStore: UseBoundStore<
             ) => set({ sessionRequests }),
             setConnectionError: (connectionError: Nullable<Error>) =>
                 set({ connectionError }),
+            setDappOrigin: (clientId, origin) =>
+                set(state => ({
+                    dappOrigins: {
+                        ...state.dappOrigins,
+                        [clientId]: { ...origin, createdAt: Date.now() },
+                    },
+                })),
+            removeDappOrigin: clientId =>
+                set(state => {
+                    if (!(clientId in state.dappOrigins)) return state
+                    const { [clientId]: _removed, ...dappOrigins } =
+                        state.dappOrigins
+                    return { dappOrigins }
+                }),
+            pruneDappOrigins: retainedClientIds =>
+                set(state => {
+                    const retained = new Set(retainedClientIds)
+                    const dappOrigins: Record<string, WalletConnectDappOrigin> =
+                        {}
+                    for (const [clientId, origin] of Object.entries(
+                        state.dappOrigins,
+                    )) {
+                        if (retained.has(clientId)) {
+                            dappOrigins[clientId] = origin
+                        }
+                    }
+                    return { dappOrigins }
+                }),
             resetState: () => set(initialState),
         }),
         {
@@ -54,6 +84,7 @@ export const useWalletConnectStore: UseBoundStore<
             version: 1,
             partialize: state => ({
                 walletConnectConnections: state.walletConnectConnections,
+                dappOrigins: state.dappOrigins,
             }),
         },
     ),

@@ -19,11 +19,15 @@ import {
     vi,
     type Mock,
 } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { usePeraWebviewInterface } from '../usePeraWebviewInterface'
+import { resetPairingStateForTesting } from '@modules/walletconnect/hooks/useWalletConnectPairing'
+import { useReturnToDappStore } from '@modules/walletconnect/stores/useReturnToDappStore'
 import { useWebView } from '..'
 import { Linking } from 'react-native'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useDeepLink } from '@hooks/useDeepLink'
+import { parseDeeplink } from '@hooks/deeplink/parser'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { trackEvent } from '@analytics'
 
@@ -685,6 +689,37 @@ describe('usePeraWebviewInterface', () => {
         })
 
         expect(Linking.openURL).toHaveBeenCalledWith('custom://uri')
+    })
+
+    it('routes an openNativeURI Pera deeplink through the dispatcher with the in-app source', async () => {
+        const handleDeepLink = vi.fn()
+        vi.mocked(useDeepLink).mockReturnValue({
+            handleDeepLink,
+        } as unknown as ReturnType<typeof useDeepLink>)
+        vi.mocked(parseDeeplink).mockReturnValueOnce({
+            type: 'HOME',
+            sourceUrl: 'perawallet://app/home',
+        } as ReturnType<typeof parseDeeplink>)
+
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: '4',
+                jsonrpc: '2.0',
+                method: 'openNativeURI',
+                params: { uri: 'perawallet://app/home' },
+            })
+        })
+
+        expect(handleDeepLink).toHaveBeenCalledWith(
+            'perawallet://app/home',
+            false,
+            'in-app',
+        )
+        expect(Linking.openURL).not.toHaveBeenCalled()
     })
 
     it('should handle getSettings action', () => {
@@ -1589,6 +1624,10 @@ describe('usePeraWebviewInterface', () => {
     describe('openWalletConnect handling', () => {
         beforeEach(() => {
             mockConnect.mockClear()
+            // The handshake-topic join in useWalletConnectPairing is
+            // module-level; clear it so one test's pending pairing can't
+            // swallow another test's connect.
+            resetPairingStateForTesting()
         })
 
         it('rejects non-WalletConnect URIs with InvalidParams', () => {
@@ -1795,7 +1834,32 @@ describe('usePeraWebviewInterface', () => {
             }
         })
 
-        it('accepts a connect again once the dedup window has elapsed', () => {
+        it('records an in-app pairing origin so post-action sheets stay suppressed', async () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true, null),
+            )
+
+            await act(async () => {
+                result.current.handleMessage({
+                    id: 'wc-origin',
+                    jsonrpc: '2.0',
+                    method: 'walletConnect',
+                    params: { uri: 'wc:origin-topic@2?relay-protocol=irn' },
+                })
+            })
+
+            // mockConnect resolves 'pairing-client'; the real pairing hook
+            // writes the origin under that id.
+            await waitFor(() => {
+                expect(
+                    useReturnToDappStore.getState().returnContexts[
+                        'pairing-client'
+                    ],
+                ).toMatchObject({ origin: 'in-app' })
+            })
+        })
+
+        it('accepts a connect again once the dedup window elapsed and the first pairing settled', async () => {
             vi.useFakeTimers()
             try {
                 const { result } = renderHook(() =>
@@ -1812,6 +1876,12 @@ describe('usePeraWebviewInterface', () => {
                 })
                 expect(mockConnect).toHaveBeenCalledTimes(1)
 
+                // Settle the first pairing: while it is in flight, a retry
+                // on the same handshake topic deliberately joins it (one
+                // connector per topic) instead of building a second one.
+                await act(async () => {
+                    await vi.runAllTimersAsync()
+                })
                 vi.advanceTimersByTime(2000)
 
                 act(() => {
@@ -1823,6 +1893,40 @@ describe('usePeraWebviewInterface', () => {
                     })
                 })
                 expect(mockConnect).toHaveBeenCalledTimes(2)
+            } finally {
+                vi.useRealTimers()
+            }
+        })
+
+        it('joins a retry onto the in-flight pairing for the same handshake topic', () => {
+            vi.useFakeTimers()
+            try {
+                const { result } = renderHook(() =>
+                    usePeraWebviewInterface(mockWebview, true, null),
+                )
+
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'wc-first',
+                        jsonrpc: '2.0',
+                        method: 'walletConnect',
+                        params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                    })
+                })
+                vi.advanceTimersByTime(2000)
+                act(() => {
+                    result.current.handleMessage({
+                        id: 'wc-retry',
+                        jsonrpc: '2.0',
+                        method: 'walletConnect',
+                        params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                    })
+                })
+
+                // One connector per topic — a second one would receive the
+                // bridge-replayed session_request again and queue a
+                // duplicate approval sheet.
+                expect(mockConnect).toHaveBeenCalledTimes(1)
             } finally {
                 vi.useRealTimers()
             }

@@ -17,8 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { navigateToScreen } from '../navigateToScreen'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
-
-type LinkSource = 'qr' | 'deeplink'
+import type { LinkSource } from '../types'
 
 export type RecoverAddressDeeplinkHandler = (params: {
     mnemonic: string
