@@ -44,9 +44,7 @@ const mocks = vi.hoisted(() => {
     return {
         provider,
         keystoreReady: vi.fn(),
-        runKeystoreLayoutMigration: vi.fn(),
-        runQuantumMaterialRepair: vi.fn(),
-        reconcileKeystore: vi.fn(),
+        runKeystoreMaintenance: vi.fn(),
         getProvider: vi.fn(() => provider),
         initializeDatabase: vi.fn(),
         getDatabase: vi.fn(() => ({})),
@@ -69,11 +67,8 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     usePeraProvider: () => mocks.provider,
-    getKeystore: () => ({ ready: mocks.keystoreReady() }),
+    runKeystoreMaintenance: mocks.runKeystoreMaintenance,
     getProvider: mocks.getProvider,
-    runKeystoreLayoutMigration: mocks.runKeystoreLayoutMigration,
-    runQuantumMaterialRepair: mocks.runQuantumMaterialRepair,
-    reconcileKeystore: mocks.reconcileKeystore,
 }))
 
 vi.mock('@perawallet/wallet-core-database', () => ({
@@ -188,16 +183,10 @@ describe('useAppBootstrap', () => {
             notifications: Promise.resolve({ token: 'fcm-token' }),
         })
         mocks.keystoreReady.mockResolvedValue(undefined)
-        mocks.runKeystoreLayoutMigration.mockResolvedValue({
-            migrated: 0,
-            skipped: 0,
-            failed: 0,
+        mocks.runKeystoreMaintenance.mockResolvedValue({
+            migration: { migrated: 0, skipped: 0, failed: 0 },
+            repair: { repaired: 0, failed: 0 },
         })
-        mocks.runQuantumMaterialRepair.mockResolvedValue({
-            repaired: 0,
-            failed: 0,
-        })
-        mocks.reconcileKeystore.mockResolvedValue(undefined)
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedAlgoAsset.mockResolvedValue(undefined)
         mocks.runPasskeyAutofillBootstrap.mockResolvedValue(undefined)
@@ -278,14 +267,10 @@ describe('useAppBootstrap', () => {
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
     })
 
-    // The engine's own hydration only sees the k/ bucket, so a re-indexed key
-    // stays out of the store until the reconcile pass re-reads it.
-    it('reconciles the keystore after records are re-indexed', async () => {
-        mocks.runKeystoreLayoutMigration.mockResolvedValue({
-            migrated: 2,
-            skipped: 0,
-            failed: 0,
-        })
+    // Sequencing the passes is the provider's job (see
+    // extensions/provider's runKeystoreMaintenance spec); the app only has to
+    // wait for it before declaring itself bootstrapped.
+    test('waits for keystore maintenance before bootstrapping', async () => {
         vi.useFakeTimers()
         renderHook(() => useAppBootstrap())
 
@@ -293,43 +278,13 @@ describe('useAppBootstrap', () => {
             await vi.runAllTimersAsync()
         })
 
-        expect(mocks.reconcileKeystore).toHaveBeenCalledTimes(1)
-    })
-
-    it('skips the reconcile pass when there was nothing to migrate', async () => {
-        vi.useFakeTimers()
-        renderHook(() => useAppBootstrap())
-
-        await act(async () => {
-            await vi.runAllTimersAsync()
-        })
-
-        expect(mocks.reconcileKeystore).not.toHaveBeenCalled()
-    })
-
-    // A quantum account minted before custody moved into the keystore has a
-    // child with no sealed material, and there is nothing to migrate on a
-    // keystore that is already in the canary.14 layout.
-    it('repairs quantum key material even when no records were migrated', async () => {
-        mocks.runQuantumMaterialRepair.mockResolvedValue({
-            repaired: 1,
-            failed: 0,
-        })
-        vi.useFakeTimers()
-        renderHook(() => useAppBootstrap())
-
-        await act(async () => {
-            await vi.runAllTimersAsync()
-        })
-
-        expect(mocks.runQuantumMaterialRepair).toHaveBeenCalledTimes(1)
-        expect(mocks.reconcileKeystore).toHaveBeenCalledTimes(1)
+        expect(mocks.runKeystoreMaintenance).toHaveBeenCalledTimes(1)
     })
 
     // An unreadable master key with canary.13 records still on disk must not
     // boot into an empty wallet — that is what prompts a destructive re-onboard.
     it('fails bootstrap when the keystore layout migration throws', async () => {
-        mocks.runKeystoreLayoutMigration.mockRejectedValue(
+        mocks.runKeystoreMaintenance.mockRejectedValue(
             new Error('master key unreadable'),
         )
         vi.useFakeTimers()

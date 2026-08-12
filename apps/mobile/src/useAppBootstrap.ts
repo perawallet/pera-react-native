@@ -35,11 +35,8 @@ import {
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import {
-    getKeystore,
     getProvider,
-    reconcileKeystore,
-    runKeystoreLayoutMigration,
-    runQuantumMaterialRepair,
+    runKeystoreMaintenance,
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
@@ -192,26 +189,13 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 // records exist) deliberately fails bootstrap: the alternative
                 // is presenting an empty wallet, which is what prompts users to
                 // wipe and re-onboard on top of keys that were still on disk.
-                const keystoreBranch = getKeystore()
-                    .ready.then(async () => {
-                        const { migrated, failed } =
-                            await runKeystoreLayoutMigration()
-                        if (migrated > 0 || failed > 0) {
-                            logger.info('Keystore layout migrated', {
-                                migrated,
-                                failed,
-                            })
-                            await reconcileKeystore()
+                const keystoreBranch = runKeystoreMaintenance()
+                    .then(({ migration, repair }) => {
+                        if (migration.migrated > 0 || migration.failed > 0) {
+                            logger.info('Keystore layout migrated', migration)
                         }
-
-                        // Runs on every launch, not just after a migration: a
-                        // quantum account minted before custody moved into the
-                        // keystore has a child with no sealed material, and it
-                        // would fail only at submit time, after signing.
-                        const repair = await runQuantumMaterialRepair()
                         if (repair.repaired > 0 || repair.failed > 0) {
                             logger.info('Quantum key material repaired', repair)
-                            await reconcileKeystore()
                         }
                     })
                     .catch(err => {

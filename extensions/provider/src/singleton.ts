@@ -147,6 +147,52 @@ export const runQuantumMaterialRepair =
             },
         })
 
+export type KeystoreMaintenanceResult = {
+    migration: KeystoreLayoutMigrationResult
+    repair: QuantumMaterialRepairResult
+}
+
+/**
+ * Every one-off pass the on-disk keystore needs at startup, in the one order
+ * that works. Callers await this instead of sequencing the passes themselves.
+ *
+ * The ordering is not incidental:
+ *
+ * - `ready` hydrates from the `k/` bucket only, so on the first launch after
+ *   the canary.14 upgrade it resolves with **zero keys**. The re-index has to
+ *   follow it, never precede it.
+ * - `reconcileKeystore` is what re-seeds the store afterwards, and it runs only
+ *   when a pass actually did something — it re-reads every entry, so calling it
+ *   unconditionally would pay that cost on every launch for nothing.
+ * - The quantum repair runs on **every** launch, not just after a migration: a
+ *   quantum account minted before custody moved into the keystore has a child
+ *   with no sealed material, and that fails only at submit time, after the user
+ *   has already signed.
+ *
+ * Throws if the keystore cannot hydrate. That is deliberate — the alternative
+ * is presenting an empty wallet, which is what prompts users to wipe and
+ * re-onboard on top of keys that are still on disk.
+ *
+ * On web this is inert: `maintenance.web.ts` returns zeroed results for both
+ * passes, so nothing reconciles and callers need no platform branch.
+ */
+export const runKeystoreMaintenance =
+    async (): Promise<KeystoreMaintenanceResult> => {
+        await keystore.ready
+
+        const migration = await runKeystoreLayoutMigration()
+        if (migration.migrated > 0 || migration.failed > 0) {
+            await reconcileKeystore()
+        }
+
+        const repair = await runQuantumMaterialRepair()
+        if (repair.repaired > 0 || repair.failed > 0) {
+            await reconcileKeystore()
+        }
+
+        return { migration, repair }
+    }
+
 /**
  * Resets the provider singleton. Only for use in tests.
  */
