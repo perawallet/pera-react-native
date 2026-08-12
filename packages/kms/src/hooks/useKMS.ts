@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
 import {
     InvalidKeyError,
@@ -150,47 +150,12 @@ export const useKMS = () => {
     )
 
     /**
-     * Signs each payload with the real Falcon-1024 PQ signer. The quantum
-     * child entry holds no private material — the keypair is re-derived from
-     * the parent seed's private bytes, exported only for the duration of
-     * this call. Both the seed bytes and the derived secret key are zeroed
-     * in `finally` once signing completes.
-     */
-    const signWithQuantumSeed = (
-        seedKey: Key,
-        payloads: Uint8Array[],
-    ): Promise<Uint8Array[]> =>
-        withExportedKey(seedKey.id, seedData => {
-            if (!seedData.privateKey) {
-                throw new KeyManagementError(
-                    'Quantum seed has no private key bytes',
-                )
-            }
-            const seedBytes = new Uint8Array(seedData.privateKey)
-            try {
-                const provider = getPQProvider()
-                const { secretKey } =
-                    provider.generateKeypairFromSeed(seedBytes)
-                try {
-                    return payloads.map(payload =>
-                        provider.sign(secretKey, payload),
-                    )
-                } finally {
-                    zeroBytes(secretKey)
-                }
-            } finally {
-                zeroBytes(seedBytes)
-            }
-        })
-
-    /**
      * Returns the Falcon public-key bytes committed on the quantum signing
      * child at `keyPairId` (the id `createQuantumKey` returns as
      * `signKeyId`, and what `account.keyPairId` is set to for quantum
      * accounts). Reads from the live reactive store rather than
-     * `keyStore.export`: the child is minted `extractable: false`, and
-     * `commitQuantumChildKey` stores the public key as plain (non-secret)
-     * metadata on the entry itself.
+     * `keyStore.export`: the child is minted `extractable: false`, so only the
+     * public half the keystore records on the entry is readable at all.
      */
     const getQuantumPublicKey = (keyPairId: string): Uint8Array => {
         const child = getKeystoreStore().state.keys.find(
@@ -251,7 +216,7 @@ export const useKMS = () => {
 
         if (isQuantumSeed !== isFalconChild) {
             throw new KeyManagementError(
-                `PQ scheme mismatch for keyPairId ${keyPairId}: seed scheme reports quantum=${isQuantumSeed}, child type reports falcon1024=${isFalconChild}`,
+                `PQ scheme mismatch for keyPairId ${keyPairId}: seed scheme reports quantum=${isQuantumSeed}, child type reports ${FALCON_CHILD_KEY_TYPE}=${isFalconChild}`,
             )
         }
 
@@ -278,6 +243,10 @@ export const useKMS = () => {
 
     /**
      * Signs each item with the child key at `childKeyId`.
+     *
+     * Scheme-agnostic on purpose: Ed25519 and Falcon-1024 children are both
+     * keystore-native, so the private material stays sealed and never
+     * reaches JS on the signing path.
      */
     const signTransactionsWithKey = async (
         childKeyId: string,
@@ -286,9 +255,6 @@ export const useKMS = () => {
     ): Promise<Uint8Array[]> => {
         const seedKey = resolveSeedKey(childKeyId)
         checkAccess(seedKey, domain)
-        if (seedSchemeOf(seedKey) === SeedScheme.Quantum) {
-            return signWithQuantumSeed(seedKey, encodedTxs)
-        }
         return Promise.all(encodedTxs.map(tx => keyStore.sign(childKeyId, tx)))
     }
 
@@ -299,9 +265,6 @@ export const useKMS = () => {
     ): Promise<Uint8Array[]> => {
         const seedKey = resolveSeedKey(childKeyId)
         checkAccess(seedKey, domain)
-        if (seedSchemeOf(seedKey) === SeedScheme.Quantum) {
-            return signWithQuantumSeed(seedKey, data)
-        }
         return Promise.all(data.map(d => keyStore.sign(childKeyId, d)))
     }
 

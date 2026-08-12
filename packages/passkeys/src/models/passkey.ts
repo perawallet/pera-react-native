@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import { toUrlSafeBase64 } from '@perawallet/wallet-core-shared'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
 

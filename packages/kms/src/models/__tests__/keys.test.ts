@@ -35,7 +35,10 @@ describe('quantumSignKeyId', () => {
 })
 
 describe('FALCON_CHILD_KEY_TYPE', () => {
+    // Spelled exactly as keystore-core's KeyType: the engine stamps this
+    // literal onto the entry it generates, so a drifted spelling would make
+    // every "is this child quantum?" guard read false.
     test('names the concrete algorithm on the keystore child entry', () => {
-        expect(FALCON_CHILD_KEY_TYPE).toBe('falcon1024')
+        expect(FALCON_CHILD_KEY_TYPE).toBe('falcon-1024')
     })
 })

@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     InvalidKeyError,
@@ -24,11 +24,6 @@ import { SeedScheme } from '../../constants'
 import { mnemonicIndexToWord } from '../../crypto/mnemonic-indices'
 import { getPQProvider } from '../../crypto/pq'
 import { FALCON_CHILD_KEY_TYPE } from '../../models'
-
-// Documented compressed Falcon-1024 signature upper bound (see "Key
-// contracts" in docs/QUANTUM_PQ_INTEGRATION.md) — not exported by the
-// package because production never needs to check it, only tests do.
-const FALCON_SIGNATURE_MAX_LENGTH = 1232
 
 // Source-of-truth keystore Key list mocked at the module that bridges to
 // the platform keystore. useKMS reads from this via useKeystoreKeys() AND
@@ -479,7 +474,7 @@ describe('useKMS', () => {
             const child = childOf(
                 'quantum-1-quantum',
                 'quantum-1',
-                'falcon1024',
+                FALCON_CHILD_KEY_TYPE,
             )
             mockKeyStoreExport.mockResolvedValue({
                 privateKey: new Uint8Array(QUANTUM_SEED_BYTES),
@@ -487,105 +482,70 @@ describe('useKMS', () => {
             return child
         }
 
-        it('signTransactionsWithKey routes quantum children to the real Falcon signer, not keyStore.sign', async () => {
+        it('signs quantum payloads through the keystore, never exporting the seed', async () => {
             const child = arrangeQuantumPair()
-            const tx = new Uint8Array([1, 2, 3])
 
             const { result } = renderHook(() => useKMS())
-            let sigs: Optional<Uint8Array[]>
             await act(async () => {
-                sigs = await result.current.signTransactionsWithKey(
+                await result.current.signTransactionsWithKey(child.id, 'pera', [
+                    new Uint8Array([1, 2, 3]),
+                ])
+            })
+
+            expect(mockKeyStoreSign).toHaveBeenCalledWith(
+                child.id,
+                new Uint8Array([1, 2, 3]),
+            )
+            // The whole point of moving custody: the seed must no longer leave the
+            // keystore on the signing path.
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
+        })
+
+        it('signTransactionsWithKey signs every payload with the child id, one keystore call each', async () => {
+            const child = arrangeQuantumPair()
+
+            const { result } = renderHook(() => useKMS())
+            await act(async () => {
+                await result.current.signTransactionsWithKey(
                     child.id,
                     'pera.accounts',
-                    [tx],
+                    [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])],
                 )
             })
 
-            expect(mockKeyStoreSign).not.toHaveBeenCalled()
-            expect(mockKeyStoreExport).toHaveBeenCalledWith('quantum-1')
-            expect(sigs![0].length).toBeGreaterThan(0)
-            expect(sigs![0].length).toBeLessThanOrEqual(
-                FALCON_SIGNATURE_MAX_LENGTH,
+            expect(mockKeyStoreSign).toHaveBeenCalledTimes(2)
+            expect(mockKeyStoreSign).toHaveBeenNthCalledWith(
+                1,
+                child.id,
+                new Uint8Array([1, 2, 3]),
+            )
+            expect(mockKeyStoreSign).toHaveBeenNthCalledWith(
+                2,
+                child.id,
+                new Uint8Array([4, 5, 6]),
             )
         })
 
-        it('signTransactionsWithKey produces a real Falcon signature for the seed keypair', async () => {
-            const child = arrangeQuantumPair()
-            const payload = new Uint8Array([1, 2, 3, 4])
-
-            const { result } = renderHook(() => useKMS())
-            let sigs: Optional<Uint8Array[]>
-            await act(async () => {
-                sigs = await result.current.signTransactionsWithKey(
-                    child.id,
-                    'pera.accounts',
-                    [payload],
-                )
-            })
-
-            // Cross-check against the provider directly: deriving the
-            // keypair from the same seed and signing the same payload must
-            // reproduce byte-identical output. This proves the hook routes
-            // through the real PQ provider rather than the old hash-based
-            // mock (whose output never matched a real Falcon signature).
-            const provider = getPQProvider()
-            const { secretKey } =
-                provider.generateKeypairFromSeed(QUANTUM_SEED_BYTES)
-            const expected = provider.sign(secretKey, payload)
-
-            expect(sigs![0].length).toBeGreaterThan(0)
-            expect(sigs![0].length).toBeLessThanOrEqual(
-                FALCON_SIGNATURE_MAX_LENGTH,
-            )
-            expect(Array.from(sigs![0])).toEqual(Array.from(expected))
-        })
-
-        it('quantum signatures are deterministic per (seed, payload) and differ across payloads', async () => {
-            const child = arrangeQuantumPair()
-            const txA = new Uint8Array([1, 2, 3])
-            const txB = new Uint8Array([4, 5, 6])
-
-            const { result } = renderHook(() => useKMS())
-            let first: Optional<Uint8Array[]>
-            let second: Optional<Uint8Array[]>
-            await act(async () => {
-                first = await result.current.signTransactionsWithKey(
-                    child.id,
-                    'pera.accounts',
-                    [txA, txB],
-                )
-                second = await result.current.signTransactionsWithKey(
-                    child.id,
-                    'pera.accounts',
-                    [txA],
-                )
-            })
-
-            expect(Array.from(first![0])).toEqual(Array.from(second![0]))
-            expect(Array.from(first![0])).not.toEqual(Array.from(first![1]))
-        })
-
-        it('signDataWithKey routes quantum children to the real Falcon signer', async () => {
+        it('signDataWithKey signs quantum data through the keystore too', async () => {
             const child = arrangeQuantumPair()
 
             const { result } = renderHook(() => useKMS())
-            let sigs: Optional<Uint8Array[]>
             await act(async () => {
-                sigs = await result.current.signDataWithKey(
+                await result.current.signDataWithKey(
                     child.id,
                     'pera.accounts',
                     [new Uint8Array([9])],
                 )
             })
 
-            expect(mockKeyStoreSign).not.toHaveBeenCalled()
-            expect(sigs![0].length).toBeGreaterThan(0)
-            expect(sigs![0].length).toBeLessThanOrEqual(
-                FALCON_SIGNATURE_MAX_LENGTH,
+            expect(mockKeyStoreSign).toHaveBeenCalledWith(
+                child.id,
+                new Uint8Array([9]),
             )
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
         })
 
-        it('rejects and never exports the seed when the ACL denies the domain', async () => {
+        it('rejects and never reaches the keystore signer when the ACL denies the domain', async () => {
             const child = arrangeQuantumPair()
             mockCheckAccess.mockImplementationOnce(() => {
                 throw new KeyAccessError()
@@ -599,6 +559,7 @@ describe('useKMS', () => {
                     [new Uint8Array([1])],
                 ),
             ).rejects.toThrow(KeyAccessError)
+            expect(mockKeyStoreSign).not.toHaveBeenCalled()
             expect(mockKeyStoreExport).not.toHaveBeenCalled()
         })
 
@@ -655,7 +616,7 @@ describe('useKMS', () => {
             // exactly as useQuantum.createQuantumKey({ mnemonic }) persists them.
             const seedBytes = seedFromMnemonic(TEST_MNEMONIC)
             seedQuantumRoot('quantum-1')
-            childOf('quantum-1-quantum', 'quantum-1', 'falcon1024')
+            childOf('quantum-1-quantum', 'quantum-1', FALCON_CHILD_KEY_TYPE)
             mockKeyStoreExport.mockResolvedValue({
                 privateKey: new Uint8Array(seedBytes),
             })
@@ -812,7 +773,7 @@ describe('useKMS', () => {
             // alone) still Falcon-signs them — silently re-creating the
             // exact un-digested-signing bug PERA-4653 closed.
             seedQuantumRoot('quantum-1')
-            childOf('quantum-1-quantum', 'quantum-1', 'falcon1024')
+            childOf('quantum-1-quantum', 'quantum-1', FALCON_CHILD_KEY_TYPE)
 
             const { result } = renderHook(() => useKMS())
 

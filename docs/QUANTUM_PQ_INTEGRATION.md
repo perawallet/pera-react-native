@@ -30,10 +30,42 @@ workspace-config change described there (see the `SWAP-BACK:` comment and
 
 ## Seam A — PQ crypto provider (`packages/kms/src/crypto/pq/`)
 
-Pure crypto, with no SDK or address coupling:
+**Custody is not in this directory.** Quantum private keys live in the
+keystore. `useQuantum` mints the signing child through
+`@algorandfoundation/keystore-core`'s `falcon-1024` key type:
+
+```ts
+await keyStore.generate({
+    type: 'falcon-1024',
+    algorithm: 'Falcon-1024',
+    extractable: false,
+    keyUsages: ['sign', 'verify'],
+    params: { seed, parentKeyId: seedKeyId, id: quantumSignKeyId(seedKeyId) },
+})
+```
+
+The keystore derives the Falcon keypair from the 32-byte quantum seed and
+seals the private half itself. Signing is `keyStore.sign(childKeyId, payload)`
+— **the seed is never exported on the signing path.** `signWithQuantumSeed`
+and `packages/kms/src/storage/quantum-child.ts`, which re-derived the keypair
+in JS on every signature, are gone. `keyStore.export` is called exactly once,
+at generation, and can only return the public half: the child is
+`extractable: false`. (`id` and `parentKeyId` ride the untyped `params` bag;
+the engine strips `seed`/`entropy`/`passphrase`/`salt` before mirroring
+`params` into the entry's plaintext metadata, so passing the seed there does
+not leak it.)
+
+What remains here is pure crypto, with no SDK or address coupling:
 
 - `PQSignatureProvider` — the interface (`scheme`, `publicKeyLength`,
-  `generateKeypairFromSeed`, `sign`).
+  `generateKeypairFromSeed`). It has **no `sign` member**. Three jobs are
+  left: scheme identity (`getPQSigningInfo` reports `getPQProvider().scheme`
+  rather than a literal of its own), address derivation, and serving as the
+  oracle behind `apps/mobile/src/__integration__/__fixtures__/quantum.ts` —
+  those fixtures derive the expected public key and address through this
+  provider, **not** through the keystore, which is what makes the quantum
+  integration tests a cross-check of the keystore's derivation instead of a
+  self-confirmation.
 - `wasmFalconProvider.ts` — wraps WASM `falcon-1024`; used in node, vitest and
   the web/extension build.
 - `rnFalconProvider.ts` — wraps the native `@joe-p/react-native-falcon` Nitro
@@ -43,8 +75,21 @@ Pure crypto, with no SDK or address coupling:
   `.native.*` platform-extension resolution swaps in the native file for iOS
   and Android, so no consumer branches on platform.
 
+Because the provider and the keystore now derive keys independently, they must
+be pinned to each other. `keystoreFalconParity.spec.ts` does that: for a fixed
+seed, `keystore-core`'s Falcon shim yields a byte-identical keypair **and** a
+byte-identical signature to calling `falcon-1024` directly (that build is the
+deterministic FALCON_DET1024 variant, so signatures are comparable, not merely
+verifiable). **It covers the WASM/off-device half only** — on device
+`react-native-keystore` injects `@joe-p/react-native-falcon` instead, since RN
+cannot load WASM, so native-vs-WASM parity from a given seed is unproven by
+any automated test in this repo. It is a manual device-checklist item (below).
+
 **Official swap:** implement a new `PQSignatureProvider` and change both
-`getPQProvider` factory files (node/web and native). Two modules.
+`getPQProvider` factory files (node/web and native). Two modules. That swaps
+the derivation/oracle side only — the code that actually produces signatures
+is the keystore's Falcon binding, swapped by changing the keystore, not this
+seam.
 
 ## Seam B — PQ transaction adapter (`packages/blockchain/src/pq/`)
 
@@ -128,6 +173,14 @@ becomes mainline.
    the 7-day `minimumReleaseAge` window for its first week; wait the window out
    rather than adding a carveout for a package that no longer needs one.
 
+**The keystore family shortens neither step.** Adopting
+`@algorandfoundation/react-native-keystore` / `keystore-core` moved custody of
+the Falcon private key, and nothing else: the keystore stops at the signature
+boundary and ships no `pqsig` field, no PQ address encoding and no transaction
+assembly, so it does nothing for step 2. Nor does it remove
+`@joe-p/react-native-falcon` or `falcon-1024` (step 1) — canary.14 declares both
+as optional peers and loads them as its own Falcon binding.
+
 Seam A's source files carry a `// SWAP:` marker pointing back here; the
 vendored algosdk's swap point lives in the `SWAP-BACK:` comment in
 `pnpm-workspace.yaml` instead.
@@ -172,11 +225,13 @@ networks still reject it (see PQ-023 below).
 
 Quantum accounts now sign locally end-to-end on real Falcon-1024:
 
-- **KMS runtime** — `useQuantum` generates the real keypair + address via the
-  provider (Seam A) and `deriveQuantumAddress` (Seam B); `useKMS.signWithQuantumSeed`
-  produces real Falcon signatures (secret key zeroed in `finally`);
-  `getQuantumPublicKey(keyPairId)` exposes the committed public key (guarded by
-  `FALCON_CHILD_KEY_TYPE`). The three keygen/sign mocks were retired.
+- **KMS runtime** — `useQuantum` mints the signing child through the keystore's
+  `falcon-1024` generator and derives the address with `deriveQuantumAddress`
+  (Seam B); `useKMS.signTransactionsWithKey`/`signDataWithKey` produce real
+  Falcon signatures through `keyStore.sign`, with the private key sealed and
+  never reaching JS; `getQuantumPublicKey(keyPairId)` exposes the recorded
+  public key (guarded by `FALCON_CHILD_KEY_TYPE`). The three keygen/sign mocks
+  were retired.
 - **No more byte carrier (PERA-4653)** — the resolved `algosdk` fork's
   `SignedTransaction` accepts `pqsig` directly, so a PQ-signed transaction is
   now a plain `SignedTransaction`, encoded through the ordinary
@@ -205,9 +260,9 @@ Quantum accounts now sign locally end-to-end on real Falcon-1024:
 - **Submission is quantum-agnostic (PQ-019/PQ-021)** — no gate or mock: a
   quantum-signed group is a plain `PeraSignedTransaction` with `pqsig` set,
   so it broadcasts through the ordinary algod/callback transports unchanged.
-  It reaches the chain only on a `pqsig`-capable node, and **no such algod
-  exists yet** — every node available today (LocalNet included) rejects it at
-  submit.
+  It reaches the chain only on a `pqsig`-capable node. One now exists
+  (`algorand/algod:master` under consensus `future`, verified 2026-07-30 — see
+  PQ-023); default LocalNet and every public network still reject it at submit.
 
 ## PQ-020 — native on-device Falcon (landed; device-verified 2026-07-30)
 
@@ -251,6 +306,71 @@ compressed signature (1234 B), and the app shows "Transaction Processed".
 > whatever bytes were stored, so the authorizer check still passes. When
 > triaging, read the numeric Falcon code: **-3 `FORMAT`** means bad key/signature
 > _bytes_, **-4 `BADSIG`** means a wrong signing _preimage_.
+
+### Keystore-custody additions to the checklist (not runnable in CI)
+
+The four steps above were verified against the pre-keystore custody path.
+Moving custody into `@algorandfoundation/react-native-keystore` canary.14
+re-opens them and adds one item that nothing in CI can cover.
+
+5. **Native-vs-WASM Falcon parity — the one thing no automated test in this
+   repo covers.** `keystoreFalconParity.spec.ts` proves `keystore-core`'s
+   Falcon shim is byte-identical to the WASM `falcon-1024` for both the
+   keypair and the signature, but on device the keystore injects
+   `@joe-p/react-native-falcon` instead, so seed → keypair → signature parity
+   for the **native** module is unproven. Create a quantum account on device
+   from `__fixtures__/quantum.ts`'s known mnemonic (`QUANTUM_TEST_MNEMONIC`)
+   and confirm the in-app address matches `QUANTUM_TEST_ADDRESS`, which that
+   fixture derives off-device through `getPQProvider()`. A mismatch means the
+   native module and the WASM build disagree on derivation, and every address
+   this repo computes off-device is wrong for on-device use.
+6. Fresh install: create an algo25, an HD and a quantum account; all three
+   persist across a cold start.
+7. Sign a transaction from the quantum account and confirm it on-chain
+   (requires a `pqsig`-capable node — see PQ-023).
+8. Confirm the biometric-prompt frequency is acceptable. canary.14 deliberately
+   removed canary.13's 60-second module-level plaintext master-key cache, so
+   prompts are more frequent; suppression now depends on the OS via
+   `authenticationValidityDuration`, which needs a `react-native-keychain@10`
+   patch that upstream ships unapplied and this work deliberately did not add.
+9. Upgrade an existing canary.13 install in place — do not reinstall, or the
+   one interesting path goes untested. canary.14 changed the MMKV layout from a
+   bare `<keyId>` blob to `m/<id>` (sealed material) + `k/<id>` (metadata), and
+   `extensions/provider/src/keystore/migrateKeystoreLayout.ts` re-indexes,
+   re-seals and re-labels the old records on first launch. Confirm the boot log
+   reports every account (`Keystore layout migrated`, `failed: 0`) and that a
+   quantum account minted before keystore custody is re-minted from its parent
+   (`Quantum key material repaired`) — that account holds a public key only,
+   because signing used to re-derive from the seed each time, so a migration
+   alone cannot fix it.
+
+### Known broken / deferred after the canary.14 migration
+
+- **Web is knowingly broken.** Metro aliases
+  `@algorandfoundation/react-native-keystore` to the vendored
+  `extensions/keystore-chrome` for `platform === 'web'`, and that package is a
+  hand-port of canary.12 with no engine factory and no WebCrypto seal helpers.
+  `extensions/keystore-chrome/src/canary14-unsupported.ts` throws with a
+  message naming the cause rather than failing opaquely several frames deeper.
+  The fix is the deferred `@algorandfoundation/keystore-web` port, which needs
+  its own plan.
+- **Android passkeys are split-brain.**
+  `react-native-passkey-autofill@canary.22`'s native credential provider writes
+  a bare `credentialId` record shaped `{iv, tag, content}`, while canary.14
+  reads and writes `m/`/`k/`-prefixed ids shaped `{iv, content}`. The two ends
+  no longer meet. This is externally blocked on an upstream release and must be
+  raised with the library authors; it is not fixable from this repo.
+  It is, however, actively **destroyable** from this repo, which is why
+  `migrateKeystoreLayout` skips those records instead of migrating them: the
+  provider uses the same MMKV instance (`PASSKEYS_MMKV_ID = "keystore"`) and the
+  same `app-secret` master key, so its credentials decrypt as ordinary
+  canary.13 entries. Migrating one deletes the bare id the provider reads back
+  by and drops its biometric-wrapped `privateKeyEnc`, which is an object rather
+  than key bytes. They are identified by `type: 'hd-derived-p256'` plus
+  `metadata.origin` and `metadata.userHandle`.
+- **`bootstrapPasskeyAutofill`'s `configureHdRootKey` is effectively a no-op.**
+  It resolves the HD root through `fetchSecret`, which reads bare ids that the
+  canary.14 driver never writes. It does not throw — it simply finds nothing.
 
 ## PQ-023 — unified signing path, generic `PQSignature` (landed)
 

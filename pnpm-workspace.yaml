@@ -7,8 +7,10 @@ catalog:
   "@algorandfoundation/algokit-utils": 9.2.0
   "@algorandfoundation/dp256": 1.1.0
   "@algorandfoundation/keystore": 1.0.0-canary.17
+  "@algorandfoundation/keystore-core": 1.0.0-canary.1
+  "@algorandfoundation/keystore-web": 1.0.0-canary.1
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.13
+  "@algorandfoundation/react-native-keystore": 1.0.0-canary.14
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.22
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
@@ -88,6 +90,7 @@ catalog:
   react-native: 0.86.2
   react-native-mmkv: ^4.2.0
   react-native-quick-base64: ^3.0.0
+  react-native-quick-crypto: ^1.0.17
   react-native-ssl-public-key-pinning: ^1.2.6
   tsx: ^4.22.3
   tweetnacl: ^1.0.3
@@ -117,6 +120,12 @@ auditConfig:
 
 minimumReleaseAgeExclude:
   - '@algorandfoundation/keystore'
+  # keystore-core and keystore-web are direct dependencies; keystore-node still
+  # arrives transitively via the meta-package, which hard-depends on every
+  # platform sibling. They share the canary publish date, so excluding only the
+  # direct ones leaves the install still blocked by the gate.
+  - '@algorandfoundation/keystore-core'
+  - '@algorandfoundation/keystore-web'
   - '@algorandfoundation/react-native-keystore'
   - '@algorandfoundation/react-native-passkey-autofill'
   - '@joe-p/react-native-falcon'
@@ -169,7 +178,9 @@ overrides:
   # spec installs a package with no entry points at all.
   algosdk: file:./libs/algosdk-3.7.0-beta.1.tgz
   '@algorandfoundation/keystore': 1.0.0-canary.17
-  '@algorandfoundation/react-native-keystore': 1.0.0-canary.13
+  '@algorandfoundation/keystore-core': 1.0.0-canary.1
+  '@algorandfoundation/keystore-web': 1.0.0-canary.1
+  '@algorandfoundation/react-native-keystore': 1.0.0-canary.14
   '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
   '@expo/dom-webview': ~57.0.1
   '@grpc/grpc-js@<1.9.16': 1.9.16

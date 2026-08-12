@@ -11,7 +11,7 @@
  */
 
 import nacl from 'tweetnacl'
-import type { Key, Seed } from '@algorandfoundation/keystore'
+import type { Key, Seed } from '@algorandfoundation/keystore-core'
 import {
     generateOrderedUniqueId,
     logger,
@@ -70,18 +70,29 @@ export const useAlgo25 = () => {
             await keyStore.import(seedData, 'raw')
             committedSeed = true
 
-            // 2. Derive the Ed25519 signing child
+            // 2. Import the Ed25519 signing child derived from this exact seed.
+            //
+            // NOT `generate`: canary.14's `generateEd25519` ignores
+            // `parentKeyId` and mints a random keypair, which silently
+            // decouples the signing key from `address` and leaves the account
+            // fundable but unspendable. Supplying `publicKey` makes the engine
+            // verify the pair against the seed, so any drift throws here
+            // rather than at submit time.
             const signKeyId = algo25SignKeyId(seedKeyId)
-            await keyStore.generate({
-                type: 'ed25519',
-                algorithm: 'EdDSA',
-                extractable: true,
-                keyUsages: ['sign'],
-                params: {
+            const { publicKey } = nacl.sign.keyPair.fromSeed(seed)
+            await keyStore.import(
+                {
                     id: signKeyId,
-                    parentKeyId: seedKeyId,
+                    type: 'ed25519',
+                    algorithm: 'EdDSA',
+                    extractable: false,
+                    keyUsages: ['sign', 'verify'],
+                    privateKey: seed,
+                    publicKey,
+                    metadata: { parentKeyId: seedKeyId },
                 },
-            })
+                'raw',
+            )
 
             return {
                 seedKey: {

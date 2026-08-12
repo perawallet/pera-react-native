@@ -34,12 +34,6 @@ const mockKeyStoreDeriveFromSeed = vi.fn()
 const mockKeyStoreSign = vi.fn()
 const mockKeyStoreExport = vi.fn()
 const mockKeyStoreRemove = vi.fn()
-const mockClearKeyData = vi.fn()
-
-vi.mock('@algorandfoundation/keystore', () => ({
-    clearKeyData: (...args: any[]) => mockClearKeyData(...args),
-}))
-
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
         keyStore: {
@@ -119,7 +113,7 @@ describe('useHDWallet', () => {
             })
 
             expect(keyResult!.seedKey.id).toBe('hd-1')
-            expect(keyResult!.seedKey.type).toBe('seed')
+            expect(keyResult!.seedKey.type).toBe('hd-root-key')
             const meta = keyResult!.seedKey.metadata as Record<string, unknown>
             expect(meta.scheme).toBe(SeedScheme.Bip39)
             expect('entropy' in meta).toBe(false)
@@ -136,9 +130,12 @@ describe('useHDWallet', () => {
 
             expect(mockKeyStoreImport).toHaveBeenCalledTimes(1)
             const arg = mockKeyStoreImport.mock.calls[0][0]
+            // `hd-root-key`, not `seed`: canary.14's `deriveFromSeed` rejects
+            // any parent that is not typed that way, so adding an account to
+            // the wallet fails outright when this regresses.
             expect(arg).toMatchObject({
                 id: 'hd-1',
-                type: 'seed',
+                type: 'hd-root-key',
                 algorithm: 'raw',
                 extractable: true,
                 keyUsages: ['deriveKey', 'deriveBits'],

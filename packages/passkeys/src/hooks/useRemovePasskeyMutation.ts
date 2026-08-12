@@ -12,7 +12,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { KeyStoreExtension } from '@algorandfoundation/keystore'
+import type { KeyStoreExtension } from '@algorandfoundation/keystore-core'
 import type { Passkey } from '../models/passkey'
 import { usePasskeyAutofillService } from './usePasskeyAutofillService'
 import { passkeysQueryKey } from './usePasskeysQuery'

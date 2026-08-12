@@ -12,13 +12,9 @@
 
 import {
     InvalidKeyDataError,
-    KeyNotFoundError,
-    sign as signKeyData,
     type Key,
-    type KeyData,
     type KeyStoreState,
 } from '@algorandfoundation/keystore'
-import { sha256 } from '@noble/hashes/sha2'
 import type { Store } from '@tanstack/store'
 import {
     bytesToB64url,
@@ -27,43 +23,83 @@ import {
     splitP256PublicKey,
     type KeystoreSigner,
 } from '@perawallet/wallet-core-passkeys/webauthn'
-import { fetchSecret } from '../storage/state'
-import { generateKey } from '../store'
 
 /**
- * Implements the `KeystoreSigner` port over keystore-chrome's real
- * `key.store` surface. Every WebAuthn P-256 passkey this adapter creates is
- * an `hd-derived-p256` keystore entry, derived (via `@algorandfoundation/dp256`
- * inside the keystore lib) from a single persisted `hd-root-key` that in turn
- * derives from the wallet's `seed`/`hd-seed` entry — mirroring the
- * `seed -> hd-root-key -> hd-derived-*` chain `store.ts` already uses for
- * Ed25519 account keys.
+ * Implements the `KeystoreSigner` port over the keystore engine the rest of
+ * the extension already uses (`getKeystore()` / `getKeystoreStore()` from
+ * `extensions/provider`), so every credential this mints is persisted where
+ * Settings > Passkeys and `signP256` can both see it.
  *
- * FINDING — why a persisted `hd-root-key` is required (not just the seed's
- * id): `store.ts`'s `generateKey` P256 branch (~176-231) accepts a
- * `params.parentKeyId` that may name either an existing `hd-root-key` or a
- * `seed`. When it's a `seed`, that branch derives a *fresh, never-committed*
- * `hd-root-key` in memory, uses it once, then zeroes it
- * (`clearKeyData(rootKey)`) — the derived `hd-derived-p256` key's
- * `metadata.parentKeyId` ends up pointing at an id that was never written to
- * storage. `signP256` (below, mirroring `extension.ts`'s `sign` handler)
- * fetches the parent by that id via `fetchSecret` — which would return
- * `null` and throw `KeyNotFoundError` on every subsequent sign. Passing an
- * *already-persisted* `hd-root-key`'s id sidesteps this: `generateKey` takes
- * the `isXHDRootKey(parentKey)` branch instead, reusing that same
- * (storage-backed) id as `parentKeyId`, so `signP256` can always resolve it.
- * `resolveRootKeyId` below lazily creates and persists exactly one such root
- * key (tagged with `ROOT_KEY_PURPOSE` in its metadata so it's identifiable
- * and reused, never regenerated, across every credential this adapter mints).
+ * TRAP — this adapter used to drive `keystore-chrome`'s own `store.ts`
+ * (`generateKey`/`fetchSecret`), which persists to `chrome.storage.local`
+ * under the `keystore:` prefix. Web key storage has since moved to the
+ * keystore-web engine (IndexedDB), leaving that bucket permanently empty:
+ * the adapter found no wallet seed and threw `InvalidKeyDataError`, and any
+ * credential it had managed to write would have been invisible to the rest
+ * of the extension anyway. Route everything through the injected engine.
+ *
+ * ## The passkey hierarchy the engine expects
+ *
+ * `wallet root -> pbkdf2-p256 main key -> hd-derived-p256 credential`
+ *
+ * The engine has no `generate({ type: 'hd-derived-p256' })` branch at all;
+ * the only way to mint a credential is `deriveDomainKey(mainKeyId, …)`, and
+ * that rejects any parent which is not an `hd-root-key` carrying
+ * `metadata.scheme === 'pbkdf2-p256'`. That main key is itself created by
+ * `generate({ type: 'hd-root-key', algorithm: 'P256' })`, which PBKDF2s the
+ * bytes of whatever `params.parentKeyId` names — the wallet's own root, so
+ * the whole chain stays recoverable from the user's seed phrase.
  */
 
-/** Tags the lazily-created, persisted `hd-root-key` this adapter derives every P-256 passkey from. */
-const ROOT_KEY_PURPOSE = 'webauthn-passkeys'
+/** Distinguishes the passkey main key from the wallet's XHD root, which shares its `hd-root-key` type. */
+const PBKDF2_P256_SCHEME = 'pbkdf2-p256'
+
+/**
+ * Types a wallet root can carry. `hd-root-key` is what `useHDWallet` writes
+ * today; `seed`/`hd-seed` cover a wallet imported before that relabel.
+ */
+const WALLET_ROOT_TYPES: ReadonlySet<string> = new Set([
+    'hd-root-key',
+    'seed',
+    'hd-seed',
+])
+
+/**
+ * The slice of the keystore engine this adapter drives. Structural rather
+ * than the concrete engine type: the React Native and web builds resolve
+ * different concrete keystores, and both satisfy this.
+ */
+export type PasskeyKeyStore = {
+    generate: (options: {
+        type: string
+        algorithm?: string
+        extractable?: boolean
+        keyUsages?: string[]
+        params?: Record<string, unknown>
+    }) => Promise<string>
+    /** Optional on the engine's own type, so callers must null-check it. */
+    deriveDomainKey?: (
+        mainKeyId: string,
+        options: {
+            algorithm: string
+            origin?: string
+            userHandle?: string
+            counter?: number
+            id?: string
+            metadata?: Record<string, unknown>
+        },
+    ) => Promise<string>
+    sign: (id: string, data: Uint8Array) => Promise<Uint8Array>
+}
 
 const readMetadataString = (key: Key, field: string): string | undefined => {
     const value = (key.metadata as Record<string, unknown> | undefined)?.[field]
     return typeof value === 'string' ? value : undefined
 }
+
+const isPasskeyMainKey = (key: Key): boolean =>
+    key.type === 'hd-root-key' &&
+    readMetadataString(key, 'scheme') === PBKDF2_P256_SCHEME
 
 /**
  * Normalizes whatever `key.publicKey` the keystore hands back (64-byte raw
@@ -79,48 +115,47 @@ const toFlatXY = (publicKey: Uint8Array): Uint8Array => {
 }
 
 /**
- * Finds this adapter's persisted `hd-root-key` (identified by
- * `metadata.purpose === ROOT_KEY_PURPOSE`), or derives and commits one from
- * the wallet's `seed`/`hd-seed` entry if it doesn't exist yet. See the
- * module doc above for why this must be a persisted root key, not the bare
- * seed id.
+ * Finds the persisted `pbkdf2-p256` main key, or derives one from the
+ * wallet's root. Exactly one is ever created: every credential shares it, so
+ * losing it would orphan all of them at once — which is precisely why it
+ * hangs off the wallet root and stays reproducible from the seed phrase.
  */
-const resolveRootKeyId = async (
+const resolveMainKeyId = async (
+    keystore: PasskeyKeyStore,
     store: Store<KeyStoreState>,
 ): Promise<string> => {
-    const existingRootKey = store.state.keys.find(
-        key =>
-            key.type === 'hd-root-key' &&
-            readMetadataString(key, 'purpose') === ROOT_KEY_PURPOSE,
-    )
-    if (existingRootKey) return existingRootKey.id
+    const existing = store.state.keys.find(isPasskeyMainKey)
+    if (existing) return existing.id
 
-    const seed = store.state.keys.find(
-        key => key.type === 'seed' || key.type === 'hd-seed',
+    const walletRoot = store.state.keys.find(
+        key => WALLET_ROOT_TYPES.has(key.type) && !isPasskeyMainKey(key),
     )
-    if (!seed) {
+    if (!walletRoot) {
         throw new InvalidKeyDataError(
-            'No wallet seed found in the keystore; cannot derive a WebAuthn P-256 credential.',
+            'No wallet root found in the keystore; cannot derive a WebAuthn P-256 credential.',
         )
     }
 
-    return generateKey({
-        store,
+    return keystore.generate({
         type: 'hd-root-key',
-        algorithm: 'raw',
+        // `algorithm: 'P256'` is what selects the PBKDF2 main-key branch over
+        // the XHD-root one; they share the `hd-root-key` type.
+        algorithm: 'P256',
         extractable: false,
-        keyUsages: ['deriveKey', 'deriveBits'],
-        params: { parentKeyId: seed.id, purpose: ROOT_KEY_PURPOSE },
+        keyUsages: ['deriveBits', 'deriveKey'],
+        params: { parentKeyId: walletRoot.id },
     })
 }
 
 /**
- * Builds a {@link KeystoreSigner} over a live keystore-chrome `Store`. Pass
- * the same `Store<KeyStoreState>` instance the extension's background
- * context uses (see `getKeystoreStore()` in `extensions/provider`) so every
- * credential this mints and signs is visible to the rest of the extension.
+ * Builds a {@link KeystoreSigner} over the extension's live keystore engine
+ * and its reactive store. Pass the same pair the background context uses
+ * (`getKeystore()` / `getKeystoreStore()` from `extensions/provider`) so
+ * every credential this mints and signs is visible to the rest of the
+ * extension.
  */
 export const createKeystoreSigner = (
+    keystore: PasskeyKeyStore,
     store: Store<KeyStoreState>,
 ): KeystoreSigner => ({
     async createP256Credential({
@@ -130,32 +165,34 @@ export const createKeystoreSigner = (
         displayName,
         userName,
     }) {
-        const rootKeyId = await resolveRootKeyId(store)
+        const deriveDomainKey = keystore.deriveDomainKey
+        if (!deriveDomainKey) {
+            throw new InvalidKeyDataError(
+                'Keystore backend does not implement deriveDomainKey; cannot mint a WebAuthn P-256 credential.',
+            )
+        }
+
+        const mainKeyId = await resolveMainKeyId(keystore, store)
 
         // Redundant today (the core already lowercases), but load-bearing if
-        // that changes: the keystore lib lowercases `metadata.userHandle` on
-        // its GENERATION path but not its SIGN path, so non-lowercase stored
-        // metadata would re-derive a different keypair than the public key we
-        // returned at registration.
+        // that changes: the engine re-derives the child at sign time from the
+        // stored `metadata.userHandle`, so a non-lowercase value here would
+        // produce a different keypair than the public key returned at
+        // registration and every assertion would fail verification.
         const normalizedUserHandle = userHandle.toLowerCase()
 
-        const keyId = await generateKey({
-            store,
-            type: 'hd-derived-p256',
+        const keyId = await deriveDomainKey.call(keystore, mainKeyId, {
             algorithm: 'P256',
-            extractable: true,
-            keyUsages: ['sign'],
-            params: {
-                parentKeyId: rootKeyId,
-                origin: rpId,
-                userHandle: normalizedUserHandle,
+            origin: rpId,
+            userHandle: normalizedUserHandle,
+            counter: 0,
+            metadata: {
                 // Byte-exact base64url of the RP's original `user.id` bytes —
-                // separate from `userHandle` (the lossy derivation input)
-                // above. NEVER fed into key derivation; only used by
+                // separate from `userHandle` (the lossy derivation input).
+                // NEVER fed into key derivation; only used by
                 // `listP256Credentials` to answer with the real `user.id` on
-                // assertion. See the module doc's userHandle-encoding finding.
+                // assertion.
                 userHandleOriginal: userHandleOriginalB64Url,
-                counter: 0,
                 displayName,
                 userName,
                 createdAt: Date.now(),
@@ -173,34 +210,17 @@ export const createKeystoreSigner = (
     },
 
     async signP256(keyId, data) {
-        const key = await fetchSecret<KeyData>({ keyId })
-        if (!key) throw new KeyNotFoundError(keyId)
-
-        const parentKeyId = readMetadataString(key, 'parentKeyId')
-        if (!parentKeyId) {
-            throw new InvalidKeyDataError(
-                `P-256 key ${keyId} is missing its parent key ID.`,
-            )
-        }
-        const parentKey = await fetchSecret<KeyData>({ keyId: parentKeyId })
-        if (!parentKey) throw new KeyNotFoundError(parentKeyId)
-
-        // The adapter must hash, because the two sides disagree on what
-        // "sign" means. The keystore's P-256 path is a RAW ECDSA primitive —
-        // noble's `p256.sign` defaults to `prehash: false`, so it signs the
-        // caller's bytes as an already-computed digest. WebAuthn ES256 requires
-        // the signature to be over `SHA256(authenticatorData || clientDataHash)`.
-        // Without hashing here, every assertion would fail verification against
-        // a standards-compliant relying party.
-        const digest = sha256(data)
-
-        // Raw 64-byte (r ‖ s) — the port's core DER-encodes, this adapter must not.
-        return signKeyData({
-            store,
-            key,
-            parentKey: { ...parentKey, type: 'hd-root-key', format: 'raw' },
-            data: digest,
-        })
+        // Hand the payload over UNHASHED. dp256's own signer is a raw ECDSA
+        // primitive that treats its input as an already-computed digest, but
+        // the engine's Deterministic-P256 shim SHA-256s before calling it, so
+        // it already emits a standards-compliant ES256 signature over
+        // `SHA256(authenticatorData || clientDataHash)`. Pre-hashing here
+        // would sign `SHA256(SHA256(…))` and every relying party's verify
+        // would fail — which is exactly what the passkey-provider e2e caught.
+        //
+        // Raw 64-byte (r ‖ s) comes back out; the port's core DER-encodes, so
+        // this adapter must not.
+        return keystore.sign(keyId, data)
     },
 
     async listP256Credentials(rpId) {
@@ -214,11 +234,10 @@ export const createKeystoreSigner = (
                 )
                 if (!derivationUserHandle || !key.publicKey) return []
 
-                // Prefer the byte-exact original `user.id` this adapter
-                // started persisting alongside the derivation `userHandle`
-                // (see `createP256Credential`). Fall back to base64url of
-                // the (lowercased, lossy) derivation string only for a key
-                // minted before this field existed — that fallback is NOT
+                // Prefer the byte-exact original `user.id` persisted alongside
+                // the derivation `userHandle`. Fall back to base64url of the
+                // (lowercased, lossy) derivation string only for a key minted
+                // before this field existed — that fallback is NOT
                 // byte-identical to the RP's original `user.id` for mixed-case
                 // or non-UTF-8 handles, but keeps a pre-existing credential
                 // listable rather than dropping it outright.

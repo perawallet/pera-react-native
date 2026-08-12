@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
-import type { Key, KeyStoreState } from '@algorandfoundation/keystore'
+import type { Key, KeyStoreState } from '@algorandfoundation/keystore-core'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
 
 const mocks = vi.hoisted(() => ({

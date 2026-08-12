@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 
 vi.mock('algosdk', async importOriginal => ({
     ...(await importOriginal<typeof import('algosdk')>()),
@@ -61,6 +61,16 @@ describe('seedSchemeOf', () => {
         expect(
             seedSchemeOf(seedKey({ metadata: { scheme: SeedScheme.Quantum } })),
         ).toBe(SeedScheme.Quantum)
+    })
+
+    test('returns "bip39" for an XHD root key', () => {
+        const rootKey = seedKey({
+            type: 'hd-root-key',
+            metadata: { scheme: SeedScheme.Bip39 },
+        })
+
+        expect(seedSchemeOf(rootKey)).toBe(SeedScheme.Bip39)
+        expect(isSeedKey(rootKey)).toBe(true)
     })
 
     test('returns null for a seed with no scheme metadata', () => {

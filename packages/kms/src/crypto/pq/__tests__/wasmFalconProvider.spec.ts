@@ -12,7 +12,6 @@
 
 // @vitest-environment node
 import { describe, expect, test } from 'vitest'
-import { FALCON_DET1024_SIG_COMPRESSED_MAXSIZE } from 'falcon-1024'
 import { createWasmFalconProvider } from '../wasmFalconProvider'
 
 describe('wasmFalconProvider', () => {
@@ -24,14 +23,5 @@ describe('wasmFalconProvider', () => {
         const b = provider.generateKeypairFromSeed(seed)
         expect(a.publicKey.length).toBe(1793)
         expect(Buffer.compare(a.publicKey, b.publicKey)).toBe(0)
-    })
-
-    test('signs and produces a Falcon-sized signature', () => {
-        const { secretKey } = provider.generateKeypairFromSeed(seed)
-        const sig = provider.sign(secretKey, new Uint8Array([1, 2, 3]))
-        expect(sig.length).toBeGreaterThan(0)
-        expect(sig.length).toBeLessThanOrEqual(
-            FALCON_DET1024_SIG_COMPRESSED_MAXSIZE,
-        )
     })
 })

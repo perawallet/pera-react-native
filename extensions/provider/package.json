@@ -18,9 +18,11 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "@algorandfoundation/keystore": "catalog:",
+    "@algorandfoundation/keystore-core": "catalog:",
+    "@algorandfoundation/keystore-web": "catalog:",
     "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
+    "@scure/base": "catalog:",
     "@tanstack/store": "catalog:",
     "@babel/runtime": "catalog:",
     "before-after-hook": "catalog:",
@@ -32,7 +34,8 @@
     "@perawallet/wallet-extension-ledger-web-ble": "workspace:*",
     "@perawallet/wallet-extension-ledger-web-usb": "workspace:*",
     "@perawallet/wallet-extension-passkey-autofill": "workspace:*",
-    "react": "catalog:"
+    "react": "catalog:",
+    "react-native-quick-crypto": "catalog:"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",

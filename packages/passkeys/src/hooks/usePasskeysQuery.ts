@@ -12,7 +12,7 @@
 
 import { useMemo, useSyncExternalStore } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import { logger } from '@perawallet/wallet-core-shared'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'

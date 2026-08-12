@@ -26,8 +26,14 @@ import {
     deserializeCreateOptions,
     deserializeGetOptions,
 } from '@perawallet/wallet-core-passkeys'
-import { createKeystoreSigner } from '@perawallet/wallet-extension-keystore-chrome'
-import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
+import {
+    createKeystoreSigner,
+    type PasskeyKeyStore,
+} from '@perawallet/wallet-extension-keystore-chrome'
+import {
+    getKeystore,
+    getKeystoreStore,
+} from '@perawallet/wallet-extension-provider'
 import {
     rejectPasskey,
     resolvePasskey,
@@ -162,7 +168,13 @@ export const usePasskeyApproval = (): UsePasskeyApprovalResult => {
             },
         }
         try {
-            const signer = createKeystoreSigner(getKeystoreStore())
+            // Both halves of the same keystore: the engine mints and signs,
+            // the reactive store is where the freshly derived public key and
+            // the credential list are read back from.
+            const signer = createKeystoreSigner(
+                getKeystore() as unknown as PasskeyKeyStore,
+                getKeystoreStore(),
+            )
             const credential =
                 current.kind === 'passkey-create'
                     ? await createCredential(

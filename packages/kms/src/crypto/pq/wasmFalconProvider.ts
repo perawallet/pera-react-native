@@ -36,7 +36,7 @@ import type { PQSignatureProvider } from './types'
  * (`import type` above is erased at compile time and is safe.)
  */
 export const createWasmFalconProvider = (): PQSignatureProvider => {
-    const { generateKey, signCompressed, FALCON_DET1024_PUBKEY_SIZE } =
+    const { generateKey, FALCON_DET1024_PUBKEY_SIZE } =
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         require('falcon-1024') as typeof import('falcon-1024')
 
@@ -46,9 +46,6 @@ export const createWasmFalconProvider = (): PQSignatureProvider => {
         generateKeypairFromSeed(seed) {
             const { publicKey, privateKey } = generateKey(seed)
             return { publicKey, secretKey: privateKey }
-        },
-        sign(secretKey, message) {
-            return signCompressed(secretKey, message)
         },
     }
 }

@@ -42,10 +42,11 @@ export const routeCapabilities: RouteCapabilities = {
     developerSettings: true, // internal builds need network/debug toggles
     vaultSecuritySettings: true,
     dappConnections: true,
-    // Off: the WASM Falcon-1024 signer is Node/test-only (see
-    // getPQProvider/wasmFalconProvider) and its Emscripten build fails to
-    // parse under Metro's web bundler, so quantum accounts have no working
-    // signer path in the browser extension yet.
+    // Off: the keystore signs Falcon-1024 from sealed material, and off
+    // device its Falcon shim is backed by the WASM `falcon-1024` build —
+    // whose Emscripten bundle fails to parse under Metro's web bundler. So
+    // quantum accounts have no working signer path in the browser extension
+    // yet.
     quantum: false,
     rekeyFlows: true,
     // Gates the SHARED_ACCOUNT_IMPORT deeplink as well as the UI entry points;

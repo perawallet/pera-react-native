@@ -18,11 +18,19 @@
 import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
 
 /**
- * Pure post-quantum signature provider contract.
+ * Pure post-quantum signature provider contract: scheme identity plus
+ * deterministic keypair derivation.
+ *
+ * It does NOT sign. The keystore owns custody — it derives and seals the
+ * Falcon private key itself and signs internally, so no secret key is
+ * available to hand a provider. What remains is used for address derivation
+ * and as an oracle independent of the keystore, which is what lets the quantum
+ * fixtures cross-check the keystore's own derivation instead of confirming it
+ * against itself.
  *
  * Implementations MUST be pure crypto: no algosdk imports, no address
- * derivation, no digest/hash computation over `message` inside `sign`.
- * Digest contracts belong to the signer / Seam B, out of scope here.
+ * derivation. Digest contracts belong to the signer / Seam B, out of scope
+ * here.
  */
 export interface PQSignatureProvider {
     /**
@@ -36,6 +44,4 @@ export interface PQSignatureProvider {
         publicKey: Uint8Array
         secretKey: Uint8Array
     }
-    /** Signs the raw `message` bytes as given; does not hash/digest them. */
-    sign(secretKey: Uint8Array, message: Uint8Array): Uint8Array
 }
