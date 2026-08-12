@@ -107,6 +107,16 @@ describe('BalanceLineChart', () => {
         expect(max).toBeGreaterThan(200)
     })
 
+    // Omitting yAxis does not hide it — victory gates the Y axis on a derived
+    // array that is always populated, so its default hairline gridlines render
+    // anyway (visible in light mode). Zero width is what suppresses them.
+    it('renders no y-axis gridlines', () => {
+        renderChart({ series: [{ balance: 1 }, { balance: 2 }] })
+
+        const yAxis = lineChartProps.current!.yAxis as { lineWidth: number }[]
+        expect(yAxis.every(axis => axis.lineWidth === 0)).toBe(true)
+    })
+
     // Victory applies activateAfterLongPress(100) unless an explicit pan config
     // is supplied. That hold-before-scrub is the exact lag this port removes,
     // so the config must stay explicit and must not reintroduce a delay.

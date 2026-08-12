@@ -11,7 +11,6 @@
  */
 
 import { useMemo } from 'react'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { LinearGradient, vec } from '@shopify/react-native-skia'
 import { Area, CartesianChart, Line, useChartPressState } from 'victory-native'
 import { useTheme } from '@rneui/themed'
@@ -45,6 +44,14 @@ const CHART_ANIMATION = {
     type: 'timing',
     duration: CHART_ANIMATION_DURATION,
 } as const
+
+// Omitting `yAxis` is not enough to hide it: victory gates the X axis on the
+// `xAxis` prop but the Y axis on its internally-derived `yAxes` array, which is
+// always populated — so the default 25%-black hairline gridlines render either
+// way (obvious in light mode, near-invisible in dark). Zero width is the off
+// switch; YAxis skips the path when lineWidth <= 0, and tick labels need a
+// `font` we never pass. Hoisted so the prop identity stays stable.
+const HIDDEN_Y_AXIS = [{ lineWidth: 0 }]
 
 // Shared area line chart for the wealth/asset-balance/asset-price charts, which
 // render an identical chart and only differ in how they fetch their series and
@@ -124,20 +131,13 @@ export const BalanceLineChart = <T,>({
         switch (renderState) {
             case 'chart': {
                 return (
-                    // Its own gesture root, deliberately. Once a scrub passes
-                    // twice the touch slop, the tab pager's NestedScrollableHost
-                    // calls requestDisallowInterceptTouchEvent on its parents;
-                    // the app-level GestureHandlerRootView answers that by
-                    // cancelling every handler it owns, which killed the scrub
-                    // mid-drag. A nested root is skipped by the outer root's
-                    // cancellation sweep, so the chart keeps its gesture until
-                    // the finger lifts (PERA-4849).
-                    <GestureHandlerRootView style={styles.canvas}>
+                    <PWView style={styles.canvas}>
                         <CartesianChart
                             data={dataPoints}
                             xKey='index'
                             yKeys={['value']}
                             domain={{ y: yDomain }}
+                            yAxis={HIDDEN_Y_AXIS}
                             padding={0}
                             domainPadding={0}
                             chartPressState={pressState}
@@ -187,7 +187,7 @@ export const BalanceLineChart = <T,>({
                                 </>
                             )}
                         </CartesianChart>
-                    </GestureHandlerRootView>
+                    </PWView>
                 )
             }
             // Offline must not masquerade as loading: a paused query reports
