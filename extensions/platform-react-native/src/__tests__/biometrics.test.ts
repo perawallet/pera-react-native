@@ -147,7 +147,7 @@ describe('RNBiometricsService', () => {
     })
 
     describe('authenticate', () => {
-        test('returns the native success flag', async () => {
+        test('returns a success result when the native call succeeds', async () => {
             authenticateAsyncMock.mockResolvedValue({ success: true })
             expect(
                 await service.authenticate({
@@ -155,20 +155,58 @@ describe('RNBiometricsService', () => {
                     description: 'd',
                     cancelLabel: 'Cancel',
                 }),
-            ).toBe(true)
+            ).toEqual({ success: true })
         })
 
-        test('returns false when the native call resolves with success: false', async () => {
+        test.each([
+            ['user_cancel', 'user-cancel'],
+            ['user_fallback', 'user-cancel'],
+            ['system_cancel', 'system-cancel'],
+            ['app_cancel', 'system-cancel'],
+            ['lockout', 'lockout'],
+            ['not_available', 'unavailable'],
+            ['not_enrolled', 'unavailable'],
+            ['passcode_not_set', 'unavailable'],
+            ['authentication_failed', 'failed'],
+            ['timeout', 'unknown'],
+            ['no_space', 'unknown'],
+            ['unable_to_process', 'unknown'],
+            ['invalid_context', 'unknown'],
+            ['unknown', 'unknown'],
+        ])('maps native error %j to reason %j', async (native, reason) => {
             authenticateAsyncMock.mockResolvedValue({
                 success: false,
-                error: 'user_cancel',
+                error: native,
             })
-            expect(await service.authenticate()).toBe(false)
+            expect(await service.authenticate()).toEqual({
+                success: false,
+                reason,
+            })
         })
 
-        test('returns false when the native call throws', async () => {
+        // iOS's default error branch returns prefixed strings rather than a
+        // member of the documented union, and some strings (e.g.
+        // missing_usage_description) aren't in the TS type at all.
+        test.each([
+            'unknown: -1004, Caller moved to background.',
+            'missing_usage_description',
+        ])('maps unrecognized native error %j to "unknown"', async native => {
+            authenticateAsyncMock.mockResolvedValue({
+                success: false,
+                error: native,
+            })
+            expect(await service.authenticate()).toEqual({
+                success: false,
+                reason: 'unknown',
+            })
+        })
+
+        test('returns an unknown failure when the native call throws', async () => {
             authenticateAsyncMock.mockRejectedValue(new Error('cancelled'))
-            expect(await service.authenticate()).toBe(false)
+            expect(await service.authenticate()).toEqual({
+                success: false,
+                reason: 'unknown',
+            })
         })
 
         test('disables device PIN/password fallback (biometric-only)', async () => {

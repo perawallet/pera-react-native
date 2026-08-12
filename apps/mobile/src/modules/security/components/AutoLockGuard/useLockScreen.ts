@@ -11,10 +11,13 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { AppState, type NativeEventSubscription } from 'react-native'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDuressWipe } from '@modules/security/hooks/useDuressWipe'
 import { useShakeToLockHandler } from '@modules/security/hooks/useShakeToLockHandler'
+
+const MAX_SYSTEM_CANCEL_RETRIES = 2
 
 type UseLockScreenParams = {
     onUnlock: () => void
@@ -114,10 +117,31 @@ export const useLockScreen = ({
         if (promptRef.current.isLockedOut) return
 
         let cancelled = false
-        void (async () => {
+        let subscription: NativeEventSubscription | null = null
+
+        // Resolves on the next 'active'; abandoned on cleanup (never resolves).
+        const waitForNextActive = () =>
+            new Promise<void>(resolve => {
+                subscription = AppState.addEventListener('change', next => {
+                    if (next !== 'active') return
+                    subscription?.remove()
+                    subscription = null
+                    resolve()
+                })
+            })
+
+        const attemptPrompt = async (retriesLeft: number): Promise<void> => {
+            // Deeplink cold start: the OS cancels a prompt requested before
+            // the app is actually active, so hold it until then.
+            if (AppState.currentState !== 'active') {
+                await waitForNextActive()
+                if (cancelled) return
+            }
+            // Lockout can begin while waiting (failed PIN attempts on the pad).
+            if (promptRef.current.isLockedOut) return
             const enabled = await promptRef.current.checkBiometricsEnabled()
             if (cancelled || !enabled) return
-            const success = await promptRef.current.authenticateWithBiometrics({
+            const result = await promptRef.current.authenticateWithBiometrics({
                 title: promptRef.current.t(
                     'security.biometric.unlock_prompt_title',
                 ),
@@ -125,13 +149,25 @@ export const useLockScreen = ({
                     'security.biometric.cancel_label',
                 ),
             })
-            if (cancelled || !success) return
-            void promptRef.current.resetFailedAttempts()
-            promptRef.current.onUnlock()
-        })()
+            if (cancelled) return
+            if (result.success) {
+                void promptRef.current.resetFailedAttempts()
+                promptRef.current.onUnlock()
+                return
+            }
+            // Only OS-initiated cancellation re-arms; a user cancel stays
+            // terminal (silent fallback to PIN), and lockout/failed/unknown
+            // never retry.
+            if (result.reason !== 'system-cancel' || retriesLeft === 0) return
+            return attemptPrompt(retriesLeft - 1)
+        }
+
+        void attemptPrompt(MAX_SYSTEM_CANCEL_RETRIES)
 
         return () => {
             cancelled = true
+            subscription?.remove()
+            subscription = null
         }
     }, [isLocked])
 

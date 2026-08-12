@@ -48,7 +48,11 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-import { useBiometrics, type EnableBiometricsResult } from '../useBiometrics'
+import {
+    useBiometrics,
+    type BiometricsAuthenticateResult,
+    type EnableBiometricsResult,
+} from '../useBiometrics'
 import { PIN_RECORD_KEY_ID, BIOMETRIC_BLOB_KEY_ID } from '../../constants'
 import { useSecurityStore } from '../../store'
 
@@ -296,7 +300,7 @@ describe('useBiometrics', () => {
     test('enableBiometrics forwards the prompt to the biometrics service', async () => {
         kmsMocks.pinBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
-        mockAuthenticate.mockResolvedValue(true)
+        mockAuthenticate.mockResolvedValue({ success: true })
 
         const { result } = await renderAndSettle()
         const prompt = { title: 'Enable', cancelLabel: 'Cancel' }
@@ -310,7 +314,7 @@ describe('useBiometrics', () => {
 
     test('authenticateWithBiometrics forwards the prompt to the biometrics service', async () => {
         kmsMocks.biometricBytes = new TextEncoder().encode('123456')
-        mockAuthenticate.mockResolvedValue(true)
+        mockAuthenticate.mockResolvedValue({ success: true })
 
         const { result } = await renderAndSettle()
         const prompt = { title: 'Unlock', cancelLabel: 'Cancel' }
@@ -326,7 +330,7 @@ describe('useBiometrics', () => {
         const pinData = new TextEncoder().encode('123456')
         kmsMocks.pinBytes = pinData
         mockCheckBiometricsAvailable.mockResolvedValue(true)
-        mockAuthenticate.mockResolvedValue(true)
+        mockAuthenticate.mockResolvedValue({ success: true })
 
         const { result } = await renderAndSettle()
 
@@ -404,7 +408,10 @@ describe('useBiometrics', () => {
     test('enableBiometrics returns declined reason when the user declines authentication', async () => {
         kmsMocks.pinBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
-        mockAuthenticate.mockResolvedValue(false)
+        mockAuthenticate.mockResolvedValue({
+            success: false,
+            reason: 'user-cancel',
+        })
 
         const { result } = await renderAndSettle()
 
@@ -424,7 +431,7 @@ describe('useBiometrics', () => {
     test('disableBiometrics removes biometric data and sets isEnabled to false', async () => {
         kmsMocks.pinBytes = new TextEncoder().encode('123456')
         mockCheckBiometricsAvailable.mockResolvedValue(true)
-        mockAuthenticate.mockResolvedValue(true)
+        mockAuthenticate.mockResolvedValue({ success: true })
 
         const { result } = await renderAndSettle()
 
@@ -444,59 +451,65 @@ describe('useBiometrics', () => {
         expect(result.current.isEnabled).toBe(false)
     })
 
-    test('authenticateWithBiometrics returns false when biometrics not enabled', async () => {
+    test('authenticateWithBiometrics reports unavailable when biometrics not enabled', async () => {
         const { result } = await renderAndSettle()
 
-        let authenticated: boolean = true
+        let authenticated: BiometricsAuthenticateResult | undefined
         await act(async () => {
             authenticated = await result.current.authenticateWithBiometrics()
         })
 
-        expect(authenticated).toBe(false)
+        expect(authenticated).toEqual({ success: false, reason: 'unavailable' })
         expect(mockAuthenticate).not.toHaveBeenCalled()
     })
 
-    test('authenticateWithBiometrics returns true when biometrics enabled and auth succeeds', async () => {
+    test('authenticateWithBiometrics reports success when biometrics enabled and auth succeeds', async () => {
         kmsMocks.biometricBytes = new TextEncoder().encode('123456')
-        mockAuthenticate.mockResolvedValue(true)
+        mockAuthenticate.mockResolvedValue({ success: true })
 
         const { result } = await renderAndSettle()
 
-        let authenticated: boolean = false
+        let authenticated: BiometricsAuthenticateResult | undefined
         await act(async () => {
             authenticated = await result.current.authenticateWithBiometrics()
         })
 
-        expect(authenticated).toBe(true)
+        expect(authenticated).toEqual({ success: true })
         expect(mockAuthenticate).toHaveBeenCalled()
     })
 
-    test('authenticateWithBiometrics returns false when biometric data missing', async () => {
-        mockAuthenticate.mockResolvedValue(true)
+    test('authenticateWithBiometrics reports unavailable when biometric data missing', async () => {
+        mockAuthenticate.mockResolvedValue({ success: true })
 
         const { result } = await renderAndSettle()
 
-        let authenticated: boolean = true
+        let authenticated: BiometricsAuthenticateResult | undefined
         await act(async () => {
             authenticated = await result.current.authenticateWithBiometrics()
         })
 
-        expect(authenticated).toBe(false)
+        expect(authenticated).toEqual({ success: false, reason: 'unavailable' })
         expect(mockAuthenticate).not.toHaveBeenCalled()
     })
 
-    test('authenticateWithBiometrics returns false when biometrics auth fails', async () => {
+    test('authenticateWithBiometrics passes the service failure through unmodified', async () => {
         kmsMocks.biometricBytes = new TextEncoder().encode('123456')
-        mockAuthenticate.mockResolvedValue(false)
+        mockAuthenticate.mockResolvedValue({
+            success: false,
+            reason: 'system-cancel',
+        })
 
         const { result } = await renderAndSettle()
 
-        let authenticated: boolean = true
+        let authenticated: BiometricsAuthenticateResult | undefined
         await act(async () => {
             authenticated = await result.current.authenticateWithBiometrics()
         })
 
-        expect(authenticated).toBe(false)
+        expect(authenticated).toEqual({
+            success: false,
+            reason: 'system-cancel',
+        })
     })
 
     // The QA gap in the first revision: the reconcile cleared the blob but only
@@ -522,17 +535,17 @@ describe('useBiometrics', () => {
         expect(settings.result.current.isEnabled).toBe(false)
     })
 
-    test('authenticateWithBiometrics returns false on error', async () => {
+    test('authenticateWithBiometrics reports unknown on error', async () => {
         kmsMocks.biometricBytes = new TextEncoder().encode('123456')
         mockAuthenticate.mockRejectedValue(new Error('Auth error'))
 
         const { result } = await renderAndSettle()
 
-        let authenticated: boolean = true
+        let authenticated: BiometricsAuthenticateResult | undefined
         await act(async () => {
             authenticated = await result.current.authenticateWithBiometrics()
         })
 
-        expect(authenticated).toBe(false)
+        expect(authenticated).toEqual({ success: false, reason: 'unknown' })
     })
 })

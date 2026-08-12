@@ -12,6 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { BiometricsAuthenticateResult } from '@perawallet/wallet-core-security'
 
 const mocks = vi.hoisted(() => ({
     verifyPin: vi.fn(),
@@ -63,9 +64,11 @@ describe('usePinEditView biometric auto-prompt (verify)', () => {
 
     it('completes on biometric success even when re-rendered mid-prompt', async () => {
         mocks.checkBiometricsEnabled.mockResolvedValue(true)
-        let resolveAuth: (value: boolean) => void = () => {}
+        let resolveAuth: (
+            value: BiometricsAuthenticateResult,
+        ) => void = () => {}
         mocks.authenticateWithBiometrics.mockReturnValue(
-            new Promise<boolean>(resolve => {
+            new Promise<BiometricsAuthenticateResult>(resolve => {
                 resolveAuth = resolve
             }),
         )
@@ -88,7 +91,7 @@ describe('usePinEditView biometric auto-prompt (verify)', () => {
         rerender({ onSuccess: onSuccessB })
 
         await act(async () => {
-            resolveAuth(true)
+            resolveAuth({ success: true })
             await Promise.resolve()
         })
 

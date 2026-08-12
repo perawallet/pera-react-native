@@ -12,7 +12,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
+    type BiometricsAuthenticateFailureReason,
     type BiometricsAuthenticatePrompt,
+    type BiometricsAuthenticateResult,
     type BiometricType,
 } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -62,7 +64,7 @@ type UseBiometricsResult = {
     disableBiometrics: () => Promise<void>
     authenticateWithBiometrics: (
         prompt?: BiometricsAuthenticatePrompt,
-    ) => Promise<boolean>
+    ) => Promise<BiometricsAuthenticateResult>
 }
 
 export const useBiometrics = (): UseBiometricsResult => {
@@ -157,7 +159,7 @@ export const useBiometrics = (): UseBiometricsResult => {
 
                         const authenticated =
                             await biometricsService.authenticate(prompt)
-                        if (!authenticated) {
+                        if (!authenticated.success) {
                             return { ok: false, reason: 'declined' }
                         }
 
@@ -196,15 +198,18 @@ export const useBiometrics = (): UseBiometricsResult => {
     }, [removeSecret, setIsEnabled])
 
     const authenticateWithBiometrics = useCallback(
-        async (prompt?: BiometricsAuthenticatePrompt): Promise<boolean> => {
+        async (
+            prompt?: BiometricsAuthenticatePrompt,
+        ): Promise<BiometricsAuthenticateResult> => {
             try {
-                if (!(await checkBiometricsEnabled())) return false
+                if (!(await checkBiometricsEnabled())) {
+                    return { success: false, reason: 'unavailable' }
+                }
                 return await biometricsService.authenticate(prompt)
             } catch {
-                // Declared `Promise<boolean>` and callers branch on it rather
-                // than catching — the reconcile above reaches the keystore, so
-                // it has to be inside the guard too.
-                return false
+                // The reconcile above reaches the keystore, so guard it here
+                // rather than letting callers catch.
+                return { success: false, reason: 'unknown' }
             }
         },
         [checkBiometricsEnabled, biometricsService],
@@ -222,4 +227,8 @@ export const useBiometrics = (): UseBiometricsResult => {
     }
 }
 
-export type { BiometricType }
+export type {
+    BiometricType,
+    BiometricsAuthenticateFailureReason,
+    BiometricsAuthenticateResult,
+}

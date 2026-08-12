@@ -62,7 +62,7 @@ const buildServices = (): PlatformServices => {
             return 'strong'
         },
         async authenticate() {
-            return true
+            return { success: true } as const
         },
     }
 
