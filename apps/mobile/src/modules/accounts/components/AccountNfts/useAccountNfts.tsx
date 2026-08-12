@@ -16,19 +16,17 @@ import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { type PWFlatList } from '@components/core'
 import {
     useSelectedAccount,
-    useAccountBalancesQuery,
+    useAccountCollectiblesQuery,
     useAccountOptInRoundsQuery,
     useCanSignWith,
+    type AccountCollectibleLiteRow,
 } from '@perawallet/wallet-core-accounts'
 import {
-    useAssetsQuery,
-    isCollectible,
     useCollectiblePreferencesStore,
     type CollectibleSortMode,
     type GalleryLayout,
 } from '@perawallet/wallet-core-assets'
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
-import { type CollectibleDisplayItem } from '@modules/assets/types/collectible'
 import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 import { useSyncRefresh } from '@hooks/useSyncRefresh'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -36,10 +34,9 @@ import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
 import { NftFilterContent } from '../NftFilterContent'
 import { NftSortContent } from '../NftSortContent'
 import { ManageNftsContent, type ManageNftsAction } from '../ManageNftsContent'
-import { sortCollectibles } from './sortCollectibles'
 
 type UseAccountNftsResult = {
-    collectibles: CollectibleDisplayItem[]
+    collectibles: AccountCollectibleLiteRow[]
     collectibleCount: number
     isPending: boolean
     isRefreshing: boolean
@@ -56,7 +53,7 @@ type UseAccountNftsResult = {
     setSortMode: (mode: CollectibleSortMode) => void
     setShowOptedIn: (value: boolean) => void
     setShowWatchAccounts: (value: boolean) => void
-    handlePress: (item: CollectibleDisplayItem) => void
+    handlePress: (item: AccountCollectibleLiteRow) => void
     handleRefresh: () => void
     openManageSheet: () => Promise<void>
     openAddNftSheet: () => void
@@ -147,10 +144,6 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         }
     }, [requestBottomSheet, openSortSheet, openFilterSheet])
 
-    const { accountBalances, isPending } = useAccountBalancesQuery(
-        account ? [account] : [],
-    )
-
     const { optInRounds } = useAccountOptInRoundsQuery(
         account?.address,
         sortMode === 'recentlyAdded',
@@ -164,18 +157,6 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         addresses: refreshAddresses,
     })
 
-    const balanceData = useMemo(
-        () => (account ? accountBalances.get(account.address) : undefined),
-        [accountBalances, account],
-    )
-
-    const assetIDs = useMemo(
-        () => balanceData?.assetBalances.map(b => b.assetId) ?? [],
-        [balanceData],
-    )
-
-    const { data: assets } = useAssetsQuery(assetIDs)
-
     useEffect(() => {
         setSearchFilter('')
     }, [account?.address])
@@ -185,61 +166,39 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         SEARCH_DEBOUNCE_TIME_SHORT,
     )
 
+    // Opt-in round lives in a separate indexer-backed query, so that one order
+    // can't be expressed in SQL. Everything else — the collectible filter, the
+    // search, the sort — runs in the engine, and rows come back unparsed.
+    const sqlSortMode = sortMode === 'recentlyAdded' ? undefined : sortMode
+
+    const { collectibles: rows, isPending } = useAccountCollectiblesQuery(
+        account?.address,
+        {
+            sortMode: sqlSortMode,
+            search: debouncedSearchFilter || undefined,
+            includeOptedInOnly: showOptedIn,
+        },
+    )
+
     const collectibles = useMemo(() => {
-        if (!balanceData?.assetBalances.length || !assets) {
-            return []
-        }
+        if (sortMode !== 'recentlyAdded') return rows
 
-        const items: CollectibleDisplayItem[] = []
-
-        for (const balance of balanceData.assetBalances) {
-            const asset = assets.get(balance.assetId)
-            if (!asset || !isCollectible(asset)) {
-                continue
-            }
-            const isOptedInOnly = balance.amount.isZero()
-
-            if (isOptedInOnly && !showOptedIn) {
-                continue
-            }
-
-            items.push({
-                assetId: balance.assetId,
-                asset,
-                collectible: asset.peraMetadata?.collectible,
-                amount: balance.amount,
-            })
-        }
-
-        const sorted = sortCollectibles(items, sortMode, optInRounds)
-
-        if (!debouncedSearchFilter) {
-            return sorted
-        }
-
-        const searchTerm = debouncedSearchFilter.toLowerCase()
-        return sorted.filter(item => {
-            const title = item.collectible?.title?.toLowerCase() ?? ''
-            const name = item.asset.name?.toLowerCase() ?? ''
-            const collectionName =
-                item.collectible?.collection?.name?.toLowerCase() ?? ''
-            return (
-                title.includes(searchTerm) ||
-                name.includes(searchTerm) ||
-                collectionName.includes(searchTerm)
-            )
+        // Roundless items (rounds still loading, or missing from the indexer
+        // page) sink below rounded ones. `sort` is stable, so ties keep SQL's
+        // asset-id-descending order — the same newest-created fallback the
+        // pre-load ordering used.
+        return [...rows].sort((a, b) => {
+            const aRound = optInRounds.get(a.assetId)
+            const bRound = optInRounds.get(b.assetId)
+            if (aRound === bRound) return 0
+            if (aRound === undefined) return 1
+            if (bRound === undefined) return -1
+            return bRound - aRound
         })
-    }, [
-        balanceData,
-        assets,
-        debouncedSearchFilter,
-        sortMode,
-        showOptedIn,
-        optInRounds,
-    ])
+    }, [rows, sortMode, optInRounds])
 
     const handlePress = useCallback(
-        (item: CollectibleDisplayItem) => {
+        (item: AccountCollectibleLiteRow) => {
             navigation.navigate('CollectibleDetails', {
                 assetId: item.assetId,
             })

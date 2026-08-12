@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useInfiniteQuery, onlineManager } from '@tanstack/react-query'
 import type { Maybe, Network, Nullable } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory, fetchMoreTransactions } from '../api/history'
@@ -21,6 +21,28 @@ import type {
 } from '../models/types'
 import { getTransactionHistory } from '../db'
 import { persistTransactionsToDb } from './useTransactionHistoryDb'
+
+/**
+ * SQLite pages are local and cheap, so they run deeper than the API's page —
+ * the footer spinner should be a network event, not a scroll event.
+ */
+const DB_PAGE_SIZE = 100
+
+/** Sentinel `nextUrl`s: the next page comes from SQLite / from the API. */
+const DB_CURSOR = '__load_more_from_db__'
+const API_CURSOR = '__load_more_from_api__'
+
+type DbPageParam = {
+    type: 'db'
+    /** Inclusive round-time cursor; the next read starts here. */
+    atOrBeforeRoundTime: number
+    /**
+     * TXIDs already held at exactly {@link atOrBeforeRoundTime}. The cursor is
+     * inclusive so an atomic group sharing that round time isn't cut in half,
+     * which means the rows we already have come back and must be dropped.
+     */
+    boundaryTxIds: string[]
+}
 
 type ApiPageParam = {
     type: 'api'
@@ -38,8 +60,25 @@ type ApiPageParam = {
     beforeRoundTxIds?: string[]
 }
 
-/** `null` = initial DB read; otherwise an API page. */
-type PageParam = Nullable<ApiPageParam>
+/** `null` = initial DB read; otherwise a DB cursor page or an API page. */
+type PageParam = Nullable<DbPageParam | ApiPageParam>
+
+/**
+ * Oldest transaction across every loaded page. Pages arrive newest-first, so
+ * this walks back from the end — and skips pages that dedupe emptied, which a
+ * plain "last page's last row" lookup would trip over.
+ */
+const findOldestLoaded = (
+    pages: TransactionHistoryResult[],
+): Maybe<TransactionHistoryItem> => {
+    for (let index = pages.length - 1; index >= 0; index--) {
+        const { transactions } = pages[index]
+        if (transactions.length > 0) {
+            return transactions[transactions.length - 1]
+        }
+    }
+    return undefined
+}
 
 /**
  * Parameters for the useTransactionHistoryQuery hook.
@@ -70,6 +109,14 @@ export type UseTransactionHistoryQueryResult = {
     transactions: TransactionHistoryItem[]
     /** Whether the initial data is being fetched */
     isLoading: boolean
+    /**
+     * Whether the query has resolved at least once. False while the query is
+     * disabled (no account address yet), which `isLoading` cannot express —
+     * a disabled query reports `isLoading: false` with no data, so consumers
+     * that gate an empty state on `!isLoading` flash "no transactions" before
+     * the first read (PERA-4861). Gate empty states on this instead.
+     */
+    isFetched: boolean
     /** Whether more data is being fetched */
     isFetchingNextPage: boolean
     /** Whether there was an error */
@@ -94,8 +141,9 @@ export type UseTransactionHistoryQueryResult = {
 /**
  * Hook for fetching transaction history with DB-first reads and infinite scrolling.
  *
- * The first page is read from the local database (populated by the sync service).
- * Subsequent pages (load-more) are fetched from the API and persisted to DB.
+ * Pages walk the local database (populated by the sync service) on a round-time
+ * cursor for as long as it has rows, then continue against the API, persisting
+ * what they fetch. Only crossing that boundary costs a network round trip.
  */
 export const useTransactionHistoryQuery = (
     params: UseTransactionHistoryQueryParams,
@@ -126,26 +174,43 @@ export const useTransactionHistoryQuery = (
         }: {
             pageParam: PageParam
         }): Promise<TransactionHistoryResult> => {
-            // First page: read from DB
-            if (pageParam == null) {
-                const dbTransactions = await getTransactionHistory({
+            // DB pages: the first read and every cursor page after it. Only
+            // once SQLite runs dry does pagination cross to the network —
+            // previously page 2 onwards always did, so scrolling back through
+            // already-synced history refetched it over the wire.
+            if (pageParam == null || pageParam.type === 'db') {
+                const dbPageSize = limit ?? DB_PAGE_SIZE
+                const rows = await getTransactionHistory({
                     accountAddress,
                     network,
                     assetId,
                     afterTime,
                     beforeTime,
-                    limit: limit ?? 25,
+                    limit: dbPageSize,
+                    atOrBeforeRoundTime: pageParam?.atOrBeforeRoundTime,
                 })
+
+                const alreadyHeld = new Set(pageParam?.boundaryTxIds ?? [])
+                const dbTransactions =
+                    alreadyHeld.size > 0
+                        ? rows.filter(tx => !alreadyHeld.has(tx.id))
+                        : rows
+
+                // Gauged on the raw row count, not the deduped one: a page
+                // that filled up in SQLite has more behind it even when the
+                // boundary filter emptied what we kept.
+                const hasMoreInDb = rows.length >= dbPageSize
 
                 return {
                     transactions: dbTransactions,
+                    // Always continue. A short DB page means SQLite is
+                    // exhausted, not that history ended — the API page decides
+                    // that. Terminating here stranded partially-synced
+                    // accounts on whatever few rows had landed.
                     pagination: {
-                        hasNextPage: dbTransactions.length >= (limit ?? 25),
-                        hasPreviousPage: false,
-                        nextUrl:
-                            dbTransactions.length >= (limit ?? 25)
-                                ? '__load_more_from_api__'
-                                : null,
+                        hasNextPage: true,
+                        hasPreviousPage: pageParam != null,
+                        nextUrl: hasMoreInDb ? DB_CURSOR : API_CURSOR,
                         previousUrl: null,
                         totalFetched: dbTransactions.length,
                     },
@@ -153,7 +218,8 @@ export const useTransactionHistoryQuery = (
                 }
             }
 
-            // Subsequent pages live only on the network. Because networkMode is
+            // Past this point SQLite is exhausted and the page can only come
+            // from the network. Because networkMode is
             // 'always' (so the first DB page loads offline), the queryFn also
             // runs for load-more while offline — guard it here so an offline
             // load-more resolves with a terminal page instead of throwing. That
@@ -175,7 +241,7 @@ export const useTransactionHistoryQuery = (
             }
 
             // Subsequent pages: fetch from API
-            if (pageParam.url !== '__load_more_from_api__') {
+            if (pageParam.url !== API_CURSOR) {
                 const result = await fetchMoreTransactions({
                     url: pageParam.url,
                     network,
@@ -257,32 +323,57 @@ export const useTransactionHistoryQuery = (
         initialPageParam: null as PageParam,
         getNextPageParam: (
             lastPage: TransactionHistoryResult,
-        ): Maybe<ApiPageParam> => {
-            if (lastPage.pagination.nextUrl === null) return undefined
+            allPages: TransactionHistoryResult[],
+        ): Maybe<DbPageParam | ApiPageParam> => {
+            const { nextUrl } = lastPage.pagination
+            if (nextUrl === null) return undefined
 
-            if (lastPage.pagination.nextUrl === '__load_more_from_api__') {
-                const oldest =
-                    lastPage.transactions[lastPage.transactions.length - 1]
-                const beforeRoundTxIds =
-                    oldest !== undefined
-                        ? lastPage.transactions
-                              .filter(
-                                  tx =>
-                                      tx.confirmedRound ===
-                                      oldest.confirmedRound,
-                              )
-                              .map(tx => tx.id)
-                        : undefined
+            // Oldest across all pages, not just the last one: a page the
+            // boundary filter emptied still has to hand a cursor forward.
+            const oldest = findOldestLoaded(allPages)
+
+            if (!oldest) {
+                // Nothing cached at all — the initial sync hasn't written this
+                // account's history yet. Fetch the API's newest page with no
+                // cursor rather than declaring the account empty.
+                return nextUrl === API_CURSOR
+                    ? { type: 'api', url: API_CURSOR }
+                    : undefined
+            }
+
+            if (nextUrl === DB_CURSOR) {
+                const boundaryTxIds = allPages
+                    .flatMap(page => page.transactions)
+                    .filter(tx => tx.roundTime === oldest.roundTime)
+                    .map(tx => tx.id)
+
                 return {
-                    type: 'api',
-                    url: '__load_more_from_api__',
-                    beforeRound: oldest?.confirmedRound,
-                    beforeRoundTime: oldest?.roundTime,
-                    beforeRoundTxIds,
+                    type: 'db',
+                    atOrBeforeRoundTime: oldest.roundTime,
+                    // Accumulated across pages, not taken from the last one:
+                    // a round time holding more rows than a page can carry
+                    // would otherwise re-serve the earlier pages' rows and
+                    // never advance.
+                    boundaryTxIds,
                 }
             }
 
-            return { type: 'api', url: lastPage.pagination.nextUrl }
+            if (nextUrl === API_CURSOR) {
+                return {
+                    type: 'api',
+                    url: API_CURSOR,
+                    beforeRound: oldest.confirmedRound,
+                    beforeRoundTime: oldest.roundTime,
+                    beforeRoundTxIds: allPages
+                        .flatMap(page => page.transactions)
+                        .filter(
+                            tx => tx.confirmedRound === oldest.confirmedRound,
+                        )
+                        .map(tx => tx.id),
+                }
+            }
+
+            return { type: 'api', url: nextUrl }
         },
         staleTime: Infinity,
         // The first page is read from SQLite (the source of truth), so the
@@ -305,9 +396,27 @@ export const useTransactionHistoryQuery = (
         [query.data],
     )
 
+    // The first page reads SQLite, which is legitimately empty until the
+    // initial sync writes this account's history — and an empty list never
+    // fires `onEndReached`, so nothing would ask for the API page. Bridge that
+    // one gap here; without it a fresh account sat on "no transactions" until
+    // the user navigated away and back. Latched so a genuinely empty history
+    // settles after a single API confirmation instead of retrying forever.
+    const { isFetched, isFetching, hasNextPage, fetchNextPage } = query
+    const hasBridgedEmptyCache = useRef(false)
+    useEffect(() => {
+        if (hasBridgedEmptyCache.current) return
+        if (!isFetched || isFetching) return
+        if (transactions.length > 0 || !hasNextPage) return
+
+        hasBridgedEmptyCache.current = true
+        void fetchNextPage()
+    }, [isFetched, isFetching, hasNextPage, transactions.length, fetchNextPage])
+
     return {
         transactions,
         isLoading: query.isLoading,
+        isFetched: query.isFetched,
         isFetchingNextPage: query.isFetchingNextPage,
         isError: query.isError,
         isPaused: query.isPaused,

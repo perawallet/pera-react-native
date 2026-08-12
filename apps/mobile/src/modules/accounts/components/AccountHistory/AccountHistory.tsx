@@ -11,17 +11,21 @@
  */
 
 import { useCallback } from 'react'
-import { PWRefreshControl, PWView } from '@components/core'
+import { PWFlatList, PWRefreshControl, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
-import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import { ActivityIndicator, SectionList } from 'react-native'
+import { ActivityIndicator } from 'react-native'
 import { AccountHistoryTitleBar } from './AccountHistoryTitleBar'
+import { HistorySkeleton } from './HistorySkeleton'
 import { useStyles } from './styles'
-import { useAccountHistory, type TransactionSection } from './useAccountHistory'
+import { useAccountHistory } from './useAccountHistory'
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
 import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
+import {
+    getTransactionRowKey,
+    getTransactionRowType,
+    type TransactionListRow,
+} from '@modules/transactions/utils/transactionListRows'
 
 export type AccountHistoryProps = {
     scrollEnabled?: boolean
@@ -31,8 +35,8 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        sections,
-        isLoading,
+        rows,
+        isInitialLoad,
         isFetchingNextPage,
         isEmpty,
         isRefreshing,
@@ -46,25 +50,16 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     } = useAccountHistory()
 
     const renderItem = useCallback(
-        ({ item }: { item: TransactionHistoryItem }) => (
-            <TransactionListItem
-                transaction={item}
-                onPress={handleTransactionPress}
-            />
-        ),
+        ({ item }: { item: TransactionListRow }) =>
+            item.kind === 'header' ? (
+                <TransactionDateHeader title={item.title} />
+            ) : (
+                <TransactionListItem
+                    transaction={item.transaction}
+                    onPress={handleTransactionPress}
+                />
+            ),
         [handleTransactionPress],
-    )
-
-    const renderSectionHeader = useCallback(
-        ({ section }: { section: TransactionSection }) => (
-            <TransactionDateHeader title={section.title} />
-        ),
-        [],
-    )
-
-    const keyExtractor = useCallback(
-        (item: TransactionHistoryItem) => item.id,
-        [],
     )
 
     const renderFooter = useCallback(() => {
@@ -92,23 +87,17 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     )
 
     // Loading (nothing cached yet) and empty history render as plain views
-    // rather than the SectionList's ListEmptyComponent: an empty SectionList
-    // inside the account tab pager collapses to zero height on native, which
-    // blanked the whole History tab — title included (PERA-4676). The NFTs tab
-    // handles its empty state the same way.
-    const isInitialLoad = isLoading && !sections.length
-
+    // rather than the list's ListEmptyComponent: an empty list inside the
+    // account tab pager collapses to zero height on native, which blanked the
+    // whole History tab — title included (PERA-4676). The NFTs tab handles its
+    // empty state the same way.
     if (isInitialLoad || isEmpty) {
         return (
             <PWView style={styles.container}>
                 <PWView style={styles.stateContainer}>
                     {titleBar}
                     {isInitialLoad ? (
-                        <LoadingView
-                            variant='circle'
-                            size='lg'
-                            style={styles.loadingContainer}
-                        />
+                        <HistorySkeleton />
                     ) : (
                         <EmptyView
                             body={t(
@@ -124,16 +113,14 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
 
     return (
         <PWView style={styles.container}>
-            <SectionList
-                sections={sections}
-                showsVerticalScrollIndicator={false}
+            <PWFlatList
+                data={rows}
                 renderItem={renderItem}
-                renderSectionHeader={renderSectionHeader}
-                keyExtractor={keyExtractor}
+                keyExtractor={getTransactionRowKey}
+                getItemType={getTransactionRowType}
                 scrollEnabled={scrollEnabled}
                 contentContainerStyle={styles.rootContainer}
-                ItemSeparatorComponent={ItemSeparator}
-                stickySectionHeadersEnabled={false}
+                ItemSeparatorComponent={RowSeparator}
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}
                 keyboardDismissMode='on-drag'
@@ -150,8 +137,26 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     )
 }
 
-const ItemSeparator = () => {
+type RowSeparatorProps = {
+    leadingItem: TransactionListRow
+    trailingItem: TransactionListRow
+}
+
+/**
+ * Hairline between two transaction rows only. A date header brings its own
+ * rules, so a separator either side of one would double up — the equivalent of
+ * `SectionList`'s item-vs-section separator split, which a flat list collapses
+ * into a single slot.
+ */
+const RowSeparator = ({ leadingItem, trailingItem }: RowSeparatorProps) => {
     const styles = useStyles()
+
+    if (
+        leadingItem.kind !== 'transaction' ||
+        trailingItem.kind !== 'transaction'
+    ) {
+        return null
+    }
 
     return <PWView style={styles.separator} />
 }

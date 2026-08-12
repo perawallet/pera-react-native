@@ -42,11 +42,37 @@ export const useStyles = makeStyles(theme => ({
         // Inset to align with the title: icon width (sm = xxl) + row gap (md).
         marginLeft: theme.spacing.xxl + theme.spacing.md,
     },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
+    // Skeleton geometry traces a real row: icon, stacked title/subtitle, and a
+    // trailing amount.
+    skeletonRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: theme.spacing['3xl'],
+        gap: theme.spacing.md,
+        paddingVertical: theme.spacing.md,
+    },
+    skeletonIcon: {
+        height: theme.spacing.xxl,
+        width: theme.spacing.xxl,
+        borderRadius: theme.spacing.xxl / 2,
+    },
+    skeletonText: {
+        flex: 1,
+        gap: theme.spacing.xs,
+    },
+    skeletonTitle: {
+        height: theme.spacing.lg,
+        width: '45%',
+        borderRadius: theme.spacing.xs,
+    },
+    skeletonSubtitle: {
+        height: theme.spacing.md,
+        width: '65%',
+        borderRadius: theme.spacing.xs,
+    },
+    skeletonAmount: {
+        height: theme.spacing.lg,
+        width: theme.spacing['4xl'],
+        borderRadius: theme.spacing.xs,
     },
     // Fills the space under the title so the empty message centers; the
     // horizontal inset comes from stateContainer, so zero the view's own gutter.

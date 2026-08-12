@@ -261,8 +261,55 @@ describe('useTransactionHistoryQuery', () => {
         expect(endpoints.fetchTransactionHistory).not.toHaveBeenCalled()
     })
 
-    test('returns empty when DB has no transactions', async () => {
+    test('reaches for the API when the DB is empty, then settles empty', async () => {
+        // An empty SQLite read means the initial sync hasn't written this
+        // account yet, not that the account has no history — and an empty list
+        // never fires onEndReached, so the hook bridges to the API itself.
+        // Previously this dead-ended on "no transactions" until the user
+        // navigated away and back.
         mockGetTransactionHistory.mockResolvedValue([])
+        ;(endpoints.fetchTransactionHistory as Mock).mockResolvedValue({
+            transactions: [],
+            pagination: {
+                hasNextPage: false,
+                hasPreviousPage: true,
+                nextUrl: null,
+                previousUrl: null,
+                totalFetched: 0,
+            },
+            currentRound: 12350,
+        })
+
+        const { result } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(endpoints.fetchTransactionHistory).toHaveBeenCalled(),
+        )
+        await waitFor(() => expect(result.current.hasNextPage).toBe(false))
+
+        expect(result.current.transactions).toEqual([])
+    })
+
+    test('walks further DB pages before touching the network', async () => {
+        // The reported bug: only page 1 came from SQLite, so scrolling back
+        // through already-synced history refetched every page over the wire.
+        const page = (start: number) =>
+            Array.from({ length: 100 }, (_, i) => ({
+                ...mockTransaction,
+                id: `TX${start + i}`,
+                confirmedRound: 12345 - (start + i),
+                roundTime: 1704067200 - (start + i),
+            }))
+        mockGetTransactionHistory
+            .mockResolvedValueOnce(page(0))
+            .mockResolvedValueOnce(page(100))
 
         const { result } = renderHook(
             () =>
@@ -274,9 +321,62 @@ describe('useTransactionHistoryQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.transactions).toHaveLength(100)
 
-        expect(result.current.transactions).toEqual([])
-        expect(result.current.hasNextPage).toBe(false)
+        result.current.fetchNextPage()
+        await waitFor(() =>
+            expect(result.current.transactions).toHaveLength(200),
+        )
+
+        // Second page came from SQLite, seeded with a round-time cursor.
+        expect(mockGetTransactionHistory).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                atOrBeforeRoundTime: 1704067200 - 99,
+            }),
+        )
+        expect(endpoints.fetchTransactionHistory).not.toHaveBeenCalled()
+    })
+
+    test('drops rows the inclusive DB cursor re-serves', async () => {
+        // The cursor includes its boundary round time so an atomic group
+        // straddling a page edge isn't cut in half — which means the boundary
+        // rows come back and must not be duplicated into the list.
+        const first = Array.from({ length: 100 }, (_, i) => ({
+            ...mockTransaction,
+            id: `TX${i}`,
+            confirmedRound: 12345 - i,
+            roundTime: 1704067200 - i,
+        }))
+        const boundary = first[99]
+        mockGetTransactionHistory
+            .mockResolvedValueOnce(first)
+            .mockResolvedValueOnce([
+                boundary,
+                {
+                    ...mockTransaction,
+                    id: 'TX_NEW',
+                    roundTime: boundary.roundTime,
+                },
+            ])
+
+        const { result } = renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+        result.current.fetchNextPage()
+        await waitFor(() =>
+            expect(result.current.transactions).toHaveLength(101),
+        )
+
+        const ids = result.current.transactions.map(t => t.id)
+        expect(ids.filter(id => id === boundary.id)).toHaveLength(1)
+        expect(ids).toContain('TX_NEW')
     })
 
     test('indicates hasNextPage when DB returns full page', async () => {
@@ -492,11 +592,10 @@ describe('useTransactionHistoryQuery', () => {
         // (one asset, or a date range) silently widens back to everything
         // from page 2 onward.
         //
-        // Length must match the custom `limit: 50` below — the DB-page
-        // pagination gate is `dbTransactions.length >= (limit ?? 25)`, so a
-        // 25-length page would short-circuit as "no next page" before ever
-        // reaching the api-page fetch this test exercises.
-        const fullPage = Array.from({ length: 50 }, (_, i) => ({
+        // Deliberately shorter than the custom `limit: 50` below: a DB page
+        // that doesn't fill means SQLite is exhausted, so the next page is the
+        // api page this test exercises rather than another DB read.
+        const fullPage = Array.from({ length: 25 }, (_, i) => ({
             ...mockTransaction,
             id: `TX${i}`,
             confirmedRound: 12345 - i,

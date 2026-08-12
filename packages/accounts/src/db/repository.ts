@@ -665,12 +665,26 @@ export async function getAccountHoldingsLite(
     }))
 }
 
+/** The subset of a lite row that materializes into a `PeraAsset`. */
+export type AssetColumnsLite = Pick<
+    AccountHoldingsLiteRow,
+    | 'assetId'
+    | 'decimals'
+    | 'creatorAddress'
+    | 'totalSupply'
+    | 'name'
+    | 'unitName'
+    | 'url'
+    | 'metadata'
+    | 'peraMetadataJson'
+>
+
 /**
  * Call only for rows you actually render — the parse is cached by raw JSON, so
  * scrolling re-renders stay cheap. Null until node metadata has synced.
  */
 export const assetFromHoldingLiteRow = (
-    row: AccountHoldingsLiteRow,
+    row: AssetColumnsLite,
 ): Nullable<PeraAsset> =>
     row.decimals !== null && row.totalSupply !== null
         ? peraAssetFromColumns({
@@ -685,6 +699,195 @@ export const assetFromHoldingLiteRow = (
               peraMetadataJson: row.peraMetadataJson,
           })
         : null
+
+/** SQL-expressible collectible orders. Opt-in-round order is applied by the caller. */
+export type CollectibleSqlSortMode =
+    | 'titleAsc'
+    | 'titleDesc'
+    | 'newestFirst'
+    | 'oldestFirst'
+
+export type AccountCollectibleLiteRow = AssetColumnsLite & {
+    /** Amount held, in base units. Zero means opted in but holding none. */
+    amount: Decimal
+    /** Pera collectible title; null when metadata hasn't synced. */
+    title: Nullable<string>
+    collectionName: Nullable<string>
+}
+
+export type GetAccountCollectiblesLiteParams = {
+    db?: Database
+    accountAddress: string
+    network: string
+    /** Omit to order by asset id descending, for callers that re-sort. */
+    sortMode?: CollectibleSqlSortMode
+    /** Case-insensitive substring match against title / name / collection. */
+    search?: string
+    /** When false, collectibles the account holds none of are excluded. */
+    includeOptedInOnly?: boolean
+}
+
+/**
+ * An account's collectibles, filtered/searched/sorted **in SQL**, returned as
+ * lite rows that defer `PeraAsset` materialization to the visible ones.
+ *
+ * Replaces the gallery's old path of reading every holding, shipping all their
+ * ids back as a 15k-parameter `IN (…)` list, and parsing every metadata blob
+ * on the JS thread.
+ */
+export async function getAccountCollectiblesLite({
+    db = getDatabase(),
+    accountAddress,
+    network,
+    sortMode,
+    search,
+    includeOptedInOnly = true,
+}: GetAccountCollectiblesLiteParams): Promise<AccountCollectibleLiteRow[]> {
+    // Built here, not at module scope: a top-level `sql` template dereferences
+    // the imported schema at import time, which breaks every consumer that
+    // mocks the assets package.
+    //
+    // Collectible title / collection name live inside `pera_metadata_json`.
+    // Reading them with SQLite's `json_extract` keeps sorting and searching in
+    // the engine: shipping 15k metadata blobs over the bridge to parse in JS is
+    // what made a large NFT gallery take double-digit seconds to first paint
+    // (PERA-4861).
+    const collectibleTitleExpr = sql<
+        Nullable<string>
+    >`json_extract(${AssetsPeraSchema.peraMetadataJson}, '$.collectible.title')`
+    const collectionNameExpr = sql<
+        Nullable<string>
+    >`json_extract(${AssetsPeraSchema.peraMetadataJson}, '$.collectible.collection.name')`
+    // Asset ids are uint64 stored as TEXT (see `decimalColumn`), so a plain
+    // ORDER BY compares them lexicographically — '10' before '9'. Ordering by
+    // length first fixes that exactly: for non-negative integers with no
+    // leading zeros a shorter string is always the smaller number, and equal
+    // lengths compare correctly as text.
+    //
+    // Deliberately not `CAST(... AS INTEGER)`: SQLite integers are *signed*
+    // 64-bit, and a cast past 2^63-1 saturates silently rather than erroring —
+    // every id above it would compare equal and sort arbitrarily. Ids are only
+    // ~10 digits today, so that's unreachable in practice, but this costs
+    // nothing and removes the cliff. Safe on the string form because
+    // `Decimal#toString` only switches to exponential notation at 1e21, two
+    // digits beyond uint64's maximum.
+    const assetIdOrderExprs = [
+        sql`length(${AccountAssetHoldingsSchema.assetId})`,
+        sql`${AccountAssetHoldingsSchema.assetId}`,
+    ]
+
+    const conditions = [
+        eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+        eq(AccountAssetHoldingsSchema.network, network),
+        eq(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+    ]
+
+    if (!includeOptedInOnly) {
+        conditions.push(ne(AccountAssetHoldingsSchema.amount, new Decimal(0)))
+    }
+
+    const term = search?.trim()
+    if (term) {
+        const pattern = `%${term}%`
+        conditions.push(
+            or(
+                sql`${collectibleTitleExpr} LIKE ${pattern}`,
+                sql`${collectionNameExpr} LIKE ${pattern}`,
+                like(AssetsNodeSchema.name, pattern),
+            )!,
+        )
+    }
+
+    // COLLATE NOCASE is ASCII-only folding, so non-ASCII titles order slightly
+    // differently than a JS localeCompare would — the same trade the holdings
+    // list already makes to keep sorting in SQL.
+    const titleExpr = sql`COALESCE(${collectibleTitleExpr}, ${AssetsNodeSchema.name}, '')`
+    const orderBy = []
+    switch (sortMode) {
+        case 'titleAsc': {
+            orderBy.push(sql`${titleExpr} COLLATE NOCASE ASC`)
+            break
+        }
+        case 'titleDesc': {
+            orderBy.push(sql`${titleExpr} COLLATE NOCASE DESC`)
+            break
+        }
+        case 'oldestFirst': {
+            orderBy.push(...assetIdOrderExprs.map(expr => sql`${expr} ASC`))
+            break
+        }
+        case 'newestFirst':
+        default: {
+            orderBy.push(...assetIdOrderExprs.map(expr => sql`${expr} DESC`))
+        }
+    }
+    orderBy.push(...assetIdOrderExprs.map(expr => sql`${expr} DESC`))
+
+    const rows = await db
+        .select({
+            assetId: AccountAssetHoldingsSchema.assetId,
+            amount: AccountAssetHoldingsSchema.amount,
+            decimals: AssetsNodeSchema.decimals,
+            creatorAddress: AssetsNodeSchema.creatorAddress,
+            totalSupply: sql<Nullable<string>>`${AssetsNodeSchema.totalSupply}`,
+            name: AssetsNodeSchema.name,
+            unitName: AssetsNodeSchema.unitName,
+            url: AssetsNodeSchema.url,
+            metadata: AssetsNodeSchema.metadata,
+            peraMetadataJson: AssetsPeraSchema.peraMetadataJson,
+            title: collectibleTitleExpr,
+            collectionName: collectionNameExpr,
+        })
+        .from(AccountAssetHoldingsSchema)
+        // Inner: a collectible is defined by its Pera metadata row.
+        .innerJoin(
+            AssetsPeraSchema,
+            and(
+                eq(
+                    AccountAssetHoldingsSchema.assetId,
+                    AssetsPeraSchema.assetId,
+                ),
+                eq(
+                    AccountAssetHoldingsSchema.network,
+                    AssetsPeraSchema.network,
+                ),
+            ),
+        )
+        // Inner too: the old path resolved assets through `assets_node`, so a
+        // holding whose node metadata hasn't synced was already invisible.
+        // Keeping that at the DB level means no null holes in the grid.
+        .innerJoin(
+            AssetsNodeSchema,
+            and(
+                eq(
+                    AccountAssetHoldingsSchema.assetId,
+                    AssetsNodeSchema.assetId,
+                ),
+                eq(
+                    AccountAssetHoldingsSchema.network,
+                    AssetsNodeSchema.network,
+                ),
+            ),
+        )
+        .where(and(...conditions))
+        .orderBy(...orderBy)
+        .all()
+
+    return rows.map(row => ({
+        assetId: row.assetId.toString(),
+        amount: row.amount,
+        decimals: row.decimals,
+        creatorAddress: row.creatorAddress,
+        totalSupply: row.totalSupply,
+        name: row.name,
+        unitName: row.unitName,
+        url: row.url,
+        metadata: row.metadata,
+        peraMetadataJson: row.peraMetadataJson,
+        title: row.title,
+        collectionName: row.collectionName,
+    }))
+}
 
 export type AccountBalanceRow = {
     accountAddress: string
