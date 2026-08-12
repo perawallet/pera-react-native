@@ -16,7 +16,9 @@ import { BackHandler } from 'react-native'
 import { useBlockHardwareBack } from '../useBlockHardwareBack'
 
 const remove = vi.fn()
-const addEventListener = vi.fn(() => ({ remove }))
+const addEventListener = vi.fn(
+    (_eventName: string, _handler: () => boolean) => ({ remove }),
+)
 
 vi.mock('react-native', () => ({
     BackHandler: {
@@ -44,7 +46,7 @@ describe('useBlockHardwareBack', () => {
             'hardwareBackPress',
             expect.any(Function),
         )
-        const handler = addEventListener.mock.calls[0][1] as () => boolean
+        const handler = addEventListener.mock.calls[0][1]
         expect(handler()).toBe(true)
     })
 
