@@ -53,21 +53,7 @@ describe('useAssetsQuery', () => {
         })
     })
 
-    describe('getAssetsQueryKey', () => {
-        it('returns correct query keys', () => {
-            expect(getAssetsQueryKey(['123'], 'mainnet')).toEqual([
-                'assets',
-                { assetIDs: ['123'], network: 'mainnet' },
-            ])
-        })
-
-        it('includes network in query key', () => {
-            expect(getAssetsQueryKey(['123'], 'testnet')).toEqual([
-                'assets',
-                { assetIDs: ['123'], network: 'testnet' },
-            ])
-        })
-    })
+    // getAssetsQueryKey's shape is covered in querykeys.test.ts.
 
     describe('getAlgoQueryKey', () => {
         it('returns correct query keys', () => {

@@ -56,6 +56,16 @@ export const getAccountHoldingsPageQueryKey = (
     },
 ) => [MODULE_PREFIX, 'holdings-page', { address, network, ...params }]
 
+export const getAccountCollectiblesQueryKey = (
+    address: string,
+    network: Network,
+    params?: {
+        sortMode?: string
+        search?: string
+        includeOptedInOnly?: boolean
+    },
+) => [MODULE_PREFIX, 'collectibles', { address, network, ...params }]
+
 export const getAccountBalancesHistoryQueryKey = (
     addresses: AccountAddress[],
     period: HistoryPeriod,

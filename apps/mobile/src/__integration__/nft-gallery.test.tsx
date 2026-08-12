@@ -172,12 +172,11 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
             expect(ids).toEqual([NFT_TEST_ASSET_ID])
             expect(ids).not.toContain(USDC_TEST_ASSET_ID)
 
-            // The display item carries the asset record so the gallery
-            // can render its title and decimals; check both round-trip
-            // through the DB layer.
+            // The row carries the asset columns the gallery renders from,
+            // unparsed; check they round-trip through the DB layer.
             const nft = result.current.collectibles[0]
-            expect(nft.asset.name).toBe(NFT_TEST_ASSET.name)
-            expect(nft.asset.decimals).toBe(0)
+            expect(nft.name).toBe(NFT_TEST_ASSET.name)
+            expect(nft.decimals).toBe(0)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

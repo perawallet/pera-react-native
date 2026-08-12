@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { type PeraAsset } from '../models'
 import { getAssetsQueryKey } from './querykeys'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useStableIdList } from '@perawallet/wallet-core-shared'
 import { getAssetsByIds } from '../db'
 import { fetchAndPersistAssets } from '../sync/asset-syncer'
 
@@ -44,14 +45,10 @@ export const useAssetsQuery = (
 ): UseAssetsQueryResult => {
     const { network } = useNetwork()
 
-    // Keep a stable reference to ids — only update when the actual content changes.
-    // This prevents query recomputation when callers pass a new array with the same values.
-    const idsKey = ids.join(',')
-    const idsRef = useRef({ ids, key: idsKey })
-    if (idsKey !== idsRef.current.key) {
-        idsRef.current = { ids, key: idsKey }
-    }
-    const stableIds = idsRef.current.ids
+    // Keep a stable reference to ids — only update when the actual content
+    // changes. This prevents query recomputation when callers pass a new array
+    // with the same values.
+    const stableIds = useStableIdList(ids)
 
     const query = useQuery({
         // fetchMissing reads through the network, so it gets its own cache

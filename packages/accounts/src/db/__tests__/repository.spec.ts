@@ -28,6 +28,7 @@ import {
     getAccountHoldings,
     getAccountPortfolioTotals,
     getAccountHoldingsPage,
+    getAccountCollectiblesLite,
     insertAssetHolding,
     addToAssetHolding,
     deleteAssetHoldings,
@@ -989,6 +990,236 @@ describe('account repository', () => {
             })
 
             expect(result).toEqual(['100', '200', '300'])
+        })
+    })
+
+    describe('getAccountCollectiblesLite', () => {
+        const collectible = (
+            assetId: string,
+            title: string,
+            collectionName?: string,
+        ): PeraAsset => ({
+            assetId,
+            decimals: 0,
+            creator: { address: 'CREATOR' },
+            totalSupply: new Decimal(1),
+            name: `Asset ${title}`,
+            unitName: 'NFT',
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'unverified',
+                type: PeraAssetType.collectible,
+                collectible: {
+                    title,
+                    collection: collectionName
+                        ? { name: collectionName }
+                        : undefined,
+                },
+            },
+        })
+
+        const token = (assetId: string, name: string): PeraAsset => ({
+            assetId,
+            decimals: 6,
+            creator: { address: 'CREATOR' },
+            totalSupply: new Decimal(1_000_000),
+            name,
+            unitName: 'TOK',
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'verified',
+                type: PeraAssetType.standard_asset,
+            },
+        })
+
+        beforeEach(async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '2', amount: new Decimal(1) },
+                    { assetId: '10', amount: new Decimal(1) },
+                    { assetId: '30', amount: new Decimal(0) },
+                    { assetId: '400', amount: new Decimal(5_000_000) },
+                ],
+            })
+            await upsertAssets({
+                db,
+                network: 'mainnet',
+                items: [
+                    collectible('2', 'Banana', 'Fruit Club'),
+                    collectible('10', 'apple', 'Fruit Club'),
+                    collectible('30', 'Cherry', 'Stone Co'),
+                    token('400', 'USDC'),
+                ],
+            })
+        })
+
+        it('returns only collectibles, never fungible holdings', async () => {
+            const rows = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            expect(rows.map(r => r.assetId).sort()).toEqual(['10', '2', '30'])
+        })
+
+        it('excludes zero-balance collectibles when opted-in are hidden', async () => {
+            const rows = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                includeOptedInOnly: false,
+            })
+
+            expect(rows.map(r => r.assetId).sort()).toEqual(['10', '2'])
+        })
+
+        it('surfaces title and collection name without parsing in JS', async () => {
+            const rows = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                sortMode: 'titleAsc',
+            })
+
+            expect(rows[0].title).toBe('apple')
+            expect(rows[0].collectionName).toBe('Fruit Club')
+        })
+
+        it('sorts by title case-insensitively', async () => {
+            const rows = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                sortMode: 'titleAsc',
+            })
+
+            expect(rows.map(r => r.title)).toEqual([
+                'apple',
+                'Banana',
+                'Cherry',
+            ])
+        })
+
+        it('reverses title order for titleDesc', async () => {
+            const rows = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                sortMode: 'titleDesc',
+            })
+
+            expect(rows.map(r => r.title)).toEqual([
+                'Cherry',
+                'Banana',
+                'apple',
+            ])
+        })
+
+        // Asset ids are TEXT columns, so a naive ORDER BY would put '10'
+        // before '2'.
+        it('orders newest-first numerically, not lexicographically', async () => {
+            const rows = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                sortMode: 'newestFirst',
+            })
+
+            expect(rows.map(r => r.assetId)).toEqual(['30', '10', '2'])
+        })
+
+        // SQLite integers are signed 64-bit, so `CAST(id AS INTEGER)` saturates
+        // silently past 2^63-1: every id above it compares equal and sorts
+        // arbitrarily. Asset ids are uint64, so the ordering must not cast.
+        it('orders ids beyond the signed-64-bit range correctly', async () => {
+            const huge = [
+                '9223372036854775807', // 2^63-1
+                '9223372036854775808', // 2^63
+                '18446744073709551615', // 2^64-1
+            ]
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                network: 'mainnet',
+                holdings: huge.map(assetId => ({
+                    assetId,
+                    amount: new Decimal(1),
+                })),
+            })
+            await upsertAssets({
+                db,
+                network: 'mainnet',
+                items: huge.map((assetId, i) =>
+                    collectible(assetId, `Huge ${i}`),
+                ),
+            })
+
+            const rows = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR2',
+                network: 'mainnet',
+                sortMode: 'oldestFirst',
+            })
+
+            expect(rows.map(r => r.assetId)).toEqual(huge)
+        })
+
+        it('orders oldest-first numerically', async () => {
+            const rows = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                sortMode: 'oldestFirst',
+            })
+
+            expect(rows.map(r => r.assetId)).toEqual(['2', '10', '30'])
+        })
+
+        it('searches title, collection name and asset name', async () => {
+            const byTitle = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                search: 'cherry',
+            })
+            const byCollection = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                search: 'Stone',
+            })
+            const byName = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                search: 'Asset Banana',
+            })
+
+            expect(byTitle.map(r => r.assetId)).toEqual(['30'])
+            expect(byCollection.map(r => r.assetId)).toEqual(['30'])
+            expect(byName.map(r => r.assetId)).toEqual(['2'])
+        })
+
+        it('omits collectibles whose node metadata has not synced', async () => {
+            await insertAssetHolding({
+                db,
+                accountAddress: 'ADDR1',
+                assetId: '999',
+                network: 'mainnet',
+                amount: '1',
+            })
+
+            const rows = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            expect(rows.map(r => r.assetId)).not.toContain('999')
         })
     })
 

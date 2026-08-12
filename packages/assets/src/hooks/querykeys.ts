@@ -22,11 +22,55 @@ export const MODULE_PREFIX = 'assets'
 export const isAssetQuery = (queryKey: QueryKey): boolean =>
     queryKey[0] === MODULE_PREFIX
 
+const FNV_OFFSET = 0x81_1c_9d_c5
+const FNV_PRIME = 0x01_00_01_93
+const MIX_SEED = 0x27_d4_eb_2f
+const MIX_PRIME = 0x85_eb_ca_6b
+/** Not a valid id character, so `['1','23']` and `['12','3']` can't collide. */
+const SEPARATOR = 0x2c
+
+/**
+ * Fixed-width digest of an asset-id list, for use inside a query key.
+ *
+ * An account can hold tens of thousands of assets, and TanStack re-derives a
+ * query's hash by `JSON.stringify`-ing its whole key on *every render* of
+ * every component observing it. Embedding the raw id array therefore costs an
+ * O(ids) string build per render — hundreds of milliseconds of main-thread
+ * work per keystroke on a large NFT gallery (PERA-4861). A digest makes that
+ * O(1).
+ *
+ * The trade is a collision: two different id lists hashing alike would share
+ * one cache entry and serve each other's assets. Two independent 32-bit lanes
+ * plus the list length discriminate on ~2^64 states, which is far below the
+ * noise floor for the few hundred distinct lists a session builds.
+ */
+export const hashAssetIds = (assetIDs: string[]): string => {
+    let low = FNV_OFFSET
+    let high = MIX_SEED
+
+    for (const assetID of assetIDs) {
+        for (let index = 0; index < assetID.length; index++) {
+            const code = assetID.charCodeAt(index)
+            low = Math.imul(low ^ code, FNV_PRIME)
+            high = Math.imul(high ^ code, MIX_PRIME)
+        }
+        low = Math.imul(low ^ SEPARATOR, FNV_PRIME)
+        high = Math.imul(high ^ SEPARATOR, MIX_PRIME)
+    }
+
+    return `${(low >>> 0).toString(36)}.${(high >>> 0).toString(36)}.${assetIDs.length}`
+}
+
 export const getAssetPricesQueryKey = (
     assetIDs: string[],
     network: Network,
 ) => {
-    return [MODULE_PREFIX, 'prices', 'usd', { assetIDs, network }]
+    return [
+        MODULE_PREFIX,
+        'prices',
+        'usd',
+        { assetIDs: hashAssetIds(assetIDs), network },
+    ]
 }
 
 export const getAssetPriceHistoryQueryKey = (
@@ -48,7 +92,7 @@ export const isAssetPriceHistoryQuery = (queryKey: QueryKey): boolean =>
     queryKey[2] === 'history'
 
 export const getAssetsQueryKey = (assetIDs: string[], network: Network) => {
-    return [MODULE_PREFIX, { assetIDs, network }]
+    return [MODULE_PREFIX, { assetIDs: hashAssetIds(assetIDs), network }]
 }
 
 export const getAlgoQueryKey = (network: Network) => {

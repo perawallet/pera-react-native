@@ -29,11 +29,11 @@ import {
     type TransactionsFilterResult,
 } from '../../../../accounts/components/TransactionsFilterContent'
 import type { AppStackParamList } from '@routes/types'
+import { getFilterTimes } from '../../../../accounts/components/AccountHistory/utils'
 import {
-    groupTransactionsByDate,
-    getFilterTimes,
-} from '../../../../accounts/components/AccountHistory/utils'
-import type { TransactionSection } from '../../../../accounts/components/AccountHistory/useAccountHistory'
+    buildTransactionListRows,
+    type TransactionListRow,
+} from '@modules/transactions/utils/transactionListRows'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useErrorToast } from '@hooks/useErrorToast'
@@ -45,8 +45,11 @@ type UseAssetTransactionListParams = {
 }
 
 export type UseAssetTransactionListResult = {
-    sections: TransactionSection[]
+    /** Date headers and transaction rows, flattened for a recycling list */
+    rows: TransactionListRow[]
     isLoading: boolean
+    /** Whether to render the cold-start skeleton (no read has resolved yet) */
+    isInitialLoad: boolean
     isFetchingNextPage: boolean
     isError: boolean
     error: Nullable<Error>
@@ -88,6 +91,7 @@ export const useAssetTransactionList = ({
     const {
         transactions,
         isLoading,
+        isFetched,
         isFetchingNextPage,
         isError,
         error,
@@ -102,8 +106,8 @@ export const useAssetTransactionList = ({
         assetId,
     })
 
-    const sections = useMemo(
-        () => groupTransactionsByDate(transactions),
+    const rows = useMemo(
+        () => buildTransactionListRows(transactions),
         [transactions],
     )
 
@@ -178,7 +182,14 @@ export const useAssetTransactionList = ({
         }
     }, [requestBottomSheet, activeFilter, customRange])
 
-    const isEmpty = !isLoading && transactions.length === 0
+    // Gated on `isFetched`, not `!isLoading`: a query that has not run yet
+    // reports `isLoading: false` with no rows, which rendered "no
+    // transactions" over a history nobody had read (PERA-4861).
+    // `!hasNextPage` too: an empty local cache still has an API page
+    // queued behind it, and calling that empty would flash the wrong
+    // answer for the length of one request.
+    const isEmpty = isFetched && !hasNextPage && transactions.length === 0
+    const isInitialLoad = rows.length === 0 && (!isFetched || hasNextPage)
     // CSV export is only meaningful when there are transactions to export.
     // The Pera export-history endpoint returns 404 for empty histories, so
     // hiding the button avoids a guaranteed-failure user action. Gating on
@@ -188,8 +199,9 @@ export const useAssetTransactionList = ({
     const isCsvExportVisible = transactions.length > 0
 
     return {
-        sections,
+        rows,
         isLoading,
+        isInitialLoad,
         isFetchingNextPage,
         isError,
         error,
