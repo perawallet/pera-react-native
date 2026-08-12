@@ -14,16 +14,24 @@ import { makeStyles } from '@rneui/themed'
 import { type EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
-    modal: {
-        flex: 1,
+    // Full-screen, opaque, inline overlay — deliberately NOT a native <Modal>.
+    // A Modal is a separate OS window whose content is laid out by the same
+    // Yoga tree: an ancestor toggling `display: none` (AutoLockGuard) zeroes
+    // its content while the window stays up, and unmounting it mid-present
+    // animation can leave the window behind. Either way the app renders
+    // normally and swallows every touch (PERA-4870).
+    overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: theme.zIndex.max,
         backgroundColor: theme.colors.background,
     },
-    // No-op on native; styles.web.ts overrides this to cap the modal to the
+    // No-op on native; styles.web.ts overrides this to cap the overlay to the
     // app's expanded-tab card width (see that file's comment).
     stage: {
-        flex: 1,
-    },
-    root: {
         flex: 1,
     },
     container: {
