@@ -169,6 +169,41 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
         expect(getAccountDisplayName(acc)).toEqual('ABCDE...VWXYZ')
     })
 
+    test('falls back to the truncated address when the name is a legacy-app truncation of the address', () => {
+        // Legacy native apps auto-named accounts with a 6+6 truncation that
+        // migration carries over verbatim.
+        const acc = {
+            id: '9',
+            type: 'hdWallet',
+            address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            name: 'ABCDEF...UVWXYZ',
+            canSign: true,
+        } as any
+        expect(getAccountDisplayName(acc)).toEqual('ABCDE...VWXYZ')
+    })
+
+    test('falls back to the truncated address when the name truncates the address with a unicode ellipsis', () => {
+        const acc = {
+            id: '10',
+            type: 'hdWallet',
+            address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            name: 'ABCDEF…UVWXYZ',
+            canSign: true,
+        } as any
+        expect(getAccountDisplayName(acc)).toEqual('ABCDE...VWXYZ')
+    })
+
+    test('keeps a custom name that only looks like a truncation but does not match the address', () => {
+        const acc = {
+            id: '11',
+            type: 'hdWallet',
+            address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            name: 'ABCDEF...WRONG',
+            canSign: true,
+        } as any
+        expect(getAccountDisplayName(acc)).toEqual('ABCDEF...WRONG')
+    })
+
     test('returns "No Account" when account is null', () => {
         expect(getAccountDisplayName(null)).toEqual('No Account')
     })

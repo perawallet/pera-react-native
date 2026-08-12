@@ -92,6 +92,44 @@ describe('useAccountDisplay', () => {
         expect(result.current.renderSecondary).toBe(true)
     })
 
+    it('collapses to a single truncated address when the name is a legacy truncation of the address', () => {
+        // Legacy native apps auto-named accounts with a 6+6 truncated address;
+        // migration keeps that name, which must not render as address-twice.
+        const legacyName = `${ADDRESS.slice(0, 6)}...${ADDRESS.slice(-6)}`
+
+        const { result } = renderHook(() =>
+            useAccountDisplay({
+                account: makeAccount(legacyName),
+                compact: false,
+                showAccountType: false,
+            }),
+        )
+
+        expect(result.current.displayName).toBe(
+            truncateAlgorandAddress(ADDRESS),
+        )
+        expect(result.current.renderSecondary).toBe(false)
+    })
+
+    it('shows the NFD as secondary when a legacy-truncation name is present', () => {
+        mockNfdNames = [{ name: 'flavortown.algo' }]
+        const legacyName = `${ADDRESS.slice(0, 6)}...${ADDRESS.slice(-6)}`
+
+        const { result } = renderHook(() =>
+            useAccountDisplay({
+                account: makeAccount(legacyName),
+                compact: false,
+                showAccountType: false,
+            }),
+        )
+
+        expect(result.current.displayName).toBe(
+            truncateAlgorandAddress(ADDRESS),
+        )
+        expect(result.current.secondaryText).toBe('flavortown.algo')
+        expect(result.current.renderSecondary).toBe(true)
+    })
+
     it('shows the account type for unnamed accounts when requested', () => {
         mockAccountTypeLabel = 'Ledger account'
 

@@ -29,17 +29,32 @@ import {
 import { MNEMONIC_WORD_COUNT } from './constants'
 import { RekeyTargetNotFoundError } from './errors'
 
+// Matches any `prefix...suffix`/`prefix…suffix` truncation of the address,
+// not just our own 5+5 format — legacy apps auto-named accounts with a 6+6
+// truncation that migration carries over verbatim.
+const isTruncationOfAddress = (name: string, address: string) => {
+    const match = name.match(/^([A-Z2-7]+)(?:\.\.\.|…)([A-Z2-7]+)$/)
+    if (!match) return false
+    const [, prefix, suffix] = match
+    return (
+        prefix.length + suffix.length < address.length &&
+        address.startsWith(prefix) &&
+        address.endsWith(suffix)
+    )
+}
+
 export const getAccountDisplayName = (account: Nullable<WalletAccount>) => {
     if (!account) return 'No Account'
     if (!account.address) return account.name || 'No Address Found'
-    const truncated = truncateAlgorandAddress(account.address)
-    // A name that is just the account's own address — full OR truncated — isn't
-    // a distinguishing label. Treat it as unnamed so callers render a single
-    // truncated address instead of the address twice.
+    // A name that is just the account's own address — full or any truncation of
+    // it — isn't a distinguishing label. Treat it as unnamed so callers render
+    // a single truncated address instead of the address twice.
     const isAddressName =
-        account.name === account.address || account.name === truncated
+        !!account.name &&
+        (account.name === account.address ||
+            isTruncationOfAddress(account.name, account.address))
     if (account.name && !isAddressName) return account.name
-    return truncated
+    return truncateAlgorandAddress(account.address)
 }
 
 export const isHDWalletAccount = (
