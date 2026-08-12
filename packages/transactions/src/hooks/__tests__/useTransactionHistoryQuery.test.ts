@@ -297,6 +297,43 @@ describe('useTransactionHistoryQuery', () => {
         expect(result.current.transactions).toEqual([])
     })
 
+    test('requests full-depth pages from the API by default', async () => {
+        // Without an explicit limit the endpoint falls back to
+        // DEFAULT_ITEMS_PER_PAGE (25), which put a footer spinner every 25
+        // rows once the local cache ran out. The hook asks for the endpoint's
+        // 100-row ceiling instead.
+        mockGetTransactionHistory.mockResolvedValue([])
+        ;(endpoints.fetchTransactionHistory as Mock).mockResolvedValue({
+            transactions: [],
+            pagination: {
+                hasNextPage: false,
+                hasPreviousPage: true,
+                nextUrl: null,
+                previousUrl: null,
+                totalFetched: 0,
+            },
+            currentRound: 12350,
+        })
+
+        renderHook(
+            () =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network: 'mainnet',
+                }),
+            { wrapper },
+        )
+
+        await waitFor(() =>
+            expect(endpoints.fetchTransactionHistory).toHaveBeenCalledWith(
+                expect.objectContaining({ limit: 100 }),
+            ),
+        )
+        expect(mockGetTransactionHistory).toHaveBeenCalledWith(
+            expect.objectContaining({ limit: 100 }),
+        )
+    })
+
     test('walks further DB pages before touching the network', async () => {
         // The reported bug: only page 1 came from SQLite, so scrolling back
         // through already-synced history refetched every page over the wire.

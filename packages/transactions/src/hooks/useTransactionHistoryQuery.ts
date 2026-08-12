@@ -23,10 +23,13 @@ import { getTransactionHistory } from '../db'
 import { persistTransactionsToDb } from './useTransactionHistoryDb'
 
 /**
- * SQLite pages are local and cheap, so they run deeper than the API's page —
- * the footer spinner should be a network event, not a scroll event.
+ * Rows per page, for both the SQLite read and the API request. 100 is the
+ * endpoint's ceiling; the module-wide `DEFAULT_ITEMS_PER_PAGE` of 25 meant a
+ * footer spinner every 25 rows once the local cache ran out. Kept as one
+ * number so a DB page and an API page stay the same depth — a DB page shorter
+ * than the request is what signals SQLite is exhausted.
  */
-const DB_PAGE_SIZE = 100
+const HISTORY_PAGE_SIZE = 100
 
 /** Sentinel `nextUrl`s: the next page comes from SQLite / from the API. */
 const DB_CURSOR = '__load_more_from_db__'
@@ -94,7 +97,7 @@ export type UseTransactionHistoryQueryParams = {
     afterTime?: string
     /** Optional: Only return transactions confirmed before this time (ISO 8601) */
     beforeTime?: string
-    /** Optional: Maximum number of transactions to return per request */
+    /** Optional: rows per page. Defaults to the endpoint's 100-row ceiling. */
     limit?: number
     /** Optional: Whether the query is enabled */
     isEnabled?: boolean
@@ -154,7 +157,7 @@ export const useTransactionHistoryQuery = (
         assetId,
         afterTime,
         beforeTime,
-        limit,
+        limit = HISTORY_PAGE_SIZE,
         isEnabled = true,
     } = params
 
@@ -179,14 +182,13 @@ export const useTransactionHistoryQuery = (
             // previously page 2 onwards always did, so scrolling back through
             // already-synced history refetched it over the wire.
             if (pageParam == null || pageParam.type === 'db') {
-                const dbPageSize = limit ?? DB_PAGE_SIZE
                 const rows = await getTransactionHistory({
                     accountAddress,
                     network,
                     assetId,
                     afterTime,
                     beforeTime,
-                    limit: dbPageSize,
+                    limit,
                     atOrBeforeRoundTime: pageParam?.atOrBeforeRoundTime,
                 })
 
@@ -199,7 +201,7 @@ export const useTransactionHistoryQuery = (
                 // Gauged on the raw row count, not the deduped one: a page
                 // that filled up in SQLite has more behind it even when the
                 // boundary filter emptied what we kept.
-                const hasMoreInDb = rows.length >= dbPageSize
+                const hasMoreInDb = rows.length >= limit
 
                 return {
                     transactions: dbTransactions,

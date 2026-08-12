@@ -86,7 +86,11 @@ export const AssetTransactionList = ({
                 // supplies one unless the slot is explicitly emptied.
                 ItemSeparatorComponent={null}
                 onEndReached={handleLoadMore}
-                onEndReachedThreshold={0.5}
+                // Nearly two screens of runway. A page is a network round trip
+                // once the local cache runs out, so starting it half a screen
+                // from the end (the old value) meant arriving at the spinner
+                // rather than at rows.
+                onEndReachedThreshold={1.5}
                 ListHeaderComponent={
                     <PWView>
                         {children}
