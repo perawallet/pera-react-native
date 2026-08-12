@@ -24,7 +24,9 @@ export const useStyles = makeStyles(theme => {
             paddingRight: theme.spacing.md,
             paddingLeft: theme.spacing.xs,
             gap: theme.spacing.sm,
-            borderRadius: theme.spacing.xl,
+            // Full radius so the trigger stays pill-shaped when the account
+            // renders two lines (name/address + NFD).
+            borderRadius: theme.borderRadius.full,
             backgroundColor: theme.colors.background,
         },
     }
