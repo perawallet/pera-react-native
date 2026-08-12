@@ -37,6 +37,54 @@ export const useStyles = makeStyles(theme => ({
     gridColumnRight: {
         paddingLeft: theme.spacing.xl / 2,
     },
+    // Skeletons trace the real layouts: two square tiles per row in grid mode,
+    // thumbnail-plus-two-lines in list mode.
+    skeletonGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        paddingHorizontal: theme.spacing.xl,
+    },
+    skeletonGridCell: {
+        width: '50%',
+        paddingBottom: theme.spacing.xl,
+        gap: theme.spacing.sm,
+    },
+    skeletonTile: {
+        aspectRatio: 1,
+        width: '100%',
+        borderRadius: theme.spacing.sm,
+    },
+    skeletonTileCaption: {
+        height: theme.spacing.lg,
+        width: '70%',
+        borderRadius: theme.spacing.xs,
+    },
+    skeletonRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
+        paddingVertical: theme.spacing.md,
+    },
+    skeletonRowThumbnail: {
+        height: theme.spacing['3xl'],
+        width: theme.spacing['3xl'],
+        borderRadius: theme.spacing.sm,
+    },
+    skeletonRowText: {
+        flex: 1,
+        gap: theme.spacing.xs,
+    },
+    skeletonRowTitle: {
+        height: theme.spacing.lg,
+        width: '60%',
+        borderRadius: theme.spacing.xs,
+    },
+    skeletonRowSubtitle: {
+        height: theme.spacing.md,
+        width: '35%',
+        borderRadius: theme.spacing.xs,
+    },
     headerContainer: {
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.md,

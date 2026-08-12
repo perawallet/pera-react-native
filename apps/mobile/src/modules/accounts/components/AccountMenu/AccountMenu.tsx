@@ -42,15 +42,8 @@ export type AccountMenuProps = {
 
 export const AccountMenu = (props: AccountMenuProps) => {
     const styles = useStyles()
-    const {
-        listItems,
-        selectedAccountAddress,
-        sortMode,
-        handleTap,
-        isChartCollapsed,
-        handleListScroll,
-        handleExpandChart,
-    } = useAccountMenu(props)
+    const { listItems, selectedAccountAddress, sortMode, handleTap } =
+        useAccountMenu(props)
     const {
         onAddAccount,
         onOpenSort,
@@ -105,16 +98,12 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         <AccountMenuHeader
                             headerContent={headerContent}
                             hideDefaultHeader={hideDefaultHeader}
-                            isChartCollapsed={isChartCollapsed}
-                            onExpandChart={handleExpandChart}
                             onOpenSort={onOpenSort}
                             onAddAccount={onAddAccount}
                         />
                     }
                     ItemSeparatorComponent={ListSeparator}
                     showsVerticalScrollIndicator={false}
-                    onScroll={handleListScroll}
-                    scrollEventThrottle={16}
                     inBottomSheet
                 />
             </PWView>

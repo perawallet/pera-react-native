@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useCallback } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import {
     PWButton,
     PWFlatList,
@@ -29,21 +29,14 @@ import {
     CollectibleListItem,
 } from '@modules/assets/components'
 import { NftEmptyState } from '../NftEmptyState'
-import { LoadingView } from '@components/LoadingView'
+import { GallerySkeleton } from './GallerySkeleton'
 import { EmptyView } from '@components/EmptyView'
-import { type CollectibleDisplayItem } from '@modules/assets/types/collectible'
+import {
+    assetFromHoldingLiteRow,
+    type AccountCollectibleLiteRow,
+} from '@perawallet/wallet-core-accounts'
 
 const GRID_COLUMNS = 2
-const SKELETON_COUNT = 6
-
-const renderLoadingSkeleton = () => {
-    return (
-        <LoadingView
-            variant='skeleton'
-            count={SKELETON_COUNT}
-        />
-    )
-}
 
 const ListSeparator = () => {
     const styles = useStyles()
@@ -51,16 +44,51 @@ const ListSeparator = () => {
     return <PWView style={styles.listSeparator} />
 }
 
-const keyExtractor = (item: CollectibleDisplayItem) => item.assetId
+const keyExtractor = (item: AccountCollectibleLiteRow) => item.assetId
 
-type GridCellProps = {
-    item: CollectibleDisplayItem
+type GalleryCellProps = {
+    item: AccountCollectibleLiteRow
     index: number
-    onPress: (item: CollectibleDisplayItem) => void
+    isGrid: boolean
+    onPress: (item: AccountCollectibleLiteRow) => void
 }
 
-const GridCell = ({ item, index, onPress }: GridCellProps) => {
+const GalleryCellView = ({
+    item,
+    index,
+    isGrid,
+    onPress,
+}: GalleryCellProps) => {
     const styles = useStyles()
+    // The row components are memoised, so they need a press handler whose
+    // identity survives a parent re-render. Building the closure here — inside
+    // a cell that only re-renders when its own item changes — is what makes
+    // that memo actually skip work.
+    const handlePress = useCallback(() => onPress(item), [onPress, item])
+
+    // Metadata is parsed here rather than in the query so a 15k-collectible
+    // account only pays for the cells on screen.
+    const displayItem = useMemo(() => {
+        const asset = assetFromHoldingLiteRow(item)
+        if (!asset) return null
+        return {
+            assetId: item.assetId,
+            asset,
+            collectible: asset.peraMetadata?.collectible,
+            amount: item.amount,
+        }
+    }, [item])
+
+    if (!displayItem) return null
+
+    if (!isGrid) {
+        return (
+            <CollectibleListItem
+                item={displayItem}
+                onPress={handlePress}
+            />
+        )
+    }
 
     return (
         <PWView
@@ -72,12 +100,14 @@ const GridCell = ({ item, index, onPress }: GridCellProps) => {
             ]}
         >
             <CollectibleGridItem
-                item={item}
-                onPress={() => onPress(item)}
+                item={displayItem}
+                onPress={handlePress}
             />
         </PWView>
     )
 }
+
+const GalleryCell = React.memo(GalleryCellView)
 
 export const AccountNfts = () => {
     const styles = useStyles()
@@ -103,19 +133,20 @@ export const AccountNfts = () => {
     const isGrid = galleryLayout === 'grid'
 
     const renderItem = useCallback(
-        ({ item, index }: { item: CollectibleDisplayItem; index: number }) =>
-            isGrid ? (
-                <GridCell
-                    item={item}
-                    index={index}
-                    onPress={handlePress}
-                />
-            ) : (
-                <CollectibleListItem
-                    item={item}
-                    onPress={() => handlePress(item)}
-                />
-            ),
+        ({
+            item,
+            index,
+        }: {
+            item: AccountCollectibleLiteRow
+            index: number
+        }) => (
+            <GalleryCell
+                item={item}
+                index={index}
+                isGrid={isGrid}
+                onPress={handlePress}
+            />
+        ),
         [isGrid, handlePress],
     )
 
@@ -240,7 +271,9 @@ export const AccountNfts = () => {
                             <EmptyView
                                 title={t('account_details.nfts.nomatch_title')}
                                 body={t('account_details.nfts.nomatch_body')}
-                                loadingView={renderLoadingSkeleton()}
+                                loadingView={
+                                    <GallerySkeleton isGrid={isGrid} />
+                                }
                                 isLoading={isPending}
                             />
                         }

@@ -208,8 +208,10 @@ describe('useAssetTransactionList', () => {
         })
     })
 
-    describe('transaction grouping', () => {
-        it('returns grouped transactions sections by date', () => {
+    // Grouping semantics live in the transactionListRows spec; these only
+    // check that the hook feeds the query's transactions through it.
+    describe('list rows', () => {
+        it('interleaves date headers with transaction rows', () => {
             const transactions = [
                 { id: '1', roundTime: 1_704_067_200, sender: 'A' }, // 2024-01-01
                 { id: '2', roundTime: 1_704_153_600, sender: 'B' }, // 2024-01-02
@@ -227,12 +229,15 @@ describe('useAssetTransactionList', () => {
                 }),
             )
 
-            expect(result.current.sections).toHaveLength(2)
-            expect(result.current.sections[0].date).toBe('2024-01-02')
-            expect(result.current.sections[1].date).toBe('2024-01-01')
+            expect(result.current.rows.map(row => row.key)).toEqual([
+                '2024-01-02',
+                '2',
+                '2024-01-01',
+                '1',
+            ])
         })
 
-        it('returns empty sections when no transactions', () => {
+        it('returns no rows when no transactions', () => {
             const { result } = renderHook(() =>
                 useAssetTransactionList({
                     account: mockAccount,
@@ -240,18 +245,14 @@ describe('useAssetTransactionList', () => {
                 }),
             )
 
-            expect(result.current.sections).toHaveLength(0)
+            expect(result.current.rows).toHaveLength(0)
         })
 
-        it('groups multiple transactions on same date', () => {
-            const transactions = [
-                { id: '1', roundTime: 1_704_067_200, sender: 'A' },
-                { id: '2', roundTime: 1_704_067_260, sender: 'B' },
-                { id: '3', roundTime: 1_704_067_320, sender: 'C' },
-            ]
+        it('reports initial load, not empty, before the first read resolves', () => {
             vi.mocked(useTransactionHistoryQuery).mockReturnValue({
-                transactions,
+                transactions: [],
                 isLoading: false,
+                isFetched: false,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any)
 
@@ -262,8 +263,8 @@ describe('useAssetTransactionList', () => {
                 }),
             )
 
-            expect(result.current.sections).toHaveLength(1)
-            expect(result.current.sections[0].data).toHaveLength(3)
+            expect(result.current.isInitialLoad).toBe(true)
+            expect(result.current.isEmpty).toBe(false)
         })
     })
 

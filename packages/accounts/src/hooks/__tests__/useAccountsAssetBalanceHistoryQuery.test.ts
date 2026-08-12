@@ -81,13 +81,13 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                 results: [
                     {
                         datetime: '2024-01-01T00:00:00Z',
-                        algo_value: '10.5',
+                        amount: '10.5',
                         usd_value: '25.0',
                         round: 10000,
                     },
                     {
                         datetime: '2024-01-02T00:00:00Z',
-                        algo_value: '12.0',
+                        amount: '12.0',
                         usd_value: '30.0',
                         round: 10001,
                     },
@@ -110,13 +110,13 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             expect(result.current.data).toHaveLength(2)
             expect(result.current.data?.[0]).toEqual({
                 datetime: new Date('2024-01-01T00:00:00Z'),
-                algoValue: new Decimal('10.5'),
+                amount: new Decimal('10.5'),
                 preferredValue: new Decimal(50), // 25 * 2
                 round: 10000,
             })
             expect(result.current.data?.[1]).toEqual({
                 datetime: new Date('2024-01-02T00:00:00Z'),
-                algoValue: new Decimal('12.0'),
+                amount: new Decimal('12.0'),
                 preferredValue: new Decimal(60), // 30 * 2
                 round: 10001,
             })
@@ -127,7 +127,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                 results: [
                     {
                         datetime: '2024-01-01T00:00:00Z',
-                        algo_value: null,
+                        amount: null,
                         usd_value: null,
                         round: 10000,
                     },
@@ -149,7 +149,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
 
             expect(result.current.data?.[0]).toEqual({
                 datetime: new Date('2024-01-01T00:00:00Z'),
-                algoValue: new Decimal(0),
+                amount: new Decimal(0),
                 preferredValue: new Decimal(0),
                 round: 10000,
             })

@@ -88,9 +88,6 @@ export const useStyles = makeStyles(theme => {
         chartToggleText: {
             color: theme.colors.textGray,
         },
-        invertedIcon: {
-            transform: [{ rotate: '180deg' }],
-        },
         primaryCurrency: {
             color: theme.colors.textMain,
         },
