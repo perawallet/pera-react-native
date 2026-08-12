@@ -28,17 +28,14 @@ const setStack = (requests: InternalRequest[]) =>
         useBottomSheetStore.setState({ requests })
     })
 
-const setHeld = (isPresentationHeld: boolean) =>
+const setHeld = (isHeld: boolean) =>
     act(() => {
-        useBottomSheetStore.setState({ isPresentationHeld })
+        useBottomSheetStore.getState().setPresentationHeld(isHeld, 'app-lock')
     })
 
 describe('usePresentableRequests', () => {
     beforeEach(() => {
-        useBottomSheetStore.setState({
-            requests: [],
-            isPresentationHeld: false,
-        })
+        useBottomSheetStore.getState().resetState()
     })
 
     it('passes stacked requests through while presentation is not held', () => {

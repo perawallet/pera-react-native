@@ -26,6 +26,7 @@ import ErrorBoundary from 'react-native-error-boundary'
 import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useTokenListener } from '@modules/token'
+import { PromptContainer } from '@modules/prompts'
 import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
@@ -264,6 +265,13 @@ export const WebMainRoutes = ({
                     )}
                 </RootStack.Navigator>
             </WalletConnectProvider>
+            {/* Native mounts this in RootComponent, which this shell replaces.
+                Outside the WC provider so a nav-tree crash caught by
+                WalletConnectErrorBoundary can't take the blocking prompt down.
+                Not parity with native: there the prompt is inside
+                RootContentContainer's own ErrorBoundary, so a MainRoutes throw
+                does drop it. */}
+            <PromptContainer />
             {/* Sibling of WalletConnectProvider (not nested inside it),
                 mirroring native RootComponent's arrangement: there,
                 `<ErrorBoundary><SigningOverlays/>...</ErrorBoundary>` is a
