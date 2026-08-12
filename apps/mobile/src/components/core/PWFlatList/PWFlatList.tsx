@@ -53,6 +53,19 @@ export type PWFlatListProps<T> = FlashListProps<T> & {
  */
 const DEFAULT_DRAW_DISTANCE = 1000
 
+/**
+ * FlashList's pool of retired-but-still-mounted cells is unbounded by default
+ * (`Number.MAX_SAFE_INTEGER`), so a long scroll grows the child container's
+ * mounted children with no ceiling. The cap applies only to cells that are no
+ * longer engaged (`keyMap.size - engagedIndices.length` in FlashList's
+ * `RenderStackManager.sync`), so it leaves the prepared window that
+ * `DEFAULT_DRAW_DISTANCE` buys untouched — it only stops the tail growing.
+ * Fewer mounted children also narrows the window for the Android Fabric mount
+ * desync in PERA-4863. Pools are keyed by item type and our lists use a handful
+ * at most, so 20 leaves recycling plenty of headroom.
+ */
+const DEFAULT_MAX_ITEMS_IN_RECYCLE_POOL = 20
+
 const ListSeparator = () => {
     const styles = useStyles()
 
@@ -78,6 +91,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             // RN's default ('never') makes the first tap dismiss the keyboard
             // instead of hitting the row; 'handled' lets the row receive it.
             keyboardShouldPersistTaps = 'handled',
+            maxItemsInRecyclePool = DEFAULT_MAX_ITEMS_IN_RECYCLE_POOL,
             ...props
         },
         ref,
@@ -118,6 +132,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             showsHorizontalScrollIndicator,
             drawDistance,
             keyboardShouldPersistTaps,
+            maxItemsInRecyclePool,
             ItemSeparatorComponent: resolvedSeparator,
             contentContainerStyle: StyleSheet.flatten([
                 isVerticalList && styles.content,

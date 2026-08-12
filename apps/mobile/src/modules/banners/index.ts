@@ -22,4 +22,7 @@
 // `@modules/banners/screens/BannersCarouselModalScreen`) so a screen that
 // doesn't need the carousel doesn't pull it into its bundle graph either.
 export * from './components/HomeBannersStrip'
+// Safe to re-export here: `animations` pulls in only reanimated and the shared
+// UI constants, never PagerView.
+export * from './components/animations'
 export * from './hooks'

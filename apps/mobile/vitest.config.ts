@@ -645,9 +645,13 @@ export default defineConfig({
                     // production icons) and is NOT under src/. It ran on the
                     // default glob until this include was added for the browser
                     // entry above — keep it listed or those specs go unrun.
+                    // `plugins/__tests__/` is the same story for the config
+                    // plugins' pure transform functions; it matched neither of
+                    // the globs above, so those specs had gone unrun entirely.
                     include: [
                         'src/**/*.{test,spec}.{ts,tsx}',
                         '__tests__/**/*.{test,spec}.{ts,tsx}',
+                        'plugins/**/*.{test,spec}.{ts,tsx}',
                         '../browser/src/offscreen/**/*.{test,spec}.{ts,tsx}',
                     ],
                     exclude: [

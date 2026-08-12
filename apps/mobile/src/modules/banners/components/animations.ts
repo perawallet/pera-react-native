@@ -36,10 +36,20 @@ export type BannerRevealResult = {
     onMeasureLayout: (event: LayoutChangeEvent) => void
 }
 
+export type BannerRevealOptions = {
+    /** Pause before the reveal starts. Defaults to `BANNER_REVEAL_DELAY_MS`. */
+    delayMs?: number
+    /** Length of the reveal. Defaults to `BANNER_REVEAL_DURATION_MS`. */
+    durationMs?: number
+}
+
 // Off-screen measurement of the natural height drives a shared-value height
 // animation. `values.targetHeight` via `entering={...}` didn't propagate
 // parent reflow when content had a fixed pager height.
-export const useBannerReveal = (): BannerRevealResult => {
+export const useBannerReveal = ({
+    delayMs = BANNER_REVEAL_DELAY_MS,
+    durationMs = BANNER_REVEAL_DURATION_MS,
+}: BannerRevealOptions = {}): BannerRevealResult => {
     const [measuredHeight, setMeasuredHeight] = useState(0)
     const height = useSharedValue(0)
     const opacity = useSharedValue(0)
@@ -48,27 +58,27 @@ export const useBannerReveal = (): BannerRevealResult => {
     useEffect(() => {
         if (measuredHeight <= 0) return
         height.value = withDelay(
-            BANNER_REVEAL_DELAY_MS,
+            delayMs,
             withTiming(measuredHeight, {
-                duration: BANNER_REVEAL_DURATION_MS,
+                duration: durationMs,
                 easing: BANNER_REVEAL_EASING,
             }),
         )
         opacity.value = withDelay(
-            BANNER_REVEAL_DELAY_MS,
+            delayMs,
             withTiming(1, {
-                duration: BANNER_REVEAL_DURATION_MS,
+                duration: durationMs,
                 easing: BANNER_REVEAL_EASING,
             }),
         )
         progress.value = withDelay(
-            BANNER_REVEAL_DELAY_MS,
+            delayMs,
             withTiming(1, {
-                duration: BANNER_REVEAL_DURATION_MS,
+                duration: durationMs,
                 easing: BANNER_REVEAL_EASING,
             }),
         )
-    }, [measuredHeight, height, opacity, progress])
+    }, [measuredHeight, height, opacity, progress, delayMs, durationMs])
 
     const animatedStyle = useAnimatedStyle(() => ({
         height: height.value,
