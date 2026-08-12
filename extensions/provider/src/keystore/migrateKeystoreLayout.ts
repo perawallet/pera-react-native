@@ -318,6 +318,22 @@ export const migrateKeystoreLayout = async (
         failed: 0,
     }
 
+    const allKeys = deps.storage.getAllKeys()
+
+    // An empty store has to stay *literally* empty. canary.14 mints the
+    // Keychain master key only while `getAllKeys()` is empty
+    // (`masterKeyForWrite`), on the reasoning that a populated store with no
+    // master means one went missing and minting a replacement would orphan
+    // every sealed record. So a lone stamp is not a free marker: it blocks the
+    // first write forever and the wallet can never create its first account.
+    // Removing it here also un-bricks a device that already ran a build which
+    // stamped too early — that store holds nothing else, so no other code path
+    // can recover it.
+    if (!allKeys.some(key => key !== LAYOUT_VERSION_KEY)) {
+        deps.storage.remove(LAYOUT_VERSION_KEY)
+        return result
+    }
+
     // The cheap exit, and the reason the stamp exists at all. Bare ids stay
     // occupied for good once the credential provider owns any — its records
     // and the HD root shadow are skipped, never consumed — so "no bare ids
@@ -328,10 +344,9 @@ export const migrateKeystoreLayout = async (
         return result
     }
 
-    const legacyIds = deps.storage.getAllKeys().filter(isLegacyEntry)
+    const legacyIds = allKeys.filter(isLegacyEntry)
     if (legacyIds.length === 0) {
-        // A fresh install has nothing to migrate and never will; stamp now so
-        // no later launch pays for the scan.
+        // Already on the new layout; stamp so no later launch pays for the scan.
         deps.storage.set(LAYOUT_VERSION_KEY, String(LAYOUT_VERSION))
         return result
     }

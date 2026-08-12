@@ -412,12 +412,36 @@ describe('migrateKeystoreLayout', () => {
             expect(store.get(LAYOUT_VERSION_KEY)).toBe(String(LAYOUT_VERSION))
         })
 
-        it('stamps on a fresh install so the first real launch is already cheap', async () => {
+        // canary.14 mints the Keychain master key only while the keystore MMKV
+        // is empty (`masterKeyForWrite`), so a lone stamp is not a harmless
+        // marker: it permanently blocks the first write and the wallet can
+        // never create an account. An empty store has nothing to skip anyway.
+        it('leaves an empty store empty so the first key can still be written', async () => {
             const result = await migrateKeystoreLayout(deps())
 
             expect(result).toEqual({ migrated: 0, skipped: 0, failed: 0 })
-            expect(store.get(LAYOUT_VERSION_KEY)).toBe(String(LAYOUT_VERSION))
+            expect([...store.keys()]).toEqual([])
             expect(readMasterKey).not.toHaveBeenCalled()
+        })
+
+        // Self-heal: a device that already ran a build which stamped too early
+        // holds exactly that one key and cannot write any other, so nothing but
+        // this pass can un-block it.
+        it('clears a stamp an earlier build left on an empty store', async () => {
+            store.set(LAYOUT_VERSION_KEY, String(LAYOUT_VERSION))
+
+            await migrateKeystoreLayout(deps())
+
+            expect([...store.keys()]).toEqual([])
+            expect(readMasterKey).not.toHaveBeenCalled()
+        })
+
+        it('stamps once the store holds a record', async () => {
+            store.set('k/key-1', JSON.stringify({ id: 'key-1' }))
+
+            await migrateKeystoreLayout(deps())
+
+            expect(store.get(LAYOUT_VERSION_KEY)).toBe(String(LAYOUT_VERSION))
         })
 
         it('skips the whole pass once stamped, without touching the master key', async () => {
