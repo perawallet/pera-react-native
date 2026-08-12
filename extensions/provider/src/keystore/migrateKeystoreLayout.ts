@@ -46,6 +46,19 @@ export type KeystoreLayoutMigrationResult = {
 }
 
 /**
+ * Records the layout this store has been migrated to.
+ *
+ * Deliberately **unsealed**: reading it must not cost a master-key read, since
+ * avoiding that read is the entire point. It shares the MMKV namespace with the
+ * keys, so `isLegacyEntry` has to exclude it explicitly or the scan would try
+ * to migrate the marker itself.
+ */
+export const LAYOUT_VERSION_KEY = 'pera/keystore-layout-version'
+
+/** Bump when a future layout change needs every store re-scanned (e.g. phase 3). */
+export const LAYOUT_VERSION = 1
+
+/**
  * canary.13 wrote one MMKV entry per key, keyed by the bare key id, holding the
  * whole encrypted `KeyData`. canary.14 splits that across two buckets:
  * `k/<id>` plaintext metadata and `m/<id>` sealed private material. Both the
@@ -53,7 +66,9 @@ export type KeystoreLayoutMigrationResult = {
  * invisible — the wallet renders empty while the bytes sit untouched on disk.
  */
 const isLegacyEntry = (key: string): boolean =>
-    !key.startsWith(METADATA_PREFIX) && !key.startsWith(MATERIAL_PREFIX)
+    key !== LAYOUT_VERSION_KEY &&
+    !key.startsWith(METADATA_PREFIX) &&
+    !key.startsWith(MATERIAL_PREFIX)
 
 /** Field names that carry raw key material anywhere in a record. */
 const SECRET_FIELDS = new Set(['privateKey', 'seed', 'key'])
@@ -297,14 +312,29 @@ const isMigrationDurable = async (
 export const migrateKeystoreLayout = async (
     deps: KeystoreLayoutMigrationDeps,
 ): Promise<KeystoreLayoutMigrationResult> => {
-    const legacyIds = deps.storage.getAllKeys().filter(isLegacyEntry)
-
     const result: KeystoreLayoutMigrationResult = {
         migrated: 0,
         skipped: 0,
         failed: 0,
     }
-    if (legacyIds.length === 0) return result
+
+    // The cheap exit, and the reason the stamp exists at all. Bare ids stay
+    // occupied for good once the credential provider owns any — its records
+    // and the HD root shadow are skipped, never consumed — so "no bare ids
+    // left" cannot mean "migrated". Without this, every launch would re-read
+    // the Keychain master key and decrypt one record per stored passkey only
+    // to skip it, and canary.14 no longer caches that master key.
+    if (deps.storage.getString(LAYOUT_VERSION_KEY) === String(LAYOUT_VERSION)) {
+        return result
+    }
+
+    const legacyIds = deps.storage.getAllKeys().filter(isLegacyEntry)
+    if (legacyIds.length === 0) {
+        // A fresh install has nothing to migrate and never will; stamp now so
+        // no later launch pays for the scan.
+        deps.storage.set(LAYOUT_VERSION_KEY, String(LAYOUT_VERSION))
+        return result
+    }
 
     // Deferred until there is something to migrate: on a fresh install the
     // Keychain entry does not exist yet and this would throw
@@ -410,6 +440,12 @@ export const migrateKeystoreLayout = async (
             )
             result.failed += 1
         }
+    }
+
+    // Only on a clean pass. Anything that failed was deliberately left on disk
+    // for a later run, and stamping here would strand it for good.
+    if (result.failed === 0) {
+        deps.storage.set(LAYOUT_VERSION_KEY, String(LAYOUT_VERSION))
     }
 
     return result

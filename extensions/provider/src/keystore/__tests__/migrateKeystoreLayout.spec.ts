@@ -17,6 +17,8 @@ import { base64, base64url } from '@scure/base'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { KeyData } from '@algorandfoundation/keystore-core'
 import {
+    LAYOUT_VERSION,
+    LAYOUT_VERSION_KEY,
     migrateKeystoreLayout,
     type KeystoreLayoutMigrationDeps,
 } from '../migrateKeystoreLayout'
@@ -213,6 +215,10 @@ describe('migrateKeystoreLayout', () => {
         const legacy = store.get('key-1')!
         await migrateKeystoreLayout(deps())
         store.set('key-1', legacy)
+        // A run that died between writing the new buckets and removing the old
+        // entry never reached the version stamp, so the next run rescans. Clear
+        // it to model that interrupted run rather than a clean one.
+        store.delete(LAYOUT_VERSION_KEY)
 
         const result = await migrateKeystoreLayout(deps())
 
@@ -388,6 +394,98 @@ describe('migrateKeystoreLayout', () => {
         await migrateKeystoreLayout(deps())
 
         expect(readMasterKey).not.toHaveBeenCalled()
+    })
+
+    // Bare ids are occupied FOREVER once the credential provider owns some:
+    // its records and the HD root shadow are skipped, never consumed, so
+    // "are there bare ids?" stopped being a usable test for "is a migration
+    // needed?". Without a version stamp every launch would re-read the
+    // Keychain master key and decrypt one record per stored passkey just to
+    // conclude "skip" — and canary.14 removed the master-key cache, so that
+    // read is not free.
+    describe('layout version stamp', () => {
+        it('stamps the version after a clean run', async () => {
+            await writeCanary13Record(store, algo25Record('key-1'))
+
+            await migrateKeystoreLayout(deps())
+
+            expect(store.get(LAYOUT_VERSION_KEY)).toBe(String(LAYOUT_VERSION))
+        })
+
+        it('stamps on a fresh install so the first real launch is already cheap', async () => {
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result).toEqual({ migrated: 0, skipped: 0, failed: 0 })
+            expect(store.get(LAYOUT_VERSION_KEY)).toBe(String(LAYOUT_VERSION))
+            expect(readMasterKey).not.toHaveBeenCalled()
+        })
+
+        it('skips the whole pass once stamped, without touching the master key', async () => {
+            store.set(LAYOUT_VERSION_KEY, String(LAYOUT_VERSION))
+            // A provider-owned bare-id record, which is what makes the cheap
+            // "no bare ids left" check impossible in the first place.
+            await writeCanary13Record(store, {
+                id: 'cred-1',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                extractable: false,
+                publicKey: new Uint8Array(33).fill(4),
+                metadata: {
+                    origin: 'https://example.com',
+                    userHandle: 'dXNlcg',
+                },
+            })
+            const before = new Map(store)
+
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result).toEqual({ migrated: 0, skipped: 0, failed: 0 })
+            expect(readMasterKey).not.toHaveBeenCalled()
+            expect(store).toEqual(before)
+        })
+
+        // The migration deliberately leaves what it could not migrate for a
+        // later run. Stamping after a partial failure would strand it.
+        it('does not stamp when a record failed, and retries on the next run', async () => {
+            await writeCanary13Record(store, algo25Record('key-1'))
+            store.set('key-1', 'not-decryptable')
+
+            await migrateKeystoreLayout(deps())
+            expect(store.get(LAYOUT_VERSION_KEY)).toBeUndefined()
+
+            // Second run still scans, because nothing said it was done.
+            store.delete('key-1')
+            await writeCanary13Record(store, algo25Record('key-1'))
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result).toEqual({ migrated: 1, skipped: 0, failed: 0 })
+            expect(store.get(LAYOUT_VERSION_KEY)).toBe(String(LAYOUT_VERSION))
+        })
+
+        // The marker lives in the same MMKV namespace as the keys and carries
+        // neither prefix, so the legacy scan would otherwise try to migrate it.
+        it('never mistakes its own marker for a canary.13 record', async () => {
+            await writeCanary13Record(store, algo25Record('key-1'))
+            await migrateKeystoreLayout(deps())
+
+            store.delete(LAYOUT_VERSION_KEY)
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result.failed).toBe(0)
+            expect(store.get(LAYOUT_VERSION_KEY)).toBe(String(LAYOUT_VERSION))
+        })
+
+        // A later layout change bumps the constant; the stale stamp must not
+        // convince the migration there is nothing to do.
+        it('re-runs when the stamp is older than the current version', async () => {
+            store.set(LAYOUT_VERSION_KEY, String(LAYOUT_VERSION - 1))
+            await writeCanary13Record(store, algo25Record('key-1'))
+
+            const result = await migrateKeystoreLayout(deps())
+
+            expect(result).toEqual({ migrated: 1, skipped: 0, failed: 0 })
+            expect(store.has('k/key-1')).toBe(true)
+        })
     })
 
     // Re-indexing alone is not enough: `sign` dispatches on `type` and reads
@@ -615,9 +713,13 @@ describe('migrateKeystoreLayout', () => {
             expect(store.has('root-1')).toBe(true)
         })
 
+        // Cleared stamp so this still exercises the skip-without-delete path
+        // rather than the version early-return, which would keep the shadow
+        // trivially and prove nothing.
         it('keeps the shadow across repeated runs rather than dropping it as a leftover', async () => {
             await writeCanary13Record(store, rootRecord('root-1'))
             await migrateKeystoreLayout(deps())
+            store.delete(LAYOUT_VERSION_KEY)
 
             const result = await migrateKeystoreLayout(deps())
 
