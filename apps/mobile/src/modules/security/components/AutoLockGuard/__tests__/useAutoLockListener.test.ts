@@ -655,7 +655,7 @@ describe('useAutoLockListener', () => {
             expect(result.current.isChecking).toBe(false)
         })
 
-        it('PROBE finding 1: real background during an in-flight banner check raises the overlay', async () => {
+        it('raises the overlay for a real background that arrives during an in-flight banner check', async () => {
             const resolvers: Array<(expired: boolean) => void> = []
             mockCheckAutoLock.mockImplementation(
                 () =>
@@ -705,7 +705,7 @@ describe('useAutoLockListener', () => {
             })
         })
 
-        it('PROBE2: stale ref flashes the overlay on a later pure banner', async () => {
+        it('does not flash the overlay on a banner following a coalesced real-background check', async () => {
             const resolvers: Array<(expired: boolean) => void> = []
             mockCheckAutoLock.mockImplementation(
                 () =>

@@ -90,60 +90,54 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         setAutoLockStartedAt(Date.now())
     }, [setAutoLockStartedAt])
 
-    const recordForeground = useCallback(
-        async (transitionContext?: {
-            previousState: AppStateValue
-            nextState: AppStateValue
-        }): Promise<void> => {
-            if (isForegroundCheckInFlight.current) {
-                hasPendingForegroundCheck.current = true
-                return
-            }
+    const recordForeground = useCallback(async (): Promise<void> => {
+        if (isForegroundCheckInFlight.current) {
+            hasPendingForegroundCheck.current = true
+            return
+        }
 
-            isForegroundCheckInFlight.current = true
-            try {
-                do {
-                    hasPendingForegroundCheck.current = false
-                    // Only hide the app while deciding if it actually left
-                    // the foreground.
-                    const returnedFromBackground =
-                        hasEnteredRealBackgroundRef.current
-                    hasEnteredRealBackgroundRef.current = false
-                    if (returnedFromBackground) {
-                        setIsChecking(true)
+        isForegroundCheckInFlight.current = true
+        try {
+            do {
+                hasPendingForegroundCheck.current = false
+                // Only hide the app while deciding if it actually left
+                // the foreground.
+                const returnedFromBackground =
+                    hasEnteredRealBackgroundRef.current
+                hasEnteredRealBackgroundRef.current = false
+                if (returnedFromBackground) {
+                    setIsChecking(true)
+                }
+                try {
+                    const expired = await checkAutoLock()
+                    // One-way: only ever flip to locked. Never write
+                    // `false` here — on iOS the biometric prompt briefly
+                    // drives the app through inactive→active, and an
+                    // `else` branch would unlock an already-locked app
+                    // within milliseconds of showing the lock screen.
+                    // (PERA-4196)
+                    if (expired) {
+                        setIsLocked(true)
                     }
-                    try {
-                        const expired = await checkAutoLock()
-                        // One-way: only ever flip to locked. Never write
-                        // `false` here — on iOS the biometric prompt briefly
-                        // drives the app through inactive→active, and an
-                        // `else` branch would unlock an already-locked app
-                        // within milliseconds of showing the lock screen.
-                        // (PERA-4196)
-                        if (expired) {
-                            setIsLocked(true)
-                        }
-                    } catch (error) {
-                        logger.error('Auto-lock foreground check failed', {
-                            source: 'AutoLockGuard.useAutoLockListener',
-                            phase: 'foreground',
-                            previousState:
-                                transitionContext?.previousState ?? null,
-                            nextState: transitionContext?.nextState ?? null,
-                            lockEnabled: isLocked,
-                            error,
-                        })
-                        // Keep current lock state on errors.
-                    } finally {
-                        setIsChecking(false)
-                    }
-                } while (hasPendingForegroundCheck.current)
-            } finally {
-                isForegroundCheckInFlight.current = false
-            }
-        },
-        [checkAutoLock, isLocked],
-    )
+                } catch (error) {
+                    // No previousState/nextState here: a coalesced
+                    // re-run has no single transition to attribute the
+                    // failure to, and a stale value would misreport it.
+                    logger.error('Auto-lock foreground check failed', {
+                        source: 'AutoLockGuard.useAutoLockListener',
+                        phase: 'foreground',
+                        lockEnabled: isLocked,
+                        error,
+                    })
+                    // Keep current lock state on errors.
+                } finally {
+                    setIsChecking(false)
+                }
+            } while (hasPendingForegroundCheck.current)
+        } finally {
+            isForegroundCheckInFlight.current = false
+        }
+    }, [checkAutoLock, isLocked])
 
     const unlock = useCallback(() => {
         setIsChecking(false)
@@ -244,10 +238,7 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
             if (didLeaveForeground) {
                 recordBackground()
             } else if (didEnterForeground) {
-                void recordForeground({
-                    previousState,
-                    nextState: nextAppState,
-                })
+                void recordForeground()
             }
 
             appState.current = nextAppState
