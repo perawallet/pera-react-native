@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
@@ -36,12 +36,15 @@ export type WealthChartProps = {
 const getPreferredValue = (item: AccountBalanceHistoryItem): number =>
     item.preferredValue.toNumber()
 
-export const WealthChart = ({
+// Memoised because the account header re-renders on every scrub sample it
+// receives. Without this each sample re-rendered CartesianChart — re-deriving
+// the d3 scales and Skia paths — purely to redraw a line that hadn't changed.
+export const WealthChart = memo(function WealthChart({
     onSelectionChanged,
     account,
     period,
     enabled = true,
-}: WealthChartProps) => {
+}: WealthChartProps) {
     const themeStyle = useStyles()
     const { t } = useLanguage()
 
@@ -70,4 +73,4 @@ export const WealthChart = ({
             style={themeStyle.container}
         />
     )
-}
+})

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
 import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import {
@@ -54,7 +53,6 @@ import { routeCapabilities } from '@routes/capabilities'
 
 export type AssetMarketsProps = {
     asset: PeraAsset
-    onSwipeEnabledChange?: (enabled: boolean) => void
 }
 
 const Loading = () => {
@@ -68,18 +66,11 @@ const Loading = () => {
     )
 }
 
-export const AssetMarkets = ({
-    asset,
-    onSwipeEnabledChange,
-}: AssetMarketsProps) => {
+export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const styles = useStyles()
     const { usdToPreferred } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AssetPriceHistoryItem>()
-
-    useEffect(() => {
-        onSwipeEnabledChange?.(!selectedPoint)
-    }, [selectedPoint, onSwipeEnabledChange])
 
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { getPreference } = usePreferences()
@@ -171,7 +162,7 @@ export const AssetMarkets = ({
                                 selectedDataPoint={selectedPoint}
                             />
                             {!!selectedPoint && (
-                                <PWText>
+                                <PWText style={styles.dateDisplay}>
                                     {formatDatetime(selectedPoint.datetime)}
                                 </PWText>
                             )}

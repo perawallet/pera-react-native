@@ -19,7 +19,6 @@ export type UseAccountOverviewModalResult = {
     openSendFunds: () => void
     openReceiveFunds: () => void
     openAccountOptions: () => void
-    onScrollEnabledChange: (enabled: boolean) => void
 }
 
 export const AccountOverviewModalContext =

@@ -22,11 +22,32 @@ const { lineChartProps, requestSheet } = vi.hoisted(() => ({
     requestSheet: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('react-native-gifted-charts', () => ({
-    LineChart: (props: Record<string, unknown>) => {
+// victory-native renders through Skia, which needs a real canvas surface —
+// stub it and capture the props so these stay behavioral rather than visual.
+vi.mock('victory-native', () => ({
+    CartesianChart: (props: Record<string, unknown>) => {
         lineChartProps.current = props
-        return <div data-testid='line-chart'>LineChart</div>
+        return <div data-testid='line-chart'>CartesianChart</div>
     },
+    Area: () => null,
+    Line: () => null,
+    useChartPressState: () => ({
+        state: {
+            isActive: { value: false },
+            matchedIndex: { value: -1 },
+            x: { position: { value: 0 } },
+            y: { value: { position: { value: 0 } } },
+        },
+        isActive: false,
+    }),
+}))
+
+vi.mock('@shopify/react-native-skia', () => ({
+    LinearGradient: () => null,
+    Circle: () => null,
+    DashPathEffect: () => null,
+    Line: () => null,
+    vec: (x: number, y: number) => ({ x, y }),
 }))
 
 // Same mock as useBalanceLineChart.spec.ts: no BottomSheetManager is mounted
@@ -67,33 +88,38 @@ describe('BalanceLineChart', () => {
 
         expect(screen.getByTestId('line-chart')).toBeTruthy()
         expect(lineChartProps.current?.data).toEqual([
-            { value: 1 },
-            { value: 2 },
+            { index: 0, value: 1 },
+            { index: 1, value: 2 },
         ])
         expect(screen.queryByText(EMPTY_BODY)).toBeNull()
     })
 
-    it('reports the focused series item through onSelectionChanged', () => {
-        // The pointer-focus handler debounces from mount time — step the
-        // clock past the debounce window before firing the event.
-        vi.useFakeTimers()
-        try {
-            const onSelectionChanged = vi.fn()
-            renderChart({
-                series: [{ balance: 1 }, { balance: 2 }],
-                onSelectionChanged,
-            })
+    // getChartYAxisRange reports a span above an offset (gifted-charts' idiom);
+    // victory wants absolute bounds, so the top must be offset + span.
+    it('converts the y-axis range into an absolute domain', () => {
+        renderChart({ series: [{ balance: 100 }, { balance: 200 }] })
 
-            vi.advanceTimersByTime(10_000)
-            const getPointerProps = lineChartProps.current?.getPointerProps as (
-                e: unknown,
-            ) => void
-            getPointerProps({ pointerIndex: 1, pointerX: 10 })
-
-            expect(onSelectionChanged).toHaveBeenCalledWith({ balance: 2 })
-        } finally {
-            vi.useRealTimers()
+        const domain = lineChartProps.current!.domain as {
+            y: [number, number]
         }
+        const [min, max] = domain.y
+        expect(min).toBeLessThan(100)
+        expect(max).toBeGreaterThan(200)
+    })
+
+    // Victory applies activateAfterLongPress(100) unless an explicit pan config
+    // is supplied. That hold-before-scrub is the exact lag this port removes,
+    // so the config must stay explicit and must not reintroduce a delay.
+    it('activates the scrub on horizontal travel rather than a long press', () => {
+        renderChart({ series: [{ balance: 1 }, { balance: 2 }] })
+
+        const pressConfig = lineChartProps.current!.chartPressConfig as {
+            pan: Record<string, unknown>
+        }
+        const { pan } = pressConfig
+
+        expect(pan.activateAfterLongPress).toBeUndefined()
+        expect(pan.activeOffsetX).toEqual([-2, 2])
     })
 
     it('renders the empty body when the series is empty and no error', () => {

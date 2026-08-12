@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useRef } from 'react'
 import { CHART_FOCUS_DEBOUNCE_TIME } from '@constants/ui'
 
 type ChartPointerEvent = {
@@ -25,22 +25,37 @@ export const useChartPointerFocus = <T>(
     data: T[] | undefined,
     onSelectionChanged: (item: T | null) => void,
 ): ((event: ChartPointerEvent) => void) => {
-    const [lastSentIndex, setLastSentIndex] = useState<number>()
-    const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
+    // Refs, not state: gifted-charts samples the pointer on every touch move,
+    // so throttle bookkeeping in state re-rendered the chart (and the screen
+    // above it) at the sample rate and re-created this callback each time.
+    const lastSentIndex = useRef<number | undefined>(undefined)
+    const lastSentTime = useRef(0)
 
     return useCallback(
         ({ pointerIndex: index, pointerX }: ChartPointerEvent) => {
-            if (Date.now() - lastSentTime <= CHART_FOCUS_DEBOUNCE_TIME) return
-
-            if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
-                onSelectionChanged(data?.[index] ?? null)
-                setLastSentIndex(index)
-            } else if (pointerX === 0) {
+            // gifted-charts zeroes pointerX to signal release, pointerVanishDelay
+            // (150ms) after the touch ends — i.e. inside the throttle window.
+            // Throttling that strands the selection on screen, so it bypasses.
+            if (pointerX === 0) {
+                if (lastSentIndex.current === undefined) return
+                lastSentIndex.current = undefined
+                lastSentTime.current = 0
                 onSelectionChanged(null)
-                setLastSentIndex(undefined)
+                return
             }
-            setLastSentTime(Date.now())
+
+            if (index < 0 || index === lastSentIndex.current) return
+            if (
+                Date.now() - lastSentTime.current <=
+                CHART_FOCUS_DEBOUNCE_TIME
+            ) {
+                return
+            }
+
+            lastSentIndex.current = index
+            lastSentTime.current = Date.now()
+            onSelectionChanged(data?.[index] ?? null)
         },
-        [data, onSelectionChanged, lastSentIndex, lastSentTime],
+        [data, onSelectionChanged],
     )
 }
