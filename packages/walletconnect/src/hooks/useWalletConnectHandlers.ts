@@ -226,8 +226,8 @@ const validateDataSignRequest = (
  *   1. Shape validation via {@link arc60PayloadSchema} — zod errors are
  *      projected into `WalletConnectSignRequestError` with a field path
  *      (e.g. `metadata.scope: Expected number, received string`).
- *   2. Semantic checks — signer belongs to the session, is signable, and
- *      is not a hardware wallet.
+ *   2. Semantic checks — signer belongs to the session (directly, or as the
+ *      rekeyAddress of a session account) and can sign ARC-60 payloads.
  *
  * Returns the parsed `Arc60StdSigData` / `Arc60Metadata` with
  * `authenticatorData` already base64-decoded so the caller doesn't repeat it.
@@ -267,7 +267,19 @@ const validateArc60Request = (
         metadata,
     } = parsed.data
 
-    if (!foundSession.session?.accounts.includes(signer)) {
+    // ARC-60 dApps (use-wallet v5) resolve the signer to the connected
+    // account's auth address, which is never in session.accounts — accept a
+    // signer that is the rekeyAddress of a session account. The SIWA
+    // validation downstream re-checks the rekey binding against the payload.
+    const sessionAccounts = foundSession.session?.accounts ?? []
+    const isAuthorizedSigner =
+        sessionAccounts.includes(signer) ||
+        accounts.some(
+            a =>
+                a.rekeyAddress === signer &&
+                sessionAccounts.includes(a.address),
+        )
+    if (!isAuthorizedSigner) {
         throw new WalletConnectInvalidSessionError('Invalid signer')
     }
     const account = accounts.find(a => a.address === signer)
