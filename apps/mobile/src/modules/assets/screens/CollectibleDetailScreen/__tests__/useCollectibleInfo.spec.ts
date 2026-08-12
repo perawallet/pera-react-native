@@ -19,6 +19,11 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 const mockPushWebView = vi.fn()
 const mockOpenURL = vi.fn()
 const mockNavigate = vi.fn()
+const mockCopyToClipboard = vi.fn()
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
+}))
 
 // Mutable capability map: mutate `mockCapabilities` per test to simulate the
 // native-shaped (inAppWebView: true) and web-shaped (false) route capability
@@ -171,6 +176,36 @@ describe('useCollectibleInfo', () => {
         expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
             assetId: '12345',
             isCollectible: true,
+        })
+    })
+
+    describe('long-press copy', () => {
+        it('copies the full (untruncated) creator address', () => {
+            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+
+            result.current.onCreatorLongPressed()
+
+            expect(mockCopyToClipboard).toHaveBeenCalledWith('CREATOR_ADDRESS')
+            expect(mockPushWebView).not.toHaveBeenCalled()
+            expect(mockOpenURL).not.toHaveBeenCalled()
+        })
+
+        it('copies the asset id without navigating', () => {
+            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+
+            result.current.onAssetIdLongPressed()
+
+            expect(mockCopyToClipboard).toHaveBeenCalledWith('12345')
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('still copies on a network with no explorer', () => {
+            Object.assign(mockNetworkConfig, { explorerUrl: '' })
+            const { result } = renderHook(() => useCollectibleInfo(makeAsset()))
+
+            result.current.onCreatorLongPressed()
+
+            expect(mockCopyToClipboard).toHaveBeenCalledWith('CREATOR_ADDRESS')
         })
     })
 })

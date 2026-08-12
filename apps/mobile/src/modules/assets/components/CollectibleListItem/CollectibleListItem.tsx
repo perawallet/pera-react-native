@@ -30,6 +30,7 @@ const CollectibleListItemBase = ({
         verificationIconName,
         title,
         collectionLabel,
+        handleLongPress,
     } = useCollectibleItem({ item, onPress })
 
     const subtitle = [
@@ -44,6 +45,7 @@ const CollectibleListItemBase = ({
             testID={`collectible_row_${item.assetId}`}
             style={[styles.container, style]}
             onPress={onPress}
+            onLongPress={handleLongPress}
             left={
                 <PWView style={styles.thumbnail}>
                     <CollectibleThumbnail

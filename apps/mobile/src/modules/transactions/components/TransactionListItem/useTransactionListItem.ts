@@ -15,6 +15,7 @@ import { type Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import { formatNumber, type Nullable } from '@perawallet/wallet-core-shared'
+import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { getTransactionIconType } from './utils'
@@ -39,6 +40,8 @@ export type UseTransactionListItemResult = {
     /** Number of impacts hidden beyond {@link MAX_VISIBLE_AMOUNTS}, for "+N more". */
     amountsOverflowCount: number
     handlePress: () => void
+    /** Long-press copies the transaction id (with the shared copied toast). */
+    handleLongPress: () => void
 }
 
 const formatAmount = (baseUnits: Decimal, decimals: number): string => {
@@ -109,6 +112,7 @@ export const useTransactionListItem = ({
     onPress,
 }: UseTransactionListItemParams): UseTransactionListItemResult => {
     const account = useSelectedAccount()
+    const { copyToClipboard } = useClipboard()
     const { t } = useLanguage()
     const userAddress = account?.address ?? ''
 
@@ -176,6 +180,11 @@ export const useTransactionListItem = ({
         onPress?.(transaction)
     }, [onPress, transaction])
 
+    const handleLongPress = useCallback(
+        () => void copyToClipboard(transaction.id),
+        [copyToClipboard, transaction.id],
+    )
+
     return {
         iconType,
         title,
@@ -183,5 +192,6 @@ export const useTransactionListItem = ({
         amounts,
         amountsOverflowCount,
         handlePress,
+        handleLongPress,
     }
 }

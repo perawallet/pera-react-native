@@ -58,6 +58,9 @@ export type PWListItemLayoutProps = {
      * ignore the event (`() => void`) remain assignable too.
      */
     onPress?: (event: GestureResponderEvent) => void
+    /** Long-press handler (e.g. copy-to-clipboard rows). Either handler alone
+     *  makes the row touchable. */
+    onLongPress?: (event: GestureResponderEvent) => void
     style?: StyleProp<ViewStyle>
     testID?: string
 }
@@ -72,6 +75,7 @@ export const PWListItemLayout = ({
     centerFlex = 1,
     align = 'center',
     onPress,
+    onLongPress,
     style,
     testID,
 }: PWListItemLayoutProps) => {
@@ -99,7 +103,7 @@ export const PWListItemLayout = ({
         </>
     )
 
-    if (onPress == null) {
+    if (onPress == null && onLongPress == null) {
         return (
             <PWView
                 style={[styles.row, style]}
@@ -114,6 +118,7 @@ export const PWListItemLayout = ({
         <PWTouchableOpacity
             style={[styles.row, style]}
             onPress={onPress}
+            onLongPress={onLongPress}
             {...getTestProps(testID)}
         >
             {content}

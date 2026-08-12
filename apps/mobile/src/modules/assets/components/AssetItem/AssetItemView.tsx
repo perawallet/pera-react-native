@@ -19,7 +19,6 @@ import {
     type PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
-import { CopyableText } from '@components/CopyableText'
 import { useLanguage } from '@hooks/useLanguage'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { AssetIcon } from '../AssetIcon'
@@ -60,7 +59,8 @@ export const AssetItemView = ({
         secondaryText,
         verificationIcon,
         iconShape,
-    } = useAssetItemView(asset)
+        onCopyAssetId,
+    } = useAssetItemView(asset, { copyableAssetId })
 
     const isFavorited = showFavorite && asset.peraMetadata?.isFavorited === true
     const showDeleted = showDeletedLabel && isDeleted
@@ -73,21 +73,12 @@ export const AssetItemView = ({
         >
             {t('asset.deleted_label')}
         </PWText>
-    ) : copyableAssetId ? (
-        <CopyableText
-            copyValue={String(asset.assetId)}
-            style={styles.copyableSubtitle}
-        >
-            <PWText
-                style={styles.subtitle}
-                numberOfLines={1}
-            >
-                {secondaryText}
-            </PWText>
-        </CopyableText>
     ) : (
         <PWText
-            variant='caption'
+            // Account rows (copyableAssetId) have always shown the subtitle at
+            // body size, search rows at caption; kept as-is when the copy
+            // long-press moved from the subtitle text to the whole row.
+            variant={copyableAssetId ? 'body' : 'caption'}
             style={styles.subtitle}
             numberOfLines={1}
         >
@@ -98,8 +89,10 @@ export const AssetItemView = ({
     return (
         <PWTouchableOpacity
             testID={`asset_row_${asset.assetId}`}
-            activeOpacity={onPress ? undefined : 1}
+            activeOpacity={onPress || onCopyAssetId ? undefined : 1}
             onPress={onPress}
+            onLongPress={onCopyAssetId}
+            accessibilityHint={onCopyAssetId ? 'Long press to copy' : undefined}
             {...rest}
             style={[styles.itemContainer, style]}
         >

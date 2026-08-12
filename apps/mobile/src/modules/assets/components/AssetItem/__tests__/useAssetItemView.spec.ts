@@ -10,10 +10,16 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
 import { useAssetItemView } from '../useAssetItemView'
+
+const mockCopyToClipboard = vi.fn()
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
+}))
 
 const make = (overrides: Partial<DisplayableAsset> = {}): DisplayableAsset => ({
     assetId: '123',
@@ -103,5 +109,37 @@ describe('useAssetItemView', () => {
             useAssetItemView(make({ peraMetadata: { isDeleted: true } })),
         )
         expect(result.current.isDeleted).toBe(true)
+    })
+
+    describe('onCopyAssetId', () => {
+        beforeEach(() => {
+            mockCopyToClipboard.mockClear()
+        })
+
+        it('copies the asset id when copyableAssetId is on', () => {
+            const { result } = renderHook(() =>
+                useAssetItemView(make(), { copyableAssetId: true }),
+            )
+
+            result.current.onCopyAssetId?.()
+
+            expect(result.current.onCopyAssetId).toBeDefined()
+            expect(mockCopyToClipboard).toHaveBeenCalledWith('123')
+        })
+
+        it('is undefined when copyableAssetId is off', () => {
+            const { result } = renderHook(() => useAssetItemView(make()))
+            expect(result.current.onCopyAssetId).toBeUndefined()
+        })
+
+        it('is undefined for ALGO even when copyableAssetId is on', () => {
+            const { result } = renderHook(() =>
+                useAssetItemView(
+                    make({ assetId: '0', name: 'Algo', unitName: 'ALGO' }),
+                    { copyableAssetId: true },
+                ),
+            )
+            expect(result.current.onCopyAssetId).toBeUndefined()
+        })
     })
 })

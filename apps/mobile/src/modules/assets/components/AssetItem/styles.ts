@@ -55,11 +55,6 @@ export const useStyles = makeStyles(theme => {
         subtitle: {
             color: theme.colors.textGray,
         },
-        // Hug the text so the copy touchable doesn't stretch across the row's
-        // full width and swallow taps meant for the row (navigation).
-        copyableSubtitle: {
-            alignSelf: 'flex-start',
-        },
         rightSlot: {
             marginLeft: theme.spacing.md,
         },
