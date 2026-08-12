@@ -72,6 +72,11 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const appState = useRef<AppStateValue>(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
     const isForegroundCheckInFlight = useRef(false)
+    // iOS returns from a real background through `inactive`, the same state a
+    // notification banner or Face ID prompt produces — so the previous state
+    // alone cannot tell the two apart. Remember whether `background` was
+    // actually observed.
+    const hasEnteredRealBackgroundRef = useRef(false)
     // Track the lock-request version we last reacted to so that on mount we
     // don't immediately re-fire for whatever value the store happens to hold.
     const seenLockRequestVersionRef = useRef<Nullable<number>>(null)
@@ -84,13 +89,21 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         async (transitionContext?: {
             previousState: AppStateValue
             nextState: AppStateValue
+            returnedFromBackground: boolean
         }): Promise<void> => {
             if (isForegroundCheckInFlight.current) {
                 return
             }
 
             isForegroundCheckInFlight.current = true
-            setIsChecking(true)
+            // Only hide the app while deciding if it actually left the
+            // foreground. Flashing the overlay for in-place interruptions
+            // applies display:none to the whole app tree and tears down
+            // anything mounted underneath (PERA-4870). The check itself still
+            // runs either way, so lock behaviour is unchanged.
+            if (transitionContext?.returnedFromBackground === true) {
+                setIsChecking(true)
+            }
             try {
                 const expired = await checkAutoLock()
                 // One-way: only ever flip to locked. Never write `false`
@@ -211,12 +224,20 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
                     appStatePlatform,
                 )
 
+            if (nextAppState === 'background') {
+                hasEnteredRealBackgroundRef.current = true
+            }
+
             if (didLeaveForeground) {
                 recordBackground()
             } else if (didEnterForeground) {
+                const returnedFromBackground =
+                    hasEnteredRealBackgroundRef.current
+                hasEnteredRealBackgroundRef.current = false
                 void recordForeground({
                     previousState,
                     nextState: nextAppState,
+                    returnedFromBackground,
                 })
             }
 

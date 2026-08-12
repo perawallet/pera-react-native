@@ -42,6 +42,8 @@ vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
     clearAccountsStore: vi.fn(),
 }))
 
+const platformState = vi.hoisted(() => ({ OS: 'android' as 'android' | 'ios' }))
+
 vi.mock('react-native', () => ({
     AppState: {
         currentState: 'active',
@@ -49,9 +51,7 @@ vi.mock('react-native', () => ({
             remove: vi.fn(),
         })),
     },
-    Platform: {
-        OS: 'android',
-    },
+    Platform: platformState,
 }))
 
 describe('useAutoLockListener', () => {
@@ -65,6 +65,7 @@ describe('useAutoLockListener', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        platformState.OS = 'android'
         appStateChangeHandler = null
         securityStoreState.lockRequestVersion = 0
         useBottomSheetStore.setState({ isPresentationHeld: false })
@@ -492,5 +493,91 @@ describe('useAutoLockListener', () => {
 
         expect(mockCheckAutoLock).not.toHaveBeenCalled()
         expect(mockSetAutoLockStartedAt).not.toHaveBeenCalled()
+    })
+
+    describe('on iOS', () => {
+        beforeEach(() => {
+            platformState.OS = 'ios'
+        })
+
+        it('re-checks the lock on inactive->active without hiding the app behind the checking overlay', async () => {
+            const { result } = renderHook(() => useAutoLockListener())
+
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+
+            // A notification banner or Face ID prompt drives inactive->active
+            // without the app ever leaving the screen. Raising the checking
+            // overlay there applies display:none to the whole app tree and
+            // tears down whatever is mounted underneath (PERA-4870).
+            act(() => {
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('active')
+            })
+
+            expect(result.current.isChecking).toBe(false)
+
+            await waitFor(() => {
+                expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
+            })
+
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        it('still locks from an inactive->active check when the timeout expired', async () => {
+            mockCheckAutoLock.mockResolvedValue(true)
+
+            const { result } = renderHook(() => useAutoLockListener())
+
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+
+            act(() => {
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('active')
+            })
+
+            await waitFor(() => {
+                expect(result.current.isLocked).toBe(true)
+            })
+        })
+
+        it('raises the checking overlay when returning from a real background', async () => {
+            let resolveCheck: (expired: boolean) => void = () => {}
+            mockCheckAutoLock.mockImplementation(
+                () =>
+                    new Promise<boolean>(resolve => {
+                        resolveCheck = resolve
+                    }),
+            )
+
+            const { result } = renderHook(() => useAutoLockListener())
+
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+
+            // iOS leaves through inactive and returns through inactive, so the
+            // background hop is the only thing that distinguishes a real
+            // background from banner noise.
+            act(() => {
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('background')
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('active')
+            })
+
+            expect(result.current.isChecking).toBe(true)
+
+            await act(async () => {
+                resolveCheck(false)
+            })
+
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+        })
     })
 })
