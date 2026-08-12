@@ -15,24 +15,23 @@ import { type EdgeInsets } from 'react-native-safe-area-context'
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
-    modal: {
-        flex: 1,
+    overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: theme.zIndex.max,
         backgroundColor: theme.colors.background,
     },
-    // react-native-web's Modal portals straight to document.body with
-    // position: fixed; inset: 0 (see PWBottomSheet's styles.web.ts for the
-    // full explanation), which puts this prompt's DOM entirely outside
-    // AppShell.web.tsx's width-capped card — this re-applies that same cap
-    // so the prompt doesn't fill the whole expanded-tab width. No-op in the
-    // popup, which is already narrower than the cap.
+    // Defence in depth: the mount point already sits inside AppShell's capped
+    // card, so this cap is inert today — it only bites if the overlay is ever
+    // remounted outside the card (as the removed RNW Modal portal was).
     stage: {
         flex: 1,
         width: '100%',
         maxWidth: WEB_EXPANDED_CARD_MAX_WIDTH,
         alignSelf: 'center' as const,
-    },
-    root: {
-        flex: 1,
     },
     container: {
         flex: 1,

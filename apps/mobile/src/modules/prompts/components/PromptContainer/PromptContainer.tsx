@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import { usePromptContainer } from './usePromptContainer'
 import { useCallback } from 'react'
-import { useStyles } from './styles'
-import { Modal } from 'react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWView } from '@components/core'
+import { useBlockHardwareBack } from '@hooks/useBlockHardwareBack'
+import { usePromptContainer } from './usePromptContainer'
+import { useStyles } from './styles'
 
 export const PromptContainer = () => {
     const insets = useSafeAreaInsets()
@@ -32,29 +31,32 @@ export const PromptContainer = () => {
         [hidePrompt, nextPrompt?.id],
     )
 
+    useBlockHardwareBack(!!nextPrompt)
+
     if (!nextPrompt) {
         return null
     }
 
-    const PromptComponent = nextPrompt?.component
+    const PromptComponent = nextPrompt.component
 
+    // accessibilityViewIsModal: a native Modal made siblings inaccessible for
+    // free; this in-tree overlay must say so itself or VoiceOver swipes onto
+    // the tab bar underneath. iOS only — Android (sibling subtrees must opt
+    // out) and web (RNW drops this prop, and the removed Modal was the focus
+    // trap) are both still open, tracked separately.
     return (
-        <Modal
-            visible={true}
-            animationType='slide'
-            statusBarTranslucent
-            style={styles.modal}
+        <PWView
+            accessibilityViewIsModal
+            style={styles.overlay}
         >
             <PWView style={styles.stage}>
-                <GestureHandlerRootView style={styles.root}>
-                    <PWView style={styles.container}>
-                        <PromptComponent
-                            onDismiss={handleDismiss}
-                            onHide={handleHide}
-                        />
-                    </PWView>
-                </GestureHandlerRootView>
+                <PWView style={styles.container}>
+                    <PromptComponent
+                        onDismiss={handleDismiss}
+                        onHide={handleHide}
+                    />
+                </PWView>
             </PWView>
-        </Modal>
+        </PWView>
     )
 }

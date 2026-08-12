@@ -22,17 +22,22 @@ import type {
     BottomSheetRegistry,
     BottomSheetRequest,
     InternalRequest,
+    PresentationHoldOwner,
 } from '../types'
 import { getRegisteredBottomSheet } from '../registry/registry'
 
 type BottomSheetState = {
     requests: InternalRequest[]
     hostCount: number
+    /** Owners currently holding presentation; see PresentationHoldOwner. */
+    presentationHolds: PresentationHoldOwner[]
     /**
      * While true, BottomSheetManager holds NEW presentations (already-painted
-     * sheets stay mounted). Set by the app-lock guard so nothing paints under
-     * its overlay (PERA-4743); kept as a neutral flag here so this module
-     * stays free of security dependencies.
+     * sheets stay mounted). Derived from `presentationHolds` — set by the
+     * app-lock guard so nothing paints under its overlay (PERA-4743) and by
+     * the blocking-prompt overlay, which gorhom's portal would otherwise paint
+     * over (PERA-4870); kept as neutral flags here so this module stays free
+     * of security and prompt dependencies.
      */
     isPresentationHeld: boolean
 }
@@ -50,7 +55,7 @@ type BottomSheetActions = {
     remove: (id: string) => void
     registerBottomSheetHost: () => void
     unregisterBottomSheetHost: () => void
-    setPresentationHeld: (held: boolean) => void
+    setPresentationHeld: (held: boolean, owner: PresentationHoldOwner) => void
     resetState: () => void
 }
 
@@ -59,6 +64,7 @@ type BottomSheetStore = BottomSheetState & BottomSheetActions
 const initialState: BottomSheetState = {
     requests: [],
     hostCount: 0,
+    presentationHolds: [],
     isPresentationHeld: false,
 }
 
@@ -183,8 +189,18 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
         registerBottomSheetHost: () => {
             set(state => ({ hostCount: state.hostCount + 1 }))
         },
-        setPresentationHeld: (held: boolean) => {
-            set({ isPresentationHeld: held })
+        setPresentationHeld: (held: boolean, owner: PresentationHoldOwner) => {
+            set(state => {
+                const alreadyHeld = state.presentationHolds.includes(owner)
+                if (held === alreadyHeld) return {}
+                const presentationHolds = held
+                    ? [...state.presentationHolds, owner]
+                    : state.presentationHolds.filter(o => o !== owner)
+                return {
+                    presentationHolds,
+                    isPresentationHeld: presentationHolds.length > 0,
+                }
+            })
         },
         unregisterBottomSheetHost: () => {
             const hostCount = Math.max(0, get().hostCount - 1)

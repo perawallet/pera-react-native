@@ -26,7 +26,6 @@ import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
-import { PromptContainer } from '@modules/prompts'
 import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
 import { NotificationsIcon } from '@modules/messages/components/NotificationsIcon'
 import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
@@ -147,7 +146,6 @@ export const AccountScreen = () => {
                     animationType='slide'
                 />
             )}
-            <PromptContainer />
         </PWView>
     )
 }

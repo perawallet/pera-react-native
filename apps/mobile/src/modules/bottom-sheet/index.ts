@@ -16,6 +16,7 @@ export type {
     BottomSheetRequest,
     BottomSheetRegistry,
     InternalRequest,
+    PresentationHoldOwner,
 } from './types'
 
 export { useBottomSheet } from './hooks/useBottomSheet'

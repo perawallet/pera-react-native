@@ -58,20 +58,30 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const isGuardActive = isLocked || isChecking || !isInitialized
     useEffect(() => {
         setAppLockActive(isGuardActive)
-        setPresentationHeld(isGuardActive)
+        setPresentationHeld(isGuardActive, 'app-lock')
     }, [setAppLockActive, setPresentationHeld, isGuardActive])
     // Never leave the flags stuck on if the guard unmounts (route-tree swap) —
     // a stale `true` would hold sheets forever.
     useEffect(
         () => () => {
             setAppLockActive(false)
-            setPresentationHeld(false)
+            setPresentationHeld(false, 'app-lock')
         },
         [setAppLockActive, setPresentationHeld],
     )
     const appState = useRef<AppStateValue>(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
     const isForegroundCheckInFlight = useRef(false)
+    // A transition that arrives while a check is in flight must not be
+    // dropped — it may be the real background hop that should raise the
+    // overlay. Coalesce it into one re-run after the in-flight check settles.
+    const hasPendingForegroundCheck = useRef(false)
+    // Only `background` (not `inactive`) tells a real backgrounding apart from
+    // banner/Face-ID noise on iOS (PERA-4870); seed from currentState so a
+    // cold mount already in background isn't missed.
+    const hasEnteredRealBackgroundRef = useRef(
+        AppState.currentState === 'background',
+    )
     // Track the lock-request version we last reacted to so that on mount we
     // don't immediately re-fire for whatever value the store happens to hold.
     const seenLockRequestVersionRef = useRef<Nullable<number>>(null)
@@ -80,44 +90,54 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         setAutoLockStartedAt(Date.now())
     }, [setAutoLockStartedAt])
 
-    const recordForeground = useCallback(
-        async (transitionContext?: {
-            previousState: AppStateValue
-            nextState: AppStateValue
-        }): Promise<void> => {
-            if (isForegroundCheckInFlight.current) {
-                return
-            }
+    const recordForeground = useCallback(async (): Promise<void> => {
+        if (isForegroundCheckInFlight.current) {
+            hasPendingForegroundCheck.current = true
+            return
+        }
 
-            isForegroundCheckInFlight.current = true
-            setIsChecking(true)
-            try {
-                const expired = await checkAutoLock()
-                // One-way: only ever flip to locked. Never write `false`
-                // here — on iOS the biometric prompt briefly drives the app
-                // through inactive→active, and an `else` branch would unlock
-                // an already-locked app within milliseconds of showing the
-                // lock screen. (PERA-4196)
-                if (expired) {
-                    setIsLocked(true)
+        isForegroundCheckInFlight.current = true
+        try {
+            do {
+                hasPendingForegroundCheck.current = false
+                // Only hide the app while deciding if it actually left
+                // the foreground.
+                const returnedFromBackground =
+                    hasEnteredRealBackgroundRef.current
+                hasEnteredRealBackgroundRef.current = false
+                if (returnedFromBackground) {
+                    setIsChecking(true)
                 }
-            } catch (error) {
-                logger.error('Auto-lock foreground check failed', {
-                    source: 'AutoLockGuard.useAutoLockListener',
-                    phase: 'foreground',
-                    previousState: transitionContext?.previousState ?? null,
-                    nextState: transitionContext?.nextState ?? null,
-                    lockEnabled: isLocked,
-                    error,
-                })
-                // Keep current lock state on errors.
-            } finally {
-                setIsChecking(false)
-                isForegroundCheckInFlight.current = false
-            }
-        },
-        [checkAutoLock, isLocked],
-    )
+                try {
+                    const expired = await checkAutoLock()
+                    // One-way: only ever flip to locked. Never write
+                    // `false` here — on iOS the biometric prompt briefly
+                    // drives the app through inactive→active, and an
+                    // `else` branch would unlock an already-locked app
+                    // within milliseconds of showing the lock screen.
+                    // (PERA-4196)
+                    if (expired) {
+                        setIsLocked(true)
+                    }
+                } catch (error) {
+                    // No previousState/nextState here: a coalesced
+                    // re-run has no single transition to attribute the
+                    // failure to, and a stale value would misreport it.
+                    logger.error('Auto-lock foreground check failed', {
+                        source: 'AutoLockGuard.useAutoLockListener',
+                        phase: 'foreground',
+                        lockEnabled: isLocked,
+                        error,
+                    })
+                    // Keep current lock state on errors.
+                } finally {
+                    setIsChecking(false)
+                }
+            } while (hasPendingForegroundCheck.current)
+        } finally {
+            isForegroundCheckInFlight.current = false
+        }
+    }, [checkAutoLock, isLocked])
 
     const unlock = useCallback(() => {
         setIsChecking(false)
@@ -211,13 +231,14 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
                     appStatePlatform,
                 )
 
+            if (nextAppState === 'background') {
+                hasEnteredRealBackgroundRef.current = true
+            }
+
             if (didLeaveForeground) {
                 recordBackground()
             } else if (didEnterForeground) {
-                void recordForeground({
-                    previousState,
-                    nextState: nextAppState,
-                })
+                void recordForeground()
             }
 
             appState.current = nextAppState

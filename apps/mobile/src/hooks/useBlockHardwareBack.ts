@@ -1,0 +1,32 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useEffect } from 'react'
+import { BackHandler, Platform } from 'react-native'
+
+// Android's system back is JS-handled by react-navigation, so a full-screen
+// overlay that is not an OS window (no native Modal) still lets back pop the
+// screen underneath it. Swallow back while the overlay is up. Inert on iOS.
+export const useBlockHardwareBack = (isBlocking: boolean): void => {
+    useEffect(() => {
+        // react-native-web's BackHandler console.errors on every subscribe, so
+        // don't touch it off Android — back is Android-only anyway.
+        if (!isBlocking || Platform.OS !== 'android') return
+
+        const subscription = BackHandler.addEventListener(
+            'hardwareBackPress',
+            () => true,
+        )
+
+        return () => subscription.remove()
+    }, [isBlocking])
+}
