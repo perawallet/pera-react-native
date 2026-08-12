@@ -72,11 +72,12 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const appState = useRef<AppStateValue>(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
     const isForegroundCheckInFlight = useRef(false)
-    // iOS returns from a real background through `inactive`, the same state a
-    // notification banner or Face ID prompt produces — so the previous state
-    // alone cannot tell the two apart. Remember whether `background` was
-    // actually observed.
-    const hasEnteredRealBackgroundRef = useRef(false)
+    // Only `background` (not `inactive`) tells a real backgrounding apart from
+    // banner/Face-ID noise on iOS (PERA-4870); seed from currentState so a
+    // cold mount already in background isn't missed.
+    const hasEnteredRealBackgroundRef = useRef(
+        AppState.currentState === 'background',
+    )
     // Track the lock-request version we last reacted to so that on mount we
     // don't immediately re-fire for whatever value the store happens to hold.
     const seenLockRequestVersionRef = useRef<Nullable<number>>(null)
@@ -89,7 +90,6 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         async (transitionContext?: {
             previousState: AppStateValue
             nextState: AppStateValue
-            returnedFromBackground: boolean
         }): Promise<void> => {
             if (isForegroundCheckInFlight.current) {
                 return
@@ -97,11 +97,11 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
 
             isForegroundCheckInFlight.current = true
             // Only hide the app while deciding if it actually left the
-            // foreground. Flashing the overlay for in-place interruptions
-            // applies display:none to the whole app tree and tears down
-            // anything mounted underneath (PERA-4870). The check itself still
-            // runs either way, so lock behaviour is unchanged.
-            if (transitionContext?.returnedFromBackground === true) {
+            // foreground — this must read/clear after the in-flight guard, or
+            // a real background during an in-progress check loses the flag.
+            const returnedFromBackground = hasEnteredRealBackgroundRef.current
+            hasEnteredRealBackgroundRef.current = false
+            if (returnedFromBackground) {
                 setIsChecking(true)
             }
             try {
@@ -231,13 +231,9 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
             if (didLeaveForeground) {
                 recordBackground()
             } else if (didEnterForeground) {
-                const returnedFromBackground =
-                    hasEnteredRealBackgroundRef.current
-                hasEnteredRealBackgroundRef.current = false
                 void recordForeground({
                     previousState,
                     nextState: nextAppState,
-                    returnedFromBackground,
                 })
             }
 

@@ -579,5 +579,31 @@ describe('useAutoLockListener', () => {
                 expect(result.current.isChecking).toBe(false)
             })
         })
+
+        it('does not leave the overlay flag stuck after a real background, so a later banner stays hidden', async () => {
+            const { result } = renderHook(() => useAutoLockListener())
+
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+
+            act(() => {
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('background')
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('active')
+            })
+
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+
+            act(() => {
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('active')
+            })
+
+            expect(result.current.isChecking).toBe(false)
+        })
     })
 })
