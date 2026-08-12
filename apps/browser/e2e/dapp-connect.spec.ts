@@ -27,7 +27,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getNetworkConfig, Networks } from '@perawallet/wallet-core-config'
-import { clickThroughPinPrompt } from './pin-prompt'
+import { clickThroughPinPrompt, settlePinPrompt } from './pin-prompt'
 
 declare global {
     interface Window {
@@ -192,6 +192,10 @@ test.beforeAll(async () => {
         timeout: 30_000,
     })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
+
+    // Settle the security nudge before any sheet-opening test runs: while it
+    // is pending it holds every new bottom-sheet presentation.
+    await settlePinPrompt(page)
 
     dappPage = await context.newPage()
     dappPageErrors = trackPageErrors(dappPage)
