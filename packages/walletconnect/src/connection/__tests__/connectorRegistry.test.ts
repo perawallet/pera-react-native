@@ -15,6 +15,7 @@ import WalletConnect from '@perawallet/walletconnect'
 import { isRetryableError } from '@perawallet/wallet-core-shared'
 import {
     __resetRegistryForTests,
+    abandonPairing,
     ensureConnectorReady,
     forgetConnector,
     getConnector,
@@ -22,10 +23,21 @@ import {
     registerConnector,
     setConnectorHandlerBinder,
 } from '../connectorRegistry'
+import { useWalletConnectStore } from '../../store'
 import {
     WalletConnectConnectionTimeoutError,
     WalletConnectInvalidSessionError,
 } from '../../errors'
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        keyValueStorage: {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+        },
+    }),
+}))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual('@perawallet/wallet-core-shared')
@@ -83,10 +95,54 @@ describe('connectorRegistry', () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
         __resetRegistryForTests()
+        useWalletConnectStore.getState().resetState()
     })
 
     afterEach(() => {
         vi.useRealTimers()
+    })
+
+    describe('abandonPairing', () => {
+        it('tears down a pending pairing so a late session_request cannot fire its handlers', () => {
+            const pending = makeConnector('c1')
+            pending.connected = false
+            registerConnector('c1', pending)
+
+            abandonPairing('c1')
+
+            expect(pending.off).toHaveBeenCalledWith('session_request')
+            expect(pending.transportClose).toHaveBeenCalledTimes(1)
+            expect(getConnector('c1')).toBeUndefined()
+        })
+
+        it('refuses to touch a connected session', () => {
+            const connected = makeConnector('c1')
+            connected.connected = true
+            registerConnector('c1', connected)
+
+            abandonPairing('c1')
+
+            expect(connected.transportClose).not.toHaveBeenCalled()
+            expect(getConnector('c1')).toBe(connected)
+        })
+
+        it('refuses to touch a session with a persisted connection', () => {
+            const pending = makeConnector('c1')
+            pending.connected = false
+            registerConnector('c1', pending)
+            useWalletConnectStore
+                .getState()
+                .setWalletConnectConnections([{ clientId: 'c1' }])
+
+            abandonPairing('c1')
+
+            expect(pending.transportClose).not.toHaveBeenCalled()
+            expect(getConnector('c1')).toBe(pending)
+        })
+
+        it('is a no-op for an unknown clientId', () => {
+            expect(() => abandonPairing('unknown')).not.toThrow()
+        })
     })
 
     describe('ensureConnectorReady', () => {

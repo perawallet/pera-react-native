@@ -37,6 +37,7 @@ import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { PairingProgressOverlay } from '@modules/walletconnect/components/PairingProgressOverlay'
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
@@ -101,6 +102,9 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
                 <GestureHandlerRootView>
                     <MainRoutes />
                     <WebViewOverlay />
+                    {/* After WebViewOverlay so a deep-link pairing scrim
+                        paints above the in-app browser too. */}
+                    <PairingProgressOverlay />
                 </GestureHandlerRootView>
             </PWView>
         </ErrorBoundary>

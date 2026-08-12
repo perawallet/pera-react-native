@@ -87,7 +87,7 @@ describe('useWebViewNavigationGuard', () => {
         expect(result.current.onShouldStartLoadWithRequest(request(url))).toBe(
             false,
         )
-        expect(handleDeepLink).toHaveBeenCalledWith(url, false, 'deeplink')
+        expect(handleDeepLink).toHaveBeenCalledWith(url, false, 'in-app')
     })
 
     it('blocks add-contact from an untrusted page (saved labels mask addresses)', () => {
@@ -142,7 +142,7 @@ describe('useWebViewNavigationGuard', () => {
         expect(result.current.onShouldStartLoadWithRequest(request(uri))).toBe(
             false,
         )
-        expect(handleDeepLink).toHaveBeenCalledWith(uri, false, 'deeplink')
+        expect(handleDeepLink).toHaveBeenCalledWith(uri, false, 'in-app')
     })
 
     it('blocks a WC pairing deeplink fired by an untrusted origin without routing it', () => {
@@ -185,7 +185,7 @@ describe('useWebViewNavigationGuard', () => {
         expect(result.current.onShouldStartLoadWithRequest(request(url))).toBe(
             false,
         )
-        expect(handleDeepLink).toHaveBeenCalledWith(url, false, 'deeplink')
+        expect(handleDeepLink).toHaveBeenCalledWith(url, false, 'in-app')
     })
 
     it('blocks an untrusted page firing an asset transfer deeplink', () => {
@@ -426,7 +426,7 @@ describe('useWebViewNavigationGuard', () => {
             expect(
                 result.current.onShouldStartLoadWithRequest(request(url)),
             ).toBe(false)
-            expect(handleDeepLink).toHaveBeenCalledWith(url, false, 'deeplink')
+            expect(handleDeepLink).toHaveBeenCalledWith(url, false, 'in-app')
             expect(onExternalNavigation).not.toHaveBeenCalled()
         })
     })

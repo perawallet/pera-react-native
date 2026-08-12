@@ -20,6 +20,7 @@ import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { withTimeout } from '@hooks/deeplink/handlers/timeout'
 import type {
     UseWalletConnectPairingResult,
+    WalletConnectPairingOptions,
     WalletConnectPairingResult,
 } from './useWalletConnectPairing'
 
@@ -102,7 +103,13 @@ const waitForPairOutcome = (
  */
 export const useWalletConnectPairing = (): UseWalletConnectPairingResult => {
     const pair = useCallback(
-        async (uri: string): Promise<WalletConnectPairingResult> => {
+        async (
+            uri: string,
+            // Accepted for signature parity with native and ignored: the
+            // extension never deep-links out to a mobile browser, so no
+            // return context is ever recorded on web.
+            _options?: WalletConnectPairingOptions,
+        ): Promise<WalletConnectPairingResult> => {
             const correlationId = generateOrderedUniqueId()
             const outcome = waitForPairOutcome(
                 correlationId,

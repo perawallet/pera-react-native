@@ -13,7 +13,11 @@
 // @vitest-environment node
 
 import { parseDeeplink } from '../parser'
-import { parseWalletConnectUri } from '../walletconnect-parser'
+import {
+    isWalletConnectFocusHint,
+    isWalletConnectScheme,
+    parseWalletConnectUri,
+} from '../walletconnect-parser'
 import { DeeplinkType } from '../types'
 
 describe('WalletConnect Parser', () => {
@@ -139,6 +143,120 @@ describe('WalletConnect Parser', () => {
             expect(
                 parseWalletConnectUri('algorand-wc:test@1?key=test'),
             ).toBeNull()
+        })
+    })
+
+    describe('classification helpers', () => {
+        it('isWalletConnectScheme recognizes every WC scheme and nothing else', () => {
+            expect(isWalletConnectScheme('wc:t@1?bridge=x&key=y')).toBe(true)
+            expect(isWalletConnectScheme('perawallet-wc://wc?uri=x')).toBe(true)
+            expect(isWalletConnectScheme('algorand-wc:t@1?key=y')).toBe(true)
+            expect(isWalletConnectScheme('perawallet://app/home')).toBe(false)
+            expect(isWalletConnectScheme('https://perawallet.app')).toBe(false)
+        })
+
+        it('isWalletConnectFocusHint matches only bridge-less topic-less focus signals', () => {
+            expect(
+                isWalletConnectFocusHint('wc://?browser=Android%20Browser'),
+            ).toBe(true)
+            expect(
+                isWalletConnectFocusHint('perawallet-wc://?browser=chrome'),
+            ).toBe(true)
+            // WC v2 pairing URIs and bridge-less v1 URIs carry a
+            // topic@version segment — they are failed pairings, not hints.
+            expect(
+                isWalletConnectFocusHint(
+                    'wc:abc@2?relay-protocol=irn&symKey=ff',
+                ),
+            ).toBe(false)
+            expect(isWalletConnectFocusHint('wc:t@1?key=y')).toBe(false)
+            // A mangled wrapper still names a uri= — a failed pairing too.
+            expect(
+                isWalletConnectFocusHint('perawallet-wc://wc?uri=%E0%A4%A'),
+            ).toBe(false)
+            expect(isWalletConnectFocusHint('perawallet://app/home')).toBe(
+                false,
+            )
+        })
+    })
+
+    describe('partially-encoded wrapper URIs', () => {
+        it('keeps the key param of an unencoded inner URI instead of truncating at the first &', () => {
+            const result = parseWalletConnectUri(
+                'perawallet-wc://wc?uri=wc:t@1?bridge=https://bridge.example&key=abc',
+            )
+            expect(result?.uri).toBe(
+                'wc:t@1?bridge=https://bridge.example&key=abc',
+            )
+        })
+
+        it('strips known wrapper params appended after an unencoded inner URI', () => {
+            const result = parseWalletConnectUri(
+                'perawallet-wc://wc?uri=wc:t@1?bridge=https://bridge.example&key=abc&browser=Safari&singleAccount=true&selectedAccount=X',
+            )
+            expect(result?.uri).toBe(
+                'wc:t@1?bridge=https://bridge.example&key=abc',
+            )
+            expect(result?.browserName).toBe('Safari')
+        })
+
+        it('keeps a fully-encoded inner URI byte-identical when wrapper params follow', () => {
+            const inner = 'wc:t@1?bridge=https://bridge.example&key=abc'
+            const result = parseWalletConnectUri(
+                'perawallet-wc://wc?uri=' +
+                    encodeURIComponent(inner) +
+                    '&browser=chrome',
+            )
+            expect(result?.uri).toBe(inner)
+            expect(result?.browserName).toBe('chrome')
+        })
+    })
+
+    describe('browserName extraction (iOS @perawallet/connect wrapper)', () => {
+        const inner = 'wc:test@1?bridge=test&key=test'
+
+        it('extracts the browser param from the wrapper', () => {
+            const wrapped =
+                'perawallet-wc://wc?uri=' +
+                encodeURIComponent(inner) +
+                '&browser=chrome'
+            const result = parseWalletConnectUri(wrapped)
+            expect(result?.uri).toBe(inner)
+            expect(result?.browserName).toBe('chrome')
+        })
+
+        it('decodes a percent-encoded browser value', () => {
+            const wrapped =
+                'perawallet-wc://wc?uri=' +
+                encodeURIComponent(inner) +
+                '&browser=Mobile%20Safari'
+            expect(parseWalletConnectUri(wrapped)?.browserName).toBe(
+                'Mobile Safari',
+            )
+        })
+
+        it('leaves browserName undefined when the wrapper has no browser param', () => {
+            const wrapped =
+                'perawallet-wc://wc?uri=' + encodeURIComponent(inner)
+            expect(parseWalletConnectUri(wrapped)?.browserName).toBeUndefined()
+        })
+
+        it('ignores a browser param inside a raw (non-wrapper) WC URI', () => {
+            const result = parseWalletConnectUri(
+                'wc:test@1?bridge=test&key=test&browser=chrome',
+            )
+            expect(result).not.toBeNull()
+            expect(result?.browserName).toBeUndefined()
+        })
+
+        it('still parses when the browser param has malformed percent-encoding', () => {
+            const wrapped =
+                'perawallet-wc://wc?uri=' +
+                encodeURIComponent(inner) +
+                '&browser=%E0%A4%A'
+            const result = parseWalletConnectUri(wrapped)
+            expect(result?.uri).toBe(inner)
+            expect(result?.browserName).toBeUndefined()
         })
     })
 })

@@ -45,7 +45,9 @@ import {
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { Networks, type Optional } from '@perawallet/wallet-core-shared'
+import { Linking } from 'react-native'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { useReturnToDappStore } from '@modules/walletconnect/stores/useReturnToDappStore'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
@@ -405,6 +407,272 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
         },
         SLOW_TEST_TIMEOUT_MS,
     )
+
+    describe('Return to the dApp (PERA-4856)', () => {
+        const approveViaUi = async (accountName: string) => {
+            const findConnectButton = (): Optional<HTMLButtonElement> =>
+                screen
+                    .getAllByRole('button')
+                    .find(b =>
+                        (b.textContent ?? '').includes('common.connect.label'),
+                    ) as Optional<HTMLButtonElement>
+            await waitFor(() => {
+                expect(findConnectButton()).toBeTruthy()
+            })
+            const matches = screen.getAllByText((_, node) =>
+                (node?.textContent ?? '').includes(accountName),
+            )
+            const leaf =
+                matches.find(el => el.children.length === 0) ?? matches[0]
+            fireEvent.click(leaf.closest('button') as HTMLButtonElement)
+            await waitFor(() => {
+                expect(findConnectButton()!.disabled).toBe(false)
+            })
+            fireEvent.click(findConnectButton()!)
+        }
+
+        const findReturnButton = (): Optional<HTMLButtonElement> =>
+            screen
+                .getAllByRole('button')
+                .find(b =>
+                    (b.textContent ?? '').includes(
+                        'walletconnect.request.success_sheet_return_to_dapp',
+                    ),
+                ) as Optional<HTMLButtonElement>
+
+        beforeEach(() => {
+            useReturnToDappStore.getState().resetState()
+            useWalletConnectStore.getState().pruneDappOrigins([])
+        })
+
+        it(
+            'Given a browser-initiated pairing, when the user approves, then the success sheet offers Return to the dApp; tapping it opens the browser, clears the pairing context, and records the session origin',
+            async () => {
+                render(
+                    <>
+                        <WalletConnectProvider>
+                            <div data-testid='child' />
+                        </WalletConnectProvider>
+                        <BottomSheetManager />
+                    </>,
+                )
+
+                const connector = await driveSessionRequest({
+                    peerMeta: {
+                        name: 'Browser dApp',
+                        description: '',
+                        url: 'https://browser-dapp.example',
+                        icons: [],
+                    },
+                    permissions: ['algo_signTxn'],
+                })
+                // What pair() records when the wc: link arrived via an OS
+                // deep link with the iOS wrapper's browser hint.
+                useReturnToDappStore
+                    .getState()
+                    .setReturnContext(connector.clientId, {
+                        origin: 'external-browser',
+                        browserName: 'Chrome',
+                    })
+
+                await approveViaUi(SIGNING_ACCOUNT_A.name as string)
+
+                await waitFor(() => {
+                    expect(findReturnButton()).toBeTruthy()
+                })
+                fireEvent.click(findReturnButton()!)
+
+                expect(Linking.openURL).toHaveBeenCalledWith(
+                    'googlechromes://browser-dapp.example',
+                )
+                // Sheet settled: pairing context consumed, session origin
+                // recorded for the sign flow.
+                await waitFor(() => {
+                    expect(
+                        useReturnToDappStore.getState().returnContexts[
+                            connector.clientId
+                        ],
+                    ).toBeUndefined()
+                })
+                expect(
+                    useWalletConnectStore.getState().dappOrigins[
+                        connector.clientId
+                    ],
+                ).toMatchObject({
+                    source: 'external-browser',
+                    browserName: 'Chrome',
+                })
+            },
+            SLOW_TEST_TIMEOUT_MS,
+        )
+
+        it(
+            'Given a QR-initiated pairing (no return context), when the user approves, then the success sheet offers only Close and records no origin',
+            async () => {
+                render(
+                    <>
+                        <WalletConnectProvider>
+                            <div data-testid='child' />
+                        </WalletConnectProvider>
+                        <BottomSheetManager />
+                    </>,
+                )
+
+                const connector = await driveSessionRequest({
+                    peerMeta: {
+                        name: 'QR dApp',
+                        description: '',
+                        url: 'https://qr-dapp.example',
+                        icons: [],
+                    },
+                    permissions: ['algo_signTxn'],
+                })
+
+                await approveViaUi(SIGNING_ACCOUNT_A.name as string)
+
+                const findCloseButton = (): Optional<HTMLButtonElement> =>
+                    screen
+                        .getAllByRole('button')
+                        .find(b =>
+                            (b.textContent ?? '').includes(
+                                'common.close.label',
+                            ),
+                        ) as Optional<HTMLButtonElement>
+                await waitFor(() => {
+                    expect(findCloseButton()).toBeTruthy()
+                })
+                expect(findReturnButton()).toBeUndefined()
+
+                fireEvent.click(findCloseButton()!)
+                await waitFor(() => {
+                    expect(
+                        useWalletConnectStore.getState().dappOrigins[
+                            connector.clientId
+                        ],
+                    ).toBeUndefined()
+                })
+            },
+            SLOW_TEST_TIMEOUT_MS,
+        )
+
+        it(
+            'Given an in-app pairing (Discover / in-app browser), when the user approves, then no success sheet appears and the origin is persisted as in-app',
+            async () => {
+                render(
+                    <>
+                        <WalletConnectProvider>
+                            <div data-testid='child' />
+                        </WalletConnectProvider>
+                        <BottomSheetManager />
+                    </>,
+                )
+
+                const connector = await driveSessionRequest({
+                    peerMeta: {
+                        name: 'Discover dApp',
+                        description: '',
+                        url: 'https://discover-dapp.example',
+                        icons: [],
+                    },
+                    permissions: ['algo_signTxn'],
+                })
+                // What pair() records when the wc: link came from the
+                // in-app browser bridge or a webview-intercepted link.
+                useReturnToDappStore
+                    .getState()
+                    .setReturnContext(connector.clientId, {
+                        origin: 'in-app',
+                    })
+
+                await approveViaUi(SIGNING_ACCOUNT_A.name as string)
+
+                await waitFor(() => {
+                    expect(connector.approveSessionCalls).toHaveLength(1)
+                })
+                await waitFor(() => {
+                    expect(
+                        useWalletConnectStore.getState().sessionRequests,
+                    ).toHaveLength(0)
+                })
+
+                // The dApp is right behind the sheet host — nothing pops.
+                expect(screen.queryByTestId('wc_connection_success')).toBeNull()
+                // Context consumed immediately; origin persisted for the
+                // sign flow's own suppression.
+                expect(
+                    useReturnToDappStore.getState().returnContexts[
+                        connector.clientId
+                    ],
+                ).toBeUndefined()
+                expect(
+                    useWalletConnectStore.getState().dappOrigins[
+                        connector.clientId
+                    ],
+                ).toMatchObject({ source: 'in-app' })
+            },
+            SLOW_TEST_TIMEOUT_MS,
+        )
+
+        it(
+            'Given a browser-initiated pairing, when the user rejects it, then the pairing context is cleared and no origin is recorded',
+            async () => {
+                render(
+                    <>
+                        <WalletConnectProvider>
+                            <div data-testid='child' />
+                        </WalletConnectProvider>
+                        <BottomSheetManager />
+                    </>,
+                )
+
+                const connector = await driveSessionRequest({
+                    peerMeta: {
+                        name: 'Rejected Browser dApp',
+                        description: '',
+                        url: 'https://rejected-dapp.example',
+                        icons: [],
+                    },
+                    permissions: ['algo_signTxn'],
+                })
+                useReturnToDappStore
+                    .getState()
+                    .setReturnContext(connector.clientId, {
+                        origin: 'external-browser',
+                        browserName: 'Chrome',
+                    })
+
+                const findCancelButton = (): Optional<HTMLButtonElement> =>
+                    screen
+                        .getAllByRole('button')
+                        .find(b =>
+                            (b.textContent ?? '').includes(
+                                'common.cancel.label',
+                            ),
+                        ) as Optional<HTMLButtonElement>
+                await waitFor(() => {
+                    expect(findCancelButton()).toBeTruthy()
+                })
+                fireEvent.click(findCancelButton()!)
+
+                await waitFor(() => {
+                    expect(connector.rejectSessionCalls).toBe(1)
+                })
+                await waitFor(() => {
+                    expect(
+                        useReturnToDappStore.getState().returnContexts[
+                            connector.clientId
+                        ],
+                    ).toBeUndefined()
+                })
+                expect(
+                    useWalletConnectStore.getState().dappOrigins[
+                        connector.clientId
+                    ],
+                ).toBeUndefined()
+            },
+            SLOW_TEST_TIMEOUT_MS,
+        )
+    })
 
     it(
         'Given an established WC session, when the user disconnects via useWalletConnect.disconnect, then connector.killSession is called and the connection is removed from the store',

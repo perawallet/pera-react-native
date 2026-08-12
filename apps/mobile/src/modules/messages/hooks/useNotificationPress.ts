@@ -63,7 +63,7 @@ export const useNotificationPress = (): UseNotificationPressResult => {
                 return
             }
             if (notification.url && isValidDeepLink(notification.url)) {
-                void handleDeepLink(notification.url, true, 'deeplink')
+                void handleDeepLink(notification.url, true, 'notification')
             }
         },
         [isValidDeepLink, handleDeepLink, handleMultisigNotification],

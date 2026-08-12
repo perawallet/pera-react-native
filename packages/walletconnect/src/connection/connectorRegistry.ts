@@ -18,6 +18,7 @@ import {
     WalletConnectInvalidSessionError,
 } from '../errors'
 import { useConnectorRegistryStore } from '../store/connectorRegistryStore'
+import { useWalletConnectStore } from '../store'
 
 /**
  * Registry of live WalletConnect v1 connectors, one bridge WebSocket each.
@@ -111,6 +112,29 @@ const teardownConnector = (connector: WalletConnect): void => {
 export const forgetConnector = (clientId: string): void => {
     useConnectorRegistryStore.getState().forgetConnector(clientId)
     readinessInFlight.delete(clientId)
+}
+
+/**
+ * Deterministically kills a pairing that never produced a session. A timed-out
+ * pairing's connector keeps its `session_request` handler bound for the full
+ * request TTL, so a slow dApp response can pop a "ghost" approval sheet
+ * minutes after the user was told pairing failed — unbinding the handlers and
+ * closing the transport is the only way to prevent that (`forgetConnector`
+ * alone leaves them bound). Refuses to touch a connector that connected or
+ * has a persisted session: abandonment is strictly for failed pairings.
+ */
+export const abandonPairing = (clientId: string): void => {
+    const connector = useConnectorRegistryStore.getState().connectors[clientId]
+    if (!connector) return
+    if (connector.connected) return
+    const hasStoredConnection = useWalletConnectStore
+        .getState()
+        .walletConnectConnections.some(
+            connection => connection.clientId === clientId,
+        )
+    if (hasStoredConnection) return
+    teardownConnector(connector)
+    forgetConnector(clientId)
 }
 
 /** Resolves once `connector`'s socket reports open, or rejects on timeout. */

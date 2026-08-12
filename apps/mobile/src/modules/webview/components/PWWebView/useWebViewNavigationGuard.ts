@@ -194,7 +194,7 @@ export const useWebViewNavigationGuard = ({
                     )
                     return false
                 }
-                void handleDeepLink(url, false, 'deeplink')
+                void handleDeepLink(url, false, 'in-app')
                 return false
             }
 

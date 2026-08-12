@@ -93,6 +93,20 @@ describe('ConfirmActionContent', () => {
         await expect(promise).resolves.toBe('delete')
     })
 
+    it('renders the source image instead of the vector icon when iconUrl is set', () => {
+        render(
+            <BottomSheetIdContext.Provider value='sheet-1'>
+                <ConfirmActionContent
+                    {...baseProps}
+                    testID='confirm'
+                    icon='check'
+                    iconUrl='https://dapp.example.org/logo.png'
+                />
+            </BottomSheetIdContext.Provider>,
+        )
+        expect(screen.getByTestId('confirm-icon-image')).toBeTruthy()
+    })
+
     it('renders a ReactNode message', () => {
         render(
             <BottomSheetIdContext.Provider value='sheet-1'>

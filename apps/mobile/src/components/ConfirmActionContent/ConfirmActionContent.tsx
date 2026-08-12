@@ -23,8 +23,11 @@ import type { ReactNode } from 'react'
 export type ConfirmActionContentProps<TResult = boolean> = {
     icon?: IconName
     iconVariant?: PWIconVariant
+    /** Remote image (e.g. a dApp logo) shown in place of `icon` when set. */
+    iconUrl?: string
     title?: string
     message?: ReactNode
+    isMessageCentered?: boolean
     confirmLabel?: string
     cancelLabel?: string
     tertiaryLabel?: string
@@ -45,8 +48,10 @@ export type ConfirmActionContentProps<TResult = boolean> = {
 export const ConfirmActionContent = <TResult = boolean,>({
     icon,
     iconVariant = 'primary',
+    iconUrl,
     title,
     message,
+    isMessageCentered,
     confirmLabel,
     cancelLabel,
     tertiaryLabel,
@@ -72,8 +77,10 @@ export const ConfirmActionContent = <TResult = boolean,>({
         <ConfirmActionLayout
             icon={icon}
             iconVariant={iconVariant}
+            iconUrl={iconUrl}
             title={title}
             message={message}
+            isMessageCentered={isMessageCentered}
             confirmLabel={confirmLabel}
             cancelLabel={cancelLabel}
             tertiaryLabel={tertiaryLabel}

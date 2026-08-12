@@ -36,6 +36,7 @@ export type PWImageProps = {
     containerStyle?: StyleProp<ViewStyle>
     placeholderStyle?: StyleProp<ImageStyle>
     resizeMode?: 'cover' | 'contain' | 'center' | 'stretch' | 'repeat'
+    testID?: string
     onLoad?: ImageProps['onLoad']
     onError?: ImageProps['onError']
     PlaceholderContent?: React.ReactElement
@@ -78,6 +79,7 @@ export const PWImage = ({
     width,
     height,
     cachePolicy = 'memory-disk',
+    testID,
 }: PWImageProps) => {
     const styles = useStyles()
     const [isLoading, setIsLoading] = useState(true)
@@ -116,7 +118,10 @@ export const PWImage = ({
     ]
 
     return (
-        <View style={imageStyle}>
+        <View
+            style={imageStyle}
+            testID={testID}
+        >
             <Image
                 source={source as ImageSource}
                 style={styles.image}

@@ -157,6 +157,8 @@
             "body_generic": "No pudimos procesar el enlace. Vuelve a intentarlo.",
             "title_walletconnect": "Error de WalletConnect",
             "body_walletconnect": "No pudimos conectar con la dApp. La sesión puede haber caducado o el bridge puede estar inaccesible.",
+            "title_wc_unsupported": "Enlace de conexión no compatible",
+            "body_wc_unsupported": "Pera no puede usar este enlace de WalletConnect. Vuelve a conectar desde la dApp e inténtalo de nuevo.",
             "title_keyreg": "No se pudo preparar el registro de clave",
             "body_keyreg": "No pudimos crear la transacción de registro de clave.",
             "body_keyreg_unknown_account": "Este registro de clave es para una cuenta que no tienes en este wallet. Añade primero la cuenta y vuelve a escanear.",
@@ -2600,6 +2602,9 @@
         "menu": "Menú"
     },
     "walletconnect": {
+        "pairing": {
+            "connecting": "Conectando con la dApp..."
+        },
         "request": {
             "title": "{{name}} quiere conectarse a tu cuenta",
             "permissions_title_one": "Se ha solicitado {{count}} permiso",
@@ -2610,6 +2615,8 @@
             "accounts_title": "SELECCIONAR CUENTAS",
             "success_sheet_title": "Te has conectado a {{name}}",
             "success_sheet_body": "Vuelve a {{name}} para continuar y finalizar la operación. Puedes ver todas las sesiones conectadas en la página de ajustes correspondiente.",
+            "success_sheet_return_to_dapp": "Volver a {{name}}",
+            "success_sheet_return_to_dapp_generic": "Volver a la dApp",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
             "networks_betanet": "Betanet",

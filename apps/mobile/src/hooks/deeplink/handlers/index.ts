@@ -32,3 +32,8 @@ export type {
 } from './useAssetOptInDeeplink'
 export { useLocaleTourDeeplink } from './useLocaleTourDeeplink'
 export type { LocaleTourDeeplinkHandler } from '@modules/locale-tour/types'
+export { useWalletConnectDeeplink } from './useWalletConnectDeeplink'
+export type {
+    WalletConnectDeeplinkHandler,
+    WalletConnectDeeplinkParams,
+} from './useWalletConnectDeeplink'

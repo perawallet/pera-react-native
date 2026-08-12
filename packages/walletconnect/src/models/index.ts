@@ -73,16 +73,46 @@ export type WalletConnectSessionRequest = {
     createdAt?: number
 }
 
+/**
+ * Where a WC pairing entered the wallet. Post-action sheets key off this:
+ * 'external-browser' gets the "Return to the dApp" hand-off, 'in-app'
+ * (Discover / in-app browser) suppresses the sheets entirely — the dApp is
+ * right behind them — and 'qr' (desktop dApps, pasted links) keeps the
+ * plain sheet as the only feedback surface.
+ */
+export type WalletConnectPairingOriginSource =
+    | 'external-browser'
+    | 'in-app'
+    | 'qr'
+
+/** Recorded at approval time, keyed by the session's clientId. */
+export type WalletConnectDappOrigin = {
+    source: WalletConnectPairingOriginSource
+    /** iOS wrapper's `browser=` hint; absent on Android (raw wc: intent). */
+    browserName?: string
+    /** Epoch ms, stamped by `setDappOrigin`. */
+    createdAt: number
+}
+
 export type WalletConnectStore = BaseStoreState & {
     walletConnectConnections: WalletConnectConnection[]
     sessionRequests: WalletConnectSessionRequest[]
     /** Transient — the most recent error to surface in the WC error bottom sheet. */
     connectionError: Nullable<Error>
+    /** Persisted, keyed by the session's clientId — see `WalletConnectDappOrigin`. */
+    dappOrigins: Record<string, WalletConnectDappOrigin>
     setWalletConnectConnections: (
         walletConnectConnections: WalletConnectConnection[],
     ) => void
     setSessionRequests: (sessionRequests: WalletConnectSessionRequest[]) => void
     setConnectionError: (connectionError: Nullable<Error>) => void
+    setDappOrigin: (
+        clientId: string,
+        origin: Omit<WalletConnectDappOrigin, 'createdAt'>,
+    ) => void
+    removeDappOrigin: (clientId: string) => void
+    /** Drops every origin whose clientId is not in `retainedClientIds`. */
+    pruneDappOrigins: (retainedClientIds: string[]) => void
 }
 
 export type WalletConnectTransactionPayload = {

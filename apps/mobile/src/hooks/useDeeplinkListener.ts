@@ -14,6 +14,11 @@ import { useEffect } from 'react'
 import { Linking } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useDeepLink } from './useDeepLink'
+import {
+    isWalletConnectFocusHint,
+    isWalletConnectScheme,
+} from './deeplink/walletconnect-parser'
+import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
 
 // Every layout mounts this hook, so several instances coexist and each fires
 // for the same URL. The guards below are module-level so a link is handled once.
@@ -46,8 +51,27 @@ const isDuplicateUrl = (url: string): boolean => {
 
 export const useDeeplinkListener = () => {
     const { handleDeepLink, isValidDeepLink } = useDeepLink()
+    const showError = useDeeplinkErrorHandler()
 
     useEffect(() => {
+        // Dedupe runs BEFORE validation so the unsupported-URI toast fires
+        // once despite every mounted layout receiving the same event.
+        const shouldDispatch = (url: string): boolean => {
+            if (isDuplicateUrl(url)) return false
+            if (isValidDeepLink(url)) return true
+            // Unparseable wc-schemed links (WC v2, bridge-less v1, mangled
+            // wrappers) get a toast instead of silence. Focus hints only
+            // exist to foreground the wallet, so they stay silent.
+            if (isWalletConnectScheme(url) && !isWalletConnectFocusHint(url)) {
+                logger.warn('Deeplink: unsupported WalletConnect URI dropped')
+                showError({
+                    variant: 'walletconnect_unsupported',
+                    parsedType: 'WALLET_CONNECT',
+                })
+            }
+            return false
+        }
+
         const handleInitialUrl = async () => {
             try {
                 const initialUrl = await Linking.getInitialURL()
@@ -58,10 +82,7 @@ export const useDeeplinkListener = () => {
                         initialUrl,
                     })
 
-                    if (
-                        isValidDeepLink(initialUrl) &&
-                        !isDuplicateUrl(initialUrl)
-                    ) {
+                    if (shouldDispatch(initialUrl)) {
                         // Small delay to ensure navigation is ready
                         setTimeout(() => {
                             void handleDeepLink(initialUrl, false, 'deeplink')
@@ -78,7 +99,7 @@ export const useDeeplinkListener = () => {
         const subscription = Linking.addEventListener('url', event => {
             logger.debug('Deeplink: URL event (warm start)', { url: event.url })
 
-            if (isValidDeepLink(event.url) && !isDuplicateUrl(event.url)) {
+            if (shouldDispatch(event.url)) {
                 void handleDeepLink(event.url, false, 'deeplink')
             }
         })
@@ -86,5 +107,5 @@ export const useDeeplinkListener = () => {
         return () => {
             subscription.remove()
         }
-    }, [handleDeepLink, isValidDeepLink])
+    }, [handleDeepLink, isValidDeepLink, showError])
 }

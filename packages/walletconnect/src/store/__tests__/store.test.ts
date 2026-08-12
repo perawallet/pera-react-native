@@ -121,6 +121,91 @@ describe('WalletConnectStore', () => {
         expect(result.current.sessionRequests).toEqual([])
     })
 
+    describe('dappOrigins', () => {
+        it('records and removes an origin keyed by clientId', async () => {
+            const { useWalletConnectStore } = await import('../store')
+            const { result } = renderHook(() => useWalletConnectStore())
+
+            act(() => {
+                result.current.setDappOrigin('client-1', {
+                    source: 'external-browser',
+                    browserName: 'Chrome',
+                })
+            })
+            expect(result.current.dappOrigins['client-1']).toMatchObject({
+                source: 'external-browser',
+                browserName: 'Chrome',
+            })
+
+            act(() => {
+                result.current.removeDappOrigin('client-1')
+            })
+            expect(result.current.dappOrigins['client-1']).toBeUndefined()
+        })
+
+        it('persists dappOrigins alongside connections', async () => {
+            const { useWalletConnectStore } = await import('../store')
+            const { result } = renderHook(() => useWalletConnectStore())
+
+            act(() => {
+                result.current.setDappOrigin('client-1', {
+                    source: 'external-browser',
+                })
+            })
+
+            const persisted = mockStorage.get('wallet-connect-store')
+            const parsed = JSON.parse(persisted!)
+            expect(parsed.state.dappOrigins['client-1']).toMatchObject({
+                source: 'external-browser',
+            })
+        })
+
+        it('records in-app and qr origins (post-action sheets key off these)', async () => {
+            const { useWalletConnectStore } = await import('../store')
+            const { result } = renderHook(() => useWalletConnectStore())
+
+            act(() => {
+                result.current.setDappOrigin('client-1', { source: 'in-app' })
+                result.current.setDappOrigin('client-2', { source: 'qr' })
+            })
+
+            expect(result.current.dappOrigins['client-1'].source).toBe('in-app')
+            expect(result.current.dappOrigins['client-2'].source).toBe('qr')
+        })
+
+        it('prunes origins whose clientId is not in the retained set', async () => {
+            const { useWalletConnectStore } = await import('../store')
+            const { result } = renderHook(() => useWalletConnectStore())
+
+            act(() => {
+                result.current.setDappOrigin('kept', {
+                    source: 'external-browser',
+                })
+                result.current.setDappOrigin('dropped', {
+                    source: 'external-browser',
+                })
+                result.current.pruneDappOrigins(['kept'])
+            })
+
+            expect(result.current.dappOrigins['kept']).toBeDefined()
+            expect(result.current.dappOrigins['dropped']).toBeUndefined()
+        })
+
+        it('clears origins on resetState', async () => {
+            const { useWalletConnectStore } = await import('../store')
+            const { result } = renderHook(() => useWalletConnectStore())
+
+            act(() => {
+                result.current.setDappOrigin('client-1', {
+                    source: 'external-browser',
+                })
+                result.current.resetState()
+            })
+
+            expect(result.current.dappOrigins).toEqual({})
+        })
+    })
+
     it('registers resetState and clearStorage callbacks', async () => {
         const { useWalletConnectStore } = await import('../store')
 

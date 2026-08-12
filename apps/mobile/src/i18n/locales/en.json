@@ -157,6 +157,8 @@
             "body_generic": "We couldn't process the link. Please try again.",
             "title_walletconnect": "WalletConnect failed",
             "body_walletconnect": "We couldn't connect to the dApp. The session may be expired or the bridge may be unreachable.",
+            "title_wc_unsupported": "Connection link not supported",
+            "body_wc_unsupported": "This WalletConnect link can't be used by Pera. Please reconnect from the dApp and try again.",
             "title_keyreg": "Couldn't prepare key registration",
             "body_keyreg": "We couldn't build the key-registration transaction.",
             "body_keyreg_unknown_account": "This key registration is for an account you don't have in this wallet. Add the account first, then scan again.",
@@ -2600,6 +2602,9 @@
         "menu": "Menu"
     },
     "walletconnect": {
+        "pairing": {
+            "connecting": "Connecting to the dApp..."
+        },
         "request": {
             "title": "{{name}} wants to connect to your account",
             "permissions_title_one": "Requested {{count}} permission",
@@ -2610,6 +2615,8 @@
             "accounts_title": "SELECT ACCOUNTS",
             "success_sheet_title": "You are connected to {{name}}",
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
+            "success_sheet_return_to_dapp": "Return to {{name}}",
+            "success_sheet_return_to_dapp_generic": "Return to the dApp",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
             "networks_betanet": "Betanet",

@@ -54,6 +54,15 @@ export type DeeplinkType =
     | (typeof DeeplinkType)[keyof typeof DeeplinkType]
     | DevLocaleTourDeeplinkType
 
+/**
+ * Where a link entered the app. 'deeplink' means the OS Linking layer only
+ * (a real external deep link, e.g. from a mobile browser) — webview-initiated
+ * navigations must use 'in-app' and push-notification taps 'notification',
+ * so handlers keyed on 'deeplink' (return-to-dapp, pairing overlay) never
+ * fire for links that originated inside the app.
+ */
+export type LinkSource = 'qr' | 'deeplink' | 'in-app' | 'notification'
+
 export interface ParsedDeeplink {
     type: DeeplinkType
     sourceUrl: string
@@ -136,6 +145,12 @@ export interface RecoverAddressDeeplink extends ParsedDeeplink {
 export interface WalletConnectDeeplink extends ParsedDeeplink {
     type: typeof DeeplinkType.WALLET_CONNECT
     uri: string // Decoded WalletConnect URI
+    /**
+     * Present only when the iOS `@perawallet/connect` wrapper
+     * (`perawallet-wc://wc?uri=...&browser=<name>`) named the initiating
+     * mobile browser. Android sends the raw wc: URI with no wrapper.
+     */
+    browserName?: string
 }
 
 export interface AssetOptInDeeplink extends ParsedDeeplink {

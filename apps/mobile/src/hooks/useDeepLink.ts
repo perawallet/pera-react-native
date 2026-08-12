@@ -10,12 +10,13 @@
  limitations under the License
  */
 
+import { useCallback, useRef } from 'react'
 import { Linking } from 'react-native'
 import { useToast } from './useToast'
 import { ALGO_ASSET_ID, logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { isDevLocaleTourDeeplink } from './deeplink/dev-locale-tour-parser'
-import { DeeplinkType } from './deeplink/types'
+import { DeeplinkType, type LinkSource } from './deeplink/types'
 import {
     AccountTypes,
     useAccountsStore,
@@ -23,7 +24,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { usePendingSignaturesSheet } from '@modules/multisig/hooks/usePendingSignaturesSheet'
-import { useWalletConnectPairing } from '@modules/walletconnect/hooks/useWalletConnectPairing'
 import {
     isValidAlgorandAddress,
     microAlgosToAlgos,
@@ -51,31 +51,39 @@ import {
     usePeraWebImportDeeplink,
     useRecoverAddressDeeplink,
     useSendFundsDeeplink,
+    useWalletConnectDeeplink,
 } from './deeplink/handlers'
 import { useDeeplinkErrorHandler } from './deeplink/handlers/useDeeplinkErrorHandler'
 
-type LinkSource = 'qr' | 'deeplink'
+type HandleDeepLink = (
+    url: string,
+    replaceCurrentScreen: boolean | undefined,
+    source: LinkSource,
+    onError?: () => void,
+    onSuccess?: () => void,
+    onConnectionError?: () => void,
+) => Promise<void>
 
 type UseDeepLinkResult = {
     isValidDeepLink: (url: string) => boolean
-    handleDeepLink: (
-        url: string,
-        replaceCurrentScreen: boolean | undefined,
-        source: LinkSource,
-        onError?: () => void,
-        onSuccess?: () => void,
-        onConnectionError?: () => void,
-    ) => Promise<void>
+    handleDeepLink: HandleDeepLink
     parseDeeplink: typeof parseDeeplink
     buildAccountDeeplink: typeof buildAccountDeeplink
     buildDeeplink: (input: BuildDeeplinkInput) => string
+}
+
+// Pure — hoisted so consumers get a stable identity. Effects in
+// `useDeeplinkListener` depend on it; a per-render arrow tore down and
+// re-registered the `Linking` subscription on every render of every layout.
+const isValidDeepLink = (url: string): boolean => {
+    if (isValidAlgorandAddress(url)) return true
+    return parseDeeplink(url) !== null
 }
 
 export const useDeepLink = (): UseDeepLinkResult => {
     const { errorToast, infoToast } = useToast()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { t } = useLanguage()
-    const { pair } = useWalletConnectPairing()
     const { requestByType } = useBottomSheetStore()
     const { showSignRequest } = usePendingSignaturesSheet()
     const isPeraCardEnabled = useIsPeraCardEnabled()
@@ -89,11 +97,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const optInAsset = useAssetOptInDeeplink()
     const showError = useDeeplinkErrorHandler()
     const runLocaleTourStep = useLocaleTourDeeplink()
-
-    const isValidDeepLink = (url: string): boolean => {
-        if (isValidAlgorandAddress(url)) return true
-        return parseDeeplink(url) !== null
-    }
+    const connectWalletConnect = useWalletConnectDeeplink()
 
     /**
      * Runs a handler that opens its own bottom sheet, deliberately WITHOUT
@@ -123,7 +127,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
         })
     }
 
-    const handleDeepLink = async (
+    const handleDeepLinkImpl: HandleDeepLink = async (
         url: string,
         replaceCurrentScreen: boolean = false,
         source: LinkSource,
@@ -249,45 +253,15 @@ export const useDeepLink = (): UseDeepLinkResult => {
                 }
 
                 case DeeplinkType.WALLET_CONNECT: {
-                    // `pair` constructs (native) or dispatches to offscreen
-                    // (web) the pairing and resolves once the outcome is known
-                    // — see `useWalletConnectPairing`.
-                    //
-                    // WC v1 bridges were sunset in mid-2024, so most public ones
-                    // — including the legacy pera bridge older QR codes embed —
-                    // now 404 without surfacing a sync throw. `pair` detects it
-                    // by waiting briefly for a session_request or error.
-                    const result = await pair(parsedData.uri)
-                    if (result.type === 'connect-failed') {
-                        logger.error('[deeplink/wc] connect failed', {
-                            error: result.error,
-                            uri: parsedData.uri,
-                        })
-                        showError({
-                            variant: 'walletconnect',
-                            parsedType: 'WALLET_CONNECT',
-                            error: result.error,
-                        })
-                        onError?.()
-                        return
-                    }
-                    if (result.type === 'error') {
-                        // Handshake rejected — usually the QR was scanned on the
-                        // wrong network. The provider toasts it, routed to the
-                        // scanner's own notifier when open so it shows above the
-                        // camera. Keep the scanner open and re-armed rather
-                        // than closing it or firing the misleading "no
-                        // response" error below.
-                        onConnectionError?.()
-                        return
-                    }
-                    if (result.type === 'timeout') {
-                        showError({
-                            variant: 'walletconnect',
-                            parsedType: 'WALLET_CONNECT',
-                            error: 'No response from the dApp. The session may be expired or the WalletConnect bridge may be unreachable.',
-                        })
-                        onError?.()
+                    // The handler surfaces its own errors; a false return
+                    // means one of the failure callbacks already fired.
+                    const paired = await connectWalletConnect({
+                        data: parsedData,
+                        source,
+                        onError,
+                        onConnectionError,
+                    })
+                    if (!paired) {
                         return
                     }
                     break
@@ -588,6 +562,17 @@ export const useDeepLink = (): UseDeepLinkResult => {
             onError?.()
         }
     }
+
+    // Latest-ref: the impl closes over this render's hook values, the
+    // returned wrapper stays identity-stable so listener effects don't
+    // resubscribe on every render (same pattern as `useWalletConnect`'s
+    // handler refs).
+    const handleDeepLinkRef = useRef(handleDeepLinkImpl)
+    handleDeepLinkRef.current = handleDeepLinkImpl
+    const handleDeepLink = useCallback<HandleDeepLink>(
+        (...args) => handleDeepLinkRef.current(...args),
+        [],
+    )
 
     return {
         isValidDeepLink,

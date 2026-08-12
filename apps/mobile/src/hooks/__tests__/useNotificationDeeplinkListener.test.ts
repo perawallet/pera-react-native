@@ -98,7 +98,7 @@ describe('useNotificationDeeplinkListener', () => {
         expect(mocks.handleDeepLink).toHaveBeenCalledWith(
             'perawallet://app/cards',
             false,
-            'deeplink',
+            'notification',
         )
     })
 

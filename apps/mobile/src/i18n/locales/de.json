@@ -157,6 +157,8 @@
             "body_generic": "Der Link konnte nicht verarbeitet werden. Bitte versuche es erneut.",
             "title_walletconnect": "WalletConnect fehlgeschlagen",
             "body_walletconnect": "Verbindung zur dApp konnte nicht hergestellt werden. Möglicherweise ist die Sitzung abgelaufen oder die Bridge ist nicht erreichbar.",
+            "title_wc_unsupported": "Verbindungslink nicht unterstützt",
+            "body_wc_unsupported": "Dieser WalletConnect-Link kann von Pera nicht verwendet werden. Bitte stelle die Verbindung in der dApp erneut her und versuche es noch einmal.",
             "title_keyreg": "Schlüsselregistrierung konnte nicht vorbereitet werden",
             "body_keyreg": "Die Schlüsselregistrierungs-Transaktion konnte nicht erstellt werden.",
             "body_keyreg_unknown_account": "Diese Schlüsselregistrierung gehört zu einem Konto, das sich nicht in diesem Wallet befindet. Füge das Konto zuerst hinzu und scanne dann erneut.",
@@ -2592,6 +2594,9 @@
         "menu": "Menü"
     },
     "walletconnect": {
+        "pairing": {
+            "connecting": "Verbindung zur dApp wird hergestellt..."
+        },
         "request": {
             "title": "{{name}} möchte sich mit deinem Konto verbinden",
             "permissions_title_one": "{{count}} Berechtigung angefragt",
@@ -2602,6 +2607,8 @@
             "accounts_title": "KONTEN AUSWÄHLEN",
             "success_sheet_title": "Du bist mit {{name}} verbunden",
             "success_sheet_body": "Bitte kehre zu {{name}} zurück, um fortzufahren und deinen Vorgang abzuschließen. Alle verbundenen Sitzungen findest du auf der zugehörigen Einstellungsseite.",
+            "success_sheet_return_to_dapp": "Zu {{name}} zurückkehren",
+            "success_sheet_return_to_dapp_generic": "Zur dApp zurückkehren",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
             "error_sheet_title": "Fehler",

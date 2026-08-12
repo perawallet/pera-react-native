@@ -72,6 +72,9 @@ const SENSITIVE_EXACT_KEYS = [
     'rawtxns',
     'unsignedtxn',
     'authenticatordata',
+    // WC v1 pairing URIs carry the symmetric handshake key as `key=`;
+    // exact so `keyregType`/`keyPairId` style params survive.
+    'key',
 ] as const
 
 const REDACTED = '[REDACTED]'

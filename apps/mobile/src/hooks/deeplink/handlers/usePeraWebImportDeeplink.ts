@@ -13,9 +13,7 @@
 import { useCallback } from 'react'
 import { usePeraWebImportFlowStore } from '@modules/onboarding/hooks'
 import { navigateToScreen } from '../navigateToScreen'
-import type { PeraWebImportDeeplink } from '../types'
-
-type LinkSource = 'qr' | 'deeplink'
+import type { LinkSource, PeraWebImportDeeplink } from '../types'
 
 export type PeraWebImportDeeplinkHandler = (params: {
     data: PeraWebImportDeeplink
