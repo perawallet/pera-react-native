@@ -27,6 +27,7 @@ import { useDeviceRegistration } from '@perawallet/wallet-core-device'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useTokenListener } from '@modules/token'
+import { PromptContainer } from '@modules/prompts'
 import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
@@ -269,6 +270,10 @@ export const WebMainRoutes = ({
                     )}
                 </RootStack.Navigator>
             </WalletConnectProvider>
+            {/* Native mounts this in RootComponent, which this shell replaces.
+                Outside the WC provider for the same reason SigningOverlays is:
+                a nav-tree crash must not take the blocking prompt down. */}
+            <PromptContainer />
             {/* Sibling of WalletConnectProvider (not nested inside it),
                 mirroring native RootComponent's arrangement: there,
                 `<ErrorBoundary><SigningOverlays/>...</ErrorBoundary>` is a

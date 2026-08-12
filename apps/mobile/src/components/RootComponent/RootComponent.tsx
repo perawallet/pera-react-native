@@ -34,6 +34,7 @@ import { useNeedsMigration } from '@perawallet/wallet-core-migrate'
 import { useReplayNotificationMutes } from '@perawallet/wallet-core-messages'
 import { useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
+import { PromptContainer } from '@modules/prompts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
@@ -105,6 +106,11 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
                     {/* After WebViewOverlay so a deep-link pairing scrim
                         paints above the in-app browser too. */}
                     <PairingProgressOverlay />
+                    {/* Blocking prompts (T&C re-acceptance, PIN setup) paint
+                        above the navigator and the tab bar. Inside
+                        AutoLockGuard's children so the lock overlay still
+                        hides them. */}
+                    <PromptContainer />
                 </GestureHandlerRootView>
             </PWView>
         </ErrorBoundary>
