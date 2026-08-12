@@ -18,6 +18,7 @@ import {
     type AppIntegrityService,
     type BiometricSecurityLevel,
     type BiometricType,
+    type BiometricsAuthenticateResult,
     type BiometricsService,
     type LegacyMigrationData,
     type LegacyMigrationSourcePlatform,
@@ -46,8 +47,8 @@ export class ChromeBiometricsService implements BiometricsService {
     async getSecurityLevel(): Promise<BiometricSecurityLevel> {
         return 'none'
     }
-    async authenticate(): Promise<boolean> {
-        return false
+    async authenticate(): Promise<BiometricsAuthenticateResult> {
+        return { success: false, reason: 'unavailable' }
     }
 }
 

@@ -27,6 +27,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useBiometrics,
     usePinCode,
+    type BiometricsAuthenticateResult,
     type EnableBiometricsResult,
 } from '@perawallet/wallet-core-security'
 
@@ -51,7 +52,11 @@ const wireBiometricsService = (config: {
         getSupportedBiometricType: ReturnType<typeof vi.fn>
     }
     biometrics.checkBiometricsAvailable.mockResolvedValue(config.available)
-    biometrics.authenticate.mockResolvedValue(config.authenticate)
+    biometrics.authenticate.mockResolvedValue(
+        config.authenticate
+            ? { success: true }
+            : { success: false, reason: 'user-cancel' },
+    )
     // enableBiometrics only binds to a strong (class-3) authenticator; the
     // default scenario presents one so the enable path reaches the prompt.
     biometrics.getSecurityLevel.mockResolvedValue('strong')
@@ -97,7 +102,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
     )
 
     it(
-        'Given a PIN is configured, when the user enables biometrics, then the biometric blob is stored, isEnabled flips on, and authenticateWithBiometrics resolves true',
+        'Given a PIN is configured, when the user enables biometrics, then the biometric blob is stored, isEnabled flips on, and authenticateWithBiometrics succeeds',
         async () => {
             const pin = renderHook(() => usePinCode())
             await act(async () => {
@@ -126,18 +131,18 @@ describe('Flow: Biometric authentication lifecycle', () => {
                 expect(await result.current.checkBiometricsEnabled()).toBe(true)
             })
 
-            // Authentication resolves true via the stub.
-            let authResult: Optional<boolean>
+            // Authentication succeeds via the stub.
+            let authResult: Optional<BiometricsAuthenticateResult>
             await act(async () => {
                 authResult = await result.current.authenticateWithBiometrics()
             })
-            expect(authResult).toBe(true)
+            expect(authResult).toEqual({ success: true })
         },
         SLOW_TEST_TIMEOUT_MS,
     )
 
     it(
-        'Given biometrics is enabled, when the user disables it, then the keystore record is removed and authenticateWithBiometrics returns false',
+        'Given biometrics is enabled, when the user disables it, then the keystore record is removed and authenticateWithBiometrics reports unavailable',
         async () => {
             const pin = renderHook(() => usePinCode())
             await act(async () => {
@@ -161,20 +166,23 @@ describe('Flow: Biometric authentication lifecycle', () => {
             })
             expect(result.current.isEnabled).toBe(false)
 
-            let authResult: Optional<boolean>
+            let authResult: Optional<BiometricsAuthenticateResult>
             await act(async () => {
                 authResult = await result.current.authenticateWithBiometrics()
             })
             // The hook short-circuits when checkBiometricsEnabled is
             // false — the platform's authenticate() doesn't even get a
             // chance to run.
-            expect(authResult).toBe(false)
+            expect(authResult).toEqual({
+                success: false,
+                reason: 'unavailable',
+            })
         },
         SLOW_TEST_TIMEOUT_MS,
     )
 
     it(
-        'Given biometrics is enabled but the device prompt is denied, when authenticateWithBiometrics is called, then it returns false (the consumer should fall back to PIN)',
+        'Given biometrics is enabled but the device prompt is denied, when authenticateWithBiometrics is called, then it reports the user cancel (the consumer should fall back to PIN)',
         async () => {
             const pin = renderHook(() => usePinCode())
             await act(async () => {
@@ -195,11 +203,14 @@ describe('Flow: Biometric authentication lifecycle', () => {
             // see "biometrics enabled, last prompt failed".
             wireBiometricsService({ available: true, authenticate: false })
 
-            let authResult: Optional<boolean>
+            let authResult: Optional<BiometricsAuthenticateResult>
             await act(async () => {
                 authResult = await result.current.authenticateWithBiometrics()
             })
-            expect(authResult).toBe(false)
+            expect(authResult).toEqual({
+                success: false,
+                reason: 'user-cancel',
+            })
             // The keystore record is untouched — the user can retry.
             expect(result.current.isEnabled).toBe(true)
         },
@@ -207,7 +218,7 @@ describe('Flow: Biometric authentication lifecycle', () => {
     )
 
     it(
-        'Given biometrics has not been enabled, when authenticateWithBiometrics is called, then it returns false without invoking the platform authenticate prompt',
+        'Given biometrics has not been enabled, when authenticateWithBiometrics is called, then it reports unavailable without invoking the platform authenticate prompt',
         async () => {
             const { result } = renderHook(() => useBiometrics())
             await waitFor(() => {
@@ -215,11 +226,14 @@ describe('Flow: Biometric authentication lifecycle', () => {
             })
             expect(result.current.isEnabled).toBe(false)
 
-            let authResult: Optional<boolean>
+            let authResult: Optional<BiometricsAuthenticateResult>
             await act(async () => {
                 authResult = await result.current.authenticateWithBiometrics()
             })
-            expect(authResult).toBe(false)
+            expect(authResult).toEqual({
+                success: false,
+                reason: 'unavailable',
+            })
         },
         SLOW_TEST_TIMEOUT_MS,
     )

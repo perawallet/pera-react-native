@@ -159,7 +159,7 @@ export const buildTestPlatform = (
             return 'strong'
         },
         async authenticate() {
-            return true
+            return { success: true } as const
         },
     }
 
