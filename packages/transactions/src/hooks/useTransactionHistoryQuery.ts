@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useMemo, useRef } from 'react'
-import { useInfiniteQuery, onlineManager } from '@tanstack/react-query'
+import { useInfiniteQuery, onlineManager, hashKey } from '@tanstack/react-query'
 import type { Maybe, Network, Nullable } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory, fetchMoreTransactions } from '../api/history'
 import { transactionQueryKeys } from './querykeys'
@@ -161,17 +161,19 @@ export const useTransactionHistoryQuery = (
         isEnabled = true,
     } = params
 
+    const queryKey = transactionQueryKeys.historyWithFilters(
+        accountAddress,
+        network,
+        {
+            assetId,
+            afterTime,
+            beforeTime,
+            limit,
+        },
+    )
+
     const query = useInfiniteQuery({
-        queryKey: transactionQueryKeys.historyWithFilters(
-            accountAddress,
-            network,
-            {
-                assetId,
-                afterTime,
-                beforeTime,
-                limit,
-            },
-        ),
+        queryKey,
         queryFn: async ({
             pageParam,
         }: {
@@ -404,16 +406,32 @@ export const useTransactionHistoryQuery = (
     // one gap here; without it a fresh account sat on "no transactions" until
     // the user navigated away and back. Latched so a genuinely empty history
     // settles after a single API confirmation instead of retrying forever.
+    //
+    // The latch is per query, not per mount: switching account or changing a
+    // filter under a mounted consumer swaps the query key, and a bare boolean
+    // ref would stay latched. The new empty query would then never get its one
+    // confirmation fetch, leaving `hasNextPage: true` with no rows to fire
+    // `onEndReached` — consumers read that as still-loading and sit on the
+    // skeleton forever. Keyed off the query key's own hash so the latch cannot
+    // drift from the key as filters are added.
     const { isFetched, isFetching, hasNextPage, fetchNextPage } = query
-    const hasBridgedEmptyCache = useRef(false)
+    const queryHash = hashKey(queryKey)
+    const bridgedQueryHash = useRef<Nullable<string>>(null)
     useEffect(() => {
-        if (hasBridgedEmptyCache.current) return
+        if (bridgedQueryHash.current === queryHash) return
         if (!isFetched || isFetching) return
         if (transactions.length > 0 || !hasNextPage) return
 
-        hasBridgedEmptyCache.current = true
+        bridgedQueryHash.current = queryHash
         void fetchNextPage()
-    }, [isFetched, isFetching, hasNextPage, transactions.length, fetchNextPage])
+    }, [
+        queryHash,
+        isFetched,
+        isFetching,
+        hasNextPage,
+        transactions.length,
+        fetchNextPage,
+    ])
 
     return {
         transactions,

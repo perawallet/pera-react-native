@@ -297,6 +297,53 @@ describe('useTransactionHistoryQuery', () => {
         expect(result.current.transactions).toEqual([])
     })
 
+    test('bridges again for a second empty account on the same mounted hook', async () => {
+        // The bridge is latched per query, not per mount. A latch that survived
+        // an account switch left the second account on `hasNextPage: true` with
+        // no rows — which consumers render as still-loading, so the tab sat on
+        // the skeleton with no way out.
+        const secondAddress =
+            'SECONDADDRESS12345678901234567890123456789012345678901234'
+        mockGetTransactionHistory.mockResolvedValue([])
+        ;(endpoints.fetchTransactionHistory as Mock).mockResolvedValue({
+            transactions: [],
+            pagination: {
+                hasNextPage: false,
+                hasPreviousPage: true,
+                nextUrl: null,
+                previousUrl: null,
+                totalFetched: 0,
+            },
+            currentRound: 12350,
+        })
+
+        const { result, rerender } = renderHook(
+            ({ address }: { address: string }) =>
+                useTransactionHistoryQuery({
+                    accountAddress: address,
+                    network: 'mainnet',
+                }),
+            { wrapper, initialProps: { address: mockAddress } },
+        )
+
+        // `hasNextPage` starts false, so wait on the bridge's own call first —
+        // waiting on the flag alone would pass before the query even resolved.
+        await waitFor(() =>
+            expect(endpoints.fetchTransactionHistory).toHaveBeenCalledTimes(1),
+        )
+        await waitFor(() => expect(result.current.hasNextPage).toBe(false))
+
+        rerender({ address: secondAddress })
+
+        await waitFor(() =>
+            expect(endpoints.fetchTransactionHistory).toHaveBeenCalledTimes(2),
+        )
+        // Settling to false is what lets a consumer distinguish "empty" from
+        // "still loading" for the second account.
+        await waitFor(() => expect(result.current.hasNextPage).toBe(false))
+        expect(result.current.transactions).toEqual([])
+    })
+
     test('requests full-depth pages from the API by default', async () => {
         // Without an explicit limit the endpoint falls back to
         // DEFAULT_ITEMS_PER_PAGE (25), which put a footer spinner every 25
