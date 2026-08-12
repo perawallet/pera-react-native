@@ -12,6 +12,7 @@
 
 export * from './useAccountBalancesQuery'
 export * from './useAccountInformationQuery'
+export * from './useAccountOptInRoundsQuery'
 export * from './useOnChainAccountInformationQuery'
 export * from './usePortfolioTotals'
 export * from './useAccountBalancesHistoryQuery'
@@ -63,5 +64,6 @@ export {
 } from './querykeys'
 export * from './useAccountSummaryQuery'
 export * from './useAccountAssetsQuery'
+export * from './useAccountCollectiblesQuery'
 export * from './useEnsureAccountEnriched'
 export * from './useSyncNewAccounts'

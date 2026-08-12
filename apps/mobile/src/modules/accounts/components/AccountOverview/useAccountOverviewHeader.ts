@@ -26,7 +26,6 @@ import {
     type HistoryPeriod,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { useAccountOverviewModal } from './AccountOverviewModalContext'
 
 export type UseAccountOverviewHeaderResult = {
     portfolioAlgoValue: Decimal
@@ -71,19 +70,20 @@ export const useAccountOverviewHeader = (
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
 
-    const { onScrollEnabledChange } = useAccountOverviewModal()
-
     const { privacyMode, setPrivacyMode } = useSettings()
     const togglePrivacyMode = useCallback(() => {
         setPrivacyMode(!privacyMode)
     }, [privacyMode, setPrivacyMode])
 
+    // Selection only drives the displayed value and date. Locking the list and
+    // pager used to hang off it too, but that flipped state three levels up and
+    // re-rendered every tab at each end of a scrub — seconds of stall on a large
+    // account. The chart's gesture now blocks its ancestors natively instead.
     const handleChartSelectionChange = useCallback(
         (selected: Nullable<AccountBalanceHistoryItem>) => {
             setSelectedPoint(selected)
-            onScrollEnabledChange(!selected)
         },
-        [setSelectedPoint, onScrollEnabledChange],
+        [setSelectedPoint],
     )
 
     return {

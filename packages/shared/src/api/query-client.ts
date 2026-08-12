@@ -35,6 +35,7 @@ type BackendInstances = {
     algod: KyInstance
     indexer: KyInstance
     pera: KyInstance
+    backup: KyInstance
 }
 
 type DiagnosticContext = {
@@ -313,6 +314,18 @@ const createPeraClient = (network: Network): KyInstance =>
         retry: peraRetryConfig,
     })
 
+// Takes no network: the backup service is a single global endpoint, so every
+// network's BackendInstances holds an equivalent instance.
+const createBackupClient = (): KyInstance =>
+    ky.create({
+        hooks: {
+            ...standardHooks,
+            beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
+        },
+        prefix: config.backupBaseUrl,
+        retry: peraRetryConfig,
+    })
+
 const createTokenHeaderClient = (
     prefix: string,
     headerName: string,
@@ -373,6 +386,7 @@ const buildClientsFor = (network: Network): BackendInstances => {
     return {
         ...createChainClients(network),
         pera: createPeraClient(network),
+        backup: createBackupClient(),
     }
 }
 
@@ -466,6 +480,7 @@ export const updateBackendHeaders = (headers: Map<string, string>) => {
             algod: applyHeaders(client.algod),
             indexer: applyHeaders(client.indexer),
             pera: applyHeaders(client.pera),
+            backup: applyHeaders(client.backup),
         })
     })
 }

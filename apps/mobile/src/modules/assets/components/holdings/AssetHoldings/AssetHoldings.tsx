@@ -14,7 +14,7 @@ import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
 import { AssetTransactionList } from '../AssetTransactionList/AssetTransactionList'
@@ -29,7 +29,7 @@ import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { Decimal } from 'decimal.js'
 import {
-    type AccountBalanceHistoryItem,
+    type AccountAssetBalanceHistoryItem,
     useAccountAssetBalanceQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -44,24 +44,18 @@ import { ExpandablePanel } from '@components/ExpandablePanel'
 export type AssetHoldingsProps = {
     account: WalletAccount
     asset: PeraAsset
-    onSwipeEnabledChange?: (enabled: boolean) => void
     isCollectible?: boolean
 }
 
 export const AssetHoldings = ({
     account,
     asset,
-    onSwipeEnabledChange,
     isCollectible,
 }: AssetHoldingsProps) => {
     const styles = useStyles()
     const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
-        useChartInteraction<AccountBalanceHistoryItem>()
-
-    useEffect(() => {
-        onSwipeEnabledChange?.(!selectedPoint)
-    }, [selectedPoint, onSwipeEnabledChange])
+        useChartInteraction<AccountAssetBalanceHistoryItem>()
 
     const { getPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
@@ -73,7 +67,7 @@ export const AssetHoldings = ({
 
     const cryptoAmount = useMemo(() => {
         const currentCrypto = selectedPoint
-            ? selectedPoint.algoValue
+            ? selectedPoint.amount
             : (assetHolding?.amount ?? new Decimal(0))
         return currentCrypto
     }, [assetHolding, selectedPoint])
@@ -133,7 +127,7 @@ export const AssetHoldings = ({
                             />
                         )}
                         {!!selectedPoint && (
-                            <PWText>
+                            <PWText style={styles.dateDisplay}>
                                 {formatDatetime(selectedPoint.datetime)}
                             </PWText>
                         )}

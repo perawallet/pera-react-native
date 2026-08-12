@@ -21,10 +21,6 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { Decimal } from 'decimal.js'
 
-vi.mock('react-native-gifted-charts', () => ({
-    LineChart: () => <div data-testid='line-chart'>LineChart</div>,
-}))
-
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<

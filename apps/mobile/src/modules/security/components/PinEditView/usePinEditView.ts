@@ -130,7 +130,7 @@ export const usePinEditView = ({
             void (async () => {
                 const enabled = await promptRef.current.checkBiometricsEnabled()
                 if (cancelled || !enabled) return
-                const success =
+                const result =
                     await promptRef.current.authenticateWithBiometrics({
                         title: promptRef.current.t(
                             'security.biometric.unlock_prompt_title',
@@ -139,7 +139,7 @@ export const usePinEditView = ({
                             'security.biometric.cancel_label',
                         ),
                     })
-                if (cancelled || !success) return
+                if (cancelled || !result.success) return
                 void promptRef.current.resetFailedAttempts()
                 setHasError(false)
                 if (currentMode === 'verify') {

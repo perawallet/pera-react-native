@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { Decimal } from 'decimal.js'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
 import { Networks } from '@perawallet/wallet-core-config'
 import {
@@ -20,8 +21,9 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 
-import { getAssetsByIds } from '../repository'
+import { getAssetsByIds, upsertAssets } from '../repository'
 import { seedAlgoAsset } from '../seed'
+import { ALGO_ASSET } from '../../models'
 
 describe('seedAlgoAsset', () => {
     let db: Database
@@ -76,5 +78,26 @@ describe('seedAlgoAsset', () => {
         })
 
         expect(result).toHaveLength(1)
+    })
+
+    it('overwrites a stale totalSupply already in the DB', async () => {
+        // Installs that ran the 1000x-too-large constant have it persisted;
+        // the seed runs on every bootstrap, so it must correct the row rather
+        // than leave the stored value alone.
+        await upsertAssets({
+            db,
+            items: [{ ...ALGO_ASSET, totalSupply: new Decimal('1e19') }],
+            network: 'mainnet',
+        })
+
+        await seedAlgoAsset(db)
+
+        const [algo] = await getAssetsByIds({
+            db,
+            assetIds: [ALGO_ASSET_ID],
+            network: 'mainnet',
+        })
+
+        expect(algo.totalSupply.toFixed()).toBe('10000000000000000')
     })
 })

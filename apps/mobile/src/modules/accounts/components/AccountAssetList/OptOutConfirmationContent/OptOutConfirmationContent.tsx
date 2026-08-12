@@ -112,7 +112,7 @@ export const OptOutConfirmationContent = ({
                     <AddressDisplay
                         address={accountAddress}
                         showCopy={false}
-                        textProps={{ style: styles.rowAddress }}
+                        hugContent
                     />
                 </PWView>
 

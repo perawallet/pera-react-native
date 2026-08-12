@@ -15,6 +15,7 @@ import { renderHook } from '@testing-library/react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
+import { PWScreenNestedContext } from '../nestedContext'
 import { usePWScreenInsets } from '../usePWScreenInsets'
 
 describe('usePWScreenInsets', () => {
@@ -30,7 +31,7 @@ describe('usePWScreenInsets', () => {
     it('adds the safe-area bottom inset plus spacing outside a tab navigator', () => {
         const { result } = renderHook(() => usePWScreenInsets())
 
-        expect(result.current.isInTabNavigator).toBe(false)
+        expect(result.current.isBottomHandledOutside).toBe(false)
         // insets.bottom (34) + theme.spacing.lg (24 in vitest mock; 16 in production → 50)
         expect(result.current.bottomInset).toBe(58)
     })
@@ -45,7 +46,21 @@ describe('usePWScreenInsets', () => {
 
         const { result } = renderHook(() => usePWScreenInsets(), { wrapper })
 
-        expect(result.current.isInTabNavigator).toBe(true)
+        expect(result.current.isBottomHandledOutside).toBe(true)
+        expect(result.current.bottomInset).toBe(0)
+    })
+
+    it('returns a zero inset inside another PWScreen to avoid double-padding', () => {
+        const wrapper = ({ children }: { children: ReactNode }) =>
+            createElement(
+                PWScreenNestedContext.Provider,
+                { value: true },
+                children,
+            )
+
+        const { result } = renderHook(() => usePWScreenInsets(), { wrapper })
+
+        expect(result.current.isBottomHandledOutside).toBe(true)
         expect(result.current.bottomInset).toBe(0)
     })
 })

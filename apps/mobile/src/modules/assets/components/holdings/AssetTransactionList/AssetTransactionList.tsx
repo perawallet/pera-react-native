@@ -11,9 +11,15 @@
  */
 
 import { useCallback } from 'react'
-import { ActivityIndicator, SectionList } from 'react-native'
+import { ActivityIndicator } from 'react-native'
 import { useStyles } from './styles'
-import { PWButton, PWRefreshControl, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWFlatList,
+    PWRefreshControl,
+    PWText,
+    PWView,
+} from '@components/core'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
@@ -21,20 +27,17 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useAssetTransactionList } from './useAssetTransactionList'
 import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
 import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import type { TransactionSection } from '@modules/accounts/components/AccountHistory/useAccountHistory'
+import {
+    getTransactionRowKey,
+    getTransactionRowType,
+    type TransactionListRow,
+} from '@modules/transactions/utils/transactionListRows'
 
 export type AssetTransactionListProps = {
     account: WalletAccount
     asset: PeraAsset
     children?: React.ReactNode
 }
-
-const renderSectionHeader = ({ section }: { section: TransactionSection }) => (
-    <TransactionDateHeader title={section.title} />
-)
-
-const keyExtractor = (item: TransactionHistoryItem) => item.id
 
 export const AssetTransactionList = ({
     account,
@@ -45,7 +48,8 @@ export const AssetTransactionList = ({
     const { t } = useLanguage()
 
     const {
-        sections,
+        rows,
+        isInitialLoad,
         isFetchingNextPage,
         isRefreshing,
         handleLoadMore,
@@ -58,27 +62,35 @@ export const AssetTransactionList = ({
     } = useAssetTransactionList({ account, asset })
 
     const renderItem = useCallback(
-        ({ item }: { item: TransactionHistoryItem }) => (
-            <TransactionListItem
-                transaction={item}
-                onPress={handleTransactionPress}
-            />
-        ),
+        ({ item }: { item: TransactionListRow }) =>
+            item.kind === 'header' ? (
+                <TransactionDateHeader title={item.title} />
+            ) : (
+                <TransactionListItem
+                    transaction={item.transaction}
+                    onPress={handleTransactionPress}
+                />
+            ),
         [handleTransactionPress],
     )
 
     return (
         <>
-            <SectionList
-                sections={sections}
-                showsVerticalScrollIndicator={false}
+            <PWFlatList
+                data={rows}
                 renderItem={renderItem}
-                renderSectionHeader={renderSectionHeader}
-                keyExtractor={keyExtractor}
+                keyExtractor={getTransactionRowKey}
+                getItemType={getTransactionRowType}
                 contentContainerStyle={styles.container}
-                stickySectionHeadersEnabled={false}
+                // This list has never drawn hairlines between rows; PWFlatList
+                // supplies one unless the slot is explicitly emptied.
+                ItemSeparatorComponent={null}
                 onEndReached={handleLoadMore}
-                onEndReachedThreshold={0.5}
+                // Nearly two screens of runway. A page is a network round trip
+                // once the local cache runs out, so starting it half a screen
+                // from the end (the old value) meant arriving at the spinner
+                // rather than at rows.
+                onEndReachedThreshold={1.5}
                 ListHeaderComponent={
                     <PWView>
                         {children}
@@ -123,6 +135,7 @@ export const AssetTransactionList = ({
                     <EmptyView
                         style={styles.emptyView}
                         body={t('asset_details.transaction_list.empty_body')}
+                        isLoading={isInitialLoad}
                     />
                 }
                 ListFooterComponent={

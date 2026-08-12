@@ -35,6 +35,29 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConnectionView } from '../components/ConnectionView/ConnectionView'
 import { ConnectionSuccessContent } from '../components/ConnectionSuccessContent'
+import { useReturnToDappStore } from '../stores/useReturnToDappStore'
+
+/**
+ * Consumes the one-shot pairing context once its request settles. Approved
+ * sessions keep a persisted `dappOrigin` so later requests on the session
+ * (sign completions) know how their sheets should behave.
+ */
+const consumeReturnContext = (
+    clientId: string,
+    { wasApproved }: { wasApproved: boolean },
+): void => {
+    const { returnContexts, clearReturnContext } =
+        useReturnToDappStore.getState()
+    const context = returnContexts[clientId]
+    if (!context) return
+    if (wasApproved) {
+        useWalletConnectStore.getState().setDappOrigin(clientId, {
+            source: context.origin,
+            browserName: context.browserName,
+        })
+    }
+    clearReturnContext(clientId)
+}
 
 // WalletConnect's `respondWithError` rebuilds a fresh
 // `WalletConnectSignRequestError` from only the original error's `.message`
@@ -74,6 +97,15 @@ export const useWalletConnectProvider = () => {
     const connectionSheetIdRef = useRef<Nullable<string>>(null)
 
     const handleSuccess = (request: WalletConnectSessionRequest) => {
+        // In-app pairings (Discover / in-app browser) skip the success
+        // sheet: the dApp is right behind it and shows its own connected
+        // state. Consume the context now since no sheet-settle will.
+        const context =
+            useReturnToDappStore.getState().returnContexts[request.clientId]
+        if (context?.origin === 'in-app') {
+            consumeReturnContext(request.clientId, { wasApproved: true })
+            return
+        }
         setSuccessRequest(request)
     }
 
@@ -83,6 +115,7 @@ export const useWalletConnectProvider = () => {
         }
         if (nextRequest) {
             removeSessionRequest(nextRequest)
+            consumeReturnContext(nextRequest.clientId, { wasApproved: false })
         }
     }
 
@@ -91,6 +124,19 @@ export const useWalletConnectProvider = () => {
     useEffect(() => {
         connectSessions()
     }, [connectSessions])
+
+    // Drop dapp origins whose session is gone (disconnected sessions,
+    // sessions removed while the app was killed). One sweep per mount is
+    // enough — clientIds are never reused across connectors.
+    useEffect(() => {
+        const { walletConnectConnections, pruneDappOrigins } =
+            useWalletConnectStore.getState()
+        pruneDappOrigins(
+            walletConnectConnections
+                .map(connection => connection.clientId)
+                .filter((clientId): clientId is string => !!clientId),
+        )
+    }, [])
 
     const shouldShowConnection =
         !!nextRequest && !successRequest && !connectionError
@@ -156,6 +202,12 @@ export const useWalletConnectProvider = () => {
                     error: error instanceof Error ? error : String(error),
                 })
             }
+            // The sheet settled (Return tap, Close tap, or pan-down) — the
+            // one-shot pairing context is consumed either way, and the
+            // approved session keeps its persisted origin for the sign flow.
+            consumeReturnContext(successRequest.clientId, {
+                wasApproved: true,
+            })
             if (cancelled) return
             successOpenRef.current = false
             setSuccessRequest(null)
@@ -194,6 +246,9 @@ export const useWalletConnectProvider = () => {
             : undefined
         if (erroredRequest) {
             removeSessionRequest(erroredRequest)
+            consumeReturnContext(erroredRequest.clientId, {
+                wasApproved: false,
+            })
         }
         setConnectionError(null)
     }, [

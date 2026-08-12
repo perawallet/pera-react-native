@@ -157,6 +157,8 @@
             "body_generic": "No pudimos procesar el enlace. Vuelve a intentarlo.",
             "title_walletconnect": "Error de WalletConnect",
             "body_walletconnect": "No pudimos conectar con la dApp. La sesión puede haber caducado o el bridge puede estar inaccesible.",
+            "title_wc_unsupported": "Enlace de conexión no compatible",
+            "body_wc_unsupported": "Pera no puede usar este enlace de WalletConnect. Vuelve a conectar desde la dApp e inténtalo de nuevo.",
             "title_keyreg": "No se pudo preparar el registro de clave",
             "body_keyreg": "No pudimos crear la transacción de registro de clave.",
             "body_keyreg_unknown_account": "Este registro de clave es para una cuenta que no tienes en este wallet. Añade primero la cuenta y vuelve a escanear.",
@@ -309,7 +311,8 @@
             "sort_title_asc": "Nombre (A-Z)",
             "sort_title_desc": "Nombre (Z-A)",
             "sort_newest_first": "Del más nuevo al más antiguo",
-            "sort_oldest_first": "Del más antiguo al más nuevo"
+            "sort_oldest_first": "Del más antiguo al más nuevo",
+            "sort_recently_added": "Añadidos recientemente"
         },
         "button_panel": {
             "swap": "Swap",
@@ -1392,6 +1395,8 @@
             "confirmed": "Transacción completada correctamente",
             "submitting": "Todas las firmas recogidas. Enviando la transacción…",
             "failed_default": "La transacción falló",
+            "load_error": "No se pudo cargar esta transacción. Es posible que haya caducado o se haya eliminado.",
+            "retry": "Volver a intentar",
             "canceled": "Transacción cancelada.",
             "declined": "Transacción rechazada.",
             "close": "Cerrar",
@@ -1430,6 +1435,20 @@
                 "no_transactions": "La solicitud de firma multisig no contiene transacciones",
                 "assembly_failed": "Error al ensamblar la transacción multisig: {{reason}}",
                 "delivery_failed": "No se pudo entregar la transacción firmada a la dApp"
+            }
+        },
+        "already_resolved": {
+            "confirmed": {
+                "title": "Ya se completó",
+                "body": "Otro firmante ya firmó y envió esta transacción."
+            },
+            "declined": {
+                "title": "Ya se rechazó",
+                "body": "Otro firmante rechazó esta transacción, por lo que ya no se puede firmar."
+            },
+            "expired": {
+                "title": "La solicitud expiró",
+                "body": "Esta transacción expiró antes de que suficientes firmantes la aprobaran."
             }
         }
     },
@@ -1938,6 +1957,7 @@
         "edit_contact": "Editar contacto",
         "add_contact": "Nuevo contacto",
         "settings": "Ajustes",
+        "launch_settings": "Ajustes de inicio",
         "security": "Seguridad",
         "notifications": "Notificaciones",
         "wallet_connect": "Wallet Connect",
@@ -2138,6 +2158,7 @@
             "app_preferences_section": "Preferencias de la app",
             "currency_title": "Moneda",
             "theme_title": "Tema",
+            "launch_title": "Ajustes de inicio",
             "language_title": "Idioma",
             "support_section": "Soporte",
             "rate_title": "Valorar Pera Wallet",
@@ -2156,6 +2177,13 @@
             "system_label": "Predeterminado del sistema",
             "light_label": "Claro",
             "dark_label": "Oscuro"
+        },
+        "launch": {
+            "account_section": "Selección de cuenta",
+            "last_used_label": "Última cuenta utilizada",
+            "last_used_description": "Pera se abre en la última cuenta que usaste.",
+            "specific_label": "Una cuenta específica",
+            "specific_description": "Pera se abre siempre en la cuenta que elijas."
         },
         "language": {
             "system_label": "Predeterminado del sistema"
@@ -2586,6 +2614,9 @@
         "menu": "Menú"
     },
     "walletconnect": {
+        "pairing": {
+            "connecting": "Conectando con la dApp..."
+        },
         "request": {
             "title": "{{name}} quiere conectarse a tu cuenta",
             "permissions_title_one": "Se ha solicitado {{count}} permiso",
@@ -2596,6 +2627,8 @@
             "accounts_title": "SELECCIONAR CUENTAS",
             "success_sheet_title": "Te has conectado a {{name}}",
             "success_sheet_body": "Vuelve a {{name}} para continuar y finalizar la operación. Puedes ver todas las sesiones conectadas en la página de ajustes correspondiente.",
+            "success_sheet_return_to_dapp": "Volver a {{name}}",
+            "success_sheet_return_to_dapp_generic": "Volver a la dApp",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
             "networks_betanet": "Betanet",

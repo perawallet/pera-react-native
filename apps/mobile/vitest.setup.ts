@@ -36,7 +36,9 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             getSupportedBiometricType: vi.fn().mockResolvedValue(null),
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
             getSecurityLevel: vi.fn().mockResolvedValue('none'),
-            authenticate: vi.fn().mockResolvedValue(false),
+            authenticate: vi
+                .fn()
+                .mockResolvedValue({ success: false, reason: 'unavailable' }),
         },
         crashReporting: {
             log: vi.fn(),
@@ -136,7 +138,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             getSupportedBiometricType: vi.fn().mockResolvedValue(null),
             checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
             getSecurityLevel: vi.fn().mockResolvedValue('none'),
-            authenticate: vi.fn().mockResolvedValue(false),
+            authenticate: vi
+                .fn()
+                .mockResolvedValue({ success: false, reason: 'unavailable' }),
         },
         crashReporting: {
             log: vi.fn(),
@@ -517,7 +521,10 @@ vi.mock('@components/core', () => {
                 'data-testid': testID || `icon-${name}`,
             }),
         PWImage: (props: any) =>
-            React.createElement('img', { ...props, 'data-testid': 'PWImage' }),
+            React.createElement('img', {
+                ...props,
+                'data-testid': props.testID ?? 'PWImage',
+            }),
         PWInfoView: ({
             illustration,
             title,
@@ -830,6 +837,7 @@ vi.mock('@components/core', () => {
         PWTouchableOpacity: ({
             children,
             onPress,
+            onLongPress,
             testID,
             isDisabled,
             disabled,
@@ -844,6 +852,8 @@ vi.mock('@components/core', () => {
                     ...props,
                     'aria-label': accessibilityLabel,
                     onClick: onPress,
+                    // DOM stand-in for long press; fire with fireEvent.contextMenu.
+                    onContextMenu: onLongPress,
                     role: 'button',
                     disabled: isDisabled ?? disabled,
                     // Prefer testID, then accessibilityIdentifier for deterministic test ids.
@@ -1147,6 +1157,7 @@ vi.mock('react-native', () => {
             .mockImplementation(
                 ({
                     onPress,
+                    onLongPress,
                     children,
                     activeOpacity,
                     testID,
@@ -1163,6 +1174,8 @@ vi.mock('react-native', () => {
                             ...props,
                             'aria-label': accessibilityLabel,
                             onClick: onPress,
+                            // DOM stand-in for long press; fire with fireEvent.contextMenu.
+                            onContextMenu: onLongPress,
                             ...(testID
                                 ? { 'data-testid': testID, testid: testID }
                                 : {}),
@@ -2543,7 +2556,14 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         LONG_ADDRESS_LENGTH: 20,
         dedupeSecondaryLabel: (primary: string, secondary?: string | null) =>
             secondary && secondary !== primary ? secondary : undefined,
-        stripUrlScheme: vi.fn(url => url),
+        // Faithful to the real impl — useReturnToDapp builds browser-scheme
+        // URLs from the stripped host+path, so an identity stub would leave
+        // the https:// prefix embedded in the assertion targets.
+        stripUrlScheme: vi.fn((url?: string) => {
+            if (!url) return url
+            const index = url.indexOf('//')
+            return index >= 0 ? url.substring(index + 2) : url
+        }),
         // Real implementations — serialized route params round-trip through
         // these, so a stub would silently corrupt every public key fixture.
         hexToBytes: (hex: string): Uint8Array => {
@@ -2703,18 +2723,56 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
 }))
 
 // Mock @perawallet/wallet-core-walletconnect
-vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: vi.fn(() => ({ connections: [] })),
-    useWalletConnectStore: vi.fn(),
-    AlgorandChainId: {
-        MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
-        TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
-    },
-    AlgorandPermission: {
-        TX_PERMISSION: 'algo_signTxn',
-        DATA_PERMISSION: 'algo_signData',
-    },
-}))
+vi.mock('@perawallet/wallet-core-walletconnect', () => {
+    // Minimal stateful twin of the real store's dappOrigins slice so
+    // consumers that reach it via `useWalletConnectStore.getState()`
+    // (signing-completed driver, WC provider) work without each spec
+    // re-mocking the package.
+    type MockDappOrigin = { browserName?: string; createdAt: number }
+    const storeState = {
+        walletConnectConnections: [] as unknown[],
+        sessionRequests: [] as unknown[],
+        connectionError: null as unknown,
+        dappOrigins: {} as Record<string, MockDappOrigin>,
+        setDappOrigin: (clientId: string, origin: Record<string, unknown>) => {
+            storeState.dappOrigins = {
+                ...storeState.dappOrigins,
+                [clientId]: {
+                    ...origin,
+                    createdAt: Date.now(),
+                } as MockDappOrigin,
+            }
+        },
+        removeDappOrigin: (clientId: string) => {
+            const { [clientId]: _removed, ...rest } = storeState.dappOrigins
+            storeState.dappOrigins = rest
+        },
+        pruneDappOrigins: (retainedClientIds: string[]) => {
+            const retained = new Set(retainedClientIds)
+            storeState.dappOrigins = Object.fromEntries(
+                Object.entries(storeState.dappOrigins).filter(([clientId]) =>
+                    retained.has(clientId),
+                ),
+            )
+        },
+    }
+    const useWalletConnectStore = vi.fn() as ReturnType<typeof vi.fn> & {
+        getState: () => typeof storeState
+    }
+    useWalletConnectStore.getState = () => storeState
+    return {
+        useWalletConnect: vi.fn(() => ({ connections: [] })),
+        useWalletConnectStore,
+        AlgorandChainId: {
+            MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
+            TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
+        },
+        AlgorandPermission: {
+            TX_PERMISSION: 'algo_signTxn',
+            DATA_PERMISSION: 'algo_signData',
+        },
+    }
+})
 
 vi.mock('@perawallet/wallet-core-swaps', async () => {
     const { Decimal } = await import('decimal.js')
@@ -2840,7 +2898,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         name: 'Algo',
         unitName: 'ALGO',
         decimals: 6,
-        totalSupply: '10000000000000000000',
+        totalSupply: '10000000000000000',
         creator: { address: '' },
         peraMetadata: {
             isDeleted: false,
@@ -2956,6 +3014,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             discoverRekeyedAccounts: vi.fn(),
         })),
         useAccountBalancesQuery: vi.fn(() => ({ data: [], isPending: false })),
+        useAccountOptInRoundsQuery: vi.fn(() => ({
+            optInRounds: new Map(),
+            isPending: false,
+        })),
         useSelectedAccount: vi.fn(() => null),
         useSelectedAccountAddress: vi.fn(() => ({
             selectedAccountAddress: null,

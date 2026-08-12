@@ -30,5 +30,14 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.lg,
             flexShrink: 1,
         },
+        trailingContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+            flexShrink: 0,
+        },
+        value: {
+            color: theme.colors.textGray,
+        },
     }
 })

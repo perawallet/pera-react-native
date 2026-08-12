@@ -69,4 +69,45 @@ describe('PWListItemLayout', () => {
 
         expect(onPress).toHaveBeenCalledTimes(1)
     })
+
+    describe('onLongPress', () => {
+        it('invokes onLongPress on a long press without firing onPress', () => {
+            const onPress = vi.fn()
+            const onLongPress = vi.fn()
+            const { container } = render(
+                <PWListItemLayout
+                    testID='item'
+                    onPress={onPress}
+                    onLongPress={onLongPress}
+                >
+                    <Text>center-slot</Text>
+                </PWListItemLayout>,
+            )
+
+            const item = container.querySelector('[testid="item"]')
+            expect(item).toBeTruthy()
+            fireEvent.contextMenu(item!)
+
+            expect(onLongPress).toHaveBeenCalledTimes(1)
+            expect(onPress).not.toHaveBeenCalled()
+        })
+
+        it('makes the row touchable when only onLongPress is given', () => {
+            const onLongPress = vi.fn()
+            const { container } = render(
+                <PWListItemLayout
+                    testID='item'
+                    onLongPress={onLongPress}
+                >
+                    <Text>center-slot</Text>
+                </PWListItemLayout>,
+            )
+
+            const item = container.querySelector('[testid="item"]')
+            expect(item).toBeTruthy()
+            fireEvent.contextMenu(item!)
+
+            expect(onLongPress).toHaveBeenCalledTimes(1)
+        })
+    })
 })

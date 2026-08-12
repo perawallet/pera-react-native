@@ -42,7 +42,15 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: theme.spacing.md,
         minWidth: 0,
+    },
+    // Mirrors the account overview's dateDisplay: flexGrow claims the rest of
+    // the row so the scrub date sits hard right, off the value beside it.
+    dateDisplay: {
+        color: theme.colors.textGray,
+        textAlign: 'right',
+        flexGrow: 1,
     },
     primaryValueContainer: {
         flexDirection: 'row',

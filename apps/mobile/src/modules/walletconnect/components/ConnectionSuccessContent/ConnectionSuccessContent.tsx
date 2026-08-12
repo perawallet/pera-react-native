@@ -13,6 +13,8 @@
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
 import { type WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
+import { getPreferredDappIcon } from '../../utils/dapp-icon'
+import { useConnectionSuccessContent } from './useConnectionSuccessContent'
 
 export type ConnectionSuccessContentProps = {
     request: WalletConnectSessionRequest
@@ -22,21 +24,34 @@ export const ConnectionSuccessContent = ({
     request,
 }: ConnectionSuccessContentProps) => {
     const { t } = useLanguage()
-    const dAppName = request.peerMeta.name ?? ''
+    const { dAppName, showReturnCta, returnLabel, handleReturnToDapp } =
+        useConnectionSuccessContent(request)
 
     return (
         <ConfirmActionContent
             testID='wc_connection_success'
             icon='check'
             iconVariant='primary'
+            iconUrl={getPreferredDappIcon(request.peerMeta.icons)}
             title={t('walletconnect.request.success_sheet_title', {
                 name: dAppName,
             })}
             message={t('walletconnect.request.success_sheet_body', {
                 name: dAppName,
             })}
-            confirmLabel={t('common.close.label')}
-            confirmVariant='secondary'
+            isMessageCentered
+            {...(showReturnCta
+                ? {
+                      confirmLabel: returnLabel,
+                      confirmVariant: 'primary' as const,
+                      onConfirm: handleReturnToDapp,
+                      confirmTestID: 'wc_connection_success_return',
+                      cancelLabel: t('common.close.label'),
+                  }
+                : {
+                      confirmLabel: t('common.close.label'),
+                      confirmVariant: 'secondary' as const,
+                  })}
         />
     )
 }

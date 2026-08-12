@@ -20,6 +20,9 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.md,
             alignItems: 'flex-start',
             justifyContent: 'flex-start',
+            // Rows are separated only by a hairline divider; without vertical
+            // padding they render flush against it (same trap as InboxItem).
+            paddingVertical: theme.spacing.md,
         },
         messageBox: {
             flexShrink: 1,

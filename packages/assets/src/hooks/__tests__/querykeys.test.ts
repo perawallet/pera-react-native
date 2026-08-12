@@ -42,7 +42,77 @@ import {
     getIndexerAssetDetailsQueryKey,
     isAssetPriceHistoryQuery,
     getAssetsQueryKey,
+    hashAssetIds,
 } from '../querykeys'
+
+describe('hashAssetIds', () => {
+    test('is stable for the same list', () => {
+        expect(hashAssetIds(['1', '2', '3'])).toBe(
+            hashAssetIds(['1', '2', '3']),
+        )
+    })
+
+    test('distinguishes different ids', () => {
+        expect(hashAssetIds(['1', '2'])).not.toBe(hashAssetIds(['1', '3']))
+    })
+
+    test('distinguishes reordered ids', () => {
+        expect(hashAssetIds(['1', '2'])).not.toBe(hashAssetIds(['2', '1']))
+    })
+
+    test('distinguishes lists that concatenate alike', () => {
+        expect(hashAssetIds(['1', '23'])).not.toBe(hashAssetIds(['12', '3']))
+    })
+
+    test('distinguishes a subset from its superset', () => {
+        expect(hashAssetIds(['1', '2'])).not.toBe(hashAssetIds(['1', '2', '3']))
+    })
+
+    test('is fixed width regardless of list size', () => {
+        const many = Array.from({ length: 20_000 }, (_, i) => String(i))
+
+        expect(hashAssetIds(many).length).toBeLessThan(32)
+    })
+
+    test('does not collide across a large sweep of realistic id lists', () => {
+        const digests = new Set<string>()
+        for (let start = 0; start < 2000; start++) {
+            digests.add(
+                hashAssetIds(
+                    Array.from({ length: 50 }, (_, i) => String(start + i)),
+                ),
+            )
+        }
+
+        expect(digests.size).toBe(2000)
+    })
+})
+
+describe('getAssetsQueryKey', () => {
+    test('keeps the ids out of the key so hashing it stays O(1)', () => {
+        const key = getAssetsQueryKey(
+            Array.from({ length: 20_000 }, (_, i) => String(i)),
+            'mainnet',
+        )
+
+        expect(JSON.stringify(key).length).toBeLessThan(100)
+    })
+
+    test('is derivable from the ids alone, so cache seeding still matches', () => {
+        expect(getAssetsQueryKey(['123'], 'mainnet')).toEqual(
+            getAssetsQueryKey(['123'], 'mainnet'),
+        )
+        expect(getAssetsQueryKey(['123'], 'mainnet')).not.toEqual(
+            getAssetsQueryKey(['456'], 'mainnet'),
+        )
+    })
+
+    test('partitions by network', () => {
+        expect(getAssetsQueryKey(['123'], 'mainnet')).not.toEqual(
+            getAssetsQueryKey(['123'], 'testnet'),
+        )
+    })
+})
 
 describe('isAssetQuery', () => {
     test('returns true for any key whose first element is the module prefix', () => {

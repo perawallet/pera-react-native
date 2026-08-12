@@ -22,6 +22,7 @@ import { config, configSchema, type Config } from '../main'
 const prodOverrides = {
     mainnetBackendUrl: 'https://mainnet.api.perawallet.app',
     testnetBackendUrl: 'https://testnet.api.perawallet.app',
+    backupBaseUrl: 'https://backup.perawallet.app/',
     // Spread from the ambient `config`, this carries whatever the local
     // generated-env resolved to — a staging host unless APP_ENV was production.
     // getConfig always derives it, so pin it to keep the fixture coherent.
@@ -37,6 +38,7 @@ const baseProdConfig: Config = {
 const STAGING_FIELDS = [
     ['mainnetBackendUrl', 'https://mainnet.staging.api.perawallet.app'],
     ['testnetBackendUrl', 'https://testnet.staging.api.perawallet.app'],
+    ['backupBaseUrl', 'https://staging.backup.perawallet.app/'],
 ] as const
 
 describe('production staging-URL guard', () => {

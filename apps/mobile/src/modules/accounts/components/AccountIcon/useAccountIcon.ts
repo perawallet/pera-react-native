@@ -95,13 +95,20 @@ export type UseAccountIconOptions = {
      * state alone.
      */
     displayState?: AccountDisplayState
+    /**
+     * The type of the auth account, for callers that force `rekeyedSignable`
+     * on a synthetic account. `useRekeyAccount` can only resolve an auth
+     * address that is already in the store, so without this a rekeyed-to-Ledger
+     * preview falls back to the turquoise standard glyph (PERA-4403).
+     */
+    authType?: AccountType
 }
 
 export const useAccountIcon = (
     account: WalletAccount | undefined,
     options: UseAccountIconOptions = {},
 ): AccountGlyph | null => {
-    const { ignoreRekey, displayState } = options
+    const { ignoreRekey, displayState, authType } = options
     const rekeyAccount = useRekeyAccount(account?.address)
     const canSign = useCanSignWith(account)
 
@@ -123,8 +130,9 @@ export const useAccountIcon = (
                 // not the account's own type — a standard account rekeyed to
                 // a Ledger keeps type `algo25`, so indexing by `account.type`
                 // wrongly picks the standard glyph instead of the ledger one.
-                const authGlyph = rekeyAccount
-                    ? REKEYED_SIGNABLE_GLYPH[rekeyAccount.type]
+                const resolvedAuthType = rekeyAccount?.type ?? authType
+                const authGlyph = resolvedAuthType
+                    ? REKEYED_SIGNABLE_GLYPH[resolvedAuthType]
                     : undefined
                 return authGlyph ?? REKEYED_SIGNABLE_DEFAULT
             }
@@ -138,5 +146,5 @@ export const useAccountIcon = (
         // rekeyAccount keeps the memo invalidating when the auth account
         // changes (which can flip canSign).
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [account, ignoreRekey, displayState, canSign, rekeyAccount])
+    }, [account, ignoreRekey, displayState, authType, canSign, rekeyAccount])
 }

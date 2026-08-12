@@ -11,10 +11,24 @@
  */
 
 import { type NativeStackNavigationOptions } from '@react-navigation/native-stack'
+import { Easing } from 'react-native-reanimated'
 
 export const CHART_FOCUS_DEBOUNCE_TIME = 200
 export const CHART_HEIGHT = 140
 export const CHART_ANIMATION_DURATION = 200
+export const CHART_LINE_THICKNESS = 2
+export const CHART_POINTER_DOT_RADIUS = 4
+/** Dash on/off lengths for the scrubbing strip. */
+export const CHART_POINTER_DASH = [6, 2]
+/**
+ * Horizontal travel (px) that activates the chart's scrub gesture. Deliberately
+ * far below a native pager's touch slop (~8dp): whichever recognizer crosses
+ * its threshold first claims the gesture, and losing that race is what let the
+ * tab pager swallow horizontal drags on the chart (PERA-4849).
+ */
+export const CHART_PRESS_ACTIVE_OFFSET_X: [number, number] = [-2, 2]
+/** Vertical travel (px) that hands the gesture back to the enclosing list. */
+export const CHART_PRESS_FAIL_OFFSET_Y: [number, number] = [-12, 12]
 
 export const BOTTOM_TAB_HEIGHT_IOS = 40
 export const BOTTOM_TAB_HEIGHT_ANDROID = 55
@@ -29,7 +43,10 @@ export const SCREEN_ANIMATION_CONFIG: NativeStackNavigationOptions = {
     statusBarAnimation: 'slide',
 }
 
-export const EXPANDABLE_PANEL_ANIMATION_DURATION = 200
+export const EXPANDABLE_PANEL_ANIMATION_DURATION = 250
+// Shared by the panel and everything that must move in lockstep with it
+// (chevron rotation, the portfolio trend fade) so nothing pops out of sync.
+export const EXPANDABLE_PANEL_ANIMATION_EASING = Easing.bezier(0.4, 0, 0.2, 1)
 export const BACKUP_REMINDER_BANNER_REVEAL_DELAY = 800
 export const BACKUP_REMINDER_BANNER_REVEAL_DURATION = 200
 export const SLIDE_TO_CONFIRM_ANIMATION_DURATION = 250

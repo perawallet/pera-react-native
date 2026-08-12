@@ -40,6 +40,7 @@ const TransactionListItemView = ({
         amounts,
         amountsOverflowCount,
         handlePress,
+        handleLongPress,
     } = useTransactionListItem({
         transaction,
         onPress,
@@ -57,6 +58,7 @@ const TransactionListItemView = ({
             style={styles.container}
             align='top'
             onPress={handlePress}
+            onLongPress={handleLongPress}
             left={
                 <TransactionIcon
                     type={iconType}

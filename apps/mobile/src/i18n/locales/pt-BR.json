@@ -157,6 +157,8 @@
             "body_generic": "Não conseguimos processar o link. Tente novamente.",
             "title_walletconnect": "Falha no WalletConnect",
             "body_walletconnect": "Não conseguimos conectar ao dApp. A sessão pode ter expirado ou o bridge pode estar inacessível.",
+            "title_wc_unsupported": "Link de conexão não suportado",
+            "body_wc_unsupported": "O Pera não consegue usar este link do WalletConnect. Reconecte a partir do dApp e tente novamente.",
             "title_keyreg": "Não foi possível preparar o registro de chaves",
             "body_keyreg": "Não conseguimos criar a transação de registro de chaves.",
             "body_keyreg_unknown_account": "Este registro de chaves é de uma conta que você não tem nesta wallet. Adicione a conta primeiro e escaneie novamente.",
@@ -309,7 +311,8 @@
             "sort_title_asc": "Nome (A-Z)",
             "sort_title_desc": "Nome (Z-A)",
             "sort_newest_first": "Mais recentes primeiro",
-            "sort_oldest_first": "Mais antigos primeiro"
+            "sort_oldest_first": "Mais antigos primeiro",
+            "sort_recently_added": "Adicionados recentemente"
         },
         "button_panel": {
             "swap": "Converter",
@@ -1396,6 +1399,8 @@
             "confirmed": "Transação concluída com sucesso",
             "submitting": "Todas as assinaturas foram coletadas. Enviando transação…",
             "failed_default": "A transação falhou",
+            "load_error": "Não foi possível carregar esta transação. Ela pode ter expirado ou sido removida.",
+            "retry": "Tentar novamente",
             "canceled": "Transação cancelada.",
             "declined": "Transação recusada.",
             "close": "Fechar",
@@ -1434,6 +1439,20 @@
                 "no_transactions": "A solicitação de assinatura Multisig não contém transações",
                 "assembly_failed": "Falha na montagem do Multisig: {{reason}}",
                 "delivery_failed": "Não foi possível entregar a transação assinada ao dApp"
+            }
+        },
+        "already_resolved": {
+            "confirmed": {
+                "title": "Já concluída",
+                "body": "Esta transação já foi assinada e enviada por outro signatário."
+            },
+            "declined": {
+                "title": "Já recusada",
+                "body": "Outro signatário recusou esta transação, então ela não pode mais ser assinada."
+            },
+            "expired": {
+                "title": "Solicitação expirada",
+                "body": "Esta transação expirou antes que signatários suficientes a aprovassem."
             }
         }
     },
@@ -1954,6 +1973,7 @@
         "edit_contact": "Editar contato",
         "add_contact": "Novo contato",
         "settings": "Configurações",
+        "launch_settings": "Configurações de inicialização",
         "security": "Segurança",
         "notifications": "Notificações",
         "wallet_connect": "Wallet Connect",
@@ -2154,6 +2174,7 @@
             "app_preferences_section": "Preferências do app",
             "currency_title": "Moeda",
             "theme_title": "Tema",
+            "launch_title": "Configurações de inicialização",
             "language_title": "Idioma",
             "support_section": "Suporte",
             "rate_title": "Avaliar a Pera Wallet",
@@ -2172,6 +2193,13 @@
             "system_label": "Padrão do sistema",
             "light_label": "Claro",
             "dark_label": "Escuro"
+        },
+        "launch": {
+            "account_section": "Seleção de conta",
+            "last_used_label": "Última conta usada",
+            "last_used_description": "A Pera abre na última conta que você usou.",
+            "specific_label": "Uma conta específica",
+            "specific_description": "A Pera abre sempre na conta que você escolher."
         },
         "language": {
             "system_label": "Padrão do sistema"
@@ -2608,6 +2636,9 @@
         "menu": "Menu"
     },
     "walletconnect": {
+        "pairing": {
+            "connecting": "Conectando ao dApp..."
+        },
         "request": {
             "title": "{{name}} quer se conectar à sua conta",
             "permissions_title_zero": "{{count}} permissões solicitadas",
@@ -2619,6 +2650,8 @@
             "accounts_title": "SELECIONAR CONTAS",
             "success_sheet_title": "Conexão estabelecida com {{name}}",
             "success_sheet_body": "Volte para {{name}} para continuar e concluir sua operação. Você encontra todas as sessões conectadas na página de configurações dedicada.",
+            "success_sheet_return_to_dapp": "Voltar para {{name}}",
+            "success_sheet_return_to_dapp_generic": "Voltar para o dApp",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
             "networks_betanet": "Betanet",

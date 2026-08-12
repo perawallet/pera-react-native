@@ -18,6 +18,7 @@ import { DEEPLINK_TIMEOUT_TAG } from './timeout'
 type Variant =
     | 'generic'
     | 'walletconnect'
+    | 'walletconnect_unsupported'
     | 'keyreg'
     | 'keyreg-unknown-account'
     | 'recover'
@@ -40,6 +41,10 @@ const MESSAGE_KEYS: Record<Variant, { title: string; body: string }> = {
     walletconnect: {
         title: 'deeplink.error.title_walletconnect',
         body: 'deeplink.error.body_walletconnect',
+    },
+    walletconnect_unsupported: {
+        title: 'deeplink.error.title_wc_unsupported',
+        body: 'deeplink.error.body_wc_unsupported',
     },
     keyreg: {
         title: 'deeplink.error.title_keyreg',

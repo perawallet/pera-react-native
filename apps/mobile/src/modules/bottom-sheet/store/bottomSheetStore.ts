@@ -28,6 +28,13 @@ import { getRegisteredBottomSheet } from '../registry/registry'
 type BottomSheetState = {
     requests: InternalRequest[]
     hostCount: number
+    /**
+     * While true, BottomSheetManager holds NEW presentations (already-painted
+     * sheets stay mounted). Set by the app-lock guard so nothing paints under
+     * its overlay (PERA-4743); kept as a neutral flag here so this module
+     * stays free of security dependencies.
+     */
+    isPresentationHeld: boolean
 }
 
 type BottomSheetActions = {
@@ -43,6 +50,7 @@ type BottomSheetActions = {
     remove: (id: string) => void
     registerBottomSheetHost: () => void
     unregisterBottomSheetHost: () => void
+    setPresentationHeld: (held: boolean) => void
     resetState: () => void
 }
 
@@ -51,6 +59,7 @@ type BottomSheetStore = BottomSheetState & BottomSheetActions
 const initialState: BottomSheetState = {
     requests: [],
     hostCount: 0,
+    isPresentationHeld: false,
 }
 
 // Captured value per id, populated by resolve, delivered on remove.
@@ -173,6 +182,9 @@ export const useBottomSheetStore: UseBoundStore<StoreApi<BottomSheetStore>> =
         },
         registerBottomSheetHost: () => {
             set(state => ({ hostCount: state.hostCount + 1 }))
+        },
+        setPresentationHeld: (held: boolean) => {
+            set({ isPresentationHeld: held })
         },
         unregisterBottomSheetHost: () => {
             const hostCount = Math.max(0, get().hostCount - 1)

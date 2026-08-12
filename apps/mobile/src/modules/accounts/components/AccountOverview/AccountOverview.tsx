@@ -21,32 +21,23 @@ import { AccountOverviewModalContext } from './AccountOverviewModalContext'
 export type AccountOverviewProps = {
     account: WalletAccount
     chartVisible: boolean
-    onSwipeEnabledChange?: (enabled: boolean) => void
 }
 
 export const AccountOverview = ({
     account,
     chartVisible,
-    onSwipeEnabledChange,
 }: AccountOverviewProps) => {
     const styles = useStyles()
-    const {
-        scrollingEnabled,
-        isLoading,
-        isRefreshing,
-        handleRefresh,
-        contextValue,
-    } = useAccountOverview({
-        account,
-        onSwipeEnabledChange,
-    })
+    const { isLoading, isRefreshing, handleRefresh, contextValue } =
+        useAccountOverview({
+            account,
+        })
 
     return (
         <AccountOverviewModalContext.Provider value={contextValue}>
             <PWView style={styles.container}>
                 <AccountAssetList
                     account={account}
-                    scrollEnabled={scrollingEnabled}
                     isLoading={isLoading}
                     refreshControl={
                         <PWRefreshControl

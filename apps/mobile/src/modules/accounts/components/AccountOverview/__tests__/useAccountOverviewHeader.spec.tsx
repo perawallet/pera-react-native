@@ -21,10 +21,6 @@ import {
     type UseAccountOverviewModalResult,
 } from '../AccountOverviewModalContext'
 
-const { mockOnScrollEnabledChange } = vi.hoisted(() => ({
-    mockOnScrollEnabledChange: vi.fn(),
-}))
-
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -77,7 +73,6 @@ const mockContextValue: UseAccountOverviewModalResult = {
     openSendFunds: vi.fn(),
     openReceiveFunds: vi.fn(),
     openAccountOptions: vi.fn(),
-    onScrollEnabledChange: mockOnScrollEnabledChange,
 }
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -206,7 +201,9 @@ describe('useAccountOverviewHeader', () => {
         expect(setPrivacyMode).toHaveBeenCalledWith(true)
     })
 
-    it('calls onScrollEnabledChange(false) when a chart point is selected', async () => {
+    // The scroll/pager lock used to hang off this callback; it now lives in the
+    // chart's native gesture, so selection must only move the displayed point.
+    it('records the selected chart point', async () => {
         const setSelectedPoint = vi.fn()
         const { useChartInteraction } =
             await import('@hooks/useChartInteraction')
@@ -233,33 +230,11 @@ describe('useAccountOverviewHeader', () => {
         act(() => {
             result.current.handleChartSelectionChange(mockPoint)
         })
-
         expect(setSelectedPoint).toHaveBeenCalledWith(mockPoint)
-        expect(mockOnScrollEnabledChange).toHaveBeenCalledWith(false)
-    })
-
-    it('calls onScrollEnabledChange(true) when chart selection is cleared', async () => {
-        const setSelectedPoint = vi.fn()
-        const { useChartInteraction } =
-            await import('@hooks/useChartInteraction')
-        vi.mocked(useChartInteraction).mockReturnValue({
-            period: 'one-week' as const,
-            setPeriod: vi.fn(),
-            selectedPoint: null,
-            setSelectedPoint,
-            clearSelection: vi.fn(),
-        })
-
-        const { result } = renderHook(
-            () => useAccountOverviewHeader(mockAccount),
-            { wrapper },
-        )
 
         act(() => {
             result.current.handleChartSelectionChange(null)
         })
-
         expect(setSelectedPoint).toHaveBeenCalledWith(null)
-        expect(mockOnScrollEnabledChange).toHaveBeenCalledWith(true)
     })
 })

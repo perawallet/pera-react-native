@@ -33,29 +33,23 @@ import {
     type TransactionsFilterResult,
 } from '../TransactionsFilterContent'
 import type { AppStackParamList } from '@routes/types'
-import { groupTransactionsByDate, getFilterTimes } from './utils'
+import { getFilterTimes } from './utils'
+import {
+    buildTransactionListRows,
+    type TransactionListRow,
+} from '@modules/transactions/utils/transactionListRows'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-
-/**
- * Represents a section of transactions grouped by date.
- */
-export type TransactionSection = {
-    /** Date string used as section key */
-    date: string
-    /** Human-readable date title */
-    title: string
-    /** Transactions in this section */
-    data: TransactionHistoryItem[]
-}
 
 /**
  * Return type for useAccountHistory hook.
  */
 export type UseAccountHistoryResult = {
-    /** Sections grouped by date for SectionList */
-    sections: TransactionSection[]
+    /** Date headers and transaction rows, flattened for a recycling list */
+    rows: TransactionListRow[]
     /** Whether initial data is loading */
     isLoading: boolean
+    /** Whether to render the cold-start skeleton (no read has resolved yet) */
+    isInitialLoad: boolean
     /** Whether more data is being fetched */
     isFetchingNextPage: boolean
     /** Whether there was an error */
@@ -133,6 +127,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const {
         transactions,
         isLoading,
+        isFetched,
         isFetchingNextPage,
         isError,
         error,
@@ -146,8 +141,8 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         beforeTime,
     })
 
-    const sections = useMemo(
-        () => groupTransactionsByDate(transactions),
+    const rows = useMemo(
+        () => buildTransactionListRows(transactions),
         [transactions],
     )
 
@@ -207,7 +202,15 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         [navigation],
     )
 
-    const isEmpty = !isLoading && transactions.length === 0
+    // Gated on `isFetched`, not `!isLoading`: the query is disabled until the
+    // selected account resolves, and a disabled query reports `isLoading:
+    // false` with no rows — which rendered "no transactions" over a history
+    // that had not been read yet (PERA-4861).
+    // `!hasNextPage` too: an empty local cache still has an API page
+    // queued behind it, and calling that empty would flash the wrong
+    // answer for the length of one request.
+    const isEmpty = isFetched && !hasNextPage && transactions.length === 0
+    const isInitialLoad = rows.length === 0 && (!isFetched || hasNextPage)
     // CSV export is only meaningful when there are transactions to export.
     // The Pera export-history endpoint returns 404 for empty histories, so
     // hiding the button avoids a guaranteed-failure user action. Gating on
@@ -217,8 +220,9 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const isCsvExportVisible = transactions.length > 0
 
     return {
-        sections,
+        rows,
         isLoading,
+        isInitialLoad,
         isFetchingNextPage,
         isError,
         error,

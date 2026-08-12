@@ -24,13 +24,13 @@ export const useStyles = makeStyles((theme, { surfaceColor }: StyleProps) => ({
     },
     assetInIcon: {
         position: 'absolute',
-        top: theme.spacing.xxs,
-        left: theme.spacing.xxs,
+        top: 0,
+        left: 0,
     },
     assetOutIcon: {
         position: 'absolute',
-        bottom: theme.spacing.xxs,
-        right: theme.spacing.xxs,
+        bottom: 0,
+        right: 0,
         borderWidth: theme.borders.sm,
         borderColor: surfaceColor,
         borderRadius: theme.borderRadius.full,

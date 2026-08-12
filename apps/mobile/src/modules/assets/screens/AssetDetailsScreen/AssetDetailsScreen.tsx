@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { dedupeSecondaryLabel } from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { trackEvent, AssetDetailsEvent, AnalyticsMetadataKey } from '@analytics'
 import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
@@ -56,8 +56,6 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
         account?.address ?? '',
         { enabled: !!account?.address },
     )
-
-    const [swipeEnabled, setSwipeEnabled] = useState(true)
 
     // Screen-view tracking (screen_asset_detail) is centralized in the
     // navigator's screenListeners (see routes/listeners.ts). This effect only
@@ -120,7 +118,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
             style={styles.contentContainer}
             testID='asset_details_screen'
         >
-            <Tab.Navigator screenOptions={{ swipeEnabled }}>
+            <Tab.Navigator>
                 <Tab.Screen
                     name='Holdings'
                     options={{
@@ -131,7 +129,6 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                         <AssetHoldings
                             account={account}
                             asset={asset}
-                            onSwipeEnabledChange={setSwipeEnabled}
                             isCollectible={isCollectible}
                         />
                     )}
@@ -143,12 +140,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                         title: t('asset_details.main_screen.markets_tab'),
                     }}
                 >
-                    {() => (
-                        <AssetMarkets
-                            asset={asset}
-                            onSwipeEnabledChange={setSwipeEnabled}
-                        />
-                    )}
+                    {() => <AssetMarkets asset={asset} />}
                 </Tab.Screen>
             </Tab.Navigator>
         </PWView>

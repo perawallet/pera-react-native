@@ -62,6 +62,11 @@ const mocks = vi.hoisted(() => {
         ),
         i18nChangeLanguage: vi.fn().mockResolvedValue(undefined),
         i18nLanguage: 'en',
+        accountsHasHydrated: vi.fn(() => true),
+        accountsOnFinishHydration: vi.fn(
+            (_fn: (state: unknown) => void) => () => {},
+        ),
+        applyLaunchAccountPreference: vi.fn(),
     }
 })
 
@@ -124,6 +129,18 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
         persist: {
             hasHydrated: mocks.settingsHasHydrated,
             onFinishHydration: mocks.settingsOnFinishHydration,
+        },
+    },
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAccountsStore: {
+        getState: () => ({
+            applyLaunchAccountPreference: mocks.applyLaunchAccountPreference,
+        }),
+        persist: {
+            hasHydrated: mocks.accountsHasHydrated,
+            onFinishHydration: mocks.accountsOnFinishHydration,
         },
     },
 }))
@@ -203,6 +220,8 @@ describe('useAppBootstrap', () => {
             (_key: string, fallback?: string) => fallback ?? '',
         )
         mocks.provider.deviceInfo.getDeviceLocales = () => ['en-US']
+        mocks.accountsHasHydrated.mockReturnValue(true)
+        mocks.accountsOnFinishHydration.mockImplementation(() => () => {})
     })
 
     it('bootstraps successfully: bootstrapped true, initError false, persister set, splash hidden', async () => {
@@ -467,5 +486,62 @@ describe('useAppBootstrap', () => {
         expect(
             mocks.provider.remoteConfig.getStringValue,
         ).not.toHaveBeenCalledWith('active_locales', '')
+    })
+
+    // Cold start is the only place the launch account preference is applied
+    // (PERA-4855), and it must land inside the bootstrap gate so the pinned
+    // account is selected before the splash lifts.
+    it('applies the launch account preference before bootstrap completes', async () => {
+        vi.useFakeTimers()
+
+        const { result } = renderHook(() => useAppBootstrap())
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.applyLaunchAccountPreference).toHaveBeenCalledTimes(1)
+        expect(result.current.bootstrapped).toBe(true)
+    })
+
+    it('waits for the accounts store to rehydrate before applying the pin', async () => {
+        mocks.accountsHasHydrated.mockReturnValue(false)
+        let finishHydration: ((state: unknown) => void) | undefined
+        mocks.accountsOnFinishHydration.mockImplementation(
+            (callback: (state: unknown) => void) => {
+                finishHydration = callback
+                return () => {}
+            },
+        )
+        vi.useFakeTimers()
+
+        renderHook(() => useAppBootstrap())
+        await act(async () => {
+            await Promise.resolve()
+        })
+
+        expect(mocks.applyLaunchAccountPreference).not.toHaveBeenCalled()
+
+        await act(async () => {
+            finishHydration?.(undefined)
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.applyLaunchAccountPreference).toHaveBeenCalledTimes(1)
+    })
+
+    // A store that never finishes rehydrating (corrupt persisted JSON) must not
+    // hang the splash gate — the launch preference is simply skipped.
+    it('still completes bootstrap when accounts rehydration never finishes', async () => {
+        mocks.accountsHasHydrated.mockReturnValue(false)
+        mocks.accountsOnFinishHydration.mockImplementation(() => () => {})
+        vi.useFakeTimers()
+
+        const { result } = renderHook(() => useAppBootstrap())
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(result.current.bootstrapped).toBe(true)
+        expect(result.current.initError).toBe(false)
     })
 })

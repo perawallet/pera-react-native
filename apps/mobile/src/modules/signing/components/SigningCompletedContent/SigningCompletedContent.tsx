@@ -12,21 +12,35 @@
 
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
+import {
+    useSigningCompletedContent,
+    type SigningReturnToDapp,
+} from './useSigningCompletedContent'
 
 export type SigningCompletedContentProps = {
     /** Whether the completed request was a transaction (vs arbitrary-data). */
     isTransaction: boolean
+    /**
+     * Set only when the request came over a WC session that was paired from
+     * an external mobile browser — enables the "Return to the dApp" CTA.
+     */
+    returnToDapp?: SigningReturnToDapp
 }
 
 export const SigningCompletedContent = ({
     isTransaction,
+    returnToDapp,
 }: SigningCompletedContentProps) => {
     const { t } = useLanguage()
+    const { showReturnCta, returnLabel, handleReturnToDapp } =
+        useSigningCompletedContent(returnToDapp)
 
     return (
         <ConfirmActionContent
             icon={isTransaction ? 'info' : 'check'}
             iconVariant={isTransaction ? 'primary' : 'positive'}
+            iconUrl={returnToDapp?.dappIconUrl}
+            isMessageCentered
             title={
                 isTransaction
                     ? t('signing.signing_completed.transaction_title')
@@ -37,7 +51,17 @@ export const SigningCompletedContent = ({
                     ? t('signing.signing_completed.transaction_body')
                     : t('signing.signing_completed.data_body')
             }
-            confirmLabel={t('common.done')}
+            {...(showReturnCta
+                ? {
+                      confirmLabel: returnLabel,
+                      confirmVariant: 'primary' as const,
+                      onConfirm: handleReturnToDapp,
+                      confirmTestID: 'signing_completed_return',
+                      cancelLabel: t('common.done'),
+                  }
+                : {
+                      confirmLabel: t('common.done'),
+                  })}
         />
     )
 }

@@ -65,3 +65,26 @@ export const NFT_TEST_ASSET: PeraAsset = {
         logo: 'https://example.test/nft-image.png',
     },
 }
+
+// Second collectible for ordering scenarios. Higher asset id than
+// NFT_TEST_ASSET but alphabetically FIRST ('Another' < 'Test'), so the
+// asset-id, title, and opt-in-round orderings are all pairwise distinct.
+export const NFT_TEST_ASSET_2_ID = '88888881'
+
+export const NFT_TEST_ASSET_2: PeraAsset = {
+    assetId: NFT_TEST_ASSET_2_ID,
+    name: 'Another Collectible',
+    unitName: 'TEST2',
+    decimals: 0,
+    creator: { address: 'CREATOR_TEST_ADDRESS' },
+    totalSupply: new Decimal('1'),
+    url: 'https://example.test/nft-image-2.png',
+    peraMetadata: {
+        isDeleted: false,
+        verificationTier: PeraAssetVerificationTier.verified,
+        isFavorited: false,
+        isPriceAlertEnabled: false,
+        type: PeraAssetType.collectible,
+        logo: 'https://example.test/nft-image-2.png',
+    },
+}

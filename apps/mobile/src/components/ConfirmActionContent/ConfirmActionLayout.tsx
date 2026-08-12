@@ -11,7 +11,7 @@
  */
 
 // Host-agnostic presentation for a confirm/acknowledge panel: icon, title,
-// message and up to two buttons. Split out of ConfirmActionContent so the same
+// message and up to three buttons. Split out of ConfirmActionContent so the same
 // visuals can render OUTSIDE a bottom sheet — ConfirmActionContent calls
 // `useBottomSheetResult()`, which THROWS without a BottomSheetIdContext, so it
 // cannot be used on the extension's approval page (its own top-level document,
@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     PWButton,
     PWIcon,
+    PWImage,
     PWText,
     PWView,
     type IconName,
@@ -36,14 +37,20 @@ import type { ReactNode } from 'react'
 export type ConfirmActionLayoutProps = {
     icon?: IconName
     iconVariant?: PWIconVariant
+    /** Remote image (e.g. a dApp logo) shown in place of `icon` when set. */
+    iconUrl?: string
     title?: string
     message?: ReactNode
+    isMessageCentered?: boolean
     confirmLabel?: string
     cancelLabel?: string
+    tertiaryLabel?: string
     onConfirm: () => void
     onCancel: () => void
+    onTertiary?: () => void
     confirmVariant?: PWButtonProps['variant']
     cancelVariant?: PWButtonProps['variant']
+    tertiaryVariant?: PWButtonProps['variant']
     buttonPaddingStyle?: PWButtonProps['paddingStyle']
     testID?: string
     confirmTestID?: string
@@ -53,14 +60,19 @@ export type ConfirmActionLayoutProps = {
 export const ConfirmActionLayout = ({
     icon,
     iconVariant = 'primary',
+    iconUrl,
     title,
     message,
+    isMessageCentered = false,
     confirmLabel,
     cancelLabel,
+    tertiaryLabel,
     onConfirm,
     onCancel,
+    onTertiary,
     confirmVariant = 'primary',
     cancelVariant = 'secondary',
+    tertiaryVariant = 'errorLink',
     buttonPaddingStyle,
     testID,
     confirmTestID,
@@ -70,6 +82,7 @@ export const ConfirmActionLayout = ({
     const styles = useStyles({
         bottomInset: insets.bottom,
         hasActions: !!confirmLabel,
+        isMessageCentered,
     })
 
     return (
@@ -77,13 +90,21 @@ export const ConfirmActionLayout = ({
             style={styles.container}
             testID={testID}
         >
-            {!!icon && (
-                <PWIcon
-                    name={icon}
-                    variant={iconVariant}
-                    size='xxl'
-                    style={styles.icon}
+            {iconUrl ? (
+                <PWImage
+                    source={{ uri: iconUrl }}
+                    style={styles.iconImage}
+                    testID={testID ? `${testID}-icon-image` : undefined}
                 />
+            ) : (
+                !!icon && (
+                    <PWIcon
+                        name={icon}
+                        variant={iconVariant}
+                        size='xxl'
+                        style={styles.icon}
+                    />
+                )
             )}
             {!!title && (
                 <PWText
@@ -119,6 +140,14 @@ export const ConfirmActionLayout = ({
                             onPress={onCancel}
                             paddingStyle={buttonPaddingStyle}
                             testID={cancelTestID}
+                        />
+                    )}
+                    {!!tertiaryLabel && (
+                        <PWButton
+                            variant={tertiaryVariant}
+                            title={tertiaryLabel}
+                            onPress={onTertiary}
+                            paddingStyle={buttonPaddingStyle}
                         />
                     )}
                 </PWView>

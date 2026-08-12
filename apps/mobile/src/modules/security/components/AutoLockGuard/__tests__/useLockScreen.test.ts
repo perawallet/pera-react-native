@@ -12,8 +12,13 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { AppState, type AppStateStatus } from 'react-native'
 import { useLockScreen } from '../useLockScreen'
-import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
+import {
+    usePinCode,
+    useBiometrics,
+    type BiometricsAuthenticateResult,
+} from '@perawallet/wallet-core-security'
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),
@@ -108,7 +113,7 @@ describe('useLockScreen', () => {
             setLockoutEndTime: mockSetLockoutEndTime,
         })
         mockCheckBiometricsEnabled.mockResolvedValue(true)
-        mockAuthenticateWithBiometrics.mockResolvedValue(true)
+        mockAuthenticateWithBiometrics.mockResolvedValue({ success: true })
 
         renderHook(() =>
             useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
@@ -329,7 +334,9 @@ describe('useLockScreen', () => {
         describe('biometric prompt on cold-start lock activation', () => {
             it('does not prompt biometrics while unlocked', async () => {
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue({
+                    success: true,
+                })
 
                 renderHook(() =>
                     useLockScreen({ onUnlock: mockOnUnlock, isLocked: false }),
@@ -350,7 +357,9 @@ describe('useLockScreen', () => {
                 // burned the attempt flag at mount and double-prompted on the
                 // flip, cancelling the first prompt mid-flight.
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue({
+                    success: true,
+                })
 
                 const { rerender } = renderHook(
                     ({ isLocked }: { isLocked: boolean }) =>
@@ -377,9 +386,11 @@ describe('useLockScreen', () => {
                 // (store update, i18n change) must not cancel an in-flight
                 // biometric prompt — same failure class as PERA-4466.
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                let resolveAuth: ((success: boolean) => void) | undefined
+                let resolveAuth:
+                    | ((result: BiometricsAuthenticateResult) => void)
+                    | undefined
                 mockAuthenticateWithBiometrics.mockReturnValue(
-                    new Promise<boolean>(resolve => {
+                    new Promise<BiometricsAuthenticateResult>(resolve => {
                         resolveAuth = resolve
                     }),
                 )
@@ -411,7 +422,7 @@ describe('useLockScreen', () => {
                 rerender({ isLocked: true })
 
                 await act(async () => {
-                    resolveAuth?.(true)
+                    resolveAuth?.({ success: true })
                     await Promise.resolve()
                 })
 
@@ -423,7 +434,9 @@ describe('useLockScreen', () => {
         describe('biometric prompt on repeated lock activations', () => {
             it('prompts biometrics again after unlock and re-lock', async () => {
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue({
+                    success: true,
+                })
 
                 const { rerender } = renderHook(
                     ({ isLocked }: { isLocked: boolean }) =>
@@ -450,7 +463,9 @@ describe('useLockScreen', () => {
 
             it('does not prompt biometrics on re-lock if user is locked out', async () => {
                 mockCheckBiometricsEnabled.mockResolvedValue(true)
-                mockAuthenticateWithBiometrics.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue({
+                    success: true,
+                })
 
                 ;(usePinCode as Mock).mockReturnValue({
                     verifyPin: mockVerifyPin,
@@ -473,6 +488,263 @@ describe('useLockScreen', () => {
                 })
 
                 expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+            })
+        })
+
+        describe('app-active gating and system-cancel retry', () => {
+            // The global react-native mock is module-level state shared across
+            // tests in this file: always restore currentState in afterEach.
+            const setAppState = (state: AppStateStatus) => {
+                ;(AppState as { currentState: AppStateStatus }).currentState =
+                    state
+            }
+
+            const getActiveWaitHandler = () =>
+                (AppState.addEventListener as Mock).mock.calls.at(-1)?.[1] as (
+                    next: AppStateStatus,
+                ) => void
+
+            // Retry chains span several awaits per attempt; flush generously.
+            const flushPrompt = async () => {
+                await act(async () => {
+                    for (let i = 0; i < 15; i++) {
+                        await Promise.resolve()
+                    }
+                })
+            }
+
+            afterEach(() => {
+                setAppState('active')
+            })
+
+            it('defers the cold-start prompt until the app becomes active (PERA-4854)', async () => {
+                setAppState('inactive')
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue({
+                    success: true,
+                })
+
+                renderHook(() =>
+                    useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+                )
+                await flushPrompt()
+
+                expect(mockCheckBiometricsEnabled).not.toHaveBeenCalled()
+                expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+
+                setAppState('active')
+                await act(async () => {
+                    getActiveWaitHandler()('active')
+                })
+                await flushPrompt()
+
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockResetFailedAttempts).toHaveBeenCalledTimes(1)
+                expect(mockOnUnlock).toHaveBeenCalledTimes(1)
+            })
+
+            it('removes the AppState listener when unlocked before the app activates', async () => {
+                setAppState('inactive')
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue({
+                    success: true,
+                })
+
+                const { rerender } = renderHook(
+                    ({ isLocked }: { isLocked: boolean }) =>
+                        useLockScreen({ onUnlock: mockOnUnlock, isLocked }),
+                    { initialProps: { isLocked: true } },
+                )
+                await flushPrompt()
+                const subscription = (
+                    AppState.addEventListener as Mock
+                ).mock.results.at(-1)?.value as { remove: Mock }
+                const staleHandler = getActiveWaitHandler()
+
+                rerender({ isLocked: false })
+
+                expect(subscription.remove).toHaveBeenCalled()
+
+                setAppState('active')
+                await act(async () => {
+                    staleHandler('active')
+                })
+                await flushPrompt()
+
+                expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+                expect(mockOnUnlock).not.toHaveBeenCalled()
+            })
+
+            it('does not prompt on activation if a lockout began while waiting', async () => {
+                setAppState('inactive')
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue({
+                    success: true,
+                })
+
+                const { rerender } = renderHook(
+                    ({ isLocked }: { isLocked: boolean }) =>
+                        useLockScreen({ onUnlock: mockOnUnlock, isLocked }),
+                    { initialProps: { isLocked: true } },
+                )
+                await flushPrompt()
+
+                // Failed PIN attempts on the pad trip the lockout while the
+                // prompt is still waiting for activation.
+                ;(usePinCode as Mock).mockReturnValue({
+                    verifyPin: mockVerifyPin,
+                    handleFailedAttempt: mockHandleFailedAttempt,
+                    resetFailedAttempts: mockResetFailedAttempts,
+                    isLockedOut: true,
+                    lockoutEndTime: Date.now() + 60_000,
+                    setLockoutEndTime: mockSetLockoutEndTime,
+                })
+                rerender({ isLocked: true })
+
+                setAppState('active')
+                await act(async () => {
+                    getActiveWaitHandler()('active')
+                })
+                await flushPrompt()
+
+                expect(mockCheckBiometricsEnabled).not.toHaveBeenCalled()
+                expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
+            })
+
+            it('retries after a system-cancel once the app becomes active, then unlocks (PERA-4854)', async () => {
+                // The deeplink cold-start repro: RN already reports 'active'
+                // when the first prompt fires, but the OS cancels it because
+                // the app is still mid-launch.
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                let resolveFirstAuth:
+                    | ((result: BiometricsAuthenticateResult) => void)
+                    | undefined
+                mockAuthenticateWithBiometrics
+                    .mockReturnValueOnce(
+                        new Promise<BiometricsAuthenticateResult>(resolve => {
+                            resolveFirstAuth = resolve
+                        }),
+                    )
+                    .mockResolvedValueOnce({ success: true })
+
+                renderHook(() =>
+                    useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+                )
+                await flushPrompt()
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+
+                // The cancellation lands while the app is genuinely inactive.
+                setAppState('inactive')
+                await act(async () => {
+                    resolveFirstAuth?.({
+                        success: false,
+                        reason: 'system-cancel',
+                    })
+                })
+                await flushPrompt()
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+
+                setAppState('active')
+                await act(async () => {
+                    getActiveWaitHandler()('active')
+                })
+                await flushPrompt()
+
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(2)
+                expect(mockResetFailedAttempts).toHaveBeenCalledTimes(1)
+                expect(mockOnUnlock).toHaveBeenCalledTimes(1)
+            })
+
+            it('retries immediately when the app is already active on a system-cancel', async () => {
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics
+                    .mockResolvedValueOnce({
+                        success: false,
+                        reason: 'system-cancel',
+                    })
+                    .mockResolvedValueOnce({ success: true })
+
+                renderHook(() =>
+                    useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+                )
+                await flushPrompt()
+
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(2)
+                expect(mockOnUnlock).toHaveBeenCalledTimes(1)
+            })
+
+            it('stops retrying after the retry budget is spent', async () => {
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue({
+                    success: false,
+                    reason: 'system-cancel',
+                })
+
+                renderHook(() =>
+                    useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+                )
+                await flushPrompt()
+
+                // Initial attempt + MAX_SYSTEM_CANCEL_RETRIES.
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(3)
+                expect(mockOnUnlock).not.toHaveBeenCalled()
+            })
+
+            it.each([
+                'user-cancel',
+                'lockout',
+                'failed',
+                'unavailable',
+                'unknown',
+            ] as const)('never retries after a %s failure', async reason => {
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue({
+                    success: false,
+                    reason,
+                })
+
+                renderHook(() =>
+                    useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+                )
+                await flushPrompt()
+
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                // No retry armed: nothing ever subscribed to AppState.
+                expect(AppState.addEventListener).not.toHaveBeenCalled()
+                expect(mockOnUnlock).not.toHaveBeenCalled()
+            })
+
+            it('ignores AppState churn from a prompt that already succeeded (PERA-4196)', async () => {
+                setAppState('inactive')
+                mockCheckBiometricsEnabled.mockResolvedValue(true)
+                mockAuthenticateWithBiometrics.mockResolvedValue({
+                    success: true,
+                })
+
+                renderHook(() =>
+                    useLockScreen({ onUnlock: mockOnUnlock, isLocked: true }),
+                )
+                await flushPrompt()
+                const handler = getActiveWaitHandler()
+
+                setAppState('active')
+                await act(async () => {
+                    handler('active')
+                })
+                await flushPrompt()
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockOnUnlock).toHaveBeenCalledTimes(1)
+
+                // iOS drives inactive -> active around the prompt itself; the
+                // stale listener must not re-prompt.
+                await act(async () => {
+                    handler('inactive')
+                    handler('active')
+                })
+                await flushPrompt()
+
+                expect(mockAuthenticateWithBiometrics).toHaveBeenCalledTimes(1)
+                expect(mockOnUnlock).toHaveBeenCalledTimes(1)
             })
         })
     })

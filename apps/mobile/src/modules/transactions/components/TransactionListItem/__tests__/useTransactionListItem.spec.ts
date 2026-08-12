@@ -46,6 +46,12 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     }
 })
 
+const mockCopyToClipboard = vi.fn()
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
+}))
+
 vi.mock('@hooks/useResolvedAddress', () => ({
     useResolvedAddress: vi.fn(() => ({
         displayName: '',
@@ -374,6 +380,20 @@ describe('useTransactionListItem', () => {
                 useTransactionListItem({ transaction: tx }),
             )
             expect(result.current.amounts[0].prefix).toBe('+')
+        })
+    })
+
+    describe('handleLongPress', () => {
+        it('copies the transaction id', () => {
+            mockCopyToClipboard.mockClear()
+            const tx = createPaymentTx({ id: 'TXID123' })
+            const { result } = renderHook(() =>
+                useTransactionListItem({ transaction: tx }),
+            )
+
+            result.current.handleLongPress()
+
+            expect(mockCopyToClipboard).toHaveBeenCalledWith('TXID123')
         })
     })
 

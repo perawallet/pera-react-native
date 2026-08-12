@@ -11,8 +11,21 @@
  */
 
 import { describe, test, expect } from 'vitest'
+import { Decimal } from 'decimal.js'
 
-import { getKnownAssetId } from '../assets'
+import { ALGO_ASSET, getKnownAssetId } from '../assets'
+import { toWholeUnits } from '../../utils'
+
+describe('ALGO_ASSET', () => {
+    test('totalSupply is the chain total of 10B ALGO, in base units', () => {
+        // Seeded into SQLite at startup and read back as authoritative, so this
+        // constant is what Asset Details renders — no API value corrects it.
+        expect(ALGO_ASSET.totalSupply.toFixed()).toBe('10000000000000000')
+        expect(toWholeUnits(ALGO_ASSET.totalSupply, ALGO_ASSET)).toStrictEqual(
+            new Decimal('10000000000'),
+        )
+    })
+})
 
 describe('known asset ids', () => {
     test('getKnownAssetId returns null where the asset has no known id', () => {

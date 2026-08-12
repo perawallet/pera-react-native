@@ -169,6 +169,23 @@ describe('Flow: View transactions → tap into details', () => {
             await resetTestDatabase()
             await seedAlgoAsset('mainnet')
 
+            // An empty SQLite read no longer means "no history" on its own —
+            // it also happens while the initial sync is still writing — so the
+            // hook confirms against the API before showing the empty view.
+            server.use(
+                http.get(`*/v1/accounts/${ACCOUNT.address}/transactions/`, () =>
+                    HttpResponse.json(
+                        {
+                            current_round: 1100,
+                            next: null,
+                            previous: null,
+                            results: [],
+                        },
+                        { status: 200 },
+                    ),
+                ),
+            )
+
             renderWithNavigation(AccountHistory, 'AccountHistory')
 
             // i18n isn't initialized under the integration setup, so `t()`
@@ -296,11 +313,8 @@ describe('Flow: View transactions → tap into details', () => {
     it(
         'Given the DB returned a full page of transactions (hasNextPage true), when the consumer triggers handleLoadMore, then the next-page API endpoint is hit and the new transactions are appended',
         async () => {
-            // Seed exactly the page size (25) so the DB-first read reports
-            // `hasNextPage = true` — see useTransactionHistoryQuery: when
-            // dbTransactions.length >= limit, the pagination cursor is set
-            // to '__load_more_from_api__' and `hasNextPage` flips on. With
-            // fewer rows the hook short-circuits and never calls the API.
+            // Fewer rows than the DB page size, so SQLite is exhausted in one
+            // read and the next page is the api page this test exercises.
             const fullPage: TransactionHistoryItem[] = Array.from(
                 { length: 25 },
                 (_, i) => ({
@@ -337,12 +351,15 @@ describe('Flow: View transactions → tap into details', () => {
             // can confirm the load-more path actually fires the network
             // request (not just bumps query state). Returns a single new
             // row so the merged list is observably longer.
+            // Round and round time must agree: the api page is deduped against
+            // the oldest row already held (round 99), so a "900" here would
+            // read as newer than the boundary and be stripped as overlap.
             const olderTx = {
                 id: 'TXOLDER0000000000000000000000000000000000000000000099',
                 tx_type: 'pay' as const,
                 sender: ALGO25_TEST_ADDRESS,
                 receiver: HD_TEST_ADDRESS,
-                confirmed_round: 900,
+                confirmed_round: 50,
                 round_time: 1_699_000_000,
                 fee: '1000',
                 amount: '500000',
@@ -380,21 +397,25 @@ describe('Flow: View transactions → tap into details', () => {
                 wrapper,
             })
 
-            // First page comes from the local DB. Wait for it to settle
-            // (25 rows in one section).
+            // First page comes from the local DB: the 25 seeded rows plus the
+            // two from beforeEach, each date group led by a header.
             await waitFor(
                 () => {
-                    expect(result.current.sections).toHaveLength(1)
-                    expect(result.current.sections[0].data).toHaveLength(25)
+                    expect(
+                        result.current.rows.filter(
+                            row => row.kind === 'transaction',
+                        ),
+                    ).toHaveLength(27)
                 },
                 { timeout: 5000 },
             )
+            expect(result.current.rows[0].kind).toBe('header')
             // hasNextPage flips on when the DB returned a full page —
             // production gates `handleLoadMore` on this same flag.
             expect(result.current.hasNextPage).toBe(true)
             expect(apiSpy).not.toHaveBeenCalled()
 
-            // Trigger the same path SectionList.onEndReached uses. wrap
+            // Trigger the same path the list's onEndReached uses. wrap
             // in act so the resulting state mutations flush.
             act(() => {
                 result.current.handleLoadMore()
@@ -411,9 +432,9 @@ describe('Flow: View transactions → tap into details', () => {
             )
             await waitFor(
                 () => {
-                    const allIds = result.current.sections.flatMap(s =>
-                        s.data.map(t => t.id),
-                    )
+                    const allIds = result.current.rows
+                        .filter(row => row.kind === 'transaction')
+                        .map(row => row.key)
                     expect(allIds).toContain(olderTx.id)
                 },
                 { timeout: 5000 },

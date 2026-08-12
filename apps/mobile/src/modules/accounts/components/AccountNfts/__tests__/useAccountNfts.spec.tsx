@@ -14,7 +14,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useAccountNfts } from '../useAccountNfts'
-import type { PeraAsset } from '@perawallet/wallet-core-assets'
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', () => ({
@@ -71,9 +70,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 })
 
 const mockUseSelectedAccount = vi.fn()
-const mockUseAccountBalancesQuery = vi.fn()
+const mockUseAccountCollectiblesQuery = vi.fn()
 const mockUseCanSignWith = vi.fn()
-const mockUseAllAccounts = vi.fn()
+const mockUseAccountOptInRoundsQuery = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -84,14 +83,14 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ...actual,
         useSelectedAccount: (...args: unknown[]) =>
             mockUseSelectedAccount(...args),
-        useAccountBalancesQuery: (...args: unknown[]) =>
-            mockUseAccountBalancesQuery(...args),
-        useAllAccounts: (...args: unknown[]) => mockUseAllAccounts(...args),
+        useAccountCollectiblesQuery: (...args: unknown[]) =>
+            mockUseAccountCollectiblesQuery(...args),
         useCanSignWith: (...args: unknown[]) => mockUseCanSignWith(...args),
+        useAccountOptInRoundsQuery: (...args: unknown[]) =>
+            mockUseAccountOptInRoundsQuery(...args),
     }
 })
 
-const mockUseAssetsQuery = vi.fn()
 const mockSetCollectibleSortMode = vi.fn()
 const mockSetGalleryLayout = vi.fn()
 const mockSetShowOptedIn = vi.fn()
@@ -104,7 +103,6 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
         await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
     return {
         ...actual,
-        useAssetsQuery: (...args: unknown[]) => mockUseAssetsQuery(...args),
         useCollectiblePreferencesStore: (
             selector: (state: Record<string, unknown>) => unknown,
         ) =>
@@ -119,39 +117,22 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     }
 })
 
-const makeCollectibleAsset = (
-    id: string,
-    name: string,
-    collectionName?: string,
-): PeraAsset => ({
-    assetId: id,
-    name,
+// Filtering, searching and ordering now happen in SQL — see the
+// `getAccountCollectiblesLite` suite in the accounts package for those. These
+// tests cover what the hook still owns: query wiring and the opt-in-round sort.
+const makeRow = (assetId: string, title: string) => ({
+    assetId,
+    amount: new Decimal(1),
     decimals: 0,
-    totalSupply: new Decimal(1),
-    creator: { address: 'CREATOR' },
-    peraMetadata: {
-        isDeleted: false,
-        verificationTier: 'unverified',
-        type: 'collectible',
-        collectible: {
-            title: name,
-            collection: collectionName ? { name: collectionName } : undefined,
-            primaryImage: `https://example.com/${id}.png`,
-        },
-    },
-})
-
-const makeFungibleAsset = (id: string, name: string): PeraAsset => ({
-    assetId: id,
-    name,
-    decimals: 6,
-    totalSupply: new Decimal(1_000_000),
-    creator: { address: 'CREATOR' },
-    peraMetadata: {
-        isDeleted: false,
-        verificationTier: 'verified',
-        type: 'standard_asset',
-    },
+    creatorAddress: 'CREATOR',
+    totalSupply: '1',
+    name: `Asset ${title}`,
+    unitName: 'NFT',
+    url: null,
+    metadata: null,
+    peraMetadataJson: null,
+    title,
+    collectionName: null,
 })
 
 const createDeferred = () => {
@@ -175,106 +156,189 @@ describe('useAccountNfts', () => {
         mockGalleryLayout = 'grid'
         mockShowOptedIn = false
         mockUseSelectedAccount.mockReturnValue(mockAccount)
-        mockUseAllAccounts.mockReturnValue([mockAccount])
         mockUseCanSignWith.mockReturnValue(true)
+        mockUseAccountOptInRoundsQuery.mockReturnValue({
+            optInRounds: new Map<string, number>(),
+            isPending: false,
+        })
+        mockUseAccountCollectiblesQuery.mockReturnValue({
+            collectibles: [makeRow('100', 'Cool NFT'), makeRow('200', 'Zed')],
+            isPending: false,
+        })
+    })
 
-        mockUseAccountBalancesQuery.mockReturnValue({
-            accountBalances: new Map([
-                [
-                    mockAccount.address,
-                    {
-                        assetBalances: [
-                            {
-                                assetId: '100',
-                                amount: new Decimal(1),
-                                algoValue: new Decimal(0),
-                            },
-                            {
-                                assetId: '200',
-                                amount: new Decimal(5),
-                                algoValue: new Decimal(0),
-                            },
-                            {
-                                assetId: '300',
-                                amount: new Decimal(1_000_000),
-                                algoValue: new Decimal(10),
-                            },
-                        ],
-                    },
-                ],
-            ]),
+    describe('query wiring', () => {
+        it('passes the selected account, sort mode and opted-in filter through', () => {
+            renderHook(() => useAccountNfts())
+
+            expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
+                mockAccount.address,
+                expect.objectContaining({
+                    sortMode: 'titleAsc',
+                    includeOptedInOnly: false,
+                }),
+            )
+        })
+
+        it('shows opted-in-only collectibles when the preference is on', () => {
+            mockShowOptedIn = true
+            renderHook(() => useAccountNfts())
+
+            expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
+                mockAccount.address,
+                expect.objectContaining({ includeOptedInOnly: true }),
+            )
+        })
+
+        it('passes the search term down so SQL narrows the read', () => {
+            const { result } = renderHook(() => useAccountNfts())
+
+            act(() => {
+                result.current.setSearchFilter('cool')
+            })
+
+            expect(mockUseAccountCollectiblesQuery).toHaveBeenLastCalledWith(
+                mockAccount.address,
+                expect.objectContaining({ search: 'cool' }),
+            )
+        })
+
+        // Opt-in round lives in an indexer query, so SQL can't express it.
+        it('leaves the SQL sort unset for recentlyAdded', () => {
+            mockSortMode = 'recentlyAdded'
+            renderHook(() => useAccountNfts())
+
+            expect(mockUseAccountCollectiblesQuery).toHaveBeenCalledWith(
+                mockAccount.address,
+                expect.objectContaining({ sortMode: undefined }),
+            )
+        })
+
+        it('enables the opt-in rounds query only for the recentlyAdded mode', () => {
+            renderHook(() => useAccountNfts())
+            expect(mockUseAccountOptInRoundsQuery).toHaveBeenCalledWith(
+                mockAccount.address,
+                false,
+            )
+
+            mockSortMode = 'recentlyAdded'
+            renderHook(() => useAccountNfts())
+            expect(mockUseAccountOptInRoundsQuery).toHaveBeenLastCalledWith(
+                mockAccount.address,
+                true,
+            )
+        })
+
+        it('returns the SQL order untouched for SQL-expressible modes', () => {
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.collectibles.map(c => c.assetId)).toEqual([
+                '100',
+                '200',
+            ])
+            expect(result.current.collectibleCount).toBe(2)
+        })
+    })
+
+    describe('recentlyAdded ordering', () => {
+        beforeEach(() => {
+            mockSortMode = 'recentlyAdded'
+        })
+
+        it('puts the most recently opted-in collectible first', () => {
+            mockUseAccountOptInRoundsQuery.mockReturnValue({
+                optInRounds: new Map([
+                    ['100', 10],
+                    ['200', 99],
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.collectibles.map(c => c.assetId)).toEqual([
+                '200',
+                '100',
+            ])
+        })
+
+        it('sinks collectibles with no known opt-in round below the rest', () => {
+            mockUseAccountOptInRoundsQuery.mockReturnValue({
+                optInRounds: new Map([['200', 5]]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.collectibles.map(c => c.assetId)).toEqual([
+                '200',
+                '100',
+            ])
+        })
+
+        it('keeps the SQL order for collectibles that tie', () => {
+            mockUseAccountOptInRoundsQuery.mockReturnValue({
+                optInRounds: new Map<string, number>(),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.collectibles.map(c => c.assetId)).toEqual([
+                '100',
+                '200',
+            ])
+        })
+    })
+
+    describe('pending state', () => {
+        it('reports the collectibles query pending state', () => {
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [],
+                isPending: true,
+            })
+
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.isPending).toBe(true)
+            expect(result.current.collectibles).toHaveLength(0)
+        })
+
+        it('is settled once the read resolves', () => {
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.isPending).toBe(false)
+        })
+    })
+
+    it('returns hasAccount false when no account selected', () => {
+        mockUseSelectedAccount.mockReturnValue(null)
+        mockUseAccountCollectiblesQuery.mockReturnValue({
+            collectibles: [],
             isPending: false,
         })
 
-        mockUseAssetsQuery.mockReturnValue({
-            data: new Map<string, PeraAsset>([
-                [
-                    '100',
-                    makeCollectibleAsset('100', 'Cool NFT', 'CoolCollection'),
-                ],
-                [
-                    '200',
-                    makeCollectibleAsset(
-                        '200',
-                        'Another NFT',
-                        'AnotherCollection',
-                    ),
-                ],
-                ['300', makeFungibleAsset('300', 'USDC')],
-            ]),
-        })
-    })
-
-    it('filters only collectible assets from balances', () => {
         const { result } = renderHook(() => useAccountNfts())
 
-        expect(result.current.collectibles).toHaveLength(2)
-        const ids = result.current.collectibles.map(c => c.assetId)
-        expect(ids).toContain('100')
-        expect(ids).toContain('200')
-        expect(ids).not.toContain('300')
+        expect(result.current.hasAccount).toBe(false)
+        expect(result.current.collectibles).toHaveLength(0)
     })
 
-    it('sorts collectibles by title ascending by default', () => {
+    it('reads gallery layout from store', () => {
+        mockGalleryLayout = 'list'
         const { result } = renderHook(() => useAccountNfts())
 
-        expect(result.current.sortMode).toBe('titleAsc')
-        expect(result.current.collectibles[0].asset.name).toBe('Another NFT')
-        expect(result.current.collectibles[1].asset.name).toBe('Cool NFT')
-    })
-
-    it('sorts collectibles by title descending', () => {
-        mockSortMode = 'titleDesc'
-        const { result } = renderHook(() => useAccountNfts())
-
-        expect(result.current.collectibles[0].asset.name).toBe('Cool NFT')
-        expect(result.current.collectibles[1].asset.name).toBe('Another NFT')
-    })
-
-    it('sorts collectibles newest first by asset ID descending', () => {
-        mockSortMode = 'newestFirst'
-        const { result } = renderHook(() => useAccountNfts())
-
-        expect(result.current.collectibles[0].assetId).toBe('200')
-        expect(result.current.collectibles[1].assetId).toBe('100')
-    })
-
-    it('sorts collectibles oldest first by asset ID ascending', () => {
-        mockSortMode = 'oldestFirst'
-        const { result } = renderHook(() => useAccountNfts())
-
-        expect(result.current.collectibles[0].assetId).toBe('100')
-        expect(result.current.collectibles[1].assetId).toBe('200')
+        expect(result.current.galleryLayout).toBe('list')
     })
 
     it('calls store setter when setSortMode is invoked', () => {
         const { result } = renderHook(() => useAccountNfts())
 
         act(() => {
-            result.current.setSortMode('newestFirst')
+            result.current.setSortMode('titleDesc')
         })
 
-        expect(mockSetCollectibleSortMode).toHaveBeenCalledWith('newestFirst')
+        expect(mockSetCollectibleSortMode).toHaveBeenCalledWith('titleDesc')
     })
 
     it('calls store setter when setGalleryLayout is invoked', () => {
@@ -287,36 +351,7 @@ describe('useAccountNfts', () => {
         expect(mockSetGalleryLayout).toHaveBeenCalledWith('list')
     })
 
-    it('reads gallery layout from store', () => {
-        mockGalleryLayout = 'list'
-        const { result } = renderHook(() => useAccountNfts())
-
-        expect(result.current.galleryLayout).toBe('list')
-    })
-
-    it('filters collectibles by search term', () => {
-        const { result } = renderHook(() => useAccountNfts())
-
-        act(() => {
-            result.current.setSearchFilter('Cool')
-        })
-
-        expect(result.current.collectibles).toHaveLength(1)
-        expect(result.current.collectibles[0].assetId).toBe('100')
-    })
-
-    it('searches by collection name', () => {
-        const { result } = renderHook(() => useAccountNfts())
-
-        act(() => {
-            result.current.setSearchFilter('AnotherCollection')
-        })
-
-        expect(result.current.collectibles).toHaveLength(1)
-        expect(result.current.collectibles[0].assetId).toBe('200')
-    })
-
-    it('navigates to AssetDetails on press', () => {
+    it('navigates to CollectibleDetails on press', () => {
         const { result } = renderHook(() => useAccountNfts())
 
         act(() => {
@@ -324,87 +359,7 @@ describe('useAccountNfts', () => {
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('CollectibleDetails', {
-            assetId: result.current.collectibles[0].assetId,
-        })
-    })
-
-    it('returns hasAccount false when no account selected', () => {
-        mockUseSelectedAccount.mockReturnValue(null)
-
-        const { result } = renderHook(() => useAccountNfts())
-
-        expect(result.current.hasAccount).toBe(false)
-        expect(result.current.collectibles).toHaveLength(0)
-    })
-
-    it('returns empty array when no collectibles exist', () => {
-        mockUseAssetsQuery.mockReturnValue({
-            data: new Map<string, PeraAsset>([
-                ['300', makeFungibleAsset('300', 'USDC')],
-            ]),
-        })
-
-        mockUseAccountBalancesQuery.mockReturnValue({
-            accountBalances: new Map([
-                [
-                    mockAccount.address,
-                    {
-                        assetBalances: [
-                            {
-                                assetId: '300',
-                                amount: new Decimal(1_000_000),
-                                algoValue: new Decimal(10),
-                            },
-                        ],
-                    },
-                ],
-            ]),
-            isPending: false,
-        })
-
-        const { result } = renderHook(() => useAccountNfts())
-
-        expect(result.current.collectibles).toHaveLength(0)
-    })
-
-    describe('opted-in filter', () => {
-        beforeEach(() => {
-            mockUseAccountBalancesQuery.mockReturnValue({
-                accountBalances: new Map([
-                    [
-                        mockAccount.address,
-                        {
-                            assetBalances: [
-                                {
-                                    assetId: '100',
-                                    amount: new Decimal(1),
-                                    algoValue: new Decimal(0),
-                                },
-                                {
-                                    assetId: '200',
-                                    amount: new Decimal(0),
-                                    algoValue: new Decimal(0),
-                                },
-                            ],
-                        },
-                    ],
-                ]),
-                isPending: false,
-            })
-        })
-
-        it('hides zero-amount NFTs when showOptedIn is false', () => {
-            const { result } = renderHook(() => useAccountNfts())
-
-            expect(result.current.collectibles).toHaveLength(1)
-            expect(result.current.collectibles[0].assetId).toBe('100')
-        })
-
-        it('shows zero-amount NFTs when showOptedIn is true', () => {
-            mockShowOptedIn = true
-            const { result } = renderHook(() => useAccountNfts())
-
-            expect(result.current.collectibles).toHaveLength(2)
+            assetId: '100',
         })
     })
 
@@ -426,9 +381,8 @@ describe('useAccountNfts', () => {
         it('reports isRefreshing while the sync refresh is in flight', async () => {
             const deferred = createDeferred()
             mockRefreshAccounts.mockReturnValue(deferred.promise)
-            const { result } = renderHook(() => useAccountNfts())
 
-            expect(result.current.isRefreshing).toBe(false)
+            const { result } = renderHook(() => useAccountNfts())
 
             act(() => {
                 result.current.handleRefresh()

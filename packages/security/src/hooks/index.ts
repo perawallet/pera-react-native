@@ -14,6 +14,8 @@ export { usePinCode } from './usePinCode'
 export {
     useBiometrics,
     type BiometricType,
+    type BiometricsAuthenticateFailureReason,
+    type BiometricsAuthenticateResult,
     type EnableBiometricsResult,
     type EnableBiometricsFailureReason,
 } from './useBiometrics'

@@ -15,15 +15,22 @@ import { makeStyles } from '@rneui/themed'
 type StyleProps = {
     bottomInset: number
     hasActions: boolean
+    isMessageCentered: boolean
 }
 
 export const useStyles = makeStyles(
-    (theme, { bottomInset, hasActions }: StyleProps) => ({
+    (theme, { bottomInset, hasActions, isMessageCentered }: StyleProps) => ({
         container: {
             paddingBottom: hasActions ? theme.spacing.lg : bottomInset,
             alignItems: 'center',
         },
         icon: {
+            marginBottom: theme.spacing.lg,
+        },
+        iconImage: {
+            width: theme.spacing['4xl'],
+            height: theme.spacing['4xl'],
+            borderRadius: theme.spacing['4xl'],
             marginBottom: theme.spacing.lg,
         },
         title: {
@@ -33,7 +40,7 @@ export const useStyles = makeStyles(
         },
         message: {
             alignSelf: 'stretch',
-            textAlign: 'left',
+            textAlign: isMessageCentered ? 'center' : 'left',
             padding: theme.spacing.xl,
             color: theme.colors.textGray,
         },

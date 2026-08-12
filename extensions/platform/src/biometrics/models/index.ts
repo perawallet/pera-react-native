@@ -37,6 +37,24 @@ export type BiometricsAuthenticatePrompt = {
     cancelLabel?: string
 }
 
+/**
+ * Why an authenticate call failed. Only `system-cancel` (the OS dropping a
+ * prompt without user action, e.g. the app was not active yet) is safe to
+ * retry; every other reason is terminal. Android folds its OS cancel into
+ * `user-cancel`, so `system-cancel` is effectively iOS-only.
+ */
+export type BiometricsAuthenticateFailureReason =
+    | 'user-cancel'
+    | 'system-cancel'
+    | 'lockout'
+    | 'unavailable'
+    | 'failed'
+    | 'unknown'
+
+export type BiometricsAuthenticateResult =
+    | { success: true }
+    | { success: false; reason: BiometricsAuthenticateFailureReason }
+
 export interface BiometricsService {
     getSupportedBiometricType(): Promise<BiometricType>
     checkBiometricsAvailable(): Promise<boolean>
@@ -47,5 +65,7 @@ export interface BiometricsService {
      * authenticator, such as the passkey credential provider, must check this.
      */
     getSecurityLevel(): Promise<BiometricSecurityLevel>
-    authenticate(prompt?: BiometricsAuthenticatePrompt): Promise<boolean>
+    authenticate(
+        prompt?: BiometricsAuthenticatePrompt,
+    ): Promise<BiometricsAuthenticateResult>
 }

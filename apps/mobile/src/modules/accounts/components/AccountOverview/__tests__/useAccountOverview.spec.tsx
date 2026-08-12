@@ -99,12 +99,8 @@ const createDeferred = () => {
     return { promise, resolve }
 }
 
-const renderUseAccountOverview = (
-    onSwipeEnabledChange?: (enabled: boolean) => void,
-) =>
-    renderHook(() =>
-        useAccountOverview({ account: mockAccount, onSwipeEnabledChange }),
-    )
+const renderUseAccountOverview = () =>
+    renderHook(() => useAccountOverview({ account: mockAccount }))
 
 describe('useAccountOverview', () => {
     beforeEach(() => {
@@ -200,41 +196,6 @@ describe('useAccountOverview', () => {
         })
     })
 
-    it('starts with scrolling enabled', () => {
-        const { result } = renderUseAccountOverview()
-
-        expect(result.current.scrollingEnabled).toBe(true)
-    })
-
-    it('updates scrolling state when onScrollEnabledChange is called', () => {
-        const { result } = renderUseAccountOverview()
-
-        act(() => {
-            result.current.onScrollEnabledChange(false)
-        })
-
-        expect(result.current.scrollingEnabled).toBe(false)
-
-        act(() => {
-            result.current.onScrollEnabledChange(true)
-        })
-
-        expect(result.current.scrollingEnabled).toBe(true)
-    })
-
-    it('forwards scrollingEnabled changes to onSwipeEnabledChange', () => {
-        const onSwipeEnabledChange = vi.fn()
-        const { result } = renderUseAccountOverview(onSwipeEnabledChange)
-
-        expect(onSwipeEnabledChange).toHaveBeenLastCalledWith(true)
-
-        act(() => {
-            result.current.onScrollEnabledChange(false)
-        })
-
-        expect(onSwipeEnabledChange).toHaveBeenLastCalledWith(false)
-    })
-
     it('isLoading gates only on the balance summary (not the chart history) and is sticky', () => {
         // The chart history is a separate, visibility-gated network query and
         // must not hold the header in a skeleton.
@@ -264,9 +225,6 @@ describe('useAccountOverview', () => {
             'function',
         )
         expect(typeof result.current.contextValue.openAccountOptions).toBe(
-            'function',
-        )
-        expect(typeof result.current.contextValue.onScrollEnabledChange).toBe(
             'function',
         )
     })

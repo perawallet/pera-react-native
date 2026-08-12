@@ -19,7 +19,7 @@ export const useStyles = makeStyles(theme => {
     }
     return {
         formContainer: {
-            paddingHorizontal: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
             paddingVertical: theme.spacing.lg,
             gap: theme.spacing.md,
         },

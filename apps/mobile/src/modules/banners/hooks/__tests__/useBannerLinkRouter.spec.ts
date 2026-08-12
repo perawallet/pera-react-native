@@ -64,7 +64,7 @@ describe('useBannerLinkRouter', () => {
         expect(mockHandleDeepLink).toHaveBeenCalledWith(
             'pera://staking',
             false,
-            'deeplink',
+            'in-app',
         )
         expect(Linking.openURL).not.toHaveBeenCalled()
     })

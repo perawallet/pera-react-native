@@ -19,6 +19,7 @@ import { AssetAmount } from '@components/AssetAmount'
 import { PreferredAmount } from '@components/PreferredAmount'
 import { useLanguage } from '@hooks/useLanguage'
 import { SheetHeader } from '@modules/bottom-sheet'
+import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
 import {
@@ -71,6 +72,12 @@ export const LedgerAccountInfoContent = ({
                                 showAccountType
                                 iconProps={{
                                     displayState: item.displayStateOverride,
+                                    // This sheet is always about one connected
+                                    // Ledger, so a forced rekeyedSignable state
+                                    // is a rekey to hardware — say so, since the
+                                    // auth account isn't in the store to be
+                                    // looked up (PERA-4403).
+                                    authType: AccountTypes.hardware,
                                 }}
                             />
                             <PWView style={styles.balanceContainer}>
@@ -131,6 +138,7 @@ export const LedgerAccountInfoContent = ({
                             style={styles.rekeyRow}
                             iconProps={{
                                 displayState: item.displayStateOverride,
+                                authType: AccountTypes.hardware,
                             }}
                         />
                     )

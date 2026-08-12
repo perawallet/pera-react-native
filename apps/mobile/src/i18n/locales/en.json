@@ -157,6 +157,8 @@
             "body_generic": "We couldn't process the link. Please try again.",
             "title_walletconnect": "WalletConnect failed",
             "body_walletconnect": "We couldn't connect to the dApp. The session may be expired or the bridge may be unreachable.",
+            "title_wc_unsupported": "Connection link not supported",
+            "body_wc_unsupported": "This WalletConnect link can't be used by Pera. Please reconnect from the dApp and try again.",
             "title_keyreg": "Couldn't prepare key registration",
             "body_keyreg": "We couldn't build the key-registration transaction.",
             "body_keyreg_unknown_account": "This key registration is for an account you don't have in this wallet. Add the account first, then scan again.",
@@ -309,7 +311,8 @@
             "sort_title_asc": "Name (A-Z)",
             "sort_title_desc": "Name (Z-A)",
             "sort_newest_first": "Newest to Oldest",
-            "sort_oldest_first": "Oldest to Newest"
+            "sort_oldest_first": "Oldest to Newest",
+            "sort_recently_added": "Recently Added"
         },
         "button_panel": {
             "swap": "Swap",
@@ -1392,6 +1395,8 @@
             "confirmed": "Transaction successfully completed",
             "submitting": "All signatures collected. Submitting transaction…",
             "failed_default": "Transaction failed",
+            "load_error": "Couldn't load this transaction. It may have expired or been removed.",
+            "retry": "Try Again",
             "canceled": "Transaction canceled.",
             "declined": "Transaction declined.",
             "close": "Close",
@@ -1430,6 +1435,20 @@
                 "no_transactions": "Multisig sign request has no transactions",
                 "assembly_failed": "Multisig assembly failed: {{reason}}",
                 "delivery_failed": "Failed to deliver signed transaction to dApp"
+            }
+        },
+        "already_resolved": {
+            "confirmed": {
+                "title": "Already completed",
+                "body": "This transaction was already signed and submitted by another signer."
+            },
+            "declined": {
+                "title": "Already declined",
+                "body": "Another signer declined this transaction, so it can no longer be signed."
+            },
+            "expired": {
+                "title": "Request expired",
+                "body": "This transaction expired before enough signers approved it."
             }
         }
     },
@@ -1938,6 +1957,7 @@
         "edit_contact": "Edit Contact",
         "add_contact": "Add New Contact",
         "settings": "Settings",
+        "launch_settings": "Launch Settings",
         "security": "Security",
         "notifications": "Notifications",
         "wallet_connect": "Wallet Connect",
@@ -2138,6 +2158,7 @@
             "app_preferences_section": "App Preferences",
             "currency_title": "Currency",
             "theme_title": "Theme",
+            "launch_title": "Launch Settings",
             "language_title": "Language",
             "support_section": "Support",
             "rate_title": "Rate Pera Wallet",
@@ -2156,6 +2177,13 @@
             "system_label": "System Default",
             "light_label": "Light",
             "dark_label": "Dark"
+        },
+        "launch": {
+            "account_section": "Account Selection",
+            "last_used_label": "Last used account",
+            "last_used_description": "Pera opens on whichever account you used last.",
+            "specific_label": "A specific account",
+            "specific_description": "Pera opens on the account you choose, every time."
         },
         "language": {
             "system_label": "System Default"
@@ -2586,6 +2614,9 @@
         "menu": "Menu"
     },
     "walletconnect": {
+        "pairing": {
+            "connecting": "Connecting to the dApp..."
+        },
         "request": {
             "title": "{{name}} wants to connect to your account",
             "permissions_title_one": "Requested {{count}} permission",
@@ -2596,6 +2627,8 @@
             "accounts_title": "SELECT ACCOUNTS",
             "success_sheet_title": "You are connected to {{name}}",
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
+            "success_sheet_return_to_dapp": "Return to {{name}}",
+            "success_sheet_return_to_dapp_generic": "Return to the dApp",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
             "networks_betanet": "Betanet",

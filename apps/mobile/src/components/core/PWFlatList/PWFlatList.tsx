@@ -45,6 +45,14 @@ export type PWFlatListProps<T> = FlashListProps<T> & {
     cardLayout?: boolean
 }
 
+/**
+ * FlashList prepares only 250dp beyond the viewport by default — roughly a
+ * third of a phone screen, so a fast fling outruns cell preparation and leaves
+ * blank space until it catches up. Two screens' worth buys that headroom; the
+ * cost is a slightly larger recycle pool, not more mounted rows.
+ */
+const DEFAULT_DRAW_DISTANCE = 1000
+
 const ListSeparator = () => {
     const styles = useStyles()
 
@@ -66,6 +74,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             contentContainerStyle,
             showsVerticalScrollIndicator = false,
             showsHorizontalScrollIndicator = false,
+            drawDistance = DEFAULT_DRAW_DISTANCE,
             // RN's default ('never') makes the first tap dismiss the keyboard
             // instead of hitting the row; 'handled' lets the row receive it.
             keyboardShouldPersistTaps = 'handled',
@@ -107,6 +116,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             ...props,
             showsVerticalScrollIndicator,
             showsHorizontalScrollIndicator,
+            drawDistance,
             keyboardShouldPersistTaps,
             ItemSeparatorComponent: resolvedSeparator,
             contentContainerStyle: StyleSheet.flatten([

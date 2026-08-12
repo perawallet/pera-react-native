@@ -33,6 +33,11 @@ import {
 import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { trackEvent, HomeEvent } from '@analytics'
 import { useCallback, useMemo } from 'react'
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
+import {
+    EXPANDABLE_PANEL_ANIMATION_DURATION,
+    EXPANDABLE_PANEL_ANIMATION_EASING,
+} from '@constants/ui'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -52,16 +57,9 @@ import { TrendIndicator } from '@components/TrendIndicator'
 
 export type PortfolioViewProps = {
     onDataSelected?: (selected: Nullable<AccountBalanceHistoryItem>) => void
-    /** Transiently collapses the chart without touching the saved `chartVisible` preference. */
-    isCollapsed?: boolean
-    onExpandChart?: () => void
 } & PWViewProps
 
-export const PortfolioView = ({
-    isCollapsed = false,
-    onExpandChart,
-    ...props
-}: PortfolioViewProps) => {
+export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
     const styles = useStyles()
     const { preferredCurrency, usdToPreferred } = useCurrency()
     const { t } = useLanguage()
@@ -77,16 +75,10 @@ export const PortfolioView = ({
         useChartInteraction<AccountBalanceHistoryItem>()
     const { getPreference, setPreference } = usePreferences()
 
-    const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    const isChartShown = chartVisible && !isCollapsed
+    const isChartShown = !!getPreference(UserPreferences.chartVisible)
     const toggleChartVisible = () => {
         trackEvent(HomeEvent.Chart)
-        if (isChartShown) {
-            setPreference(UserPreferences.chartVisible, false)
-            return
-        }
-        setPreference(UserPreferences.chartVisible, true)
-        onExpandChart?.()
+        setPreference(UserPreferences.chartVisible, !isChartShown)
     }
 
     const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
@@ -125,6 +117,31 @@ export const PortfolioView = ({
             props.onDataSelected?.(selected)
         },
         [setSelectedPoint, props],
+    )
+
+    // Timed to the ExpandablePanel below so the trend column and the toggle
+    // chevron move together with the chart instead of popping instantly.
+    const trendColumnStyle = useAnimatedStyle(
+        () => ({
+            opacity: withTiming(isChartShown ? 1 : 0, {
+                duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
+                easing: EXPANDABLE_PANEL_ANIMATION_EASING,
+            }),
+        }),
+        [isChartShown],
+    )
+    const chevronStyle = useAnimatedStyle(
+        () => ({
+            transform: [
+                {
+                    rotate: withTiming(isChartShown ? '180deg' : '0deg', {
+                        duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
+                        easing: EXPANDABLE_PANEL_ANIMATION_EASING,
+                    }),
+                },
+            ],
+        }),
+        [isChartShown],
     )
 
     return (
@@ -179,8 +196,16 @@ export const PortfolioView = ({
                     />
                 </PWView>
 
-                {!selectedPoint && isChartShown && (
-                    <PWView style={styles.rightColumn}>
+                {/* Stays mounted while the chart is hidden so it can fade in
+                    sync with the panel collapse rather than unmount abruptly. */}
+                {!selectedPoint && (
+                    <Animated.View
+                        style={[styles.rightColumn, trendColumnStyle]}
+                        accessibilityElementsHidden={!isChartShown}
+                        importantForAccessibility={
+                            isChartShown ? 'auto' : 'no-hide-descendants'
+                        }
+                    >
                         <PWText
                             variant='h4'
                             style={styles.trendTitle}
@@ -199,7 +224,7 @@ export const PortfolioView = ({
                                 currency: preferredCurrency,
                             }}
                         />
-                    </PWView>
+                    </Animated.View>
                 )}
 
                 {selectedPoint && (
@@ -244,12 +269,13 @@ export const PortfolioView = ({
                         ? t('portfolio.hide_chart')
                         : t('portfolio.show_chart')}
                 </PWText>
-                <PWIcon
-                    name='chevron-down'
-                    variant='secondary'
-                    size='xs'
-                    style={isChartShown ? styles.invertedIcon : undefined}
-                />
+                <Animated.View style={chevronStyle}>
+                    <PWIcon
+                        name='chevron-down'
+                        variant='secondary'
+                        size='xs'
+                    />
+                </Animated.View>
             </PWTouchableOpacity>
 
             <ExpandablePanel isExpanded={isChartShown}>

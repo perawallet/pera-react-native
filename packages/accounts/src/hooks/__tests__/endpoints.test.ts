@@ -15,12 +15,14 @@ import {
     CHART_QUERY_TIMEOUT_MS,
     queryClient,
 } from '@perawallet/wallet-core-shared'
+import { HOLDINGS_PAGE_LIMIT } from '../../constants'
 import {
     fetchOnChainAccountInformation,
     getAccountsBalanceHistoryEndpointPath,
     fetchAccountsBalanceHistory,
     getAccountAssetBalanceHistoryEndpointPath,
     fetchAccountAssetBalanceHistory,
+    fetchAccountAssetOptInRounds,
 } from '../endpoints'
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -52,6 +54,60 @@ describe('endpoints', () => {
             expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1')
             expect(mockDo).toHaveBeenCalled()
             expect(result).toBe('result')
+        })
+    })
+
+    describe('fetchAccountAssetOptInRounds', () => {
+        it('paginates indexer holdings into an assetId to opt-in-round map, skipping roundless entries', async () => {
+            // Indexer builder chain: `lookupAccountAssets(addr).limit(n).nextToken(t).do()`.
+            const pages = [
+                {
+                    assets: [
+                        { assetId: 10n, optedInAtRound: 100n },
+                        { assetId: 15n, optedInAtRound: undefined },
+                    ],
+                    nextToken: 'tok1',
+                },
+                {
+                    assets: [{ assetId: 20n, optedInAtRound: 200n }],
+                    nextToken: undefined,
+                },
+            ]
+            const limits: number[] = []
+            const nextTokens: string[] = []
+            const mockDo = vi.fn(() => Promise.resolve(pages.shift()))
+            const mockLookupAccountAssets = vi.fn((_address: string) => {
+                const builder = {
+                    limit: vi.fn((value: number) => {
+                        limits.push(value)
+                        return builder
+                    }),
+                    nextToken: vi.fn((token: string) => {
+                        nextTokens.push(token)
+                        return builder
+                    }),
+                    do: mockDo,
+                }
+                return builder
+            })
+            const algokit = {
+                client: {
+                    indexer: { lookupAccountAssets: mockLookupAccountAssets },
+                },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any
+
+            const result = await fetchAccountAssetOptInRounds(algokit, 'ADDR1')
+
+            expect(mockLookupAccountAssets).toHaveBeenCalledWith('ADDR1')
+            expect(limits).toEqual([HOLDINGS_PAGE_LIMIT, HOLDINGS_PAGE_LIMIT])
+            expect(nextTokens).toEqual(['tok1'])
+            expect(result).toEqual(
+                new Map([
+                    ['10', 100],
+                    ['20', 200],
+                ]),
+            )
         })
     })
 

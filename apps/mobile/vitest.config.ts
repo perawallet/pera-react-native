@@ -43,6 +43,27 @@ export default defineConfig({
                 ),
             },
             {
+                // Skia's Platform module imports `findNodeHandle` from
+                // react-native, which the alias above points at
+                // react-native-web — no such export, so importing Skia at all
+                // fails collection for every suite that reaches a chart.
+                find: '@shopify/react-native-skia',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/skia-stub.tsx',
+                ),
+            },
+            {
+                // victory-native draws through Skia (see above) and its
+                // gestures need a real UI thread. Suites that assert on chart
+                // wiring mock it themselves.
+                find: 'victory-native',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/victory-native-stub.tsx',
+                ),
+            },
+            {
                 // react-native-keyboard-controller ships untranspiled
                 // sources that vitest can't parse; tests don't need real
                 // keyboard tracking, so route through a passthrough stub.

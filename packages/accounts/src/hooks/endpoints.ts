@@ -19,7 +19,11 @@ import {
     type Network,
 } from '@perawallet/wallet-core-shared'
 
-import { type AccountBalanceHistoryResponse } from '../models'
+import {
+    type AccountAssetBalanceHistoryResponse,
+    type AccountBalanceHistoryResponse,
+} from '../models'
+import { HOLDINGS_PAGE_LIMIT } from '../constants'
 
 export type OnChainAccountInformationResponse = Awaited<
     ReturnType<typeof fetchOnChainAccountInformation>
@@ -30,6 +34,34 @@ export const fetchOnChainAccountInformation = (
     address: string,
 ): Promise<modelsv2.Account> =>
     algokit.client.algod.accountInformation(address).do()
+
+/**
+ * Opt-in round per held asset, keyed by decimal asset-id string. Read from the
+ * indexer, the only source that exposes it (algod and the Pera API don't).
+ * Rounds fit safely in a JS number.
+ */
+export const fetchAccountAssetOptInRounds = async (
+    algokit: AlgorandClient,
+    address: string,
+): Promise<Map<string, number>> => {
+    const rounds = new Map<string, number>()
+    let next: string | undefined
+
+    do {
+        let request = algokit.client.indexer
+            .lookupAccountAssets(address)
+            .limit(HOLDINGS_PAGE_LIMIT)
+        if (next) request = request.nextToken(next)
+        const page = await request.do()
+        for (const holding of page.assets ?? []) {
+            if (holding.optedInAtRound === undefined) continue
+            rounds.set(`${holding.assetId}`, Number(holding.optedInAtRound))
+        }
+        next = page.nextToken
+    } while (next)
+
+    return rounds
+}
 
 export const getAccountsBalanceHistoryEndpointPath = () => `/v1/wallet/wealth/`
 
@@ -64,12 +96,12 @@ export const fetchAccountAssetBalanceHistory = async (
     period: HistoryPeriod,
     currency: string,
     network: Network,
-): Promise<AccountBalanceHistoryResponse> => {
+): Promise<AccountAssetBalanceHistoryResponse> => {
     const endpointPath = getAccountAssetBalanceHistoryEndpointPath(
         address,
         assetId,
     )
-    const response = await queryClient<AccountBalanceHistoryResponse>({
+    const response = await queryClient<AccountAssetBalanceHistoryResponse>({
         backend: 'pera',
         network,
         method: 'GET',

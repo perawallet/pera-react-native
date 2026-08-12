@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { isPureNft } from '@perawallet/wallet-core-assets'
 import type { IconName } from '@components/core'
+import { useClipboard } from '@hooks/useClipboard'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
 import type { CollectibleItemProps } from '@modules/assets/types/collectible'
 import type { Maybe, Nullable, Optional } from '@perawallet/wallet-core-shared'
@@ -24,11 +25,14 @@ type UseCollectibleItemResult = {
     verificationIconName: Nullable<IconName>
     title: string
     collectionLabel: Optional<string>
+    /** Long-press copies the asset id (with the shared copied toast). */
+    handleLongPress: () => void
 }
 
 export const useCollectibleItem = ({
     item,
 }: CollectibleItemProps): UseCollectibleItemResult => {
+    const { copyToClipboard } = useClipboard()
     const { asset, amount, collectible } = item
 
     const thumbnailUrl = collectible?.primaryImage ?? asset.peraMetadata?.logo
@@ -43,6 +47,11 @@ export const useCollectibleItem = ({
         return tier ? getVerificationIcon(tier) : null
     }, [asset.peraMetadata?.verificationTier])
 
+    const handleLongPress = useCallback(
+        () => void copyToClipboard(item.assetId),
+        [copyToClipboard, item.assetId],
+    )
+
     return {
         thumbnailUrl,
         showAmount,
@@ -50,5 +59,6 @@ export const useCollectibleItem = ({
         verificationIconName,
         title,
         collectionLabel,
+        handleLongPress,
     }
 }

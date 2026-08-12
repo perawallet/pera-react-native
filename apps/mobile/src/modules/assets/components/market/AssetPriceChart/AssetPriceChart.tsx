@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { memo } from 'react'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
@@ -32,11 +33,14 @@ export type AssetPriceChartProps = {
 const getUsdPriceValue = (item: AssetPriceHistoryItem): number =>
     item.usdPrice.toNumber()
 
-export const AssetPriceChart = ({
+// Memoised like WealthChart: the history query rebuilds its results in an
+// inline `select`, so an unmemoised re-render hands the chart a new data
+// array and victory resets an in-progress scrub.
+export const AssetPriceChart = memo(function AssetPriceChart({
     onSelectionChanged,
     asset,
     period,
-}: AssetPriceChartProps) => {
+}: AssetPriceChartProps) {
     const themeStyle = useStyles()
     const { t } = useLanguage()
 
@@ -57,4 +61,4 @@ export const AssetPriceChart = ({
             style={themeStyle.container}
         />
     )
-}
+})

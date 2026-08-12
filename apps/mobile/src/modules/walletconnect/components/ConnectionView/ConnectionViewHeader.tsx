@@ -35,6 +35,7 @@ import {
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
 import { PermissionItem } from '../PermissionItem'
+import { getPreferredDappIcon } from '../../utils/dapp-icon'
 
 export type ConnectionViewHeaderProps = {
     request: WalletConnectSessionRequest
@@ -64,13 +65,7 @@ export const ConnectionViewHeader = ({
         undefined,
     )
 
-    const preferredIcon =
-        request.peerMeta.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg'),
-        ) ?? request.peerMeta.icons?.at(0)
+    const preferredIcon = getPreferredDappIcon(request.peerMeta.icons)
 
     const handlePressUrl = () => {
         if (!request.peerMeta.url) return

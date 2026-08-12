@@ -19,8 +19,6 @@ import { useStyles } from './styles'
 export type AccountMenuHeaderProps = {
     headerContent?: ReactNode
     hideDefaultHeader?: boolean
-    isChartCollapsed: boolean
-    onExpandChart: () => void
     onOpenSort: () => void
     onAddAccount: () => void
 }
@@ -31,8 +29,6 @@ export type AccountMenuHeaderProps = {
 export const AccountMenuHeader = ({
     headerContent,
     hideDefaultHeader = false,
-    isChartCollapsed,
-    onExpandChart,
     onOpenSort,
     onAddAccount,
 }: AccountMenuHeaderProps) => {
@@ -42,11 +38,7 @@ export const AccountMenuHeader = ({
     return (
         <PWView>
             {headerContent ?? (
-                <PortfolioView
-                    style={styles.portfolioContainer}
-                    isCollapsed={isChartCollapsed}
-                    onExpandChart={onExpandChart}
-                />
+                <PortfolioView style={styles.portfolioContainer} />
             )}
 
             {!hideDefaultHeader && (

@@ -157,6 +157,8 @@
             "body_generic": "Bağlantıyı işleyemedik. Lütfen tekrar dene.",
             "title_walletconnect": "WalletConnect başarısız oldu",
             "body_walletconnect": "dApp’e bağlanamadık. Oturumun süresi dolmuş ya da köprüye ulaşılamıyor olabilir.",
+            "title_wc_unsupported": "Bağlantı linki desteklenmiyor",
+            "body_wc_unsupported": "Bu WalletConnect linki Pera tarafından kullanılamıyor. Lütfen dApp üzerinden yeniden bağlanmayı dene.",
             "title_keyreg": "Anahtar kaydı hazırlanamadı",
             "body_keyreg": "Anahtar kaydı işlemini oluşturamadık.",
             "body_keyreg_unknown_account": "Bu anahtar kaydı, bu cüzdanda bulunmayan bir hesaba ait. Önce hesabı ekle, sonra tekrar tara.",
@@ -309,7 +311,8 @@
             "sort_title_asc": "Ad (A-Z)",
             "sort_title_desc": "Ad (Z-A)",
             "sort_newest_first": "Yeniden eskiye",
-            "sort_oldest_first": "Eskiden yeniye"
+            "sort_oldest_first": "Eskiden yeniye",
+            "sort_recently_added": "Son eklenenler"
         },
         "button_panel": {
             "swap": "Swap",
@@ -1392,6 +1395,8 @@
             "confirmed": "İşlem başarıyla tamamlandı",
             "submitting": "Tüm imzalar toplandı. İşlem gönderiliyor…",
             "failed_default": "İşlem başarısız oldu",
+            "load_error": "Bu işlem yüklenemedi. Süresi dolmuş veya kaldırılmış olabilir.",
+            "retry": "Tekrar dene",
             "canceled": "İşlem iptal edildi.",
             "declined": "İşlem reddedildi.",
             "close": "Kapat",
@@ -1430,6 +1435,20 @@
                 "no_transactions": "Multisig imza isteğinde hiç işlem yok",
                 "assembly_failed": "Multisig birleştirme başarısız oldu: {{reason}}",
                 "delivery_failed": "İmzalanmış işlem dApp’e iletilemedi"
+            }
+        },
+        "already_resolved": {
+            "confirmed": {
+                "title": "Zaten tamamlandı",
+                "body": "Bu işlem başka bir imzalayan tarafından zaten imzalandı ve gönderildi."
+            },
+            "declined": {
+                "title": "Zaten reddedildi",
+                "body": "Başka bir imzalayan bu işlemi reddetti, bu nedenle artık imzalanamaz."
+            },
+            "expired": {
+                "title": "İstek süresi doldu",
+                "body": "Bu işlemin süresi, yeterli sayıda imzalayan onaylamadan önce doldu."
             }
         }
     },
@@ -1938,6 +1957,7 @@
         "edit_contact": "Kişiyi düzenle",
         "add_contact": "Yeni kişi ekle",
         "settings": "Ayarlar",
+        "launch_settings": "Başlangıç ayarları",
         "security": "Güvenlik",
         "notifications": "Bildirimler",
         "wallet_connect": "Wallet Connect",
@@ -2138,6 +2158,7 @@
             "app_preferences_section": "Uygulama tercihleri",
             "currency_title": "Para birimi",
             "theme_title": "Tema",
+            "launch_title": "Başlangıç ayarları",
             "language_title": "Dil",
             "support_section": "Destek",
             "rate_title": "Pera Wallet’i değerlendir",
@@ -2156,6 +2177,13 @@
             "system_label": "Sistem varsayılanı",
             "light_label": "Açık",
             "dark_label": "Koyu"
+        },
+        "launch": {
+            "account_section": "Hesap seçimi",
+            "last_used_label": "Son kullanılan hesap",
+            "last_used_description": "Pera, en son kullandığın hesapla açılır.",
+            "specific_label": "Belirli bir hesap",
+            "specific_description": "Pera her seferinde seçtiğin hesapla açılır."
         },
         "language": {
             "system_label": "Sistem varsayılanı"
@@ -2586,6 +2614,9 @@
         "menu": "Menü"
     },
     "walletconnect": {
+        "pairing": {
+            "connecting": "dApp bağlantısı kuruluyor..."
+        },
         "request": {
             "title": "{{name}} hesabına bağlanmak istiyor",
             "permissions_title_one": "{{count}} izin istendi",
@@ -2596,6 +2627,8 @@
             "accounts_title": "HESAPLARI SEÇ",
             "success_sheet_title": "{{name}} bağlantısı kuruldu",
             "success_sheet_body": "Devam etmek ve işlemini tamamlamak için {{name}} uygulamasına geri dön. Bağlı tüm oturumları ilgili ayarlar sayfasında bulabilirsin.",
+            "success_sheet_return_to_dapp": "{{name}} uygulamasına geri dön",
+            "success_sheet_return_to_dapp_generic": "Uygulamaya geri dön",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
             "networks_betanet": "Betanet",

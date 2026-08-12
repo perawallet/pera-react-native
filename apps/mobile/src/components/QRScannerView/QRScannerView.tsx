@@ -21,7 +21,7 @@ import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton, PWText, PWTouchableIcon, PWView } from '@components/core'
 import { useQRScannerView } from './useQRScannerView'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -135,10 +135,15 @@ export const QRScannerView = (props: QRScannerViewProps) => {
             animationType={props.animationType}
         >
             {props.isVisible ? (
+                // No ContainerComponent override: the notifier's default is
+                // RN's built-in SafeAreaView (inset-aware on iOS, inert on
+                // Android). Passing safe-area-context's SafeAreaView here
+                // makes Android apply window insets natively inside this
+                // Modal's window, which re-layouts continuously and strobes
+                // the toast against the title (wrong-network flicker).
                 <NotifierWrapper
                     omitGlobalMethodsHookup
                     ref={scannerNotifier}
-                    componentProps={{ ContainerComponent: SafeAreaView }}
                 >
                     {device == null || permissionDenied || !hasPermission ? (
                         <EmptyView

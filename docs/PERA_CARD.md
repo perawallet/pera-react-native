@@ -115,6 +115,17 @@ flow can't complete — every entry point falls back to the manual
 - Do **not** add the library's Expo config plugin to `app.config.js`: its
   default injects the Apple Pay provisioning entitlement on prebuild, which
   breaks code signing until Apple grants the entitlement.
+- The library is excluded from **Android** autolinking
+  (`expo.autolinking.android.exclude` in `apps/mobile/package.json`). Its
+  `android/build.gradle` declares `com.google.android.gms:play-services-tapandpay:+`,
+  which Google publishes only in the private Maven repo it opens to allowlisted
+  push-provisioning issuers — so every Android build (debug included) fails to
+  resolve `releaseRuntimeClasspath` while the module is linked. Excluding it is
+  what keeps the feature dormant rather than build-breaking; the JS side already
+  degrades, since the library's `TurboModuleRegistry.getEnforcing` failure makes
+  every call reject and `RNWalletProvisioningService` reports unavailable.
+  Drop the exclusion once TapAndPay allowlisting lands and the private repo
+  (with credentials) is added to the generated Gradle config via a config plugin.
 
 ## Tests
 

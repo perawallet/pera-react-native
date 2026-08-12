@@ -157,6 +157,8 @@
             "body_generic": "Der Link konnte nicht verarbeitet werden. Bitte versuche es erneut.",
             "title_walletconnect": "WalletConnect fehlgeschlagen",
             "body_walletconnect": "Verbindung zur dApp konnte nicht hergestellt werden. Möglicherweise ist die Sitzung abgelaufen oder die Bridge ist nicht erreichbar.",
+            "title_wc_unsupported": "Verbindungslink nicht unterstützt",
+            "body_wc_unsupported": "Dieser WalletConnect-Link kann von Pera nicht verwendet werden. Bitte stelle die Verbindung in der dApp erneut her und versuche es noch einmal.",
             "title_keyreg": "Schlüsselregistrierung konnte nicht vorbereitet werden",
             "body_keyreg": "Die Schlüsselregistrierungs-Transaktion konnte nicht erstellt werden.",
             "body_keyreg_unknown_account": "Diese Schlüsselregistrierung gehört zu einem Konto, das sich nicht in diesem Wallet befindet. Füge das Konto zuerst hinzu und scanne dann erneut.",
@@ -309,7 +311,8 @@
             "sort_title_asc": "Name (A-Z)",
             "sort_title_desc": "Name (Z-A)",
             "sort_newest_first": "Neueste zuerst",
-            "sort_oldest_first": "Älteste zuerst"
+            "sort_oldest_first": "Älteste zuerst",
+            "sort_recently_added": "Zuletzt hinzugefügt"
         },
         "button_panel": {
             "swap": "Tauschen",
@@ -1384,6 +1387,8 @@
             "confirmed": "Transaktion erfolgreich abgeschlossen",
             "submitting": "Alle Signaturen gesammelt. Transaktion wird übermittelt…",
             "failed_default": "Transaktion fehlgeschlagen",
+            "load_error": "Diese Transaktion konnte nicht geladen werden. Sie ist möglicherweise abgelaufen oder wurde entfernt.",
+            "retry": "Erneut versuchen",
             "canceled": "Transaktion abgebrochen.",
             "declined": "Transaktion abgelehnt.",
             "close": "Schließen",
@@ -1422,6 +1427,20 @@
                 "no_transactions": "Multisig-Signaturanfrage enthält keine Transaktionen",
                 "assembly_failed": "Multisig-Zusammenstellung fehlgeschlagen: {{reason}}",
                 "delivery_failed": "Signierte Transaktion konnte nicht an die dApp übermittelt werden"
+            }
+        },
+        "already_resolved": {
+            "confirmed": {
+                "title": "Bereits abgeschlossen",
+                "body": "Diese Transaktion wurde bereits von einem anderen Unterzeichner signiert und gesendet."
+            },
+            "declined": {
+                "title": "Bereits abgelehnt",
+                "body": "Ein anderer Unterzeichner hat diese Transaktion abgelehnt, sie kann nicht mehr signiert werden."
+            },
+            "expired": {
+                "title": "Anfrage abgelaufen",
+                "body": "Diese Transaktion ist abgelaufen, bevor genügend Unterzeichner zugestimmt haben."
             }
         }
     },
@@ -1930,6 +1949,7 @@
         "edit_contact": "Kontakt bearbeiten",
         "add_contact": "Neuen Kontakt hinzufügen",
         "settings": "Einstellungen",
+        "launch_settings": "Starteinstellungen",
         "security": "Sicherheit",
         "notifications": "Benachrichtigungen",
         "wallet_connect": "Wallet Connect",
@@ -2130,6 +2150,7 @@
             "app_preferences_section": "App-Einstellungen",
             "currency_title": "Währung",
             "theme_title": "Design",
+            "launch_title": "Starteinstellungen",
             "language_title": "Sprache",
             "support_section": "Support",
             "rate_title": "Pera Wallet bewerten",
@@ -2148,6 +2169,13 @@
             "system_label": "Systemstandard",
             "light_label": "Hell",
             "dark_label": "Dunkel"
+        },
+        "launch": {
+            "account_section": "Kontoauswahl",
+            "last_used_label": "Zuletzt verwendetes Konto",
+            "last_used_description": "Pera öffnet sich mit dem Konto, das du zuletzt verwendet hast.",
+            "specific_label": "Ein bestimmtes Konto",
+            "specific_description": "Pera öffnet sich jedes Mal mit dem Konto, das du auswählst."
         },
         "language": {
             "system_label": "Systemstandard"
@@ -2578,6 +2606,9 @@
         "menu": "Menü"
     },
     "walletconnect": {
+        "pairing": {
+            "connecting": "Verbindung zur dApp wird hergestellt..."
+        },
         "request": {
             "title": "{{name}} möchte sich mit deinem Konto verbinden",
             "permissions_title_one": "{{count}} Berechtigung angefragt",
@@ -2588,6 +2619,8 @@
             "accounts_title": "KONTEN AUSWÄHLEN",
             "success_sheet_title": "Du bist mit {{name}} verbunden",
             "success_sheet_body": "Bitte kehre zu {{name}} zurück, um fortzufahren und deinen Vorgang abzuschließen. Alle verbundenen Sitzungen findest du auf der zugehörigen Einstellungsseite.",
+            "success_sheet_return_to_dapp": "Zu {{name}} zurückkehren",
+            "success_sheet_return_to_dapp_generic": "Zur dApp zurückkehren",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet",
             "error_sheet_title": "Fehler",

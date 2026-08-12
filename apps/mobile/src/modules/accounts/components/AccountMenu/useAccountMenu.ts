@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
@@ -20,31 +20,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCardSession, useCardStore } from '@perawallet/wallet-core-card'
 import { useIsPeraCardEnabled } from '@hooks/useIsPeraCardEnabled'
-import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 import type { AccountMenuProps } from './AccountMenu'
 
-import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-
-// Hysteresis band: collapse past COLLAPSE_OFFSET, re-expand only within
-// EXPAND_OFFSET of the top, so small scrolls don't flip the chart on and off.
-const CHART_COLLAPSE_OFFSET = 48
-const CHART_EXPAND_OFFSET = 8
-
-// Settle window after a flip: on web, collapsing the ~200px chart can trigger
-// browser scroll anchoring that yanks scrollTop back under the re-expand
-// threshold, causing an endless collapse/expand loop. Ignoring scroll events
-// for the panel's animation duration (+ margin) lets the layout settle first.
-const SETTLE_MS = EXPANDABLE_PANEL_ANIMATION_DURATION + 50
-
-export const resolveChartCollapsed = (
-    wasCollapsed: boolean,
-    offsetY: number,
-): boolean => {
-    if (!wasCollapsed && offsetY > CHART_COLLAPSE_OFFSET) return true
-    if (wasCollapsed && offsetY < CHART_EXPAND_OFFSET) return false
-    return wasCollapsed
-}
 
 export type AccountMenuListItem =
     | { kind: 'account'; account: WalletAccount }
@@ -55,9 +33,6 @@ type UseAccountMenuResult = {
     selectedAccountAddress: Nullable<string>
     sortMode: string
     handleTap: (acct: WalletAccount) => void
-    isChartCollapsed: boolean
-    handleListScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
-    handleExpandChart: () => void
 }
 
 export const useAccountMenu = (
@@ -138,33 +113,10 @@ export const useAccountMenu = (
         [props, isControlled, setSelectedAccountAddress],
     )
 
-    const [isChartCollapsed, setIsChartCollapsed] = useState(false)
-    const lastFlipAt = useRef(0)
-    const handleListScroll = useCallback(
-        (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-            const offsetY = event.nativeEvent.contentOffset.y
-            const now = Date.now()
-            if (now - lastFlipAt.current < SETTLE_MS) return
-            setIsChartCollapsed(prev => {
-                const next = resolveChartCollapsed(prev, offsetY)
-                if (next !== prev) lastFlipAt.current = now
-                return next
-            })
-        },
-        [],
-    )
-
-    const handleExpandChart = useCallback(() => {
-        setIsChartCollapsed(false)
-    }, [])
-
     return {
         listItems,
         selectedAccountAddress: effectiveSelectedAddress,
         sortMode,
         handleTap,
-        isChartCollapsed,
-        handleListScroll,
-        handleExpandChart,
     }
 }

@@ -34,6 +34,7 @@ import {
 } from '@perawallet/wallet-core-remote-config'
 import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     getProvider,
     runKeystoreMaintenance,
@@ -43,6 +44,7 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { type Persister } from '@tanstack/react-query-persist-client'
 import { queryClient } from './providers/QueryProvider'
 import { runPasskeyAutofillBootstrap } from './bootstrap/passkey-autofill'
+import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'
 import { getEffectiveSupportedLocales } from './i18n/effectiveLocales'
 import { resolveLocale } from './i18n/locales'
 import i18n from './i18n'
@@ -60,12 +62,9 @@ export type UseAppBootstrapResult = {
 // enough that a foreground start always hides on the frame path instead.
 const SPLASH_HIDE_BACKSTOP_MS = 1000
 
-// Ceiling on the wait for settings rehydration. zustand's persist middleware
-// never fires `onFinishHydration` if rehydration rejects (corrupt persisted
-// JSON, storage read failure), and `hasHydrated()` stays false — so without
-// this the language branch, and with it the whole bootstrap gate and the
-// splash-hide, would hang forever with no recovery short of a reinstall.
-const SETTINGS_HYDRATION_TIMEOUT_MS = 2000
+// Ceiling on the wait for store rehydration; see waitForStoreHydration for why
+// an unguarded wait can hang forever.
+const STORE_HYDRATION_TIMEOUT_MS = 2000
 
 const updateQueryHeaders = () => {
     const deviceInfo = getProvider().deviceInfo
@@ -79,28 +78,6 @@ const updateQueryHeaders = () => {
     headers.set('Device-Model', deviceInfo.getDeviceModelId())
     headers.set('User-Agent', deviceInfo.getUserAgent())
     updateBackendHeaders(headers)
-}
-
-// Timing out leaves `language` at the store's default ('system'), which just
-// means a saved override is missed for this one launch — never a hang.
-const waitForSettingsHydration = (): Promise<void> => {
-    if (useSettingsStore.persist.hasHydrated()) return Promise.resolve()
-    return new Promise(resolve => {
-        let settled = false
-        const finish = () => {
-            if (settled) return
-            settled = true
-            resolve()
-        }
-        const unsubscribe = useSettingsStore.persist.onFinishHydration(() => {
-            unsubscribe()
-            finish()
-        })
-        setTimeout(() => {
-            unsubscribe()
-            finish()
-        }, SETTINGS_HYDRATION_TIMEOUT_MS)
-    })
 }
 
 const resolveEffectiveLocale = (): string => {
@@ -138,12 +115,23 @@ const resolveEffectiveLocale = (): string => {
 // falls outside the currently-effective set (Remote Config rolled back, or
 // that locale deactivated) correctly falls through resolveLocale's chain
 // back to en, via resolveEffectiveLocale re-validating it every run.
+// Timing out leaves `language` at the store's default ('system'), which just
+// means a saved override is missed for this one launch — never a hang.
 const syncLanguagePreference = async (): Promise<void> => {
-    await waitForSettingsHydration()
+    await waitForStoreHydration(useSettingsStore, STORE_HYDRATION_TIMEOUT_MS)
     const effectiveLocale = resolveEffectiveLocale()
     if (effectiveLocale !== i18n.language) {
         await i18n.changeLanguage(effectiveLocale)
     }
+}
+
+// Cold start is the only place the launch preference is applied (PERA-4855).
+// Running it here — inside the bootstrap gate, before the splash lifts — means
+// no visible flash of a non-pinned account. Deep links land strictly later,
+// from mounted UI, so a notification tap still wins for that session.
+const applyLaunchAccountPreference = async (): Promise<void> => {
+    await waitForStoreHydration(useAccountsStore, STORE_HYDRATION_TIMEOUT_MS)
+    useAccountsStore.getState().applyLaunchAccountPreference()
 }
 
 export const useAppBootstrap = (): UseAppBootstrapResult => {
@@ -221,11 +209,19 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                     }),
                 )
 
+                const launchAccountBranch =
+                    applyLaunchAccountPreference().catch(err =>
+                        logger.error('Launch account preference failed', {
+                            error: err,
+                        }),
+                    )
+
                 await Promise.all([
                     keystoreBranch,
                     passkeyBranch,
                     databaseBranch,
                     languageBranch,
+                    launchAccountBranch,
                 ])
 
                 initializeSyncService({

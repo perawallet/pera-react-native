@@ -162,6 +162,39 @@ export const createMultisigProposeTransport = (
                 }
             }
 
+            // Handoff preconditions are validated BEFORE the create: failing
+            // after it would orphan a live backend sign-request with no
+            // handoff registered (so the resolver's cancel-on-failure never
+            // sees it), and a retry would then create a duplicate.
+            let msig: MsigMetadata | undefined
+            let deviceId: string | undefined
+            if (isExternal) {
+                msig = getMsigMetadata(multisigAddress)
+                if (!msig) {
+                    // A programmer error — the multisig should be locally
+                    // known by now — so surface it to the peer and fail the
+                    // transport rather than assembling without metadata.
+                    // Non-retryable: retrying cannot make it known.
+                    const err = new Error(
+                        `Multisig metadata not found for address ${multisigAddress}`,
+                    )
+                    void source.callbacks?.error?.(err).catch(() => {})
+                    throw new TransportError(err.message, err, {
+                        retryable: false,
+                    })
+                }
+                deviceId = getDeviceId()
+                if (!deviceId) {
+                    // Transient (device re-registration / network switch), so
+                    // retryable — and the peer is NOT notified: erroring the
+                    // request would kill the very request a successful Retry
+                    // still needs to deliver to.
+                    throw new TransportError(
+                        'Device id not available; cannot register WC handoff',
+                    )
+                }
+            }
+
             try {
                 const response = await proposeSignRequest({
                     multisigAddress,
@@ -173,26 +206,7 @@ export const createMultisigProposeTransport = (
                 // The resolver delivers the assembled bytes once threshold is
                 // met, choosing between `approveSignedBytes`, `error`, and
                 // `softReject` (decline / expired) at terminal status.
-                if (isExternal) {
-                    const msig = getMsigMetadata(multisigAddress)
-                    if (!msig) {
-                        // A programmer error — the multisig should be locally
-                        // known by now — so surface it to the peer and fail the
-                        // transport rather than assembling without metadata.
-                        const err = new Error(
-                            `Multisig metadata not found for address ${multisigAddress}`,
-                        )
-                        void source.callbacks?.error?.(err).catch(() => {})
-                        throw new TransportError(err.message, err)
-                    }
-                    const deviceId = getDeviceId()
-                    if (!deviceId) {
-                        const err = new Error(
-                            'Device id not available; cannot register WC handoff',
-                        )
-                        void source.callbacks?.error?.(err).catch(() => {})
-                        throw new TransportError(err.message, err)
-                    }
+                if (isExternal && msig && deviceId) {
                     walletConnectHandoffs.register({
                         signRequestId: response.signRequestId,
                         multisigAddress,

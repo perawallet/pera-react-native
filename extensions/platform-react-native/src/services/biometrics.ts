@@ -22,14 +22,39 @@ import {
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
     BiometricSecurityLevel,
+    BiometricsAuthenticateFailureReason,
     BiometricsAuthenticatePrompt,
+    BiometricsAuthenticateResult,
     BiometricsService,
     BiometricType,
 } from '@perawallet/wallet-extension-platform'
 
 const LOG_SOURCE = 'RNBiometricsService'
 
-// Backed by `expo-local-authentication` (Expo SDK 55), which on iOS uses
+// Unmapped errors fall through to 'unknown': iOS returns prefixed strings
+// ("unknown: <code>") and strings outside the TS union. Android folds its OS
+// cancel into 'user_cancel', so 'system-cancel' is iOS-only.
+const AUTH_FAILURE_REASONS: Record<
+    string,
+    BiometricsAuthenticateFailureReason
+> = {
+    user_cancel: 'user-cancel',
+    user_fallback: 'user-cancel',
+    system_cancel: 'system-cancel',
+    app_cancel: 'system-cancel',
+    lockout: 'lockout',
+    not_available: 'unavailable',
+    not_enrolled: 'unavailable',
+    passcode_not_set: 'unavailable',
+    authentication_failed: 'failed',
+}
+
+const mapAuthFailureReason = (
+    error: string | undefined,
+): BiometricsAuthenticateFailureReason =>
+    (error && AUTH_FAILURE_REASONS[error]) || 'unknown'
+
+// Backed by `expo-local-authentication` (Expo SDK 57), which on iOS uses
 // LAPolicy.deviceOwnerAuthenticationWithBiometrics and on Android uses the
 // AndroidX BiometricPrompt. We force biometric-only by disabling the device
 // PIN/password fallback — Pera has its own PIN flow and the
@@ -85,7 +110,7 @@ export class RNBiometricsService implements BiometricsService {
 
     async authenticate(
         prompt: BiometricsAuthenticatePrompt = {},
-    ): Promise<boolean> {
+    ): Promise<BiometricsAuthenticateResult> {
         try {
             const result = await authenticateAsync({
                 promptMessage: prompt.title ?? 'Authenticate',
@@ -107,14 +132,18 @@ export class RNBiometricsService implements BiometricsService {
                     error: result.error ?? null,
                     warning: result.warning ?? null,
                 })
+                return {
+                    success: false,
+                    reason: mapAuthFailureReason(result.error),
+                }
             }
-            return result.success
+            return { success: true }
         } catch (error) {
             logger.error('Biometric authentication threw', {
                 source: LOG_SOURCE,
                 error,
             })
-            return false
+            return { success: false, reason: 'unknown' }
         }
     }
 }

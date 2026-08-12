@@ -73,6 +73,40 @@ describe('ConfirmActionContent', () => {
         await expect(promise).resolves.toBeUndefined()
     })
 
+    it('resolves the caller promise with the tertiary value when the tertiary button is pressed', async () => {
+        const promise = useBottomSheetStore
+            .getState()
+            .request<string>({ id: 'sheet-1', contents: null })
+        render(
+            <BottomSheetIdContext.Provider value='sheet-1'>
+                <ConfirmActionContent<string>
+                    {...baseProps}
+                    tertiaryLabel='Delete forever'
+                    tertiaryValue='delete'
+                />
+            </BottomSheetIdContext.Provider>,
+        )
+
+        fireEvent.click(screen.getByText('Delete forever'))
+
+        useBottomSheetStore.getState().remove('sheet-1')
+        await expect(promise).resolves.toBe('delete')
+    })
+
+    it('renders the source image instead of the vector icon when iconUrl is set', () => {
+        render(
+            <BottomSheetIdContext.Provider value='sheet-1'>
+                <ConfirmActionContent
+                    {...baseProps}
+                    testID='confirm'
+                    icon='check'
+                    iconUrl='https://dapp.example.org/logo.png'
+                />
+            </BottomSheetIdContext.Provider>,
+        )
+        expect(screen.getByTestId('confirm-icon-image')).toBeTruthy()
+    })
+
     it('renders a ReactNode message', () => {
         render(
             <BottomSheetIdContext.Provider value='sheet-1'>

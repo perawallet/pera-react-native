@@ -144,7 +144,7 @@ export const ALGO_ASSET: PeraAsset = {
     name: 'Algo',
     unitName: ALGO_ASSET_NAME,
     decimals: 6,
-    totalSupply: new Decimal('10000000000000000000'), //10,000 T microalgos
+    totalSupply: new Decimal('10000000000000000'), // 10B ALGO in microAlgos
     creator: {
         address: '',
     },

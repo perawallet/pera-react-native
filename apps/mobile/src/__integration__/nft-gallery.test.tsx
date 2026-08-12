@@ -34,6 +34,8 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Notifier } from 'react-native-notifier'
 
+import { http, HttpResponse } from 'msw'
+
 import { server } from '@test-utils/msw-server'
 import { createTestQueryClient } from '@test-utils/render'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -51,11 +53,16 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useCollectiblePreferencesStore } from '@perawallet/wallet-core-assets'
+import { Networks } from '@perawallet/wallet-core-shared'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useAccountNfts } from '@modules/accounts/components/AccountNfts/useAccountNfts'
 
 import {
     NFT_TEST_ASSET,
     NFT_TEST_ASSET_ID,
+    NFT_TEST_ASSET_2,
+    NFT_TEST_ASSET_2_ID,
     USDC_TEST_ASSET,
     USDC_TEST_ASSET_ID,
 } from './__fixtures__/assets'
@@ -85,7 +92,11 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
         server.listen({ onUnhandledRequest: 'bypass' })
         await setupTestDatabase()
     })
-    afterEach(() => server.resetHandlers())
+    afterEach(() => {
+        server.resetHandlers()
+        // The sort-mode test mutates the module-global preferences store.
+        useCollectiblePreferencesStore.getState().resetState()
+    })
     afterAll(async () => {
         server.close()
         await teardownTestDatabase()
@@ -161,12 +172,73 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
             expect(ids).toEqual([NFT_TEST_ASSET_ID])
             expect(ids).not.toContain(USDC_TEST_ASSET_ID)
 
-            // The display item carries the asset record so the gallery
-            // can render its title and decimals; check both round-trip
-            // through the DB layer.
+            // The row carries the asset columns the gallery renders from,
+            // unparsed; check they round-trip through the DB layer.
             const nft = result.current.collectibles[0]
-            expect(nft.asset.name).toBe(NFT_TEST_ASSET.name)
-            expect(nft.asset.decimals).toBe(0)
+            expect(nft.name).toBe(NFT_TEST_ASSET.name)
+            expect(nft.decimals).toBe(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given two held NFTs with opt-in rounds served by the indexer, when the sort mode is recentlyAdded, then the most recently opted-in NFT comes first',
+        async () => {
+            await seedAssets([NFT_TEST_ASSET_2], 'mainnet')
+            await insertAssetHolding({
+                accountAddress: HOLDER.address,
+                assetId: NFT_TEST_ASSET_2_ID,
+                network: 'mainnet',
+                amount: '1',
+            })
+
+            // The lower-id NFT gets the HIGHER round: the expected order can
+            // only come from opt-in data, not from the asset-id (newestFirst)
+            // or title (titleAsc) orderings, which both put the other one
+            // first.
+            server.use(
+                http.get(
+                    `${getNetworkConfig(Networks.mainnet).indexerUrl}/v2/accounts/:address/assets`,
+                    () =>
+                        HttpResponse.json({
+                            'current-round': 30_000,
+                            assets: [
+                                {
+                                    'asset-id': Number(NFT_TEST_ASSET_ID),
+                                    amount: 1,
+                                    'is-frozen': false,
+                                    deleted: false,
+                                    'opted-in-at-round': 20_000,
+                                },
+                                {
+                                    'asset-id': Number(NFT_TEST_ASSET_2_ID),
+                                    amount: 1,
+                                    'is-frozen': false,
+                                    deleted: false,
+                                    'opted-in-at-round': 10_000,
+                                },
+                            ],
+                        }),
+                ),
+            )
+
+            useCollectiblePreferencesStore
+                .getState()
+                .setCollectibleSortMode('recentlyAdded')
+
+            const { result } = renderHook(() => useAccountNfts(), {
+                wrapper: buildWrapper(),
+            })
+
+            await waitFor(
+                () => {
+                    expect(result.current.collectibleCount).toBe(2)
+                    expect(
+                        result.current.collectibles.map(c => c.assetId),
+                    ).toEqual([NFT_TEST_ASSET_ID, NFT_TEST_ASSET_2_ID])
+                },
+                { timeout: 5000 },
+            )
         },
         SLOW_TEST_TIMEOUT_MS,
     )

@@ -23,15 +23,22 @@ import type { ReactNode } from 'react'
 export type ConfirmActionContentProps<TResult = boolean> = {
     icon?: IconName
     iconVariant?: PWIconVariant
+    /** Remote image (e.g. a dApp logo) shown in place of `icon` when set. */
+    iconUrl?: string
     title?: string
     message?: ReactNode
+    isMessageCentered?: boolean
     confirmLabel?: string
     cancelLabel?: string
+    tertiaryLabel?: string
     confirmValue?: TResult
+    tertiaryValue?: TResult
     onConfirm?: () => void
     onCancel?: () => void
+    onTertiary?: () => void
     confirmVariant?: PWButtonProps['variant']
     cancelVariant?: PWButtonProps['variant']
+    tertiaryVariant?: PWButtonProps['variant']
     buttonPaddingStyle?: PWButtonProps['paddingStyle']
     testID?: string
     confirmTestID?: string
@@ -41,15 +48,21 @@ export type ConfirmActionContentProps<TResult = boolean> = {
 export const ConfirmActionContent = <TResult = boolean,>({
     icon,
     iconVariant = 'primary',
+    iconUrl,
     title,
     message,
+    isMessageCentered,
     confirmLabel,
     cancelLabel,
+    tertiaryLabel,
     confirmValue = true as TResult,
+    tertiaryValue,
     onConfirm,
     onCancel,
+    onTertiary,
     confirmVariant = 'primary',
     cancelVariant = 'secondary',
+    tertiaryVariant = 'errorLink',
     buttonPaddingStyle,
     testID,
     confirmTestID,
@@ -64,14 +77,19 @@ export const ConfirmActionContent = <TResult = boolean,>({
         <ConfirmActionLayout
             icon={icon}
             iconVariant={iconVariant}
+            iconUrl={iconUrl}
             title={title}
             message={message}
+            isMessageCentered={isMessageCentered}
             confirmLabel={confirmLabel}
             cancelLabel={cancelLabel}
+            tertiaryLabel={tertiaryLabel}
             onConfirm={onConfirm ?? (() => resolve(confirmValue))}
             onCancel={onCancel ?? dismiss}
+            onTertiary={onTertiary ?? (() => resolve(tertiaryValue as TResult))}
             confirmVariant={confirmVariant}
             cancelVariant={cancelVariant}
+            tertiaryVariant={tertiaryVariant}
             buttonPaddingStyle={buttonPaddingStyle}
             testID={testID}
             confirmTestID={confirmTestID}

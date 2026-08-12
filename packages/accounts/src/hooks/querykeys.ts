@@ -56,6 +56,16 @@ export const getAccountHoldingsPageQueryKey = (
     },
 ) => [MODULE_PREFIX, 'holdings-page', { address, network, ...params }]
 
+export const getAccountCollectiblesQueryKey = (
+    address: string,
+    network: Network,
+    params?: {
+        sortMode?: string
+        search?: string
+        includeOptedInOnly?: boolean
+    },
+) => [MODULE_PREFIX, 'collectibles', { address, network, ...params }]
+
 export const getAccountBalancesHistoryQueryKey = (
     addresses: AccountAddress[],
     period: HistoryPeriod,
@@ -76,6 +86,13 @@ export const getOnChainAccountInformationQueryKey = (
     address: string,
     network: Network,
 ) => [MODULE_PREFIX, 'on-chain-account-information', { address, network }]
+
+// The { address } payload keeps this key inside the sync tick's scoped
+// invalidation, so a fresh opt-in reorders the gallery on the next sync.
+export const getAccountOptInRoundsQueryKey = (
+    address: string,
+    network: Network,
+) => [MODULE_PREFIX, 'opt-in-rounds', { address, network }]
 
 export const getRekeyedAddressesQueryKey = (
     address: string,
