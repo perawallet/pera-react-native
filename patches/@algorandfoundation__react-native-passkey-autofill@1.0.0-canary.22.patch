@@ -243,3 +243,47 @@ index 0000000000000000000000000000000000000000..66fea2df2b65c72ef705d5c61e895f70
 + */
 +@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 +class PasskeyProviderService : PasskeyAutofillCredentialProviderService()
+diff --git a/app.plugin.js b/app.plugin.js
+index a4169e2e756f2bcd4ae298c027c186bed61420bd..e7f8c9408b30d0a6d2389628c41ca3c18b8ded89 100644
+--- a/app.plugin.js
++++ b/app.plugin.js
+@@ -160,7 +160,7 @@ const extensionInfoPlist = ({
+ ${aaguid ? `  <key>ReactNativePasskeyAutofillAAGUID</key>\n  <string>${aaguid}</string>\n` : ""}  <key>${IOS_BIOMETRIC_INFO_PLIST_KEY}</key>
+   <string>${biometricRequirement}</string>
+   <key>NSFaceIDUsageDescription</key>
+-  <string>Rocca uses Face ID to create and use passkeys.</string>
++  <string>${label} uses Face ID to create and use passkeys.</string>
+   <key>NSExtension</key>
+   <dict>
+     <key>ASCredentialProviderExtensionSupportedDomains</key>
+diff --git a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
+index 3860b7ed1e7fd409cfeca06c506b15ab66ce7efc..2e46a684c8c9617f5a828d0bd37d49de711629ba 100644
+--- a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
++++ b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
+@@ -149,7 +149,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+     do {
+       guard let store else {
+         self.store?.appendDiagnostic("missing wallet root-key state")
+-        showFailure("Wallet root key is not available. Open Rocca Wallet once, unlock it, then try again.")
++        showFailure("Wallet root key is not available. Open Pera Wallet once, unlock it, then try again.")
+         return
+       }
+ 
+@@ -305,7 +305,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+     }
+ 
+     store?.appendDiagnostic("evaluatePolicy assertion start")
+-    context.evaluatePolicy(policy, localizedReason: "Use passkeys with Rocca Wallet") { [weak self] success, authenticationError in
++    context.evaluatePolicy(policy, localizedReason: "Use passkeys with Pera Wallet") { [weak self] success, authenticationError in
+       DispatchQueue.main.async {
+         guard let self else {
+           return
+@@ -403,7 +403,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+     }
+ 
+     store?.appendDiagnostic("evaluatePolicy start")
+-    context.evaluatePolicy(policy, localizedReason: "Create passkeys with Rocca Wallet") { [weak self] success, authenticationError in
++    context.evaluatePolicy(policy, localizedReason: "Create passkeys with Pera Wallet") { [weak self] success, authenticationError in
+       DispatchQueue.main.async {
+         guard let self else {
+           return

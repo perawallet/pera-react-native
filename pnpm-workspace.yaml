@@ -154,6 +154,11 @@ onlyBuiltDependencies:
   - simple-git-hooks
 
 patchedDependencies:
+  # Two unrelated reasons: the Android credential provider keeps the legacy
+  # native app's service class name so Credential Manager carries the user's
+  # enablement across the upgrade, and every user-facing string the package
+  # ships names "Rocca Wallet" — its own product, shown verbatim in the iOS
+  # Face ID / passcode prompts. Neither is configurable through plugin options.
   "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.22": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.22.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
