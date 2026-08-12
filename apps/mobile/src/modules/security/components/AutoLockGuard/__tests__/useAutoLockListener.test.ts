@@ -43,14 +43,15 @@ vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
 }))
 
 const platformState = vi.hoisted(() => ({ OS: 'android' as 'android' | 'ios' }))
+const appStateState = vi.hoisted(() => ({
+    currentState: 'active' as string,
+    addEventListener: vi.fn(() => ({
+        remove: vi.fn(),
+    })),
+}))
 
 vi.mock('react-native', () => ({
-    AppState: {
-        currentState: 'active',
-        addEventListener: vi.fn(() => ({
-            remove: vi.fn(),
-        })),
-    },
+    AppState: appStateState,
     Platform: platformState,
 }))
 
@@ -66,6 +67,7 @@ describe('useAutoLockListener', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         platformState.OS = 'android'
+        appStateState.currentState = 'active'
         appStateChangeHandler = null
         securityStoreState.lockRequestVersion = 0
         useBottomSheetStore.setState({ isPresentationHeld: false })
@@ -373,12 +375,12 @@ describe('useAutoLockListener', () => {
         })
     })
 
-    it('should avoid overlapping foreground checks', async () => {
-        let resolveForegroundCheck: Nullable<(value: boolean) => void> = null
+    it('coalesces a foreground check that arrives mid-check into one non-overlapping re-run', async () => {
+        const resolvers: Array<(value: boolean) => void> = []
         mockCheckAutoLock.mockImplementation(
             () =>
                 new Promise<boolean>(resolve => {
-                    resolveForegroundCheck = resolve
+                    resolvers.push(resolve)
                 }),
         )
 
@@ -395,10 +397,23 @@ describe('useAutoLockListener', () => {
             appStateChangeHandler?.('active')
         })
 
+        // The second transition arrives while the first check is still
+        // pending — it must be coalesced into a pending re-run, not dropped
+        // and not run concurrently with the first.
         expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
 
         act(() => {
-            resolveForegroundCheck?.(false)
+            resolvers[0]?.(false)
+        })
+
+        // The coalesced re-run only starts once the first check settles.
+        await waitFor(() => {
+            expect(mockCheckAutoLock).toHaveBeenCalledTimes(2)
+        })
+        expect(result.current.isChecking).toBe(true)
+
+        act(() => {
+            resolvers[1]?.(false)
         })
 
         await waitFor(() => {
@@ -493,6 +508,40 @@ describe('useAutoLockListener', () => {
 
         expect(mockCheckAutoLock).not.toHaveBeenCalled()
         expect(mockSetAutoLockStartedAt).not.toHaveBeenCalled()
+    })
+
+    it('raises the checking overlay on the first foreground after a cold mount that started backgrounded', async () => {
+        appStateState.currentState = 'background'
+        let resolveCheck: (expired: boolean) => void = () => {}
+        mockCheckAutoLock.mockImplementation(
+            () =>
+                new Promise<boolean>(resolve => {
+                    resolveCheck = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useAutoLockListener())
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        // A silent-push cold launch (or the route-tree remount) can mount the
+        // guard while the app is already backgrounded — the first foreground
+        // transition it observes is still a real background return.
+        act(() => {
+            appStateChangeHandler?.('active')
+        })
+
+        expect(result.current.isChecking).toBe(true)
+
+        await act(async () => {
+            resolveCheck(false)
+        })
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
     })
 
     describe('on iOS', () => {
@@ -598,6 +647,107 @@ describe('useAutoLockListener', () => {
                 expect(result.current.isChecking).toBe(false)
             })
 
+            act(() => {
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('active')
+            })
+
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        it('PROBE finding 1: real background during an in-flight banner check raises the overlay', async () => {
+            const resolvers: Array<(expired: boolean) => void> = []
+            mockCheckAutoLock.mockImplementation(
+                () =>
+                    new Promise<boolean>(resolve => {
+                        resolvers.push(resolve)
+                    }),
+            )
+
+            const { result } = renderHook(() => useAutoLockListener())
+
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+
+            // A banner starts a check (no overlay, since it's not a real
+            // background) while it is still pending.
+            act(() => {
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('active')
+            })
+            expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
+
+            // A real background/return arrives while that banner check is
+            // still in flight — it must not be dropped.
+            act(() => {
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('background')
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('active')
+            })
+
+            await act(async () => {
+                resolvers[0]?.(false)
+            })
+
+            await waitFor(() => {
+                expect(mockCheckAutoLock).toHaveBeenCalledTimes(2)
+            })
+            expect(result.current.isChecking).toBe(true)
+
+            await act(async () => {
+                resolvers[1]?.(false)
+            })
+
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+        })
+
+        it('PROBE2: stale ref flashes the overlay on a later pure banner', async () => {
+            const resolvers: Array<(expired: boolean) => void> = []
+            mockCheckAutoLock.mockImplementation(
+                () =>
+                    new Promise<boolean>(resolve => {
+                        resolvers.push(resolve)
+                    }),
+            )
+
+            const { result } = renderHook(() => useAutoLockListener())
+
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+
+            act(() => {
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('active')
+            })
+
+            act(() => {
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('background')
+                appStateChangeHandler?.('inactive')
+                appStateChangeHandler?.('active')
+            })
+
+            await act(async () => {
+                resolvers[0]?.(false)
+            })
+            await waitFor(() => {
+                expect(mockCheckAutoLock).toHaveBeenCalledTimes(2)
+            })
+
+            await act(async () => {
+                resolvers[1]?.(false)
+            })
+            await waitFor(() => {
+                expect(result.current.isChecking).toBe(false)
+            })
+
+            // A later, unrelated banner must not see a stale flag from the
+            // earlier real background.
             act(() => {
                 appStateChangeHandler?.('inactive')
                 appStateChangeHandler?.('active')

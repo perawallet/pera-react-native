@@ -72,6 +72,10 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const appState = useRef<AppStateValue>(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
     const isForegroundCheckInFlight = useRef(false)
+    // A transition that arrives while a check is in flight must not be
+    // dropped — it may be the real background hop that should raise the
+    // overlay. Coalesce it into one re-run after the in-flight check settles.
+    const hasPendingForegroundCheck = useRef(false)
     // Only `background` (not `inactive`) tells a real backgrounding apart from
     // banner/Face-ID noise on iOS (PERA-4870); seed from currentState so a
     // cold mount already in background isn't missed.
@@ -92,40 +96,49 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
             nextState: AppStateValue
         }): Promise<void> => {
             if (isForegroundCheckInFlight.current) {
+                hasPendingForegroundCheck.current = true
                 return
             }
 
             isForegroundCheckInFlight.current = true
-            // Only hide the app while deciding if it actually left the
-            // foreground — this must read/clear after the in-flight guard, or
-            // a real background during an in-progress check loses the flag.
-            const returnedFromBackground = hasEnteredRealBackgroundRef.current
-            hasEnteredRealBackgroundRef.current = false
-            if (returnedFromBackground) {
-                setIsChecking(true)
-            }
             try {
-                const expired = await checkAutoLock()
-                // One-way: only ever flip to locked. Never write `false`
-                // here — on iOS the biometric prompt briefly drives the app
-                // through inactive→active, and an `else` branch would unlock
-                // an already-locked app within milliseconds of showing the
-                // lock screen. (PERA-4196)
-                if (expired) {
-                    setIsLocked(true)
-                }
-            } catch (error) {
-                logger.error('Auto-lock foreground check failed', {
-                    source: 'AutoLockGuard.useAutoLockListener',
-                    phase: 'foreground',
-                    previousState: transitionContext?.previousState ?? null,
-                    nextState: transitionContext?.nextState ?? null,
-                    lockEnabled: isLocked,
-                    error,
-                })
-                // Keep current lock state on errors.
+                do {
+                    hasPendingForegroundCheck.current = false
+                    // Only hide the app while deciding if it actually left
+                    // the foreground.
+                    const returnedFromBackground =
+                        hasEnteredRealBackgroundRef.current
+                    hasEnteredRealBackgroundRef.current = false
+                    if (returnedFromBackground) {
+                        setIsChecking(true)
+                    }
+                    try {
+                        const expired = await checkAutoLock()
+                        // One-way: only ever flip to locked. Never write
+                        // `false` here — on iOS the biometric prompt briefly
+                        // drives the app through inactive→active, and an
+                        // `else` branch would unlock an already-locked app
+                        // within milliseconds of showing the lock screen.
+                        // (PERA-4196)
+                        if (expired) {
+                            setIsLocked(true)
+                        }
+                    } catch (error) {
+                        logger.error('Auto-lock foreground check failed', {
+                            source: 'AutoLockGuard.useAutoLockListener',
+                            phase: 'foreground',
+                            previousState:
+                                transitionContext?.previousState ?? null,
+                            nextState: transitionContext?.nextState ?? null,
+                            lockEnabled: isLocked,
+                            error,
+                        })
+                        // Keep current lock state on errors.
+                    } finally {
+                        setIsChecking(false)
+                    }
+                } while (hasPendingForegroundCheck.current)
             } finally {
-                setIsChecking(false)
                 isForegroundCheckInFlight.current = false
             }
         },
