@@ -271,8 +271,11 @@ export const WebMainRoutes = ({
                 </RootStack.Navigator>
             </WalletConnectProvider>
             {/* Native mounts this in RootComponent, which this shell replaces.
-                Outside the WC provider for the same reason SigningOverlays is:
-                a nav-tree crash must not take the blocking prompt down. */}
+                Outside the WC provider so a nav-tree crash caught by
+                WalletConnectErrorBoundary can't take the blocking prompt down.
+                Not parity with native: there the prompt is inside
+                RootContentContainer's own ErrorBoundary, so a MainRoutes throw
+                does drop it. */}
             <PromptContainer />
             {/* Sibling of WalletConnectProvider (not nested inside it),
                 mirroring native RootComponent's arrangement: there,

@@ -11,14 +11,16 @@
  */
 
 import { useEffect } from 'react'
-import { BackHandler } from 'react-native'
+import { BackHandler, Platform } from 'react-native'
 
 // Android's system back is JS-handled by react-navigation, so a full-screen
 // overlay that is not an OS window (no native Modal) still lets back pop the
 // screen underneath it. Swallow back while the overlay is up. Inert on iOS.
 export const useBlockHardwareBack = (isBlocking: boolean): void => {
     useEffect(() => {
-        if (!isBlocking) return
+        // react-native-web's BackHandler console.errors on every subscribe, so
+        // don't touch it off Android — back is Android-only anyway.
+        if (!isBlocking || Platform.OS !== 'android') return
 
         const subscription = BackHandler.addEventListener(
             'hardwareBackPress',

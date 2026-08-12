@@ -39,8 +39,15 @@ export const PromptContainer = () => {
 
     const PromptComponent = nextPrompt.component
 
+    // accessibilityViewIsModal: a native Modal made siblings inaccessible for
+    // free; this in-tree overlay must say so itself or VoiceOver swipes onto
+    // the tab bar underneath. iOS only — the Android half needs sibling
+    // subtrees to opt out and is tracked separately.
     return (
-        <PWView style={styles.overlay}>
+        <PWView
+            accessibilityViewIsModal
+            style={styles.overlay}
+        >
             <PWView style={styles.stage}>
                 <PWView style={styles.container}>
                     <PromptComponent

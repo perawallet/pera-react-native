@@ -20,17 +20,23 @@ const addEventListener = vi.fn(
     (_eventName: string, _handler: () => boolean) => ({ remove }),
 )
 
+const platform = { OS: 'android' }
+
 vi.mock('react-native', () => ({
     BackHandler: {
         get addEventListener() {
             return addEventListener
         },
     },
+    get Platform() {
+        return platform
+    },
 }))
 
 describe('useBlockHardwareBack', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        platform.OS = 'android'
     })
 
     it('does not register a handler while not blocking', () => {
@@ -48,6 +54,14 @@ describe('useBlockHardwareBack', () => {
         )
         const handler = addEventListener.mock.calls[0][1]
         expect(handler()).toBe(true)
+    })
+
+    it.each(['ios', 'web'])('does not touch BackHandler on %s', platformOS => {
+        platform.OS = platformOS
+
+        renderHook(() => useBlockHardwareBack(true))
+
+        expect(addEventListener).not.toHaveBeenCalled()
     })
 
     it('removes the handler when blocking stops', () => {

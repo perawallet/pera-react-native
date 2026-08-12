@@ -24,10 +24,9 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         zIndex: theme.zIndex.max,
         backgroundColor: theme.colors.background,
     },
-    // The overlay fills its mount point in the web shell, which is wider than
-    // the app's expanded-tab card — cap it so the prompt matches the card the
-    // rest of the UI is painted into. No-op in the popup, which is already
-    // narrower than the cap.
+    // Defence in depth: the mount point already sits inside AppShell's capped
+    // card, so this cap is inert today — it only bites if the overlay is ever
+    // remounted outside the card (as the removed RNW Modal portal was).
     stage: {
         flex: 1,
         width: '100%',
