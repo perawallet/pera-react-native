@@ -17,6 +17,7 @@ import {
     isWalletConnectFocusHint,
     isWalletConnectScheme,
     parseWalletConnectUri,
+    walletConnectLogContext,
 } from '../walletconnect-parser'
 import { DeeplinkType } from '../types'
 
@@ -257,6 +258,40 @@ describe('WalletConnect Parser', () => {
             const result = parseWalletConnectUri(wrapped)
             expect(result?.uri).toBe(inner)
             expect(result?.browserName).toBeUndefined()
+        })
+    })
+
+    describe('walletConnectLogContext', () => {
+        it('extracts topic and bridge origin without exposing the key', () => {
+            const out = walletConnectLogContext(
+                'wc:abc-topic@1?bridge=https%3A%2F%2Fbridge.example%2Fsub&key=deadbeef',
+            )
+            expect(out).toEqual({
+                topic: 'abc-topic',
+                bridgeOrigin: 'https://bridge.example',
+            })
+            expect(JSON.stringify(out)).not.toContain('deadbeef')
+        })
+
+        it('handles an unencoded bridge value', () => {
+            expect(
+                walletConnectLogContext(
+                    'wc:t@1?bridge=https://b.example&key=beef',
+                ),
+            ).toEqual({ topic: 't', bridgeOrigin: 'https://b.example' })
+        })
+
+        it('returns nulls for a non-wc string', () => {
+            expect(walletConnectLogContext('https://evil.com')).toEqual({
+                topic: null,
+                bridgeOrigin: null,
+            })
+        })
+
+        it('returns a null bridgeOrigin for a malformed bridge value', () => {
+            expect(
+                walletConnectLogContext('wc:t@1?bridge=%ZZ&key=beef'),
+            ).toEqual({ topic: 't', bridgeOrigin: null })
         })
     })
 })

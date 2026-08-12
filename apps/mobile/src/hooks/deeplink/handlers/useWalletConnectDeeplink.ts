@@ -24,6 +24,7 @@ import { usePairingProgressStore } from '@modules/walletconnect/stores/usePairin
 import { useReturnToDappStore } from '@modules/walletconnect/stores/useReturnToDappStore'
 import { useToast } from '../../useToast'
 import { useDeeplinkErrorHandler } from './useDeeplinkErrorHandler'
+import { walletConnectLogContext } from '../walletconnect-parser'
 import type { LinkSource, WalletConnectDeeplink } from '../types'
 
 export type WalletConnectDeeplinkParams = {
@@ -94,11 +95,11 @@ export const useWalletConnectDeeplink = (): WalletConnectDeeplinkHandler => {
             }
 
             if (result.type === 'connect-failed') {
-                // The logger's context redaction scrubs the wc URI's
-                // symmetric `key=` param.
+                // Never log the URI itself: its `key=` param is the pairing
+                // secret.
                 logger.error('[deeplink/wc] connect failed', {
                     error: result.error,
-                    uri: data.uri,
+                    ...walletConnectLogContext(data.uri),
                 })
                 showError({
                     variant: 'walletconnect',

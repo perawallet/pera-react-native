@@ -290,17 +290,24 @@ vi.mock('@hooks/deeplink/parser', () => ({
     parseDeeplink: vi.fn(() => null),
 }))
 
-vi.mock('@hooks/deeplink/walletconnect-parser', () => ({
-    parseWalletConnectUri: vi.fn((uri: string) =>
-        uri.startsWith('wc:') || uri.startsWith('perawallet-wc:')
-            ? {
-                  type: 'WALLET_CONNECT',
-                  sourceUrl: uri,
-                  uri: uri.replace('perawallet-wc:', 'wc:'),
-              }
-            : null,
-    ),
-}))
+vi.mock('@hooks/deeplink/walletconnect-parser', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@hooks/deeplink/walletconnect-parser')
+        >()
+    return {
+        walletConnectLogContext: actual.walletConnectLogContext,
+        parseWalletConnectUri: vi.fn((uri: string) =>
+            uri.startsWith('wc:') || uri.startsWith('perawallet-wc:')
+                ? {
+                      type: 'WALLET_CONNECT',
+                      sourceUrl: uri,
+                      uri: uri.replace('perawallet-wc:', 'wc:'),
+                  }
+                : null,
+        ),
+    }
+})
 
 const { mockUseLanguage } = vi.hoisted(() => ({
     mockUseLanguage: vi.fn(),
@@ -1762,6 +1769,38 @@ describe('usePeraWebviewInterface', () => {
             expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
                 expect.stringContaining('wrong network'),
             )
+        })
+
+        it('logs a connect failure by topic and bridge origin, never the URI', async () => {
+            mockConnect.mockRejectedValueOnce(new Error('bridge unreachable'))
+            const { logger } = await import('@perawallet/wallet-core-shared')
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true, null),
+            )
+
+            await act(async () => {
+                result.current.handleMessage({
+                    id: 'wc-fail',
+                    jsonrpc: '2.0',
+                    method: 'walletConnect',
+                    params: {
+                        uri: 'wc:topic-1@1?bridge=https%3A%2F%2Fb.example&key=deadbeef',
+                    },
+                })
+                await Promise.resolve()
+                await Promise.resolve()
+            })
+
+            expect(logger.error).toHaveBeenCalledWith(
+                '[webview/wc] connect failed',
+                {
+                    error: expect.any(Error),
+                    topic: 'topic-1',
+                    bridgeOrigin: 'https://b.example',
+                },
+            )
+            const context = vi.mocked(logger.error).mock.calls.at(-1)?.[1]
+            expect(JSON.stringify(context)).not.toContain('deadbeef')
         })
 
         it('short-circuits with an offline error instead of dialing a dead bridge', async () => {
