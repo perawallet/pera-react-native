@@ -265,12 +265,44 @@ describe('usePromptContainer', () => {
         expect(result.current.nextPrompt).toBeUndefined()
     })
 
+    it('holds bottom-sheet presentation before the display delay elapses', async () => {
+        // A sheet that paints during the delay is already presented and would
+        // survive the hold, so the hold must engage the moment a prompt is due.
+        mockGetPreference.mockReturnValue(false)
+        mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+
+        const { result } = renderHook(() => usePromptContainer())
+
+        await act(async () => {})
+        act(() => {
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY - 1)
+        })
+
+        expect(result.current.nextPrompt).toBeUndefined()
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
+    })
+
+    it('releases the hold when the lock overlay takes the prompt away', async () => {
+        mockGetPreference.mockReturnValue(false)
+
+        const { rerender } = renderHook(() => usePromptContainer())
+
+        await act(async () => {})
+
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
+
+        mockIsLockOverlayVisible.mockReturnValue(true)
+        await act(async () => {
+            rerender()
+        })
+
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(false)
+    })
+
     it('holds bottom-sheet presentation while a prompt is up', async () => {
         mockGetPreference.mockReturnValue(false)
 
         const { result } = renderHook(() => usePromptContainer())
-
-        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(false)
 
         await act(async () => {})
         act(() => {

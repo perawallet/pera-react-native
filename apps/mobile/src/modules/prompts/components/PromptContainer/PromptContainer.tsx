@@ -41,8 +41,9 @@ export const PromptContainer = () => {
 
     // accessibilityViewIsModal: a native Modal made siblings inaccessible for
     // free; this in-tree overlay must say so itself or VoiceOver swipes onto
-    // the tab bar underneath. iOS only — the Android half needs sibling
-    // subtrees to opt out and is tracked separately.
+    // the tab bar underneath. iOS only — Android (sibling subtrees must opt
+    // out) and web (RNW drops this prop, and the removed Modal was the focus
+    // trap) are both still open, tracked separately.
     return (
         <PWView
             accessibilityViewIsModal

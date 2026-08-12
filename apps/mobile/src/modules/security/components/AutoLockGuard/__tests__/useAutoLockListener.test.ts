@@ -70,7 +70,7 @@ describe('useAutoLockListener', () => {
         appStateState.currentState = 'active'
         appStateChangeHandler = null
         securityStoreState.lockRequestVersion = 0
-        useBottomSheetStore.setState({ isPresentationHeld: false })
+        useBottomSheetStore.getState().resetState()
         mockCheckPinEnabled.mockResolvedValue(false)
         mockCheckAutoLock.mockResolvedValue(false)
         ;(usePinCode as Mock).mockReturnValue({

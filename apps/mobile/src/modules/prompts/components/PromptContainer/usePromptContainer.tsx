@@ -139,9 +139,12 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     // signing overlay drives) paints above it — a sign-review sheet could
     // otherwise be actioned while a legally-required gate is up. Holding at
     // the manager keeps new sheets off screen until the prompt is answered.
+    // Keyed to `prompt`, not `nextPrompt`: the latter lands a display delay
+    // later, and a sheet that paints inside that window is already presented
+    // and so survives the hold (e.g. a WC deep-link cold start).
     useEffect(() => {
-        setPresentationHeld(!!nextPrompt, 'blocking-prompt')
-    }, [nextPrompt, setPresentationHeld])
+        setPresentationHeld(!!prompt, 'blocking-prompt')
+    }, [prompt, setPresentationHeld])
     // Never leave the hold stuck on if the container unmounts.
     useEffect(
         () => () => setPresentationHeld(false, 'blocking-prompt'),

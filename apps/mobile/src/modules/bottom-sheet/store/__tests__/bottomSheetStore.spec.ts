@@ -248,6 +248,12 @@ describe('presentation holds', () => {
 
         setPresentationHeld(true, 'app-lock')
         setPresentationHeld(true, 'app-lock')
+
+        // Not refcounted, and not duplicated: one release must clear it.
+        expect(useBottomSheetStore.getState().presentationHolds).toEqual([
+            'app-lock',
+        ])
+
         setPresentationHeld(false, 'app-lock')
 
         expect(useBottomSheetStore.getState().isPresentationHeld).toBe(false)
