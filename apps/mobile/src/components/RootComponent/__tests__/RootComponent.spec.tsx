@@ -71,6 +71,12 @@ vi.mock('@hooks/useErrorToast', () => ({
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceRegistration: vi.fn(),
 }))
+// Pairs with the useDeviceRegistration stub above to keep DeviceRegistrar
+// inert; without it the real hook reaches into wallet-core-messages, which the
+// full-module mock below deliberately does not carry.
+vi.mock('@hooks/useDeviceAccountRegistrations', () => ({
+    useDeviceAccountRegistrations: vi.fn(() => []),
+}))
 vi.mock('@perawallet/wallet-core-migrate', () => ({
     useNeedsMigration: vi.fn(() => ({
         isChecking: false,
