@@ -11,9 +11,11 @@
  */
 
 import { useCallback } from 'react'
+import { NavigationContainerRefContext } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWView } from '@components/core'
 import { useBlockHardwareBack } from '@hooks/useBlockHardwareBack'
+import { navigationRef } from '@routes/navigationRef'
 import { usePromptContainer } from './usePromptContainer'
 import { useStyles } from './styles'
 
@@ -51,10 +53,21 @@ export const PromptContainer = () => {
         >
             <PWView style={styles.stage}>
                 <PWView style={styles.container}>
-                    <PromptComponent
-                        onDismiss={handleDismiss}
-                        onHide={handleHide}
-                    />
+                    {/* This container mounts above NavigationContainer (it is
+                        a sibling of <MainRoutes />), so a prompt calling
+                        useNavigation would throw "Couldn't find a navigation
+                        object" and take the whole app down through the root
+                        error boundary. Hand it the container ref, which
+                        useNavigation falls back to — same reason and same
+                        shape as BottomSheetHost. */}
+                    <NavigationContainerRefContext.Provider
+                        value={navigationRef}
+                    >
+                        <PromptComponent
+                            onDismiss={handleDismiss}
+                            onHide={handleHide}
+                        />
+                    </NavigationContainerRefContext.Provider>
                 </PWView>
             </PWView>
         </PWView>
