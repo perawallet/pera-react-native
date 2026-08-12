@@ -11,29 +11,58 @@
  */
 
 import { useMemo } from 'react'
-import { LineChart } from 'react-native-gifted-charts'
+import { LinearGradient, vec } from '@shopify/react-native-skia'
+import { Area, CartesianChart, Line, useChartPressState } from 'victory-native'
 import { useTheme } from '@rneui/themed'
 import { PWButton, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
-import { useChartPointerFocus } from '@hooks/useChartPointerFocus'
 import { useLanguage } from '@hooks/useLanguage'
-import { CHART_ANIMATION_DURATION, CHART_HEIGHT } from '@constants/ui'
+import {
+    CHART_ANIMATION_DURATION,
+    CHART_LINE_THICKNESS,
+    CHART_PRESS_ACTIVE_OFFSET_X,
+    CHART_PRESS_FAIL_OFFSET_Y,
+} from '@constants/ui'
 import { getChartYAxisRange } from '@utils/chart'
 import { useBalanceLineChart } from './useBalanceLineChart'
+import { ChartPressIndicator } from './ChartPressIndicator'
+import { useChartPressSelection } from './useChartPressSelection'
+import { useStableChartData } from './useStableChartData'
+import { useStyles } from './styles'
 
 import type { StyleProp, ViewStyle } from 'react-native'
 
+// Legacy literal, carried over verbatim so the port stays visually a no-op. It
+// is deliberately not theme.colors.positive (a different turquoise) and wants a
+// semantic token of its own.
+const AREA_FILL_COLOR = '#28A79B'
+const AREA_FILL_TOP_OPACITY = '4D' // 30%
+const AREA_FILL_BOTTOM_OPACITY = '00'
+
+const CHART_ANIMATION = {
+    type: 'timing',
+    duration: CHART_ANIMATION_DURATION,
+} as const
+
+// Omitting `yAxis` is not enough to hide it: victory gates the X axis on the
+// `xAxis` prop but the Y axis on its internally-derived `yAxes` array, which is
+// always populated — so the default 25%-black hairline gridlines render either
+// way (obvious in light mode, near-invisible in dark). Zero width is the off
+// switch; YAxis skips the path when lineWidth <= 0, and tick labels need a
+// `font` we never pass. Hoisted so the prop identity stays stable.
+const HIDDEN_Y_AXIS = [{ lineWidth: 0 }]
+
 // Shared area line chart for the wealth/asset-balance/asset-price charts, which
 // render an identical chart and only differ in how they fetch their series and
-// which field of it they plot. Mapping and pointer-focus wiring live here so
-// each caller is just its query plus this component.
+// which field of it they plot. Mapping and scrub wiring live here so each
+// caller is just its query plus this component.
 type BalanceLineChartProps<T> = {
     /** Source series as fetched; undefined while the query has no data. */
     series: T[] | undefined
     /** Extracts the plotted value from a series item. */
     getValue: (item: T) => number
-    /** Reports the pointer-focused series item, or null when focus leaves. */
+    /** Reports the scrub-focused series item, or null when the touch ends. */
     onSelectionChanged: (item: T | null) => void
     isPending: boolean
     emptyBody: string
@@ -62,15 +91,24 @@ export const BalanceLineChart = <T,>({
 }: BalanceLineChartProps<T>) => {
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const dataPoints = useMemo(
-        () => series?.map(item => ({ value: getValue(item) })) ?? [],
-        [series, getValue],
-    )
-    const getPointerProps = useChartPointerFocus(series, onSelectionChanged)
-    const yAxisRange = useMemo(
-        () => getChartYAxisRange(dataPoints),
-        [dataPoints],
-    )
+    const styles = useStyles()
+
+    const dataPoints = useStableChartData(series, getValue)
+
+    // getChartYAxisRange speaks gifted-charts' idiom, where maxValue is the span
+    // above the offset rather than the top of the axis.
+    const yDomain = useMemo<[number, number]>(() => {
+        const { yAxisOffset, maxValue } = getChartYAxisRange(dataPoints)
+        return [yAxisOffset, yAxisOffset + maxValue]
+    }, [dataPoints])
+
+    // Only the shared values are used; the hook's JS `isActive` boolean lands a
+    // render too late to gate anything on (see ChartPressIndicator).
+    const { state: pressState } = useChartPressState({
+        x: 0,
+        y: { value: 0 },
+    })
+    useChartPressSelection(pressState, series, onSelectionChanged)
 
     const { renderState, handleRetry } = useBalanceLineChart({
         hasData: dataPoints.length > 0,
@@ -93,39 +131,63 @@ export const BalanceLineChart = <T,>({
         switch (renderState) {
             case 'chart': {
                 return (
-                    <LineChart
-                        data={dataPoints}
-                        hideAxesAndRules
-                        height={CHART_HEIGHT}
-                        color={theme.colors.positive}
-                        startFillColor='#28A79B'
-                        endFillColor='#28A79B'
-                        startOpacity={0.3}
-                        endOpacity={0.0}
-                        areaChart
-                        yAxisLabelWidth={1}
-                        hideYAxisText
-                        yAxisOffset={yAxisRange.yAxisOffset}
-                        maxValue={yAxisRange.maxValue}
-                        initialSpacing={0}
-                        endSpacing={0}
-                        showStripOnFocus
-                        showDataPointOnFocus
-                        animateOnDataChange
-                        animationDuration={CHART_ANIMATION_DURATION}
-                        onDataChangeAnimationDuration={CHART_ANIMATION_DURATION}
-                        pointerConfig={{
-                            showPointerStrip: true,
-                            pointerStripColor: theme.colors.textGrayLighter,
-                            pointerStripWidth: 1,
-                            pointerStripHeight: CHART_HEIGHT,
-                            pointerColor: theme.colors.positive,
-                            strokeDashArray: [6, 2],
-                        }}
-                        getPointerProps={getPointerProps}
-                        disableScroll
-                        adjustToWidth
-                    />
+                    <PWView style={styles.canvas}>
+                        <CartesianChart
+                            data={dataPoints}
+                            xKey='index'
+                            yKeys={['value']}
+                            domain={{ y: yDomain }}
+                            yAxis={HIDDEN_Y_AXIS}
+                            padding={0}
+                            domainPadding={0}
+                            chartPressState={pressState}
+                            // Without an explicit pan config victory applies
+                            // activateAfterLongPress(100), i.e. a hold before
+                            // the scrub starts — the lag we're removing.
+                            chartPressConfig={{
+                                pan: {
+                                    activeOffsetX: CHART_PRESS_ACTIVE_OFFSET_X,
+                                    failOffsetY: CHART_PRESS_FAIL_OFFSET_Y,
+                                },
+                            }}
+                        >
+                            {({ points, chartBounds }) => (
+                                <>
+                                    <Area
+                                        points={points.value}
+                                        y0={chartBounds.bottom}
+                                        curveType='linear'
+                                        animate={CHART_ANIMATION}
+                                    >
+                                        <LinearGradient
+                                            start={vec(0, chartBounds.top)}
+                                            end={vec(0, chartBounds.bottom)}
+                                            colors={[
+                                                `${AREA_FILL_COLOR}${AREA_FILL_TOP_OPACITY}`,
+                                                `${AREA_FILL_COLOR}${AREA_FILL_BOTTOM_OPACITY}`,
+                                            ]}
+                                        />
+                                    </Area>
+                                    <Line
+                                        points={points.value}
+                                        color={theme.colors.positive}
+                                        strokeWidth={CHART_LINE_THICKNESS}
+                                        curveType='linear'
+                                        animate={CHART_ANIMATION}
+                                    />
+                                    <ChartPressIndicator
+                                        pressState={pressState}
+                                        top={chartBounds.top}
+                                        bottom={chartBounds.bottom}
+                                        stripColor={
+                                            theme.colors.textGrayLighter
+                                        }
+                                        dotColor={theme.colors.positive}
+                                    />
+                                </>
+                            )}
+                        </CartesianChart>
+                    </PWView>
                 )
             }
             // Offline must not masquerade as loading: a paused query reports

@@ -14,7 +14,7 @@ import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { PWText, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
 import { AssetTransactionList } from '../AssetTransactionList/AssetTransactionList'
@@ -44,24 +44,18 @@ import { ExpandablePanel } from '@components/ExpandablePanel'
 export type AssetHoldingsProps = {
     account: WalletAccount
     asset: PeraAsset
-    onSwipeEnabledChange?: (enabled: boolean) => void
     isCollectible?: boolean
 }
 
 export const AssetHoldings = ({
     account,
     asset,
-    onSwipeEnabledChange,
     isCollectible,
 }: AssetHoldingsProps) => {
     const styles = useStyles()
     const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountAssetBalanceHistoryItem>()
-
-    useEffect(() => {
-        onSwipeEnabledChange?.(!selectedPoint)
-    }, [selectedPoint, onSwipeEnabledChange])
 
     const { getPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
@@ -133,7 +127,7 @@ export const AssetHoldings = ({
                             />
                         )}
                         {!!selectedPoint && (
-                            <PWText>
+                            <PWText style={styles.dateDisplay}>
                                 {formatDatetime(selectedPoint.datetime)}
                             </PWText>
                         )}

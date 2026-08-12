@@ -28,15 +28,12 @@ import { type UseAccountOverviewModalResult } from './AccountOverviewModalContex
 
 export type UseAccountOverviewParams = {
     account: WalletAccount
-    onSwipeEnabledChange?: (enabled: boolean) => void
 }
 
 export type UseAccountOverviewResult = {
     openSendFunds: () => void
     openReceiveFunds: () => void
     openAccountOptions: () => void
-    scrollingEnabled: boolean
-    onScrollEnabledChange: (enabled: boolean) => void
     isLoading: boolean
     isRefreshing: boolean
     handleRefresh: () => void
@@ -45,7 +42,6 @@ export type UseAccountOverviewResult = {
 
 export const useAccountOverview = ({
     account,
-    onSwipeEnabledChange,
 }: UseAccountOverviewParams): UseAccountOverviewResult => {
     const selectedAccount = useSelectedAccount()
     const { setSelectedAccount, setCanSelectAccount } = useReceiveFunds()
@@ -102,12 +98,6 @@ export const useAccountOverview = ({
         })
     }, [requestBottomSheet, account, openReceiveFunds])
 
-    const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
-
-    useEffect(() => {
-        onSwipeEnabledChange?.(scrollingEnabled)
-    }, [scrollingEnabled, onSwipeEnabledChange])
-
     // Reveal the header as soon as the (cheap, SQL-aggregate) balance summary
     // resolves. The chart history is a separate, slower network query that's
     // gated on chart visibility — it must not hold the header in a skeleton
@@ -141,7 +131,6 @@ export const useAccountOverview = ({
             openSendFunds,
             openReceiveFunds,
             openAccountOptions,
-            onScrollEnabledChange: setScrollingEnabled,
         }),
         [account, openSendFunds, openReceiveFunds, openAccountOptions],
     )
@@ -150,8 +139,6 @@ export const useAccountOverview = ({
         openSendFunds,
         openReceiveFunds,
         openAccountOptions,
-        scrollingEnabled,
-        onScrollEnabledChange: setScrollingEnabled,
         isLoading,
         isRefreshing,
         handleRefresh,

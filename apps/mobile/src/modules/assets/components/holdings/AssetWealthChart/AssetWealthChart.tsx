@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { memo } from 'react'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { BalanceLineChart } from '@components/BalanceLineChart'
@@ -34,12 +35,15 @@ export type AssetWealthChartProps = {
 const getPreferredValue = (item: AccountAssetBalanceHistoryItem): number =>
     item.preferredValue.toNumber()
 
-export const AssetWealthChart = ({
+// Memoised like WealthChart: the history query rebuilds its results in an
+// inline `select`, so an unmemoised re-render hands the chart a new data
+// array and victory resets an in-progress scrub.
+export const AssetWealthChart = memo(function AssetWealthChart({
     onSelectionChanged,
     account,
     asset,
     period,
-}: AssetWealthChartProps) => {
+}: AssetWealthChartProps) {
     const themeStyle = useStyles()
     const { t } = useLanguage()
 
@@ -59,4 +63,4 @@ export const AssetWealthChart = ({
             style={themeStyle.container}
         />
     )
-}
+})
