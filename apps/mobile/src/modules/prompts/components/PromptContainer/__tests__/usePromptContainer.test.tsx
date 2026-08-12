@@ -16,6 +16,7 @@ import { usePromptContainer } from '../usePromptContainer'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
+import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { UserPreferences } from '@constants/user-preferences'
 import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
@@ -65,6 +66,7 @@ describe('usePromptContainer', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         vi.useFakeTimers()
+        useBottomSheetStore.getState().resetState()
         ;(usePreferences as Mock).mockReturnValue({
             getPreference: mockGetPreference,
             setPreference: mockSetPreference,
@@ -261,6 +263,41 @@ describe('usePromptContainer', () => {
         })
 
         expect(result.current.nextPrompt).toBeUndefined()
+    })
+
+    it('holds bottom-sheet presentation while a prompt is up', async () => {
+        mockGetPreference.mockReturnValue(false)
+
+        const { result } = renderHook(() => usePromptContainer())
+
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(false)
+
+        await act(async () => {})
+        act(() => {
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+        })
+
+        expect(result.current.nextPrompt).toBeDefined()
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
+
+        // The app lock holds independently — the prompt releasing must not
+        // release it.
+        act(() => {
+            useBottomSheetStore.getState().setPresentationHeld(true, 'app-lock')
+            result.current.hidePrompt(UserPreferences._securityPinSetupPrompt)
+        })
+        await act(async () => {})
+
+        expect(result.current.nextPrompt).toBeUndefined()
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
+
+        act(() => {
+            useBottomSheetStore
+                .getState()
+                .setPresentationHeld(false, 'app-lock')
+        })
+
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(false)
     })
 
     it('should dismiss prompt and save preference when dismissPrompt is called', async () => {

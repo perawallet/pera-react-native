@@ -13,6 +13,7 @@
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useIsLockOverlayVisible } from '@modules/security'
+import { useBottomSheetStore } from '@modules/bottom-sheet'
 import { type ReactElement, useEffect, useMemo, useState } from 'react'
 import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
 import { type PromptViewProps } from '@modules/prompts/models'
@@ -47,6 +48,9 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     const hasAccounts = useHasAccounts()
     const { needsAcceptance: needsTermsAcceptance } = useTermsAcceptance()
     const isLockOverlayVisible = useIsLockOverlayVisible()
+    const setPresentationHeld = useBottomSheetStore(
+        state => state.setPresentationHeld,
+    )
     const [hiddenPrompts, setHiddenPrompts] = useState<Set<string>>(new Set())
     const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>(undefined)
 
@@ -130,6 +134,19 @@ export const usePromptContainer = (): UsePromptContainerResult => {
             }
         }
     }, [prompt, checkPinEnabled, setPreference])
+
+    // The prompt overlay is in-tree, so gorhom's portal (and the sheets every
+    // signing overlay drives) paints above it — a sign-review sheet could
+    // otherwise be actioned while a legally-required gate is up. Holding at
+    // the manager keeps new sheets off screen until the prompt is answered.
+    useEffect(() => {
+        setPresentationHeld(!!nextPrompt, 'blocking-prompt')
+    }, [nextPrompt, setPresentationHeld])
+    // Never leave the hold stuck on if the container unmounts.
+    useEffect(
+        () => () => setPresentationHeld(false, 'blocking-prompt'),
+        [setPresentationHeld],
+    )
 
     const hidePrompt = () => {
         //we only want to show one prompt at a time so hide all prompts at this point

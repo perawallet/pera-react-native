@@ -42,6 +42,13 @@ export type BottomSheetRequest = {
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface BottomSheetRegistry {}
 
+/**
+ * Who is holding sheet presentation. Holds are keyed by owner because the
+ * app-lock guard and a blocking prompt can be up at the same time — with a
+ * plain boolean the first one to close would release the other's hold.
+ */
+export type PresentationHoldOwner = 'app-lock' | 'blocking-prompt'
+
 export type InternalRequest = {
     id: string
     contents: ReactNode

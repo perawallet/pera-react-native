@@ -58,14 +58,14 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const isGuardActive = isLocked || isChecking || !isInitialized
     useEffect(() => {
         setAppLockActive(isGuardActive)
-        setPresentationHeld(isGuardActive)
+        setPresentationHeld(isGuardActive, 'app-lock')
     }, [setAppLockActive, setPresentationHeld, isGuardActive])
     // Never leave the flags stuck on if the guard unmounts (route-tree swap) —
     // a stale `true` would hold sheets forever.
     useEffect(
         () => () => {
             setAppLockActive(false)
-            setPresentationHeld(false)
+            setPresentationHeld(false, 'app-lock')
         },
         [setAppLockActive, setPresentationHeld],
     )

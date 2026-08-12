@@ -223,3 +223,33 @@ describe('host registration (fail-loud request)', () => {
         expect(useBottomSheetStore.getState().requests).toEqual([])
     })
 })
+
+describe('presentation holds', () => {
+    beforeEach(() => {
+        useBottomSheetStore.getState().resetState()
+    })
+
+    it('stays held until every owner releases', () => {
+        const { setPresentationHeld } = useBottomSheetStore.getState()
+
+        setPresentationHeld(true, 'app-lock')
+        setPresentationHeld(true, 'blocking-prompt')
+        setPresentationHeld(false, 'blocking-prompt')
+
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
+
+        setPresentationHeld(false, 'app-lock')
+
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(false)
+    })
+
+    it('ignores a repeated hold from the same owner', () => {
+        const { setPresentationHeld } = useBottomSheetStore.getState()
+
+        setPresentationHeld(true, 'app-lock')
+        setPresentationHeld(true, 'app-lock')
+        setPresentationHeld(false, 'app-lock')
+
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(false)
+    })
+})
