@@ -11,6 +11,7 @@
  */
 
 import { type NativeStackNavigationOptions } from '@react-navigation/native-stack'
+import { Easing } from 'react-native-reanimated'
 
 export const CHART_FOCUS_DEBOUNCE_TIME = 200
 export const CHART_HEIGHT = 140
@@ -29,7 +30,10 @@ export const SCREEN_ANIMATION_CONFIG: NativeStackNavigationOptions = {
     statusBarAnimation: 'slide',
 }
 
-export const EXPANDABLE_PANEL_ANIMATION_DURATION = 200
+export const EXPANDABLE_PANEL_ANIMATION_DURATION = 250
+// Shared by the panel and everything that must move in lockstep with it
+// (chevron rotation, the portfolio trend fade) so nothing pops out of sync.
+export const EXPANDABLE_PANEL_ANIMATION_EASING = Easing.bezier(0.4, 0, 0.2, 1)
 export const BACKUP_REMINDER_BANNER_REVEAL_DELAY = 800
 export const BACKUP_REMINDER_BANNER_REVEAL_DURATION = 200
 export const SLIDE_TO_CONFIRM_ANIMATION_DURATION = 250
