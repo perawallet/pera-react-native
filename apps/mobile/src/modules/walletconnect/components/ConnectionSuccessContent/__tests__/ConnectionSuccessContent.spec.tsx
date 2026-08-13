@@ -109,9 +109,7 @@ describe('ConnectionSuccessContent', () => {
             ),
         )
 
-        expect(Linking.openURL).toHaveBeenCalledWith(
-            'googlechrome://',
-        )
+        expect(Linking.openURL).toHaveBeenCalledWith('googlechrome://')
         useBottomSheetStore.getState().remove('sheet-1')
         await expect(promise).resolves.toBe(true)
     })
