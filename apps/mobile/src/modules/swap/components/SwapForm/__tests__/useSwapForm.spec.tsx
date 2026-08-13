@@ -365,6 +365,37 @@ describe('useSwapForm', () => {
         )
     })
 
+    it('tells the user instead of filling 0 when the calculated max is zero', async () => {
+        mockCalculateSwapAmount.mockResolvedValueOnce({
+            amount: new Decimal(0),
+        })
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handleMaxPress()
+        })
+
+        expect(mockCalculateSwapAmount).toHaveBeenCalled()
+        expect(result.current.payAmount).toBeNull()
+        expect(mockInfoToast).toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it('tells the user instead of filling 0 when the response has no amount', async () => {
+        mockCalculateSwapAmount.mockResolvedValueOnce({})
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handleMaxPress()
+        })
+
+        expect(result.current.payAmount).toBeNull()
+        expect(mockInfoToast).toHaveBeenCalled()
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
     it('clears the amounts and the asset pair when the selected account changes', async () => {
         mockCalculateSwapAmount.mockResolvedValueOnce({
             amount: new Decimal('5000000'),

@@ -286,12 +286,22 @@ export const useSwapForm = (): UseSwapFormResult => {
                     asset_out_id: uint64IdToNumber(toAsset),
                     percentage: String(percentage / 100),
                 })
-                if (result.amount) {
+                if (result.amount && !result.amount.isZero()) {
                     const displayAmount = baseUnitsToDisplayUnits(
                         result.amount,
                         payAsset?.decimals ?? 0,
                     )
                     setPayAmount(displayAmount)
+                } else {
+                    // The backend clamps the swappable amount at zero when
+                    // fee reserves consume the balance; filling the field
+                    // with 0 would read as a dead button too.
+                    infoToast(
+                        t('swap.form.balance_too_low_title'),
+                        t('swap.form.balance_too_low_body', {
+                            unit: payAsset?.unitName ?? fromAsset,
+                        }),
+                    )
                 }
             } catch {
                 // Already logged by the query client; the user needs to know the

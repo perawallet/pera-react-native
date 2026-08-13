@@ -2712,6 +2712,8 @@
             "insufficient_balance": "Miktar, kullanılabilir bakiyeni aşıyor.",
             "no_balance_title": "Takas edilecek bir şey yok",
             "no_balance_body": "Bu hesapta {{unit}} yok.",
+            "balance_too_low_title": "Bakiye çok düşük",
+            "balance_too_low_body": "Kullanılabilir {{unit}} bakiyen takas için çok düşük.",
             "percentage_error_title": "Miktar hesaplanamadı",
             "percentage_error_body": "Lütfen birazdan tekrar dene.",
             "you_pay": "Ödeyeceğin",
