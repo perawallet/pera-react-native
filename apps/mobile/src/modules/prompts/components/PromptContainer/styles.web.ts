@@ -24,6 +24,11 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         zIndex: theme.zIndex.max,
         backgroundColor: theme.colors.background,
     },
+    // Must exist here too: this file replaces the native style object outright
+    // rather than merging with it, so a key missing here is missing on web.
+    revealLayer: {
+        flex: 1,
+    },
     // Defence in depth: the mount point already sits inside AppShell's capped
     // card, so this cap is inert today — it only bites if the overlay is ever
     // remounted outside the card (as the removed RNW Modal portal was).
@@ -32,6 +37,12 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         width: '100%',
         maxWidth: WEB_EXPANDED_CARD_MAX_WIDTH,
         alignSelf: 'center' as const,
+    },
+    // Full-bleed variant: a prompt whose own art covers the surface insets its
+    // chrome itself, so container padding would only frame it.
+    containerFullBleed: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
     },
     container: {
         flex: 1,

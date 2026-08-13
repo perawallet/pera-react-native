@@ -14,7 +14,10 @@ import { renderHook, act } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
-    termsVersion: '1',
+    // `undefined` models remote config before fetchAndActivate: getStringValue
+    // returns the caller's fallback. `''` does not — it is a real value and
+    // never reaches the fallback branch.
+    termsVersion: '1' as string | undefined,
     preferences: {} as Record<string, string | boolean | number>,
     setPreference: vi.fn(),
 }))
@@ -82,6 +85,29 @@ describe('useTermsAcceptance', () => {
         const { result } = renderHook(() => useTermsAcceptance())
 
         expect(result.current.needsAcceptance).toBe(false)
+    })
+
+    it('does not gate while the remote version is unresolved', () => {
+        mocks.termsVersion = undefined
+
+        const { result } = renderHook(() => useTermsAcceptance())
+
+        expect(result.current.needsAcceptance).toBe(false)
+    })
+
+    it('gates once against the real version once config resolves', () => {
+        // PERA-4874's duplicate T&Cs: a placeholder fallback read as a genuine
+        // version, so the user accepted it, the real version then activated and
+        // the gate fired a second time.
+        mocks.termsVersion = undefined
+        const { result, rerender } = renderHook(() => useTermsAcceptance())
+        expect(result.current.needsAcceptance).toBe(false)
+
+        mocks.termsVersion = '2'
+        rerender()
+
+        expect(result.current.currentVersion).toBe('2')
+        expect(result.current.needsAcceptance).toBe(true)
     })
 
     it('persists the current version on accept', () => {

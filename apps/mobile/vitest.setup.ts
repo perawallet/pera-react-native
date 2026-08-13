@@ -211,6 +211,9 @@ vi.mock('react-native-reanimated', () => {
         useAnimatedGestureHandler: () => {},
         useAnimatedScrollHandler: () => {},
         useAnimatedReaction: () => {},
+        // Matches the runtime default: motion is only reduced when the OS says
+        // so, so components animate normally under test.
+        useReducedMotion: () => false,
         withTiming: (toValue: any) => toValue,
         withSpring: (toValue: any) => toValue,
         withDecay: () => 0,
@@ -1541,6 +1544,23 @@ vi.mock('react-native-safe-area-context', () => {
         SafeAreaInsetsContext,
         SafeAreaFrameContext,
         initialWindowMetrics: { insets: inset, frame },
+    }
+})
+
+// react-native-pager-view requires the native RNCViewPager view manager and
+// touches the legacy bridge at import time, so the unit environment cannot load
+// the real package (the web bundle aliases it to a shim instead — see
+// metro.config.js). Every consumer uses plain children-as-pages, with
+// OnrampScreen additionally calling `setPage` on the ref, so rendering the
+// children inline is a faithful stand-in rather than an inert stub.
+vi.mock('react-native-pager-view', () => {
+    const React = require('react')
+    return {
+        __esModule: true,
+        default: React.forwardRef((props: any, ref: any) => {
+            React.useImperativeHandle(ref, () => ({ setPage: vi.fn() }))
+            return React.createElement('div', props, props.children)
+        }),
     }
 })
 
