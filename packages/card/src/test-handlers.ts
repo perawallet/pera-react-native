@@ -20,6 +20,9 @@ export {
     mockOauthChain,
     mockOauthInitiate,
     mockOauthToken,
+    mockPasswordResetConfirm,
+    mockPasswordResetRequest,
+    mockPasswordResetVerify,
     mockRefreshToken,
     mockSendLoginOtp,
 } from './api/auth/msw-handlers'
@@ -29,6 +32,9 @@ export type {
     MockOauthChainParams,
     MockOauthInitiateParams,
     MockOauthTokenParams,
+    MockPasswordResetConfirmParams,
+    MockPasswordResetRequestParams,
+    MockPasswordResetVerifyParams,
     MockRefreshTokenParams,
     MockSendLoginOtpParams,
 } from './api/auth/msw-handlers'
