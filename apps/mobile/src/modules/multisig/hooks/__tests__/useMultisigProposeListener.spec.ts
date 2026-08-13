@@ -59,6 +59,18 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxInvalidator: () => ({ invalidate: invalidateInboxMock }),
 }))
 
+const pendingSignRequestsMock = vi.fn<() => unknown[]>(() => [])
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
+    return {
+        ...actual,
+        useSigningRequest: () => ({
+            pendingSignRequests: pendingSignRequestsMock(),
+        }),
+    }
+})
+
 import { useMultisigProposeListener } from '../useMultisigProposeListener'
 
 const SIGN_REQUEST_ID = 'sr-1'
@@ -105,6 +117,7 @@ describe('useMultisigProposeListener', () => {
         openSheetMock.mockClear()
         invalidateInboxMock.mockClear()
         deleteDraftMock.mockClear()
+        pendingSignRequestsMock.mockReturnValue([])
     })
 
     it('opens the sheet and invalidates inbox when a `proposed` non-confirmed transport-result event is published', () => {
@@ -183,6 +196,66 @@ describe('useMultisigProposeListener', () => {
 
         expect(openSheetMock).not.toHaveBeenCalled()
         expect(invalidateInboxMock).not.toHaveBeenCalled()
+    })
+
+    it('holds the sheet (but still invalidates inbox) while a sibling cosign for the same request is queued', () => {
+        // Device holds 2+ participants: cosign-2 is still queued when
+        // cosign-1 resolves. Opening the progress sheet now would bury
+        // cosign-2's review sheet and strand the user on a no-op Sign button.
+        pendingSignRequestsMock.mockReturnValue([
+            {
+                id: 'cosign-2',
+                type: 'transactions',
+                txs: [],
+                sourceType: 'multisig-cosign',
+                signRequestId: SIGN_REQUEST_ID,
+            },
+        ])
+
+        renderHook(() => useMultisigProposeListener())
+        publishTransportResult(signaturesAddedResult(), 'cosign-1')
+
+        expect(openSheetMock).not.toHaveBeenCalled()
+        expect(invalidateInboxMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('opens the sheet when the only queued entry is the cosign that just resolved', () => {
+        // The lifecycle publishes the bus event BEFORE removing the request
+        // from the queue, so the completed cosign still appears there — it
+        // must not count as a sibling or the last cosign never opens the sheet.
+        pendingSignRequestsMock.mockReturnValue([
+            {
+                id: 'cosign-1',
+                type: 'transactions',
+                txs: [],
+                sourceType: 'multisig-cosign',
+                signRequestId: SIGN_REQUEST_ID,
+            },
+        ])
+
+        renderHook(() => useMultisigProposeListener())
+        publishTransportResult(signaturesAddedResult(), 'cosign-1')
+
+        expect(openSheetMock).toHaveBeenCalledTimes(1)
+        expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID)
+    })
+
+    it('opens the sheet when the queued cosign targets a different sign request', () => {
+        pendingSignRequestsMock.mockReturnValue([
+            {
+                id: 'cosign-other',
+                type: 'transactions',
+                txs: [],
+                sourceType: 'multisig-cosign',
+                signRequestId: 'sr-OTHER',
+            },
+        ])
+
+        renderHook(() => useMultisigProposeListener())
+        publishTransportResult(signaturesAddedResult(), 'cosign-1')
+
+        expect(openSheetMock).toHaveBeenCalledTimes(1)
+        expect(openSheetMock).toHaveBeenCalledWith(SIGN_REQUEST_ID)
     })
 
     it('opens the sheet at the result signRequestId (draft reconciliation is owned by usePendingSignaturesSheet)', () => {

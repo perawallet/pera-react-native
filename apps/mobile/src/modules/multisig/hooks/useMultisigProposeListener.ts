@@ -11,7 +11,11 @@
  */
 
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
-import { useSigningEvent } from '@perawallet/wallet-core-signing'
+import {
+    isTransactionRequest,
+    useSigningEvent,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import { usePendingSignaturesSheet } from './usePendingSignaturesSheet'
 
 /**
@@ -24,6 +28,7 @@ import { usePendingSignaturesSheet } from './usePendingSignaturesSheet'
 export const useMultisigProposeListener = () => {
     const { showSignRequest } = usePendingSignaturesSheet()
     const { invalidate: invalidateInbox } = useInboxInvalidator()
+    const { pendingSignRequests } = useSigningRequest()
 
     useSigningEvent(
         event =>
@@ -41,6 +46,20 @@ export const useMultisigProposeListener = () => {
             }
             invalidateInbox()
             if (result.status === 'confirmed') return
+            // When the device holds several participants, their cosigns queue
+            // together and the driver presents the next review sheet as soon
+            // as this one resolves. Opening the progress sheet now would bury
+            // that review sheet — and the footer Sign correctly no-ops on the
+            // in-flight guard, stranding the user with an "unresponsive"
+            // button. Hold the sheet until the LAST queued cosign resolves.
+            const hasQueuedSiblingCosign = pendingSignRequests.some(
+                r =>
+                    r.id !== event.request.id &&
+                    isTransactionRequest(r) &&
+                    r.sourceType === 'multisig-cosign' &&
+                    r.signRequestId === result.signRequestId,
+            )
+            if (hasQueuedSiblingCosign) return
             showSignRequest(result.signRequestId)
         },
     )
