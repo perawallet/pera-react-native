@@ -29,10 +29,23 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         zIndex: theme.zIndex.max,
         backgroundColor: theme.colors.background,
     },
+    // Carries the entrance animation. Separate from `overlay` so the backdrop
+    // stays opaque from the first frame: fading the backdrop in would show the
+    // app underneath mid-reveal and read as still interactive, which is exactly
+    // what a gate must not do.
+    revealLayer: {
+        flex: 1,
+    },
     // No-op on native; styles.web.ts overrides this to cap the overlay to the
     // app's expanded-tab card width (see that file's comment).
     stage: {
         flex: 1,
+    },
+    // Full-bleed variant: a prompt whose own art covers the surface insets its
+    // chrome itself, so container padding would only frame it.
+    containerFullBleed: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
     },
     container: {
         flex: 1,

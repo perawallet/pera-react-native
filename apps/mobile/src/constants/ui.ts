@@ -86,6 +86,19 @@ export const BANNER_REVEAL_DURATION_MS = 500
 // distinct beat instead of getting lost in the initial render frames.
 export const BANNER_REVEAL_DELAY_MS = 500
 
+// Entrance reveal for the blocking-prompt overlay. Its backdrop is opaque from
+// the first frame — only the content animates — so the app underneath is never
+// visibly interactive while a gate is coming up.
+//
+// Short on purpose: a gate now renders the moment it is due (no display delay),
+// and the animation is there to make the change legible, not to slow it down.
+export const PROMPT_REVEAL_MS = 220
+
+// How far the prompt content rises as it fades in. Enough to read as a reveal,
+// short of a full sheet-style travel — the overlay is full-screen, so a long
+// slide reads as a screen transition rather than something surfacing.
+export const PROMPT_REVEAL_OFFSET = 32
+
 // Web-only: caps the app's content width on the wide "expanded" browser-tab
 // surface (the UI is designed for a 360px popup and looks broken stretched
 // edge-to-edge across a full desktop tab). Shared by AppShell.web.tsx (the

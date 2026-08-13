@@ -10,14 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import {
-    useBannersStore,
-    useVisibleBanners,
-    type Banner,
-} from '@perawallet/wallet-core-banners'
+import { useVisibleBanners, type Banner } from '@perawallet/wallet-core-banners'
 import { trackEvent, BannersEvent, AnalyticsMetadataKey } from '@analytics'
 import type { RootStackParamList } from '@routes/types'
 
@@ -29,21 +25,10 @@ export type UseHomeBannersStripResult = {
     onPress: () => void
 }
 
-const findAutoOpenCandidate = (banners: Banner[]): Banner | null => {
-    // Force takes precedence over select; first match wins within a mode.
-    return (
-        banners.find(b => b.autoOpenMode === 'force') ??
-        banners.find(b => b.autoOpenMode === 'select') ??
-        null
-    )
-}
-
 export const useHomeBannersStrip = (): UseHomeBannersStripResult => {
     const { banners } = useVisibleBanners()
     const navigation =
         useNavigation<NativeStackNavigationProp<RootStackParamList>>()
-    const markAutoOpened = useBannersStore(state => state.markAutoOpened)
-    const hasAutoOpened = useBannersStore(state => state.hasAutoOpened)
 
     const onPress = useCallback(() => {
         trackEvent(BannersEvent.Spot, {
@@ -52,12 +37,12 @@ export const useHomeBannersStrip = (): UseHomeBannersStripResult => {
         navigation.navigate('BannersCarouselModal')
     }, [navigation, banners])
 
-    useEffect(() => {
-        const candidate = findAutoOpenCandidate(banners)
-        if (!candidate || hasAutoOpened(candidate.id)) return
-        markAutoOpened(candidate.id)
-        navigation.navigate('BannersCarouselModal', { bannerId: candidate.id })
-    }, [banners, hasAutoOpened, markAutoOpened, navigation])
+    // No auto-open effect here any more. This used to navigate to the carousel
+    // modal the moment banners loaded, with no knowledge of the terms gate or
+    // the PIN prompt, which is how a migrating user met three unrelated
+    // interruptions in whatever order their triggers happened to fire
+    // (PERA-4874). The prompt container owns that decision now; this hook is
+    // only the strip, and only opens the modal when the user taps it.
 
     // The strip surfaces the first visible banner only — extras are signalled
     // by the "+N" badge and revealed when the user opens the modal carousel.

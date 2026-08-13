@@ -17,6 +17,7 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { useBottomSheetStore } from '@modules/bottom-sheet'
+import { usePromptStore } from '@modules/prompts/store'
 import { UserPreferences } from '@constants/user-preferences'
 import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
@@ -49,6 +50,21 @@ const { mockUseTermsAcceptance } = vi.hoisted(() => ({
     mockUseTermsAcceptance: vi.fn(),
 }))
 
+// Which banner is due is useBannerPrompt's job and has its own spec; this file
+// is about the order the queue puts prompts in.
+const { mockUseBannerPrompt } = vi.hoisted(() => ({
+    mockUseBannerPrompt: vi.fn(() => ({ isDue: false, isForced: false })),
+}))
+
+vi.mock('@modules/prompts/hooks/useBannerPrompt', () => ({
+    useBannerPrompt: () => mockUseBannerPrompt(),
+}))
+
+vi.mock('@modules/prompts/components/BannerPrompt', () => ({
+    BannerPrompt: () => null,
+    BANNER_PROMPT_ID: 'banner_prompt',
+}))
+
 vi.mock('@modules/onboarding/hooks/useTermsAcceptance', () => ({
     useTermsAcceptance: () => mockUseTermsAcceptance(),
 }))
@@ -67,6 +83,9 @@ describe('usePromptContainer', () => {
         vi.clearAllMocks()
         vi.useFakeTimers()
         useBottomSheetStore.getState().resetState()
+        // Dismissal and the entry delay are session state now, so they outlive
+        // a renderHook and would leak into the next test.
+        usePromptStore.getState().resetState()
         ;(usePreferences as Mock).mockReturnValue({
             getPreference: mockGetPreference,
             setPreference: mockSetPreference,
@@ -78,6 +97,7 @@ describe('usePromptContainer', () => {
         })
         // Default: terms already accepted, so the T&C prompt is out of the way.
         mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: false })
+        mockUseBannerPrompt.mockReturnValue({ isDue: false, isForced: false })
         mockIsLockOverlayVisible.mockReturnValue(false)
     })
 
@@ -90,6 +110,162 @@ describe('usePromptContainer', () => {
         const { result } = renderHook(() => usePromptContainer())
 
         expect(result.current.nextPrompt).toBeUndefined()
+    })
+
+    describe('ordering', () => {
+        it('shows the highest-priority due prompt first', async () => {
+            // Terms and the PIN nudge both due — legally-required copy wins.
+            mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+            mockGetPreference.mockReturnValue(false)
+
+            const { result } = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+
+            expect(result.current.nextPrompt?.id).toBe(
+                'terms_acceptance_prompt',
+            )
+        })
+
+        it('advances to the next prompt without paying the entry delay again', async () => {
+            mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+            mockGetPreference.mockReturnValue(false)
+
+            const { result } = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+            expect(result.current.nextPrompt?.id).toBe(
+                'terms_acceptance_prompt',
+            )
+
+            mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: false })
+            await act(async () => {
+                result.current.hidePrompt('terms_acceptance_prompt')
+            })
+
+            // Deliberately no timer advance. Only the first interruption of a
+            // session waits; that is what turns the PERA-4874 storm into one
+            // flow rather than three separate ambushes.
+            expect(result.current.nextPrompt?.id).toBe(
+                UserPreferences._securityPinSetupPrompt,
+            )
+        })
+
+        it('runs terms, then a forced banner, then the PIN nudge', async () => {
+            // The PERA-4874 migration case: everything due at once. A forced
+            // banner may be a forced update notice, so it outranks the nudge
+            // but never the legally-required copy.
+            mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+            mockUseBannerPrompt.mockReturnValue({
+                isDue: true,
+                isForced: true,
+            })
+            mockGetPreference.mockReturnValue(false)
+
+            const { result } = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            expect(result.current.nextPrompt?.id).toBe(
+                'terms_acceptance_prompt',
+            )
+
+            mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: false })
+            await act(async () => {
+                result.current.hidePrompt('terms_acceptance_prompt')
+            })
+            expect(result.current.nextPrompt?.id).toBe('banner_prompt')
+
+            mockUseBannerPrompt.mockReturnValue({
+                isDue: false,
+                isForced: false,
+            })
+            await act(async () => {
+                result.current.hidePrompt('banner_prompt')
+            })
+            expect(result.current.nextPrompt?.id).toBe(
+                UserPreferences._securityPinSetupPrompt,
+            )
+        })
+
+        it('ranks a select banner below the PIN nudge', async () => {
+            // Same surface, softer rules: `select` is the gentlest thing in the
+            // queue, so it waits for everything else.
+            mockUseBannerPrompt.mockReturnValue({
+                isDue: true,
+                isForced: false,
+            })
+            mockGetPreference.mockReturnValue(false)
+
+            const { result } = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+
+            expect(result.current.nextPrompt?.id).toBe(
+                UserPreferences._securityPinSetupPrompt,
+            )
+        })
+
+        it('treats a forced banner as a gate and a select banner as a nudge', async () => {
+            mockUseBannerPrompt.mockReturnValue({
+                isDue: true,
+                isForced: true,
+            })
+            mockGetPreference.mockReturnValue(true)
+
+            const forced = renderHook(() => usePromptContainer())
+            await act(async () => {})
+
+            // A gate renders with no delay and holds sheet presentation.
+            expect(forced.result.current.nextPrompt?.id).toBe('banner_prompt')
+            expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
+
+            forced.unmount()
+            useBottomSheetStore.getState().resetState()
+            usePromptStore.getState().resetState()
+            mockUseBannerPrompt.mockReturnValue({
+                isDue: true,
+                isForced: false,
+            })
+
+            const select = renderHook(() => usePromptContainer())
+            await act(async () => {})
+
+            expect(select.result.current.nextPrompt).toBeUndefined()
+            expect(useBottomSheetStore.getState().isPresentationHeld).toBe(
+                false,
+            )
+        })
+
+        it('keeps a dismissal across a container remount', async () => {
+            mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+            // PIN already handled, so only the terms prompt is in play.
+            mockGetPreference.mockReturnValue(true)
+
+            const first = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+            await act(async () => {
+                first.result.current.hidePrompt('terms_acceptance_prompt')
+            })
+            first.unmount()
+
+            const second = renderHook(() => usePromptContainer())
+            await act(async () => {})
+            act(() => {
+                vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+            })
+
+            // Dismissal used to be the container's own state, so a remount
+            // brought the prompt straight back.
+            expect(second.result.current.nextPrompt).toBeUndefined()
+        })
     })
 
     describe('while the lock overlay is visible', () => {
@@ -265,11 +441,28 @@ describe('usePromptContainer', () => {
         expect(result.current.nextPrompt).toBeUndefined()
     })
 
-    it('holds bottom-sheet presentation before the display delay elapses', async () => {
-        // A sheet that paints during the delay is already presented and would
-        // survive the hold, so the hold must engage the moment a prompt is due.
+    it('renders a gate the moment it is due, leaving no silent hold window', async () => {
+        // A sheet that paints while the hold is on is recorded as presented and
+        // survives it, so a gate must hold from the moment it is due. Rendering
+        // in the same breath is what stops that hold being silent: any gap is a
+        // window where the app looks idle and discards taps.
         mockGetPreference.mockReturnValue(false)
         mockUseTermsAcceptance.mockReturnValue({ needsAcceptance: true })
+
+        const { result } = renderHook(() => usePromptContainer())
+
+        await act(async () => {})
+
+        // Deliberately no timer advance.
+        expect(result.current.nextPrompt?.id).toBe('terms_acceptance_prompt')
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
+    })
+
+    it('does not hold while a nudge is merely due', async () => {
+        // The PIN nudge is not a gate, so a sheet the user opened on purpose
+        // must still present. Holding here discarded it silently for the length
+        // of the display delay.
+        mockGetPreference.mockReturnValue(false)
 
         const { result } = renderHook(() => usePromptContainer())
 
@@ -279,7 +472,7 @@ describe('usePromptContainer', () => {
         })
 
         expect(result.current.nextPrompt).toBeUndefined()
-        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
+        expect(useBottomSheetStore.getState().isPresentationHeld).toBe(false)
     })
 
     it('releases the hold when the lock overlay takes the prompt away', async () => {
@@ -288,6 +481,9 @@ describe('usePromptContainer', () => {
         const { rerender } = renderHook(() => usePromptContainer())
 
         await act(async () => {})
+        act(() => {
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+        })
 
         expect(useBottomSheetStore.getState().isPresentationHeld).toBe(true)
 
