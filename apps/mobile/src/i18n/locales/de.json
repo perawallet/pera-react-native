@@ -2704,6 +2704,8 @@
             "insufficient_balance": "Der Betrag übersteigt dein verfügbares Guthaben.",
             "no_balance_title": "Nichts zum Tauschen",
             "no_balance_body": "Dieses Konto hält kein {{unit}}.",
+            "balance_too_low_title": "Guthaben zu niedrig",
+            "balance_too_low_body": "Dein verfügbares {{unit}}-Guthaben ist zum Tauschen zu gering.",
             "percentage_error_title": "Betrag konnte nicht berechnet werden",
             "percentage_error_body": "Bitte versuche es in einem Moment erneut.",
             "you_pay": "Du zahlst",

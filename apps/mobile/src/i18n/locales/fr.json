@@ -2712,6 +2712,8 @@
             "insufficient_balance": "Le montant dépasse votre solde disponible.",
             "no_balance_title": "Rien à échanger",
             "no_balance_body": "Ce compte ne détient aucun {{unit}}.",
+            "balance_too_low_title": "Solde trop faible",
+            "balance_too_low_body": "Votre solde {{unit}} disponible est trop faible pour être échangé.",
             "percentage_error_title": "Impossible de calculer le montant",
             "percentage_error_body": "Veuillez réessayer dans un instant.",
             "you_pay": "Vous payez",

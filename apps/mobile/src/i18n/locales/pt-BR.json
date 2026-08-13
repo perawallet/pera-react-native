@@ -2735,6 +2735,8 @@
             "insufficient_balance": "O valor excede seu saldo disponível.",
             "no_balance_title": "Nada para converter",
             "no_balance_body": "Esta conta não possui {{unit}}.",
+            "balance_too_low_title": "Saldo muito baixo",
+            "balance_too_low_body": "Seu saldo disponível de {{unit}} é muito baixo para converter.",
             "percentage_error_title": "Não foi possível calcular o valor",
             "percentage_error_body": "Tente novamente em instantes.",
             "you_pay": "Você paga",
