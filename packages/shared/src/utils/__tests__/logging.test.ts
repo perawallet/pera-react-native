@@ -391,6 +391,17 @@ describe('logging', () => {
             expect(out.user).toBe('will')
         })
 
+        test('keeps keyPairId and publicKey diagnostics unredacted', () => {
+            const out = redactSensitiveContext({
+                keyPairId: 'kp-1',
+                publicKey: 'BASE64PUBKEY',
+            })
+            expect(out).toEqual({
+                keyPairId: 'kp-1',
+                publicKey: 'BASE64PUBKEY',
+            })
+        })
+
         test('redacts sensitive keys in nested objects', () => {
             const out = redactSensitiveContext({
                 payload: {

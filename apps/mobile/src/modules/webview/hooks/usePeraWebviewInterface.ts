@@ -71,7 +71,10 @@ import { useWalletConnectPairing } from '@modules/walletconnect/hooks/useWalletC
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
-import { parseWalletConnectUri } from '@hooks/deeplink/walletconnect-parser'
+import {
+    parseWalletConnectUri,
+    walletConnectLogContext,
+} from '@hooks/deeplink/walletconnect-parser'
 import { useNetworkStatus } from '@modules/network'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 import { AnalyticsMetadataKey, WebviewEvent, trackEvent } from '@analytics'
@@ -912,9 +915,11 @@ export const usePeraWebviewInterface = (
                     origin: { source: 'in-app' },
                 })
                 if (result.type === 'connect-failed') {
+                    // Never log the URI itself: its `key=` param is the
+                    // pairing secret.
                     logger.error('[webview/wc] connect failed', {
                         error: result.error,
-                        uri: parsed.uri,
+                        ...walletConnectLogContext(parsed.uri),
                     })
                     sendErrorToWebview(
                         message.id,
