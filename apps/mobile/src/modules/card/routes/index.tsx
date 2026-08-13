@@ -63,7 +63,9 @@ export const PeraCardStackNavigator = () => {
             />
             <PeraCardStack.Screen
                 name='CardForgotPasswordVerify'
-                options={{ title: 'peraCard.forgot_password.verify_navigation_title' }}
+                options={{
+                    title: 'peraCard.forgot_password.verify_navigation_title',
+                }}
                 component={CardForgotPasswordVerifyScreen}
             />
             <PeraCardStack.Screen
