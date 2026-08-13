@@ -19,11 +19,50 @@ import { NoConnectionError } from './network-validation'
  * a request failed instead of falling back to a generic error.
  */
 export type PeraNetworkErrorKind =
-    | 'offline' // device/network unreachable (fetch TypeError / ky isNetworkError)
+    | 'offline' // device/network unreachable (see isNetworkTransportError)
     | 'timeout' // ky TimeoutError
     | 'server' // HTTP 5xx
     | 'client' // HTTP 4xx (status preserved)
     | 'unknown' // anything else (parse errors, non-ky throwables)
+
+/**
+ * React Native's fetch rejects with a plain `Error` — name `"Error"`, not the
+ * `TypeError` that every one of ky's runtime heuristics requires — and on
+ * Android it appends the Java cause after a `fetch failed:` prefix rather than
+ * using one of the exact messages ky matches. So ky never wraps these in its
+ * `NetworkError` and `isNetworkError` returns false for a device that is simply
+ * offline. ky documents the gap on `NetworkError`: "Unrecognized runtimes may
+ * produce errors that are not wrapped in NetworkError."
+ *
+ * Matching on message text is unpleasant, but it's the only signal RN gives us,
+ * and the cost of not doing it is high: an offline request classifies as
+ * `unknown`, which is non-retryable and shows the user a generic error instead
+ * of "no connection".
+ */
+const RAW_NETWORK_ERROR_FRAGMENTS = [
+    'fetch failed', // RN Android — prefix, Java cause appended
+    'network request failed', // RN iOS
+    'unable to resolve host', // Android DNS
+    'unknownhostexception',
+]
+
+const isRawPlatformNetworkError = (error: unknown): boolean => {
+    if (!(error instanceof Error) || typeof error.message !== 'string') {
+        return false
+    }
+    const message = error.message.toLowerCase()
+    return RAW_NETWORK_ERROR_FRAGMENTS.some(fragment =>
+        message.includes(fragment),
+    )
+}
+
+/**
+ * True for a transport-level failure where the request never got a response.
+ * Prefer this over ky's `isNetworkError`, which under-reports on React Native —
+ * see {@link isRawPlatformNetworkError}.
+ */
+export const isNetworkTransportError = (error: unknown): boolean =>
+    isNetworkError(error) || isRawPlatformNetworkError(error)
 
 const RETRYABLE_BY_KIND: Record<PeraNetworkErrorKind, boolean> = {
     offline: true,
@@ -91,7 +130,7 @@ export class PeraNetworkError extends AppError {
         if (isTimeoutError(error)) {
             return new PeraNetworkError('timeout', { originalError })
         }
-        if (isNetworkError(error)) {
+        if (isNetworkTransportError(error)) {
             return new PeraNetworkError('offline', { originalError })
         }
         if (isHTTPError(error)) {
@@ -154,7 +193,7 @@ export const isPeraNetworkError = (error: unknown): error is PeraNetworkError =>
 export const isConnectivityError = (error: unknown): boolean => {
     if (isPeraNetworkError(error)) return error.kind === 'offline'
     if (error instanceof NoConnectionError) return true
-    return isNetworkError(error)
+    return isNetworkTransportError(error)
 }
 
 export type NetworkErrorMessageKeys = { titleKey: string; bodyKey: string }
