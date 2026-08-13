@@ -157,8 +157,8 @@ describe('useSigningCompletedDriver', () => {
             const contents = requestBottomSheetMock.mock.calls[0][0].contents
             expect(contents.props.returnToDapp).toEqual({
                 browserName: 'Chrome',
-                dappUrl: 'https://browser-dapp.example',
                 dappName: 'Browser dApp',
+                dappIconUrl: undefined,
             })
         })
 

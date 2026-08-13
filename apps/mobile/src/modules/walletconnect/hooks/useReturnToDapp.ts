@@ -12,16 +12,13 @@
 
 import { useCallback } from 'react'
 import { BackHandler, Linking, Platform } from 'react-native'
-import { logger, stripUrlScheme } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export type ReturnToDappArgs = {
     /** Browser name from the iOS @perawallet/connect wrapper's `browser=`
      * param (Bowser names like "Chrome", "Mobile Safari", plus "Brave" /
      * "DuckDuckGo" / "Opera GX" specials). */
     browserName?: string
-    /** The dApp's https URL (peerMeta.url) — the only return target WC v1
-     * metadata offers. */
-    dappUrl?: string
 }
 
 export type UseReturnToDappResult = {
@@ -29,49 +26,32 @@ export type UseReturnToDappResult = {
     returnToDapp: (args: ReturnToDappArgs) => Promise<void>
 }
 
-const isHttpUrl = (value: string | undefined): value is string => {
-    if (!value) return false
-    try {
-        const { protocol } = new URL(value)
-        return protocol === 'https:' || protocol === 'http:'
-    } catch {
-        return false
-    }
-}
-
 /**
- * Maps the initiating iOS browser to a URL-scheme link that reopens the
- * dApp's exact tab context where possible. Returns null when the right move
- * is opening the plain https URL instead (Safari, unknown browsers) — on
- * iOS 14+ that lands in the user's default browser.
+ * Maps the initiating iOS browser to its bare launch scheme, which
+ * foregrounds the app on whatever tab it was showing. Deliberately carries
+ * NO url payload: navigation-style schemes (`googlechromes://<url>`,
+ * `firefox://open-url?...`) reload the dApp page, wiping in-flight state
+ * like a pending swap result — the exact QA regression on this ticket.
+ *
+ * Null for browsers with no focus-only scheme (Safari, DuckDuckGo, Opera,
+ * unknown): reloading them would be worse than showing no button, and the
+ * iOS back-to-app chevron still covers the return.
  *
  * `Linking.openURL` needs no LSApplicationQueriesSchemes entry (only
- * `canOpenURL` does), and a scheme with no installed handler rejects, which
- * the caller catches and downgrades to the https fallback.
+ * `canOpenURL` does); a scheme with no installed handler rejects, which the
+ * caller catches.
  */
-export const buildIosBrowserReturnUrl = (
+export const buildIosBrowserFocusUrl = (
     browserName: string | undefined,
-    dappUrl: string,
 ): string | null => {
-    if (!browserName || !isHttpUrl(dappUrl)) return null
+    if (!browserName) return null
     const name = browserName.toLowerCase()
-    const isSecure = dappUrl.startsWith('https:')
-    // "scheme replaces protocol" style (Chrome/Edge/Opera Touch docs).
-    const stripped = stripUrlScheme(dappUrl) ?? dappUrl
-    const encoded = encodeURIComponent(dappUrl)
 
     if (name.includes('safari')) return null
-    if (name.includes('chrome')) {
-        return `${isSecure ? 'googlechromes' : 'googlechrome'}://${stripped}`
-    }
-    if (name.includes('firefox')) return `firefox://open-url?url=${encoded}`
-    if (name.includes('brave')) return `brave://open-url?url=${encoded}`
-    if (name.includes('edge')) {
-        return `${isSecure ? 'microsoft-edge-https' : 'microsoft-edge-http'}://${stripped}`
-    }
-    if (name.includes('opera')) {
-        return `${isSecure ? 'touch-https' : 'touch-http'}://${stripped}`
-    }
+    if (name.includes('chrome')) return 'googlechrome://'
+    if (name.includes('firefox')) return 'firefox://'
+    if (name.includes('brave')) return 'brave://'
+    if (name.includes('edge')) return 'microsoft-edge://'
     return null
 }
 
@@ -80,40 +60,34 @@ export const buildIosBrowserReturnUrl = (
  * via an OS deep link from a mobile browser.
  *
  * Android: the browser task that fired the wc: intent sits directly behind
- * ours, so exiting the activity reveals the exact tab, state intact —
- * no browser hint needed. iOS has no task-stack equivalent, so we deep-link
- * into the initiating browser (or the default browser as fallback).
+ * ours, so exiting the activity reveals the exact tab, state intact — no
+ * browser hint needed. iOS has no task-stack equivalent, so we foreground
+ * the initiating browser via its bare launch scheme.
  */
 export const useReturnToDapp = (): UseReturnToDappResult => {
-    const canReturnToDapp = useCallback((args: ReturnToDappArgs): boolean => {
-        if (Platform.OS === 'android') return true
-        // iOS has no task-stack return, so without the wrapper's browser
-        // hint there is no browser to reopen — the system back-to-app
-        // chevron covers that case.
-        return !!args.browserName && isHttpUrl(args.dappUrl)
-    }, [])
+    const canReturnToDapp = useCallback(
+        (args: ReturnToDappArgs): boolean =>
+            Platform.OS === 'android' ||
+            buildIosBrowserFocusUrl(args.browserName) !== null,
+        [],
+    )
 
     const returnToDapp = useCallback(
-        async ({ browserName, dappUrl }: ReturnToDappArgs): Promise<void> => {
+        async ({ browserName }: ReturnToDappArgs): Promise<void> => {
             if (Platform.OS === 'android') {
                 BackHandler.exitApp()
                 return
             }
-            if (!isHttpUrl(dappUrl)) return
-            const schemeUrl = buildIosBrowserReturnUrl(browserName, dappUrl)
-            if (schemeUrl) {
-                try {
-                    await Linking.openURL(schemeUrl)
-                    return
-                } catch {
-                    // Browser not installed (or scheme drifted) — the plain
-                    // https open below still gets the user to the dApp.
-                }
-            }
+            const focusUrl = buildIosBrowserFocusUrl(browserName)
+            if (!focusUrl) return
             try {
-                await Linking.openURL(dappUrl)
+                await Linking.openURL(focusUrl)
             } catch (error) {
-                logger.warn('[wc/return-to-dapp] failed to open dapp url', {
+                // The hinted browser is gone (uninstalled since pairing).
+                // Deliberately NO navigation fallback: opening the dApp's
+                // url would reload the page and wipe in-flight state — the
+                // exact regression this hook exists to avoid.
+                logger.warn('[wc/return-to-dapp] failed to focus browser', {
                     error,
                 })
             }

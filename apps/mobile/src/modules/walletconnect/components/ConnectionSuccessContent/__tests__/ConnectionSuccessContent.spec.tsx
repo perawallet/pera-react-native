@@ -110,27 +110,19 @@ describe('ConnectionSuccessContent', () => {
         )
 
         expect(Linking.openURL).toHaveBeenCalledWith(
-            'googlechromes://dapp.example.org',
+            'googlechrome://',
         )
         useBottomSheetStore.getState().remove('sheet-1')
         await expect(promise).resolves.toBe(true)
     })
 
-    it('hides the CTA when the dapp has no usable url (iOS has no return target)', () => {
+    it('hides the CTA when the browser has no focus scheme (iOS Safari)', () => {
         useReturnToDappStore.getState().setReturnContext('client-1', {
             origin: 'external-browser',
-            browserName: 'Chrome',
+            browserName: 'Mobile Safari',
         })
-        const urllessRequest = {
-            ...request,
-            peerMeta: { ...request.peerMeta, url: '' },
-        } as unknown as WalletConnectSessionRequest
 
-        render(
-            <BottomSheetIdContext.Provider value='sheet-1'>
-                <ConnectionSuccessContent request={urllessRequest} />
-            </BottomSheetIdContext.Provider>,
-        )
+        renderWithId()
 
         expect(
             screen.queryByText(

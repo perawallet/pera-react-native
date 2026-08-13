@@ -39,7 +39,6 @@ const resolveReturnToDapp = (
     if (origin?.source !== 'external-browser') return undefined
     return {
         browserName: origin.browserName,
-        dappUrl: req.sourceMetadata?.url,
         dappName: req.sourceMetadata?.name,
         dappIconUrl: getPreferredDappIcon(req.sourceMetadata?.icons),
     }
