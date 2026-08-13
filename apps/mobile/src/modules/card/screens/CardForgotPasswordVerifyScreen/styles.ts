@@ -20,6 +20,9 @@ export const useStyles = makeStyles(theme => ({
     description: {
         color: theme.colors.textGray,
     },
+    form: {
+        gap: theme.spacing.xxl,
+    },
     inputGroup: {
         gap: theme.spacing.md,
     },

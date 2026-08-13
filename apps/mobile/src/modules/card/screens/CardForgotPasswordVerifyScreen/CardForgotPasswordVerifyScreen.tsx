@@ -48,49 +48,51 @@ export const CardForgotPasswordVerifyScreen = () => {
                     {t('peraCard.forgot_password.verify_body', { email })}
                 </PWText>
 
-                <PWView style={styles.inputGroup}>
-                    <PWCodeInput
-                        value={code}
-                        onChangeText={onChangeCode}
-                        length={CARD_VERIFICATION_CODE_LENGTH}
-                        onComplete={handleVerify}
-                        onSubmitEditing={() => handleVerify()}
-                        errorMessage={codeError}
-                        autoFocus
-                        accessibilityLabel={t(
-                            'peraCard.forgot_password.verify_navigation_title',
+                <PWView style={styles.form}>
+                    <PWView style={styles.inputGroup}>
+                        <PWCodeInput
+                            value={code}
+                            onChangeText={onChangeCode}
+                            length={CARD_VERIFICATION_CODE_LENGTH}
+                            onComplete={handleVerify}
+                            onSubmitEditing={() => handleVerify()}
+                            errorMessage={codeError}
+                            autoFocus
+                            accessibilityLabel={t(
+                                'peraCard.forgot_password.verify_navigation_title',
+                            )}
+                            testID='card-forgot-password-verify-input'
+                        />
+
+                        {canResend ? (
+                            <PWText
+                                variant='linkPositive'
+                                onPress={handleResend}
+                                testID='card-forgot-password-verify-resend'
+                            >
+                                {t('peraCard.forgot_password.send_again')}
+                            </PWText>
+                        ) : (
+                            <PWText
+                                variant='footnoteMedium'
+                                style={styles.countdownText}
+                            >
+                                {t('peraCard.forgot_password.send_again_in', {
+                                    count: secondsRemaining,
+                                })}
+                            </PWText>
                         )}
-                        testID='card-forgot-password-verify-input'
+                    </PWView>
+
+                    <PWButton
+                        variant='primary'
+                        title={t('peraCard.forgot_password.verify_button')}
+                        onPress={() => handleVerify()}
+                        isDisabled={!isValid || isSubmitting}
+                        isLoading={isSubmitting}
+                        testID='card-forgot-password-verify-confirm'
                     />
-
-                    {canResend ? (
-                        <PWText
-                            variant='linkPositive'
-                            onPress={handleResend}
-                            testID='card-forgot-password-verify-resend'
-                        >
-                            {t('peraCard.forgot_password.send_again')}
-                        </PWText>
-                    ) : (
-                        <PWText
-                            variant='footnoteMedium'
-                            style={styles.countdownText}
-                        >
-                            {t('peraCard.forgot_password.send_again_in', {
-                                count: secondsRemaining,
-                            })}
-                        </PWText>
-                    )}
                 </PWView>
-
-                <PWButton
-                    variant='primary'
-                    title={t('peraCard.forgot_password.verify_button')}
-                    onPress={() => handleVerify()}
-                    isDisabled={!isValid || isSubmitting}
-                    isLoading={isSubmitting}
-                    testID='card-forgot-password-verify-confirm'
-                />
             </PWView>
         </PWScreen>
     )
