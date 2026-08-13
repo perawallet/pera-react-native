@@ -24,6 +24,7 @@ export const useStyles = makeStyles(theme => ({
         flexShrink: 0,
         width: '100%',
         paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.md,
     },
     formWrapper: {
         flex: 1,
@@ -60,5 +61,6 @@ export const useStyles = makeStyles(theme => ({
         maxWidth: '100%',
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
+        paddingVertical: theme.spacing.xs,
     },
 }))
