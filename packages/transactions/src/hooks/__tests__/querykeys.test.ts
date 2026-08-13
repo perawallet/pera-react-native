@@ -200,9 +200,7 @@ describe('invalidateTransactionQueriesForAddresses', () => {
 
         invalidateTransactionQueriesForAddresses(queryClient, ['ADDR1'])
 
-        expect(queryClient.getQueryState(filteredKey)?.isInvalidated).toBe(
-            true,
-        )
+        expect(queryClient.getQueryState(filteredKey)?.isInvalidated).toBe(true)
         expect(queryClient.getQueryState(pageKey)?.isInvalidated).toBe(true)
     })
 
@@ -217,9 +215,7 @@ describe('invalidateTransactionQueriesForAddresses', () => {
 
         invalidateTransactionQueriesForAddresses(queryClient, ['ADDR1'])
 
-        expect(queryClient.getQueryState(foreignKey)?.isInvalidated).toBe(
-            false,
-        )
+        expect(queryClient.getQueryState(foreignKey)?.isInvalidated).toBe(false)
     })
 
     test('is a no-op for an empty address list', () => {

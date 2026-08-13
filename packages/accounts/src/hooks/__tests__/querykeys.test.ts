@@ -58,9 +58,9 @@ describe('invalidateAccountQueriesForAddresses', () => {
             includeMultiAccountKeys: true,
         })
 
-        expect(
-            queryClient.getQueryState(intersectingKey)?.isInvalidated,
-        ).toBe(true)
+        expect(queryClient.getQueryState(intersectingKey)?.isInvalidated).toBe(
+            true,
+        )
         expect(queryClient.getQueryState(disjointKey)?.isInvalidated).toBe(
             false,
         )

@@ -56,8 +56,7 @@ export const useInboxStatus = (): UseInboxStatusResult => {
         refetchInterval: query => {
             if (!config.pollingEnabled) return false
             const isFailing =
-                query.state.data === undefined &&
-                query.state.status === 'error'
+                query.state.data === undefined && query.state.status === 'error'
             return isFailing
                 ? config.notificationRefreshTime *
                       ERROR_PROBE_INTERVAL_MULTIPLIER

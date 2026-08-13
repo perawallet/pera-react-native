@@ -61,10 +61,9 @@ export const useInboxQueryOptions = () => {
                 refetchInterval: query => {
                     const data = query.state.data
                     if (!data) return false
-                    const hasInFlight =
-                        data.joint_account_sign_requests.some(r =>
-                            IN_FLIGHT_SIGN_REQUEST_STATUSES.has(r.status),
-                        )
+                    const hasInFlight = data.joint_account_sign_requests.some(
+                        r => IN_FLIGHT_SIGN_REQUEST_STATUSES.has(r.status),
+                    )
                     return hasInFlight
                         ? INBOX_IN_FLIGHT_POLL_INTERVAL_MS
                         : false

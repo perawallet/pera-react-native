@@ -807,9 +807,8 @@ describe('SyncService', () => {
                 invalidateAccountQueries,
                 invalidateAccountQueriesForAddresses,
             } = await import('@perawallet/wallet-core-accounts')
-            const { invalidateTransactionQueriesForAddresses } = await import(
-                '@perawallet/wallet-core-transactions'
-            )
+            const { invalidateTransactionQueriesForAddresses } =
+                await import('@perawallet/wallet-core-transactions')
 
             vi.mocked(fetchAndPersistAccount).mockResolvedValue({
                 changed: true,
@@ -867,9 +866,8 @@ describe('SyncService', () => {
                 fetchAndPersistAccount,
                 invalidateAccountQueriesForAddresses,
             } = await import('@perawallet/wallet-core-accounts')
-            const { invalidateTransactionQueriesForAddresses } = await import(
-                '@perawallet/wallet-core-transactions'
-            )
+            const { invalidateTransactionQueriesForAddresses } =
+                await import('@perawallet/wallet-core-transactions')
 
             vi.mocked(fetchAndPersistAccount).mockRejectedValueOnce(
                 new Error('all fetches fail'),
@@ -944,9 +942,8 @@ describe('SyncService', () => {
         it('never throws and still invalidates account/tx queries when asset enrichment fails', async () => {
             const { getAllHeldAssetIdsForNetwork, invalidateAccountQueries } =
                 await import('@perawallet/wallet-core-accounts')
-            const { invalidateTransactionQueriesForAddresses } = await import(
-                '@perawallet/wallet-core-transactions'
-            )
+            const { invalidateTransactionQueriesForAddresses } =
+                await import('@perawallet/wallet-core-transactions')
 
             vi.mocked(getAllHeldAssetIdsForNetwork).mockRejectedValueOnce(
                 new Error('db read blew up'),
