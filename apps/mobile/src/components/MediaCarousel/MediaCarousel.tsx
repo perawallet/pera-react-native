@@ -26,13 +26,8 @@ import { VideoPlayer } from '@components/VideoPlayer'
 import { AudioPlayer } from '@components/AudioPlayer'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
+import { resolveMediaImageUri, type MediaItem } from './resolveMediaImageUri'
 import PagerView from 'react-native-pager-view'
-
-export type MediaItem = {
-    type: string
-    previewUrl?: string
-    downloadUrl?: string
-}
 
 export type MediaCarouselProps = {
     media: MediaItem[]
@@ -74,10 +69,7 @@ export const MediaCarousel = ({
         ({ item, index }: { item?: MediaItem; index: number }) => {
             const downloadUri = item?.downloadUrl
             const isModelItem = item?.type === 'model'
-            // A model's downloadUrl is the 3D asset, not an inline image.
-            const imageUri = isModelItem
-                ? (item?.previewUrl ?? fallbackImageUrl)
-                : (item?.previewUrl ?? item?.downloadUrl ?? fallbackImageUrl)
+            const imageUri = resolveMediaImageUri(item, fallbackImageUrl)
             return (
                 <PWView
                     style={styles.carouselItem}
