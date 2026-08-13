@@ -14,6 +14,9 @@
 export * from './useCardSession'
 export * from './useCardLoginMutation'
 export * from './useSendLoginOtpMutation'
+export * from './useRequestPasswordResetMutation'
+export * from './useVerifyPasswordResetMutation'
+export * from './useConfirmPasswordResetMutation'
 export * from './useCardLogout'
 
 // Card lifecycle + status
