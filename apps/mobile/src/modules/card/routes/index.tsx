@@ -19,6 +19,7 @@ import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
 import { PeraCardIntroScreen } from '../screens/PeraCardIntroScreen'
 import { CardSignInScreen } from '../screens/CardSignInScreen'
+import { CardForgotPasswordScreen } from '../screens/CardForgotPasswordScreen'
 import { CardOnboardingStackNavigator } from './card-onboarding'
 import { type PeraCardStackParamList } from './types'
 
@@ -52,6 +53,11 @@ export const PeraCardStackNavigator = () => {
                 name='CardSignIn'
                 options={{ title: 'peraCard.sign_in.navigation_title' }}
                 component={CardSignInScreen}
+            />
+            <PeraCardStack.Screen
+                name='CardForgotPassword'
+                options={{ title: 'peraCard.forgot_password.navigation_title' }}
+                component={CardForgotPasswordScreen}
             />
             <PeraCardStack.Screen
                 name='CardOnboarding'
