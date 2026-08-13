@@ -429,5 +429,45 @@ describe('useWebViewNavigationGuard', () => {
             expect(handleDeepLink).toHaveBeenCalledWith(url, false, 'in-app')
             expect(onExternalNavigation).not.toHaveBeenCalled()
         })
+
+        it('loads a top-frame blob: URL in place instead of handing it to the in-app browser', () => {
+            // A blob URL only resolves inside the page context that created
+            // it, so a handoff to a fresh browser sheet could never load it.
+            const onExternalNavigation = vi.fn()
+            const { result } = renderWithHandoff(onExternalNavigation)
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('blob:https://vestige.fi/9a41c2d7-4f38'),
+                ),
+            ).toBe(true)
+            expect(onExternalNavigation).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('blob: navigations (Vestige charts, PERA-4881)', () => {
+        it('allows a blob:https iframe navigation to load in place', () => {
+            // Vestige's Discover charts render in iframes whose src is
+            // blob:https://vestige.fi/...; refusing them blanks the chart.
+            const { result } = renderGuard(true)
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('blob:https://vestige.fi/9a41c2d7-4f38', false),
+                ),
+            ).toBe(true)
+            expect(handleDeepLink).not.toHaveBeenCalled()
+        })
+
+        it('still refuses a blob: URL not backed by http(s)', () => {
+            const { result } = renderGuard(true)
+
+            expect(
+                result.current.onShouldStartLoadWithRequest(
+                    request('blob:null/9a41c2d7-4f38', false),
+                ),
+            ).toBe(false)
+            expect(Linking.openURL).not.toHaveBeenCalled()
+        })
     })
 })
