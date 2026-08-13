@@ -12,6 +12,10 @@
 # hangs here rather than failing usefully.
 set -euo pipefail
 
+# Resolved before the cd into the harness checkout below, which is a different
+# repo entirely.
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 PLATFORM="${1:-}"
 ARTIFACT="${2:-}"
 
@@ -116,4 +120,35 @@ export BROWSERSTACK_BUILD_NAME="RN smoke ${APP_VERSION:-local} ${PLATFORM}"
 ./scripts/apply-browserstack-app.sh
 
 echo "--- Running '$SMOKE_TAG' from $SMOKE_SUITE"
-browserstack-sdk robot --outputdir "$RESULTS_DIR" --include "$SMOKE_TAG" "$SMOKE_SUITE"
+# The SDK's exit code is not evidence: it has reported 0 for a run that printed
+# "1 test, 0 passed, 1 failed" and then crashed pabot's result merge. Keep it
+# for the log, but take the verdict from the artefacts.
+SDK_RC=0
+browserstack-sdk robot --outputdir "$RESULTS_DIR" --include "$SMOKE_TAG" "$SMOKE_SUITE" || SDK_RC=$?
+
+# Best-effort repair of the merge pabot dropped, so the uploaded report is
+# readable. The verdict does not depend on this succeeding — smoke-verdict.sh
+# reads the per-process outputs directly when there is no merged file.
+if [ ! -f "$RESULTS_DIR/output.xml" ] && command -v rebot >/dev/null 2>&1; then
+  rebot --nostatusrc --outputdir "$RESULTS_DIR" \
+    "$RESULTS_DIR"/pabot_results/*/output.xml >/dev/null 2>&1 || true
+fi
+
+VERDICT=$("$ROOT_DIR/tools/smoke-verdict.sh" "$RESULTS_DIR") || true
+# Written for the Bitrise publish step, which runs in a separate shell with no
+# harness venv and so cannot re-derive this itself.
+printf '%s' "$VERDICT" >"$RESULTS_DIR/verdict"
+echo "--- Smoke verdict: ${VERDICT} (BrowserStack SDK exit ${SDK_RC})"
+
+if [ "$VERDICT" = "ok" ]; then
+  exit 0
+fi
+
+# SMOKE_STRICT is the mute switch for triage. Flipping it keeps the verdict
+# flowing to Slack; the alternative people reach for under pressure is
+# reverting to trusting the SDK's exit code, which is how this bug began.
+if [ "${SMOKE_STRICT:-true}" = "true" ]; then
+  exit 1
+fi
+echo "--- SMOKE_STRICT is off: reporting the failure without failing the build"
+exit 0

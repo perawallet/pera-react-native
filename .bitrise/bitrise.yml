@@ -7,6 +7,45 @@ app:
   - BITRISE_SCHEME_STAGING: Pera7Staging
   - BITRISE_SCHEME_PRODUCTION: PeraAlgoWallet
 pipelines:
+  # Staging and production are split across two pipelines rather than built
+  # together on every tag: four build machines a night (two of them
+  # g2.mac.large) is what sent Bitrise usage through the roof.
+  #
+  # The smoke gate rides along with staging because only the staging builds
+  # bake DISABLE_SCREEN_CAPTURE_PREVENTION, and Appium cannot drive a
+  # FLAG_SECURE surface — a production build hangs rather than failing
+  # usefully. So the gate is nightly-only, and an rc is covered by the
+  # nightlies it descends from rather than directly.
+  #
+  # Neither pipeline sets abort_on_fail, and that default is load-bearing: it
+  # is what keeps a red iOS smoke gate from killing the Android build running
+  # beside it. should_always_run on notify is the matching half — the card
+  # still posts when a build it depends on failed.
+  nightly-builds:
+    workflows:
+      test: {}
+      generate-changelog: {}
+      ios-staging:
+        depends_on:
+        - test
+      android-staging:
+        depends_on:
+        - test
+        - generate-changelog
+      notify-nightly:
+        depends_on:
+        # `test` is listed even though the builds already gate on it — shared
+        # pipeline variables only reach dependent workflows, and without it
+        # TEST_STATUS would never arrive here.
+        - test
+        - generate-changelog
+        - ios-staging
+        - android-staging
+        should_always_run: workflow
+    triggers:
+      tag:
+      - name:
+          regex: "^v[0-9]+\\.[0-9]+\\.[0-9]+-alpha\\.[0-9]+$"
   release-builds:
     workflows:
       test: {}
@@ -18,29 +57,19 @@ pipelines:
         depends_on:
         - test
         - generate-changelog
-      ios-staging:
-        depends_on:
-        - test
-      android-staging:
-        depends_on:
-        - test
-        - generate-changelog
       notify-release:
         depends_on:
-        # `test` is listed even though the builds already gate on it — shared
-        # pipeline variables only reach dependent workflows, and without it
-        # TEST_STATUS would never arrive here.
+        # See nightly-builds for why `test` is listed here.
         - test
         - generate-changelog
         - ios-production
         - android-production
-        - ios-staging
-        - android-staging
         should_always_run: workflow
     triggers:
       tag:
+      # rc and stable both cut production builds; only the suffix differs.
       - name:
-          regex: "^v[0-9]+\\.[0-9]+\\.[0-9]+(-(alpha|rc)\\.[0-9]+)?$"
+          regex: "^v[0-9]+\\.[0-9]+\\.[0-9]+(-rc\\.[0-9]+)?$"
   web-release-builds:
     description: Build the browser extension (Web) zip for staging + production.
       Manual-trigger only for now — no automatic tag/nightly trigger, and no
@@ -200,11 +229,25 @@ workflows:
             if [ -n "$LAST_TAG" ]; then
               echo "Generating changelog since tag: $LAST_TAG"
               CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG" || echo "")
+              # Same range, unabridged and without Slack markup: the card only
+              # ever shows a summary, so this file is the record of what
+              # actually shipped and is what the card's link points at.
+              FULL=$(LINK_FORMAT=plain MAX_COUNT=0 ./tools/generate_changelog.sh "$LAST_TAG" || echo "")
             fi
             if [ -z "${CHANGELOG:-}" ]; then
               echo "No previous tag / empty changelog; using fallback"
               CHANGELOG="Release build - see git history for changes"
             fi
+
+            ARTIFACT_NAME="changelog-${BITRISE_GIT_TAG:-b$BITRISE_BUILD_NUMBER}.md"
+            printf '%s\n' "${FULL:-$CHANGELOG}" >"${BITRISE_DEPLOY_DIR}/${ARTIFACT_NAME}"
+            envman add --key CHANGELOG_ARTIFACT_NAME --value "$ARTIFACT_NAME"
+
+            # Slack drops the whole payload with `invalid_attachments` once a
+            # section block passes 3000 chars, which is what killed the RC
+            # cards. Cap before the escape below — cutting escaped text can
+            # split a \n or \" in half. See tools/cap-changelog.sh.
+            CHANGELOG=$(printf '%s' "$CHANGELOG" | ./tools/cap-changelog.sh 2500)
 
             # JSON-escape (newlines -> \n, quotes) so the changelog embeds
             # cleanly in the Slack payload "text" field; without it the raw
@@ -212,9 +255,40 @@ workflows:
             CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//')
 
             envman add --key CHANGELOG --value "$CHANGELOG"
+    - deploy-to-bitrise-io@2:
+        inputs:
+        - notify_user_groups: none
+        - is_enable_public_page: 'false'
+    - script@1:
+        title: Capture changelog artifact URL
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            # set -e without -x: keep temporary S3 download signatures out of the trace log.
+            set -e
+            # Map entries are `name=>url` joined by `|` — same shape the web
+            # build parses for its zip. A glob rather than a regex: the
+            # filename carries dots from the version.
+            URL=""
+            if [ -n "${BITRISE_PERMANENT_DOWNLOAD_URL_MAP:-}" ]; then
+              IFS='|' read -ra ENTRIES <<< "$BITRISE_PERMANENT_DOWNLOAD_URL_MAP"
+              for entry in "${ENTRIES[@]}"; do
+                case "$entry" in
+                  "${CHANGELOG_ARTIFACT_NAME}=>"*)
+                    URL="${entry#*=>}"
+                    break
+                    ;;
+                esac
+              done
+            fi
+            # Empty is tolerated: the card omits the link rather than failing
+            # the release over a changelog upload.
+            envman add --key CHANGELOG_URL --value "$URL"
     - share-pipeline-variable@1:
         inputs:
-        - variables: CHANGELOG
+        - variables: |-
+            CHANGELOG
+            CHANGELOG_URL
   ios-staging:
     description: Build and deploy iOS Staging to TestFlight
     envs:
@@ -1117,7 +1191,15 @@ workflows:
             # workflow, whose ROW_ID is IOS_STAGING/ANDROID_STAGING. Reusing
             # that would overwrite a green build row with the gate's verdict
             # and lose which of the two actually broke.
-            if [ "$BITRISE_BUILD_STATUS" = "0" ]; then STATUS=ok; else STATUS=fail; fi
+            #
+            # The verdict file rather than BITRISE_BUILD_STATUS: that status is
+            # workflow-wide, so an artifact-deploy failure would be reported as
+            # a failing smoke test. A missing file reads as fail, so a script
+            # that died before writing one cannot publish a green.
+            STATUS=fail
+            if [ -f "$BITRISE_SOURCE_DIR/smoke-results/verdict" ]; then
+              STATUS=$(cat "$BITRISE_SOURCE_DIR/smoke-results/verdict")
+            fi
             envman add --key "IOS_SMOKE_STATUS" --value "$STATUS"
             envman add --key "IOS_SMOKE_URL" --value "${BITRISE_BUILD_URL:-}"
     - share-pipeline-variable@1:
@@ -1154,7 +1236,13 @@ workflows:
             # workflow, whose ROW_ID is IOS_STAGING/ANDROID_STAGING. Reusing
             # that would overwrite a green build row with the gate's verdict
             # and lose which of the two actually broke.
-            if [ "$BITRISE_BUILD_STATUS" = "0" ]; then STATUS=ok; else STATUS=fail; fi
+            #
+            # See _smoke-ios for why this reads the verdict file rather than
+            # BITRISE_BUILD_STATUS.
+            STATUS=fail
+            if [ -f "$BITRISE_SOURCE_DIR/smoke-results/verdict" ]; then
+              STATUS=$(cat "$BITRISE_SOURCE_DIR/smoke-results/verdict")
+            fi
             envman add --key "ANDROID_SMOKE_STATUS" --value "$STATUS"
             envman add --key "ANDROID_SMOKE_URL" --value "${BITRISE_BUILD_URL:-}"
     - share-pipeline-variable@1:
@@ -1304,12 +1392,31 @@ workflows:
               ]
             }
             EOF
-  notify-release:
-    description: Post one consolidated release card (all build statuses + changelog)
+  notify-nightly:
+    description: Post the nightly card — staging builds plus both smoke gates
+    envs:
+    - CARD_ROWS: staging
     meta:
       bitrise.io:
         stack: ubuntu-noble-24.04-bitrise-2025-android
         machine_type_id: g2.linux.medium
+    after_run:
+    - _notify-card
+  notify-release:
+    description: Post the rc/release card — production builds only
+    envs:
+    - CARD_ROWS: production
+    meta:
+      bitrise.io:
+        stack: ubuntu-noble-24.04-bitrise-2025-android
+        machine_type_id: g2.linux.medium
+    after_run:
+    - _notify-card
+  _notify-card:
+    description: Post one consolidated release card (all build statuses + changelog).
+      Shared by notify-nightly and notify-release, which differ only in CARD_ROWS —
+      the two pipelines build different things, so a card listing rows that never
+      ran would read as a failed release.
     steps:
     - script@1:
         is_always_run: true
@@ -1354,14 +1461,26 @@ workflows:
               printf '%s' "$r"
             }
 
-            ROWS="$(row "${ANDROID_PRODUCTION_STATUS:-}" "${ANDROID_PRODUCTION_URL:-}" "${ANDROID_PRODUCTION_INSTALL:-}" "APK" "Android production" "Play internal")"
-            ROWS="${ROWS}\n$(row "${ANDROID_STAGING_STATUS:-}" "${ANDROID_STAGING_URL:-}" "${ANDROID_STAGING_INSTALL:-}" "APK" "Android staging" "Firebase")"
-            ROWS="${ROWS}\n$(row "${IOS_PRODUCTION_STATUS:-}" "${IOS_PRODUCTION_URL:-}" "${IOS_PRODUCTION_INSTALL:-}" "IPA" "iOS production" "TestFlight")"
-            ROWS="${ROWS}\n$(row "${IOS_STAGING_STATUS:-}" "${IOS_STAGING_URL:-}" "${IOS_STAGING_INSTALL:-}" "IPA" "iOS staging" "TestFlight")"
-            # No install link: smoke binaries have screen-capture prevention
-            # disabled and are deliberately not published anywhere.
-            ROWS="${ROWS}\n$(row "${IOS_SMOKE_STATUS:-}" "${IOS_SMOKE_URL:-}" "" "" "iOS smoke gate" "BrowserStack")"
-            ROWS="${ROWS}\n$(row "${ANDROID_SMOKE_STATUS:-}" "${ANDROID_SMOKE_URL:-}" "" "" "Android smoke gate" "BrowserStack")"
+            # Rows follow the pipeline: nightly-builds only builds staging and
+            # only it runs the smoke gates, release-builds only builds
+            # production. Listing a row the pipeline never ran would show an
+            # empty status, which reads below as a failed build.
+            if [ "${CARD_ROWS:-production}" = "staging" ]; then
+              ROWS="$(row "${ANDROID_STAGING_STATUS:-}" "${ANDROID_STAGING_URL:-}" "${ANDROID_STAGING_INSTALL:-}" "APK" "Android staging" "Firebase")"
+              ROWS="${ROWS}\n$(row "${IOS_STAGING_STATUS:-}" "${IOS_STAGING_URL:-}" "${IOS_STAGING_INSTALL:-}" "IPA" "iOS staging" "TestFlight")"
+              # No install link: smoke binaries have screen-capture prevention
+              # disabled and are deliberately not published anywhere.
+              ROWS="${ROWS}\n$(row "${IOS_SMOKE_STATUS:-}" "${IOS_SMOKE_URL:-}" "" "" "iOS smoke gate" "BrowserStack")"
+              ROWS="${ROWS}\n$(row "${ANDROID_SMOKE_STATUS:-}" "${ANDROID_SMOKE_URL:-}" "" "" "Android smoke gate" "BrowserStack")"
+              # An array, not a string: an empty status must survive as its own
+              # element. Word-splitting a plain string would drop it, and an
+              # empty status is exactly the "never ran" case that must go red.
+              CHECKS=("${TEST_STATUS:-}" "${IOS_STAGING_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${IOS_SMOKE_STATUS:-}" "${ANDROID_SMOKE_STATUS:-}")
+            else
+              ROWS="$(row "${ANDROID_PRODUCTION_STATUS:-}" "${ANDROID_PRODUCTION_URL:-}" "${ANDROID_PRODUCTION_INSTALL:-}" "APK" "Android production" "Play internal")"
+              ROWS="${ROWS}\n$(row "${IOS_PRODUCTION_STATUS:-}" "${IOS_PRODUCTION_URL:-}" "${IOS_PRODUCTION_INSTALL:-}" "IPA" "iOS production" "TestFlight")"
+              CHECKS=("${TEST_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}")
+            fi
 
             # Header icon per channel on success (any failed build flips it
             # to ❌ + red below): 🚀 stable Release, ⭐ RC, 🌙 Nightly, 📦 Manual.
@@ -1382,18 +1501,29 @@ workflows:
             # smoke gates run inside the staging workflows and always publish
             # a status, so an empty one likewise means the build never got
             # there rather than that the gate was skipped.
-            for s in "${TEST_STATUS:-}" "${IOS_STAGING_STATUS:-}" "${IOS_PRODUCTION_STATUS:-}" "${ANDROID_STAGING_STATUS:-}" "${ANDROID_PRODUCTION_STATUS:-}" "${IOS_SMOKE_STATUS:-}" "${ANDROID_SMOKE_STATUS:-}"; do
+            #
+            # CHECKS is scoped to this pipeline's own rows, set above.
+            for s in "${CHECKS[@]}"; do
               if [ "$s" != "ok" ]; then OVERALL="❌"; COLOR="#ec0000"; fi
             done
 
-            # generate_changelog.sh caps each section at 7 entries, so a busy
-            # nightly hides most of its own fixes behind "…and N more". The tag's
-            # GitHub release carries the full list — link it rather than widening
-            # the card. Literal \n: the payload below is JSON, not shell.
+            # The card only ever shows a summary — capped at 7 entries a
+            # section and again at 2500 characters, because Slack drops the
+            # whole payload past 3000. The uploaded artifact is the unabridged
+            # copy. Literal \n: the payload below is JSON, not shell.
             NOTES_LINK=""
-            if [ -n "${BITRISE_GIT_TAG:-}" ]; then
-              NOTES_LINK="\n\n<https://github.com/perawallet/pera-react-native/releases/tag/${BITRISE_GIT_TAG}|Full release notes>"
+            if [ -n "${CHANGELOG_URL:-}" ]; then
+              NOTES_LINK="\n\n<${CHANGELOG_URL}|Full changelog>"
             fi
+            # Only stable tags get a GitHub release — publish-github-release.sh
+            # is stable-only by design — so linking one unconditionally sent
+            # every nightly and rc card to a 404.
+            case "${BITRISE_GIT_TAG:-}" in
+              *-alpha.* | *-rc.*) ;;
+              v[0-9]*)
+                NOTES_LINK="${NOTES_LINK}\n<https://github.com/perawallet/pera-react-native/releases/tag/${BITRISE_GIT_TAG}|Release notes>"
+                ;;
+            esac
 
             # -sS --fail-with-body: without it curl exits 0 on an HTTP 4xx/5xx
             # and the release card silently never arrives. --retry covers
