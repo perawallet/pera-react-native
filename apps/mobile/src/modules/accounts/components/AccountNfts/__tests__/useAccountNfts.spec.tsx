@@ -262,7 +262,7 @@ describe('useAccountNfts', () => {
             ])
         })
 
-        it('sinks collectibles with no known opt-in round below the rest', () => {
+        it('floats collectibles with no known opt-in round above the rest', () => {
             mockUseAccountOptInRoundsQuery.mockReturnValue({
                 optInRounds: new Map([['200', 5]]),
                 isPending: false,
@@ -271,6 +271,35 @@ describe('useAccountNfts', () => {
             const { result } = renderHook(() => useAccountNfts())
 
             expect(result.current.collectibles.map(c => c.assetId)).toEqual([
+                '100',
+                '200',
+            ])
+        })
+
+        // PERA-4845 QA regression: an NFT opted into seconds ago is already a
+        // holding row (SQLite mirrors algod) but the lagging indexer has no
+        // round for it yet. It must lead the list instantly, not sink.
+        it('puts a fresh opt-in the indexer does not know yet on top', () => {
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [
+                    makeRow('900', 'Fresh Mint'),
+                    makeRow('200', 'Zed'),
+                    makeRow('100', 'Cool NFT'),
+                ],
+                isPending: false,
+            })
+            mockUseAccountOptInRoundsQuery.mockReturnValue({
+                optInRounds: new Map([
+                    ['100', 50],
+                    ['200', 99],
+                ]),
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useAccountNfts())
+
+            expect(result.current.collectibles.map(c => c.assetId)).toEqual([
+                '900',
                 '200',
                 '100',
             ])

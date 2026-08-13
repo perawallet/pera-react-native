@@ -88,3 +88,26 @@ export const NFT_TEST_ASSET_2: PeraAsset = {
         logo: 'https://example.test/nft-image-2.png',
     },
 }
+
+// Third collectible for the fresh-opt-in scenario (PERA-4845): highest asset
+// id, alphabetically between the other two, so a three-way expected order can
+// be unique to opt-in data rather than id or title order.
+export const NFT_TEST_ASSET_3_ID = '88888882'
+
+export const NFT_TEST_ASSET_3: PeraAsset = {
+    assetId: NFT_TEST_ASSET_3_ID,
+    name: 'Middle Collectible',
+    unitName: 'TEST3',
+    decimals: 0,
+    creator: { address: 'CREATOR_TEST_ADDRESS' },
+    totalSupply: new Decimal('1'),
+    url: 'https://example.test/nft-image-3.png',
+    peraMetadata: {
+        isDeleted: false,
+        verificationTier: PeraAssetVerificationTier.verified,
+        isFavorited: false,
+        isPriceAlertEnabled: false,
+        type: PeraAssetType.collectible,
+        logo: 'https://example.test/nft-image-3.png',
+    },
+}

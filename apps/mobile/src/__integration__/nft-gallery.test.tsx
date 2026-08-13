@@ -63,6 +63,8 @@ import {
     NFT_TEST_ASSET_ID,
     NFT_TEST_ASSET_2,
     NFT_TEST_ASSET_2_ID,
+    NFT_TEST_ASSET_3,
+    NFT_TEST_ASSET_3_ID,
     USDC_TEST_ASSET,
     USDC_TEST_ASSET_ID,
 } from './__fixtures__/assets'
@@ -236,6 +238,74 @@ describe('Flow: NFT gallery hook (useAccountNfts)', () => {
                     expect(
                         result.current.collectibles.map(c => c.assetId),
                     ).toEqual([NFT_TEST_ASSET_ID, NFT_TEST_ASSET_2_ID])
+                },
+                { timeout: 5000 },
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a just-opted-in NFT the indexer does not know yet, when the sort mode is recentlyAdded, then that NFT leads and the known ones follow in opt-in order',
+        async () => {
+            await seedAssets([NFT_TEST_ASSET_2, NFT_TEST_ASSET_3], 'mainnet')
+            for (const assetId of [NFT_TEST_ASSET_2_ID, NFT_TEST_ASSET_3_ID]) {
+                await insertAssetHolding({
+                    accountAddress: HOLDER.address,
+                    assetId,
+                    network: 'mainnet',
+                    amount: '1',
+                })
+            }
+
+            // PERA-4845 QA scenario: asset 3 is held (SQLite mirrors algod)
+            // but the lagging indexer omits it. Expected order is unique to
+            // opt-in data: raw id order gives [3, 2, 1], titles give
+            // [2, 3, 1], the old sink behavior gave [1, 2, 3].
+            server.use(
+                http.get(
+                    `${getNetworkConfig(Networks.mainnet).indexerUrl}/v2/accounts/:address/assets`,
+                    () =>
+                        HttpResponse.json({
+                            'current-round': 30_000,
+                            assets: [
+                                {
+                                    'asset-id': Number(NFT_TEST_ASSET_ID),
+                                    amount: 1,
+                                    'is-frozen': false,
+                                    deleted: false,
+                                    'opted-in-at-round': 20_000,
+                                },
+                                {
+                                    'asset-id': Number(NFT_TEST_ASSET_2_ID),
+                                    amount: 1,
+                                    'is-frozen': false,
+                                    deleted: false,
+                                    'opted-in-at-round': 10_000,
+                                },
+                            ],
+                        }),
+                ),
+            )
+
+            useCollectiblePreferencesStore
+                .getState()
+                .setCollectibleSortMode('recentlyAdded')
+
+            const { result } = renderHook(() => useAccountNfts(), {
+                wrapper: buildWrapper(),
+            })
+
+            await waitFor(
+                () => {
+                    expect(result.current.collectibleCount).toBe(3)
+                    expect(
+                        result.current.collectibles.map(c => c.assetId),
+                    ).toEqual([
+                        NFT_TEST_ASSET_3_ID,
+                        NFT_TEST_ASSET_ID,
+                        NFT_TEST_ASSET_2_ID,
+                    ])
                 },
                 { timeout: 5000 },
             )
