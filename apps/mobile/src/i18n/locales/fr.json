@@ -1037,9 +1037,7 @@
             "otp_body": "Saisissez le code de vérification que nous vous avons envoyé pour terminer la connexion.",
             "otp_invalid": "Ce code est incorrect. Veuillez réessayer.",
             "send_again": "Renvoyer",
-            "send_again_in": "Renvoyer dans {{count}} s",
-            "coming_soon_title": "Bientôt disponible",
-            "coming_soon_body": "La réinitialisation du mot de passe n’est pas encore disponible. Revenez bientôt."
+            "send_again_in": "Renvoyer dans {{count}} s"
         },
         "forgot_password": {
             "navigation_title": "Réinitialiser le mot de passe",

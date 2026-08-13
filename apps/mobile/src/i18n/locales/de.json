@@ -1029,9 +1029,7 @@
             "otp_body": "Gib den Bestätigungscode ein, den wir dir gesendet haben, um die Anmeldung abzuschließen.",
             "otp_invalid": "Dieser Code ist nicht korrekt. Bitte versuche es erneut.",
             "send_again": "Erneut senden",
-            "send_again_in": "Erneut senden in {{count}}s",
-            "coming_soon_title": "Demnächst verfügbar",
-            "coming_soon_body": "Das Zurücksetzen des Passworts ist noch nicht verfügbar. Schau bald wieder vorbei."
+            "send_again_in": "Erneut senden in {{count}}s"
         },
         "forgot_password": {
             "navigation_title": "Passwort zurücksetzen",

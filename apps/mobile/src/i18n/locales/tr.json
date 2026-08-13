@@ -1037,9 +1037,7 @@
             "otp_body": "Girişi tamamlamak için sana gönderdiğimiz doğrulama kodunu gir.",
             "otp_invalid": "Bu kod doğru değil. Lütfen tekrar dene.",
             "send_again": "Tekrar gönder",
-            "send_again_in": "{{count}} sn içinde tekrar gönder",
-            "coming_soon_title": "Çok yakında",
-            "coming_soon_body": "Şifre sıfırlama henüz kullanıma açık değil. Kısa süre sonra tekrar kontrol et."
+            "send_again_in": "{{count}} sn içinde tekrar gönder"
         },
         "forgot_password": {
             "navigation_title": "Şifreyi sıfırla",

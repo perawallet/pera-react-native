@@ -1037,9 +1037,7 @@
             "otp_body": "Introduce el código de verificación que te enviamos para terminar de iniciar sesión.",
             "otp_invalid": "Ese código no es correcto. Vuelve a intentarlo.",
             "send_again": "Reenviar",
-            "send_again_in": "Reenviar en {{count}}s",
-            "coming_soon_title": "Próximamente",
-            "coming_soon_body": "El restablecimiento de contraseña aún no está disponible. Vuelve pronto."
+            "send_again_in": "Reenviar en {{count}}s"
         },
         "forgot_password": {
             "navigation_title": "Restablecer contraseña",

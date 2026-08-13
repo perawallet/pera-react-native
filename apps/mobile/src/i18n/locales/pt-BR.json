@@ -1037,9 +1037,7 @@
             "otp_body": "Digite o código de verificação que enviamos para concluir o login.",
             "otp_invalid": "Esse código não está correto. Tente novamente.",
             "send_again": "Enviar novamente",
-            "send_again_in": "Enviar novamente em {{count}}s",
-            "coming_soon_title": "Em breve",
-            "coming_soon_body": "A redefinição de senha ainda não está disponível. Volte em breve."
+            "send_again_in": "Enviar novamente em {{count}}s"
         },
         "forgot_password": {
             "navigation_title": "Redefinir senha",

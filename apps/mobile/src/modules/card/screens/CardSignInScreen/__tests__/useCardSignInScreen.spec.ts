@@ -20,6 +20,12 @@ vi.mock('@analytics', async () => {
     return { ...actual, trackEvent: mockTrackEvent }
 })
 
+let mockRouteParams: { email?: string } | undefined
+vi.mock('@react-navigation/native', async () => {
+    const actual = await vi.importActual<object>('@react-navigation/native')
+    return { ...actual, useRoute: () => ({ params: mockRouteParams }) }
+})
+
 const mockMutateAsync = vi.fn()
 const mockSetOnboardingStep = vi.fn()
 const mockSendOtpMutateAsync = vi.fn()
@@ -89,6 +95,7 @@ import { useCardSignInScreen } from '../useCardSignInScreen'
 describe('useCardSignInScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockRouteParams = undefined
     })
 
     it('starts with an invalid form, idle, and no OTP step', () => {
@@ -111,21 +118,21 @@ describe('useCardSignInScreen', () => {
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('shows a coming-soon toast for the forgot-password link', () => {
+    it('opens the forgot-password flow with the typed email', () => {
         const { result } = renderHook(() => useCardSignInScreen())
 
         act(() => {
             result.current.handleForgotPassword()
         })
 
-        expect(mockInfoToast).toHaveBeenCalledWith(
-            'peraCard.sign_in.coming_soon_title',
-            'peraCard.sign_in.coming_soon_body',
-        )
-        // The tap is tracked even while the flow is a stub — demand signal.
         expect(mockTrackEvent).toHaveBeenCalledWith(
             CardEvent.RecoverForgotPassword,
         )
+        // Empty form: no email is handed over.
+        expect(mockNavigate).toHaveBeenCalledWith('CardForgotPassword', {
+            email: undefined,
+        })
+        expect(mockInfoToast).not.toHaveBeenCalled()
     })
 
     it('tracks the sign-in submit on the credentials pass', async () => {
