@@ -15,6 +15,7 @@ import { QueryClient } from '@tanstack/react-query'
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-blockchain'
 import {
     MODULE_PREFIX,
+    invalidateAccountQueriesForAddresses,
     removeAccountQueriesForAddresses,
     getAccountBalancesQueryKey,
     getAccountAssetBalanceHistoryQueryKey,
@@ -22,6 +23,64 @@ import {
     getOwnedAssetIdsQueryKey,
     isAccountBalancesHistoryQuery,
 } from '../querykeys'
+
+describe('invalidateAccountQueriesForAddresses', () => {
+    test('leaves multi-account balance-history aggregates alone by default', () => {
+        const queryClient = new QueryClient()
+        const key = getAccountBalancesHistoryQueryKey(
+            ['ADDR1', 'ADDR2'],
+            'one-day',
+            'mainnet',
+        )
+        queryClient.setQueryData(key, { value: 1 })
+
+        invalidateAccountQueriesForAddresses(queryClient, ['ADDR1'])
+
+        expect(queryClient.getQueryState(key)?.isInvalidated).toBe(false)
+    })
+
+    test('includeMultiAccountKeys invalidates aggregates containing a target address', () => {
+        const queryClient = new QueryClient()
+        const intersectingKey = getAccountBalancesHistoryQueryKey(
+            ['ADDR1', 'ADDR2'],
+            'one-day',
+            'mainnet',
+        )
+        const disjointKey = getAccountBalancesHistoryQueryKey(
+            ['ADDR3', 'ADDR4'],
+            'one-day',
+            'mainnet',
+        )
+        queryClient.setQueryData(intersectingKey, { value: 1 })
+        queryClient.setQueryData(disjointKey, { value: 2 })
+
+        invalidateAccountQueriesForAddresses(queryClient, ['ADDR1'], {
+            includeMultiAccountKeys: true,
+        })
+
+        expect(
+            queryClient.getQueryState(intersectingKey)?.isInvalidated,
+        ).toBe(true)
+        expect(queryClient.getQueryState(disjointKey)?.isInvalidated).toBe(
+            false,
+        )
+    })
+
+    test('includeMultiAccountKeys still invalidates single-account keys and spares others', () => {
+        const queryClient = new QueryClient()
+        const targetKey = getAccountBalancesQueryKey('ADDR1', 'mainnet')
+        const otherKey = getAccountBalancesQueryKey('ADDR2', 'mainnet')
+        queryClient.setQueryData(targetKey, { value: 1 })
+        queryClient.setQueryData(otherKey, { value: 2 })
+
+        invalidateAccountQueriesForAddresses(queryClient, ['ADDR1'], {
+            includeMultiAccountKeys: true,
+        })
+
+        expect(queryClient.getQueryState(targetKey)?.isInvalidated).toBe(true)
+        expect(queryClient.getQueryState(otherKey)?.isInvalidated).toBe(false)
+    })
+})
 
 describe('removeAccountQueriesForAddresses', () => {
     test('evicts only the targeted address queries from the cache', () => {

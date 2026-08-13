@@ -29,6 +29,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     invalidateTransactionQueries,
+    invalidateTransactionQueriesForAddresses,
     fetchAndPersistTransactions,
 } from '@perawallet/wallet-core-transactions'
 import {
@@ -666,7 +667,23 @@ export class SyncService {
             }
         }
 
-        invalidateAccountQueries(this.deps.queryClient)
-        invalidateTransactionQueries(this.deps.queryClient)
+        // A holdings change ripples beyond the refreshed addresses (any
+        // mounted account read joins in the just-fetched asset metadata and
+        // prices), so match the tick's broad accounts pass in that case.
+        // Otherwise scope to the refreshed addresses — including the
+        // multi-account wealth chart, which must reflect the send immediately.
+        if (anyHoldingsChanged) {
+            invalidateAccountQueries(this.deps.queryClient)
+        } else {
+            invalidateAccountQueriesForAddresses(
+                this.deps.queryClient,
+                addresses,
+                { includeMultiAccountKeys: true },
+            )
+        }
+        invalidateTransactionQueriesForAddresses(
+            this.deps.queryClient,
+            addresses,
+        )
     }
 }

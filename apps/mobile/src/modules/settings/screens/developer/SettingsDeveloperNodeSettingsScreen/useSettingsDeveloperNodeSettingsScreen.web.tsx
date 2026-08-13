@@ -101,9 +101,10 @@ export const useSettingsDeveloperNodeSettingsScreen =
                 useNetworkStore.getState().setNetwork(network)
 
                 try {
-                    const syncService = getSyncService()
-                    syncService.invalidateQueries()
-                    syncService.restart()
+                    // Invalidation is owned by the shell's network effect
+                    // (useNetworkSwitchInvalidation) — calling it here too
+                    // would double-refetch every mounted query.
+                    getSyncService().restart()
                 } catch {
                     // SyncService not yet initialized
                 }

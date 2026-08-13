@@ -29,8 +29,13 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
+import { QueryClient } from '@tanstack/react-query'
 import { NETWORK_PARTITIONED_QUERY_MODULES } from '@perawallet/wallet-core-blockchain'
-import { MODULE_PREFIX, transactionQueryKeys } from '../querykeys'
+import {
+    MODULE_PREFIX,
+    transactionQueryKeys,
+    invalidateTransactionQueriesForAddresses,
+} from '../querykeys'
 
 describe('transactionQueryKeys', () => {
     describe('all', () => {
@@ -161,6 +166,70 @@ describe('transactionQueryKeys', () => {
 
             expect(mainnetKey).not.toEqual(testnetKey)
         })
+    })
+})
+
+describe('invalidateTransactionQueriesForAddresses', () => {
+    test('invalidates only the targeted address histories', () => {
+        const queryClient = new QueryClient()
+        const targetKey = transactionQueryKeys.history('ADDR1', 'mainnet')
+        const otherKey = transactionQueryKeys.history('ADDR2', 'mainnet')
+        queryClient.setQueryData(targetKey, { value: 1 })
+        queryClient.setQueryData(otherKey, { value: 2 })
+
+        invalidateTransactionQueriesForAddresses(queryClient, ['ADDR1'])
+
+        expect(queryClient.getQueryState(targetKey)?.isInvalidated).toBe(true)
+        expect(queryClient.getQueryState(otherKey)?.isInvalidated).toBe(false)
+    })
+
+    test('invalidates filtered and paginated history keys for the address', () => {
+        const queryClient = new QueryClient()
+        const filteredKey = transactionQueryKeys.historyWithFilters(
+            'ADDR1',
+            'mainnet',
+            { assetId: '456' },
+        )
+        const pageKey = transactionQueryKeys.paginatedHistory(
+            'ADDR1',
+            'mainnet',
+            'https://api.example.com/next',
+        )
+        queryClient.setQueryData(filteredKey, { value: 1 })
+        queryClient.setQueryData(pageKey, { value: 2 })
+
+        invalidateTransactionQueriesForAddresses(queryClient, ['ADDR1'])
+
+        expect(queryClient.getQueryState(filteredKey)?.isInvalidated).toBe(
+            true,
+        )
+        expect(queryClient.getQueryState(pageKey)?.isInvalidated).toBe(true)
+    })
+
+    test('leaves other modules with the same address untouched', () => {
+        const queryClient = new QueryClient()
+        const foreignKey = [
+            'accounts',
+            'balance',
+            { address: 'ADDR1', network: 'mainnet' },
+        ]
+        queryClient.setQueryData(foreignKey, { value: 1 })
+
+        invalidateTransactionQueriesForAddresses(queryClient, ['ADDR1'])
+
+        expect(queryClient.getQueryState(foreignKey)?.isInvalidated).toBe(
+            false,
+        )
+    })
+
+    test('is a no-op for an empty address list', () => {
+        const queryClient = new QueryClient()
+        const key = transactionQueryKeys.history('ADDR1', 'mainnet')
+        queryClient.setQueryData(key, { value: 1 })
+
+        invalidateTransactionQueriesForAddresses(queryClient, [])
+
+        expect(queryClient.getQueryState(key)?.isInvalidated).toBe(false)
     })
 })
 

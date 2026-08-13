@@ -29,6 +29,7 @@ import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useTokenListener } from '@modules/token'
 import { PromptContainer } from '@modules/prompts'
 import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
+import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
 import { BottomSheetManager } from '@modules/bottom-sheet'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { screenListeners } from './listeners'
@@ -111,11 +112,13 @@ export const WebMainRoutes = ({
         [accounts],
     )
     useDeviceRegistration(addresses)
-    // Native mounts both of these in RootComponent, which the web shell
+    // Native mounts all of these in RootComponent, which the web shell
     // replaces — without them the extension registers devices with no push
-    // token and drops notification-tap deeplinks.
+    // token and drops notification-tap deeplinks. The received listener is a
+    // no-op where the platform lacks a foreground receive path.
     useTokenListener(fcmToken)
     useNotificationDeeplinkListener()
+    useNotificationReceivedListener()
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
 
     const handleReady = useExpandedFlowNavigation((screen, params) => {

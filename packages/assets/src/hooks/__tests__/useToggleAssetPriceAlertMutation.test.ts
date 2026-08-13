@@ -241,7 +241,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('optimistically updates the cached asset before the mutation resolves', async () => {
-        const queryKey = getAssetDetailsQueryKey('123', true, 'mainnet')
+        const queryKey = getAssetDetailsQueryKey('123', 'mainnet')
         queryClient.setQueryData<PeraAsset>(queryKey, buildAsset(false))
 
         let resolvePromise: (value: typeof mockToggleResponse) => void
@@ -279,7 +279,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('rolls the cache back to its previous value when the mutation fails', async () => {
-        const queryKey = getAssetDetailsQueryKey('123', true, 'mainnet')
+        const queryKey = getAssetDetailsQueryKey('123', 'mainnet')
         const original = buildAsset(false)
         queryClient.setQueryData<PeraAsset>(queryKey, original)
 
@@ -312,7 +312,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('rolls the DB write back to the previous value when the mutation fails', async () => {
-        const queryKey = getAssetDetailsQueryKey('123', true, 'mainnet')
+        const queryKey = getAssetDetailsQueryKey('123', 'mainnet')
         queryClient.setQueryData<PeraAsset>(queryKey, buildAsset(false))
 
         vi.mocked(toggleAssetPriceAlert).mockRejectedValue(
@@ -375,7 +375,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('invalidates the asset list cache on error so the rolled-back value is read', async () => {
-        const detailsKey = getAssetDetailsQueryKey('123', true, 'mainnet')
+        const detailsKey = getAssetDetailsQueryKey('123', 'mainnet')
         queryClient.setQueryData<PeraAsset>(detailsKey, buildAsset(false))
 
         const listKey = getAssetsQueryKey(['123'], 'mainnet')

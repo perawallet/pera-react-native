@@ -21,7 +21,7 @@ const IN_ID = '887406851'
 const mockOutAsset = { assetId: OUT_ID, unitName: 'USDC', decimals: 6 }
 const mockInAsset = { assetId: IN_ID, unitName: 'wSOL', decimals: 8 }
 
-const mockUseAssetByIdQuery = vi.hoisted(() => vi.fn())
+const mockUseSingleAssetDetailsQuery = vi.hoisted(() => vi.fn())
 const mockSetQueryData = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -29,7 +29,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         'assets',
         { assetIDs, network },
     ],
-    useAssetByIdQuery: mockUseAssetByIdQuery,
+    useSingleAssetDetailsQuery: mockUseSingleAssetDetailsQuery,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -43,16 +43,13 @@ vi.mock('@tanstack/react-query', () => ({
 describe('useSeedSwapRouteAssets', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        // Resolve the asset by id only when the query is enabled (non-ALGO id
-        // present), mirroring useAssetByIdQuery's enabled gating.
-        mockUseAssetByIdQuery.mockImplementation(
-            (id: string, options?: { enabled?: boolean }) => {
-                if (options?.enabled === false) return { data: undefined }
-                if (id === OUT_ID) return { data: mockOutAsset }
-                if (id === IN_ID) return { data: mockInAsset }
-                return { data: undefined }
-            },
-        )
+        // Resolve the asset only for a non-empty id, mirroring the query's
+        // `enabled: !!assetId.length` gating (ALGO/absent ids come in as '').
+        mockUseSingleAssetDetailsQuery.mockImplementation((id: string) => {
+            if (id === OUT_ID) return { data: mockOutAsset }
+            if (id === IN_ID) return { data: mockInAsset }
+            return { data: undefined }
+        })
     })
 
     it('seeds the asset cache for a non-opted-in output asset', () => {
@@ -85,10 +82,8 @@ describe('useSeedSwapRouteAssets', () => {
     it('does not fetch or seed when the output asset is ALGO', () => {
         renderHook(() => useSeedSwapRouteAssets({ assetOutId: ALGO_ASSET_ID }))
 
-        expect(mockUseAssetByIdQuery).toHaveBeenCalledWith(
-            ALGO_ASSET_ID,
-            expect.objectContaining({ enabled: false }),
-        )
+        // An ALGO route id is passed through as '' — the disabled sentinel.
+        expect(mockUseSingleAssetDetailsQuery).toHaveBeenCalledWith('')
         expect(mockSetQueryData).not.toHaveBeenCalled()
     })
 

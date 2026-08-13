@@ -65,4 +65,14 @@ export interface PushNotificationService {
      * notification isn't lost to a race.
      */
     addNotificationOpenListener(listener: NotificationOpenListener): () => void
+    /**
+     * Registers a listener for pushes *received* while the app is running in
+     * the foreground (no tap involved) — the signal that server-side unread
+     * state just changed. Optional: platforms without a foreground receive
+     * path (e.g. the browser extension, where pushes land in a service
+     * worker) simply don't implement it. Returns an unsubscribe function.
+     * No replay: a receive is only a cache-freshness hint, so missing one
+     * before the listener mounts costs nothing (the poll covers it).
+     */
+    addNotificationReceivedListener?(listener: () => void): () => void
 }

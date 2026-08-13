@@ -120,6 +120,9 @@ export class RNFirebaseService
     // is buffered and replayed on the first registration.
     private notificationOpenListener: NotificationOpenListener | null = null
     private pendingNotificationPayload: NotificationOpenPayload | null = null
+    // Same single-slot pattern, no replay: a foreground receive is only a
+    // cache-freshness hint (see PushNotificationService).
+    private notificationReceivedListener: (() => void) | null = null
 
     isSupported(): boolean {
         return true
@@ -151,6 +154,15 @@ export class RNFirebaseService
         return () => {
             if (this.notificationOpenListener === listener) {
                 this.notificationOpenListener = null
+            }
+        }
+    }
+
+    addNotificationReceivedListener(listener: () => void): () => void {
+        this.notificationReceivedListener = listener
+        return () => {
+            if (this.notificationReceivedListener === listener) {
+                this.notificationReceivedListener = null
             }
         }
     }
@@ -347,6 +359,11 @@ export class RNFirebaseService
                   const title =
                       remoteMessage.notification?.title ?? 'Notification'
                   const body = remoteMessage.notification?.body ?? undefined
+
+                  // Any push implies server-side unread state changed — let
+                  // the app refresh its badge/inbox without waiting out the
+                  // poll interval.
+                  this.notificationReceivedListener?.()
 
                   await notifee.displayNotification({
                       title,
