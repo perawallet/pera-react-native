@@ -16,7 +16,6 @@ import { useReturnToDapp } from '@modules/walletconnect/hooks/useReturnToDapp'
 
 export type SigningReturnToDapp = {
     browserName?: string
-    dappUrl?: string
     dappName?: string
     dappIconUrl?: string
 }
@@ -34,10 +33,7 @@ export const useSigningCompletedContent = (
     const { resolve } = useBottomSheetResult<boolean>()
     const { canReturnToDapp, returnToDapp } = useReturnToDapp()
 
-    const returnArgs = {
-        browserName: returnToDappInfo?.browserName,
-        dappUrl: returnToDappInfo?.dappUrl,
-    }
+    const returnArgs = { browserName: returnToDappInfo?.browserName }
     const showReturnCta = !!returnToDappInfo && canReturnToDapp(returnArgs)
 
     const returnLabel = returnToDappInfo?.dappName

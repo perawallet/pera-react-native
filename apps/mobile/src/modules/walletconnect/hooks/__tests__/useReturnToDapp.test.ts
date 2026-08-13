@@ -13,46 +13,33 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { BackHandler, Linking, Platform } from 'react-native'
-import { buildIosBrowserReturnUrl, useReturnToDapp } from '../useReturnToDapp'
-
-const DAPP_URL = 'https://app.example.org/swap?x=1'
+import { buildIosBrowserFocusUrl, useReturnToDapp } from '../useReturnToDapp'
 
 const setPlatform = (os: string) => {
     ;(Platform as { OS: string }).OS = os
 }
 
-describe('buildIosBrowserReturnUrl', () => {
+describe('buildIosBrowserFocusUrl', () => {
+    // Bare launch schemes, no URL payload: focusing must never navigate,
+    // or the dApp page reloads and drops its in-flight state (QA finding
+    // on PERA-4856).
     it.each([
-        ['Chrome', 'googlechromes://app.example.org/swap?x=1'],
-        ['chrome', 'googlechromes://app.example.org/swap?x=1'],
-        ['Firefox', `firefox://open-url?url=${encodeURIComponent(DAPP_URL)}`],
-        ['Brave', `brave://open-url?url=${encodeURIComponent(DAPP_URL)}`],
-        ['Microsoft Edge', 'microsoft-edge-https://app.example.org/swap?x=1'],
-        ['Opera', 'touch-https://app.example.org/swap?x=1'],
-    ])('maps %s to its URL scheme', (browserName, expected) => {
-        expect(buildIosBrowserReturnUrl(browserName, DAPP_URL)).toBe(expected)
+        ['Chrome', 'googlechrome://'],
+        ['chrome', 'googlechrome://'],
+        ['Firefox', 'firefox://'],
+        ['Brave', 'brave://'],
+        ['Microsoft Edge', 'microsoft-edge://'],
+    ])('maps %s to its bare launch scheme', (browserName, expected) => {
+        expect(buildIosBrowserFocusUrl(browserName)).toBe(expected)
     })
 
-    it('uses the insecure chrome scheme for http URLs', () => {
-        expect(
-            buildIosBrowserReturnUrl('Chrome', 'http://app.example.org/'),
-        ).toBe('googlechrome://app.example.org/')
-    })
-
-    it('returns null for Safari (plain https open is the correct path)', () => {
-        expect(buildIosBrowserReturnUrl('Mobile Safari', DAPP_URL)).toBeNull()
-        expect(buildIosBrowserReturnUrl('Safari', DAPP_URL)).toBeNull()
-    })
-
-    it('returns null for unknown browsers and missing names', () => {
-        expect(buildIosBrowserReturnUrl('NetFront', DAPP_URL)).toBeNull()
-        expect(buildIosBrowserReturnUrl(undefined, DAPP_URL)).toBeNull()
-    })
-
-    it('returns null for a non-http dapp url', () => {
-        expect(
-            buildIosBrowserReturnUrl('Chrome', 'javascript:alert(1)'),
-        ).toBeNull()
+    it('returns null for browsers without a focus-only scheme', () => {
+        expect(buildIosBrowserFocusUrl('Mobile Safari')).toBeNull()
+        expect(buildIosBrowserFocusUrl('Safari')).toBeNull()
+        expect(buildIosBrowserFocusUrl('DuckDuckGo')).toBeNull()
+        expect(buildIosBrowserFocusUrl('Opera')).toBeNull()
+        expect(buildIosBrowserFocusUrl('NetFront')).toBeNull()
+        expect(buildIosBrowserFocusUrl(undefined)).toBeNull()
     })
 })
 
@@ -84,92 +71,61 @@ describe('useReturnToDapp', () => {
     })
 
     describe('iOS', () => {
-        it('cannot return without a valid http(s) dapp url', () => {
+        it('can return only when the browser hint maps to a focus scheme', () => {
             const { result } = renderHook(() => useReturnToDapp())
+            expect(
+                result.current.canReturnToDapp({ browserName: 'Chrome' }),
+            ).toBe(true)
             expect(result.current.canReturnToDapp({})).toBe(false)
             expect(
                 result.current.canReturnToDapp({
-                    browserName: 'Chrome',
-                    dappUrl: 'not-a-url',
+                    browserName: 'Mobile Safari',
                 }),
             ).toBe(false)
         })
 
-        it('cannot return without a browser hint (no task stack to fall back on)', () => {
-            const { result } = renderHook(() => useReturnToDapp())
-            expect(result.current.canReturnToDapp({ dappUrl: DAPP_URL })).toBe(
-                false,
-            )
-        })
-
-        it('can return when both the browser hint and a valid dapp url exist', () => {
-            const { result } = renderHook(() => useReturnToDapp())
-            expect(
-                result.current.canReturnToDapp({
-                    browserName: 'Mobile Safari',
-                    dappUrl: DAPP_URL,
-                }),
-            ).toBe(true)
-        })
-
-        it('opens the initiating browser via its scheme', async () => {
+        it('focuses the initiating browser without navigating it', async () => {
             vi.mocked(Linking.openURL).mockResolvedValue(true)
             const { result } = renderHook(() => useReturnToDapp())
 
-            await result.current.returnToDapp({
-                browserName: 'Chrome',
-                dappUrl: DAPP_URL,
-            })
+            await result.current.returnToDapp({ browserName: 'Chrome' })
 
-            expect(Linking.openURL).toHaveBeenCalledWith(
-                'googlechromes://app.example.org/swap?x=1',
-            )
+            expect(Linking.openURL).toHaveBeenCalledTimes(1)
+            expect(Linking.openURL).toHaveBeenCalledWith('googlechrome://')
             expect(BackHandler.exitApp).not.toHaveBeenCalled()
         })
 
-        it('falls back to the plain https url when the browser scheme fails', async () => {
-            vi.mocked(Linking.openURL)
-                .mockRejectedValueOnce(new Error('no handler'))
-                .mockResolvedValueOnce(true)
-            const { result } = renderHook(() => useReturnToDapp())
-
-            await result.current.returnToDapp({
-                browserName: 'Chrome',
-                dappUrl: DAPP_URL,
-            })
-
-            expect(Linking.openURL).toHaveBeenNthCalledWith(
-                1,
-                'googlechromes://app.example.org/swap?x=1',
-            )
-            expect(Linking.openURL).toHaveBeenNthCalledWith(2, DAPP_URL)
-        })
-
-        it('opens the dapp url directly for Safari', async () => {
-            vi.mocked(Linking.openURL).mockResolvedValue(true)
-            const { result } = renderHook(() => useReturnToDapp())
-
-            await result.current.returnToDapp({
-                browserName: 'Mobile Safari',
-                dappUrl: DAPP_URL,
-            })
-
-            expect(Linking.openURL).toHaveBeenCalledTimes(1)
-            expect(Linking.openURL).toHaveBeenCalledWith(DAPP_URL)
-        })
-
-        it('never throws into the caller when every open fails', async () => {
+        it('never navigates anywhere when the focus scheme fails (navigation reloads the dapp page)', async () => {
             vi.mocked(Linking.openURL).mockRejectedValue(
                 new Error('no handler'),
             )
             const { result } = renderHook(() => useReturnToDapp())
 
+            // Even when a caller still supplies a dapp url, a failed focus
+            // must not degrade into navigation — that re-navigation is the
+            // page reload QA reported (and the guaranteed path on
+            // simulators, where the hinted browser can't be installed).
             await expect(
                 result.current.returnToDapp({
                     browserName: 'Chrome',
-                    dappUrl: DAPP_URL,
-                }),
+                    dappUrl: 'https://app.example.org/swap?x=1',
+                } as Parameters<
+                    ReturnType<typeof useReturnToDapp>['returnToDapp']
+                >[0]),
             ).resolves.toBeUndefined()
+
+            expect(Linking.openURL).toHaveBeenCalledTimes(1)
+            expect(Linking.openURL).toHaveBeenCalledWith('googlechrome://')
+        })
+
+        it('does nothing for browsers without a focus scheme', async () => {
+            const { result } = renderHook(() => useReturnToDapp())
+
+            await result.current.returnToDapp({
+                browserName: 'Mobile Safari',
+            })
+
+            expect(Linking.openURL).not.toHaveBeenCalled()
         })
     })
 })
