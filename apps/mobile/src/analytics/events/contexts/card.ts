@@ -21,7 +21,10 @@ export enum CardEvent {
     OnboardingCreate = 'card_onboarding_create', // Tapped "Create a Baanx Account" on the intro screen
     OnboardingRecover = 'card_onboarding_recover', // Tapped "I already have an account" on the intro screen
     RecoverSignIn = 'card_onboarding_recover_signin', // Submitted the sign-in form
-    RecoverForgotPassword = 'card_onboarding_recover_forgotpass', // Tapped "Forgot Password?" (flow not live yet)
+    RecoverForgotPassword = 'card_onboarding_recover_forgotpass', // Tapped "Forgot Password?" on the sign-in screen
+    RecoverResetRequestCode = 'card_onboarding_recover_forgotpass_requestCode', // Requested a password reset code (email submit or resend)
+    RecoverResetVerifyCode = 'card_onboarding_recover_forgotpass_verifyCode', // Submitted the reset verification code
+    RecoverResetComplete = 'card_onboarding_recover_forgotpass_complete', // Set the new password (reset completed)
     CreateCountrySelect = 'card_onboarding_create_countrySelect', // Picked a country on the account form (country id)
     CreateConfirmEmail = 'card_onboarding_create_confirmEmail', // Submitted the account/email form
     CreateEmailVerification = 'card_onboarding_create_emailVerification', // Submitted the email verification code

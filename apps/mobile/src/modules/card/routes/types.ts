@@ -49,6 +49,15 @@ export type PeraCardFlowParamList = {
  */
 export type PeraCardStackParamList = {
     PeraCardIntro: undefined
-    CardSignIn: undefined
+    // `email` prefills the sign-in form: handed back by the forgot-password
+    // flow so the user returns to a ready-to-submit screen.
+    CardSignIn: { email?: string } | undefined
     CardOnboarding: NavigatorScreenParams<CardOnboardingStackParamList>
+    // Forgot-password flow. Its state rides in params, NOT the card store:
+    // the store persists to disk and the reset token is a short-lived,
+    // single-use secret. `email` rides along to the last screen so it can be
+    // handed back to CardSignIn.
+    CardForgotPassword: { email?: string } | undefined
+    CardForgotPasswordVerify: { email: string }
+    CardForgotPasswordNewPassword: { email: string; token: string }
 }
