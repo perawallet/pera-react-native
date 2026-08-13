@@ -183,16 +183,18 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const collectibles = useMemo(() => {
         if (sortMode !== 'recentlyAdded') return rows
 
-        // Roundless items (rounds still loading, or missing from the indexer
-        // page) sink below rounded ones. `sort` is stable, so ties keep SQL's
-        // asset-id-descending order — the same newest-created fallback the
-        // pre-load ordering used.
+        // A row with no known round is newer than the indexer's view: holdings
+        // mirror algod, so only a just-opted-in asset can be missing from the
+        // (lagging) indexer map. Float those to the top so a fresh opt-in
+        // lands first instantly (PERA-4845). `sort` is stable, so ties keep
+        // SQL's asset-id-descending order, which also covers the map's empty
+        // pre-load state.
         return [...rows].sort((a, b) => {
             const aRound = optInRounds.get(a.assetId)
             const bRound = optInRounds.get(b.assetId)
             if (aRound === bRound) return 0
-            if (aRound === undefined) return 1
-            if (bRound === undefined) return -1
+            if (aRound === undefined) return -1
+            if (bRound === undefined) return 1
             return bRound - aRound
         })
     }, [rows, sortMode, optInRounds])
