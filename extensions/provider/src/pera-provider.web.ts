@@ -17,6 +17,7 @@ import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-dri
 import { WithLedgerWebBleExtension } from '@perawallet/wallet-extension-ledger-web-ble'
 import { WithLedgerWebUsbExtension } from '@perawallet/wallet-extension-ledger-web-usb'
 import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
+import { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
 import type {
     PeraExtensions,
     PeraProvider as PeraProviderShape,
@@ -46,13 +47,15 @@ export const PeraProvider: {
 } & typeof Provider = Provider.withExtensions([
     // First, and load-bearing: every later extension registers its migrations
     // through `provider.migrations`, which does not exist until this has run.
-    // Tasks 3/4 insert the `.web.ts` no-op siblings of
-    // WithPeraKeystorePreflight/WithPeraKeystoreRepairs around WithKeyStore
-    // below, mirroring the native file.
+    // Task 4 inserts the `.web.ts` no-op sibling of WithPeraKeystoreRepairs
+    // immediately after WithKeyStore below, mirroring the native file.
     WithMigrations,
     WithPlatformExtension,
     WithLedgerWebBleExtension,
     WithLedgerWebUsbExtension,
+    // Metro resolves the `.web.ts` no-op sibling here. Kept in the same slot as
+    // the native file so the two arrays can't drift out of order.
+    WithPeraKeystorePreflight,
     WithKeyStore,
     WithPasskeyAutofill,
 ] as const)

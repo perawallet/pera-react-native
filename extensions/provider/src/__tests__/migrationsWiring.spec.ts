@@ -22,6 +22,9 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     createReactNativeKeyStore: (opts: { before?: Promise<unknown> }) => ({
         ready: Promise.resolve(opts.before).then(() => undefined),
     }),
+    // Read by WithPeraKeystorePreflight when it builds its migration context.
+    readMasterKey: vi.fn(),
+    storage: {},
 }))
 
 vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
@@ -45,6 +48,19 @@ describe('provider migrations wiring', () => {
         // and the Provider constructor applies extensions synchronously in
         // array order — so position 0 is load-bearing, not cosmetic.
         expect(PeraProvider.EXTENSIONS[0].name).toBe('WithMigrations')
+    })
+
+    // Ordering is the whole point of the preflight module and it fails
+    // silently when wrong: modules run in registration order, registration
+    // order is extension order, and nothing declares a dependency. Land it
+    // after WithKeyStore and upstream's `adopt-flat-records` runs first,
+    // overwriting `k/<rootId>` with the shadow's stripped metadata.
+    it('registers WithPeraKeystorePreflight immediately before WithKeyStore', () => {
+        const names = PeraProvider.EXTENSIONS.map(extension => extension.name)
+
+        expect(names.indexOf('WithKeyStore')).toBe(
+            names.indexOf('WithPeraKeystorePreflight') + 1,
+        )
     })
 
     it('exposes provider.migrations', () => {

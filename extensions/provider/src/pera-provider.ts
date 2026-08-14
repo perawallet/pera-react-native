@@ -17,6 +17,7 @@ import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-dri
 import { WithLedgerExtension } from '@perawallet/wallet-extension-ledger-react-native'
 import { WithLedgerUsbExtension } from '@perawallet/wallet-extension-ledger-react-native-usb'
 import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
+import { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
 import type {
     PeraExtensions,
     PeraProvider as PeraProviderShape,
@@ -47,13 +48,15 @@ export const PeraProvider: {
 } & typeof Provider = Provider.withExtensions([
     // First, and load-bearing: every later extension registers its migrations
     // through `provider.migrations`, which does not exist until this has run.
-    // Task 3 inserts WithPeraKeystorePreflight immediately before
-    // WithKeyStore, and Task 4 inserts WithPeraKeystoreRepairs immediately
-    // after it.
+    // Task 4 inserts WithPeraKeystoreRepairs immediately after WithKeyStore.
     WithMigrations,
     WithPlatformExtension,
     WithLedgerExtension,
     WithLedgerUsbExtension,
+    // Immediately before WithKeyStore, and load-bearing: modules migrate in
+    // registration order, so this is the only thing that gets revision 0001
+    // ahead of upstream's `adopt-flat-records`.
+    WithPeraKeystorePreflight,
     WithKeyStore,
     WithPasskeyAutofill,
 ] as const)

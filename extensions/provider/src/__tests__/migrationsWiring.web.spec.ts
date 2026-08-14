@@ -43,6 +43,15 @@ vi.mock('@algorandfoundation/keystore-web', () => ({
     WithKeyStore: () => ({ key: { store: {} } }),
 }))
 
+// Vitest has no `.web.ts` platform resolution, so importing the web provider
+// pulls the *native* withPeraKeystorePreflight and with it the native keystore
+// bindings. Ordering is identical in both siblings, which is what this asserts.
+vi.mock('@algorandfoundation/react-native-keystore', () => ({
+    readMasterKey: vi.fn(),
+    storage: {},
+}))
+vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
+
 import { PeraProvider } from '../pera-provider.web'
 
 describe('provider migrations wiring (web)', () => {
@@ -51,5 +60,13 @@ describe('provider migrations wiring (web)', () => {
         // ordering is silent on both platforms — `provider.migrations` simply
         // never exists, and every `register` call no-ops with no error.
         expect(PeraProvider.EXTENSIONS[0].name).toBe('WithMigrations')
+    })
+
+    it('registers WithPeraKeystorePreflight immediately before WithKeyStore', () => {
+        const names = PeraProvider.EXTENSIONS.map(extension => extension.name)
+
+        expect(names.indexOf('WithKeyStore')).toBe(
+            names.indexOf('WithPeraKeystorePreflight') + 1,
+        )
     })
 })

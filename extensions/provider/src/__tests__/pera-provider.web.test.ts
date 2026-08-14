@@ -51,9 +51,17 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({ hardwareWalletRegistry }),
 }))
 
+// `storage`/`readMasterKey` are what WithPeraKeystorePreflight reads: vitest
+// has no `.web.ts` resolution, so the web provider pulls the native sibling.
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     WithKeyStore: () => ({ key: { store: {} } }),
+    readMasterKey: vi.fn(),
+    storage: {},
 }))
+
+// Ships untranspiled sources vitest can't parse; reached through the same
+// native preflight sibling.
+vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
 vi.mock('@perawallet/wallet-extension-passkey-autofill', () => ({
     WithPasskeyAutofill: () => ({ passkeyAutofill: {} }),

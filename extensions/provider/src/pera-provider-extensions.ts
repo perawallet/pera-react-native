@@ -29,6 +29,7 @@ import type {
     PasskeyAutofillExtension,
 } from '@perawallet/wallet-extension-passkey-autofill'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import type { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
 
 // Re-exported so pera-provider.ts / pera-provider.web.ts can build their
 // `new (...)` signature without importing `ProviderOptions` separately.
@@ -63,6 +64,7 @@ export type PeraExtensions = readonly [
     typeof WithPlatformExtension,
     LedgerBleExtension,
     LedgerUsbExtension,
+    typeof WithPeraKeystorePreflight,
     typeof WithKeyStore,
     typeof WithPasskeyAutofill,
 ]
