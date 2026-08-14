@@ -251,7 +251,10 @@ describe('useSwapForm', () => {
         expect(mockResetQuoteMutation).toHaveBeenCalled()
     })
 
-    it('handleOpenPayAssetSelection preserves pay amount and clears receive amount and quote when an asset is picked', async () => {
+    // The typed amount is denominated in the pay asset, so it cannot survive
+    // the pay asset changing: quoting the old number against the new asset
+    // produces a wrong quote.
+    it('handleOpenPayAssetSelection resets both amounts and the quote when a new asset is picked', async () => {
         mockRequestBottomSheet.mockResolvedValueOnce('123')
         const { result } = renderHook(() => useSwapForm())
 
@@ -264,7 +267,7 @@ describe('useSwapForm', () => {
         })
 
         expect(mockSetFromAsset).toHaveBeenCalledWith('123')
-        expect(result.current.payAmount).toEqual(new Decimal(5))
+        expect(result.current.payAmount).toBeNull()
         expect(result.current.receiveAmount).toBeNull()
         expect(result.current.selectedQuote).toBeNull()
         expect(mockResetQuoteMutation).toHaveBeenCalled()
@@ -281,7 +284,7 @@ describe('useSwapForm', () => {
         expect(mockSetFromAsset).not.toHaveBeenCalled()
     })
 
-    it('handleOpenPayAssetSelection triggers quote re-fetch when pay amount exists', async () => {
+    it('handleOpenPayAssetSelection does not re-quote the stale amount against the new asset', async () => {
         mockCreateQuotes.mockResolvedValue([])
         mockRequestBottomSheet.mockResolvedValueOnce('123')
 
@@ -298,7 +301,56 @@ describe('useSwapForm', () => {
             await result.current.handleOpenPayAssetSelection()
         })
 
-        expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
+        expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
+    })
+
+    // Pair-history and top-pair taps write the pair straight into the store,
+    // so the reset has to react to the store change, not just the sheet flow.
+    it('clears the amounts when the pay asset changes outside the form', () => {
+        const { result, rerender } = renderHook(() => useSwapForm())
+
+        act(() => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+        expect(result.current.payAmount).toEqual(new Decimal(5))
+
+        mockFromAsset = '123'
+        rerender()
+
+        expect(result.current.payAmount).toBeNull()
+        expect(result.current.receiveAmount).toBeNull()
+    })
+
+    it('handleSwapDirection carries the amounts across the pair change', async () => {
+        mockCreateQuotes.mockResolvedValue([
+            {
+                provider: 'tinyman',
+                amountOut: new Decimal('7000000'),
+                assetIn: { assetId: '0', unitName: 'ALGO', decimals: 6 },
+                assetOut: {
+                    assetId: '31566704',
+                    unitName: 'USDC',
+                    decimals: 6,
+                },
+            },
+        ])
+        const { result, rerender } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+        expect(result.current.receiveAmount).toEqual(new Decimal(7))
+
+        act(() => {
+            result.current.handleSwapDirection()
+        })
+        mockFromAsset = '31566704'
+        mockToAsset = '0'
+        rerender()
+
+        // receiveAmount is quote-derived and repopulates asynchronously; the
+        // carried pay amount is what the pair-change reset must not clobber.
+        expect(result.current.payAmount).toEqual(new Decimal(7))
     })
 
     it('handleOpenReceiveAssetSelection triggers quote re-fetch when pay amount exists', async () => {
