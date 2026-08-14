@@ -188,8 +188,17 @@ describe('useSearchableList content-size pin correction', () => {
         return { ...rendered, scrollToOffset }
     }
 
+    // Narrowed with Pick, like the describe block above: the full result type
+    // is generic in the item, so a `<{id: string}>` result is not assignable to
+    // the `<unknown>` that `ReturnType` resolves to. These members don't
+    // involve the item type.
     const layoutHeader = (
-        result: { current: ReturnType<typeof useSearchableList> },
+        result: {
+            current: Pick<
+                ReturnType<typeof useSearchableList>,
+                'handleHeaderLayout'
+            >
+        },
         height: number,
     ) =>
         act(() =>
@@ -200,7 +209,9 @@ describe('useSearchableList content-size pin correction', () => {
         )
 
     const scrollTo = (
-        result: { current: ReturnType<typeof useSearchableList> },
+        result: {
+            current: Pick<ReturnType<typeof useSearchableList>, 'handleScroll'>
+        },
         y: number,
     ) =>
         act(() =>
