@@ -18,6 +18,8 @@ import {
     type KeychainStorage,
 } from '@algorandfoundation/react-native-keystore'
 import { REPAIRS_MODULE_ID, repairsMigrations } from './migrations/repairs'
+import { createDeclinedRegister } from './migrations/declined'
+import { peraMigrationNoteStore } from './migrationsLedger'
 
 type RepairsOptions = {
     keystore?: { storage?: KeychainStorage }
@@ -56,6 +58,10 @@ export const WithPeraKeystoreRepairs: Extension<object> = (
                 storage,
                 subtle: subtle as unknown as SubtleCrypto,
                 masterKeyForRead: () => readMasterKey(),
+                // The ledger's instance, deliberately: a note in the keystore's
+                // would leave it non-empty and block a fresh install from
+                // minting its master key.
+                declined: createDeclinedRegister(peraMigrationNoteStore()),
             }
         },
         migrations: repairsMigrations,

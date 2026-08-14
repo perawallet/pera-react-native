@@ -50,7 +50,10 @@ vi.mock('@algorandfoundation/react-native-keystore', async () => {
     }
 })
 
-import { MasterKeyNotFoundError } from '@algorandfoundation/react-native-keystore'
+import {
+    MasterKeyNotFoundError,
+    METADATA_PREFIX,
+} from '@algorandfoundation/react-native-keystore'
 import type { PeraMigrationContext } from '../../types'
 import {
     fakeStorage,
@@ -64,6 +67,7 @@ import {
     sealCanary13Record,
 } from '../../__fixtures__/keystoreFormats'
 import { SECRET_FIELDS } from '../../canary13'
+import { createDeclinedRegister } from '../../declined'
 import { migration } from '../0002-lift-nested-material'
 import { PREFLIGHT_MODULE_ID, preflightMigrations } from '../index'
 
@@ -85,6 +89,16 @@ const utils = (): MigrationUtils => ({
     log: { info: vi.fn(), warn: logWarn, error: vi.fn() },
 })
 
+/** Stands in for the migrations ledger's MMKV instance. */
+let noteStore: Record<string, string>
+
+const noteStoreApi = () => ({
+    getString: (key: string) => noteStore[key],
+    set: (key: string, value: string) => {
+        noteStore[key] = value
+    },
+})
+
 let masterKeyForRead: ReturnType<typeof vi.fn>
 /** The buffer the last read handed out, so the wipe can be asserted on. */
 let lastMasterKey: Uint8Array | undefined
@@ -93,6 +107,7 @@ const context = (storage: FakeKeychainStorage): PeraMigrationContext => ({
     storage,
     subtle,
     masterKeyForRead: masterKeyForRead as () => Promise<Uint8Array>,
+    declined: createDeclinedRegister(noteStoreApi()),
 })
 
 /**
@@ -187,6 +202,7 @@ describe('0002-lift-nested-material', () => {
             return lastMasterKey
         })
         lastMasterKey = undefined
+        noteStore = {}
         logWarn = vi.fn()
         vi.spyOn(console, 'warn').mockImplementation(() => {})
     })
@@ -622,6 +638,97 @@ describe('0002-lift-nested-material', () => {
         expect(console.warn).not.toHaveBeenCalled()
     })
 
+    // canary.13's `commit` wrote the id as a storage key, not necessarily as a
+    // field, so a record can arrive without one. The driver reads every record
+    // back at `k/<record.id>`, so the id has to be restated on the way into the
+    // metadata bucket or the adopted record is unreachable.
+    it('gives a record with no id field the id it was stored under', async () => {
+        const storage = fakeStorage({})
+        storage.set(
+            'bare-1',
+            await sealCanary13Record(subtle, MASTER_KEY, {
+                type: 'hd-derived-ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                privateKey: OWN_SECRET,
+                metadata: {
+                    rootKey: {
+                        id: 'root-1',
+                        type: 'hd-root-key',
+                        privateKey: ROOT_SECRET,
+                    },
+                },
+            }),
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('bare-1')).toBeUndefined()
+        expect(decode(storage.getString(`${METADATA_PREFIX}bare-1`)!).id).toBe(
+            'bare-1',
+        )
+    })
+
+    // Declining is a deliberate outcome, not a failure, so `up` resolves and
+    // the runner marks the revision applied — it will never run again. Without
+    // a note on disk the record is invisible forever.
+    it('records a declined record in the durable sentinel', async () => {
+        const storage = await seeded({
+            id: 'key-c',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            privateKey: OWN_SECRET,
+            metadata: {
+                backup: {
+                    label: 'paper',
+                    privateKey: new Uint8Array(64).fill(13),
+                },
+            },
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual(['key-c'])
+    })
+
+    it('writes no sentinel when every record was taken', async () => {
+        const storage = await seeded(nestedAndTopLevel())
+
+        await migration.up(context(storage), utils())
+
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual([])
+        expect(noteStore).toEqual({})
+    })
+
+    // The sentinel must never live in the keystore's own MMKV instance:
+    // canary.19 mints the master key only while that store is literally empty,
+    // so a note there would permanently block a fresh install.
+    it('keeps the sentinel out of the keystore storage', async () => {
+        const storage = await seeded({
+            id: 'key-c',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            privateKey: OWN_SECRET,
+            metadata: {
+                backup: {
+                    label: 'paper',
+                    privateKey: new Uint8Array(64).fill(13),
+                },
+            },
+        })
+        const before = storage.entries()
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.entries()).toEqual(before)
+    })
+
     // Upstream zeroes the master key in a `finally`; a revision whose purpose
     // is keeping key bytes off disk must not leave them in the heap either.
     it('zeroes the master key it was handed', async () => {
@@ -653,6 +760,55 @@ describe('0002-lift-nested-material', () => {
             ...new Uint8Array(64),
         ])
     })
+
+    // Declining and leaving-flat are exits too. A record that was decrypted and
+    // then not taken still had every one of its secrets in the heap, so the
+    // wipe has to cover the paths that return early, not just the adopt path.
+    it.each([
+        [
+            'declined',
+            {
+                id: 'key-c',
+                type: 'ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                privateKey: OWN_SECRET,
+                metadata: {
+                    backup: { label: 'paper', privateKey: ROOT_SECRET },
+                },
+            },
+            ['metadata', 'backup'],
+        ],
+        [
+            'left flat because its material is only nested',
+            nestedOnly('derived-9'),
+            ['metadata', 'rootKey'],
+        ],
+        [
+            'left flat because its id disagrees with its storage key',
+            nestedAndTopLevel('a-different-id'),
+            ['metadata', 'rootKey'],
+        ],
+    ] as const)(
+        'zeroes the material of a record %s',
+        async (_label, seed, path) => {
+            const storage = fakeStorage({})
+            storage.set(
+                'flat-key',
+                await sealCanary13Record(subtle, MASTER_KEY, { ...seed }),
+            )
+            resetDecoded()
+
+            await migration.up(context(storage), utils())
+
+            const carrier = path.reduce<Record<string, unknown>>(
+                (node, step) => node[step] as Record<string, unknown>,
+                decodedRecords[0] as unknown as Record<string, unknown>,
+            )
+            const secret = carrier.privateKey as Uint8Array
+            expect([...secret]).toEqual([...new Uint8Array(secret.length)])
+        },
+    )
 
     it('is a no-op on empty storage', async () => {
         const storage = fakeStorage({})

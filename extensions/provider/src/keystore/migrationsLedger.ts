@@ -33,6 +33,13 @@ const storage = (): MMKV => {
     return instance
 }
 
+/**
+ * The ledger's own store, for the handful of migration-side notes that must
+ * outlive a run without touching the keystore's instance (see
+ * {@link PERA_MIGRATIONS_MMKV_ID}).
+ */
+export const peraMigrationNoteStore = () => storage()
+
 export const createPeraMigrationLedger = (): MigrationLedger =>
     keyValueLedger({
         get: key => storage().getString(key) ?? null,

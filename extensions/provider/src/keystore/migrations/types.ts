@@ -11,6 +11,7 @@
  */
 
 import type { KeychainStorage } from '@algorandfoundation/react-native-keystore'
+import type { DeclinedRegister } from './declined'
 
 /**
  * The context Pera's own keystore revisions run against, mirroring upstream's
@@ -32,4 +33,11 @@ export type PeraMigrationContext = {
      * missing master key is how a fresh install (nothing to migrate) looks.
      */
     masterKeyForRead: () => Promise<Uint8Array>
+    /**
+     * Durable note of records a revision deliberately left alone. Backed by the
+     * **migrations ledger's** MMKV instance — writing it to the keystore's would
+     * leave that store non-empty and permanently block a fresh install from
+     * minting its master key.
+     */
+    declined: DeclinedRegister
 }

@@ -78,11 +78,21 @@ export const sealAndVerify = async (
     const encoded = base64.encode(bytes)
     storage.set(key, await sealData(subtle, masterKey, encoded))
 
-    const written = storage.getString(key)
-    if (
-        written === undefined ||
-        (await openData(subtle, masterKey, written)) !== encoded
-    ) {
+    // A write that landed as garbage throws inside `openData` rather than
+    // comparing unequal, and the two are the same condition to every caller —
+    // so both surface as one message rather than a JSON parse error.
+    let reopened: string | undefined
+    try {
+        const written = storage.getString(key)
+        reopened =
+            written === undefined
+                ? undefined
+                : await openData(subtle, masterKey, written)
+    } catch {
+        reopened = undefined
+    }
+
+    if (reopened !== encoded) {
         throw new Error(`sealed material at ${key} did not read back`)
     }
 }

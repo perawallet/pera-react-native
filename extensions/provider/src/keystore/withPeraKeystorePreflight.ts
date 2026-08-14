@@ -21,6 +21,8 @@ import {
     PREFLIGHT_MODULE_ID,
     preflightMigrations,
 } from './migrations/preflight'
+import { createDeclinedRegister } from './migrations/declined'
+import { peraMigrationNoteStore } from './migrationsLedger'
 
 type PreflightOptions = {
     keystore?: { storage?: KeychainStorage }
@@ -61,6 +63,10 @@ export const WithPeraKeystorePreflight: Extension<object> = (
                 storage,
                 subtle: subtle as unknown as SubtleCrypto,
                 masterKeyForRead: () => readMasterKey(),
+                // The ledger's instance, deliberately: a note in the keystore's
+                // would leave it non-empty and block a fresh install from
+                // minting its master key.
+                declined: createDeclinedRegister(peraMigrationNoteStore()),
             }
         },
         migrations: preflightMigrations,

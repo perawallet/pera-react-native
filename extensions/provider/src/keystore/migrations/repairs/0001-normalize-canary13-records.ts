@@ -26,6 +26,7 @@ import type { PeraMigrationContext } from '../types'
 import {
     liftSecrets,
     normalizeCanary13Record,
+    wipeSecrets,
     type Canary13Record,
     type LiftedMaterial,
 } from '../canary13'
@@ -86,16 +87,20 @@ export const migration: Migration<PeraMigrationContext> = {
             }))
 
         const untouched: string[] = []
+        const declined: string[] = []
 
         for (const id of ids) {
             const raw = storage.getString(METADATA_PREFIX + id)
             if (raw === undefined) continue
 
             const journal = createJournal(storage)
-            const opened: (Uint8Array | undefined)[] = []
+            const derived: (Uint8Array | undefined)[] = []
+
+            // Hoisted so the `finally` can zero whatever was decrypted, on
+            // every exit including the ones that `continue`.
+            let record: Canary13Record | undefined
 
             try {
-                let record: Canary13Record
                 try {
                     record = decode(raw) as Canary13Record
                 } catch {
@@ -113,7 +118,6 @@ export const migration: Migration<PeraMigrationContext> = {
                     record.id ?? id,
                     lifted,
                 ) as Canary13Record
-                for (const entry of lifted) opened.push(entry.bytes)
 
                 // Decided from the plaintext record alone: a canary.19 ed25519
                 // record always carries `signAlgorithm`, so its absence is what
@@ -134,14 +138,14 @@ export const migration: Migration<PeraMigrationContext> = {
                           ),
                       )
                     : undefined
-                opened.push(current)
+                derived.push(current)
 
                 const { metadata, material } = normalizeCanary13Record({
                     record: stripped,
                     material: current,
                     hasMaterial,
                 })
-                opened.push(material)
+                derived.push(material)
 
                 const next = serializeKey(metadata)
                 if (
@@ -205,6 +209,9 @@ export const migration: Migration<PeraMigrationContext> = {
                 if (!placeable) {
                     journal.rollback()
                     untouched.push(id)
+                    // Never retried — the runner marks this revision applied
+                    // because `up` resolves — so it needs a note on disk.
+                    declined.push(id)
                     console.warn(
                         `[provider] normalize-canary13-records: entry ${id} left untouched; a nested secret has nowhere to be sealed`,
                     )
@@ -228,11 +235,16 @@ export const migration: Migration<PeraMigrationContext> = {
                     }`,
                 )
             } finally {
-                for (const bytes of opened) wipeBytes(bytes)
+                // Every exit: the record's own nested carriers plus anything
+                // opened or re-encoded on the way through.
+                wipeSecrets(record)
+                for (const bytes of derived) wipeBytes(bytes)
             }
         }
 
         utils.secrets.wipe('keystore-master-key')
+
+        context.declined.record(utils.revision.module, declined)
 
         if (untouched.length > 0) {
             utils.log?.warn(

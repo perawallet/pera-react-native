@@ -83,6 +83,34 @@ export const liftSecrets = <T>(
     return Object.fromEntries(kept) as T
 }
 
+/**
+ * Zeroes every secret in a decrypted record, at every depth.
+ *
+ * Walks the same shape `liftSecrets` does, so a carrier it can pull material
+ * out of is one this can erase. Called from a `finally` covering *every* exit —
+ * adopted, declined, left flat, failed — because a record that was decrypted
+ * and then not taken still had its private key bytes in the heap, and upstream's
+ * own `clearBuffer(material)` sits in a `finally` for the same reason.
+ */
+export const wipeSecrets = (value: unknown): void => {
+    if (value instanceof Uint8Array || value === null) return
+    if (Array.isArray(value)) {
+        for (const item of value) wipeSecrets(item)
+        return
+    }
+    if (typeof value !== 'object') return
+
+    for (const [field, nested] of Object.entries(
+        value as Record<string, unknown>,
+    )) {
+        if (SECRET_FIELDS.has(field) && nested instanceof Uint8Array) {
+            nested.fill(0)
+            continue
+        }
+        wipeSecrets(nested)
+    }
+}
+
 const carriesMaterial = (value: unknown): boolean => {
     if (value instanceof Uint8Array || value === null) return false
     if (Array.isArray(value)) return value.some(carriesMaterial)

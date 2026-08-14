@@ -67,6 +67,7 @@ const context = (storage: FakeKeychainStorage): PeraMigrationContext => ({
     masterKeyForRead: () => {
         throw new Error('the preflight revision must not read the master key')
     },
+    declined: { read: () => [], record: () => {} },
 })
 
 const seeded = (type = 'hd-root-key'): FakeKeychainStorage =>

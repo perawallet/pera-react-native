@@ -54,6 +54,7 @@ import {
 } from '../../__fixtures__/fakeStorage'
 import { decode, openData, sealData } from '../../__fixtures__/keystoreFormats'
 import { SECRET_FIELDS } from '../../canary13'
+import { createDeclinedRegister } from '../../declined'
 import { migration } from '../0001-normalize-canary13-records'
 import { REPAIRS_MODULE_ID, repairsMigrations } from '../index'
 
@@ -72,6 +73,16 @@ const utils = (): MigrationUtils => ({
     log: { info: vi.fn(), warn: logWarn, error: vi.fn() },
 })
 
+/** Stands in for the migrations ledger's MMKV instance. */
+let noteStore: Record<string, string>
+
+const noteStoreApi = () => ({
+    getString: (key: string) => noteStore[key],
+    set: (key: string, value: string) => {
+        noteStore[key] = value
+    },
+})
+
 let masterKeyForRead: ReturnType<typeof vi.fn>
 /** The buffer the last read handed out, so the wipe can be asserted on. */
 let lastMasterKey: Uint8Array | undefined
@@ -80,6 +91,7 @@ const context = (storage: FakeKeychainStorage): PeraMigrationContext => ({
     storage,
     subtle,
     masterKeyForRead: masterKeyForRead as () => Promise<Uint8Array>,
+    declined: createDeclinedRegister(noteStoreApi()),
 })
 
 /** Seeds a split record: plaintext `k/<id>` plus, optionally, sealed `m/<id>`. */
@@ -143,6 +155,7 @@ describe('0001-normalize-canary13-records', () => {
             return lastMasterKey
         })
         lastMasterKey = undefined
+        noteStore = {}
         logWarn = vi.fn()
         vi.spyOn(console, 'warn').mockImplementation(() => {})
     })
@@ -524,6 +537,48 @@ describe('0001-normalize-canary13-records', () => {
         expect(console.warn).not.toHaveBeenCalled()
     })
 
+    // Declining resolves `up`, so the runner marks the revision applied and it
+    // never runs again. The note on disk is the only thing that outlives it.
+    it('records a declined record in the durable sentinel', async () => {
+        const storage = await seeded(
+            {
+                id: 'key-c',
+                type: 'ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                metadata: {
+                    signAlgorithm: { name: 'Ed25519' },
+                    storage: 'bytes',
+                    backup: {
+                        label: 'paper',
+                        privateKey: new Uint8Array(64).fill(13),
+                    },
+                },
+            },
+            new Uint8Array(48).fill(4),
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(REPAIRS_MODULE_ID),
+        ).toEqual(['key-c'])
+    })
+
+    it('writes no sentinel when every record was normalised', async () => {
+        const storage = await seeded({
+            id: 'q-1',
+            type: 'falcon1024',
+            algorithm: 'raw',
+            extractable: false,
+            metadata: {},
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(noteStore).toEqual({})
+    })
+
     // Upstream zeroes the master key in a `finally`; a revision that opens key
     // material must not leave it in the heap either.
     it('zeroes the master key it was handed', async () => {
@@ -586,7 +641,7 @@ describe('0001-normalize-canary13-records', () => {
             },
         })
         storage.set(
-            'm/root-1',
+            `${MATERIAL_PREFIX}root-1`,
             await sealData(
                 subtle,
                 MASTER_KEY,
@@ -660,7 +715,7 @@ describe('0001-normalize-canary13-records', () => {
         const before = storage.entries()
         const set = storage.set
         storage.set = (key, value) => {
-            if (!key.startsWith('m/')) set(key, value)
+            if (!key.startsWith(MATERIAL_PREFIX)) set(key, value)
         }
 
         await migration.up(context(storage), utils())
@@ -720,13 +775,13 @@ describe('0001-normalize-canary13-records', () => {
             extractable: false,
             metadata: { parentKeyId: 'seed-q' },
         })
-        storage.set('k/broken', 'not json')
+        storage.set(`${METADATA_PREFIX}broken`, 'not json')
 
         await expect(
             migration.up(context(storage), utils()),
         ).resolves.toBeUndefined()
         expect(metadataOf(storage, 'q-1').type).toBe('falcon-1024')
-        expect(storage.getString('k/broken')).toBe('not json')
+        expect(storage.getString(`${METADATA_PREFIX}broken`)).toBe('not json')
     })
 
     it('ignores flat and sealed entries, rewriting only the k/ bucket', async () => {
