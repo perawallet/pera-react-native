@@ -28,6 +28,7 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
         clear: keystoreMocks.clear,
     }),
     decode: keystoreMocks.decode,
+    METADATA_PREFIX: 'k/',
     storage: {
         getAllKeys: keystoreMocks.storageGetAllKeys,
         getString: keystoreMocks.storageGetString,

@@ -17,12 +17,7 @@ import type { KeyStoreState } from '@algorandfoundation/keystore-core'
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
 import type { MigrationReport } from '@algorandfoundation/provider-migrations'
 import { createPeraKeystore } from './keystore/createKeystore'
-import {
-    readPersistedKeys,
-    runLayoutMigration,
-    runMaterialRepair,
-} from './keystore/maintenance'
-import type { KeystoreLayoutMigrationResult } from './keystore/migrateKeystoreLayout'
+import { readPersistedKeys, runMaterialRepair } from './keystore/maintenance'
 import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
 import { createPeraMigrationLedger } from './keystore/migrationsLedger'
 import { PeraProvider } from './pera-provider'
@@ -152,10 +147,6 @@ export const reconcileKeystore = async (): Promise<void> => {
     keystoreStore.setState(state => ({ ...state, keys }))
 }
 
-/** Runs the canary.13 → canary.14 storage-layout migration. Native-only. */
-export const runKeystoreLayoutMigration =
-    (): Promise<KeystoreLayoutMigrationResult> => runLayoutMigration()
-
 /**
  * Re-mints Falcon children that never had sealed material. Must run after the
  * engine has hydrated, since it works off the reactive key snapshot.
@@ -178,7 +169,6 @@ export const runQuantumMaterialRepair =
         })
 
 export type KeystoreMaintenanceResult = {
-    migration: KeystoreLayoutMigrationResult
     repair: QuantumMaterialRepairResult
 }
 
@@ -186,41 +176,44 @@ export type KeystoreMaintenanceResult = {
  * Every one-off pass the on-disk keystore needs at startup, in the one order
  * that works. Callers await this instead of sequencing the passes themselves.
  *
- * The ordering is not incidental:
+ * `ready` now already sits behind `provider.migrations.ready` (see
+ * `getMigrationsReady` above), so any layout re-indexing has happened before
+ * this ever runs — this no longer sequences a migration itself.
  *
- * - `ready` hydrates from the `k/` bucket only, so on the first launch after
- *   the canary.14 upgrade it resolves with **zero keys**. The re-index has to
- *   follow it, never precede it.
- * - `reconcileKeystore` is what re-seeds the store afterwards, and it runs only
- *   when a pass actually did something — it re-reads every entry, so calling it
- *   unconditionally would pay that cost on every launch for nothing.
- * - The quantum repair runs on **every** launch, not just after a migration: a
- *   quantum account minted before custody moved into the keystore has a child
- *   with no sealed material, and that fails only at submit time, after the user
- *   has already signed.
+ * The ordering that remains is not incidental:
+ *
+ * - `reconcileKeystore` runs first to pick up anything the Android passkey
+ *   credential provider wrote from its own process while this process was not
+ *   yet reading — `ready`'s hydration runs once per launch and nothing else
+ *   re-reads.
+ * - The quantum repair runs on **every** launch: a quantum account minted
+ *   before custody moved into the keystore has a child with no sealed
+ *   material, and that fails only at submit time, after the user has already
+ *   signed. It is not a tracked migration revision for exactly that reason —
+ *   it has no "done" state to record, it must keep checking every launch.
+ * - A second `reconcileKeystore` runs only when the repair actually did
+ *   something, since it re-reads every entry and paying that cost on a launch
+ *   where nothing changed is pure cost.
  *
  * Throws if the keystore cannot hydrate. That is deliberate — the alternative
  * is presenting an empty wallet, which is what prompts users to wipe and
  * re-onboard on top of keys that are still on disk.
  *
- * On web this is inert: `maintenance.web.ts` returns zeroed results for both
- * passes, so nothing reconciles and callers need no platform branch.
+ * On web this is inert: `maintenance.web.ts` returns a zeroed repair result,
+ * so nothing reconciles and callers need no platform branch.
  */
 export const runKeystoreMaintenance =
     async (): Promise<KeystoreMaintenanceResult> => {
         await keystore.ready
 
-        const migration = await runKeystoreLayoutMigration()
-        if (migration.migrated > 0 || migration.failed > 0) {
-            await reconcileKeystore()
-        }
+        await reconcileKeystore()
 
         const repair = await runQuantumMaterialRepair()
         if (repair.repaired > 0 || repair.failed > 0) {
             await reconcileKeystore()
         }
 
-        return { migration, repair }
+        return { repair }
     }
 
 /**

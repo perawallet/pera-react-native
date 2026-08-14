@@ -11,7 +11,7 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
-import { MATERIAL_PREFIX } from './prefixes'
+import { MATERIAL_PREFIX } from '@algorandfoundation/react-native-keystore'
 
 const FALCON_CHILD_TYPE = 'falcon-1024'
 

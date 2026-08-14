@@ -19,6 +19,5 @@ export type {
 } from '@algorandfoundation/wallet-provider'
 export * from './pera-provider'
 export * from './context'
-export * from './keystore/migrateKeystoreLayout'
 export * from './singleton'
 export * from './test-platform'

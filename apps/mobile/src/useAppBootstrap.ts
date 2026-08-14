@@ -168,20 +168,13 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 // do startup hydration and setup in parallel to speed up time
                 // to interactive. Keystore/database failures must fail the whole
                 // bootstrap; only the passkey branch is allowed to fail silently.
-                // `ready` hydrates from the `k/` bucket only, so on the first
-                // launch after the canary.14 upgrade it resolves with zero keys
-                // and the re-index has to follow it, not precede it. The
-                // reconcile pass is what re-seeds the store afterwards.
                 //
-                // A throw here (the master key is unreadable while canary.13
-                // records exist) deliberately fails bootstrap: the alternative
-                // is presenting an empty wallet, which is what prompts users to
-                // wipe and re-onboard on top of keys that were still on disk.
+                // A throw here (an unreadable master key) deliberately fails
+                // bootstrap: the alternative is presenting an empty wallet,
+                // which is what prompts users to wipe and re-onboard on top of
+                // keys that were still on disk.
                 const keystoreBranch = runKeystoreMaintenance()
-                    .then(({ migration, repair }) => {
-                        if (migration.migrated > 0 || migration.failed > 0) {
-                            logger.info('Keystore layout migrated', migration)
-                        }
+                    .then(({ repair }) => {
                         if (repair.repaired > 0 || repair.failed > 0) {
                             logger.info('Quantum key material repaired', repair)
                         }
