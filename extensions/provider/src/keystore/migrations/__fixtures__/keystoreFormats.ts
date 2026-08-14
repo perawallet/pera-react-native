@@ -86,8 +86,27 @@ export const openData = async (
     )
 }
 
+/**
+ * Every record `decode` has handed out since the last {@link resetDecoded}.
+ *
+ * The arrays inside these are the very ones a revision lifts and seals, so this
+ * is the only handle a test has on whether decrypted material was zeroed once
+ * the revision was done with it.
+ */
+export const decodedRecords: KeyData[] = []
+
+export const resetDecoded = (): void => {
+    decodedRecords.length = 0
+}
+
 /** `decode`, which accepts both the `{ $u8 }` format and canary.13's. */
 export const decode = (data: string): KeyData => {
+    const record = decodeRecord(data)
+    decodedRecords.push(record)
+    return record
+}
+
+const decodeRecord = (data: string): KeyData => {
     if (data.startsWith('{')) {
         return JSON.parse(data, (_key, value) =>
             value && typeof value === 'object' && typeof value.$u8 === 'string'

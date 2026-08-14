@@ -103,7 +103,11 @@ const adopt = async (
         }
 
         const metadataKey = METADATA_PREFIX + id
-        journal.set(metadataKey, serializeKey(stripped))
+        // `id` is restated rather than inherited, matching upstream's
+        // `metaRecord = { ...meta, id: keyData.id ?? id }`: a record that never
+        // carried an `id` field still needs one, because the driver reads it
+        // back by it.
+        journal.set(metadataKey, serializeKey({ ...stripped, id }))
 
         const written = storage.getString(metadataKey)
         if (written === undefined || decode(written).id !== id) {

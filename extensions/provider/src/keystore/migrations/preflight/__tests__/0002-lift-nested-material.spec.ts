@@ -58,7 +58,9 @@ import {
 } from '../../__fixtures__/fakeStorage'
 import {
     decode,
+    decodedRecords,
     openData,
+    resetDecoded,
     sealCanary13Record,
 } from '../../__fixtures__/keystoreFormats'
 import { SECRET_FIELDS } from '../../canary13'
@@ -629,6 +631,27 @@ describe('0002-lift-nested-material', () => {
 
         expect(lastMasterKey).toBeDefined()
         expect([...lastMasterKey!]).toEqual([...new Uint8Array(32)])
+    })
+
+    // The master key is not the only plaintext this revision holds: the record
+    // it decrypts carries its own material and the HD root's, and both must be
+    // gone from the heap once they are sealed.
+    it('zeroes the record material it decrypted', async () => {
+        const storage = await seeded(nestedAndTopLevel())
+        resetDecoded()
+
+        await migration.up(context(storage), utils())
+
+        // The flat record is the first thing decoded; its arrays are the ones
+        // `liftSecrets` pulled out and sealed.
+        const flat = decodedRecords[0] as {
+            privateKey?: Uint8Array
+            metadata?: { rootKey?: { privateKey?: Uint8Array } }
+        }
+        expect([...flat.privateKey!]).toEqual([...new Uint8Array(32)])
+        expect([...flat.metadata!.rootKey!.privateKey!]).toEqual([
+            ...new Uint8Array(64),
+        ])
     })
 
     it('is a no-op on empty storage', async () => {
