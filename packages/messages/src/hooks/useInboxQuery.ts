@@ -18,7 +18,11 @@ import {
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { IN_FLIGHT_SIGN_REQUEST_STATUSES } from '@perawallet/wallet-core-multisig'
-import { useQuery, type UseQueryResult } from '@tanstack/react-query'
+import {
+    queryOptions,
+    useQuery,
+    type UseQueryResult,
+} from '@tanstack/react-query'
 import { fetchInbox, type InboxResponse } from '../api/inbox'
 import type { InboxItem } from '../models'
 import { getInboxQueryKey } from './querykeys'
@@ -27,44 +31,67 @@ import { sortInboxItems } from '../utils'
 
 const INBOX_IN_FLIGHT_POLL_INTERVAL_MS = 10_000
 
-export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
+/**
+ * Single owner of the shared inbox query. Query-level options (queryFn,
+ * retry) are last-observer-wins in TanStack, so every observer of
+ * `getInboxQueryKey` must spread these options rather than redeclare them —
+ * per-observer `select` is the only thing a consumer should add.
+ */
+export const useInboxQueryOptions = () => {
     const { network } = useNetwork()
-    const deviceID = useDeviceID(network)
+    const deviceID = useDeviceID(network) ?? ''
     const signingAccounts = useSigningAccounts()
-    const allAccounts = useAllAccounts()
 
     const addresses = useMemo(
         () => signingAccounts.map(a => a.address),
         [signingAccounts],
     )
+
+    return useMemo(
+        () =>
+            queryOptions({
+                queryKey: getInboxQueryKey(network, deviceID, addresses),
+                queryFn: () => fetchInbox(network, deviceID, addresses),
+                enabled: !!deviceID.length && !!addresses.length,
+                // Self-heal stale rows after a multisig sign action: poll only
+                // while the cached response still contains a non-terminal sign
+                // request, and stop automatically once everything settles.
+                // Operates on raw `InboxResponse` — `select` does not run for
+                // this callback.
+                refetchInterval: query => {
+                    const data = query.state.data
+                    if (!data) return false
+                    const hasInFlight = data.joint_account_sign_requests.some(
+                        r => IN_FLIGHT_SIGN_REQUEST_STATUSES.has(r.status),
+                    )
+                    return hasInFlight
+                        ? INBOX_IN_FLIGHT_POLL_INTERVAL_MS
+                        : false
+                },
+                // Belt-and-suspenders against the global default (`retry: 0` in
+                // QueryProvider). Inbox is best-effort: the sibling notification-
+                // status poll (useInboxStatus) is what keeps it fresh, so a single
+                // failure can simply propagate. This avoids retry-storming
+                // TimeoutErrors, which on some Hermes builds have been observed to
+                // trip ky's Error subclass via Babel's `_construct` helper.
+                retry: false,
+            }),
+        [network, deviceID, addresses],
+    )
+}
+
+export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
+    const inboxQueryOptions = useInboxQueryOptions()
+    const signingAccounts = useSigningAccounts()
+    const allAccounts = useAllAccounts()
+
     const localAddresses = useMemo(
         () => new Set(allAccounts.map(a => a.address)),
         [allAccounts],
     )
 
     return useQuery({
-        queryKey: getInboxQueryKey(network, deviceID ?? '', addresses),
-        queryFn: () => fetchInbox(network, deviceID ?? '', addresses),
-        enabled: !!deviceID?.length && !!addresses.length,
-        // Self-heal stale rows after a multisig sign action: poll only while
-        // the cached response still contains a non-terminal sign request,
-        // and stop automatically once everything settles. Operates on raw
-        // `InboxResponse` — `select` does not run for this callback.
-        refetchInterval: query => {
-            const data = query.state.data
-            if (!data) return false
-            const hasInFlight = data.joint_account_sign_requests.some(r =>
-                IN_FLIGHT_SIGN_REQUEST_STATUSES.has(r.status),
-            )
-            return hasInFlight ? INBOX_IN_FLIGHT_POLL_INTERVAL_MS : false
-        },
-        // Belt-and-suspenders against the global default (`retry: 0` in
-        // QueryProvider). Inbox is best-effort: the sibling notification-
-        // status poll (useInboxStatus) is what keeps it fresh, so a single
-        // failure can simply propagate. This avoids retry-storming
-        // TimeoutErrors, which on some Hermes builds have been observed to
-        // trip ky's Error subclass via Babel's `_construct` helper.
-        retry: false,
+        ...inboxQueryOptions,
         select: useCallback(
             (data: InboxResponse) =>
                 mapInboxResponse(data)

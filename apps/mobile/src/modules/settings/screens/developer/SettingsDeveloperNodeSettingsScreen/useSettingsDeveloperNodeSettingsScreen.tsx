@@ -84,9 +84,9 @@ export const useSettingsDeveloperNodeSettingsScreen =
                 // (see useSwitchNetwork). Nothing to toast about.
                 await switchNetwork(network)
                 try {
-                    const syncService = getSyncService()
-                    syncService.invalidateQueries()
-                    syncService.restart()
+                    // Invalidation is owned by RootComponent's network effect —
+                    // calling it here too would double-refetch every mounted query.
+                    getSyncService().restart()
                 } catch {
                     // SyncService not yet initialized
                 }

@@ -12,7 +12,11 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toggleAssetPriceAlert } from '../api'
-import { getAssetDetailsQueryKey, invalidateAssetQueries } from './querykeys'
+import {
+    getAssetDetailsQueryKey,
+    getRemoteAssetDetailsQueryKey,
+    invalidateAssetQueries,
+} from './querykeys'
 import {
     type Network,
     logger,
@@ -32,6 +36,7 @@ type UseToggleAssetPriceAlertMutationParams = {
 
 type ToggleAssetPriceAlertMutationContext = {
     previousData: Optional<PeraAsset>
+    previousRemoteData: Optional<PeraAsset>
     previousIsPriceAlertEnabled: boolean
 }
 
@@ -64,15 +69,22 @@ export const useToggleAssetPriceAlertMutation =
             onMutate: async variables => {
                 const queryKey = getAssetDetailsQueryKey(
                     variables.assetID,
-                    true,
+                    variables.network,
+                )
+                const remoteQueryKey = getRemoteAssetDetailsQueryKey(
+                    variables.assetID,
                     variables.network,
                 )
                 await queryClient.cancelQueries({ queryKey })
+                await queryClient.cancelQueries({ queryKey: remoteQueryKey })
 
                 const previousData =
                     queryClient.getQueryData<PeraAsset>(queryKey)
+                const previousRemoteData =
+                    queryClient.getQueryData<PeraAsset>(remoteQueryKey)
                 const previousIsPriceAlertEnabled =
-                    previousData?.peraMetadata?.isPriceAlertEnabled ?? false
+                    (previousData ?? previousRemoteData)?.peraMetadata
+                        ?.isPriceAlertEnabled ?? false
 
                 await updateAssetPeraMetadata({
                     assetId: variables.assetID,
@@ -80,20 +92,36 @@ export const useToggleAssetPriceAlertMutation =
                     updates: { isPriceAlertEnabled: variables.enabled },
                 })
 
+                const patch = (data: PeraAsset): PeraAsset => ({
+                    ...data,
+                    peraMetadata: {
+                        ...DEFAULT_ASSET_METADATA,
+                        ...data.peraMetadata,
+                        isPriceAlertEnabled: variables.enabled,
+                    },
+                })
                 if (previousData) {
-                    queryClient.setQueryData<PeraAsset>(queryKey, {
-                        ...previousData,
-                        peraMetadata: {
-                            ...DEFAULT_ASSET_METADATA,
-                            ...previousData.peraMetadata,
-                            isPriceAlertEnabled: variables.enabled,
-                        },
-                    })
+                    queryClient.setQueryData<PeraAsset>(
+                        queryKey,
+                        patch(previousData),
+                    )
+                }
+                // The collectible screen observes the remote entry — patch it
+                // too so its alert toggle is instant.
+                if (previousRemoteData) {
+                    queryClient.setQueryData<PeraAsset>(
+                        remoteQueryKey,
+                        patch(previousRemoteData),
+                    )
                 }
 
                 invalidateAssetQueries(queryClient)
 
-                return { previousData, previousIsPriceAlertEnabled }
+                return {
+                    previousData,
+                    previousRemoteData,
+                    previousIsPriceAlertEnabled,
+                }
             },
             onError: async (error, variables, context) => {
                 if (context) {
@@ -109,10 +137,18 @@ export const useToggleAssetPriceAlertMutation =
                         queryClient.setQueryData(
                             getAssetDetailsQueryKey(
                                 variables.assetID,
-                                true,
                                 variables.network,
                             ),
                             context.previousData,
+                        )
+                    }
+                    if (context.previousRemoteData) {
+                        queryClient.setQueryData(
+                            getRemoteAssetDetailsQueryKey(
+                                variables.assetID,
+                                variables.network,
+                            ),
+                            context.previousRemoteData,
                         )
                     }
                     invalidateAssetQueries(queryClient)

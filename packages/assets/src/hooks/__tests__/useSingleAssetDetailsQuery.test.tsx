@@ -32,6 +32,8 @@ const mocks = vi.hoisted(() => ({
     useNetwork: vi.fn(),
     getAssetById: vi.fn(),
     getAssetPeraMetadata: vi.fn(),
+    upsertNodeAssets: vi.fn(),
+    batchEnqueue: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -41,6 +43,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 vi.mock('../../db', () => ({
     getAssetById: mocks.getAssetById,
     getAssetPeraMetadata: mocks.getAssetPeraMetadata,
+    upsertNodeAssets: mocks.upsertNodeAssets,
+}))
+
+vi.mock('../../services/assetBatchQueue', () => ({
+    assetBatchQueue: { enqueue: mocks.batchEnqueue },
 }))
 
 vi.mock('../../api', async importOriginal => {
@@ -61,6 +68,10 @@ describe('useSingleAssetDetailsQuery', () => {
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         mocks.getAssetById.mockResolvedValue(null)
         mocks.getAssetPeraMetadata.mockResolvedValue(null)
+        mocks.upsertNodeAssets.mockResolvedValue(undefined)
+        // Default: the bulk endpoint doesn't know the asset — fall through to
+        // the per-asset detail endpoints.
+        mocks.batchEnqueue.mockResolvedValue(undefined)
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -274,6 +285,65 @@ describe('useSingleAssetDetailsQuery', () => {
             )
         })
 
+        it('resolves a DB miss through the batch queue without hitting the detail endpoints', async () => {
+            mocks.getAssetById.mockResolvedValue(null)
+            const bulkAsset = {
+                assetId: '456',
+                decimals: 2,
+                creator: { address: 'ADDR' },
+                totalSupply: new Decimal(10),
+                name: 'Bulk Asset',
+                unitName: 'BULK',
+            }
+            mocks.batchEnqueue.mockResolvedValue(bulkAsset)
+
+            const { result } = renderHook(
+                () => useSingleAssetDetailsQuery('456'),
+                {
+                    wrapper: createWrapper(queryClient),
+                },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.data).toEqual(bulkAsset)
+            expect(mocks.batchEnqueue).toHaveBeenCalledWith('456', 'mainnet')
+            expect(mocks.fetchAssetDetails).not.toHaveBeenCalled()
+            expect(mocks.fetchIndexerAssetDetails).not.toHaveBeenCalled()
+        })
+
+        it('skips DB and batch queue entirely with useDB=false and caches under the remote key', async () => {
+            mocks.fetchAssetDetails.mockResolvedValue({
+                asset_id: 789,
+                name: 'Remote Asset',
+                fraction_decimals: 0,
+                total: '1',
+                is_deleted: false,
+                verification_tier: 'unverified',
+                creator: { address: 'ADDR' },
+                category: null,
+            })
+            mocks.fetchIndexerAssetDetails.mockRejectedValue(
+                new Error('irrelevant'),
+            )
+            mocks.fetchPublicAssetDetails.mockRejectedValue(
+                new Error('irrelevant'),
+            )
+
+            const { result } = renderHook(
+                () => useSingleAssetDetailsQuery('789', false),
+                {
+                    wrapper: createWrapper(queryClient),
+                },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.data?.name).toBe('Remote Asset')
+            expect(mocks.getAssetById).not.toHaveBeenCalled()
+            expect(mocks.batchEnqueue).not.toHaveBeenCalled()
+        })
+
         it('handles loading state', () => {
             mocks.getAssetById.mockReturnValue(new Promise(() => {}))
 
@@ -387,5 +457,33 @@ describe('fetchAssetFromApis merge precedence', () => {
         expect(asset.peraMetadata?.verificationTier).toBe(
             PeraAssetVerificationTier.verified,
         )
+    })
+
+    it('persists the chain-intrinsics half so the next read is DB-local', async () => {
+        await fetchAssetFromApis('10458941', Networks.testnet)
+
+        expect(mocks.upsertNodeAssets).toHaveBeenCalledTimes(1)
+        const { items, network } = mocks.upsertNodeAssets.mock.calls[0][0]
+        expect(items).toHaveLength(1)
+        expect(items[0].assetId).toBe('10458941')
+        expect(network).toBe(Networks.testnet)
+    })
+
+    it('does not persist a merge built only from defaults (every lane failed)', async () => {
+        mocks.fetchAssetDetails.mockRejectedValue(new Error('down'))
+        mocks.fetchIndexerAssetDetails.mockRejectedValue(new Error('down'))
+
+        const asset = await fetchAssetFromApis('10458941', Networks.testnet)
+
+        expect(asset.assetId).toBe('10458941')
+        expect(mocks.upsertNodeAssets).not.toHaveBeenCalled()
+    })
+
+    it('still returns the merged asset when the persist itself fails', async () => {
+        mocks.upsertNodeAssets.mockRejectedValue(new Error('db locked'))
+
+        const asset = await fetchAssetFromApis('10458941', Networks.testnet)
+
+        expect(asset.name).toBe('USDC')
     })
 })

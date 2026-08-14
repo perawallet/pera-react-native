@@ -33,6 +33,11 @@ type UseInboxStatusResult = {
     unreadInboxCount: number
 }
 
+// While v3 is failing the v1 fallback owns freshness; v3 keeps probing for
+// recovery at this multiple of the normal cadence instead of double-polling
+// both endpoints at full rate.
+const ERROR_PROBE_INTERVAL_MULTIPLIER = 10
+
 export const useInboxStatus = (): UseInboxStatusResult => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
@@ -43,9 +48,20 @@ export const useInboxStatus = (): UseInboxStatusResult => {
         queryKey: getMessageStatusQueryKey(network, deviceID ?? ''),
         queryFn: () => fetchMessageStatus(network, deviceID ?? ''),
         enabled: !!deviceID,
-        refetchInterval: config.pollingEnabled
-            ? config.notificationRefreshTime
-            : false,
+        // Overrides the globally-pinned false: the badge should catch up as
+        // soon as the app foregrounds — pushes that arrived while
+        // backgrounded (intervals are paused then) and restart-hydrated
+        // state otherwise stay stale for up to a full poll interval.
+        refetchOnWindowFocus: true,
+        refetchInterval: query => {
+            if (!config.pollingEnabled) return false
+            const isFailing =
+                query.state.data === undefined && query.state.status === 'error'
+            return isFailing
+                ? config.notificationRefreshTime *
+                      ERROR_PROBE_INTERVAL_MULTIPLIER
+                : config.notificationRefreshTime
+        },
     })
 
     // Only fall back when v3 has produced no usable data at all (errored and

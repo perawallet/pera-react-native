@@ -37,6 +37,8 @@ import { WebViewOverlay } from '@modules/webview'
 import { PromptContainer } from '@modules/prompts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNotificationDeeplinkListener } from '@hooks/useNotificationDeeplinkListener'
+import { useNotificationReceivedListener } from '@hooks/useNotificationReceivedListener'
+import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { PairingProgressOverlay } from '@modules/walletconnect/components/PairingProgressOverlay'
 import { useTokenListener } from '@modules/token'
@@ -80,6 +82,9 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
 
     // Route tapped push notifications through the deeplink dispatcher.
     useNotificationDeeplinkListener()
+
+    // Refresh the notification badge/inbox as soon as a foreground push lands.
+    useNotificationReceivedListener()
 
     const handleBoundaryError = (error: string | Error) => {
         logger.critical(error, {
@@ -126,7 +131,6 @@ const DeviceRegistrar = ({ addresses }: { addresses: string[] }) => {
 }
 
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
-    const { network } = useNetwork()
     const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
@@ -169,13 +173,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
         }
     }, [])
 
-    useEffect(() => {
-        try {
-            getSyncService().invalidateQueries()
-        } catch {
-            // SyncService not yet initialized
-        }
-    }, [network])
+    useNetworkSwitchInvalidation()
 
     useEffect(() => {
         // Hold the background poll until migration finishes: its initial

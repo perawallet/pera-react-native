@@ -62,6 +62,9 @@ vi.mock('@modules/network', () => ({
 vi.mock('@modules/token', () => ({
     useTokenListener: vi.fn(),
 }))
+vi.mock('@hooks/useNotificationReceivedListener', () => ({
+    useNotificationReceivedListener: vi.fn(),
+}))
 vi.mock('@hooks/useNotificationDeeplinkListener', () => ({
     useNotificationDeeplinkListener: vi.fn(),
 }))

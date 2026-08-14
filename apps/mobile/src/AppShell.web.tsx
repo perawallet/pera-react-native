@@ -65,6 +65,7 @@ import { DappRequestRoutes } from '@modules/dapp'
 import { TestnetIndicator } from '@components/TestnetIndicator'
 import { OfflineBanner } from '@components/OfflineBanner'
 import { initNetworkStatus, useNetworkStatusListener } from '@modules/network'
+import { useNetworkSwitchInvalidation } from '@hooks/useNetworkSwitchInvalidation'
 import { WEB_EXPANDED_CARD_MAX_WIDTH } from '@constants/ui'
 import { useWebAppShell } from './useWebAppShell.web'
 import { updateQueryHeaders } from './bootstrap/query-headers'
@@ -287,6 +288,11 @@ const AppShellThemedRoot = (): React.JSX.Element => {
     // without it here the reachability probe never runs and onlineManager
     // keeps whatever seed initNetworkStatus left.
     useNetworkStatusListener()
+
+    // Same RootComponent-replacement contract: the single owner of the
+    // on-network-switch invalidation must live in this shell too, since the
+    // imperative switch paths only restart() the sync service.
+    useNetworkSwitchInvalidation()
 
     return (
         <SafeAreaProvider>

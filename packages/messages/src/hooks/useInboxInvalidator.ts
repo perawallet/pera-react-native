@@ -10,17 +10,20 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { invalidateAllPredicate } from './querykeys'
 
 export const useInboxInvalidator = () => {
     const queryClient = useQueryClient()
 
-    const invalidate = () => {
+    // Stable identity so consumers can use it in effect deps (e.g. the
+    // push-received subscription) without re-subscribing every render.
+    const invalidate = useCallback(() => {
         void queryClient.invalidateQueries({
             predicate: invalidateAllPredicate,
         })
-    }
+    }, [queryClient])
 
     return {
         invalidate,

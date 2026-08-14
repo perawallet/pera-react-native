@@ -12,7 +12,11 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toggleAssetFavorite } from '../api'
-import { getAssetDetailsQueryKey, invalidateAssetQueries } from './querykeys'
+import {
+    getAssetDetailsQueryKey,
+    getRemoteAssetDetailsQueryKey,
+    invalidateAssetQueries,
+} from './querykeys'
 import {
     type Network,
     logger,
@@ -32,6 +36,7 @@ type UseToggleAssetFavoriteMutationParams = {
 
 type ToggleAssetFavoriteMutationContext = {
     previousData: Optional<PeraAsset>
+    previousRemoteData: Optional<PeraAsset>
     previousIsFavorited: boolean
 }
 
@@ -69,14 +74,21 @@ export const useToggleAssetFavoriteMutation = ({
         onMutate: async variables => {
             const queryKey = getAssetDetailsQueryKey(
                 variables.assetID,
-                true,
+                variables.network,
+            )
+            const remoteQueryKey = getRemoteAssetDetailsQueryKey(
+                variables.assetID,
                 variables.network,
             )
             await queryClient.cancelQueries({ queryKey })
+            await queryClient.cancelQueries({ queryKey: remoteQueryKey })
 
             const previousData = queryClient.getQueryData<PeraAsset>(queryKey)
+            const previousRemoteData =
+                queryClient.getQueryData<PeraAsset>(remoteQueryKey)
             const previousIsFavorited =
-                previousData?.peraMetadata?.isFavorited ?? false
+                (previousData ?? previousRemoteData)?.peraMetadata
+                    ?.isFavorited ?? false
 
             await updateAssetPeraMetadata({
                 assetId: variables.assetID,
@@ -84,21 +96,33 @@ export const useToggleAssetFavoriteMutation = ({
                 updates: { isFavorited: variables.enabled },
             })
 
+            const patch = (data: PeraAsset): PeraAsset => ({
+                ...data,
+                peraMetadata: {
+                    ...DEFAULT_ASSET_METADATA,
+                    ...data.peraMetadata,
+                    isFavorited: variables.enabled,
+                },
+            })
             if (previousData) {
-                queryClient.setQueryData<PeraAsset>(queryKey, {
-                    ...previousData,
-                    peraMetadata: {
-                        ...DEFAULT_ASSET_METADATA,
-                        ...previousData.peraMetadata,
-                        isFavorited: variables.enabled,
-                    },
-                })
+                queryClient.setQueryData<PeraAsset>(
+                    queryKey,
+                    patch(previousData),
+                )
+            }
+            // The collectible screen observes the remote entry — patch it too
+            // so its favorite toggle is instant.
+            if (previousRemoteData) {
+                queryClient.setQueryData<PeraAsset>(
+                    remoteQueryKey,
+                    patch(previousRemoteData),
+                )
             }
 
             invalidateAssetQueries(queryClient)
             onLocalWrite?.()
 
-            return { previousData, previousIsFavorited }
+            return { previousData, previousRemoteData, previousIsFavorited }
         },
         onError: async (error, variables, context) => {
             if (context) {
@@ -113,10 +137,18 @@ export const useToggleAssetFavoriteMutation = ({
                     queryClient.setQueryData(
                         getAssetDetailsQueryKey(
                             variables.assetID,
-                            true,
                             variables.network,
                         ),
                         context.previousData,
+                    )
+                }
+                if (context.previousRemoteData) {
+                    queryClient.setQueryData(
+                        getRemoteAssetDetailsQueryKey(
+                            variables.assetID,
+                            variables.network,
+                        ),
+                        context.previousRemoteData,
                     )
                 }
                 invalidateAssetQueries(queryClient)

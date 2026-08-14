@@ -25,15 +25,20 @@ import {
     fetchIndexerAssetDetails,
     fetchPublicAssetDetails,
 } from '../api'
-import { getAssetDetailsQueryKey } from './querykeys'
+import {
+    getAssetDetailsQueryKey,
+    getRemoteAssetDetailsQueryKey,
+} from './querykeys'
 import {
     isAlgoAssetId,
+    logger,
     stripNulls,
     type Network,
 } from '@perawallet/wallet-core-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { getAssetById } from '../db'
+import { getAssetById, upsertNodeAssets } from '../db'
+import { assetBatchQueue } from '../services/assetBatchQueue'
 
 /**
  * Re-asserts the real chain's values for fields that are facts about the chain
@@ -95,9 +100,30 @@ export const fetchAssetFromApis = async (
         },
     }
 
-    return indexerData && !isPeraBackedNetwork(network)
-        ? withChainIntrinsics(merged, indexerData)
-        : merged
+    const asset =
+        indexerData && !isPeraBackedNetwork(network)
+            ? withChainIntrinsics(merged, indexerData)
+            : merged
+
+    // Warm assets_node so the next read of this asset is DB-local instead of
+    // re-fanning these three requests. Node half ONLY: the detail endpoint is
+    // not device-scoped, so its pera opinion (is_favorited et al) must never
+    // overwrite assets_pera — the device-scoped bulk sync owns that table.
+    // Guarded on an authoritative lane so an all-defaults merge (e.g. every
+    // endpoint failed offline) can't poison decimals in the DB.
+    if (peraData || indexerData) {
+        try {
+            await upsertNodeAssets({ items: [asset], network })
+        } catch (error) {
+            logger.warn('Asset detail persist failed', {
+                assetId,
+                network,
+                error,
+            })
+        }
+    }
+
+    return asset
 }
 
 export const useSingleAssetDetailsQuery = (
@@ -107,7 +133,12 @@ export const useSingleAssetDetailsQuery = (
     const { network } = useNetwork()
 
     return useQuery<PeraAsset, Error>({
-        queryKey: getAssetDetailsQueryKey(assetId, useDB, network),
+        // The remote variant keeps a distinct entry — see
+        // getRemoteAssetDetailsQueryKey for why it can't share the canonical
+        // one.
+        queryKey: useDB
+            ? getAssetDetailsQueryKey(assetId, network)
+            : getRemoteAssetDetailsQueryKey(assetId, network),
         queryFn: async (): Promise<PeraAsset> => {
             // Try DB first (data synced by sync service)
             if (useDB) {
@@ -122,7 +153,19 @@ export const useSingleAssetDetailsQuery = (
                 return ALGO_ASSET
             }
 
-            // Fallback to API for assets not in DB (e.g., non-held assets)
+            // DB miss (e.g. a non-held asset in the tx history): resolve
+            // through the batch queue — it coalesces concurrent per-row
+            // lookups into one bulk fetch and persists, so the next read is
+            // local.
+            if (useDB) {
+                const fetched = await assetBatchQueue.enqueue(assetId, network)
+                if (fetched) {
+                    return fetched
+                }
+            }
+
+            // Last resort — and the whole path for useDB=false: merge the
+            // per-asset detail endpoints.
             return fetchAssetFromApis(assetId, network)
         },
         staleTime: Infinity,

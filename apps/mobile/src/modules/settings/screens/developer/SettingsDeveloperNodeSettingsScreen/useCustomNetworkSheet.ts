@@ -194,9 +194,13 @@ export const useCustomNetworkSheet = (): UseCustomNetworkSheetResult => {
 
         await switchNetwork(Networks.custom)
         try {
-            const syncService = getSyncService()
-            syncService.invalidateQueries()
-            syncService.restart()
+            // Invalidation is owned by the shell's network effect
+            // (useNetworkSwitchInvalidation), which fires on the network
+            // change above. Re-saving the SAME custom network (no network
+            // change) doesn't need it either: clearCustomNetworkCache above
+            // already evicted the affected entries, and eviction refetches
+            // active observers on its own.
+            getSyncService().restart()
         } catch {
             // SyncService not yet initialized
         }

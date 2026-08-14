@@ -26,8 +26,9 @@ export const useMessagesScreen = () => {
     const { data: inboxItems } = useInboxQuery()
 
     // Decided once at mount: the navigator only reads initialRouteName on its
-    // first render, and the inbox query is subscribed app-wide (RootComponent),
-    // so its cache is already settled by the time this screen mounts.
+    // first render, and the inbox query is subscribed session-long via
+    // useInboxStatus in the AccountDetails header's NotificationsIcon, so its
+    // cache is already settled by the time this screen mounts.
     const [initialRouteName] = useState<keyof MessagesTabsParamsList>(() => {
         if (initialTab) return initialTab
         if (!inboxItems?.length) return 'Notifications'

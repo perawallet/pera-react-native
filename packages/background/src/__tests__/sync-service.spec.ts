@@ -119,6 +119,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     getLatestTransactionRoundTime: vi.fn(() => Promise.resolve(null)),
     upsertTransactions: vi.fn(() => Promise.resolve()),
     invalidateTransactionQueries: vi.fn(),
+    invalidateTransactionQueriesForAddresses: vi.fn(),
     fetchAndPersistTransactions: vi.fn(() => Promise.resolve()),
 }))
 
@@ -769,7 +770,7 @@ describe('SyncService', () => {
                 await import('@perawallet/wallet-core-accounts')
             const {
                 fetchAndPersistTransactions,
-                invalidateTransactionQueries,
+                invalidateTransactionQueriesForAddresses,
             } = await import('@perawallet/wallet-core-transactions')
 
             await service.refreshAccounts(['ADDR1', 'ADDR2'], 'testnet')
@@ -792,9 +793,43 @@ describe('SyncService', () => {
                 'ADDR2',
                 'testnet',
             )
+            // Default mock reports holdingsChanged, so the accounts pass is
+            // broad; transactions are always scoped to the given addresses.
             expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
-            expect(invalidateTransactionQueries).toHaveBeenCalledWith(
+            expect(
+                invalidateTransactionQueriesForAddresses,
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1', 'ADDR2'])
+        })
+
+        it('scopes invalidation to the given addresses when no holdings changed', async () => {
+            const {
+                fetchAndPersistAccount,
+                invalidateAccountQueries,
+                invalidateAccountQueriesForAddresses,
+            } = await import('@perawallet/wallet-core-accounts')
+            const { invalidateTransactionQueriesForAddresses } =
+                await import('@perawallet/wallet-core-transactions')
+
+            vi.mocked(fetchAndPersistAccount).mockResolvedValue({
+                changed: true,
+                holdingsChanged: false,
+                observedRound: null,
+            })
+
+            await service.refreshAccounts(['ADDR1'], 'mainnet')
+
+            expect(invalidateAccountQueries).not.toHaveBeenCalled()
+            expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
                 queryClient,
+                ['ADDR1'],
+                { includeMultiAccountKeys: true },
+            )
+            expect(
+                invalidateTransactionQueriesForAddresses,
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1'])
+
+            vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
+                Promise.resolve({ changed: true, holdingsChanged: true }),
             )
         })
 
@@ -827,9 +862,11 @@ describe('SyncService', () => {
         })
 
         it('still invalidates queries when fetches fail', async () => {
-            const { fetchAndPersistAccount, invalidateAccountQueries } =
-                await import('@perawallet/wallet-core-accounts')
-            const { invalidateTransactionQueries } =
+            const {
+                fetchAndPersistAccount,
+                invalidateAccountQueriesForAddresses,
+            } = await import('@perawallet/wallet-core-accounts')
+            const { invalidateTransactionQueriesForAddresses } =
                 await import('@perawallet/wallet-core-transactions')
 
             vi.mocked(fetchAndPersistAccount).mockRejectedValueOnce(
@@ -838,10 +875,16 @@ describe('SyncService', () => {
 
             await service.refreshAccounts(['ADDR1'], 'mainnet')
 
-            expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
-            expect(invalidateTransactionQueries).toHaveBeenCalledWith(
+            // A rejected fetch reports no holdings change, so the scoped
+            // (non-broad) path applies.
+            expect(invalidateAccountQueriesForAddresses).toHaveBeenCalledWith(
                 queryClient,
+                ['ADDR1'],
+                { includeMultiAccountKeys: true },
             )
+            expect(
+                invalidateTransactionQueriesForAddresses,
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1'])
 
             vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
                 Promise.resolve(),
@@ -899,7 +942,7 @@ describe('SyncService', () => {
         it('never throws and still invalidates account/tx queries when asset enrichment fails', async () => {
             const { getAllHeldAssetIdsForNetwork, invalidateAccountQueries } =
                 await import('@perawallet/wallet-core-accounts')
-            const { invalidateTransactionQueries } =
+            const { invalidateTransactionQueriesForAddresses } =
                 await import('@perawallet/wallet-core-transactions')
 
             vi.mocked(getAllHeldAssetIdsForNetwork).mockRejectedValueOnce(
@@ -910,10 +953,11 @@ describe('SyncService', () => {
                 service.refreshAccounts(['ADDR1'], 'mainnet'),
             ).resolves.toBeUndefined()
 
+            // Default mock reports holdingsChanged → broad accounts pass.
             expect(invalidateAccountQueries).toHaveBeenCalledWith(queryClient)
-            expect(invalidateTransactionQueries).toHaveBeenCalledWith(
-                queryClient,
-            )
+            expect(
+                invalidateTransactionQueriesForAddresses,
+            ).toHaveBeenCalledWith(queryClient, ['ADDR1'])
         })
     })
 
