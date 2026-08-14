@@ -10,15 +10,23 @@
  limitations under the License
  */
 
+import { createElement, type ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { onlineManager } from '@tanstack/react-query'
+import {
+    onlineManager,
+    QueryClient,
+    QueryClientProvider,
+} from '@tanstack/react-query'
 import { NoConnectionError } from '@perawallet/wallet-core-shared'
 import {
     useAssetOptInMutation,
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
 } from '../useAssetOptInMutation'
+
+const wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client: new QueryClient() }, children)
 
 const mockSubmit = vi.fn()
 const mockAccountInformation = vi.fn()
@@ -39,7 +47,8 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     insertAssetHolding: (...args: unknown[]) => mockInsertAssetHolding(...args),
-    useAccountBalancesInvalidator: () => ({ invalidate: mockInvalidate }),
+    invalidateAccountQueriesForAddresses: (...args: unknown[]) =>
+        mockInvalidate(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -83,7 +92,9 @@ describe('useAssetOptInMutation', () => {
     })
 
     it('builds an opt-in via composer and submits via the pipeline helper', async () => {
-        const { result } = renderHook(() => useAssetOptInMutation())
+        const { result } = renderHook(() => useAssetOptInMutation(), {
+            wrapper,
+        })
 
         await act(async () => {
             const res = await result.current.optIn({
@@ -108,7 +119,13 @@ describe('useAssetOptInMutation', () => {
             ['12345'],
             'testnet',
         )
+        // The scoped invalidation is what refreshes every staleTime-Infinity
+        // account read (balances, holdings page, NFT gallery sort caches) —
+        // PERA-4845.
         expect(mockInvalidate).toHaveBeenCalledTimes(1)
+        expect(mockInvalidate).toHaveBeenCalledWith(expect.anything(), [
+            'SENDER',
+        ])
     })
 
     it('throws AlreadyOptedInError without calling the pipeline', async () => {
@@ -118,7 +135,9 @@ describe('useAssetOptInMutation', () => {
             assets: [{ assetId: 12345n }],
         })
 
-        const { result } = renderHook(() => useAssetOptInMutation())
+        const { result } = renderHook(() => useAssetOptInMutation(), {
+            wrapper,
+        })
 
         await act(async () => {
             await expect(
@@ -136,7 +155,9 @@ describe('useAssetOptInMutation', () => {
             assets: [],
         })
 
-        const { result } = renderHook(() => useAssetOptInMutation())
+        const { result } = renderHook(() => useAssetOptInMutation(), {
+            wrapper,
+        })
 
         await act(async () => {
             await expect(
@@ -163,7 +184,9 @@ describe('useAssetOptInMutation', () => {
             assets: [],
         })
 
-        const { result } = renderHook(() => useAssetOptInMutation())
+        const { result } = renderHook(() => useAssetOptInMutation(), {
+            wrapper,
+        })
 
         await act(async () => {
             await expect(
@@ -176,7 +199,9 @@ describe('useAssetOptInMutation', () => {
 
     it('does not run post-submit work when submit fails', async () => {
         mockSubmit.mockRejectedValueOnce(new Error('user cancelled'))
-        const { result } = renderHook(() => useAssetOptInMutation())
+        const { result } = renderHook(() => useAssetOptInMutation(), {
+            wrapper,
+        })
         await act(async () => {
             await expect(
                 result.current.optIn({ sender: 'SENDER', assetId: 12345n }),
@@ -192,7 +217,9 @@ describe('useAssetOptInMutation', () => {
 
         it('throws NoConnectionError before any algod call when offline', async () => {
             onlineManager.setOnline(false)
-            const { result } = renderHook(() => useAssetOptInMutation())
+            const { result } = renderHook(() => useAssetOptInMutation(), {
+                wrapper,
+            })
 
             await act(async () => {
                 await expect(
