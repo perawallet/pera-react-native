@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useLayoutEffect } from 'react'
+import { useCallback, useEffect, useLayoutEffect } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -59,6 +59,14 @@ export const useReceiveFundsContent = (
     useLayoutEffect(() => {
         setOnFinished(handleFinished)
     }, [handleFinished, setOnFinished])
+
+    // Same teardown contract as the send sheet: the store is a module singleton
+    // that outlives this sheet, and `onFinished` only fires from the ✕ button,
+    // so any other dismissal used to strand `canSelectAccount: false` and open
+    // the next Receive on the previous account's QR instead of the picker.
+    // Teardown, not mount — AccountOverview sets the account on the store
+    // *before* opening the sheet, so a mount-time reset would wipe it.
+    useEffect(() => () => reset(), [reset])
 
     return {
         hasAccount: selectedAccount != null || !canSelectAccount,

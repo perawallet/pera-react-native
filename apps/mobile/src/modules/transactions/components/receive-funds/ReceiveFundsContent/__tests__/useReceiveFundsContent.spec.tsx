@@ -118,6 +118,32 @@ describe('useReceiveFundsContent', () => {
         expect(mockReset).toHaveBeenCalled()
     })
 
+    it('resets on teardown, not just via onFinished', () => {
+        // `onFinished` is wired to the ✕ button alone, so a backdrop press or
+        // any other dismissal would otherwise leave `canSelectAccount: false`
+        // and the next Receive would open straight onto the previous account's
+        // QR instead of the picker.
+        const { unmount } = renderHook(
+            () => useReceiveFundsContent(mockAccount),
+            { wrapper },
+        )
+
+        expect(mockReset).not.toHaveBeenCalled()
+
+        unmount()
+
+        expect(mockReset).toHaveBeenCalled()
+    })
+
+    it('keeps prefill written before the sheet opened', () => {
+        // AccountOverview sets the account on the store and *then* opens the
+        // sheet, so the cleanup has to be teardown-only — resetting on mount
+        // would wipe that prefill.
+        renderHook(() => useReceiveFundsContent(mockAccount), { wrapper })
+
+        expect(mockReset).not.toHaveBeenCalled()
+    })
+
     it('does not update selected account if address matches', () => {
         ;(useReceiveFunds as Mock).mockReturnValue({
             canSelectAccount: false,

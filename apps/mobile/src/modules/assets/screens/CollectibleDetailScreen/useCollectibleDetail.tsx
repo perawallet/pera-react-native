@@ -172,6 +172,7 @@ export const useCollectibleDetail = (
             options: {
                 size: 'modal',
                 enablePanDownToClose: false,
+                enableCloseOnBackdropPress: false,
                 autoCreateContainer: false,
             },
         })
