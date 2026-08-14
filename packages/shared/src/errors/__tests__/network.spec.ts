@@ -38,6 +38,15 @@ const makeNetworkError = (): NetworkError => new NetworkError({} as Request)
 // ky's isTimeoutError checks `instanceof TimeoutError`.
 const makeTimeoutError = (): TimeoutError => new TimeoutError({} as Request)
 
+// Verbatim shapes React Native's fetch rejects with. Plain `Error`, name
+// "Error" — none of them satisfy any of ky's runtime heuristics, so they arrive
+// at the request layer unwrapped.
+const RAW_PLATFORM_NETWORK_MESSAGES = [
+    'fetch failed: java.net.UnknownHostException: Unable to resolve host "mainnet.api.perawallet.app": No address associated with hostname',
+    'Network request failed',
+    'fetch failed: java.net.ConnectException: Failed to connect to /10.0.2.2:80',
+]
+
 // Same HTTPError shape as makeHttpError, but with a real Response carrying a
 // body so `.clone().json()` (or `.text()`) resolves against real content.
 const makeHttpErrorWithBody = (status: number, body: unknown): HTTPError => {
@@ -85,6 +94,17 @@ describe('PeraNetworkError.fromKyError', () => {
         expect(err.kind).toBe('unknown')
         expect(err.metadata.retryable).toBe(false)
     })
+
+    // RN's fetch never produces the `TypeError` + exact-message shape ky's
+    // heuristics require, so ky hands these through unwrapped as plain `Error`s.
+    it.each(RAW_PLATFORM_NETWORK_MESSAGES)(
+        'classifies an unwrapped platform network error as offline: %s',
+        message => {
+            const err = PeraNetworkError.fromKyError(new Error(message))
+            expect(err.kind).toBe('offline')
+            expect(err.metadata.retryable).toBe(true)
+        },
+    )
 
     it('is idempotent for an existing PeraNetworkError', () => {
         const original = PeraNetworkError.fromKyError(makeHttpError(404))
@@ -155,6 +175,18 @@ describe('getNetworkErrorMessageKeys', () => {
         expect(
             getNetworkErrorMessageKeys(new PeraNetworkError('offline')),
         ).toEqual(keysFor('errors.network.no_connection'))
+    })
+
+    // The user-visible half of the ky-classification gap: before the platform
+    // shapes were recognized these normalized to `unknown` and an offline user
+    // got a generic error instead of "no connection".
+    it('maps a normalized platform network error → errors.network.no_connection', () => {
+        const normalized = PeraNetworkError.fromKyError(
+            new Error(RAW_PLATFORM_NETWORK_MESSAGES[0]),
+        )
+        expect(getNetworkErrorMessageKeys(normalized)).toEqual(
+            keysFor('errors.network.no_connection'),
+        )
     })
 
     it('maps timeout → errors.network.timeout', () => {
@@ -228,6 +260,13 @@ describe('isConnectivityError', () => {
     it('is true for a raw ky network error', () => {
         expect(isConnectivityError(makeNetworkError())).toBe(true)
     })
+
+    it.each(RAW_PLATFORM_NETWORK_MESSAGES)(
+        'is true for an unwrapped platform network error: %s',
+        message => {
+            expect(isConnectivityError(new Error(message))).toBe(true)
+        },
+    )
 
     it('is false for PeraNetworkError with kind server', () => {
         expect(

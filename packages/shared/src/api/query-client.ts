@@ -18,7 +18,6 @@ import ky, {
     type BeforeErrorState,
     HTTPError,
     isHTTPError,
-    isNetworkError,
     isTimeoutError,
 } from 'ky'
 import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
@@ -28,7 +27,11 @@ import {
 } from '../models/queries'
 import { type Network, Networks } from '../models/base-types'
 import { logger, parsePrecisionSafeJson } from '../utils'
-import { PeraNetworkError, isPeraNetworkError } from '../errors/network'
+import {
+    PeraNetworkError,
+    isNetworkTransportError,
+    isPeraNetworkError,
+} from '../errors/network'
 import { PeraServiceUnavailableError } from '../errors/pera-service'
 
 type BackendInstances = {
@@ -81,7 +84,7 @@ const logRequest = ({ request, options }: BeforeRequestState) => {
 export const isTransientNetworkError = (error: unknown): boolean => {
     if (isPeraNetworkError(error)) return error.metadata.retryable
     // Fallback for any not-yet-normalized raw ky error.
-    if (isTimeoutError(error) || isNetworkError(error)) return true
+    if (isTimeoutError(error) || isNetworkTransportError(error)) return true
     if (isHTTPError(error) && (error.response?.status ?? 0) >= 500) return true
     return false
 }
@@ -126,7 +129,7 @@ const logError = ({ request, options, error }: BeforeErrorState): Error => {
     // connectivity. v1 of ky did not invoke beforeError for these cases at all,
     // so they were silently propagated to the consumer. Logging at warn keeps
     // observability without polluting error-level reporting.
-    if (isTimeoutError(error) || isNetworkError(error)) {
+    if (isTimeoutError(error) || isNetworkTransportError(error)) {
         logger.warn('Request did not complete', {
             url: request?.url,
             name: error.name,

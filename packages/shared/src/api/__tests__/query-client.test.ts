@@ -1035,6 +1035,26 @@ describe('queryClient', () => {
             expect(mockLogger.warn).not.toHaveBeenCalled()
         })
 
+        // RN rejects with a plain `Error`, so ky never wraps it in NetworkError
+        // and this used to fall through to error level — it was ~84% of the
+        // Android app's Crashlytics volume.
+        it('logs an unwrapped platform network error at warn level, not error', async () => {
+            const dnsError = new Error(
+                'fetch failed: java.net.UnknownHostException: Unable to resolve host "mainnet.api.perawallet.app": No address associated with hostname',
+            )
+
+            const result = await runBeforeError(dnsError)
+
+            expect(result).toBe(dnsError)
+            expect(mockLogger.warn).toHaveBeenCalledWith(
+                'Request did not complete',
+                expect.objectContaining({
+                    url: 'https://mainnet.pera.algo/v1/assets',
+                }),
+            )
+            expect(mockLogger.error).not.toHaveBeenCalled()
+        })
+
         it('still logs unexpected errors at error level', async () => {
             const unexpectedError = new Error('boom')
 
