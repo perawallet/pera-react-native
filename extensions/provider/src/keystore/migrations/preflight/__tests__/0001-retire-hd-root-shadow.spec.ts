@@ -69,11 +69,11 @@ const context = (storage: FakeKeychainStorage): PeraMigrationContext => ({
     },
 })
 
-const seeded = (): FakeKeychainStorage =>
+const seeded = (type = 'hd-root-key'): FakeKeychainStorage =>
     fakeStorage({
         [`k/${ROOT_ID}`]: JSON.stringify({
             id: ROOT_ID,
-            type: 'hd-root-key',
+            type,
             algorithm: 'raw',
             publicKey: { $u8: 'AAAA' },
             metadata: { scheme: 'bip32-ed25519', storage: 'bytes' },
@@ -90,6 +90,19 @@ describe('0001-retire-hd-root-shadow', () => {
 
         expect(storage.getString(ROOT_ID)).toBeUndefined()
     })
+
+    // The set errs wide on purpose — one type too few is a record upstream then
+    // mangles — so every member is pinned, not just the common one.
+    it.each(['hd-root-key', 'xhd-root-key', 'hd-seed', 'seed'])(
+        'removes the shadow of a %s root',
+        async type => {
+            const storage = seeded(type)
+
+            await migration.up(context(storage), utils())
+
+            expect(storage.getString(ROOT_ID)).toBeUndefined()
+        },
+    )
 
     it('leaves the split metadata untouched', async () => {
         const storage = seeded()
@@ -137,6 +150,23 @@ describe('0001-retire-hd-root-shadow', () => {
         await migration.up(context(storage), utils())
 
         expect(storage.getString('passkey-1')).toBeDefined()
+    })
+
+    // A throw here fails the module, which rejects `migrations.ready`, which
+    // rejects `keystore.ready` (wired as `before:` in singleton.ts), which
+    // throws in `runKeystoreMaintenance` — a path that deliberately surfaces
+    // rather than degrades. One foreign `k/` record would stop the app booting.
+    it.each([
+        ['unparseable metadata', 'not json'],
+        ['metadata with a non-string type', '{"type":42}'],
+    ])('skips %s without throwing', async (_label, meta) => {
+        const storage = seeded()
+        storage.set(`k/${ROOT_ID}`, meta)
+
+        await expect(
+            Promise.resolve(migration.up(context(storage), utils())),
+        ).resolves.toBeUndefined()
+        expect(storage.getString(ROOT_ID)).toBeDefined()
     })
 
     it('is a no-op on empty storage', async () => {

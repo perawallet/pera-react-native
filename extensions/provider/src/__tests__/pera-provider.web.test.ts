@@ -59,8 +59,10 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     storage: {},
 }))
 
-// Ships untranspiled sources vitest can't parse; reached through the same
-// native preflight sibling.
+// Ships untranspiled sources vitest can't parse. Defensive: the preflight
+// sibling now imports it inside its context thunk, so composing a provider no
+// longer reaches it — but any extension that regresses to a module-scope
+// import would break this file rather than the one that made the change.
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
 vi.mock('@perawallet/wallet-extension-passkey-autofill', () => ({

@@ -17,7 +17,6 @@ import {
     storage as defaultStorage,
     type KeychainStorage,
 } from '@algorandfoundation/react-native-keystore'
-import { subtle } from 'react-native-quick-crypto'
 import {
     PREFLIGHT_MODULE_ID,
     preflightMigrations,
@@ -50,14 +49,20 @@ export const WithPeraKeystorePreflight: Extension<object> = (
 
     provider.migrations?.register({
         module: PREFLIGHT_MODULE_ID,
-        // Resolved lazily, only when a revision is pending. Revision 0001 reads
-        // the plaintext `k/` bucket only; `subtle` and `masterKeyForRead` are
-        // carried for later revisions and are never touched by it.
-        context: () => ({
-            storage,
-            subtle: subtle as unknown as SubtleCrypto,
-            masterKeyForRead: () => readMasterKey(),
-        }),
+        // Resolved lazily, only when a revision is pending. `react-native-quick
+        // -crypto` is imported here rather than at module scope so composing the
+        // provider costs nothing: revision 0001 reads the plaintext `k/` bucket
+        // only and never touches `subtle`, and later revisions that do will
+        // already be running inside the runner.
+        context: async () => {
+            const { subtle } = await import('react-native-quick-crypto')
+
+            return {
+                storage,
+                subtle: subtle as unknown as SubtleCrypto,
+                masterKeyForRead: () => readMasterKey(),
+            }
+        },
         migrations: preflightMigrations,
     })
 

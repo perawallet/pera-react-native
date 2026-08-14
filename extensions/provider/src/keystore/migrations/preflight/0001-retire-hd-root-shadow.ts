@@ -40,9 +40,11 @@ const HD_ROOT_SHADOW_TYPES: ReadonlySet<string> = new Set([
  * non-`k/`/`m/` key as a legacy flat record and writes the decoded blob's
  * metadata over `k/<id>` unconditionally — the shadow carries only
  * `{id, type, algorithm, seed}`, so the real record loses `publicKey`,
- * `metadata.scheme` and `bip44Path`, and passkey parent selection (which reads
- * `metadata.scheme`) breaks. This revision runs first so there is nothing left
- * for that pass to misread.
+ * `metadata.scheme` and `bip44Path`. Losing `scheme` is the damaging one:
+ * `seedSchemeOf` (`@perawallet/wallet-core-kms`) returns `null` without it, so
+ * `isSeedKey` goes false and the root stops being recognised as a wallet seed
+ * key at all. This revision runs first so there is nothing left for that pass
+ * to misread.
  *
  * The shadow is removed only when the split pair it duplicates is verifiably
  * present. When it is not, the flat record may be the only copy of the key —
@@ -76,5 +78,3 @@ export const migration: Migration<PeraMigrationContext> = {
         }
     },
 }
-
-export default migration
