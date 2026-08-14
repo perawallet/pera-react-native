@@ -10,10 +10,18 @@
  limitations under the License
  */
 
-import { partition, type Network } from '@perawallet/wallet-core-shared'
+import {
+    mapWithConcurrency,
+    partition,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { fetchNfdBulkRead } from '../api'
-import { NFD_BULK_CHUNK_SIZE, NFD_CACHE_TTL_MS } from '../constants'
+import {
+    NFD_BULK_CHUNK_SIZE,
+    NFD_BULK_CONCURRENCY,
+    NFD_CACHE_TTL_MS,
+} from '../constants'
 import {
     getStaleOrMissingAddresses,
     upsertNfdEntries,
@@ -45,23 +53,24 @@ export async function fetchAndPersistNfds(
 
     const batches = partition(toFetch, NFD_BULK_CHUNK_SIZE)
 
-    await Promise.allSettled(
-        batches.map(async batch => {
-            const results = await fetchNfdBulkRead({
-                addresses: batch,
-                network,
-            })
+    // Capped rather than all-at-once: a first visit to a long transaction list
+    // can hand this hundreds of uncached addresses, and one request per chunk
+    // fired simultaneously is a burst that reads as rate-limit abuse.
+    await mapWithConcurrency(batches, NFD_BULK_CONCURRENCY, async batch => {
+        const results = await fetchNfdBulkRead({
+            addresses: batch,
+            network,
+        })
 
-            // Build a map of hits keyed by address; we need to emit one row
-            // per requested address, including negative results for any
-            // address absent from the response.
-            const hitMap = new Map(results.map(r => [r.address, r.name]))
-            const entries: NfdCacheEntry[] = batch.map(address => ({
-                address,
-                name: hitMap.get(address) ?? null,
-            }))
+        // Build a map of hits keyed by address; we need to emit one row
+        // per requested address, including negative results for any
+        // address absent from the response.
+        const hitMap = new Map(results.map(r => [r.address, r.name]))
+        const entries: NfdCacheEntry[] = batch.map(address => ({
+            address,
+            name: hitMap.get(address) ?? null,
+        }))
 
-            await upsertNfdEntries({ network, entries })
-        }),
-    )
+        await upsertNfdEntries({ network, entries })
+    })
 }

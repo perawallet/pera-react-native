@@ -31,6 +31,24 @@ export const initializeSyncService = (deps: SyncServiceDeps): SyncService => {
     return newInstance
 }
 
+/**
+ * Pause/resume the poll loop if it exists, for UI that owns the JS thread for a
+ * while (see `pauseSyncOnInteraction` on PWFlatList).
+ *
+ * Deliberately not routed through `getSyncService`, which throws when sync has
+ * not been initialised: a list can mount and be scrolled before bootstrap
+ * finishes, and in tests and previews where sync never starts at all. A gesture
+ * must never be able to throw, so these no-op instead. Calls stay balanced
+ * either way — with no instance there is nothing to leave paused.
+ */
+export const pauseSync = (): void => {
+    instance?.pause()
+}
+
+export const resumeSync = (): void => {
+    instance?.resume()
+}
+
 export const getSyncService = (): SyncService => {
     if (instance === null) {
         throw new Error(

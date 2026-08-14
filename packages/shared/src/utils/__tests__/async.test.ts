@@ -11,7 +11,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { calculateBackoff, deferToNextCycle, withTimeout } from '../async'
+import {
+    calculateBackoff,
+    deferToNextCycle,
+    mapWithConcurrency,
+    withTimeout,
+} from '../async'
 
 describe('deferToNextCycle', () => {
     beforeEach(() => {
@@ -201,5 +206,146 @@ describe('withTimeout', () => {
         await expect(
             withTimeout(Promise.reject(wrappedError), 1000, 'op'),
         ).rejects.toBe(wrappedError)
+    })
+})
+
+describe('mapWithConcurrency', () => {
+    /**
+     * Mappers that block until released, so the test controls exactly when a
+     * worker is free to claim its next item. `started` is the ground truth for
+     * how many ran concurrently.
+     */
+    const gatedMapper = () => {
+        const started: number[] = []
+        const release: Array<() => void> = []
+        const mapper = (item: number) => {
+            started.push(item)
+            return new Promise<number>(resolve => {
+                release.push(() => resolve(item * 2))
+            })
+        }
+        return {
+            mapper,
+            started,
+            /** Release the oldest `count` in-flight mappers. */
+            releaseNext: async (count: number) => {
+                for (let i = 0; i < count; i++) release.shift()?.()
+                // Let the freed workers claim their next item.
+                await new Promise(resolve => setTimeout(resolve, 0))
+            },
+            /**
+             * Release everything, including the replacements each release
+             * admits — releasing only the currently-in-flight set would strand
+             * the workers that pick up after it.
+             */
+            drain: async () => {
+                while (release.length > 0) {
+                    for (const resolve of release.splice(0, release.length)) {
+                        resolve()
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 0))
+                }
+            },
+        }
+    }
+
+    // Asserts the exact ceiling in both directions: `<= limit` alone would also
+    // pass a fully sequential implementation, which is the bug most likely to
+    // hide here.
+    it('saturates the limit and never exceeds it', async () => {
+        const items = Array.from({ length: 20 }, (_, i) => i)
+        const { mapper, started, releaseNext, drain } = gatedMapper()
+
+        const pending = mapWithConcurrency(items, 3, mapper)
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        // Exactly the limit is in flight, and nothing more can start until one
+        // of them settles.
+        expect(started).toHaveLength(3)
+
+        // Each completion admits exactly one replacement — never a burst.
+        await releaseNext(1)
+        expect(started).toHaveLength(4)
+        await releaseNext(2)
+        expect(started).toHaveLength(6)
+
+        await drain()
+        await pending
+        expect(started).toHaveLength(20)
+    })
+
+    it('runs every item exactly once', async () => {
+        const items = Array.from({ length: 20 }, (_, i) => i)
+        const seen: number[] = []
+
+        await mapWithConcurrency(items, 3, async item => {
+            seen.push(item)
+            return item
+        })
+
+        expect(seen).toHaveLength(20)
+        expect(new Set(seen)).toEqual(new Set(items))
+    })
+
+    it('runs everything concurrently when the limit exceeds the item count', async () => {
+        const { mapper, started } = gatedMapper()
+
+        void mapWithConcurrency([1, 2, 3], 10, mapper)
+        await new Promise(resolve => setTimeout(resolve, 0))
+
+        expect(started).toHaveLength(3)
+    })
+
+    // Callers map a result index back to its input to report which subject
+    // failed, so drifting order would misattribute failures.
+    it('aligns results positionally with the input, not with completion order', async () => {
+        const results = await mapWithConcurrency(
+            [10, 20, 30],
+            2,
+            async item => {
+                // Invert the delay so completion order reverses input order.
+                await new Promise(resolve => setTimeout(resolve, 30 - item))
+                return item
+            },
+        )
+
+        expect(results).toEqual([
+            { status: 'fulfilled', value: 10 },
+            { status: 'fulfilled', value: 20 },
+            { status: 'fulfilled', value: 30 },
+        ])
+    })
+
+    it('isolates a rejection without failing the batch', async () => {
+        const boom = new Error('boom')
+
+        const results = await mapWithConcurrency([1, 2, 3], 2, async item => {
+            if (item === 2) throw boom
+            return item
+        })
+
+        expect(results).toEqual([
+            { status: 'fulfilled', value: 1 },
+            { status: 'rejected', reason: boom },
+            { status: 'fulfilled', value: 3 },
+        ])
+    })
+
+    it('returns an empty array without invoking the mapper', async () => {
+        const mapper = vi.fn()
+
+        expect(await mapWithConcurrency([], 4, mapper)).toEqual([])
+        expect(mapper).not.toHaveBeenCalled()
+    })
+
+    // A limit computed from config could arrive as 0; flooring at 1 keeps that
+    // from hanging forever with no worker to drain the queue.
+    it.each([0, -1])('still drains when the limit is %i', async limit => {
+        const results = await mapWithConcurrency([1, 2], limit, async i => i)
+
+        expect(results).toEqual([
+            { status: 'fulfilled', value: 1 },
+            { status: 'fulfilled', value: 2 },
+        ])
     })
 })

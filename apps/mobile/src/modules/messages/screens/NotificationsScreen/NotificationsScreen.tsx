@@ -51,6 +51,7 @@ export const NotificationsScreen = () => {
     return (
         <PWScreen scroll='never'>
             <PWFlatList
+                pauseSyncOnInteraction
                 ref={listRef}
                 data={notifications}
                 renderItem={renderItem}

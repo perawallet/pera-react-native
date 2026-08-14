@@ -28,6 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWView } from '../PWView'
 import { PWInBottomSheetContext } from '../PWBottomSheet/inSheetContext'
 import { useStyles } from './styles'
+import { useSyncPauseOnInteraction } from './useSyncPauseOnInteraction'
 
 export type PWFlatListRef = {
     scrollToOffset: (params: { offset: number; animated?: boolean }) => void
@@ -43,6 +44,16 @@ export type PWFlatListRef = {
 export type PWFlatListProps<T> = FlashListProps<T> & {
     inBottomSheet?: boolean
     cardLayout?: boolean
+    /**
+     * Holds background sync off the JS thread while this list is being scrolled.
+     *
+     * Worth setting on any list long enough to be flung through: a sync tick
+     * writes to SQLite per account, and that hitch mid-gesture is far more
+     * noticeable than data arriving a moment later. Off by default — on a short
+     * list there is nothing to protect, and pausing sync for no reason only
+     * makes it staler.
+     */
+    pauseSyncOnInteraction?: boolean
 }
 
 /**
@@ -70,6 +81,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
         {
             inBottomSheet,
             cardLayout,
+            pauseSyncOnInteraction = false,
             ItemSeparatorComponent,
             contentContainerStyle,
             showsVerticalScrollIndicator = false,
@@ -112,8 +124,20 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
               ? defaultSeparator
               : ItemSeparatorComponent
 
+        // Wraps the caller's own scroll handlers rather than replacing them.
+        const syncPauseHandlers = useSyncPauseOnInteraction(
+            pauseSyncOnInteraction,
+            {
+                onScrollBeginDrag: props.onScrollBeginDrag,
+                onScrollEndDrag: props.onScrollEndDrag,
+                onMomentumScrollBegin: props.onMomentumScrollBegin,
+                onMomentumScrollEnd: props.onMomentumScrollEnd,
+            },
+        )
+
         const flashProps: FlashListProps<unknown> = {
             ...props,
+            ...syncPauseHandlers,
             showsVerticalScrollIndicator,
             showsHorizontalScrollIndicator,
             drawDistance,

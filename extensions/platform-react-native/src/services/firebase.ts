@@ -421,16 +421,25 @@ export class RNFirebaseService
         void setCrashlyticsCollectionEnabled(this.crashlytics, !isDebug)
     }
 
-    recordNonFatalError(error: unknown): void {
+    /**
+     * `groupingKey` maps onto RN Firebase's `jsErrorName`, which prepends a
+     * synthetic top stack frame carrying that string. Crashlytics fingerprints
+     * non-fatals on the exception class plus the top frames, and every JS
+     * non-fatal arrives as the same class — so that injected frame is the only
+     * lever that separates two distinct error sites into distinct issues. It
+     * also titles the issue, which is why the key should read as a description.
+     *
+     * Omit it and the error's real stack does the grouping, which is preferable
+     * when there is one.
+     */
+    recordNonFatalError(error: unknown, groupingKey?: string): void {
         if (!this.crashlytics) {
             return
         }
 
-        if (error instanceof Error) {
-            recordError(this.crashlytics, error)
-        } else {
-            recordError(this.crashlytics, new Error(String(error)))
-        }
+        const reportable =
+            error instanceof Error ? error : new Error(String(error))
+        recordError(this.crashlytics, reportable, groupingKey)
     }
 
     initializeAnalytics(): void {

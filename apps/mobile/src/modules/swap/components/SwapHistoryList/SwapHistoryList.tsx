@@ -88,6 +88,7 @@ export const SwapHistoryList = ({
             testID='swap-history-list'
         >
             <PWFlatList
+                pauseSyncOnInteraction
                 data={swaps}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}

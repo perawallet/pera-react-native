@@ -244,6 +244,7 @@ export const AccountNfts = () => {
                         </PWView>
                     </PWView>
                     <PWFlatList
+                        pauseSyncOnInteraction
                         ref={flatListRef}
                         // Keyed on the layout ONLY. Sorting and searching just
                         // reorder/narrow `data`, which FlashList handles, so

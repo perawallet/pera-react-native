@@ -134,6 +134,15 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     },
     calculateBackoff: (current: number, multiplier: number, max: number) =>
         Math.min(current * multiplier, max),
+    // Unbounded stand-in: these tests assert what gets fetched and how failures
+    // are handled, not the concurrency cap. The real limiting behaviour is
+    // covered in shared's async tests — do not read a passing suite here as
+    // evidence that the cap works.
+    mapWithConcurrency: async <T, R>(
+        items: T[],
+        _limit: number,
+        mapper: (item: T, index: number) => Promise<R>,
+    ) => Promise.allSettled(items.map((item, index) => mapper(item, index))),
 }))
 
 describe('SyncService', () => {
@@ -200,6 +209,106 @@ describe('SyncService', () => {
 
         service.stop()
         expect(service.isRunning()).toBe(false)
+    })
+
+    // A tick persists to SQLite per account, on the same JS thread a scroll is
+    // being rendered on. Pausing trades a moment of staleness for a gesture that
+    // does not hitch.
+    it('holds off syncing while paused', async () => {
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: false,
+            round: null,
+        })
+
+        vi.useRealTimers()
+        service.pause()
+
+        service.start()
+        await new Promise(resolve => setTimeout(resolve, 100))
+
+        expect(fetchAndPersistAccount).not.toHaveBeenCalled()
+
+        service.stop()
+        vi.useFakeTimers()
+    })
+
+    it('syncs again once resumed', async () => {
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: false,
+            round: null,
+        })
+
+        vi.useRealTimers()
+        service.pause()
+        service.start()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        expect(fetchAndPersistAccount).not.toHaveBeenCalled()
+
+        service.resume()
+        // Past PAUSE_RECHECK_MS so the deferred re-check runs for real.
+        await new Promise(resolve => setTimeout(resolve, 600))
+
+        expect(fetchAndPersistAccount).toHaveBeenCalled()
+
+        service.stop()
+        vi.useFakeTimers()
+    })
+
+    // Several long lists can be mounted at once (the account tabs all stay
+    // mounted), so one list's resume must not cancel another's pause.
+    it('ref-counts pauses so one resume does not release another holder', () => {
+        service.pause()
+        service.pause()
+
+        service.resume()
+        expect(service.isPaused()).toBe(true)
+
+        service.resume()
+        expect(service.isPaused()).toBe(false)
+    })
+
+    it('ignores a resume with no matching pause rather than going negative', () => {
+        service.resume()
+        expect(service.isPaused()).toBe(false)
+
+        service.pause()
+        expect(service.isPaused()).toBe(true)
+    })
+
+    // The recovery path: a list unmounted mid-scroll never resumes, and without
+    // the ceiling that would stop background sync for the rest of the process.
+    it('force-clears an abandoned pause after the ceiling elapses', () => {
+        service.pause()
+        service.pause()
+        expect(service.isPaused()).toBe(true)
+
+        // MAX_PAUSE_MS is 5s.
+        vi.advanceTimersByTime(5001)
+
+        expect(service.isPaused()).toBe(false)
+    })
+
+    it('re-arms the ceiling on each pause instead of inheriting a spent one', () => {
+        service.pause()
+        vi.advanceTimersByTime(4000)
+        service.pause()
+        vi.advanceTimersByTime(4000)
+
+        // 8s since the first pause, only 4s since the last — still held.
+        expect(service.isPaused()).toBe(true)
+    })
+
+    it('drops any held pause on stop so it cannot bleed into the next start', () => {
+        service.pause()
+        expect(service.isPaused()).toBe(true)
+
+        service.stop()
+
+        expect(service.isPaused()).toBe(false)
     })
 
     it('force-syncs all networks on the first tick', async () => {

@@ -114,6 +114,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     return (
         <PWView style={styles.container}>
             <PWFlatList
+                pauseSyncOnInteraction
                 data={rows}
                 renderItem={renderItem}
                 keyExtractor={getTransactionRowKey}

@@ -57,6 +57,51 @@ export function deferToNextCycle<T>(
 }
 
 /**
+ * `Promise.allSettled(items.map(fn))` with at most `limit` in flight.
+ *
+ * A bare `allSettled` over a mapped list starts every task at once. With one
+ * request per item that is a burst proportional to the user's data — enough
+ * accounts, or enough uncached addresses, and it reads as an attack to a rate
+ * limiter and comes back as 429s.
+ *
+ * Returns `PromiseSettledResult`s positionally aligned with `items`, so it
+ * drops into an existing `allSettled` call site unchanged — including callers
+ * that map a result index back to its input (e.g. failure logging that needs
+ * the address a rejection belongs to).
+ *
+ * `limit` is floored at 1: a caller computing it from config can't accidentally
+ * pass 0 and deadlock.
+ */
+export const mapWithConcurrency = async <T, R>(
+    items: T[],
+    limit: number,
+    mapper: (item: T, index: number) => Promise<R>,
+): Promise<PromiseSettledResult<R>[]> => {
+    const results: PromiseSettledResult<R>[] = new Array(items.length)
+    let nextIndex = 0
+
+    const worker = async (): Promise<void> => {
+        for (;;) {
+            const index = nextIndex++
+            if (index >= items.length) return
+            try {
+                results[index] = {
+                    status: 'fulfilled',
+                    value: await mapper(items[index], index),
+                }
+            } catch (reason) {
+                results[index] = { status: 'rejected', reason }
+            }
+        }
+    }
+
+    const workerCount = Math.max(1, Math.min(limit, items.length))
+    await Promise.all(Array.from({ length: workerCount }, worker))
+
+    return results
+}
+
+/**
  * The timer is cleared on settle, so fast calls don't leave a setTimeout
  * pinning the rejection closure for the full window. Cleaning up a
  * late-resolving resource is the caller's job — see the hardware-wallet

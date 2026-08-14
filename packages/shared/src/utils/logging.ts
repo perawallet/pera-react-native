@@ -11,7 +11,7 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
-import type { Nullable } from './types'
+import type { Nullable, Optional } from './types'
 
 /**
  * Log levels for controlling log output and error reporting
@@ -182,6 +182,13 @@ export type LogErrorSeverity = 'error' | 'critical'
 export type ErrorReportPayload = {
     severity: LogErrorSeverity
     error: unknown
+    /**
+     * Stable name for the logical error site, set only when `error`'s stack was
+     * captured inside the logger and so cannot identify the caller. Reporters
+     * that fingerprint on the stack need it to tell two sites apart; see
+     * `reportError`.
+     */
+    groupingKey?: string
 }
 
 export type ErrorReporter = (payload: ErrorReportPayload) => void
@@ -293,15 +300,53 @@ class Logger {
             if (messageOrError instanceof Error) {
                 reportableError.name = messageOrError.name
                 reportableError.stack = messageOrError.stack
+
+                // No groupingKey: this error's own stack points at where it was
+                // thrown, which separates sites far better than a shared name
+                // would. Supplying one here would prepend an identical frame
+                // above genuinely distinct stacks and merge them.
+                this.errorReporter({ severity, error: reportableError })
+                return
+            }
+
+            // A string message means `reportableError`'s stack was captured
+            // here, inside the logger — so it is identical for every such call
+            // in the app, and a stack-fingerprinting reporter collapses them all
+            // into one issue. Two things fix that:
+            //
+            // 1. `groupingKey`, the constant message, names the site. The
+            //    message alone, never `combinedMessage`, whose interpolated
+            //    context would make every event its own issue.
+            // 2. Adopting the stack of an `Error` passed in context, so the
+            //    frames below point at the real origin instead of at `log()`.
+            const contextError = this.findContextError(context)
+            if (contextError?.stack) {
+                reportableError.stack = contextError.stack
             }
 
             this.errorReporter({
                 severity,
                 error: reportableError,
+                groupingKey: message,
             })
         } catch {
             // Never allow error reporting to crash the app.
         }
+    }
+
+    /**
+     * The `{ error }` convention most call sites already follow. `cause` and
+     * `reason` cover the promise-rejection and settled-result spellings.
+     * Deliberately shallow: a nested search would start adopting stacks from
+     * incidental errors buried in a payload.
+     */
+    private findContextError(context?: LogContext): Optional<Error> {
+        if (!context) return undefined
+        for (const key of ['error', 'cause', 'reason']) {
+            const value = (context as Record<string, unknown>)[key]
+            if (value instanceof Error) return value
+        }
+        return undefined
     }
 
     /**

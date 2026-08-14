@@ -12,5 +12,10 @@
 
 export interface CrashReportingService {
     initializeCrashReporting(): void
-    recordNonFatalError(error: unknown): void
+    /**
+     * `groupingKey` names the logical error site, for reporters that fingerprint
+     * on something other than the error's own stack. Optional: a caller with a
+     * genuine stack should omit it and let the stack do the grouping.
+     */
+    recordNonFatalError(error: unknown, groupingKey?: string): void
 }

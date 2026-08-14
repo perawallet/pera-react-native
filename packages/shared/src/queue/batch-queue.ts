@@ -33,16 +33,43 @@ type Bucket<TKey, TResult, TPartition> = Map<
     Map<TKey, Waiter<TResult>[]>
 >
 
+export type BatchQueueOptions = {
+    /** Quiet period (or fixed window, when `debounce` is off) before dispatch. */
+    delayMs?: number
+    /**
+     * Restart the timer on every enqueue, so a continuous stream of enqueues
+     * dispatches once when it settles instead of once per `delayMs`. Trades
+     * latency for far fewer dispatches — suitable when the result is
+     * non-critical. Bound it with `maxWaitMs`.
+     */
+    debounce?: boolean
+    /**
+     * Dispatch immediately once any one partition holds this many distinct
+     * keys, regardless of the timer. Size it to whatever the executor can
+     * serve in a single call.
+     */
+    maxBatchSize?: number
+    /**
+     * Ceiling on how long `debounce` may defer a dispatch, measured from the
+     * window's first enqueue. Without it, enqueues arriving slightly faster
+     * than `delayMs` restart the timer indefinitely and nothing ever
+     * dispatches. Ignored when `debounce` is off.
+     */
+    maxWaitMs?: number
+}
+
 /**
- * Groups keys enqueued within `delayMs` of each other into one dispatch. The
- * first enqueue starts the timer; when it fires the filled bucket is swapped
- * aside for its executor to run (one call per partition) while new enqueues
- * accumulate in a fresh bucket, which schedules the next round once the
- * previous settles.
+ * Groups keys enqueued close together into one dispatch. When the timer fires
+ * the filled bucket is swapped aside for its executor to run (one call per
+ * partition) while new enqueues accumulate in a fresh bucket, which schedules
+ * the next round once the previous settles.
+ *
+ * By default the first enqueue starts a fixed `delayMs` window. With
+ * `debounce`, each enqueue restarts it instead — see {@link BatchQueueOptions}.
  *
  * A key enqueued twice in one window dedups to a single fetch with multiple
- * waiters. Across adjacent windows it's two fetches, by design — raise
- * `delayMs` for longer dedup.
+ * waiters. Across adjacent windows it's two fetches, by design — widen the
+ * window for longer dedup.
  *
  * Partitions suit a segmented API: NFD lookups are per-network, so different
  * networks fire separate executor calls in the same flush. Leave `TPartition`
@@ -51,12 +78,29 @@ type Bucket<TKey, TResult, TPartition> = Map<
 export class BatchQueue<TKey, TResult, TPartition = void> {
     private current: Bucket<TKey, TResult, TPartition> = new Map()
     private timer: Nullable<ReturnType<typeof setTimeout>> = null
+    /** Start of the open window, for the `maxWaitMs` ceiling. */
+    private windowStartedAt: Nullable<number> = null
 
-    /** Larger `delayMs` means more coalescing and more latency. */
+    private readonly delayMs: number
+    private readonly debounce: boolean
+    private readonly maxBatchSize: Optional<number>
+    private readonly maxWaitMs: Optional<number>
+
+    /**
+     * A bare number is the `delayMs` shorthand, keeping the original
+     * two-argument form working.
+     */
     constructor(
         private readonly executor: BatchExecutor<TKey, TResult, TPartition>,
-        private readonly delayMs: number = 0,
-    ) {}
+        options: number | BatchQueueOptions = 0,
+    ) {
+        const resolved =
+            typeof options === 'number' ? { delayMs: options } : options
+        this.delayMs = resolved.delayMs ?? 0
+        this.debounce = resolved.debounce ?? false
+        this.maxBatchSize = resolved.maxBatchSize
+        this.maxWaitMs = resolved.maxWaitMs
+    }
 
     enqueue(key: TKey, partition: TPartition): Promise<Optional<TResult>> {
         let partitionMap = this.current.get(partition)
@@ -71,11 +115,49 @@ export class BatchQueue<TKey, TResult, TPartition = void> {
             partitionMap!.set(key, waiters)
         })
 
-        if (this.timer === null) {
-            this.timer = setTimeout(() => void this.flush(), this.delayMs)
-        }
+        this.scheduleFlush(partitionMap.size)
 
         return promise
+    }
+
+    /**
+     * `pendingKeys` is the enqueueing partition's distinct-key count — the unit
+     * `maxBatchSize` bounds, since the executor is called once per partition.
+     */
+    private scheduleFlush(pendingKeys: number): void {
+        if (this.windowStartedAt === null) {
+            this.windowStartedAt = Date.now()
+        }
+
+        if (
+            this.maxBatchSize !== undefined &&
+            pendingKeys >= this.maxBatchSize
+        ) {
+            this.clearTimer()
+            void this.flush()
+            return
+        }
+
+        if (this.timer !== null && !this.debounce) {
+            return
+        }
+
+        this.clearTimer()
+
+        let delay = this.delayMs
+        if (this.debounce && this.maxWaitMs !== undefined) {
+            const elapsed = Date.now() - this.windowStartedAt
+            delay = Math.min(delay, Math.max(0, this.maxWaitMs - elapsed))
+        }
+
+        this.timer = setTimeout(() => void this.flush(), delay)
+    }
+
+    private clearTimer(): void {
+        if (this.timer !== null) {
+            clearTimeout(this.timer)
+            this.timer = null
+        }
     }
 
     private async flush(): Promise<void> {
@@ -84,6 +166,10 @@ export class BatchQueue<TKey, TResult, TPartition = void> {
         const taken = this.current
         this.current = new Map()
         this.timer = null
+        // Closes the window: enqueues arriving during the executor belong to
+        // the next one, and must not inherit this window's spent maxWait
+        // budget — otherwise every later batch would dispatch with zero delay.
+        this.windowStartedAt = null
 
         // Run one executor invocation per partition. Failures in one
         // partition don't affect others.
@@ -97,6 +183,7 @@ export class BatchQueue<TKey, TResult, TPartition = void> {
         // timer was scheduled (e.g. those enqueues happened after the
         // executor started), kick off the next round.
         if (this.current.size > 0 && this.timer === null) {
+            this.windowStartedAt = Date.now()
             this.timer = setTimeout(() => void this.flush(), this.delayMs)
         }
     }
