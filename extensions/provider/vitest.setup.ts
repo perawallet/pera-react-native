@@ -12,6 +12,28 @@
 
 import { vi } from 'vitest'
 
+// One store per instance id, mirroring real MMKV: `createMMKV({ id })` gives
+// each id its own keyspace. A mock that shared one Map across ids would make
+// the ledger-isolation test pass vacuously.
+const mmkvInstances = new Map<string, Map<string, string>>()
+
+vi.mock('react-native-mmkv', () => ({
+    createMMKV: (config?: { id?: string }) => {
+        const id = config?.id ?? 'mmkv.default'
+        let store = mmkvInstances.get(id)
+        if (!store) {
+            store = new Map<string, string>()
+            mmkvInstances.set(id, store)
+        }
+        return {
+            getString: (key: string) => store.get(key) ?? undefined,
+            set: (key: string, value: string) => store.set(key, String(value)),
+            remove: (key: string) => store.delete(key),
+            getAllKeys: () => Array.from(store.keys()),
+        }
+    },
+}))
+
 // `expo-modules-core` references `__DEV__` at module-load time. The
 // passkey-autofill native module pulls in `expo`, so any import chain that
 // touches PeraProvider triggers this in jsdom. Mirror the apps/mobile setup

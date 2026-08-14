@@ -20,6 +20,7 @@
   "dependencies": {
     "@algorandfoundation/keystore-core": "catalog:",
     "@algorandfoundation/keystore-web": "catalog:",
+    "@algorandfoundation/provider-migrations": "catalog:",
     "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
     "@scure/base": "catalog:",
@@ -35,6 +36,7 @@
     "@perawallet/wallet-extension-ledger-web-usb": "workspace:*",
     "@perawallet/wallet-extension-passkey-autofill": "workspace:*",
     "react": "catalog:",
+    "react-native-mmkv": "catalog:",
     "react-native-quick-crypto": "catalog:"
   },
   "devDependencies": {
