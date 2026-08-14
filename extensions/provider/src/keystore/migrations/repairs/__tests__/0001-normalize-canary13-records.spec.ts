@@ -442,6 +442,11 @@ describe('0001-normalize-canary13-records', () => {
         // every device that has already been normalised.
         expect(written).toEqual([])
         expect(storage.entries()).toEqual(before)
+        // And the record must be *judged* from its plaintext metadata. Opening
+        // this one's material to measure it would leave the entries above
+        // identical while costing a biometric prompt at launch on every device
+        // that has nothing left to migrate.
+        expect(masterKeyForRead).not.toHaveBeenCalled()
     })
 
     // Copy, verify, delete: the plaintext copy of a secret is only dropped once
