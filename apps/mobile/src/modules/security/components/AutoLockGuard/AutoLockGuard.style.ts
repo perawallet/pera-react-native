@@ -21,8 +21,15 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     childrenContainer: {
         flex: 1,
     },
+    // Hidden with opacity, NOT `display: none`. Yoga services a hidden subtree
+    // via zeroOutLayoutRecursively, which does not terminate over this tree
+    // (51 host levels deep) — the JS thread enters one Fabric commit, pegs a
+    // core, grows native memory to ~1.6GB and dies in
+    // uiManagerDidFinishTransaction. Opacity keeps the pre-warm intact while
+    // staying on the ordinary layout path. Nothing leaks visually: `lockOverlay`
+    // below is opaque, full-screen and above this in z-order.
     childrenHidden: {
-        display: 'none',
+        opacity: 0,
     },
     // Full-screen, opaque overlay for the lock UI. Rendered inline (no
     // Modal) so there's no Android Dialog enter/exit animation between

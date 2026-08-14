@@ -103,6 +103,11 @@ export const useAccountBalancesQuery = (
                 // which would strand consumers in `pending`. Network segments are
                 // already caught in the syncer.
                 networkMode: 'always' as const,
+                // notifyOnChangeProps: 'all' disables Proxy-based property tracking in
+                // TanStack Query. This works around a race condition in QueriesObserver
+                // where _observerMatches and _result can get out of sync during
+                // synchronous notifications, causing "new Proxy target must be an Object".
+                notifyOnChangeProps: 'all' as const,
                 queryFn: () => readAccountFromDb(address, network, filters),
             }
         })
@@ -119,15 +124,24 @@ export const useAccountBalancesQuery = (
         filters?.hideOptedInNfts,
     ])
 
-    // notifyOnChangeProps: 'all' disables Proxy-based property tracking in TanStack Query.
-    // This works around a race condition in QueriesObserver where _observerMatches and _result
-    // can get out of sync during synchronous notifications, causing "new Proxy target must be an Object".
-    const results = useQueries({
-        queries: queries.map(q => ({
-            ...q,
-            notifyOnChangeProps: 'all' as const,
-        })),
-    })
+    const results = useQueries({ queries })
+
+    // `useQueries` returns a fresh `results` array on every render even when
+    // nothing changed, so depending on it directly defeats the memo below and
+    // re-walks every holding — allocating a Decimal per field, per asset, per
+    // render. This primitive signature captures everything the body reads
+    // (`dataUpdatedAt` moves whenever the data does), and Object.is stays true
+    // across renders when content matches. Same guard as `useLedgerRekeyedScan`.
+    const resultsSig = results
+        .map(
+            (r, i) =>
+                `${accounts[i]?.address ?? ''}|${r.dataUpdatedAt}|${
+                    r.isPending ? 1 : 0
+                }${r.isFetched ? 1 : 0}${r.isRefetching ? 1 : 0}${
+                    r.isError ? 1 : 0
+                }${r.isPaused ? 1 : 0}`,
+        )
+        .join('||')
 
     const {
         accountBalances,
@@ -239,7 +253,10 @@ export const useAccountBalancesQuery = (
             isError,
             isPaused,
         }
-    }, [results, accounts, hasAccounts])
+        // `results` is read inside but deliberately not a dep — `resultsSig` is
+        // its stable stand-in; see the comment where it is built.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [resultsSig, accounts, hasAccounts])
 
     return {
         accountBalances,

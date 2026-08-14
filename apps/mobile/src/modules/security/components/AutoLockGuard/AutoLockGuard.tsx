@@ -48,6 +48,10 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
                     styles.childrenContainer,
                     isGuardActive && styles.childrenHidden,
                 ]}
+                // The children are invisible but still mounted and laid out, so
+                // they remain hit-testable without this — a tap could reach a
+                // control the user cannot see.
+                pointerEvents={isGuardActive ? 'none' : 'auto'}
             >
                 <LockOverlayProvider value={isGuardActive}>
                     {children}
