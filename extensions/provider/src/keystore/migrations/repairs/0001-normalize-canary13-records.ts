@@ -86,8 +86,10 @@ export const migration: Migration<PeraMigrationContext> = {
                 return key
             }))
 
+        // Every record this revision did not rewrite, whatever the reason.
+        // None is ever revisited: the runner marks the revision applied as
+        // soon as `up` resolves.
         const untouched: string[] = []
-        const declined: string[] = []
 
         for (const id of ids) {
             const raw = storage.getString(METADATA_PREFIX + id)
@@ -209,9 +211,6 @@ export const migration: Migration<PeraMigrationContext> = {
                 if (!placeable) {
                     journal.rollback()
                     untouched.push(id)
-                    // Never retried — the runner marks this revision applied
-                    // because `up` resolves — so it needs a note on disk.
-                    declined.push(id)
                     console.warn(
                         `[provider] normalize-canary13-records: entry ${id} left untouched; a nested secret has nowhere to be sealed`,
                     )
@@ -244,7 +243,7 @@ export const migration: Migration<PeraMigrationContext> = {
 
         utils.secrets.wipe('keystore-master-key')
 
-        context.declined.record(utils.revision.module, declined)
+        context.declined.record(utils.revision.module, untouched)
 
         if (untouched.length > 0) {
             utils.log?.warn(

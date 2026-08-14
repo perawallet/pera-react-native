@@ -55,8 +55,8 @@ const noteKey = (module: string): string =>
  * would block the first write forever and a fresh install could never create an
  * account.
  */
-export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => ({
-    read: module => {
+export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
+    const read = (module: string): string[] => {
         const raw = store.getString(noteKey(module))
         if (raw === undefined) return []
 
@@ -70,16 +70,15 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => ({
             // worst case is re-recording ids that were already there.
             return []
         }
-    },
-    record: (module, ids) => {
-        if (ids.length === 0) return
+    }
 
-        const key = noteKey(module)
-        const merged = new Set(
-            createDeclinedRegister(store)
-                .read(module)
-                .concat([...ids]),
-        )
-        store.set(key, JSON.stringify([...merged]))
-    },
-})
+    return {
+        read,
+        record: (module, ids) => {
+            if (ids.length === 0) return
+
+            const merged = new Set(read(module).concat([...ids]))
+            store.set(noteKey(module), JSON.stringify([...merged]))
+        },
+    }
+}

@@ -52,7 +52,13 @@ import {
     fakeStorage,
     type FakeKeychainStorage,
 } from '../../__fixtures__/fakeStorage'
-import { decode, openData, sealData } from '../../__fixtures__/keystoreFormats'
+import {
+    decode,
+    decodedRecords,
+    openData,
+    resetDecoded,
+    sealData,
+} from '../../__fixtures__/keystoreFormats'
 import { SECRET_FIELDS } from '../../canary13'
 import { createDeclinedRegister } from '../../declined'
 import { migration } from '../0001-normalize-canary13-records'
@@ -565,6 +571,39 @@ describe('0001-normalize-canary13-records', () => {
         ).toEqual(['key-c'])
     })
 
+    // The `catch` path needs the note as much as the declined one — both leave
+    // a record un-normalised and neither is ever revisited.
+    it('records a failed record in the durable sentinel', async () => {
+        const storage = await seeded({
+            id: 'derived-1',
+            type: 'hd-derived-ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            metadata: {
+                rootKey: {
+                    id: 'root-1',
+                    privateKey: new Uint8Array(64).fill(11),
+                },
+            },
+        })
+        const set = storage.set
+        storage.set = (key, value) => {
+            set(
+                key,
+                key === `${MATERIAL_PREFIX}root-1`
+                    ? 'truncated-ciphertext'
+                    : value,
+            )
+        }
+
+        await migration.up(context(storage), utils())
+
+        storage.set = set
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(REPAIRS_MODULE_ID),
+        ).toEqual(['derived-1'])
+    })
+
     it('writes no sentinel when every record was normalised', async () => {
         const storage = await seeded({
             id: 'q-1',
@@ -600,6 +639,63 @@ describe('0001-normalize-canary13-records', () => {
         expect(lastMasterKey).toBeDefined()
         expect([...lastMasterKey!]).toEqual([...new Uint8Array(32)])
     })
+
+    // The master key is not the only plaintext this revision holds: a `k/`
+    // record can still carry nested material, and it must be gone from the heap
+    // once the revision is done with it — on every exit, not just the rewritten
+    // one. Without these, a no-op `wipeSecrets` fails nothing in this spec.
+    it.each([
+        [
+            'lifted and sealed',
+            {
+                id: 'derived-1',
+                type: 'hd-derived-ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                metadata: {
+                    rootKey: {
+                        id: 'root-1',
+                        privateKey: new Uint8Array(64).fill(11),
+                    },
+                },
+            },
+            undefined,
+        ],
+        [
+            'declined for having nowhere to seal it',
+            {
+                id: 'key-c',
+                type: 'ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                metadata: {
+                    signAlgorithm: { name: 'Ed25519' },
+                    storage: 'bytes',
+                    backup: {
+                        label: 'paper',
+                        privateKey: new Uint8Array(64).fill(13),
+                    },
+                },
+            },
+            new Uint8Array(48).fill(4),
+        ],
+    ] as const)(
+        'zeroes nested material of a record %s',
+        async (_label, record, material) => {
+            const storage = await seeded({ ...record }, material)
+            resetDecoded()
+
+            await migration.up(context(storage), utils())
+
+            const carrier = decodedRecords[0] as unknown as {
+                metadata: Record<string, { privateKey: Uint8Array }>
+            }
+            const secret = Object.values(carrier.metadata).find(
+                value => value?.privateKey instanceof Uint8Array,
+            )!.privateKey
+            expect([...secret]).toEqual([...new Uint8Array(secret.length)])
+        },
+    )
 
     it('keeps the non-secret structure of the nested carrier', async () => {
         const storage = await seeded({

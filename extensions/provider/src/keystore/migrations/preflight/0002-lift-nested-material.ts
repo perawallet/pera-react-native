@@ -76,14 +76,9 @@ const adopt = async (
     const lifted: LiftedMaterial[] = []
     const stripped = liftSecrets(record, id, lifted) as Canary13Record
 
-    // Not reachable by any record shape attested in this repo. The only nested
-    // carrier that exists anywhere — `metadata.rootKey` — always carries its own
-    // `id`, in the in-house migration's fixtures and in this revision's; and the
-    // other theoretical trigger, a top-level `privateKey` and `seed` holding
-    // *different* bytes, is ruled out by canary.13's `importSeed`, which puts
-    // the seed in `privateKey` so the two never disagree. It exists because the
-    // walk is unbounded by design while the re-seal is not, and because the cost
-    // of being wrong is a key that exists nowhere.
+    // Unreachable by any shape attested in this repo — see `placeSecrets`. Kept
+    // because the walk is unbounded by design while the re-seal is not, and the
+    // cost of being wrong is a key that exists nowhere.
     const placements = placeSecrets(lifted, [[id, own]])
     if (placements === undefined) {
         return {
@@ -179,8 +174,9 @@ export const migration: Migration<PeraMigrationContext> = {
         // is zeroed when the runner settles even if this revision throws.
         utils.secrets.put('keystore-master-key', masterKey)
 
+        // Every record this revision did not take, whatever the reason. All of
+        // them are left flat for upstream to adopt, and none is ever revisited.
         const untouched: string[] = []
-        const declined: string[] = []
 
         await utils.secrets.use('keystore-master-key', async unlocked => {
             for (const storageKey of candidates) {
@@ -226,11 +222,14 @@ export const migration: Migration<PeraMigrationContext> = {
                     )
 
                     if (outcome !== 'adopted') {
+                        // Both non-adopted outcomes need the same note, and a
+                        // `failed` one needs it more: it stays flat, upstream
+                        // adopts it next module, and its nested private key
+                        // reaches plaintext `k/` — the hazard this revision
+                        // exists to prevent. Neither is ever retried, because
+                        // the runner marks this revision applied as soon as
+                        // `up` resolves.
                         untouched.push(storageKey)
-                        // A declined record is not retried: the runner marks
-                        // this revision applied because `up` resolves, so
-                        // without a note on disk it is invisible forever.
-                        if (outcome === 'declined') declined.push(storageKey)
                         // Storage keys, not key material — the same identifiers
                         // `migrateKeystoreLayout` already logs, and the only
                         // thing that makes an on-device failure diagnosable.
@@ -251,7 +250,7 @@ export const migration: Migration<PeraMigrationContext> = {
 
         utils.secrets.wipe('keystore-master-key')
 
-        context.declined.record(utils.revision.module, declined)
+        context.declined.record(utils.revision.module, untouched)
 
         if (untouched.length > 0) {
             utils.log?.warn(

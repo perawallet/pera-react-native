@@ -31,6 +31,11 @@ import type { LiftedMaterial } from './canary13'
  * Identity, not equality: `liftSecrets` pushes the very array it found, so a
  * secret that is already accounted for under an id resolves to its own bucket
  * without conflict.
+ *
+ * No shape attested in this repo reaches the refusal: the only nested carrier
+ * anywhere, `metadata.rootKey`, always carries its own `id`, and a top-level
+ * `privateKey`/`seed` pair never disagrees because canary.13's `importSeed`
+ * puts the seed in `privateKey`.
  */
 export const placeSecrets = (
     lifted: readonly LiftedMaterial[],

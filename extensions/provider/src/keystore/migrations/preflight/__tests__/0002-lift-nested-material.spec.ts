@@ -694,6 +694,41 @@ describe('0002-lift-nested-material', () => {
         ).toEqual(['key-c'])
     })
 
+    // A `failed` record needs the note more than a declined one: it stays flat,
+    // upstream adopts it in the very next module, and its nested private key
+    // reaches plaintext `k/`. A sentinel that only covered `declined` would
+    // read as "nothing was left behind", which is worse than no sentinel.
+    it('records a failed record in the durable sentinel', async () => {
+        const storage = await seeded(nestedAndTopLevel())
+        const set = storage.set
+        storage.set = (key, value) => {
+            if (!key.startsWith(METADATA_PREFIX)) set(key, value)
+        }
+
+        await migration.up(context(storage), utils())
+
+        storage.set = set
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual(['derived-1'])
+    })
+
+    it('records a record left flat for disagreeing with its storage key', async () => {
+        const storage = fakeStorage({})
+        storage.set(
+            'storage-key-2',
+            await sealCanary13Record(subtle, MASTER_KEY, {
+                ...nestedAndTopLevel('a-different-id'),
+            }),
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual(['storage-key-2'])
+    })
+
     it('writes no sentinel when every record was taken', async () => {
         const storage = await seeded(nestedAndTopLevel())
 
