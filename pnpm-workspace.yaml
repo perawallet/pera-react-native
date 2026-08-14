@@ -121,10 +121,10 @@ auditConfig:
 
 minimumReleaseAgeExclude:
   - '@algorandfoundation/keystore'
-  # keystore-core and keystore-web are direct dependencies; keystore-node still
-  # arrives transitively via the meta-package, which hard-depends on every
-  # platform sibling. They share the canary publish date, so excluding only the
-  # direct ones leaves the install still blocked by the gate.
+  # keystore-core and keystore-web are direct dependencies that share the
+  # keystore canary publish date. keystore-node is deliberately absent: the
+  # meta package is pinned at canary.17 (see the overrides note), which pulls
+  # no platform siblings. Add it back if that pin ever moves to canary.18+.
   - '@algorandfoundation/keystore-core'
   - '@algorandfoundation/keystore-web'
   - '@algorandfoundation/provider-migrations'
