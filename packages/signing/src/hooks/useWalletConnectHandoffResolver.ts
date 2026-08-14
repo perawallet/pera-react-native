@@ -22,6 +22,7 @@ import {
     classifyHandoffPoll,
     resolveHandoffOutcome,
     type HandoffPeerDelivery,
+    type HandoffPollOutcome,
     type ResolverMessages,
     type TerminalHandoffOutcome,
 } from '../pipeline/classifyHandoffPoll'
@@ -57,6 +58,16 @@ export type UseWalletConnectHandoffResolverArgs = {
      * after an app kill (no in-memory closures to replay).
      */
     delivery: HandoffPeerDelivery
+    /**
+     * Whether the WC session behind `clientId` still exists. When it returns
+     * false for a handoff carrying WC recovery context, the next poll
+     * short-circuits to a terminal `session-disconnected` error — which
+     * auto-declines the backend request — instead of letting participants
+     * cosign toward a delivery that can only fail. Injected from the app
+     * layer (session list) so this hook stays WalletConnect-free; omit to
+     * disable the check.
+     */
+    isPeerSessionAlive?: (clientId: string) => boolean
 }
 
 /**
@@ -86,6 +97,7 @@ export const useWalletConnectHandoffResolver = ({
     isAppActive,
     messages,
     delivery,
+    isPeerSessionAlive,
 }: UseWalletConnectHandoffResolverArgs): void => {
     // Re-render whenever a handoff is registered / unregistered. The store
     // swaps the `handoffs` dict reference on every change, so the default
@@ -111,6 +123,30 @@ export const useWalletConnectHandoffResolver = ({
             enabled: isAppActive,
         }),
         [isAppActive],
+    )
+
+    const classify = useCallback(
+        (
+            detail: SignRequestResponse,
+            handoff: PendingWalletConnectHandoff,
+        ): Promise<HandoffPollOutcome> => {
+            // A dropped session can never take delivery — short-circuit to a
+            // terminal error now (auto-declining the backend request via
+            // `cancelRequest`) instead of polling until threshold only to
+            // fail then. `recovery` is WC-only, so non-WC handoffs skip this.
+            if (
+                isPeerSessionAlive &&
+                handoff.recovery &&
+                !isPeerSessionAlive(handoff.recovery.clientId)
+            ) {
+                return Promise.resolve({
+                    kind: 'error',
+                    reason: { kind: 'session-disconnected' },
+                })
+            }
+            return classifyHandoffPoll(detail, handoff)
+        },
+        [isPeerSessionAlive],
     )
 
     const resolve = useCallback(
@@ -157,7 +193,7 @@ export const useWalletConnectHandoffResolver = ({
         handoffs,
         keyOf: handoffKey,
         poll,
-        classify: classifyHandoffPoll,
+        classify,
         resolve,
         expiresAtOf: handoffExpiresAt,
         registeredAtOf: handoffRegisteredAt,

@@ -74,7 +74,10 @@ const delivery = {
     deliverError: vi.fn().mockResolvedValue(undefined),
 }
 
-const makeHandoff = (signRequestId: string): PendingWalletConnectHandoff => ({
+const makeHandoff = (
+    signRequestId: string,
+    overrides: Partial<PendingWalletConnectHandoff> = {},
+): PendingWalletConnectHandoff => ({
     signRequestId,
     multisigAddress: 'MSIG_ADDR',
     msigMetadata: { version: 1, threshold: 2, addresses: ['A', 'B', 'C'] },
@@ -84,7 +87,15 @@ const makeHandoff = (signRequestId: string): PendingWalletConnectHandoff => ({
     callbacks: {},
     sourceType: 'walletconnect',
     registeredAt: Date.now(),
+    ...overrides,
 })
+
+const recovery = {
+    clientId: 'wc-client-1',
+    payloadId: 7,
+    indicesToSign: [0],
+    totalLength: 1,
+}
 
 let queryClient: QueryClient
 
@@ -163,6 +174,83 @@ describe('useWalletConnectHandoffResolver', () => {
             delivery,
             markConfirmed: mocks.markConfirmed,
             cancelRequest: expect.any(Function),
+        })
+    })
+
+    // Cancel-on-disconnect: a handoff whose WC session is gone can never be
+    // delivered, so the next poll short-circuits it to a terminal error (which
+    // auto-declines the backend request) instead of waiting for threshold.
+    describe('peer session liveness', () => {
+        it('short-circuits a handoff whose peer session is gone', async () => {
+            const handoff = makeHandoff('sr-1', { recovery })
+            useWalletConnectHandoffsStore.getState().register(handoff)
+
+            renderHook(
+                () =>
+                    useWalletConnectHandoffResolver({
+                        isAppActive: true,
+                        messages,
+                        delivery,
+                        isPeerSessionAlive: () => false,
+                    }),
+                { wrapper },
+            )
+
+            await waitFor(() =>
+                expect(mocks.resolveHandoffOutcome).toHaveBeenCalledTimes(1),
+            )
+            expect(mocks.resolveHandoffOutcome).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    outcome: {
+                        kind: 'error',
+                        reason: { kind: 'session-disconnected' },
+                    },
+                }),
+            )
+            expect(mocks.classifyHandoffPoll).not.toHaveBeenCalled()
+        })
+
+        it('classifies normally while the peer session is alive', async () => {
+            const handoff = makeHandoff('sr-1', { recovery })
+            useWalletConnectHandoffsStore.getState().register(handoff)
+
+            renderHook(
+                () =>
+                    useWalletConnectHandoffResolver({
+                        isAppActive: true,
+                        messages,
+                        delivery,
+                        isPeerSessionAlive: () => true,
+                    }),
+                { wrapper },
+            )
+
+            await waitFor(() =>
+                expect(mocks.classifyHandoffPoll).toHaveBeenCalled(),
+            )
+            expect(mocks.resolveHandoffOutcome).not.toHaveBeenCalled()
+        })
+
+        it('skips the liveness check for handoffs without WC recovery context', async () => {
+            // A webview/deeplink handoff has no WC session to be alive.
+            const handoff = makeHandoff('sr-1', { recovery: undefined })
+            useWalletConnectHandoffsStore.getState().register(handoff)
+
+            renderHook(
+                () =>
+                    useWalletConnectHandoffResolver({
+                        isAppActive: true,
+                        messages,
+                        delivery,
+                        isPeerSessionAlive: () => false,
+                    }),
+                { wrapper },
+            )
+
+            await waitFor(() =>
+                expect(mocks.classifyHandoffPoll).toHaveBeenCalled(),
+            )
+            expect(mocks.resolveHandoffOutcome).not.toHaveBeenCalled()
         })
     })
 

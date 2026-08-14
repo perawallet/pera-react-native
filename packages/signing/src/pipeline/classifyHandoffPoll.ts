@@ -59,6 +59,7 @@ export type HandoffErrorReason =
     | { kind: 'no-transactions' }
     | { kind: 'assembly-failed'; detail: string }
     | { kind: 'backend-failed'; displayReason: string | null }
+    | { kind: 'session-disconnected' }
 
 /** Every variant but `keep-polling` is terminal, delivered exactly once. */
 export type HandoffPollOutcome =
@@ -217,6 +218,12 @@ export const errorReasonToMessage = (
         }
         case 'backend-failed': {
             return reason.displayReason ?? messages.failed
+        }
+        case 'session-disconnected': {
+            // The peer is gone, so nobody reads this — reuse the
+            // delivery-failed string instead of minting a locale key for a
+            // dead letter.
+            return messages.deliveryFailed
         }
     }
 }
