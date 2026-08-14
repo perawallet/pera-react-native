@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { base64 } from '@scure/base'
 import {
     createSecretScratch,
@@ -71,6 +71,8 @@ const subtle = globalThis.crypto.subtle
 const ROOT_SECRET = new Uint8Array(64).fill(11)
 const OWN_SECRET = new Uint8Array(32).fill(1)
 
+let logWarn: ReturnType<typeof vi.fn>
+
 const utils = (): MigrationUtils => ({
     revision: {
         module: PREFLIGHT_MODULE_ID,
@@ -78,6 +80,7 @@ const utils = (): MigrationUtils => ({
         name: migration.name,
     },
     secrets: createSecretScratch().scratch,
+    log: { info: vi.fn(), warn: logWarn, error: vi.fn() },
 })
 
 let masterKeyForRead: ReturnType<typeof vi.fn>
@@ -182,6 +185,12 @@ describe('0002-lift-nested-material', () => {
             return lastMasterKey
         })
         lastMasterKey = undefined
+        logWarn = vi.fn()
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+        vi.restoreAllMocks()
     })
 
     it('adopts a record carrying material both at the top level and nested', async () => {
@@ -577,6 +586,38 @@ describe('0002-lift-nested-material', () => {
         expect(storage.getString('storage-key-1')).toBeDefined()
         expect(storage.getString('k/storage-key-1')).toBeUndefined()
         expect(storage.getString('k/a-different-id')).toBeUndefined()
+    })
+
+    // A record left unmigrated now leaves state a later run has to interpret,
+    // so it must not be silent. `utils.log` is absent unless the provider
+    // carries a log extension, which is why the console line exists too.
+    it('reports every record it could not lift', async () => {
+        const storage = await seeded(nestedAndTopLevel())
+        const set = storage.set
+        storage.set = (key, value) => {
+            if (!key.startsWith('k/')) set(key, value)
+        }
+
+        await migration.up(context(storage), utils())
+
+        storage.set = set
+        expect(logWarn).toHaveBeenCalledWith(
+            expect.stringContaining('1 flat record(s) unlifted'),
+            { entries: ['derived-1'] },
+            PREFLIGHT_MODULE_ID,
+        )
+        expect(console.warn).toHaveBeenCalledWith(
+            expect.stringContaining('derived-1'),
+        )
+    })
+
+    it('reports nothing when every record was taken', async () => {
+        const storage = await seeded(nestedAndTopLevel())
+
+        await migration.up(context(storage), utils())
+
+        expect(logWarn).not.toHaveBeenCalled()
+        expect(console.warn).not.toHaveBeenCalled()
     })
 
     // Upstream zeroes the master key in a `finally`; a revision whose purpose

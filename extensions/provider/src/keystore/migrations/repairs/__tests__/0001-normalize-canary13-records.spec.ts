@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { base64 } from '@scure/base'
 import {
     createSecretScratch,
@@ -60,6 +60,8 @@ import { REPAIRS_MODULE_ID, repairsMigrations } from '../index'
 const MASTER_KEY = new Uint8Array(32).fill(7)
 const subtle = globalThis.crypto.subtle
 
+let logWarn: ReturnType<typeof vi.fn>
+
 const utils = (): MigrationUtils => ({
     revision: {
         module: REPAIRS_MODULE_ID,
@@ -67,6 +69,7 @@ const utils = (): MigrationUtils => ({
         name: migration.name,
     },
     secrets: createSecretScratch().scratch,
+    log: { info: vi.fn(), warn: logWarn, error: vi.fn() },
 })
 
 let masterKeyForRead: ReturnType<typeof vi.fn>
@@ -140,6 +143,12 @@ describe('0001-normalize-canary13-records', () => {
             return lastMasterKey
         })
         lastMasterKey = undefined
+        logWarn = vi.fn()
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+        vi.restoreAllMocks()
     })
 
     // `sign` dispatches on `type`: `falcon1024` misses the `falcon-1024` case
@@ -460,6 +469,59 @@ describe('0001-normalize-canary13-records', () => {
         const raw = storage.getString(`${METADATA_PREFIX}key-d`)!
         expect(secretPathsIn(decode(raw))).toEqual([])
         expect(await materialOf(storage, 'key-d')).toEqual(material)
+    })
+
+    // A record left un-normalised must not be silent: the next run has to be
+    // able to tell it apart from one that needed nothing.
+    it('reports every record it could not normalise', async () => {
+        const storage = await seeded({
+            id: 'derived-1',
+            type: 'hd-derived-ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            metadata: {
+                rootKey: {
+                    id: 'root-1',
+                    privateKey: new Uint8Array(64).fill(11),
+                },
+            },
+        })
+        const set = storage.set
+        storage.set = (key, value) => {
+            set(
+                key,
+                key === `${MATERIAL_PREFIX}root-1`
+                    ? 'truncated-ciphertext'
+                    : value,
+            )
+        }
+
+        await migration.up(context(storage), utils())
+
+        storage.set = set
+        expect(logWarn).toHaveBeenCalledWith(
+            expect.stringContaining('1 keystore record(s) un-normalised'),
+            { entries: ['derived-1'] },
+            REPAIRS_MODULE_ID,
+        )
+        expect(console.warn).toHaveBeenCalledWith(
+            expect.stringContaining('derived-1'),
+        )
+    })
+
+    it('reports nothing when every record was normalised', async () => {
+        const storage = await seeded({
+            id: 'q-1',
+            type: 'falcon1024',
+            algorithm: 'raw',
+            extractable: false,
+            metadata: {},
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(logWarn).not.toHaveBeenCalled()
+        expect(console.warn).not.toHaveBeenCalled()
     })
 
     // Upstream zeroes the master key in a `finally`; a revision that opens key
