@@ -24,6 +24,7 @@ import {
     isDraftSignRequestId,
     useDraftSignRequestStore,
     useSignRequestDetailQuery,
+    useUndeliveredSignRequestsStore,
     type DraftSignRequest,
     type MultisigSignRequest,
     type SignRequestStatus,
@@ -185,9 +186,18 @@ export const usePendingSignaturesContent =
         const isFailureWithinRecoveryWindow =
             status === 'failed' && !isFailedRecoveryExpired
 
+        // Complete signatures the wallet could not hand back to the dApp, with
+        // no client action left to move the record (see
+        // useUndeliveredSignRequestsStore). Surfaced as a failure so the sheet
+        // stops promising "Submitting transaction…".
+        const isUndeliverable = useUndeliveredSignRequestsStore(store =>
+            store.signRequestIds.includes(signRequestId ?? ''),
+        )
+
         const bannerVariant: StatusBannerVariant = getStatusBannerVariant(
             status,
             isFailureWithinRecoveryWindow,
+            isUndeliverable,
         )
 
         const signedCount = signRequest
@@ -244,9 +254,13 @@ export const usePendingSignaturesContent =
         const disableOtherSignersForDraft =
             isDraft && signers.some(s => s.isSigning)
 
+        // Only the stranded-at-threshold case gets the delivery copy; a real
+        // terminal status keeps its own message even if a marker lingers.
         const failureBannerKey =
-            (status && FAILURE_BANNER_KEY_BY_STATUS[status]) ??
-            'multisig.pending_signatures.failed_default'
+            isUndeliverable && (status === 'ready' || status === 'submitting')
+                ? 'multisig.pending_signatures.delivery_failed'
+                : ((status && FAILURE_BANNER_KEY_BY_STATUS[status]) ??
+                  'multisig.pending_signatures.failed_default')
 
         const handleClose = useCallback(() => {
             trackEvent(MultisigEvent.CloseForNow)

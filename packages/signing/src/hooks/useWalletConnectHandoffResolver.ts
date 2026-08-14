@@ -68,6 +68,15 @@ export type UseWalletConnectHandoffResolverArgs = {
      * disable the check.
      */
     isPeerSessionAlive?: (clientId: string) => boolean
+    /**
+     * Called when a handoff fails terminally after its request already reached
+     * threshold. Such a record is stranded: the signatures are complete so the
+     * backend holds it at `ready`/`submitting`, a `sync` request is never
+     * broadcast by the backend, and a proposer decline can no longer move it.
+     * Consumers use this to tell the user delivery failed instead of leaving
+     * the sheet claiming "Submitting transaction…".
+     */
+    onUndeliverable?: (signRequestId: string) => void
 }
 
 /**
@@ -98,6 +107,7 @@ export const useWalletConnectHandoffResolver = ({
     messages,
     delivery,
     isPeerSessionAlive,
+    onUndeliverable,
 }: UseWalletConnectHandoffResolverArgs): void => {
     // Re-render whenever a handoff is registered / unregistered. The store
     // swaps the `handoffs` dict reference on every change, so the default
@@ -155,11 +165,30 @@ export const useWalletConnectHandoffResolver = ({
             handoff: PendingWalletConnectHandoff,
             detail: SignRequestResponse | undefined,
         ) => {
-            // Proposer address from the poll — the only local participant
-            // allowed to cancel the request on a terminal failure. Absent when
-            // a client-side deadline fires with no poll body: the cancel is
-            // best-effort and simply skipped below.
-            const proposerAddress = detail?.proposer_address ?? undefined
+            // The only local participant allowed to cancel the request on a
+            // terminal failure. Prefer the poll, but fall back to the address
+            // pinned at propose time: the backend declares `proposer_address`
+            // optional and some deployments echo null, and a deadline can fire
+            // with no poll body at all. Skipped entirely when neither has it.
+            const proposerAddress =
+                detail?.proposer_address ?? handoff.proposerAddress ?? undefined
+
+            // A decline only terminalizes a request that hasn't reached
+            // threshold. Once the backend reports `ready`/`submitting` the
+            // signatures are complete and it keeps that status: the decline is
+            // accepted but merely marks the proposer's own response declined,
+            // which renders as "all signatures collected" with one signature
+            // failed — contradictory, and still not terminal. Skip it only
+            // when the poll actually told us we're past threshold; an unknown
+            // status (no poll body, e.g. a deadline firing) stays best-effort.
+            const hasReachedThreshold =
+                detail?.status !== undefined && detail.status !== 'pending'
+
+            // Stranded: complete signatures the wallet can't hand over and
+            // nothing left to move the record. Flagged so the UI can say so.
+            if (outcome.kind === 'error' && hasReachedThreshold) {
+                onUndeliverable?.(handoff.signRequestId)
+            }
 
             return resolveHandoffOutcome({
                 outcome,
@@ -171,7 +200,7 @@ export const useWalletConnectHandoffResolver = ({
                 // word) so the pending inbox item goes terminal instead of
                 // sitting orphaned when the dApp session is gone.
                 cancelRequest: async () => {
-                    if (!proposerAddress) return
+                    if (!proposerAddress || hasReachedThreshold) return
                     await addSignature(handoff.network, handoff.signRequestId, [
                         {
                             address: proposerAddress,
@@ -182,7 +211,7 @@ export const useWalletConnectHandoffResolver = ({
                 },
             })
         },
-        [messages, delivery, markConfirmed],
+        [messages, delivery, markConfirmed, onUndeliverable],
     )
 
     useHandoffResolver<

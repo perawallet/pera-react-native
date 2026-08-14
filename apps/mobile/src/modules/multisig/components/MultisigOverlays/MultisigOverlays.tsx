@@ -24,6 +24,7 @@ import {
     deliverRejectInBackground,
     useWalletConnectStore,
 } from '@perawallet/wallet-core-walletconnect'
+import { useUndeliveredSignRequestsStore } from '@perawallet/wallet-core-multisig'
 import { useMultisigProposeListener } from '../../hooks/useMultisigProposeListener'
 import { usePendingSignaturesSheetDriver } from './usePendingSignaturesSheetDriver'
 
@@ -99,10 +100,15 @@ const useResolverWiring = (): void => {
             )
     }, [])
 
+    const markUndelivered = useUndeliveredSignRequestsStore(
+        store => store.markUndelivered,
+    )
+
     useWalletConnectHandoffResolver({
         isAppActive,
         messages,
         delivery,
         isPeerSessionAlive,
+        onUndeliverable: markUndelivered,
     })
 }
