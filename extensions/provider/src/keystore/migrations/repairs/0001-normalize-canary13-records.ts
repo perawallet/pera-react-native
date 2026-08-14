@@ -20,7 +20,6 @@ import {
     METADATA_PREFIX,
     decode,
     openData,
-    sealData,
     serializeKey,
 } from '@algorandfoundation/react-native-keystore'
 import type { PeraMigrationContext } from '../types'
@@ -30,30 +29,13 @@ import {
     type Canary13Record,
     type LiftedMaterial,
 } from '../canary13'
-
-/**
- * Seals `bytes` under `key` and confirms the write reads back, so a truncated
- * or silently-dropped write is caught before the plaintext it replaces is
- * rewritten. Throws rather than returning a flag: the caller's `catch` leaves
- * the whole record untouched for a later build.
- */
-const sealAndVerify = async (
-    { storage, subtle }: PeraMigrationContext,
-    masterKey: Uint8Array,
-    key: string,
-    bytes: Uint8Array,
-): Promise<void> => {
-    const encoded = base64.encode(bytes)
-    storage.set(key, await sealData(subtle, masterKey, encoded))
-
-    const written = storage.getString(key)
-    if (
-        written === undefined ||
-        (await openData(subtle, masterKey, written)) !== encoded
-    ) {
-        throw new Error('the sealed material did not read back')
-    }
-}
+import {
+    createJournal,
+    holdsSameMaterial,
+    placeSecrets,
+    sealAndVerify,
+    wipeBytes,
+} from '../sealing'
 
 /**
  * Rewrites already-split `k/<id>` records from canary.13's vocabulary into the
@@ -94,12 +76,23 @@ export const migration: Migration<PeraMigrationContext> = {
 
         // Memoised so a store full of canary.13 records costs one Keychain read
         // and one prompt, and so a rejection is not retried once per record.
+        // The scratch takes ownership on first read, so the plaintext master
+        // key is zeroed when the runner settles even if this revision throws.
         let pending: Promise<Uint8Array> | undefined
-        const unlock = () => (pending ??= context.masterKeyForRead())
+        const unlock = () =>
+            (pending ??= context.masterKeyForRead().then(key => {
+                utils.secrets.put('keystore-master-key', key)
+                return key
+            }))
+
+        const untouched: string[] = []
 
         for (const id of ids) {
             const raw = storage.getString(METADATA_PREFIX + id)
             if (raw === undefined) continue
+
+            const journal = createJournal(storage)
+            const opened: (Uint8Array | undefined)[] = []
 
             try {
                 let record: Canary13Record
@@ -120,6 +113,7 @@ export const migration: Migration<PeraMigrationContext> = {
                     record.id ?? id,
                     lifted,
                 ) as Canary13Record
+                for (const entry of lifted) opened.push(entry.bytes)
 
                 // Decided from the plaintext record alone: a canary.19 ed25519
                 // record always carries `signAlgorithm`, so its absence is what
@@ -131,7 +125,7 @@ export const migration: Migration<PeraMigrationContext> = {
                     record.metadata?.signAlgorithm === undefined &&
                     hasMaterial
 
-                const opened = needsMaterial
+                const current = needsMaterial
                     ? base64.decode(
                           await openData(
                               subtle,
@@ -140,12 +134,14 @@ export const migration: Migration<PeraMigrationContext> = {
                           ),
                       )
                     : undefined
+                opened.push(current)
 
                 const { metadata, material } = normalizeCanary13Record({
                     record: stripped,
-                    material: opened,
+                    material: current,
                     hasMaterial,
                 })
+                opened.push(material)
 
                 const next = serializeKey(metadata)
                 if (
@@ -160,6 +156,7 @@ export const migration: Migration<PeraMigrationContext> = {
                 // bytes that did not land. The plaintext copy is only dropped
                 // once its sealed replacement is proven readable.
                 if (material) {
+                    journal.track(materialKey)
                     await sealAndVerify(
                         context,
                         await unlock(),
@@ -168,30 +165,81 @@ export const migration: Migration<PeraMigrationContext> = {
                     )
                 }
 
-                for (const entry of lifted) {
-                    const key = MATERIAL_PREFIX + entry.id
-                    // The record that owns an id is the authority on its
-                    // material; an embedded copy may be stale and must never
-                    // overwrite it.
-                    if (storage.getString(key) !== undefined) continue
-                    await sealAndVerify(
-                        context,
-                        await unlock(),
-                        key,
-                        entry.bytes,
-                    )
+                // Two different secrets resolving to one bucket cannot both be
+                // sealed, and this is checked before the first write so the
+                // second is never silently dropped.
+                const placements = placeSecrets(lifted)
+                let placeable = placements !== undefined
+
+                for (const [owner, bytes] of placements ?? []) {
+                    const key = MATERIAL_PREFIX + owner
+                    if (storage.getString(key) === undefined) {
+                        journal.track(key)
+                        await sealAndVerify(context, await unlock(), key, bytes)
+                        continue
+                    }
+
+                    // The bucket is taken. For another record's id that is
+                    // correct and lossless: that record owns its key and its
+                    // material is on disk, so the embedded copy is redundant.
+                    if (owner !== (record.id ?? id)) continue
+
+                    // For this record's own id it is not. A carrier with no
+                    // `id` of its own inherits this one, so stripping it from
+                    // `k/` while `m/` holds *different* bytes would destroy a
+                    // secret nothing else has. Only drop it when it is provably
+                    // the same material already sealed there.
+                    if (
+                        !(await holdsSameMaterial(
+                            context,
+                            await unlock(),
+                            key,
+                            bytes,
+                        ))
+                    ) {
+                        placeable = false
+                        break
+                    }
                 }
 
-                storage.set(METADATA_PREFIX + id, next)
-            } catch {
-                // No id and no field names: failures are recorded verbatim in
-                // the migration report.
-                utils.log?.warn(
-                    'Could not normalise a keystore record; left untouched',
-                    { module: utils.revision.module },
-                    utils.revision.module,
+                if (!placeable) {
+                    journal.rollback()
+                    untouched.push(id)
+                    console.warn(
+                        `[provider] normalize-canary13-records: entry ${id} left untouched; a nested secret has nowhere to be sealed`,
+                    )
+                    continue
+                }
+
+                journal.set(METADATA_PREFIX + id, next)
+            } catch (error) {
+                // `remove` would not undo this: a half-written `m/` entry that
+                // survives is read as authoritative by the next run, which
+                // would then strip the plaintext copy and leave the key
+                // nowhere. Restore every key this record touched instead.
+                journal.rollback()
+                untouched.push(id)
+                // Storage keys, not key material — the identifiers
+                // `migrateKeystoreLayout` already logs, and the only thing
+                // that makes an on-device failure diagnosable.
+                console.warn(
+                    `[provider] normalize-canary13-records: entry ${id} left untouched: ${
+                        error instanceof Error ? error.message : String(error)
+                    }`,
                 )
+            } finally {
+                for (const bytes of opened) wipeBytes(bytes)
             }
+        }
+
+        utils.secrets.wipe('keystore-master-key')
+
+        if (untouched.length > 0) {
+            utils.log?.warn(
+                `Left ${untouched.length} keystore record(s) un-normalised`,
+                { entries: untouched },
+                utils.revision.module,
+            )
         }
     },
 }

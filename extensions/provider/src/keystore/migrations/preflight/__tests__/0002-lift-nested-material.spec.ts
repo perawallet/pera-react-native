@@ -81,6 +81,8 @@ const utils = (): MigrationUtils => ({
 })
 
 let masterKeyForRead: ReturnType<typeof vi.fn>
+/** The buffer the last read handed out, so the wipe can be asserted on. */
+let lastMasterKey: Uint8Array | undefined
 
 const context = (storage: FakeKeychainStorage): PeraMigrationContext => ({
     storage,
@@ -172,7 +174,14 @@ const secretPathsIn = (value: unknown, path = ''): string[] => {
 
 describe('0002-lift-nested-material', () => {
     beforeEach(() => {
-        masterKeyForRead = vi.fn(async () => MASTER_KEY)
+        // A fresh buffer per read, as `readMasterKey` gives: the revision
+        // zeroes what it was handed, and a shared array would be zeroed out
+        // from under the assertions that follow.
+        masterKeyForRead = vi.fn(async () => {
+            lastMasterKey = MASTER_KEY.slice()
+            return lastMasterKey
+        })
+        lastMasterKey = undefined
     })
 
     it('adopts a record carrying material both at the top level and nested', async () => {
@@ -367,6 +376,218 @@ describe('0002-lift-nested-material', () => {
         storage.set = set
         expect(storage.getString('derived-1')).toBeDefined()
         expect(storage.getString('k/derived-1')).toBeUndefined()
+    })
+
+    // The dangerous half of a failed adoption. A lifted `m/` write that LANDS
+    // but cannot be opened looks occupied to the next run, which treats it as
+    // authoritative, never rewrites it, and strips the secret from `k/` — the
+    // HD root private key then exists nowhere. Suppressing the write entirely
+    // (the neighbouring test) never reaches this.
+    it('rolls back a lifted material write that lands unreadable', async () => {
+        const storage = await seeded(nestedAndTopLevel())
+        const set = storage.set
+        storage.set = (key, value) => {
+            set(key, key === 'm/root-1' ? 'truncated-ciphertext' : value)
+        }
+
+        await migration.up(context(storage), utils())
+
+        storage.set = set
+        expect(storage.getString('derived-1')).toBeDefined()
+        expect(storage.getString('k/derived-1')).toBeUndefined()
+        expect(storage.getString('m/derived-1')).toBeUndefined()
+        // The poison entry must not survive to be trusted next launch.
+        expect(storage.getString('m/root-1')).toBeUndefined()
+    })
+
+    // A pre-existing bucket is not ours to destroy on the way out.
+    it('restores a pre-existing material entry it overwrote when the record fails', async () => {
+        const storage = await seeded(nestedAndTopLevel())
+        storage.set('m/derived-1', 'someone-elses-payload')
+        const set = storage.set
+        storage.set = (key, value) => {
+            if (!key.startsWith('k/')) set(key, value)
+        }
+
+        await migration.up(context(storage), utils())
+
+        storage.set = set
+        expect(storage.getString('m/derived-1')).toBe('someone-elses-payload')
+        expect(storage.getString('derived-1')).toBeDefined()
+    })
+
+    // One id addresses one `m/` bucket. `metadata.backup.privateKey` has no
+    // `id` of its own, so it inherits the record's and collides with the
+    // record's own material — sealing one would silently destroy the other.
+    // Left flat, the record still holds both.
+    it('declines a record whose nested secret has nowhere to be sealed', async () => {
+        const orphan = new Uint8Array(64).fill(13)
+        const storage = await seeded({
+            id: 'key-c',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            privateKey: OWN_SECRET,
+            metadata: { backup: { label: 'paper', privateKey: orphan } },
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('key-c')).toBeDefined()
+        expect(storage.getString('k/key-c')).toBeUndefined()
+        expect(storage.getString('m/key-c')).toBeUndefined()
+    })
+
+    // canary.13's HD/XHD roots carry their bytes under `seed`, not
+    // `privateKey`. Reading only `privateKey` would leave the root class this
+    // revision exists for entirely unhandled.
+    it('adopts a record whose own material is a top-level seed', async () => {
+        const rootSeed = new Uint8Array(96).fill(3)
+        const storage = await seeded({
+            id: 'root-2',
+            type: 'seed',
+            algorithm: 'raw',
+            extractable: true,
+            seed: rootSeed,
+            metadata: {
+                scheme: 'bip39',
+                rootKey: {
+                    id: 'root-1',
+                    type: 'hd-root-key',
+                    privateKey: ROOT_SECRET,
+                },
+            },
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('root-2')).toBeUndefined()
+        expect(secretPathsIn(decode(storage.getString('k/root-2')!))).toEqual(
+            [],
+        )
+        expect(
+            base64.decode(
+                await openData(
+                    subtle,
+                    MASTER_KEY,
+                    storage.getString('m/root-2')!,
+                ),
+            ),
+        ).toEqual(rootSeed)
+    })
+
+    // `SECRET_FIELDS` is the whole vocabulary of what counts as material.
+    // Nested `seed` and `key` carriers are as dangerous as `privateKey` and
+    // were previously covered by nothing.
+    it.each(['privateKey', 'seed', 'key'])(
+        'lifts a nested %s out of the plaintext bucket',
+        async field => {
+            const storage = await seeded({
+                id: 'derived-3',
+                type: 'hd-derived-ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                privateKey: OWN_SECRET,
+                metadata: {
+                    rootKey: {
+                        id: 'root-1',
+                        type: 'hd-root-key',
+                        [field]: ROOT_SECRET,
+                    },
+                },
+            })
+
+            await migration.up(context(storage), utils())
+
+            const raw = storage.getString('k/derived-3')!
+            expect(secretPathsIn(decode(raw))).toEqual([])
+            expect(raw).not.toContain(base64.encode(ROOT_SECRET))
+            expect(
+                base64.decode(
+                    await openData(
+                        subtle,
+                        MASTER_KEY,
+                        storage.getString('m/root-1')!,
+                    ),
+                ),
+            ).toEqual(ROOT_SECRET)
+        },
+    )
+
+    // The credential provider shares this MMKV instance from another process
+    // and is still on the bare-id layout. Neither real shape has nested
+    // material, so neither is at risk and neither is touched — behaviour the
+    // removed `migrateKeystoreLayout` exemption used to enforce explicitly.
+    it('leaves a provider credential with a plain key flat', async () => {
+        const storage = await seeded({
+            id: 'cred-plain',
+            type: 'hd-derived-p256',
+            algorithm: 'P256',
+            extractable: false,
+            keyUsages: ['sign'],
+            privateKey: new Uint8Array(32).fill(3),
+            publicKey: new Uint8Array(91).fill(4),
+            metadata: {
+                origin: 'example.com',
+                userHandle: 'dXNlcg',
+                userId: 'user-1',
+                count: 0,
+            },
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('cred-plain')).toBeDefined()
+        expect(storage.getString('k/cred-plain')).toBeUndefined()
+    })
+
+    // `privateKeyEnc` is an OBJECT — wrapped by an Android Keystore cipher this
+    // package cannot open. It is not a `Uint8Array`, so the record reads as
+    // carrying no material and is left alone rather than adopted without it.
+    it('leaves a biometric provider credential flat', async () => {
+        const storage = await seeded({
+            id: 'cred-biometric',
+            type: 'hd-derived-p256',
+            algorithm: 'P256',
+            extractable: false,
+            publicKey: new Uint8Array(91).fill(4),
+            privateKeyEnc: { iv: 'aXY=', data: 'ZGF0YQ==' },
+            metadata: { origin: 'example.com', userHandle: 'dXNlcg' },
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('cred-biometric')).toBeDefined()
+        expect(storage.getString('k/cred-biometric')).toBeUndefined()
+    })
+
+    // The driver reads a record back at `k/<record.id>`; a record whose id
+    // disagrees with its storage key cannot be split coherently under either.
+    it('leaves a record whose id disagrees with its storage key flat', async () => {
+        const storage = fakeStorage({})
+        storage.set(
+            'storage-key-1',
+            await sealCanary13Record(subtle, MASTER_KEY, {
+                ...nestedAndTopLevel('a-different-id'),
+            }),
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('storage-key-1')).toBeDefined()
+        expect(storage.getString('k/storage-key-1')).toBeUndefined()
+        expect(storage.getString('k/a-different-id')).toBeUndefined()
+    })
+
+    // Upstream zeroes the master key in a `finally`; a revision whose purpose
+    // is keeping key bytes off disk must not leave them in the heap either.
+    it('zeroes the master key it was handed', async () => {
+        const storage = await seeded(nestedAndTopLevel())
+
+        await migration.up(context(storage), utils())
+
+        expect(lastMasterKey).toBeDefined()
+        expect([...lastMasterKey!]).toEqual([...new Uint8Array(32)])
     })
 
     it('is a no-op on empty storage', async () => {

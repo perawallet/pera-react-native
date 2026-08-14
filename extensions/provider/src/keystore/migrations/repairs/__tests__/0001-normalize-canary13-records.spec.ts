@@ -42,7 +42,11 @@ vi.mock('@algorandfoundation/react-native-keystore', async () => {
     }
 })
 
-import { serializeKey } from '@algorandfoundation/react-native-keystore'
+import {
+    MATERIAL_PREFIX,
+    METADATA_PREFIX,
+    serializeKey,
+} from '@algorandfoundation/react-native-keystore'
 import type { PeraMigrationContext } from '../../types'
 import {
     fakeStorage,
@@ -66,6 +70,8 @@ const utils = (): MigrationUtils => ({
 })
 
 let masterKeyForRead: ReturnType<typeof vi.fn>
+/** The buffer the last read handed out, so the wipe can be asserted on. */
+let lastMasterKey: Uint8Array | undefined
 
 const context = (storage: FakeKeychainStorage): PeraMigrationContext => ({
     storage,
@@ -79,13 +85,13 @@ const seeded = async (
     material?: Uint8Array,
 ): Promise<FakeKeychainStorage> => {
     const storage = fakeStorage({
-        [`k/${record.id}`]: serializeKey(
+        [METADATA_PREFIX + record.id]: serializeKey(
             record as unknown as Parameters<typeof serializeKey>[0],
         ),
     })
     if (material) {
         storage.set(
-            `m/${record.id}`,
+            MATERIAL_PREFIX + record.id,
             await sealData(subtle, MASTER_KEY, base64.encode(material)),
         )
     }
@@ -93,11 +99,15 @@ const seeded = async (
 }
 
 const metadataOf = (storage: FakeKeychainStorage, id: string) =>
-    decode(storage.getString(`k/${id}`)!)
+    decode(storage.getString(METADATA_PREFIX + id)!)
 
 const materialOf = async (storage: FakeKeychainStorage, id: string) =>
     base64.decode(
-        await openData(subtle, MASTER_KEY, storage.getString(`m/${id}`)!),
+        await openData(
+            subtle,
+            MASTER_KEY,
+            storage.getString(MATERIAL_PREFIX + id)!,
+        ),
     )
 
 /** Every path at which a `SECRET_FIELDS` name appears, at any depth. */
@@ -122,7 +132,14 @@ const secretPathsIn = (value: unknown, path = ''): string[] => {
 
 describe('0001-normalize-canary13-records', () => {
     beforeEach(() => {
-        masterKeyForRead = vi.fn(async () => MASTER_KEY)
+        // A fresh buffer per read, as `readMasterKey` gives: the revision
+        // zeroes what it was handed, and a shared array would be zeroed out
+        // from under the assertions that follow.
+        masterKeyForRead = vi.fn(async () => {
+            lastMasterKey = MASTER_KEY.slice()
+            return lastMasterKey
+        })
+        lastMasterKey = undefined
     })
 
     // `sign` dispatches on `type`: `falcon1024` misses the `falcon-1024` case
@@ -327,30 +344,144 @@ describe('0001-normalize-canary13-records', () => {
 
     // The backstop for a preflight adoption that failed and left the record for
     // upstream, which strips only top-level material.
-    it('lifts nested material out of the plaintext bucket and seals it', async () => {
-        const rootSecret = new Uint8Array(64).fill(11)
+    // `SECRET_FIELDS` is the whole vocabulary of what counts as material.
+    // Nested `seed` and `key` carriers are as dangerous as `privateKey`.
+    it.each(['privateKey', 'seed', 'key'])(
+        'lifts a nested %s out of the plaintext bucket and seals it',
+        async field => {
+            const rootSecret = new Uint8Array(64).fill(11)
+            const storage = await seeded({
+                id: 'derived-1',
+                type: 'hd-derived-ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                publicKey: new Uint8Array(32).fill(4),
+                metadata: {
+                    parentKeyId: 'root-1',
+                    rootKey: {
+                        id: 'root-1',
+                        type: 'hd-root-key',
+                        [field]: rootSecret,
+                    },
+                },
+            })
+
+            await migration.up(context(storage), utils())
+
+            const raw = storage.getString(`${METADATA_PREFIX}derived-1`)!
+            expect(secretPathsIn(decode(raw))).toEqual([])
+            expect(raw).not.toContain(base64.encode(rootSecret))
+            expect(await materialOf(storage, 'root-1')).toEqual(rootSecret)
+        },
+    )
+
+    // The dangerous half of a failed lift: a write that LANDS but cannot be
+    // opened looks occupied to the next run, which treats it as authoritative
+    // and strips the plaintext copy — leaving the key nowhere.
+    it('rolls back a lifted material write that lands unreadable', async () => {
         const storage = await seeded({
             id: 'derived-1',
             type: 'hd-derived-ed25519',
             algorithm: 'EdDSA',
             extractable: false,
-            publicKey: new Uint8Array(32).fill(4),
             metadata: {
-                parentKeyId: 'root-1',
                 rootKey: {
                     id: 'root-1',
-                    type: 'hd-root-key',
-                    privateKey: rootSecret,
+                    privateKey: new Uint8Array(64).fill(11),
                 },
             },
         })
+        const before = storage.entries()
+        const set = storage.set
+        storage.set = (key, value) => {
+            set(
+                key,
+                key === `${MATERIAL_PREFIX}root-1`
+                    ? 'truncated-ciphertext'
+                    : value,
+            )
+        }
 
         await migration.up(context(storage), utils())
 
-        const raw = storage.getString('k/derived-1')!
+        storage.set = set
+        expect(storage.entries()).toEqual(before)
+    })
+
+    // A carrier with no `id` of its own inherits the record's, so it resolves
+    // to the bucket the record's own material already occupies. Stripping it
+    // from `k/` would destroy a secret nothing else holds.
+    it('leaves a record whose nested secret has nowhere to be sealed', async () => {
+        const storage = await seeded(
+            {
+                id: 'key-c',
+                type: 'ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                metadata: {
+                    signAlgorithm: { name: 'Ed25519' },
+                    storage: 'bytes',
+                    backup: {
+                        label: 'paper',
+                        privateKey: new Uint8Array(64).fill(13),
+                    },
+                },
+            },
+            new Uint8Array(48).fill(4),
+        )
+        const before = storage.entries()
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.entries()).toEqual(before)
+    })
+
+    // The same shape, but the nested copy IS what is already sealed there —
+    // then dropping it from plaintext loses nothing and must still happen.
+    it('strips a nested copy of material already sealed under the same id', async () => {
+        const material = new Uint8Array(48).fill(4)
+        const storage = await seeded(
+            {
+                id: 'key-d',
+                type: 'ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                metadata: {
+                    signAlgorithm: { name: 'Ed25519' },
+                    storage: 'bytes',
+                    backup: { label: 'paper', privateKey: material },
+                },
+            },
+            material,
+        )
+
+        await migration.up(context(storage), utils())
+
+        const raw = storage.getString(`${METADATA_PREFIX}key-d`)!
         expect(secretPathsIn(decode(raw))).toEqual([])
-        expect(raw).not.toContain(base64.encode(rootSecret))
-        expect(await materialOf(storage, 'root-1')).toEqual(rootSecret)
+        expect(await materialOf(storage, 'key-d')).toEqual(material)
+    })
+
+    // Upstream zeroes the master key in a `finally`; a revision that opens key
+    // material must not leave it in the heap either.
+    it('zeroes the master key it was handed', async () => {
+        const seed = new Uint8Array(32).fill(1)
+        const storage = await seeded(
+            {
+                id: 'a-1',
+                type: 'ed25519',
+                algorithm: 'EdDSA',
+                format: 'raw',
+                extractable: false,
+                metadata: {},
+            },
+            new Uint8Array([...seed, ...new Uint8Array(32).fill(2)]),
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(lastMasterKey).toBeDefined()
+        expect([...lastMasterKey!]).toEqual([...new Uint8Array(32)])
     })
 
     it('keeps the non-secret structure of the nested carrier', async () => {

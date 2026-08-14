@@ -39,10 +39,18 @@ export type LiftedMaterial = { id: string; bytes: Uint8Array }
  * plaintext, so copying `metadata` verbatim would write an HD wallet's root
  * private key to disk unencrypted.
  *
- * Material is never discarded on the way out: each nested carrier names the id
- * it belongs to, so the bytes are re-sealed under that id's `m/` entry rather
- * than dropped. `ownerId` is the id inherited from the enclosing object, so a
- * bare `{ privateKey }` with no `id` of its own is still attributed correctly.
+ * Every secret is *reported*, never silently skipped: each carrier names the id
+ * it belongs to, so the bytes can be re-sealed under that id's `m/` entry.
+ * `ownerId` is the id inherited from the enclosing object, so a bare
+ * `{ privateKey }` with no `id` of its own is attributed to the record that
+ * encloses it.
+ *
+ * Reported is not the same as stored, and this function does not promise
+ * storage. One id addresses one `m/` bucket, so an id-less carrier resolves to
+ * the same bucket as the record's own material and only one of the two can be
+ * sealed. Resolving that is the caller's job — see `placeSecrets` in
+ * `sealing.ts`, which refuses the record rather than let either secret go
+ * unstored.
  */
 export const liftSecrets = <T>(
     value: T,
