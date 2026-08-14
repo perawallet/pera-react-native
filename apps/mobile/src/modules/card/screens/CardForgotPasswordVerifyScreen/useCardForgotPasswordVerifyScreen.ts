@@ -81,6 +81,11 @@ export const useCardForgotPasswordVerifyScreen =
             [hasCodeError],
         )
 
+        // Depends on the stable `mutateAsync` (not the per-render mutation
+        // object), matching the sign-in screen's pattern.
+        const requestResetAsync = requestReset.mutateAsync
+        const verifyResetAsync = verifyReset.mutateAsync
+
         const handleResend = useCallback(() => {
             // Blocked while a send OR the verify is in flight, so a fresh code
             // can't race the verification of the one being checked. The
@@ -88,22 +93,32 @@ export const useCardForgotPasswordVerifyScreen =
             if (requestReset.isPending || verifyReset.isPending) return
             trackEvent(CardEvent.RecoverResetRequestCode)
             setHasCodeError(false)
-            requestReset
-                .mutateAsync({ email })
+            requestResetAsync({ email })
                 .then(() => restart())
                 .catch(async error => {
                     await showError(error)
                 })
-        }, [requestReset, verifyReset.isPending, email, restart, showError])
+        }, [
+            requestResetAsync,
+            requestReset.isPending,
+            verifyReset.isPending,
+            email,
+            restart,
+            showError,
+        ])
 
         const handleVerify = useCallback(
             (submittedCode?: string) => {
+                // The keyboard done-key can fire again while the first
+                // verify is still in flight; a single-use code would 400 on
+                // the second attempt.
+                if (verifyReset.isPending) return
                 const value = (submittedCode ?? code).trim()
                 if (value.length !== CARD_VERIFICATION_CODE_LENGTH) return
                 trackEvent(CardEvent.RecoverResetVerifyCode)
                 const verify = async () => {
                     try {
-                        const token = await verifyReset.mutateAsync({
+                        const token = await verifyResetAsync({
                             email,
                             code: value,
                         })
@@ -124,7 +139,14 @@ export const useCardForgotPasswordVerifyScreen =
                 }
                 void verify()
             },
-            [code, email, verifyReset, navigation, showError],
+            [
+                verifyResetAsync,
+                verifyReset.isPending,
+                code,
+                email,
+                navigation,
+                showError,
+            ],
         )
 
         return {

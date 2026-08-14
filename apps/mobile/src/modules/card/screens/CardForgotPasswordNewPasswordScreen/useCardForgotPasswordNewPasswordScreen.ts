@@ -71,7 +71,6 @@ export const useCardForgotPasswordNewPasswordScreen =
         const password = watch('password')
 
         const handleConfirm = useCallback(() => {
-            trackEvent(CardEvent.RecoverResetComplete)
             void handleSubmit(async ({ password, confirmPassword }) => {
                 try {
                     await confirmReset.mutateAsync({
@@ -79,6 +78,7 @@ export const useCardForgotPasswordNewPasswordScreen =
                         password,
                         confirmPassword,
                     })
+                    trackEvent(CardEvent.RecoverResetComplete)
                     successToast(
                         t('peraCard.forgot_password.success_title'),
                         t('peraCard.forgot_password.success_body'),

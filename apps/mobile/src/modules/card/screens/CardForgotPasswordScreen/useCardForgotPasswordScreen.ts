@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { useForm, type Control, type FieldErrors } from 'react-hook-form'
+import { useForm, type Control } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
@@ -26,7 +26,6 @@ import { type PeraCardStackParamList } from '../../routes/types'
 
 export type UseCardForgotPasswordScreenResult = {
     control: Control<ForgotPasswordEmailFormValues>
-    errors: FieldErrors<ForgotPasswordEmailFormValues>
     isValid: boolean
     isSubmitting: boolean
     handleSendCode: () => void
@@ -46,7 +45,7 @@ export const useCardForgotPasswordScreen =
         const {
             control,
             handleSubmit,
-            formState: { isValid, errors },
+            formState: { isValid },
         } = useForm<ForgotPasswordEmailFormValues>({
             resolver: zodResolver(forgotPasswordEmailSchema),
             mode: 'onChange',
@@ -69,7 +68,6 @@ export const useCardForgotPasswordScreen =
 
         return {
             control,
-            errors,
             isValid,
             isSubmitting: requestReset.isPending,
             handleSendCode,

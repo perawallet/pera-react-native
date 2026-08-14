@@ -12,6 +12,7 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { CardEvent } from '@analytics'
 
 const { mockTrackEvent } = vi.hoisted(() => ({ mockTrackEvent: vi.fn() }))
 vi.mock('@analytics', async () => {
@@ -93,9 +94,9 @@ describe('useCardForgotPasswordNewPasswordScreen', () => {
             result.current.handleConfirm()
         })
         expect(mockConfirmMutateAsync).not.toHaveBeenCalled()
-        // The tap is tracked even when validation blocks the call, matching
-        // how the onboarding password screen tracks CreatePassword.
-        expect(mockTrackEvent).toHaveBeenCalled()
+        // RecoverResetComplete only fires once the reset actually succeeds,
+        // so a tap blocked by validation must not track anything.
+        expect(mockTrackEvent).not.toHaveBeenCalled()
     })
 
     it('exposes the live password value for the requirements checklist', () => {
@@ -104,5 +105,84 @@ describe('useCardForgotPasswordNewPasswordScreen', () => {
         )
 
         expect(result.current.password).toBe('')
+    })
+
+    describe('confirm submission outcomes', () => {
+        const VALID_PASSWORD = 'CorrectHorse7Battery!'
+
+        // Writes a schema-valid password straight into the form store: no
+        // inputs are rendered in a hook test, so this is the submit lever.
+        const submitWithValidForm = async (result: {
+            current: ReturnType<typeof useCardForgotPasswordNewPasswordScreen>
+        }) => {
+            act(() => {
+                Object.assign(result.current.control._formValues, {
+                    password: VALID_PASSWORD,
+                    confirmPassword: VALID_PASSWORD,
+                })
+            })
+            await act(async () => {
+                result.current.handleConfirm()
+            })
+        }
+
+        it('confirms the reset, tracks completion, toasts, and hands the email back to sign-in', async () => {
+            mockConfirmMutateAsync.mockResolvedValueOnce(undefined)
+            const { result } = renderHook(() =>
+                useCardForgotPasswordNewPasswordScreen(),
+            )
+
+            await submitWithValidForm(result)
+
+            expect(mockTrackEvent).toHaveBeenCalledWith(
+                CardEvent.RecoverResetComplete,
+            )
+            expect(mockSuccessToast).toHaveBeenCalledWith(
+                'peraCard.forgot_password.success_title',
+                'peraCard.forgot_password.success_body',
+            )
+            expect(mockNavigate).toHaveBeenCalledWith('CardSignIn', {
+                email: 'typed@x.com',
+            })
+        })
+
+        it('goes back to the code screen without tracking on a rejected token (400/422)', async () => {
+            mockConfirmMutateAsync.mockRejectedValueOnce(
+                Object.assign(new Error('rejected'), {
+                    response: { status: 422 },
+                }),
+            )
+            const { result } = renderHook(() =>
+                useCardForgotPasswordNewPasswordScreen(),
+            )
+
+            await submitWithValidForm(result)
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'peraCard.forgot_password.confirm_failed_title',
+                'peraCard.forgot_password.token_expired_body',
+            )
+            expect(mockGoBack).toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockTrackEvent).not.toHaveBeenCalled()
+        })
+
+        it('shows the generic error and stays put without tracking on any other failure', async () => {
+            mockConfirmMutateAsync.mockRejectedValueOnce(
+                Object.assign(new Error('boom'), {
+                    response: { status: 500 },
+                }),
+            )
+            const { result } = renderHook(() =>
+                useCardForgotPasswordNewPasswordScreen(),
+            )
+
+            await submitWithValidForm(result)
+
+            expect(mockShowError).toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockGoBack).not.toHaveBeenCalled()
+            expect(mockTrackEvent).not.toHaveBeenCalled()
+        })
     })
 })
