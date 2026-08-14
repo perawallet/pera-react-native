@@ -7,11 +7,12 @@ catalog:
   "@algorandfoundation/algokit-utils": 9.2.0
   "@algorandfoundation/dp256": 1.1.0
   "@algorandfoundation/keystore": 1.0.0-canary.17
-  "@algorandfoundation/keystore-core": 1.0.0-canary.1
-  "@algorandfoundation/keystore-web": 1.0.0-canary.1
+  "@algorandfoundation/keystore-core": 1.0.0-canary.3
+  "@algorandfoundation/keystore-web": 1.0.0-canary.3
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
-  "@algorandfoundation/react-native-keystore": 1.0.0-canary.14
-  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.22
+  "@algorandfoundation/provider-migrations": 1.0.0-canary.1
+  "@algorandfoundation/react-native-keystore": 1.0.0-canary.19
+  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.24
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@lottiefiles/dotlottie-react": 0.19.12
@@ -126,6 +127,7 @@ minimumReleaseAgeExclude:
   # direct ones leaves the install still blocked by the gate.
   - '@algorandfoundation/keystore-core'
   - '@algorandfoundation/keystore-web'
+  - '@algorandfoundation/provider-migrations'
   - '@algorandfoundation/react-native-keystore'
   - '@algorandfoundation/react-native-passkey-autofill'
   - '@joe-p/react-native-falcon'
@@ -154,12 +156,14 @@ onlyBuiltDependencies:
   - simple-git-hooks
 
 patchedDependencies:
-  # Two unrelated reasons: the Android credential provider keeps the legacy
+  # Three unrelated reasons: the Android credential provider keeps the legacy
   # native app's service class name so Credential Manager carries the user's
-  # enablement across the upgrade, and every user-facing string the package
-  # ships names "Rocca Wallet" — its own product, shown verbatim in the iOS
-  # Face ID / passcode prompts. Neither is configurable through plugin options.
-  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.22": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.22.patch
+  # enablement across the upgrade, relying-party scoping so the credential
+  # provider doesn't hand every stored passkey to any caller (PERA-4714), and
+  # every user-facing string the package ships names "Rocca Wallet" — its own
+  # product, shown verbatim in the iOS Face ID / passcode prompts. None of the
+  # three is configurable through plugin options.
+  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.24": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.24.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
@@ -182,10 +186,17 @@ overrides:
   # regardless of `onlyBuiltDependencies` or `dangerouslyAllowAllBuilds`. A git
   # spec installs a package with no entry points at all.
   algosdk: file:./libs/algosdk-3.7.0-beta.1.tgz
+  # Pinned below the catalog's other keystore-family bumps: canary.18+ turned
+  # this meta package into a thin `export * from keystore-node` re-export and
+  # dropped the flat function API (clearKeyData/encrypt/decrypt/sign/verify/...)
+  # that extensions/keystore-chrome is built on. canary.17 predates the split
+  # and depends on no keystore-core, so it raises no two-copies hazard against
+  # the keystore-core override below. Migrating keystore-chrome onto the new
+  # engine-style API is a separate epic with its own e2e surface.
   '@algorandfoundation/keystore': 1.0.0-canary.17
-  '@algorandfoundation/keystore-core': 1.0.0-canary.1
-  '@algorandfoundation/keystore-web': 1.0.0-canary.1
-  '@algorandfoundation/react-native-keystore': 1.0.0-canary.14
+  '@algorandfoundation/keystore-core': 1.0.0-canary.3
+  '@algorandfoundation/keystore-web': 1.0.0-canary.3
+  '@algorandfoundation/react-native-keystore': 1.0.0-canary.19
   '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
   '@expo/dom-webview': ~57.0.1
   '@grpc/grpc-js@<1.9.16': 1.9.16
