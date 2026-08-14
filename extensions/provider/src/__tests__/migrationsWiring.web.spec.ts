@@ -69,4 +69,12 @@ describe('provider migrations wiring (web)', () => {
             names.indexOf('WithPeraKeystorePreflight') + 1,
         )
     })
+
+    it('registers WithPeraKeystoreRepairs immediately after WithKeyStore', () => {
+        const names = PeraProvider.EXTENSIONS.map(extension => extension.name)
+
+        expect(names.indexOf('WithPeraKeystoreRepairs')).toBe(
+            names.indexOf('WithKeyStore') + 1,
+        )
+    })
 })

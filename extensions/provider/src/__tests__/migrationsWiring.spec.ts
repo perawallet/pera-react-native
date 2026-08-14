@@ -63,6 +63,19 @@ describe('provider migrations wiring', () => {
         )
     })
 
+    // The mirror image, and just as silent when wrong: the repair revisions
+    // rewrite `k/` records that upstream's `adopt-flat-records` has not yet
+    // produced, so landing this before WithKeyStore makes them a no-op on
+    // exactly the records they exist to fix — with the ledger recording them
+    // as applied, so they never run again.
+    it('registers WithPeraKeystoreRepairs immediately after WithKeyStore', () => {
+        const names = PeraProvider.EXTENSIONS.map(extension => extension.name)
+
+        expect(names.indexOf('WithPeraKeystoreRepairs')).toBe(
+            names.indexOf('WithKeyStore') + 1,
+        )
+    })
+
     it('exposes provider.migrations', () => {
         const provider = new PeraProvider(
             { id: 'test', name: 'Test' },
