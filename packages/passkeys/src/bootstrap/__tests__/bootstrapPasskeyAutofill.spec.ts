@@ -78,6 +78,8 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     readMasterKey: mocks.readMasterKey,
     storage: mocks.storage,
     MasterKeyNotFoundError: mocks.MasterKeyNotFoundError,
+    METADATA_PREFIX: 'k/',
+    MATERIAL_PREFIX: 'm/',
     // canary.14's codecs, restated over the same primitives for the same
     // reason as the class above. `decode` reads the `{$u8}` metadata the
     // Keychain driver writes into `k/`; `openData` unseals `m/`.

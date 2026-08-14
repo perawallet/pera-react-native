@@ -14,6 +14,8 @@ import type { Migration } from '@algorandfoundation/provider-migrations'
 import type { PeraMigrationContext } from '../types'
 import { migration as r0001 } from './0001-retire-hd-root-shadow'
 import { migration as r0002 } from './0002-lift-nested-material'
+import { migration as r0003 } from './0003-remove-layout-version-stamp'
+import { migration as r0004 } from './0004-adopt-material-less-records'
 
 /**
  * Permanent ledger key. Renaming it makes the engine believe this module has
@@ -25,4 +27,6 @@ export const PREFLIGHT_MODULE_ID = 'com.perawallet.wallet/keystore-preflight'
 export const preflightMigrations: readonly Migration<PeraMigrationContext>[] = [
     r0001,
     r0002,
+    r0003,
+    r0004,
 ]

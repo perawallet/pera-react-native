@@ -13,6 +13,8 @@
 import {
     decode,
     MasterKeyNotFoundError,
+    MATERIAL_PREFIX,
+    METADATA_PREFIX,
     openData,
     readMasterKey,
     storage as keystoreStorage,
@@ -40,15 +42,12 @@ export interface BootstrapPasskeyAutofillOptions {
     }
 }
 
-/** The canary.14 driver's two buckets: plaintext metadata, sealed material. */
-const METADATA_PREFIX = 'k/'
-const MATERIAL_PREFIX = 'm/'
-
 /**
  * Kept in step with `HD_ROOT_SHADOW_TYPES` in the provider extension's
- * `migrateKeystoreLayout`, which exempts these records' bare-id copies from
- * deletion. This list is the authority — it decides which id the credential
- * provider is actually handed.
+ * `preflight/0001-retire-hd-root-shadow`, which **deletes** these records'
+ * bare-id copies once the split `k/`+`m/` pair is verifiably present. This
+ * list is the authority — it decides which id the credential provider is
+ * actually handed.
  */
 const HD_ROOT_KEY_TYPES = new Set<string>([
     'hd-root-key',

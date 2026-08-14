@@ -374,6 +374,18 @@ describe('0002-lift-nested-material', () => {
         ).toBe('{"modules":{}}')
     })
 
+    // `0003` deletes this key outright, but a store holding only the stamp
+    // must never cost a master-key read here either, in case a future reorder
+    // ever ran this revision first.
+    it('does not treat the layout-version stamp as a flat record', async () => {
+        const storage = fakeStorage({ 'pera/keystore-layout-version': '1' })
+
+        await migration.up(context(storage), utils())
+
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+        expect(storage.getString('pera/keystore-layout-version')).toBe('1')
+    })
+
     // A record this pass cannot open belongs to another writer (the iOS
     // credential provider seals with unpadded base64 `openData` rejects) or is
     // not a record at all. Upstream reports it; ours must not fail the module.
@@ -542,10 +554,18 @@ describe('0002-lift-nested-material', () => {
     )
 
     // The credential provider shares this MMKV instance from another process
-    // and is still on the bare-id layout. Neither real shape has nested
-    // material, so neither is at risk and neither is touched — behaviour the
-    // removed `migrateKeystoreLayout` exemption used to enforce explicitly.
-    it('leaves a provider credential with a plain key flat', async () => {
+    // and is still on the bare-id layout. Neither real shape carries *nested*
+    // material, so this revision is not the one that decides their fate: this
+    // pins that it does not touch them, not that they survive. A plain-key
+    // credential like this one carries top-level `privateKey`, so upstream's
+    // own `adopt-flat-records` adopts it and deletes the bare id in the very
+    // next module — and per `packages/passkeys/src/native/nativeProviderRecord.ts`,
+    // the provider is still bare-id-only pending its own Phase 3, so that
+    // deletion is a real regression for this record shape, not a benign one.
+    // Pre-existing (upstream's adoption ran regardless of the now-removed
+    // `migrateKeystoreLayout`, per Task 4's review) and tracked for the
+    // on-device pass — not something this test asserts is safe.
+    it('leaves a provider credential with a plain key flat here', async () => {
         const storage = await seeded({
             id: 'cred-plain',
             type: 'hd-derived-p256',

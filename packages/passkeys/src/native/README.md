@@ -118,13 +118,17 @@ When the provider moves to `k/`+`m/` and the canary.14 `{iv, content}` envelope,
 the bare-id records have to move with it.
 
 The safety property is **write → read back → only then delete**, per record,
-idempotent and resumable. `migrateKeystoreLayout` already has this shape: it
-leaves anything it could not migrate in place for a later run rather than
-dropping it.
+idempotent and resumable — the shape every keystore migration revision in
+`extensions/provider/src/keystore/migrations/` already follows: each leaves
+anything it could not migrate in place for a later run rather than dropping it.
 
-Until then, `migrateKeystoreLayout` **skips** provider records — skips, never
-consumes. That is what keeps phase 3 possible, so do not "tidy" it into
-migrating them.
+Until then, nothing in this branch **consumes** provider records — upstream's
+`adopt-flat-records` requires top-level material and skips `privateKeyEnc`
+credentials, but does adopt (and delete the bare id of) a plain-key credential;
+none of Pera's own revisions add a provider exemption (see Task 4/5's review).
+That gap is what keeps phase 3 possible and is also a real, tracked exposure
+for that one record shape — so do not "tidy" it into migrating them without
+first closing the gap.
 
 The bare-id root shadow from phase 2 is deleted in this phase too, and only
 here: once the provider reads `m/`, the duplicate is redundant, and removing it

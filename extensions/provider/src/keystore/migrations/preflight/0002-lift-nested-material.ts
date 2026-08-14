@@ -31,6 +31,7 @@ import {
     type LiftedMaterial,
 } from '../canary13'
 import { createJournal, placeSecrets, sealAndVerify } from '../sealing'
+import { LAYOUT_VERSION_KEY } from './0003-remove-layout-version-stamp'
 
 /**
  * The storage key `@algorandfoundation/provider-migrations` serialises its
@@ -43,7 +44,12 @@ const MIGRATIONS_LEDGER_KEY = '@algorandfoundation/provider-migrations'
 const isFlatCandidate = (key: string): boolean =>
     !key.startsWith(MATERIAL_PREFIX) &&
     !key.startsWith(METADATA_PREFIX) &&
-    key !== MIGRATIONS_LEDGER_KEY
+    key !== MIGRATIONS_LEDGER_KEY &&
+    // `migrateKeystoreLayout`'s now-removed completion stamp. `0003` deletes it
+    // outright, but excluding it here too means a store holding only the stamp
+    // never becomes a decrypt attempt even if a future reorder ran this before
+    // `0003`.
+    key !== LAYOUT_VERSION_KEY
 
 /**
  * `adopted` took the record; `declined` left it whole and flat by choice;

@@ -126,13 +126,15 @@ describe('runKeystoreMaintenance', () => {
     // An unreadable master key still on disk must not boot into an empty
     // wallet — that is what prompts a destructive re-onboard. The caller
     // (`useAppBootstrap`) turns this into a failed bootstrap.
-    test('propagates a throw from the repair pass', async () => {
-        mocks.runMaterialRepair.mockRejectedValue(
-            new Error('master key unreadable'),
-        )
+    test('propagates a throw from the repair pass, without reconciling again', async () => {
+        mocks.runMaterialRepair.mockImplementation(async () => {
+            calls.push('repair')
+            throw new Error('master key unreadable')
+        })
 
         await expect(runKeystoreMaintenance()).rejects.toThrow(
             'master key unreadable',
         )
+        expect(calls).toEqual(['reconcile', 'repair'])
     })
 })
