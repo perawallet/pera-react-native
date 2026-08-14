@@ -15,6 +15,7 @@ import Hook from 'before-after-hook'
 import type { HookCollection } from 'before-after-hook'
 import type { KeyStoreState } from '@algorandfoundation/keystore-core'
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
+import type { MigrationReport } from '@algorandfoundation/provider-migrations'
 import { createPeraKeystore } from './keystore/createKeystore'
 import {
     readPersistedKeys,
@@ -23,6 +24,7 @@ import {
 } from './keystore/maintenance'
 import type { KeystoreLayoutMigrationResult } from './keystore/migrateKeystoreLayout'
 import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
+import { createPeraMigrationLedger } from './keystore/migrationsLedger'
 import { PeraProvider } from './pera-provider'
 
 const keystoreStore = new Store<KeyStoreState>({
@@ -31,9 +33,25 @@ const keystoreStore = new Store<KeyStoreState>({
 })
 const keystoreHooks = new Hook.Collection()
 
+// The keystore needs `provider.migrations.ready` to gate its hydration, but
+// the provider needs a concrete keystore to construct (it's injected through
+// `options.api.keystore`). A deferred promise breaks the cycle: the keystore
+// is built against it first, and it's wired to the real
+// `provider.migrations.ready` once the provider exists. `WithMigrations`
+// runs its first pass on a microtask, which can't fire until this
+// synchronous module body — including the `.then` below — has finished, so
+// nothing races.
+let resolveMigrations!: (report: MigrationReport) => void
+let rejectMigrations!: (error: unknown) => void
+const migrationsReady = new Promise<MigrationReport>((resolve, reject) => {
+    resolveMigrations = resolve
+    rejectMigrations = reject
+})
+
 const keystore = createPeraKeystore({
     store: keystoreStore,
     hooks: keystoreHooks,
+    before: migrationsReady,
 })
 
 let instance: PeraProvider | null = new PeraProvider(
@@ -47,8 +65,20 @@ let instance: PeraProvider | null = new PeraProvider(
             store: keystoreStore,
             hooks: keystoreHooks,
         },
+        migrations: { ledger: createPeraMigrationLedger() },
     },
 )
+
+instance.migrations.ready.then(resolveMigrations, rejectMigrations)
+
+/**
+ * Resolves once the startup migration run settles, mirroring
+ * `provider.migrations.ready`. Exists as a module-level export because the
+ * keystore is built (and gated on this) before the provider — the one that
+ * owns `migrations` — exists.
+ */
+export const getMigrationsReady = (): Promise<MigrationReport> =>
+    migrationsReady
 
 /**
  * Returns the provider singleton. Throws if called before `initializeProvider()`.

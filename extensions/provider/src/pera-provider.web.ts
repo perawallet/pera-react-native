@@ -12,6 +12,7 @@
 
 import { Provider } from '@algorandfoundation/wallet-provider'
 import { WithKeyStore } from '@algorandfoundation/keystore-web'
+import { WithMigrations } from '@algorandfoundation/provider-migrations'
 import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-driver'
 import { WithLedgerWebBleExtension } from '@perawallet/wallet-extension-ledger-web-ble'
 import { WithLedgerWebUsbExtension } from '@perawallet/wallet-extension-ledger-web-usb'
@@ -43,6 +44,12 @@ export const PeraProvider: {
     ): PeraProviderShape
     EXTENSIONS: PeraExtensions
 } & typeof Provider = Provider.withExtensions([
+    // First, and load-bearing: every later extension registers its migrations
+    // through `provider.migrations`, which does not exist until this has run.
+    // Tasks 3/4 insert the `.web.ts` no-op siblings of
+    // WithPeraKeystorePreflight/WithPeraKeystoreRepairs around WithKeyStore
+    // below, mirroring the native file.
+    WithMigrations,
     WithPlatformExtension,
     WithLedgerWebBleExtension,
     WithLedgerWebUsbExtension,

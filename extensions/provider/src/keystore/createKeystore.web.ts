@@ -38,13 +38,27 @@ import type { PeraKeystoreDeps } from './createKeystore'
  * non-platform file; the two are structurally the same `KeyStore`, differing
  * only in the driver's per-operation context (`void` here, biometric prompt
  * options on device), which no caller in this repo passes.
+ *
+ * `deps.before` gates the driver's `ready` the same way `createReactNativeKeyStore`
+ * gates the Keychain driver's — core's orchestrator awaits `driver.ready`
+ * before hydrating, and that's the only hook available since `createKeyStore`
+ * itself takes no such option. No Pera migration module registers on web
+ * today (the `.web.ts` extension siblings are no-ops) and `keystore-web` ships
+ * none either, so this currently gates nothing — it's here for the first web
+ * revision that needs it.
  */
 export const createPeraKeystore = (
     deps: PeraKeystoreDeps,
-): ReactNativeKeyStore =>
-    createKeyStore({
-        driver: createIndexedDBDriver({ host: globalThis.crypto.subtle }),
+): ReactNativeKeyStore => {
+    const driver = createIndexedDBDriver({ host: globalThis.crypto.subtle })
+    const gatedDriver = deps.before
+        ? { ...driver, ready: deps.before.then(() => driver.ready) }
+        : driver
+
+    return createKeyStore({
+        driver: gatedDriver,
         store: deps.store,
         hooks: deps.hooks,
         shims: () => createDefaultShims(),
     }) as unknown as ReactNativeKeyStore
+}

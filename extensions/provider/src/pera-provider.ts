@@ -12,6 +12,7 @@
 
 import { Provider } from '@algorandfoundation/wallet-provider'
 import { WithKeyStore } from '@algorandfoundation/react-native-keystore'
+import { WithMigrations } from '@algorandfoundation/provider-migrations'
 import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-driver'
 import { WithLedgerExtension } from '@perawallet/wallet-extension-ledger-react-native'
 import { WithLedgerUsbExtension } from '@perawallet/wallet-extension-ledger-react-native-usb'
@@ -44,6 +45,12 @@ export const PeraProvider: {
     ): PeraProviderShape
     EXTENSIONS: PeraExtensions
 } & typeof Provider = Provider.withExtensions([
+    // First, and load-bearing: every later extension registers its migrations
+    // through `provider.migrations`, which does not exist until this has run.
+    // Task 3 inserts WithPeraKeystorePreflight immediately before
+    // WithKeyStore, and Task 4 inserts WithPeraKeystoreRepairs immediately
+    // after it.
+    WithMigrations,
     WithPlatformExtension,
     WithLedgerExtension,
     WithLedgerUsbExtension,
