@@ -22,6 +22,9 @@ import {
     loginResponseSchema,
     oauthAuthorizeResponseSchema,
     oauthInitiateResponseSchema,
+    passwordResetConfirmResponseSchema,
+    passwordResetRequestResponseSchema,
+    passwordResetVerifyResponseSchema,
     sendLoginOtpResponseSchema,
     tokenResponseSchema,
 } from './schema'
@@ -217,4 +220,96 @@ export const refreshTokenRequest = async (
     })
 
     return transformTokenResponse(tokenResponseSchema.parse(response.data))
+}
+
+export type RequestPasswordResetParams = {
+    email: string
+    network: Network
+    signal?: AbortSignal
+}
+
+/**
+ * Step 1 of the password reset flow: asks Baanx to email a verification code.
+ * Direct to Baanx with the x-client-key alone (same auth as login). Baanx
+ * answers `{success: true}` even for unknown emails (no account enumeration),
+ * so callers can always advance to the code screen. Rejects on a 200 that
+ * reports `success: false`, so "resolved" means "a code is on its way".
+ */
+export const requestPasswordReset = async (
+    params: RequestPasswordResetParams,
+): Promise<void> => {
+    const { email, network, signal } = params
+
+    const response = await getCardTransport().request({
+        network,
+        method: 'POST',
+        path: '/v1/auth/password/reset/request',
+        data: { email },
+        signal,
+    })
+
+    const { success } = passwordResetRequestResponseSchema.parse(response.data)
+    if (success === false) {
+        throw new Error('Baanx declined to send the password reset code')
+    }
+}
+
+export type VerifyPasswordResetParams = {
+    /** Must be the same address the code was requested for. */
+    email: string
+    /** Verification code from the reset email. */
+    code: string
+    network: Network
+    signal?: AbortSignal
+}
+
+/**
+ * Step 2: trades the emailed code for the single-use reset token consumed by
+ * {@link confirmPasswordReset}. The token expires after a short period, so
+ * confirm should follow promptly. A wrong or expired code is a 400/422.
+ */
+export const verifyPasswordReset = async (
+    params: VerifyPasswordResetParams,
+): Promise<string> => {
+    const { email, code, network, signal } = params
+
+    const response = await getCardTransport().request({
+        network,
+        method: 'POST',
+        path: '/v1/auth/password/reset/verify',
+        data: { email, code },
+        signal,
+    })
+
+    return passwordResetVerifyResponseSchema.parse(response.data).token
+}
+
+export type ConfirmPasswordResetParams = {
+    /** Single-use reset token from {@link verifyPasswordReset}. */
+    token: string
+    password: string
+    /** Must equal `password`; Baanx validates the match server-side too. */
+    confirmPassword: string
+    network: Network
+    signal?: AbortSignal
+}
+
+/** Step 3: sets the new password. An expired or used token is a 400/422. */
+export const confirmPasswordReset = async (
+    params: ConfirmPasswordResetParams,
+): Promise<void> => {
+    const { token, password, confirmPassword, network, signal } = params
+
+    const response = await getCardTransport().request({
+        network,
+        method: 'POST',
+        path: '/v1/auth/password/reset/confirm',
+        data: { token, password, confirmPassword },
+        signal,
+    })
+
+    const { success } = passwordResetConfirmResponseSchema.parse(response.data)
+    if (success === false) {
+        throw new Error('Baanx declined the password reset confirmation')
+    }
 }

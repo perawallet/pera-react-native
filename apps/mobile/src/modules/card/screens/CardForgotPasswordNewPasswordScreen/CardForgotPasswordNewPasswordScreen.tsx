@@ -12,30 +12,19 @@
 
 import { Controller } from 'react-hook-form'
 import { PWButton, PWInput, PWScreen, PWView } from '@components/core'
-import { CardConsentCheckboxRow } from '@modules/card/components/CardConsentCheckboxRow'
 import { PasswordRequirements } from '@modules/card/components/PasswordRequirements'
 import { useLanguage } from '@hooks/useLanguage'
-import { useCardOnboardingPasswordScreen } from './useCardOnboardingPasswordScreen'
+import { useCardForgotPasswordNewPasswordScreen } from './useCardForgotPasswordNewPasswordScreen'
 import { useStyles } from './styles'
 
-export const CardOnboardingPasswordScreen = () => {
+export const CardForgotPasswordNewPasswordScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const {
-        control,
-        errors,
-        password,
-        isValid,
-        isSubmitting,
-        allowMarketing,
-        allowSms,
-        handleToggleMarketing,
-        handleToggleSms,
-        handleConfirm,
-    } = useCardOnboardingPasswordScreen()
+    const { control, errors, password, isValid, isSubmitting, handleConfirm } =
+        useCardForgotPasswordNewPasswordScreen()
 
     return (
-        <PWScreen testID='card-onboarding-password'>
+        <PWScreen testID='card-forgot-password-new-password'>
             <PWView style={styles.content}>
                 <PWView style={styles.fields}>
                     <Controller
@@ -47,13 +36,13 @@ export const CardOnboardingPasswordScreen = () => {
                                 onChangeText={onChange}
                                 onBlur={onBlur}
                                 placeholder={t(
-                                    'peraCard.create_password.password_placeholder',
+                                    'peraCard.forgot_password.password_placeholder',
                                 )}
                                 secureTextEntry
                                 showVisibilityToggle
                                 autoCapitalize='none'
                                 autoCorrect={false}
-                                testID='card-onboarding-password-input'
+                                testID='card-forgot-password-password-input'
                             />
                         )}
                     />
@@ -70,7 +59,7 @@ export const CardOnboardingPasswordScreen = () => {
                                     onChangeText={onChange}
                                     onBlur={onBlur}
                                     placeholder={t(
-                                        'peraCard.create_password.confirm_placeholder',
+                                        'peraCard.forgot_password.confirm_placeholder',
                                     )}
                                     secureTextEntry
                                     showVisibilityToggle
@@ -80,46 +69,26 @@ export const CardOnboardingPasswordScreen = () => {
                                     errorMessage={
                                         errors.confirmPassword && value
                                             ? t(
-                                                  'peraCard.create_password.passwords_mismatch',
+                                                  'peraCard.forgot_password.passwords_mismatch',
                                               )
                                             : undefined
                                     }
-                                    testID='card-onboarding-confirm-password-input'
+                                    testID='card-forgot-password-confirm-password-input'
                                 />
                             )}
                         />
 
                         <PasswordRequirements password={password} />
                     </PWView>
-
-                    <PWView style={styles.checkboxes}>
-                        {/* SMS consent is required by Baanx (gates Continue), so
-                            it comes first; marketing is optional. */}
-                        <CardConsentCheckboxRow
-                            checked={allowSms}
-                            onPress={handleToggleSms}
-                            testID='card-onboarding-password-sms-checkbox'
-                        >
-                            {t('peraCard.create_password.sms_opt_in')}
-                        </CardConsentCheckboxRow>
-
-                        <CardConsentCheckboxRow
-                            checked={allowMarketing}
-                            onPress={handleToggleMarketing}
-                            testID='card-onboarding-password-marketing-checkbox'
-                        >
-                            {t('peraCard.create_password.marketing_opt_in')}
-                        </CardConsentCheckboxRow>
-                    </PWView>
                 </PWView>
 
                 <PWButton
                     variant='primary'
-                    title={t('peraCard.create_password.confirm_button')}
+                    title={t('peraCard.forgot_password.reset_button')}
                     onPress={handleConfirm}
                     isDisabled={!isValid || isSubmitting}
                     isLoading={isSubmitting}
-                    testID='card-onboarding-password-confirm'
+                    testID='card-forgot-password-confirm'
                 />
             </PWView>
         </PWScreen>

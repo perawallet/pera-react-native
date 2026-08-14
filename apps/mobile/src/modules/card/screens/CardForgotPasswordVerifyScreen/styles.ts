@@ -15,15 +15,18 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     content: {
         paddingTop: theme.spacing.xl,
-        gap: theme.spacing.xxl,
-    },
-    fields: {
         gap: theme.spacing.xl,
     },
-    confirmGroup: {
+    description: {
+        color: theme.colors.textGray,
+    },
+    form: {
+        gap: theme.spacing.xxl,
+    },
+    inputGroup: {
         gap: theme.spacing.md,
     },
-    checkboxes: {
-        gap: theme.spacing.md,
+    countdownText: {
+        color: theme.colors.textGrayLighter,
     },
 }))

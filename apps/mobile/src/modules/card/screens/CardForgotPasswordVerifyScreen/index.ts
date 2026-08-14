@@ -10,20 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    content: {
-        paddingTop: theme.spacing.xl,
-        gap: theme.spacing.xxl,
-    },
-    fields: {
-        gap: theme.spacing.xl,
-    },
-    confirmGroup: {
-        gap: theme.spacing.md,
-    },
-    checkboxes: {
-        gap: theme.spacing.md,
-    },
-}))
+export { CardForgotPasswordVerifyScreen } from './CardForgotPasswordVerifyScreen'

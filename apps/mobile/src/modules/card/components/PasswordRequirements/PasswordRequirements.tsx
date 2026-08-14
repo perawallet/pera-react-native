@@ -36,8 +36,8 @@ const RULE_LABEL_KEYS: Record<PasswordRuleId, string> = {
 /**
  * Live checklist of the password rules. Each row turns green with a check the
  * moment its rule is satisfied. Rules come from `PASSWORD_RULES` so this stays
- * in lockstep with `passwordSetSchema`. Not exported from the barrel — used only
- * by the Create Password screen.
+ * in lockstep with `passwordSetSchema`. Shared by the onboarding Create Password
+ * screen and the forgot-password flow.
  */
 export const PasswordRequirements = ({
     password,
@@ -75,7 +75,7 @@ export const PasswordRequirements = ({
                 )
             })}
 
-            {/* Advisory only — Baanx recommends it but it isn't enforced, so
+            {/* Advisory only, Baanx recommends it but it isn't enforced, so
                 it's plain guidance rather than a checked requirement. */}
             <PWText
                 variant='footnoteMedium'

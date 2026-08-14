@@ -11,18 +11,24 @@
  */
 
 export {
+    confirmPasswordReset,
     loginRequest,
     oauthAuthorizeRequest,
     oauthInitiateRequest,
     oauthTokenRequest,
     refreshTokenRequest,
+    requestPasswordReset,
     sendLoginOtpRequest,
+    verifyPasswordReset,
+    type ConfirmPasswordResetParams,
     type LoginRequestParams,
     type OauthAuthorizeRequestParams,
     type OauthInitiateRequestParams,
     type OauthTokenRequestParams,
     type RefreshTokenRequestParams,
+    type RequestPasswordResetParams,
     type SendLoginOtpRequestParams,
+    type VerifyPasswordResetParams,
 } from './endpoints'
 export {
     acquireCardSessionTokens,

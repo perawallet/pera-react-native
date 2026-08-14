@@ -46,12 +46,24 @@ const PeraCardStub = ({ route }: PeraCardStubProps) => (
         testID={`peracard-dest-${route.params?.params?.screen ?? 'unknown'}`}
     />
 )
+// The real CardForgotPassword screen (and the rest of the reset flow) is
+// covered end to end by card-forgot-password.test.tsx; this stub only lets
+// this file assert what CardSignInScreen itself hands off.
+type ForgotPasswordStubProps = {
+    route: { params?: { email?: string } }
+}
+const ForgotPasswordStub = ({ route }: ForgotPasswordStubProps) => (
+    <View
+        testID={`card-forgot-password-dest-${route.params?.email ?? 'empty'}`}
+    />
+)
 
 const renderSignIn = () =>
     renderWithNavigation(CardSignInScreen, 'CardSignIn', {
         additionalScreens: [
             { name: 'TabBar', component: HomeStub },
             { name: 'PeraCard', component: PeraCardStub },
+            { name: 'CardForgotPassword', component: ForgotPasswordStub },
         ],
     })
 
@@ -349,13 +361,18 @@ describe('Flow: Card sign in', () => {
         expect(screen.queryByTestId('home-tab-stub')).toBeNull()
     })
 
-    it('shows a coming-soon toast when Forgot Password is tapped', async () => {
+    it('navigates to the forgot-password flow, carrying along the typed email', async () => {
         renderSignIn()
 
+        fireEvent.change(screen.getByTestId('card-sign-in-email-input'), {
+            target: { value: VALID_EMAIL },
+        })
         fireEvent.click(screen.getByTestId('card-sign-in-forgot-password'))
 
         await waitFor(() =>
-            expect(Notifier.showNotification).toHaveBeenCalled(),
+            expect(
+                screen.getByTestId(`card-forgot-password-dest-${VALID_EMAIL}`),
+            ).toBeTruthy(),
         )
     })
 })

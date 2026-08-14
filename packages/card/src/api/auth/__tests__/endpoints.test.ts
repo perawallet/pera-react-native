@@ -16,12 +16,15 @@ const { request } = vi.hoisted(() => ({ request: vi.fn() }))
 vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
 
 import {
+    confirmPasswordReset,
     loginRequest,
     oauthAuthorizeRequest,
     oauthInitiateRequest,
     oauthTokenRequest,
     refreshTokenRequest,
+    requestPasswordReset,
     sendLoginOtpRequest,
+    verifyPasswordReset,
 } from '../endpoints'
 
 describe('auth endpoints', () => {
@@ -182,5 +185,92 @@ describe('auth endpoints', () => {
         // handler.
         expect(call.route).toBeUndefined()
         expect(call.authenticated).toBeUndefined()
+    })
+
+    it('requests a password reset via the direct route', async () => {
+        request.mockResolvedValue({ data: { success: true } })
+
+        await requestPasswordReset({ email: 'e@x.com', network: 'mainnet' })
+
+        const call = request.mock.calls[0][0]
+        expect(call).toEqual(
+            expect.objectContaining({
+                method: 'POST',
+                path: '/v1/auth/password/reset/request',
+                data: { email: 'e@x.com' },
+            }),
+        )
+        // Direct to Baanx with the x-client-key alone: no proxy, no Bearer.
+        expect(call.route).toBeUndefined()
+        expect(call.authenticated).toBeUndefined()
+    })
+
+    it('rejects when the reset request reports success: false', async () => {
+        request.mockResolvedValue({ data: { success: false } })
+
+        await expect(
+            requestPasswordReset({ email: 'e@x.com', network: 'mainnet' }),
+        ).rejects.toThrow('Baanx declined to send the password reset code')
+    })
+
+    it('verifies the reset code and returns the token', async () => {
+        request.mockResolvedValue({ data: { token: 'reset-token-1' } })
+
+        const token = await verifyPasswordReset({
+            email: 'e@x.com',
+            code: '123456',
+            network: 'mainnet',
+        })
+
+        const call = request.mock.calls[0][0]
+        expect(call).toEqual(
+            expect.objectContaining({
+                method: 'POST',
+                path: '/v1/auth/password/reset/verify',
+                data: { email: 'e@x.com', code: '123456' },
+            }),
+        )
+        expect(call.route).toBeUndefined()
+        expect(call.authenticated).toBeUndefined()
+        expect(token).toBe('reset-token-1')
+    })
+
+    it('confirms the reset with the token and the new password pair', async () => {
+        request.mockResolvedValue({ data: { success: true } })
+
+        await confirmPasswordReset({
+            token: 'reset-token-1',
+            password: 'aA1!aA1!aA1!aA1',
+            confirmPassword: 'aA1!aA1!aA1!aA1',
+            network: 'mainnet',
+        })
+
+        const call = request.mock.calls[0][0]
+        expect(call).toEqual(
+            expect.objectContaining({
+                method: 'POST',
+                path: '/v1/auth/password/reset/confirm',
+                data: {
+                    token: 'reset-token-1',
+                    password: 'aA1!aA1!aA1!aA1',
+                    confirmPassword: 'aA1!aA1!aA1!aA1',
+                },
+            }),
+        )
+        expect(call.route).toBeUndefined()
+        expect(call.authenticated).toBeUndefined()
+    })
+
+    it('rejects when the reset confirm reports success: false', async () => {
+        request.mockResolvedValue({ data: { success: false } })
+
+        await expect(
+            confirmPasswordReset({
+                token: 'reset-token-1',
+                password: 'aA1!aA1!aA1!aA1',
+                confirmPassword: 'aA1!aA1!aA1!aA1',
+                network: 'mainnet',
+            }),
+        ).rejects.toThrow('Baanx declined the password reset confirmation')
     })
 })

@@ -17,13 +17,12 @@ export const useStyles = makeStyles(theme => ({
         paddingTop: theme.spacing.xl,
         gap: theme.spacing.xxl,
     },
-    fields: {
-        gap: theme.spacing.xl,
+    description: {
+        color: theme.colors.textGrayLighter,
     },
-    confirmGroup: {
-        gap: theme.spacing.md,
-    },
-    checkboxes: {
-        gap: theme.spacing.md,
+    errorMessage: {
+        marginTop: theme.spacing.xs,
+        marginBottom: 0,
+        minHeight: theme.spacing.lg,
     },
 }))

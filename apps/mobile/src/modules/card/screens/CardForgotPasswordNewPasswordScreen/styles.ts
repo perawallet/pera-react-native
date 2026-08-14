@@ -23,7 +23,4 @@ export const useStyles = makeStyles(theme => ({
     confirmGroup: {
         gap: theme.spacing.md,
     },
-    checkboxes: {
-        gap: theme.spacing.md,
-    },
 }))
