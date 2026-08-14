@@ -55,10 +55,17 @@ export const createPeraKeystore = (
         ? { ...driver, ready: deps.before.then(() => driver.ready) }
         : driver
 
-    return createKeyStore({
+    const keystore = createKeyStore({
         driver: gatedDriver,
         store: deps.store,
         hooks: deps.hooks,
         shims: () => createDefaultShims(),
     }) as unknown as ReactNativeKeyStore
+
+    // A caller is free to never await `ready`; without this, a migrations
+    // rejection would surface as an unhandled promise rejection instead of
+    // only through `ready` — mirrors the native engine's own guard.
+    keystore.ready.catch(() => {})
+
+    return keystore
 }
