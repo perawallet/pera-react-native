@@ -392,6 +392,14 @@ describe('errorReasonToMessage', () => {
             ),
         ).toBe('msg.failed')
     })
+
+    it('maps session-disconnected to the delivery-failed message', () => {
+        // The peer is gone, so nobody reads the message — reusing the
+        // delivery-failed string avoids a new locale key for a dead letter.
+        expect(
+            errorReasonToMessage({ kind: 'session-disconnected' }, messages),
+        ).toBe('msg.delivery_failed')
+    })
 })
 
 describe('resolveHandoffOutcome', () => {

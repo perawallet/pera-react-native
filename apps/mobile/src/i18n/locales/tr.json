@@ -1394,6 +1394,7 @@
             "accounts_subtitle_other": "İmzalamak için en az {{count}} hesaba ihtiyacın var",
             "confirmed": "İşlem başarıyla tamamlandı",
             "submitting": "Tüm imzalar toplandı. İşlem gönderiliyor…",
+            "delivery_failed": "İstekte bulunan uygulamaya gönderilemedi: bağlantı kesildi.",
             "failed_default": "İşlem başarısız oldu",
             "load_error": "Bu işlem yüklenemedi. Süresi dolmuş veya kaldırılmış olabilir.",
             "retry": "Tekrar dene",

@@ -60,4 +60,19 @@ describe('getStatusBannerVariant', () => {
             expect(getStatusBannerVariant(status)).toBe('submitting')
         },
     )
+
+    it.each<SignRequestStatus>(['ready', 'submitting'])(
+        'returns failure for %s status the wallet could not deliver',
+        status => {
+            // Nothing is on its way: the signatures are complete but the dApp
+            // session is gone and no client action can move the record, so the
+            // "Submitting transaction…" banner would never come true.
+            expect(getStatusBannerVariant(status, false, true)).toBe('failure')
+        },
+    )
+
+    it('still reports success for a confirmed request marked undeliverable', () => {
+        // A stale marker must never override a genuinely confirmed request.
+        expect(getStatusBannerVariant('confirmed', false, true)).toBe('success')
+    })
 })

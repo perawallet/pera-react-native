@@ -78,6 +78,14 @@ export type PendingWalletConnectHandoff = {
     /** Originating source type, for logging / telemetry. */
     sourceType: SourceType
     /**
+     * The proposing participant's address, pinned at propose time. The only
+     * local participant allowed to cancel the request on a terminal failure,
+     * and the poll response can't be relied on for it: the backend declares
+     * `proposer_address` optional and some deployments echo null. Persisted,
+     * so a handoff resumed after an app kill can still cancel.
+     */
+    proposerAddress?: string
+    /**
      * Timestamp of registration. Anchors the client-side handoff deadline
      * (PERA-4819); persisted, so a resumed-but-stale handoff self-expires on
      * relaunch instead of resuming a dead poll.

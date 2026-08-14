@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppState } from 'react-native'
 import { useTranslation } from 'react-i18next'
 import {
@@ -22,7 +22,9 @@ import {
     deliverApprove,
     deliverReject,
     deliverRejectInBackground,
+    useWalletConnectStore,
 } from '@perawallet/wallet-core-walletconnect'
+import { useUndeliveredSignRequestsStore } from '@perawallet/wallet-core-multisig'
 import { useMultisigProposeListener } from '../../hooks/useMultisigProposeListener'
 import { usePendingSignaturesSheetDriver } from './usePendingSignaturesSheetDriver'
 
@@ -83,5 +85,30 @@ const useResolverWiring = (): void => {
         [],
     )
 
-    useWalletConnectHandoffResolver({ isAppActive, messages, delivery })
+    // Session-list check, read lazily per poll (no subscription): the
+    // persisted connections are the source of truth for whether a session
+    // exists — socket state is irrelevant, reconnects keep the entry.
+    // Before rehydration the list reads empty, which would falsely cancel a
+    // live handoff right after launch — report alive until hydration lands
+    // (the next poll re-checks).
+    const isPeerSessionAlive = useCallback((clientId: string) => {
+        if (!useWalletConnectStore.persist.hasHydrated()) return true
+        return useWalletConnectStore
+            .getState()
+            .walletConnectConnections.some(
+                connection => connection.clientId === clientId,
+            )
+    }, [])
+
+    const markUndelivered = useUndeliveredSignRequestsStore(
+        store => store.markUndelivered,
+    )
+
+    useWalletConnectHandoffResolver({
+        isAppActive,
+        messages,
+        delivery,
+        isPeerSessionAlive,
+        onUndeliverable: markUndelivered,
+    })
 }

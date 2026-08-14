@@ -1386,6 +1386,7 @@
             "accounts_subtitle_other": "Du benötigst mindestens {{count}} Konten zum Signieren",
             "confirmed": "Transaktion erfolgreich abgeschlossen",
             "submitting": "Alle Signaturen gesammelt. Transaktion wird übermittelt…",
+            "delivery_failed": "Konnte nicht an die anfragende App gesendet werden – die Verbindung wurde getrennt.",
             "failed_default": "Transaktion fehlgeschlagen",
             "load_error": "Diese Transaktion konnte nicht geladen werden. Sie ist möglicherweise abgelaufen oder wurde entfernt.",
             "retry": "Erneut versuchen",

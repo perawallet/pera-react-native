@@ -1394,6 +1394,7 @@
             "accounts_subtitle_other": "You need at least {{count}} accounts to sign",
             "confirmed": "Transaction successfully completed",
             "submitting": "All signatures collected. Submitting transaction…",
+            "delivery_failed": "Couldn't send this to the app that requested it — the connection was lost.",
             "failed_default": "Transaction failed",
             "load_error": "Couldn't load this transaction. It may have expired or been removed.",
             "retry": "Try Again",

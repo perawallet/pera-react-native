@@ -1394,6 +1394,7 @@
             "accounts_subtitle_other": "Necesitas al menos {{count}} cuentas para firmar",
             "confirmed": "Transacción completada correctamente",
             "submitting": "Todas las firmas recogidas. Enviando la transacción…",
+            "delivery_failed": "No se pudo enviar a la aplicación que lo solicitó: se perdió la conexión.",
             "failed_default": "La transacción falló",
             "load_error": "No se pudo cargar esta transacción. Es posible que haya caducado o se haya eliminado.",
             "retry": "Volver a intentar",

@@ -1394,6 +1394,7 @@
             "accounts_subtitle_other": "Il vous faut au moins {{count}} comptes pour signer",
             "confirmed": "Transaction effectuée avec succès",
             "submitting": "Toutes les signatures ont été collectées. Envoi de la transaction…",
+            "delivery_failed": "Impossible d'envoyer ceci à l'application qui l'a demandé : la connexion a été perdue.",
             "failed_default": "La transaction a échoué",
             "load_error": "Impossible de charger cette transaction. Elle a peut-être expiré ou été supprimée.",
             "retry": "Réessayer",
