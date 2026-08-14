@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
     useAlgorandClient,
     useMinimumFeeConfig,
@@ -19,7 +20,7 @@ import {
 import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
 import {
     insertAssetHolding,
-    useAccountBalancesInvalidator,
+    invalidateAccountQueriesForAddresses,
 } from '@perawallet/wallet-core-accounts'
 import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import { assertOnline, toError } from '@perawallet/wallet-core-shared'
@@ -51,7 +52,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
     const algokit = useAlgorandClient()
     const { submit } = useSignAndSubmitGroup()
     const { network } = useNetwork()
-    const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
+    const queryClient = useQueryClient()
     const { assetMbr } = useMinimumFeeConfig()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<Nullable<Error>>(null)
@@ -105,7 +106,11 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                     network,
                 })
                 await fetchAndPersistAssets([assetIdString], network)
-                invalidateBalances()
+                // Not balances-only: account reads (holdings page, NFT
+                // gallery sort caches) cache over SQLite with staleTime:
+                // Infinity, and the sync diff can't catch this write later —
+                // the holding is already persisted (PERA-4845).
+                invalidateAccountQueriesForAddresses(queryClient, [sender])
 
                 return { txIds }
             } catch (err) {
@@ -116,7 +121,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 setIsLoading(false)
             }
         },
-        [algokit, submit, network, invalidateBalances, assetMbr],
+        [algokit, submit, network, queryClient, assetMbr],
     )
 
     return {
