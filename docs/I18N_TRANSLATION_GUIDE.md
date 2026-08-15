@@ -223,7 +223,6 @@ decisions:
 - `walletconnect.request.networks_mainnet` / `networks_testnet` spell it
   `Mainnet`/`Testnet` where the rest of the app uses `MainNet`/`TestNet`.
 - `signing.arc60_view.details_title` misspells "Athentication".
-- `transactions.warning.close_group_warning` is missing a "to".
 
 ## Workflow that works
 
