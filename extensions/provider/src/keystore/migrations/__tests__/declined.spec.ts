@@ -87,4 +87,58 @@ describe('createDeclinedRegister', () => {
 
         expect(createDeclinedRegister(store()).read(MODULE)).toEqual(['a', 'b'])
     })
+
+    // `record` is called outside every `try` at all five call sites in the
+    // repairs/preflight revisions — a rejecting `up` rejects `keystore.ready`
+    // and, because the ledger only writes after `up` resolves, re-runs and
+    // re-fails on every subsequent launch. The guard belongs here, once, not
+    // at each call site.
+    it('does not throw when the ledger write fails', () => {
+        const throwingStore: NoteStore = {
+            getString: () => undefined,
+            set: () => {
+                throw new Error('MMKV ledger write failure')
+            },
+        }
+
+        expect(() =>
+            createDeclinedRegister(throwingStore).record(MODULE, ['a']),
+        ).not.toThrow()
+    })
+
+    // An unreadable ledger inside `record` must not be treated as "nothing
+    // recorded yet" the way a corrupt-JSON note is: that would union the new
+    // ids with an empty set and overwrite whatever was actually on disk,
+    // silently dropping ids a prior run recorded. Skipping the write entirely
+    // is the safer failure mode.
+    it('does not throw, and does not write, when the ledger read fails inside record', () => {
+        let setCalls = 0
+        const throwingStore: NoteStore = {
+            getString: () => {
+                throw new Error('MMKV ledger read failure')
+            },
+            set: () => {
+                setCalls += 1
+            },
+        }
+
+        expect(() =>
+            createDeclinedRegister(throwingStore).record(MODULE, ['a']),
+        ).not.toThrow()
+        expect(setCalls).toBe(0)
+    })
+
+    it('does not throw when store.getString fails inside read', () => {
+        const throwingStore: NoteStore = {
+            getString: () => {
+                throw new Error('MMKV ledger read failure')
+            },
+            set: () => {},
+        }
+
+        expect(() =>
+            createDeclinedRegister(throwingStore).read(MODULE),
+        ).not.toThrow()
+        expect(createDeclinedRegister(throwingStore).read(MODULE)).toEqual([])
+    })
 })

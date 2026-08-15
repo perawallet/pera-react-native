@@ -55,21 +55,41 @@ const noteKey = (module: string): string =>
  * would block the first write forever and a fresh install could never create an
  * account.
  */
-export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
-    const read = (module: string): string[] => {
-        const raw = store.getString(noteKey(module))
-        if (raw === undefined) return []
+/** `ok: false` means the read itself threw — distinct from a note that reads back as absent. */
+type RawRead = { ok: true; raw: string | undefined } | { ok: false }
 
+const parseIds = (raw: string | undefined): string[] => {
+    if (raw === undefined) return []
+
+    try {
+        const parsed: unknown = JSON.parse(raw)
+        return Array.isArray(parsed)
+            ? parsed.filter((id): id is string => typeof id === 'string')
+            : []
+    } catch {
+        // A corrupt note must not fail the revision that reads it; the
+        // worst case is re-recording ids that were already there.
+        return []
+    }
+}
+
+export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
+    // Every call site calls `record` outside its own `try` (that's the whole
+    // point of the ledger — it must survive a revision that itself declined
+    // because of a storage failure), so both the read and the write below
+    // have to swallow their own failures rather than let this module become
+    // the one unguarded storage call in the chain.
+    const tryReadRaw = (module: string): RawRead => {
         try {
-            const parsed: unknown = JSON.parse(raw)
-            return Array.isArray(parsed)
-                ? parsed.filter((id): id is string => typeof id === 'string')
-                : []
+            return { ok: true, raw: store.getString(noteKey(module)) }
         } catch {
-            // A corrupt note must not fail the revision that reads it; the
-            // worst case is re-recording ids that were already there.
-            return []
+            return { ok: false }
         }
+    }
+
+    const read = (module: string): string[] => {
+        const result = tryReadRaw(module)
+        return result.ok ? parseIds(result.raw) : []
     }
 
     return {
@@ -77,8 +97,20 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
         record: (module, ids) => {
             if (ids.length === 0) return
 
-            const merged = new Set(read(module).concat([...ids]))
-            store.set(noteKey(module), JSON.stringify([...merged]))
+            const result = tryReadRaw(module)
+            // An unreadable ledger can't be safely unioned with `ids`: writing
+            // just the new ids would overwrite whatever was already recorded,
+            // silently dropping it — worse than leaving the ledger untouched
+            // for this run.
+            if (!result.ok) return
+
+            const merged = new Set(parseIds(result.raw).concat([...ids]))
+            try {
+                store.set(noteKey(module), JSON.stringify([...merged]))
+            } catch {
+                // The affected ids simply go unrecorded this run rather than
+                // rejecting `up`.
+            }
         },
     }
 }

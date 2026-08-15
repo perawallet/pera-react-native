@@ -88,9 +88,11 @@ import {
  * There is usually no "next run" to lean on: the runner records this revision
  * applied as soon as `up` resolves. For that to hold, every storage mutation
  * a per-credential failure can trigger has to be guarded against throwing
- * itself — the write-and-verify rollback and the k/+m/ removal both wrap
- * their own storage calls in a `try` that only logs on failure, precisely
- * because an unguarded one previously escaped `up`, rejected
+ * itself — the write-and-verify rollback, the k/+m/ removal, and
+ * `declined.record` (guarded once, centrally, inside `createDeclinedRegister`
+ * rather than at each of its five call sites) all swallow their own storage
+ * failures rather than let one escape, precisely because an unguarded one
+ * previously escaped `up`, rejected
  * `keystore.ready`, and — since the ledger only writes after `up`
  * resolves — re-ran and re-failed on every subsequent launch. With that
  * true, the resume gate above (`is k/ still there?`) only ever helps a
@@ -243,16 +245,25 @@ export const migration: Migration<PeraMigrationContext> = {
                     // Cast rather than `publicKey?: Uint8Array`: no separate
                     // "missing publicKey" guard follows on purpose.
                     // `toNativeByteArray(publicKey)` throws on `undefined`
-                    // (declining exactly as an explicit guard would), and for
-                    // the only other malformed shape worth naming — a plain
-                    // `number[]` rather than a real `Uint8Array` — this
-                    // module never actually requires `Uint8Array`-ness;
-                    // `toNativeByteArray` and the readback comparison below
-                    // both only need something iterable/indexable, so they
-                    // treat it identically either way. A prior explicit guard
-                    // rejected that harmless shape while the verify check
-                    // accepted it — two checks disagreeing on the same input
-                    // is worse than one.
+                    // (declining exactly as an explicit guard would). A plain
+                    // `number[]` rather than a real `Uint8Array` isn't caught
+                    // by anything either, but is harmless: `toNativeByteArray`
+                    // and the readback comparison below only need something
+                    // iterable/indexable, so they treat it identically to a
+                    // real `Uint8Array`. A falsy-but-defined `publicKey` —
+                    // `''` or a plain `[]` — is a different, NOT harmless gap
+                    // this reasoning doesn't cover: `toNativeByteArray('')`/
+                    // `toNativeByteArray([])` both produce `[]` without
+                    // throwing, the readback reconstructs an empty
+                    // `Uint8Array`, and `bytesEqual`'s length+`.every` check
+                    // passes vacuously comparing two empty values — so it
+                    // verifies clean and the split pair is deleted, exactly
+                    // the "no usable publicKey" case the deleted early guard
+                    // existed to decline. (`new Uint8Array(0)` was accepted
+                    // both before and after this revision too — this gap was
+                    // never fully closed.) Not fixed here: reachability from a
+                    // real writer wasn't established, so this is deferred
+                    // rather than changed.
                     const { publicKey, ...rest } =
                         metadata as typeof metadata & {
                             publicKey: Uint8Array
@@ -304,7 +315,15 @@ export const migration: Migration<PeraMigrationContext> = {
                     if (priorFlatUnknown) {
                         // Couldn't read what was there before, so we don't
                         // know whether it's safe to remove or what to
-                        // restore — left exactly as-is rather than guessed.
+                        // restore — nothing is done here, deliberately. That
+                        // only leaves `id` "exactly as-is" for a failure
+                        // BEFORE the flat write above (a decrypt or decode
+                        // failure): the bare id never changed this run. A
+                        // failure AFTER the write — the readback verification
+                        // above throwing — has already overwritten the
+                        // unknown prior record with the new (unverified) one,
+                        // and doing nothing here means that unverified write
+                        // is what's kept, not the unknown original.
                     } else {
                         try {
                             if (priorFlat === undefined) {

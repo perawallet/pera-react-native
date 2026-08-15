@@ -874,6 +874,69 @@ describe('0002-rematerialize-passkey-credentials', () => {
         ).toEqual(['cred-1'])
     })
 
+    // PROBE G: `context.declined.record(...)` sits outside every `try` in this
+    // module. A declined credential is precisely the case where `record`'s
+    // ledger write fires (it early-returns on an empty id list), so a write
+    // failure coinciding with a decline must not escape `up` either.
+    it('does not reject up (PROBE G) when a credential is declined and the declined-ledger write itself fails', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        vi.mocked(openData).mockImplementation(async () => {
+            throw new Error('bad tag')
+        })
+        const throwingNoteStore = {
+            getString: () => undefined,
+            set: () => {
+                throw new Error('MMKV ledger write failure')
+            },
+        }
+
+        await expect(
+            migration.up(
+                {
+                    ...context(storage),
+                    declined: createDeclinedRegister(throwingNoteStore),
+                },
+                utils(),
+            ),
+        ).resolves.toBeUndefined()
+    })
+
+    // PROBE H: the `MasterKeyNotFoundError` branch calls `context.declined.record`
+    // directly with the full pending list, so this is a second, independent
+    // path into the same unguarded write.
+    it('does not reject up (PROBE H) when the master key is missing and the declined-ledger write itself fails', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        masterKeyForRead = vi.fn(async () => {
+            throw new MasterKeyNotFoundError()
+        })
+        const throwingNoteStore = {
+            getString: () => undefined,
+            set: () => {
+                throw new Error('MMKV ledger write failure')
+            },
+        }
+
+        await expect(
+            migration.up(
+                {
+                    ...context(storage),
+                    declined: createDeclinedRegister(throwingNoteStore),
+                },
+                utils(),
+            ),
+        ).resolves.toBeUndefined()
+    })
+
     it('rethrows a master-key read failure that is not MasterKeyNotFoundError', async () => {
         const storage = fakeStorage({})
         await seededCredential(storage, {
