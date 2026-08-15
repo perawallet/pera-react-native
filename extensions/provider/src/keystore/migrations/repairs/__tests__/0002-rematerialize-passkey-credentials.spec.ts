@@ -312,6 +312,32 @@ describe('0002-rematerialize-passkey-credentials', () => {
         ).toEqual(['cred-1'])
     })
 
+    // A `console.warn` that itself throws (RN's LogBox patch) is exactly the
+    // hazard `safeWarn` exists to swallow. This module's own warn calls sit in
+    // a `catch` inside `up` with no outer `try`, so an unguarded one would
+    // escape `up` verbatim.
+    it('does not reject up when console.warn itself throws during the un-rematerialize log', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        let openDataCalls = 0
+        vi.mocked(openData).mockImplementation(async (...args) => {
+            openDataCalls += 1
+            if (openDataCalls === 2) throw new Error('readback failed')
+            return realOpenData(...args)
+        })
+        vi.spyOn(console, 'warn').mockImplementation(() => {
+            throw new Error('LogBox is not ready')
+        })
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+    })
+
     it('never mentions key material when a rematerialization failure is logged', async () => {
         const storage = fakeStorage({})
         await seededCredential(storage, {

@@ -23,6 +23,7 @@ import {
     serializeKey,
 } from '@algorandfoundation/react-native-keystore'
 import type { PeraMigrationContext } from '../types'
+import { safeErrorMessage, safeWarn } from '../safeLog'
 import {
     liftSecrets,
     normalizeCanary13Record,
@@ -211,7 +212,7 @@ export const migration: Migration<PeraMigrationContext> = {
                 if (!placeable) {
                     journal.rollback()
                     untouched.push(id)
-                    console.warn(
+                    safeWarn(
                         `[provider] normalize-canary13-records: entry ${id} left untouched; a nested secret has nowhere to be sealed`,
                     )
                     continue
@@ -228,10 +229,8 @@ export const migration: Migration<PeraMigrationContext> = {
                 // Storage keys, not key material — the identifiers
                 // `migrateKeystoreLayout` already logs, and the only thing
                 // that makes an on-device failure diagnosable.
-                console.warn(
-                    `[provider] normalize-canary13-records: entry ${id} left untouched: ${
-                        error instanceof Error ? error.message : String(error)
-                    }`,
+                safeWarn(
+                    `[provider] normalize-canary13-records: entry ${id} left untouched: ${safeErrorMessage(error)}`,
                 )
             } finally {
                 // Every exit: the record's own nested carriers plus anything

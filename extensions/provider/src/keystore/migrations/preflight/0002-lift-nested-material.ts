@@ -23,6 +23,7 @@ import {
     serializeKey,
 } from '@algorandfoundation/react-native-keystore'
 import type { PeraMigrationContext } from '../types'
+import { safeErrorMessage, safeWarn } from '../safeLog'
 import {
     hasNestedMaterial,
     liftSecrets,
@@ -122,7 +123,7 @@ const adopt = async (
         journal.rollback()
         return {
             outcome: 'failed',
-            reason: error instanceof Error ? error.message : String(error),
+            reason: safeErrorMessage(error),
         }
     }
 
@@ -239,7 +240,7 @@ export const migration: Migration<PeraMigrationContext> = {
                         // Storage keys, not key material — the same identifiers
                         // `migrateKeystoreLayout` already logs, and the only
                         // thing that makes an on-device failure diagnosable.
-                        console.warn(
+                        safeWarn(
                             `[provider] lift-nested-material: entry ${storageKey} left flat (${outcome}): ${reason}`,
                         )
                     }

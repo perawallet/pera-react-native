@@ -23,6 +23,7 @@ import {
     openData,
 } from '@algorandfoundation/react-native-keystore'
 import type { PeraMigrationContext } from '../types'
+import { safeErrorMessage, safeWarn } from '../safeLog'
 import { wipeBytes } from '../sealing'
 import {
     sealNativeCredentialRecord,
@@ -332,24 +333,16 @@ export const migration: Migration<PeraMigrationContext> = {
                                 storage.set(id, priorFlat)
                             }
                         } catch (rollbackError) {
-                            console.warn(
-                                `[provider] rematerialize-passkey-credentials: entry ${id} rollback itself failed, leaving disk state as-is: ${
-                                    rollbackError instanceof Error
-                                        ? rollbackError.message
-                                        : String(rollbackError)
-                                }`,
+                            safeWarn(
+                                `[provider] rematerialize-passkey-credentials: entry ${id} rollback itself failed, leaving disk state as-is: ${safeErrorMessage(rollbackError)}`,
                             )
                         }
                     }
                     untouched.push(id)
                     // Storage keys, never key material — the only thing that
                     // makes an on-device failure diagnosable.
-                    console.warn(
-                        `[provider] rematerialize-passkey-credentials: entry ${id} left un-rematerialized: ${
-                            error instanceof Error
-                                ? error.message
-                                : String(error)
-                        }`,
+                    safeWarn(
+                        `[provider] rematerialize-passkey-credentials: entry ${id} left un-rematerialized: ${safeErrorMessage(error)}`,
                     )
                     continue
                 } finally {
@@ -382,12 +375,8 @@ export const migration: Migration<PeraMigrationContext> = {
                     storage.remove(materialKey)
                 } catch (error) {
                     untouched.push(id)
-                    console.warn(
-                        `[provider] rematerialize-passkey-credentials: entry ${id} rematerialized but left with an orphaned k/+m/ pair: ${
-                            error instanceof Error
-                                ? error.message
-                                : String(error)
-                        }`,
+                    safeWarn(
+                        `[provider] rematerialize-passkey-credentials: entry ${id} rematerialized but left with an orphaned k/+m/ pair: ${safeErrorMessage(error)}`,
                     )
                 }
             }

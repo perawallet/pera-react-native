@@ -93,11 +93,12 @@ describe('createDeclinedRegister', () => {
     })
 
     // `record` is called outside every `try` at all five call sites, so a
-    // write failure must not escape it. Once `up` resolves the runner marks
-    // this revision applied, so barring a process killed mid-run there's no
-    // retry — the affected ids are gone for good in a release build, where
-    // `console.warn` reaches nowhere (per the module doc); a dev build is the
-    // only place this log is ever seen.
+    // write failure must not escape it. This store shares its MMKV instance
+    // with the migration ledger itself, so a failing write here usually means
+    // the ledger's own write fails right after — reported failed, not
+    // applied, and re-run next launch. The log is the fallback for the case
+    // where it isn't: `console.warn` reaches Metro in dev and the platform
+    // log in release, neither of which reaches a user in the field.
     it('does not throw, and logs both the ids and the error, when the ledger write fails', () => {
         const consoleWarn = vi
             .spyOn(console, 'warn')

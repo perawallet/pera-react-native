@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { safeErrorMessage, safeWarn } from './safeLog'
+
 /**
  * The minimal store this register needs. Structural so it can be backed by the
  * ledger's MMKV instance in production and a plain object in tests.
@@ -26,9 +28,12 @@ export type NoteStore = {
  * these revisions resolve by design — failing the module would reject
  * `keystore.ready` and stop the app booting. So a record the revision declined
  * is never revisited: `report.failed` stays empty, `utils.log` reaches no
- * registered logger, and `console.warn` reaches Metro in dev and nowhere in
- * release. Without a note on disk it is permanently un-migrated, permanently
- * unflagged, and invisible.
+ * registered logger, and `console.warn` reaches Metro in dev and the platform
+ * log (`logcat`/`os_log`) in release — retrievable from an attached device,
+ * but not from a user in the field, who is never going to plug in and send a
+ * log capture. Without a note on disk it is permanently un-migrated,
+ * permanently unflagged, and invisible to anyone who can't get the device on
+ * a bench.
  *
  * Storage keys only, never key material — the same identifiers already written
  * to the console.
@@ -60,29 +65,11 @@ const parseIds = (raw: string | undefined): string[] => {
             ? parsed.filter((id): id is string => typeof id === 'string')
             : []
     } catch {
-        // A corrupt note can't be parsed, so there's nothing to union `ids`
-        // against — overwriting it is the only forward option, not a
-        // deliberately safe one.
+        // A corrupt note can't be parsed, so `ids` can't be unioned against
+        // it. This overwrites it — including any ids a truncated note
+        // (`["cred-a","cred-b`) still held — rather than preserving it the
+        // way the unreadable-note branch below does.
         return []
-    }
-}
-
-const safeErrorMessage = (error: unknown): string => {
-    try {
-        return error instanceof Error ? error.message : String(error)
-    } catch {
-        // A `toString`/`Symbol.toPrimitive` that itself throws must not
-        // propagate out of a logging path.
-        return '<unstringifiable error>'
-    }
-}
-
-/** Never throws: a broken logger (RN patches `console.warn` via LogBox) must not escape `record`/`read` either. */
-const safeWarn = (message: string): void => {
-    try {
-        console.warn(message)
-    } catch {
-        // no-op
     }
 }
 
@@ -136,12 +123,13 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
                 // just transiently inaccessible. Unioning against `[]` here
                 // would overwrite it with only `ids`, destroying data that
                 // might have been recoverable. Once `up` resolves the runner
-                // marks this revision applied, so barring a process killed
-                // mid-run there is no retry — logged so a dev build has a
-                // trace; release builds have none, which is why the note
-                // itself matters.
+                // marks this revision applied — unless the ledger write
+                // (which shares this same MMKV instance) fails too, in which
+                // case the module is reported failed and re-runs next
+                // launch. Between that and a process killed mid-run, this
+                // loss is likely, not certainly, permanent.
                 safeWarn(
-                    `[provider] declined-register: could not read the ledger for ${module}, ${ids.length} id(s) left permanently unrecorded (${ids.join(', ')}): ${safeErrorMessage(result.error)}`,
+                    `[provider] declined-register: could not read the ledger for ${module}, ${ids.length} id(s) left unrecorded (${ids.join(', ')}): ${safeErrorMessage(result.error)}`,
                 )
                 return
             }
@@ -150,11 +138,15 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
             try {
                 store.set(noteKey(module), JSON.stringify([...merged]))
             } catch (error) {
-                // Same reasoning as the read-failure branch above: once `up`
-                // resolves there is no retry (barring a process killed
-                // mid-run), so this loss is permanent in a release build.
+                // This same MMKV instance backs the migration ledger too
+                // (`migrationsLedger.ts`), so a failing write here usually
+                // means the ledger's own write fails right after — the
+                // module is then reported failed rather than applied, and
+                // re-runs next launch. Between that and a process killed
+                // mid-run, treat this loss as likely, not certainly,
+                // permanent.
                 safeWarn(
-                    `[provider] declined-register: ledger write failed for ${module}, ${ids.length} id(s) left permanently unrecorded (${ids.join(', ')}): ${safeErrorMessage(error)}`,
+                    `[provider] declined-register: ledger write failed for ${module}, ${ids.length} id(s) left unrecorded (${ids.join(', ')}): ${safeErrorMessage(error)}`,
                 )
             }
         },

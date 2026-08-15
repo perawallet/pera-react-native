@@ -23,6 +23,7 @@ import {
     serializeKey,
 } from '@algorandfoundation/react-native-keystore'
 import type { PeraMigrationContext } from '../types'
+import { safeErrorMessage, safeWarn } from '../safeLog'
 import {
     hasNestedMaterial,
     wipeSecrets,
@@ -133,12 +134,8 @@ export const migration: Migration<PeraMigrationContext> = {
                     // that would reject `keystore.ready` and stop the app
                     // booting over one record. Left flat for a later run.
                     untouched.push(storageKey)
-                    console.warn(
-                        `[provider] adopt-material-less-records: entry ${storageKey} left flat: ${
-                            error instanceof Error
-                                ? error.message
-                                : String(error)
-                        }`,
+                    safeWarn(
+                        `[provider] adopt-material-less-records: entry ${storageKey} left flat: ${safeErrorMessage(error)}`,
                     )
                 } finally {
                     wipeSecrets(record)

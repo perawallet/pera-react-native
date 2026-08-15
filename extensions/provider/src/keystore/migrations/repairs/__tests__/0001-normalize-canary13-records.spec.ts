@@ -820,6 +820,35 @@ describe('0001-normalize-canary13-records', () => {
         expect(storage.entries()).toEqual(before)
     })
 
+    // A `console.warn` that itself throws (RN's LogBox patch) must not escape
+    // `up` either — this module's warn calls sit in a `catch` with no outer
+    // `try`, same hazard the reviewer's probe found on the sibling revision.
+    it('does not reject up when console.warn itself throws during the left-untouched log', async () => {
+        const storage = await seeded({
+            id: 'derived-1',
+            type: 'hd-derived-ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            metadata: {
+                rootKey: {
+                    id: 'root-1',
+                    privateKey: new Uint8Array(64).fill(11),
+                },
+            },
+        })
+        const set = storage.set
+        storage.set = (key, value) => {
+            if (!key.startsWith(MATERIAL_PREFIX)) set(key, value)
+        }
+        vi.spyOn(console, 'warn').mockImplementation(() => {
+            throw new Error('LogBox is not ready')
+        })
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+    })
+
     // Reading the master key is the only step that can raise a biometric
     // prompt; a rename touches no material and must not pay for one.
     it('does not read the master key for a metadata-only rewrite', async () => {
