@@ -12,8 +12,12 @@
 
 import { useCallback } from 'react'
 import {
+    abandonPairing,
     useWalletConnect,
+    waitForPairingSocketOpen,
     waitForSessionOutcome,
+    WalletConnectBridgeConnectionError,
+    WC_DELIVERY_TIMEOUT_MS,
     WC_SESSION_OUTCOME_TIMEOUT_MS,
     type WalletConnectPairingOriginSource,
     type WalletConnectSessionOutcome,
@@ -139,10 +143,36 @@ export const useWalletConnectPairing = (): UseWalletConnectPairingResult => {
                         browserName: options.origin.browserName,
                     })
             }
-            const outcome = await waitForSessionOutcome(
+            const outcomePromise = waitForSessionOutcome(
                 pairingClientId,
                 options?.outcomeTimeoutMs ?? WC_SESSION_OUTCOME_TIMEOUT_MS,
             )
+            // Socket fail-fast, raced so it never delays a live pairing: the
+            // WC client surfaces no event for a socket that simply never
+            // opens (dead bridge, wedged handshake), which would otherwise
+            // burn the full outcome budget in silence. A socket that never
+            // opened can never deliver a session_request, so the pairing is
+            // abandoned outright — no late-session grace applies.
+            const socketOpened = await Promise.race([
+                outcomePromise.then(() => true),
+                waitForPairingSocketOpen(
+                    pairingClientId,
+                    WC_DELIVERY_TIMEOUT_MS,
+                ),
+            ])
+            if (!socketOpened) {
+                abandonPairing(pairingClientId)
+                if (options?.origin) {
+                    useReturnToDappStore
+                        .getState()
+                        .clearReturnContext(pairingClientId)
+                }
+                return {
+                    type: 'connect-failed',
+                    error: new WalletConnectBridgeConnectionError(),
+                }
+            }
+            const outcome = await outcomePromise
             // Errored handshakes never reach the success sheet. A timeout
             // keeps its context: a late session_request may still surface
             // the request, and the CTA should survive that path.

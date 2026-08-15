@@ -13,18 +13,28 @@
 import { DeeplinkType, type WalletConnectDeeplink } from './types'
 import { normalizeUrl } from './utils'
 import {
+    ALGORAND_SCHEME,
     ALGORAND_WC_SCHEME,
     PERAWALLET_WC_SCHEME,
     WC_SCHEME,
 } from './constants'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
+/**
+ * The pairing wrapper emitted by @perawallet/connect < Feb 2025, whose
+ * Android deep-link base was `algorand://`. Deliberately narrow — a plain
+ * `algorand://…` link is an ARC-90 URI, not WalletConnect.
+ */
+const isLegacyAlgorandWcWrapper = (normalizedUrl: string): boolean =>
+    normalizedUrl.startsWith(`${ALGORAND_SCHEME}://wc?`)
+
 export const isWalletConnectScheme = (url: string): boolean => {
     const normalizedUrl = normalizeUrl(url)
     return (
         normalizedUrl.startsWith(`${WC_SCHEME}:`) ||
         normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`) ||
-        normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)
+        normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`) ||
+        isLegacyAlgorandWcWrapper(normalizedUrl)
     )
 }
 
@@ -58,7 +68,8 @@ export const parseWalletConnectUri = (
     if (
         !normalizedUrl.startsWith(`${WC_SCHEME}:`) &&
         !normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`) &&
-        !normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)
+        !normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`) &&
+        !isLegacyAlgorandWcWrapper(normalizedUrl)
     ) {
         return null
     }
@@ -83,20 +94,11 @@ export const parseWalletConnectUri = (
         } catch {
             return null
         }
-        // The iOS @perawallet/connect wrapper appends the initiating
-        // browser after the encoded uri; keep it so the connection
-        // success sheet can deep-link back to that browser. Scoped to
-        // the wrapper form — a `browser` param inside a raw WC URI
-        // belongs to the WC client, not to us.
-        const browserMatch = normalizedUrl.match(/[?&]browser=([^&]+)/)
-        if (browserMatch) {
-            try {
-                browserName = decodeURIComponent(browserMatch[1])
-            } catch {
-                // Malformed encoding only costs the return CTA,
-                // never the pairing itself.
-            }
-        }
+    } else if (isLegacyAlgorandWcWrapper(normalizedUrl)) {
+        // Wrapper base without a uri param is not a pairing link (the
+        // legacy Android redirect signal was `algorand://?browser=…`);
+        // never forward a bare `algorand://wc?…` to the WC client.
+        return null
     } else if (normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`)) {
         // Legacy format: perawallet-wc:topic@1?...  →  wc:topic@1?...
         wcUri = normalizedUrl.replace(
@@ -113,6 +115,22 @@ export const parseWalletConnectUri = (
     // a non-wc scheme.
     if (!wcUri.startsWith(`${WC_SCHEME}:`)) {
         return null
+    }
+
+    // The initiating browser rides a trailing `browser=` param so the
+    // connection success sheet can deep-link back to it. It appears on the
+    // wrapper on iOS, but @perawallet/connect's Android branch appends it
+    // to the RAW wc: URI (`deepLink = uri` + `&browser=…`) — extract it
+    // from either shape. WC v1 defines no `browser` param, so a trailing
+    // one is unambiguously connect's metadata.
+    const browserMatch = normalizedUrl.match(/[?&]browser=([^&]+)/)
+    if (browserMatch) {
+        try {
+            browserName = decodeURIComponent(browserMatch[1])
+        } catch {
+            // Malformed encoding only costs the return CTA,
+            // never the pairing itself.
+        }
     }
 
     // A real WC v1 pairing URI always carries a bridge (`wc:<topic>@1?bridge=…`).

@@ -17,7 +17,7 @@ import { useWalletConnectStore } from '../../store'
 
 // Mock store
 vi.mock('../../store', () => ({
-    useWalletConnectStore: vi.fn(),
+    useWalletConnectStore: Object.assign(vi.fn(), { getState: vi.fn() }),
 }))
 
 // The constants module re-exports signing caps whose barrel pulls in
@@ -42,6 +42,10 @@ describe('useWalletConnectSessionRequests', () => {
             }
             return selector(state)
         })
+        ;(useWalletConnectStore as any).getState.mockImplementation(() => ({
+            sessionRequests: mockSessionRequests,
+            setSessionRequests: mockSetSessionRequests,
+        }))
     })
 
     it('should add session request stamped with createdAt', () => {
@@ -86,6 +90,30 @@ describe('useWalletConnectSessionRequests', () => {
 
         expect(result.current.sessionRequests).toEqual([legacy])
         expect(mockSetSessionRequests).not.toHaveBeenCalled()
+    })
+
+    it('appends to live store state when called through a stale closure', () => {
+        // Connector handlers capture addSessionRequest once, at connect()
+        // time. Two session_requests arriving through the same captured
+        // reference must both survive — a render-time snapshot would let
+        // the second write clobber the first.
+        mockSetSessionRequests = vi.fn((next: any[]) => {
+            mockSessionRequests = next
+        })
+        const { result } = renderHook(() => useWalletConnectSessionRequests())
+        const capturedAdd = result.current.addSessionRequest
+
+        act(() => {
+            capturedAdd({ clientId: 'dapp-a' } as any)
+        })
+        act(() => {
+            capturedAdd({ clientId: 'dapp-b' } as any)
+        })
+
+        expect(mockSessionRequests.map(r => r.clientId)).toEqual([
+            'dapp-a',
+            'dapp-b',
+        ])
     })
 
     it('should remove session request', () => {

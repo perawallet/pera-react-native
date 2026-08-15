@@ -772,6 +772,7 @@
             "permission_body": "You have received an unauthorized request from an app. Please check the app and try again.",
             "invalid_session_body": "You have received an invalid session request from an app. Please check the app and try again.",
             "connection_timeout_body": "Couldn't reach WalletConnect to deliver your signed transaction. Check your connection and try again.",
+            "bridge_connection_body": "Couldn't connect to WalletConnect. Check your internet connection and try again.",
             "session_request_expired_body": "This connection request has expired. Start a new connection from the dApp and try again."
         },
         "signing": {

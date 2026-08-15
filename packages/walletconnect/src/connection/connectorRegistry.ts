@@ -98,6 +98,7 @@ const teardownConnector = (connector: WalletConnect): void => {
         connector.off('disconnect')
         connector.off('session_request')
         connector.off('error')
+        connector.off('transport_error')
         connector.transportClose()
     } catch {
         // Teardown of a superseded connector is best-effort; a failure
@@ -151,6 +152,36 @@ const waitForSocketOpen = (
             }
             if (Date.now() - startedAt >= timeoutMs) {
                 reject(new WalletConnectConnectionTimeoutError())
+                return
+            }
+            setTimeout(poll, POLL_INTERVAL_MS)
+        }
+        poll()
+    })
+
+/**
+ * Pure observation for pairing fail-fast: resolves `true` the moment
+ * `clientId`'s socket reports open, `false` once `timeoutMs` elapses without
+ * it EVER opening. Never rejects and never touches the connector — the
+ * caller decides whether a dead pairing socket means abandoning the pairing.
+ * A pairing connector can't go through `ensureConnectorReady` (no `peerId`
+ * yet, so recreation is impossible); watching is all that's available.
+ */
+export const waitForPairingSocketOpen = (
+    clientId: string,
+    timeoutMs: number,
+): Promise<boolean> =>
+    new Promise(resolve => {
+        const startedAt = Date.now()
+        const poll = (): void => {
+            const connector =
+                useConnectorRegistryStore.getState().connectors[clientId]
+            if (connector && isSocketOpen(connector)) {
+                resolve(true)
+                return
+            }
+            if (Date.now() - startedAt >= timeoutMs) {
+                resolve(false)
                 return
             }
             setTimeout(poll, POLL_INTERVAL_MS)

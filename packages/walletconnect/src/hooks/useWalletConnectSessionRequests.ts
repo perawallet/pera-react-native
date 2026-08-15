@@ -51,21 +51,30 @@ export const useWalletConnectSessionRequests = () => {
         }
     }, [sessionRequests, allSessionRequests, setSessionRequests])
 
+    // Both mutators read live store state at call time rather than the
+    // render-time snapshot: connector event handlers capture them once, at
+    // connect()/bind time, and that frozen closure would otherwise clobber
+    // every add/remove that happened since binding (dropping a pending
+    // approval or resurrecting a rejected one).
     const addSessionRequest = useCallback(
         (request: WalletConnectSessionRequest) => {
-            setSessionRequests([
-                ...allSessionRequests,
+            const { sessionRequests, setSessionRequests: setRequests } =
+                useWalletConnectStore.getState()
+            setRequests([
+                ...sessionRequests,
                 { ...request, createdAt: Date.now() },
             ])
         },
-        [allSessionRequests],
+        [],
     )
 
     const removeSessionRequest = useCallback(
         (request: WalletConnectSessionRequest) => {
-            setSessionRequests(allSessionRequests.filter(r => r !== request))
+            const { sessionRequests, setSessionRequests: setRequests } =
+                useWalletConnectStore.getState()
+            setRequests(sessionRequests.filter(r => r !== request))
         },
-        [allSessionRequests],
+        [],
     )
 
     return {

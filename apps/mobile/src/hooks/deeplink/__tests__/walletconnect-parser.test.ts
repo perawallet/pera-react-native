@@ -57,6 +57,30 @@ describe('WalletConnect Parser', () => {
                 expect(result.uri).toContain('wc:')
             }
         })
+
+        it('routes the legacy algorand://wc?uri= wrapper to WALLET_CONNECT', () => {
+            // @perawallet/connect < Feb 2025 used algorand:// as the Android
+            // deep-link base, so its pairing wrapper was algorand://wc?uri=…
+            // — the scheme is registered in our manifest, and dApps pinning
+            // old SDK versions still emit it.
+            const inner = 'wc:test@1?bridge=test&key=test'
+            const result = parseDeeplink(
+                'algorand://wc?uri=' + encodeURIComponent(inner),
+            )
+            expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
+            if (result?.type === DeeplinkType.WALLET_CONNECT) {
+                expect(result.uri).toBe(inner)
+            }
+        })
+
+        it('still routes non-wc algorand:// links to the ARC-90 parser path', () => {
+            // Only the wc?uri= shape is WalletConnect; a plain algorand://
+            // payment link must keep resolving through parseAlgorandUri.
+            const result = parseDeeplink(
+                'algorand://GYBK7O4DIDJKR2G5PCSTQDNI2NUIC7DXNZ25M2UN4WBMJH77QSFHU7IVPU?amount=1000000',
+            )
+            expect(result?.type).not.toBe(DeeplinkType.WALLET_CONNECT)
+        })
     })
 
     describe('Direct parseWalletConnectUri calls', () => {
@@ -138,6 +162,29 @@ describe('WalletConnect Parser', () => {
             const inner = 'wc:test@1?bridge=test&key=test'
             const wrapped = 'algorand-wc://wc?uri=' + encodeURIComponent(inner)
             expect(parseWalletConnectUri(wrapped)?.uri).toBe(inner)
+        })
+
+        it('unwraps a valid encoded wc: URI in the legacy algorand://wc wrapper', () => {
+            const inner = 'wc:test@1?bridge=test&key=test'
+            const result = parseWalletConnectUri(
+                'algorand://wc?uri=' + encodeURIComponent(inner),
+            )
+            expect(result?.uri).toBe(inner)
+        })
+
+        it('rejects an algorand://wc wrapper that unwraps to a non-wc scheme', () => {
+            expect(
+                parseWalletConnectUri(
+                    'algorand://wc?uri=' +
+                        encodeURIComponent('javascript:alert(1)'),
+                ),
+            ).toBeNull()
+        })
+
+        it('returns null for a plain algorand:// link with no uri param', () => {
+            expect(
+                parseWalletConnectUri('algorand://wc?browser=chrome'),
+            ).toBeNull()
         })
 
         it('rejects an algorand-wc: URI with no bridge', () => {
@@ -242,12 +289,18 @@ describe('WalletConnect Parser', () => {
             expect(parseWalletConnectUri(wrapped)?.browserName).toBeUndefined()
         })
 
-        it('ignores a browser param inside a raw (non-wrapper) WC URI', () => {
+        it('extracts the browser param from a raw (non-wrapper) WC URI', () => {
+            // @perawallet/connect's Android branch sends the RAW wc: URI and
+            // appends &browser=… to it (peraWalletUtils.ts: `deepLink = uri`
+            // then `${deepLink}&browser=…`) — the wrapper form is iOS-only.
+            // Without this, Android external-browser pairings never get the
+            // return-to-dApp CTA. WC v1 defines no `browser` param, so the
+            // trailing param is unambiguously connect's metadata.
             const result = parseWalletConnectUri(
                 'wc:test@1?bridge=test&key=test&browser=chrome',
             )
             expect(result).not.toBeNull()
-            expect(result?.browserName).toBeUndefined()
+            expect(result?.browserName).toBe('chrome')
         })
 
         it('still parses when the browser param has malformed percent-encoding', () => {

@@ -772,6 +772,7 @@
             "permission_body": "Bir uygulamadan yetkisiz bir istek aldın. Uygulamayı kontrol et ve tekrar dene.",
             "invalid_session_body": "Bir uygulamadan geçersiz bir oturum isteği aldın. Uygulamayı kontrol et ve tekrar dene.",
             "connection_timeout_body": "İmzalanan işlemi iletmek için WalletConnect’e ulaşılamadı. Bağlantını kontrol et ve tekrar dene.",
+            "bridge_connection_body": "WalletConnect'e bağlanılamadı. İnternet bağlantını kontrol et ve tekrar dene.",
             "session_request_expired_body": "Bu bağlantı isteğinin süresi doldu. dApp üzerinden yeni bir bağlantı başlat ve tekrar dene."
         },
         "signing": {

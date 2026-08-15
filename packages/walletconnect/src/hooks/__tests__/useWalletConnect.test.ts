@@ -1249,6 +1249,112 @@ describe('useWalletConnect', () => {
             errorCallback(new Error('test error'))
         })
 
+        it('surfaces an error event delivered in the payload argument', async () => {
+            // The SDK's EventManager delivers internal events as
+            // callback(null, event) — the error slot is only populated for
+            // JSON-RPC error responses. A handler reading only the first
+            // argument never fires.
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({
+                    connection: { clientId: 'payload-error' },
+                } as any)
+            })
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            const errorCallback = mockConnectorInstance.on.mock.calls.find(
+                (call: any) => call[0] === 'error',
+            )[1]
+
+            act(() => {
+                errorCallback(null, {
+                    event: 'error',
+                    params: [
+                        {
+                            code: 'SESSION_REQUEST_ERROR',
+                            message: 'handshake failed',
+                        },
+                    ],
+                })
+            })
+
+            expect(mockSetConnectionError).toHaveBeenCalledWith(
+                expect.objectContaining({ clientId: 'payload-error' }),
+            )
+        })
+
+        it('surfaces a scoped bridge error after repeated transport errors while pairing', async () => {
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({
+                    connection: { clientId: 'pairing-client' },
+                } as any)
+            })
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            const transportErrorCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'transport_error',
+                )?.[1]
+            expect(transportErrorCallback).toBeDefined()
+
+            const payload = {
+                event: 'transport_error',
+                params: ['Websocket connection failed'],
+            }
+
+            // First failure: the transport retries on its own (~1s) — a
+            // single flap must not abort a pairing that would recover.
+            act(() => {
+                transportErrorCallback(null, payload)
+            })
+            expect(mockSetConnectionError).not.toHaveBeenCalled()
+
+            act(() => {
+                transportErrorCallback(null, payload)
+            })
+            expect(mockSetConnectionError).toHaveBeenCalledWith(
+                expect.objectContaining({ clientId: 'pairing-client' }),
+            )
+        })
+
+        it('never surfaces transport errors on an established session', async () => {
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({
+                    connection: { clientId: 'live-session' },
+                } as any)
+            })
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            mockConnectorInstance.connected = true
+            const transportErrorCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'transport_error',
+                )?.[1]
+            expect(transportErrorCallback).toBeDefined()
+
+            const payload = {
+                event: 'transport_error',
+                params: ['Websocket connection failed'],
+            }
+            act(() => {
+                transportErrorCallback(null, payload)
+                transportErrorCallback(null, payload)
+                transportErrorCallback(null, payload)
+            })
+
+            // Background flaps on a live session are routine; the reconnect
+            // sweep owns recovery there — no error UI.
+            expect(mockSetConnectionError).not.toHaveBeenCalled()
+        })
+
         it('should reject when approving invalid session', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),

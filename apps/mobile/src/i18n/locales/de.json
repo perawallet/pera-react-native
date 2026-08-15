@@ -764,6 +764,7 @@
             "permission_body": "Du hast eine nicht autorisierte Anfrage von einer App erhalten. Bitte überprüfe die App und versuche es erneut.",
             "invalid_session_body": "Du hast eine ungültige Sitzungsanfrage von einer App erhalten. Bitte überprüfe die App und versuche es erneut.",
             "connection_timeout_body": "WalletConnect konnte nicht erreicht werden, um deine signierte Transaktion zu übermitteln. Überprüfe deine Verbindung und versuche es erneut.",
+            "bridge_connection_body": "Verbindung zu WalletConnect konnte nicht hergestellt werden. Überprüfe deine Internetverbindung und versuche es erneut.",
             "session_request_expired_body": "Diese Verbindungsanfrage ist abgelaufen. Starte eine neue Verbindung über die dApp und versuche es erneut."
         },
         "signing": {
