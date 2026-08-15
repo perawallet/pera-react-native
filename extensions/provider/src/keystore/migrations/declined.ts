@@ -47,7 +47,9 @@ const noteKey = (module: string): string =>
     `com.perawallet.wallet/declined-records/${module}`
 
 /** `ok: false` means the read itself threw — distinct from a note that reads back as absent. */
-type RawRead = { ok: true; raw: string | undefined } | { ok: false }
+type RawRead =
+    | { ok: true; raw: string | undefined }
+    | { ok: false; error: unknown }
 
 const parseIds = (raw: string | undefined): string[] => {
     if (raw === undefined) return []
@@ -58,9 +60,29 @@ const parseIds = (raw: string | undefined): string[] => {
             ? parsed.filter((id): id is string => typeof id === 'string')
             : []
     } catch {
-        // A corrupt note's content is already unrecoverable garbage — nothing
-        // is lost treating it as empty and letting `record` overwrite it.
+        // A corrupt note can't be parsed, so there's nothing to union `ids`
+        // against — overwriting it is the only forward option, not a
+        // deliberately safe one.
         return []
+    }
+}
+
+const safeErrorMessage = (error: unknown): string => {
+    try {
+        return error instanceof Error ? error.message : String(error)
+    } catch {
+        // A `toString`/`Symbol.toPrimitive` that itself throws must not
+        // propagate out of a logging path.
+        return '<unstringifiable error>'
+    }
+}
+
+/** Never throws: a broken logger (RN patches `console.warn` via LogBox) must not escape `record`/`read` either. */
+const safeWarn = (message: string): void => {
+    try {
+        console.warn(message)
+    } catch {
+        // no-op
     }
 }
 
@@ -82,14 +104,24 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
     const tryReadRaw = (module: string): RawRead => {
         try {
             return { ok: true, raw: store.getString(noteKey(module)) }
-        } catch {
-            return { ok: false }
+        } catch (error) {
+            return { ok: false, error }
         }
     }
 
     const read = (module: string): string[] => {
         const result = tryReadRaw(module)
-        return result.ok ? parseIds(result.raw) : []
+        if (!result.ok) {
+            // Conflating "unreadable" with "nothing declined" would be silent
+            // otherwise — a follow-up revision calling `read` to decide what
+            // to re-attempt would see an empty list and conclude, wrongly,
+            // that nothing was ever declined.
+            safeWarn(
+                `[provider] declined-register: could not read the ledger for ${module}, treating as nothing declined: ${safeErrorMessage(result.error)}`,
+            )
+            return []
+        }
+        return parseIds(result.raw)
     }
 
     return {
@@ -103,12 +135,13 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
                 // its content is bad — it may still be perfectly good and
                 // just transiently inaccessible. Unioning against `[]` here
                 // would overwrite it with only `ids`, destroying data that
-                // might have been recoverable. There is no later run of this
-                // revision to retry from (the runner marks it applied as soon
-                // as `up` resolves), so `ids` go permanently unrecorded —
-                // logged so the loss has a trace somewhere.
-                console.warn(
-                    `[provider] declined-register: could not read the ledger for ${module}, ${ids.length} id(s) left permanently unrecorded: ${ids.join(', ')}`,
+                // might have been recoverable. Once `up` resolves the runner
+                // marks this revision applied, so barring a process killed
+                // mid-run there is no retry — logged so a dev build has a
+                // trace; release builds have none, which is why the note
+                // itself matters.
+                safeWarn(
+                    `[provider] declined-register: could not read the ledger for ${module}, ${ids.length} id(s) left permanently unrecorded (${ids.join(', ')}): ${safeErrorMessage(result.error)}`,
                 )
                 return
             }
@@ -117,13 +150,11 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
             try {
                 store.set(noteKey(module), JSON.stringify([...merged]))
             } catch (error) {
-                // Same permanence as above: this revision is marked applied
-                // the moment `up` resolves, so there is no next run to
-                // succeed where this one failed.
-                console.warn(
-                    `[provider] declined-register: ledger write failed for ${module}, ${ids.length} id(s) left permanently unrecorded: ${
-                        error instanceof Error ? error.message : String(error)
-                    }`,
+                // Same reasoning as the read-failure branch above: once `up`
+                // resolves there is no retry (barring a process killed
+                // mid-run), so this loss is permanent in a release build.
+                safeWarn(
+                    `[provider] declined-register: ledger write failed for ${module}, ${ids.length} id(s) left permanently unrecorded (${ids.join(', ')}): ${safeErrorMessage(error)}`,
                 )
             }
         },

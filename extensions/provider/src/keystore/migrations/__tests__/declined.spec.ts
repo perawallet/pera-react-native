@@ -93,11 +93,12 @@ describe('createDeclinedRegister', () => {
     })
 
     // `record` is called outside every `try` at all five call sites, so a
-    // write failure must not escape it. The runner marks this revision applied
-    // the moment `up` resolves, so there's no later run to retry from — the
-    // affected ids are gone for good, and `console.warn` is the only trace
-    // left (per the module doc, `report.failed`/`utils.log` never see it).
-    it('does not throw, and logs, when the ledger write fails', () => {
+    // write failure must not escape it. Once `up` resolves the runner marks
+    // this revision applied, so barring a process killed mid-run there's no
+    // retry — the affected ids are gone for good in a release build, where
+    // `console.warn` reaches nowhere (per the module doc); a dev build is the
+    // only place this log is ever seen.
+    it('does not throw, and logs both the ids and the error, when the ledger write fails', () => {
         const consoleWarn = vi
             .spyOn(console, 'warn')
             .mockImplementation(() => {})
@@ -109,22 +110,69 @@ describe('createDeclinedRegister', () => {
         }
 
         expect(() =>
-            createDeclinedRegister(throwingStore).record(MODULE, ['a']),
+            createDeclinedRegister(throwingStore).record(MODULE, [
+                'cred-zzy1',
+                'cred-zzy2',
+            ]),
         ).not.toThrow()
         expect(consoleWarn).toHaveBeenCalledOnce()
-        expect(consoleWarn.mock.calls[0][0]).toContain(MODULE)
+        const message = consoleWarn.mock.calls[0][0] as string
+        expect(message).toContain('ledger write failed')
+        expect(message).not.toContain('could not read')
+        expect(message).toContain(MODULE)
+        expect(message).toContain('cred-zzy1')
+        expect(message).toContain('cred-zzy2')
+        expect(message).toContain('MMKV ledger write failure')
+    })
+
+    // A `console.warn` that itself throws (RN's LogBox patches it) must not
+    // escape `record` either — the swallowing handler would otherwise become
+    // exactly the unguarded call it exists to prevent.
+    it('does not throw when console.warn itself throws during the write-failure log', () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {
+            throw new Error('LogBox is not ready')
+        })
+        const throwingStore: NoteStore = {
+            getString: () => undefined,
+            set: () => {
+                throw new Error('MMKV ledger write failure')
+            },
+        }
+
+        expect(() =>
+            createDeclinedRegister(throwingStore).record(MODULE, ['a']),
+        ).not.toThrow()
+    })
+
+    // A thrown value that fails `instanceof Error` and has no safe primitive
+    // form (a throwing `toString`) must not make the logging path itself
+    // throw via `String(error)`.
+    it('does not throw when the thrown write error cannot be stringified', () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const throwingStore: NoteStore = {
+            getString: () => undefined,
+            set: () => {
+                throw {
+                    toString: () => {
+                        throw new Error('cannot stringify')
+                    },
+                }
+            },
+        }
+
+        expect(() =>
+            createDeclinedRegister(throwingStore).record(MODULE, ['a']),
+        ).not.toThrow()
     })
 
     // An unreadable ledger inside `record` must not be treated as "nothing
-    // recorded yet" the way a corrupt-JSON note is: a corrupt note's content
-    // is already unrecoverable garbage, but an unreadable one gives no
-    // evidence its content is bad — it might still be perfectly good.
-    // Unioning against `[]` here would overwrite it with only the new ids,
-    // destroying data that might have been recoverable. Skipping the write
-    // entirely, and logging, is the safer failure mode — and, same as the
-    // write-failure case above, permanent: there is no later run of this
-    // revision to retry from.
-    it('does not throw, does not write, and logs, when the ledger read fails inside record', () => {
+    // recorded yet" the way a corrupt-JSON note is: a corrupt note can't be
+    // parsed at all, but an unreadable one gives no evidence its content is
+    // bad — it might still be perfectly good. Unioning against `[]` here
+    // would overwrite it with only the new ids, destroying data that might
+    // have been recoverable. Skipping the write entirely, and logging, is
+    // the safer failure mode.
+    it('does not throw, does not write, and logs both the ids and the error, when the ledger read fails inside record', () => {
         const consoleWarn = vi
             .spyOn(console, 'warn')
             .mockImplementation(() => {})
@@ -139,14 +187,26 @@ describe('createDeclinedRegister', () => {
         }
 
         expect(() =>
-            createDeclinedRegister(throwingStore).record(MODULE, ['a']),
+            createDeclinedRegister(throwingStore).record(MODULE, [
+                'cred-zzy1',
+                'cred-zzy2',
+            ]),
         ).not.toThrow()
         expect(setCalls).toBe(0)
         expect(consoleWarn).toHaveBeenCalledOnce()
-        expect(consoleWarn.mock.calls[0][0]).toContain(MODULE)
+        const message = consoleWarn.mock.calls[0][0] as string
+        expect(message).toContain('could not read the ledger')
+        expect(message).not.toContain('ledger write failed')
+        expect(message).toContain(MODULE)
+        expect(message).toContain('cred-zzy1')
+        expect(message).toContain('cred-zzy2')
+        expect(message).toContain('MMKV ledger read failure')
     })
 
-    it('does not throw when store.getString fails inside read', () => {
+    it('does not throw, and logs, when store.getString fails inside read', () => {
+        const consoleWarn = vi
+            .spyOn(console, 'warn')
+            .mockImplementation(() => {})
         const throwingStore: NoteStore = {
             getString: () => {
                 throw new Error('MMKV ledger read failure')
@@ -158,5 +218,10 @@ describe('createDeclinedRegister', () => {
             createDeclinedRegister(throwingStore).read(MODULE),
         ).not.toThrow()
         expect(createDeclinedRegister(throwingStore).read(MODULE)).toEqual([])
+        expect(consoleWarn).toHaveBeenCalled()
+        const message = consoleWarn.mock.calls[0][0] as string
+        expect(message).toContain('treating as nothing declined')
+        expect(message).toContain(MODULE)
+        expect(message).toContain('MMKV ledger read failure')
     })
 })
