@@ -23,6 +23,8 @@ import {
     upsertTransactions,
     getTransactionHistory,
     getLatestTransactionRoundTime,
+    getCloseRowsMissingCloseAmount,
+    updateTransactionCloseAmount,
 } from '../repository'
 
 describe('transaction repository', () => {
@@ -135,6 +137,63 @@ describe('transaction repository', () => {
             network: 'mainnet',
         })
 
+        expect(result[0].closeAmount).toEqual(new Decimal('50854132929'))
+    })
+
+    it('lists close rows missing their closeAmount for backfill', async () => {
+        await upsertTransactions({
+            db,
+            items: [
+                makeTx({ id: 'TXPLAIN', closeTo: null, closeAmount: null }),
+                makeTx({
+                    id: 'TXHEALED',
+                    closeTo: 'CLOSE_ADDR',
+                    closeAmount: new Decimal(5),
+                }),
+                makeTx({
+                    id: 'TXSTALE',
+                    closeTo: 'CLOSE_ADDR',
+                    closeAmount: null,
+                }),
+            ],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        const rows = await getCloseRowsMissingCloseAmount({
+            db,
+            network: 'mainnet',
+        })
+
+        expect(rows.map(row => row.id)).toEqual(['TXSTALE'])
+    })
+
+    it('updates a single transaction closeAmount in place', async () => {
+        await upsertTransactions({
+            db,
+            items: [
+                makeTx({
+                    id: 'TXSTALE',
+                    closeTo: 'CLOSE_ADDR',
+                    closeAmount: null,
+                }),
+            ],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
+
+        await updateTransactionCloseAmount({
+            db,
+            id: 'TXSTALE',
+            network: 'mainnet',
+            closeAmount: new Decimal('50854132929'),
+        })
+
+        const result = await getTransactionHistory({
+            db,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
         expect(result[0].closeAmount).toEqual(new Decimal('50854132929'))
     })
 
