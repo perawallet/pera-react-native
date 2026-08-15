@@ -54,13 +54,6 @@ const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
                         </PWText>
                     </PWView>
                 )}
-                <PWView style={styles.eyeIconContainer}>
-                    <PWIcon
-                        name='eye'
-                        size='sm'
-                        variant='white'
-                    />
-                </PWView>
             </PWView>
             <PWView style={styles.infoContainer}>
                 {collectionLabel && (
