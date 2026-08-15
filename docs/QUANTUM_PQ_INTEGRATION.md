@@ -368,9 +368,12 @@ re-opens them and adds one item that nothing in CI can cover.
   by and drops its biometric-wrapped `privateKeyEnc`, which is an object rather
   than key bytes. They are identified by `type: 'hd-derived-p256'` plus
   `metadata.origin` and `metadata.userHandle`.
-- **`bootstrapPasskeyAutofill`'s `configureHdRootKey` is effectively a no-op.**
-  It resolves the HD root through `fetchSecret`, which reads bare ids that the
-  canary.14 driver never writes. It does not throw — it simply finds nothing.
+- **Update:** `bootstrapPasskeyAutofill`'s HD-root resolver (renamed
+  `configureParentKey`) is no longer the no-op described above — it now scans
+  the plaintext `k/` bucket directly (`findHdRootMetadata`) rather than going
+  through `fetchSecret`, and correctly finds the root. See
+  `packages/passkeys/src/native/README.md` for the current state of the
+  Android/iOS passkey split.
 
 ## PQ-023 — unified signing path, generic `PQSignature` (landed)
 

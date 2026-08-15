@@ -36,6 +36,41 @@ _silently_ against the provider), and why credentials are written as a flat
 bare-id record with `privateKey` as a JSON number array rather than into
 `k/`+`m/`.
 
+### Upstream's own adoption revision eats the flat record
+
+Because credentials are still flat, upstream's `adopt-flat-records`
+(`@algorandfoundation/react-native-keystore`'s own revision `0002`, which runs
+immediately after Pera's preflight) decrypts a migrated credential's flat
+record fine — its envelope and plaintext shapes are exactly what
+`adoptLegacyRecords`/`decode` accept — sees a top-level `privateKey`
+`Uint8Array`, and adopts it into `k/`+`m/`, deleting the flat original neither
+provider can then read.
+
+`extensions/provider/.../repairs/0002-rematerialize-passkey-credentials.ts` is
+the backstop: it runs after upstream's adoption, in the same launch, and
+re-writes every adopted passkey credential's flat copy from its `k/`+`m/`
+pair. This is a deliberate **dual-write**, not a rename — the split copy stays
+for the keystore's own reactive store (Task 7 depends on it), and the flat
+copy comes back beside it for the providers. It restates
+`nativeProviderRecord.ts`'s seal function rather than importing it, because
+`packages/passkeys` already depends on `@perawallet/wallet-extension-provider`
+and the reverse import would be circular.
+
+## Still pending: a real phase 3 for credentials
+
+The provider has never been asked to read a credential from `k/`+`m/`, so this
+work has not started. When it does, a migration has to handle everything the
+fixture corpus in `__tests__/nativeProviderRecord.spec.ts` pins:
+
+- Both envelope shapes: sealed `{iv, tag, content}` **and** the unsealed
+  base64url payload the provider falls back to when it has no master key.
+- Both credential type strings: `hd-derived-p256` and the legacy
+  `xhd-derived-p256`, which the provider's read path still accepts.
+- Byte fields as JSON **number arrays**, not `{$u8}`.
+- `privateKeyEnc` — an object, not a `Uint8Array`. It must be carried across
+  verbatim. A generic secret-lifter that only understands byte arrays drops
+  it, which destroys a biometric-gated credential while appearing to succeed.
+
 ## What passkeys actually depend on
 
 Credentials are **P256** (`hd-derived-p256`), derived by

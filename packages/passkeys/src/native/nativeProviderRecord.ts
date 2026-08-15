@@ -11,21 +11,38 @@
  */
 
 /**
- * The on-disk contract of the Android credential provider
- * (`react-native-passkey-autofill`'s `CredentialRepository`).
+ * The on-disk contract of the credential provider's **credential records**
+ * (`react-native-passkey-autofill`'s `CredentialRepository` on Android,
+ * `PasskeyCredentialStore` on iOS).
  *
  * The provider is a **separate process** that shares this app's keystore MMKV
- * instance (`PASSKEYS_MMKV_ID = "keystore"`) and master key, but is still on the
- * pre-canary.14 bare-id layout. Everything it reads and writes lives at an
- * unprefixed key — no `k/`, no `m/`.
+ * instance (`PASSKEYS_MMKV_ID = "keystore"`) and master key. As of autofill
+ * canary.23/.24 the derivation **parent/root** is read from the keystore's own
+ * `k/`+`m/` split on both platforms — but **credential records are still
+ * bare-id only, on both platforms**. iOS's only credential-from-keystore path,
+ * `allKeystoreCredentials()`, guards on `dataArray(keyData["publicKey"])` and
+ * `dataArray(keyData["privateKey"])`, both of which require a JSON number
+ * array; a split `k/` record's `publicKey` is `{"$u8": …}` and it carries no
+ * `privateKey` at all, so the guard fails silently. Android's
+ * `credentialFromMetadataRecord` re-derives on demand instead of reading a
+ * persisted key, which cannot reproduce a migrated Pera 6 credential. See
+ * `packages/passkeys/src/native/README.md` for the full split.
  *
- * This module is the single place that contract is expressed, because two
- * separate things need it and a third will:
+ * This module is the single place the **credential** contract is expressed,
+ * because two separate things need it and a third still will:
  *
- * 1. Writing credentials migrated from Pera 6 so the provider can read them.
- * 2. Writing the HD root record the provider derives new credentials from.
- * 3. **Phase 3** — reading both back, once the provider moves to `k/`+`m/`, so
- *    the records can be migrated into the keystore's own layout without loss.
+ * 1. Writing credentials migrated from Pera 6 so the provider can read them
+ *    (`packages/migrate/.../writeNativePasskeyEntry.ts`).
+ * 2. Re-materialising a credential's flat copy after upstream's own
+ *    `adopt-flat-records` revision destroys it
+ *    (`extensions/provider/.../repairs/0002-rematerialize-passkey-credentials.ts`,
+ *    which restates this module's seal function rather than importing it —
+ *    `packages/passkeys` already depends on `@perawallet/wallet-extension-provider`,
+ *    so the reverse import would be circular).
+ * 3. **A still-pending phase 3** — reading credential records back, if and
+ *    when the provider ever moves credentials to `k/`+`m/` too, so they can be
+ *    migrated into the keystore's own layout without loss. Not started: see
+ *    "What a credential migration would have to handle" below.
  *
  * ## Why `sealData`/`encode` from the keystore cannot be used
  *
@@ -43,6 +60,21 @@
  * Neither throws. A record written with the keystore's own helpers is simply
  * invisible to the provider, which is exactly the failure this module exists to
  * prevent.
+ *
+ * ## What a credential migration would have to handle
+ *
+ * Not started, but recorded here rather than left to be rediscovered — this is
+ * what the fixture corpus in `__tests__/nativeProviderRecord.spec.ts` pins:
+ *
+ * - Both envelope shapes: sealed `{iv, tag, content}` **and** the unsealed
+ *   base64url payload the provider falls back to when it has no master key.
+ * - Both credential type strings: `hd-derived-p256` and the legacy
+ *   `xhd-derived-p256`, which the provider's read path still accepts.
+ * - Byte fields as JSON **number arrays**, not `{$u8}`.
+ * - `privateKeyEnc` — an object, not a `Uint8Array`. It must be carried across
+ *   verbatim. A generic secret-lifter that only understands byte arrays drops
+ *   it, which destroys a biometric-gated credential while appearing to
+ *   succeed.
  */
 
 /** AES-GCM parameters the provider's Kotlin seal/open path assumes. */

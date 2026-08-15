@@ -13,6 +13,7 @@
 import type { Migration } from '@algorandfoundation/provider-migrations'
 import type { PeraMigrationContext } from '../types'
 import { migration as r0001 } from './0001-normalize-canary13-records'
+import { migration as r0002 } from './0002-rematerialize-passkey-credentials'
 
 /**
  * Permanent ledger key. Renaming it makes the engine believe this module has
@@ -23,4 +24,5 @@ export const REPAIRS_MODULE_ID = 'com.perawallet.wallet/keystore-repairs'
 /** Every repair revision, ascending by id. */
 export const repairsMigrations: readonly Migration<PeraMigrationContext>[] = [
     r0001,
+    r0002,
 ]

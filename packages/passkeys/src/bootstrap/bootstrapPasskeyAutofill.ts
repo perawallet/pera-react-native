@@ -22,6 +22,7 @@ import {
 import type { KeyData } from '@algorandfoundation/keystore-core'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { PasskeyAutofillService } from '@perawallet/wallet-extension-passkey-autofill'
+import { fromStandardBase64 } from '../native/nativeProviderRecord'
 
 export interface BootstrapPasskeyAutofillOptions {
     /** Required. The service registered on the provider. */
@@ -53,13 +54,6 @@ const HD_ROOT_KEY_TYPES = new Set<string>([
 // canary.14's own `fetchSecret`/`commit` reach for the same global, so this is
 // the subtle the keystore's sealed payloads were written with.
 const subtle = (): SubtleCrypto => globalThis.crypto.subtle
-
-// Restated rather than pulled from `@scure/base`: that dependency has to be
-// bundled into `dist/` rather than externalised, and getting that wrong takes
-// down the browser extension's service worker at module-eval — the package
-// root reaches the web bundle even though this module is native-only.
-const fromStandardBase64 = (value: string): Uint8Array =>
-    Uint8Array.from(atob(value), char => char.charCodeAt(0))
 
 /**
  * `storeDisabled` is the expected state when the user hasn't enabled Pera as
