@@ -375,7 +375,7 @@ describe('0002-rematerialize-passkey-credentials', () => {
         expect(storage.getString(MATERIAL_PREFIX + 'cred-1')).toBeUndefined()
     })
 
-    it('keeps the rematerialized flat record when removing the split pair partially fails', async () => {
+    it('removes k/ before m/: a failure removing the split pair leaves only a harmless orphaned m/, keeps the flat record, and declines', async () => {
         const storage = fakeStorage({})
         await seededCredential(storage, {
             id: 'cred-1',
@@ -392,6 +392,7 @@ describe('0002-rematerialize-passkey-credentials', () => {
             }
             originalRemove(key)
         }
+        const consoleWarn = vi.spyOn(console, 'warn')
 
         await migration.up(context(storage), utils())
 
@@ -402,6 +403,168 @@ describe('0002-rematerialize-passkey-credentials', () => {
         expect(record.privateKey).toEqual(
             Array.from(new Uint8Array(32).fill(3)),
         )
+        // k/ removed (order pinned: metadata first), m/ orphaned, not the
+        // reverse — a surviving k/ with no material would still trigger
+        // Android's split-first lookup and could only ever be declined by a
+        // resume gate keyed on k/'s presence.
+        expect(storage.getString(METADATA_PREFIX + 'cred-1')).toBeUndefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'cred-1')).toBeDefined()
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(REPAIRS_MODULE_ID),
+        ).toEqual(['cred-1'])
+        expect(consoleWarn).toHaveBeenCalled()
+    })
+
+    it('restores the previously-verified flat record rather than deleting it when a re-run cannot reach the material', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        // Simulates run 1: wrote and verified a flat copy, then was killed
+        // before removing k/+m/ — exactly the state the resume gate exists
+        // to reprocess.
+        const goodFlat = await sealNativeCredentialRecord(subtle, MASTER_KEY, {
+            id: 'cred-1',
+            type: 'hd-derived-p256',
+            privateKey: Array.from(new Uint8Array(32).fill(3)),
+            publicKey: Array.from(new Uint8Array(91).fill(4)),
+        })
+        storage.set('cred-1', goodFlat)
+        // Run 2: the m/ material is unreadable (corrupt seal / GCM tag
+        // mismatch) — a real failure, not a mock artifact of the test setup.
+        vi.mocked(openData).mockImplementation(async () => {
+            throw new Error('GCM tag mismatch')
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('cred-1')).toBe(goodFlat)
+    })
+
+    it('restores the previously-verified flat record rather than deleting it when the rewrite itself fails', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        const goodFlat = await sealNativeCredentialRecord(subtle, MASTER_KEY, {
+            id: 'cred-1',
+            type: 'hd-derived-p256',
+            privateKey: Array.from(new Uint8Array(32).fill(3)),
+            publicKey: Array.from(new Uint8Array(91).fill(4)),
+        })
+        storage.set('cred-1', goodFlat)
+        const originalSet = storage.set.bind(storage)
+        let flatWriteAttempts = 0
+        storage.set = (key: string, value: string) => {
+            if (key === 'cred-1') {
+                flatWriteAttempts += 1
+                // Only the rewrite attempt fails; a later restore of the
+                // prior good value must still be able to land.
+                if (flatWriteAttempts === 1) {
+                    throw new Error('storage failure writing flat record')
+                }
+            }
+            originalSet(key, value)
+        }
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('cred-1')).toBe(goodFlat)
+    })
+
+    it('declines rather than un-adopting a credential whose metadata carries no usable publicKey', async () => {
+        const storage = fakeStorage({})
+        storage.set(
+            METADATA_PREFIX + 'cred-1',
+            serializeKey({
+                id: 'cred-1',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                extractable: false,
+                keyUsages: ['sign'],
+                // No publicKey at all — the shape iOS's allKeystoreCredentials()
+                // guard cannot pass either way.
+                metadata: { origin: 'https://webauthn.io', userHandle: 'u' },
+            } as unknown as Parameters<typeof serializeKey>[0]),
+        )
+        storage.set(
+            MATERIAL_PREFIX + 'cred-1',
+            await sealData(
+                subtle,
+                MASTER_KEY,
+                base64.encode(new Uint8Array(32).fill(3)),
+            ),
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('cred-1')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'cred-1')).toBeDefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'cred-1')).toBeDefined()
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(REPAIRS_MODULE_ID),
+        ).toEqual(['cred-1'])
+    })
+
+    it('does not reject up when getAllKeys throws', async () => {
+        const storage = fakeStorage({})
+        storage.getAllKeys = () => {
+            throw new Error('MMKV corrupted')
+        }
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+    })
+
+    it('skips a record whose metadata read throws, without rejecting up', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        const originalGetString = storage.getString.bind(storage)
+        storage.getString = (key: string) => {
+            if (key === METADATA_PREFIX + 'cred-1') {
+                throw new Error('MMKV read failure')
+            }
+            return originalGetString(key)
+        }
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+    })
+
+    it('declines a credential whose material read throws, without rejecting up', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        const originalGetString = storage.getString.bind(storage)
+        storage.getString = (key: string) => {
+            if (key === MATERIAL_PREFIX + 'cred-1') {
+                throw new Error('MMKV read failure')
+            }
+            return originalGetString(key)
+        }
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+        expect(storage.getString('cred-1')).toBeUndefined()
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(REPAIRS_MODULE_ID),
+        ).toEqual(['cred-1'])
     })
 
     it('leaves the split pair intact when the readback decodes successfully but to the wrong private key', async () => {

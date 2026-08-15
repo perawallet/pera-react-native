@@ -83,14 +83,18 @@ import {
  * failure removing `k/`+`m/` must never roll back the flat write, because
  * that copy is already proven correct and destroying it would leave nothing
  * readable at all (the rollback that undoes a bad *write* must not also catch
- * a bad *removal*). A write that lands as garbage is worse than one that
- * never lands: the next run's resume gate (`is k/ still there?`) would still
- * reprocess it, but the previous (better) flat copy is gone in the meantime.
- * So a failed verification rolls the flat write back and leaves `k/`+`m/`
- * exactly as adoption left them, recorded via `declined` — a durable note, not
- * a retry: nothing in this codebase currently reads the declined sentinel
- * (Task 4 already deferred that), so a declined credential's `k/` shadow is
- * permanent until that follow-up lands, not merely until "a later pass."
+ * a bad *removal*).
+ *
+ * There is usually no "next run" to lean on: the runner records this revision
+ * applied as soon as `up` resolves, and `up` resolves on every path here by
+ * design (a per-credential failure declines and continues; nothing rethrows
+ * except a genuine master-key error). So the resume gate above (`is k/ still
+ * there?`) only ever helps a process that never reached `up`'s resolution at
+ * all — killed mid-run, not merely a prior run that "declined." A completed
+ * decline is final: recorded via `declined`, a durable note that nothing in
+ * this codebase currently reads back (Task 4 already deferred that consuming
+ * revision), so a declined credential's `k/` shadow is permanent, not
+ * revisited.
  *
  * Cheap and side-effect-free when there is nothing to do: the `k/` bucket is
  * scanned and decoded (plaintext, no master key) first, and the master key is
@@ -118,8 +122,19 @@ export const migration: Migration<PeraMigrationContext> = {
     ): Promise<void> => {
         const { storage, subtle } = context
 
+        // An MMKV read failing here must not reject `up` — same reasoning as
+        // every other guard in this module: that would reject
+        // `keystore.ready` and stop the app booting over a scan, not even a
+        // single record.
+        let allKeys: string[]
+        try {
+            allKeys = storage.getAllKeys()
+        } catch {
+            return
+        }
+
         const pending: { id: string; metadataRaw: string }[] = []
-        for (const key of storage.getAllKeys()) {
+        for (const key of allKeys) {
             if (!key.startsWith(METADATA_PREFIX)) continue
             const id = key.slice(METADATA_PREFIX.length)
 
@@ -130,7 +145,12 @@ export const migration: Migration<PeraMigrationContext> = {
             // surviving k/ still shadows a correct flat copy beside it). So a
             // record with a pre-existing flat copy is deliberately
             // reprocessed here, not skipped.
-            const metadataRaw = storage.getString(key)
+            let metadataRaw: string | undefined
+            try {
+                metadataRaw = storage.getString(key)
+            } catch {
+                continue
+            }
             if (metadataRaw === undefined) continue
 
             try {
@@ -172,10 +192,30 @@ export const migration: Migration<PeraMigrationContext> = {
             for (const { id, metadataRaw } of pending) {
                 const metadataKey = METADATA_PREFIX + id
                 const materialKey = MATERIAL_PREFIX + id
-                const sealed = storage.getString(materialKey)
+                let sealed: string | undefined
+                try {
+                    sealed = storage.getString(materialKey)
+                } catch {
+                    untouched.push(id)
+                    continue
+                }
                 if (sealed === undefined) {
                     untouched.push(id)
                     continue
+                }
+
+                // Under the resume gate above, `id` frequently already holds
+                // a flat record a PREVIOUS run wrote and verified before
+                // being killed before the k/+m/ removals — exactly the state
+                // that gate exists to reprocess. A failure in THIS run must
+                // restore that, not destroy it. An unreadable read here is
+                // treated as "nothing to restore" rather than crashing —
+                // strictly no worse than the pre-un-adopt behaviour.
+                let priorFlat: string | undefined
+                try {
+                    priorFlat = storage.getString(id)
+                } catch {
+                    priorFlat = undefined
                 }
 
                 let privateKey: Uint8Array | undefined
@@ -190,11 +230,22 @@ export const migration: Migration<PeraMigrationContext> = {
                             publicKey?: Uint8Array
                         }
 
+                    // A `publicKey` this shape can't carry is not a record
+                    // safe to un-adopt: iOS's allKeystoreCredentials() guards
+                    // on dataArray(publicKey) AND dataArray(privateKey), so a
+                    // flat record missing it would fail that guard with
+                    // nothing left to fall back to. Declines rather than
+                    // writing a flat copy that only verifies clean because
+                    // there's nothing to compare.
+                    if (!(publicKey instanceof Uint8Array)) {
+                        throw new Error(
+                            `credential ${id} has no usable publicKey`,
+                        )
+                    }
+
                     const flatRecord = {
                         ...rest,
-                        ...(publicKey instanceof Uint8Array
-                            ? { publicKey: toNativeByteArray(publicKey) }
-                            : {}),
+                        publicKey: toNativeByteArray(publicKey),
                         privateKey: toNativeByteArray(privateKey),
                     }
 
@@ -216,27 +267,26 @@ export const migration: Migration<PeraMigrationContext> = {
                     const reopened = decode(
                         await openData(subtle, unlocked, sealedFlat),
                     ) as { privateKey?: Uint8Array; publicKey?: Uint8Array }
-                    const publicKeyVerified =
-                        !(publicKey instanceof Uint8Array) ||
-                        (reopened.publicKey instanceof Uint8Array &&
-                            bytesEqual(reopened.publicKey, publicKey))
                     if (
                         !(reopened.privateKey instanceof Uint8Array) ||
                         !bytesEqual(reopened.privateKey, privateKey) ||
-                        !publicKeyVerified
+                        !(reopened.publicKey instanceof Uint8Array) ||
+                        !bytesEqual(reopened.publicKey, publicKey)
                     ) {
                         throw new Error(
                             `rematerialized record for ${id} did not read back`,
                         )
                     }
                 } catch (error) {
-                    // Undoes a flat write this iteration may have made before
-                    // failing — a `remove` on a key that was never set (an
-                    // earlier failure, before any write) is a harmless no-op.
-                    // Leaving a written-but-unverified flat copy behind is the
-                    // dangerous case: the next run's idempotency check sees it
-                    // and treats the credential as already done.
-                    storage.remove(id)
+                    // Restore, don't remove: `priorFlat` is what makes this
+                    // safe under the resume gate above. Only a credential
+                    // with no pre-existing flat copy (a genuinely first
+                    // attempt) gets `remove`d back to nothing.
+                    if (priorFlat === undefined) {
+                        storage.remove(id)
+                    } else {
+                        storage.set(id, priorFlat)
+                    }
                     untouched.push(id)
                     // Storage keys, never key material — the only thing that
                     // makes an on-device failure diagnosable.
@@ -256,9 +306,20 @@ export const migration: Migration<PeraMigrationContext> = {
                 // failure from here on must never roll back to storage.remove
                 // the flat write above — that copy is already proven correct,
                 // and destroying it here would leave nothing readable at all.
-                // Worst case, the split pair lingers for a later pass to
-                // retry (harmless: the next run's resume gate reprocesses any
-                // credential whose k/ is still present).
+                //
+                // k/ removed before m/, deliberately: if the removal below
+                // throws between the two calls, k/ is already gone and m/ is
+                // merely orphaned — harmless, since nothing looks up material
+                // without metadata, and the split is gone from the layout
+                // Android's split-first lookup shadows. The reverse order
+                // would leave a k/ with no material, and since this run
+                // already resolves (this catch doesn't rethrow), there is no
+                // next run to notice: this same revision only re-scans on a
+                // process killed before `up` resolves, and once resolved the
+                // ledger marks it done regardless of outcome. So a failed
+                // removal here is permanent, not "a later pass" — declined
+                // and logged, the same as any other un-rematerializable
+                // credential.
                 try {
                     // Un-adopt: only now is it safe to drop the pair the
                     // provider can't use (see the module doc for why leaving

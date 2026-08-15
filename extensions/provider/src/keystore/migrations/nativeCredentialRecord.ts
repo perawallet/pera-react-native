@@ -23,12 +23,15 @@
  * `crypto.ts`/`state.ts` cannot be used — both fail silently against the
  * provider) and for the credential-record field shapes this must match.
  *
- * `__tests__/nativeCredentialRecord.spec.ts` proves this stays byte-compatible
- * two ways: a live round trip through the real `openNativeProviderRecord`
- * (imported by deep relative path — a `package.json` dependency on
+ * `__tests__/nativeCredentialRecord.spec.ts` guards this three ways: a live
+ * round trip through the real `openNativeProviderRecord` (imported by deep
+ * relative path — a `package.json` dependency on
  * `@perawallet/wallet-core-passkeys` trips turbo's whole-graph cycle check,
- * but a relative import creates no such edge), and a golden envelope pinned
- * from an earlier such round trip, kept alongside it. See that spec's doc.
+ * but a relative import creates no such edge), a golden envelope pinned from
+ * an earlier such round trip, and — the only one of the three that isn't
+ * blind to a writer bug that still round-trips through its own paired reader
+ * — a direct comparison of this module's output against
+ * `sealNativeProviderRecord`'s for the same input. See that spec's doc.
  */
 
 const IV_BYTE_LENGTH = 12

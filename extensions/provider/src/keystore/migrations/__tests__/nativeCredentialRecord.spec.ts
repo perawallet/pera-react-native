@@ -21,7 +21,10 @@ import { sealNativeCredentialRecord } from '../nativeCredentialRecord'
 // how the interop test below gets to run the real reader without the build
 // failure the round-3 report wrongly generalised into "no live import is
 // possible at all."
-import { openNativeProviderRecord } from '../../../../../../packages/passkeys/src/native/nativeProviderRecord'
+import {
+    openNativeProviderRecord,
+    sealNativeProviderRecord,
+} from '../../../../../../packages/passkeys/src/native/nativeProviderRecord'
 
 /**
  * `nativeCredentialRecord.ts` restates
@@ -47,6 +50,17 @@ import { openNativeProviderRecord } from '../../../../../../packages/passkeys/sr
  * reachable). It's redundant with the live test below now, but cheaper to run
  * and keeps failing the same way if the relative import path above ever needs
  * to move.
+ *
+ * Neither of the above guards the *writer* half by itself: both are a
+ * seal-here/open-there round trip, symmetric and blind to which side of the
+ * split introduced a bug — a writer mutation that still round-trips correctly
+ * through its own paired reader (e.g. a GCM tag boundary shifted by one byte,
+ * consistently sealed and opened the same wrong way) passes both. The
+ * `'produces the identical envelope as the real sealNativeProviderRecord'`
+ * test below is the one that isn't blind to that: it compares the two WRITER
+ * implementations' output directly, so any divergence between them — in
+ * either direction — fails it regardless of whether either one's own
+ * self-round-trip still happens to work.
  */
 describe('nativeCredentialRecord interop with the real provider reader', () => {
     const subtle = globalThis.crypto.subtle
@@ -106,5 +120,44 @@ describe('nativeCredentialRecord matches the real provider reader (golden envelo
         )
 
         expect(sealed).toBe(GOLDEN_ENVELOPE)
+    })
+})
+
+describe('nativeCredentialRecord matches sealNativeProviderRecord byte-for-byte (writer-vs-writer)', () => {
+    const subtle = globalThis.crypto.subtle
+    const masterKey = new Uint8Array(32).fill(9)
+
+    beforeEach(() => {
+        vi.spyOn(crypto, 'getRandomValues').mockImplementation(array => {
+            ;(array as Uint8Array).set(new Uint8Array(12).fill(1))
+            return array as never
+        })
+    })
+
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
+    it('produces the identical envelope as the real sealNativeProviderRecord for the same input and IV', async () => {
+        const record = {
+            id: 'cred-1',
+            type: 'hd-derived-p256',
+            publicKey: Array.from(new Uint8Array(91).fill(4)),
+            privateKey: Array.from(new Uint8Array(32).fill(3)),
+            metadata: { origin: 'https://webauthn.io', userHandle: 'ünïcode' },
+        }
+
+        const fromThisPackage = await sealNativeCredentialRecord(
+            subtle,
+            masterKey,
+            record,
+        )
+        const fromRealProvider = await sealNativeProviderRecord(
+            subtle,
+            masterKey,
+            record,
+        )
+
+        expect(fromThisPackage).toBe(fromRealProvider)
     })
 })
