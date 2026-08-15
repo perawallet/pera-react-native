@@ -214,6 +214,60 @@ describe('0004-adopt-material-less-records', () => {
         ).toEqual(['derived-2'])
     })
 
+    // Mirrors 0002's identical guard: the driver reads a record back at
+    // `k/<storageKey>`, so an id that disagrees with the storage key cannot
+    // be split coherently under either.
+    it('leaves a record whose id disagrees with its storage key flat', async () => {
+        const storage = fakeStorage({})
+        storage.set(
+            'storage-key-1',
+            await sealCanary13Record(subtle, MASTER_KEY, {
+                id: 'a-different-id',
+                type: 'hd-derived-ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                publicKey: new Uint8Array(32).fill(7),
+            }),
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('storage-key-1')).toBeDefined()
+        expect(
+            storage.getString(`${METADATA_PREFIX}storage-key-1`),
+        ).toBeUndefined()
+        expect(
+            storage.getString(`${METADATA_PREFIX}a-different-id`),
+        ).toBeUndefined()
+    })
+
+    // A write that fails must not fail the whole module — that would reject
+    // `keystore.ready` and stop the app booting over one record. Left flat
+    // for a later run, same as every other non-adopted outcome.
+    it('leaves a record flat and reports it when the metadata write throws', async () => {
+        const storage = await seeded({
+            id: 'watch-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(3),
+        })
+        const set = storage.set
+        storage.set = () => {
+            throw new Error('MMKV write failed')
+        }
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        storage.set = set
+        expect(storage.getString('watch-1')).toBeDefined()
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual(['watch-1'])
+    })
+
     it('adopts the material-less record while leaving a real key beside it alone', async () => {
         const storage = await seeded(
             {

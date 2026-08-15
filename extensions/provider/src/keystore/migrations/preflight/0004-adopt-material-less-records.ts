@@ -112,32 +112,34 @@ export const migration: Migration<PeraMigrationContext> = {
                         continue
                     }
 
-                    // canary.13 did not always restate `id`; the driver reads
-                    // a record back at `k/<storageKey>`, so it has to be there
-                    // on the way in.
-                    const metadataKey = METADATA_PREFIX + storageKey
-                    storage.set(
-                        metadataKey,
-                        serializeKey({
-                            ...record,
-                            id: record.id ?? storageKey,
-                        }),
-                    )
-
-                    const written = storage.getString(metadataKey)
-                    if (
-                        written === undefined ||
-                        decode(written).id !== storageKey
-                    ) {
-                        storage.remove(metadataKey)
+                    // Mirrors `0002`'s guard: the driver reads a record back
+                    // at `k/<storageKey>`, so an id that disagrees with the
+                    // storage key cannot be split coherently under either.
+                    if (record.id !== undefined && record.id !== storageKey) {
                         untouched.push(storageKey)
-                        console.warn(
-                            `[provider] adopt-material-less-records: entry ${storageKey} left flat; metadata did not read back`,
-                        )
                         continue
                     }
 
+                    // canary.13 did not always restate `id`; the driver reads
+                    // a record back at `k/<storageKey>`, so it has to be there
+                    // on the way in.
+                    storage.set(
+                        METADATA_PREFIX + storageKey,
+                        serializeKey({ ...record, id: storageKey }),
+                    )
                     storage.remove(storageKey)
+                } catch (error) {
+                    // A write that failed must not fail the whole module —
+                    // that would reject `keystore.ready` and stop the app
+                    // booting over one record. Left flat for a later run.
+                    untouched.push(storageKey)
+                    console.warn(
+                        `[provider] adopt-material-less-records: entry ${storageKey} left flat: ${
+                            error instanceof Error
+                                ? error.message
+                                : String(error)
+                        }`,
+                    )
                 } finally {
                     wipeSecrets(record)
                 }
