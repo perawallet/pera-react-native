@@ -86,15 +86,19 @@ import {
  * a bad *removal*).
  *
  * There is usually no "next run" to lean on: the runner records this revision
- * applied as soon as `up` resolves, and `up` resolves on every path here by
- * design (a per-credential failure declines and continues; nothing rethrows
- * except a genuine master-key error). So the resume gate above (`is k/ still
- * there?`) only ever helps a process that never reached `up`'s resolution at
- * all — killed mid-run, not merely a prior run that "declined." A completed
- * decline is final: recorded via `declined`, a durable note that nothing in
- * this codebase currently reads back (Task 4 already deferred that consuming
- * revision), so a declined credential's `k/` shadow is permanent, not
- * revisited.
+ * applied as soon as `up` resolves. For that to hold, every storage mutation
+ * a per-credential failure can trigger has to be guarded against throwing
+ * itself — the write-and-verify rollback and the k/+m/ removal both wrap
+ * their own storage calls in a `try` that only logs on failure, precisely
+ * because an unguarded one previously escaped `up`, rejected
+ * `keystore.ready`, and — since the ledger only writes after `up`
+ * resolves — re-ran and re-failed on every subsequent launch. With that
+ * true, the resume gate above (`is k/ still there?`) only ever helps a
+ * process that never reached `up`'s resolution at all — killed mid-run, not
+ * merely a prior run that "declined." A completed decline is final:
+ * recorded via `declined`, a durable note that nothing in this codebase
+ * currently reads back (Task 4 already deferred that consuming revision),
+ * so a declined credential's `k/` shadow is permanent, not revisited.
  *
  * Cheap and side-effect-free when there is nothing to do: the `k/` bucket is
  * scanned and decoded (plaintext, no master key) first, and the master key is
@@ -145,6 +149,13 @@ export const migration: Migration<PeraMigrationContext> = {
             // surviving k/ still shadows a correct flat copy beside it). So a
             // record with a pre-existing flat copy is deliberately
             // reprocessed here, not skipped.
+            // Silently skipped, not `untouched`-tracked, on a read failure:
+            // at this point the scan doesn't yet know `id` names a passkey
+            // credential at all (that's decided below), so there's nothing
+            // meaningful to decline yet — same reasoning as the decode
+            // failure two lines down. The per-credential material read
+            // further down tracks failures because by then `id` is already
+            // a confirmed pending credential.
             let metadataRaw: string | undefined
             try {
                 metadataRaw = storage.getString(key)
@@ -208,14 +219,18 @@ export const migration: Migration<PeraMigrationContext> = {
                 // a flat record a PREVIOUS run wrote and verified before
                 // being killed before the k/+m/ removals — exactly the state
                 // that gate exists to reprocess. A failure in THIS run must
-                // restore that, not destroy it. An unreadable read here is
-                // treated as "nothing to restore" rather than crashing —
-                // strictly no worse than the pre-un-adopt behaviour.
+                // restore that, not destroy it. A throw here means we don't
+                // know what's there — NOT the same as confirmed absence — so
+                // `priorFlatUnknown` routes the failure catch below to leave
+                // the key untouched rather than treating "couldn't read it"
+                // as "nothing to restore" and deleting a record that might be
+                // perfectly good.
                 let priorFlat: string | undefined
+                let priorFlatUnknown = false
                 try {
                     priorFlat = storage.getString(id)
                 } catch {
-                    priorFlat = undefined
+                    priorFlatUnknown = true
                 }
 
                 let privateKey: Uint8Array | undefined
@@ -225,23 +240,23 @@ export const migration: Migration<PeraMigrationContext> = {
                     )
 
                     const metadata = decode(metadataRaw)
+                    // Cast rather than `publicKey?: Uint8Array`: no separate
+                    // "missing publicKey" guard follows on purpose.
+                    // `toNativeByteArray(publicKey)` throws on `undefined`
+                    // (declining exactly as an explicit guard would), and for
+                    // the only other malformed shape worth naming — a plain
+                    // `number[]` rather than a real `Uint8Array` — this
+                    // module never actually requires `Uint8Array`-ness;
+                    // `toNativeByteArray` and the readback comparison below
+                    // both only need something iterable/indexable, so they
+                    // treat it identically either way. A prior explicit guard
+                    // rejected that harmless shape while the verify check
+                    // accepted it — two checks disagreeing on the same input
+                    // is worse than one.
                     const { publicKey, ...rest } =
                         metadata as typeof metadata & {
-                            publicKey?: Uint8Array
+                            publicKey: Uint8Array
                         }
-
-                    // A `publicKey` this shape can't carry is not a record
-                    // safe to un-adopt: iOS's allKeystoreCredentials() guards
-                    // on dataArray(publicKey) AND dataArray(privateKey), so a
-                    // flat record missing it would fail that guard with
-                    // nothing left to fall back to. Declines rather than
-                    // writing a flat copy that only verifies clean because
-                    // there's nothing to compare.
-                    if (!(publicKey instanceof Uint8Array)) {
-                        throw new Error(
-                            `credential ${id} has no usable publicKey`,
-                        )
-                    }
 
                     const flatRecord = {
                         ...rest,
@@ -281,11 +296,31 @@ export const migration: Migration<PeraMigrationContext> = {
                     // Restore, don't remove: `priorFlat` is what makes this
                     // safe under the resume gate above. Only a credential
                     // with no pre-existing flat copy (a genuinely first
-                    // attempt) gets `remove`d back to nothing.
-                    if (priorFlat === undefined) {
-                        storage.remove(id)
+                    // attempt) gets `remove`d back to nothing. Wrapped in its
+                    // own try: this rollback must never escape `up` either —
+                    // a rejecting `up` rejects `keystore.ready` and, because
+                    // the ledger only writes after `up` resolves, re-runs and
+                    // re-fails this module on every subsequent launch.
+                    if (priorFlatUnknown) {
+                        // Couldn't read what was there before, so we don't
+                        // know whether it's safe to remove or what to
+                        // restore — left exactly as-is rather than guessed.
                     } else {
-                        storage.set(id, priorFlat)
+                        try {
+                            if (priorFlat === undefined) {
+                                storage.remove(id)
+                            } else {
+                                storage.set(id, priorFlat)
+                            }
+                        } catch (rollbackError) {
+                            console.warn(
+                                `[provider] rematerialize-passkey-credentials: entry ${id} rollback itself failed, leaving disk state as-is: ${
+                                    rollbackError instanceof Error
+                                        ? rollbackError.message
+                                        : String(rollbackError)
+                                }`,
+                            )
+                        }
                     }
                     untouched.push(id)
                     // Storage keys, never key material — the only thing that

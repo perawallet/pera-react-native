@@ -476,6 +476,120 @@ describe('0002-rematerialize-passkey-credentials', () => {
         expect(storage.getString('cred-1')).toBe(goodFlat)
     })
 
+    it('does not reject up (probe A) when the restore attempt itself also fails to land', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        const goodFlat = await sealNativeCredentialRecord(subtle, MASTER_KEY, {
+            id: 'cred-1',
+            type: 'hd-derived-p256',
+            privateKey: Array.from(new Uint8Array(32).fill(3)),
+            publicKey: Array.from(new Uint8Array(91).fill(4)),
+        })
+        storage.set('cred-1', goodFlat)
+        // Unlike the test above, EVERY write to 'cred-1' fails — the rewrite
+        // attempt and the restore both. The rollback must not let that
+        // escape `up`: a rejecting `up` rejects `keystore.ready`, and since
+        // the ledger only writes once `up` resolves, this module would
+        // re-run and re-fail on every subsequent launch.
+        storage.set = (key: string) => {
+            if (key === 'cred-1') {
+                throw new Error('storage failure writing flat record')
+            }
+        }
+        const consoleWarn = vi.spyOn(console, 'warn')
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        // The rewrite attempt never landed (it throws before touching the
+        // map), so the pre-existing good copy is exactly where it was —
+        // untouched, not merely "restored".
+        expect(storage.getString('cred-1')).toBe(goodFlat)
+        expect(consoleWarn).toHaveBeenCalled()
+    })
+
+    it('does not reject up (probe B) when there is no prior flat copy and the rollback remove itself fails', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        // Forces the readback verification to fail (a real, decodable
+        // envelope sealed under the wrong private key) rather than an
+        // upstream decrypt failure, so there IS a fresh (bad) write at
+        // 'cred-1' for the rollback's `storage.remove(id)` branch to target.
+        const wrongRecordSealed = await sealNativeCredentialRecord(
+            subtle,
+            MASTER_KEY,
+            {
+                id: 'cred-1',
+                type: 'hd-derived-p256',
+                privateKey: Array.from(new Uint8Array(32).fill(99)),
+                publicKey: Array.from(new Uint8Array(91).fill(4)),
+            },
+        )
+        let openDataCalls = 0
+        vi.mocked(openData).mockImplementation(async (...args) => {
+            openDataCalls += 1
+            if (openDataCalls === 2) {
+                return realOpenData(subtle, MASTER_KEY, wrongRecordSealed)
+            }
+            return realOpenData(...args)
+        })
+        const originalRemove = storage.remove.bind(storage)
+        storage.remove = (key: string) => {
+            if (key === 'cred-1') {
+                throw new Error('MMKV remove failure')
+            }
+            originalRemove(key)
+        }
+        const consoleWarn = vi.spyOn(console, 'warn')
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+        expect(consoleWarn).toHaveBeenCalled()
+    })
+
+    it('leaves the bare id untouched on a later failure when the prior-flat read itself throws', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        storage.set('cred-1', 'UNKNOWN-CONTENT-COULD-BE-GOOD-OR-BAD')
+        const originalGetString = storage.getString.bind(storage)
+        let priorFlatReadShouldThrow = true
+        storage.getString = (key: string) => {
+            if (key === 'cred-1' && priorFlatReadShouldThrow) {
+                priorFlatReadShouldThrow = false
+                throw new Error('MMKV read failure')
+            }
+            return originalGetString(key)
+        }
+        // Any later failure exercises the same catch; a decrypt failure on
+        // the material is the simplest one to force.
+        vi.mocked(openData).mockImplementation(async () => {
+            throw new Error('bad tag')
+        })
+
+        await migration.up(context(storage), utils())
+
+        // Unknown prior state must never be guessed at: not restored (we
+        // don't have the value) and not removed (we don't know it was
+        // absent) — left exactly as it was.
+        expect(storage.getString('cred-1')).toBe(
+            'UNKNOWN-CONTENT-COULD-BE-GOOD-OR-BAD',
+        )
+    })
+
     it('declines rather than un-adopting a credential whose metadata carries no usable publicKey', async () => {
         const storage = fakeStorage({})
         storage.set(
