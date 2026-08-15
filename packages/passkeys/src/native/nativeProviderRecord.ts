@@ -33,12 +33,16 @@
  *
  * 1. Writing credentials migrated from Pera 6 so the provider can read them
  *    (`packages/migrate/.../writeNativePasskeyEntry.ts`).
- * 2. Re-materialising a credential's flat copy after upstream's own
- *    `adopt-flat-records` revision destroys it
+ * 2. Un-adopting a credential upstream's own `adopt-flat-records` revision
+ *    wrongly split into `k/`+`m/`
  *    (`extensions/provider/.../repairs/0002-rematerialize-passkey-credentials.ts`,
  *    which restates this module's seal function rather than importing it —
  *    `packages/passkeys` already depends on `@perawallet/wallet-extension-provider`,
- *    so the reverse import would be circular).
+ *    so the reverse import would be circular). That module's own
+ *    `nativeCredentialRecord.spec.ts` pins the restated writer against a
+ *    golden envelope captured once from a real round trip through this
+ *    module's `openNativeProviderRecord` — a live cross-package import was
+ *    tried and reverted because it trips turbo's whole-graph cycle check.
  * 3. **A still-pending phase 3** — reading credential records back, if and
  *    when the provider ever moves credentials to `k/`+`m/` too, so they can be
  *    migrated into the keystore's own layout without loss. Not started: see
@@ -105,11 +109,24 @@ const toStandardBase64 = (bytes: Uint8Array): string =>
 export const fromStandardBase64 = (value: string): Uint8Array =>
     Uint8Array.from(atob(value), char => char.charCodeAt(0))
 
+/**
+ * UTF-8-encodes before base64-ing, so a non-Latin1 `userName`/`displayName`
+ * doesn't throw `btoa`'s `InvalidCharacterError` mid-write — Android's own
+ * writer does the equivalent (`jsonString.toByteArray(Charsets.UTF_8)` before
+ * `Base64.encodeToString`), and keeps the padding
+ * `Base64.encodeToString(..., URL_SAFE or NO_WRAP)` produces by default,
+ * because the keystore package's own `decode` requires it (`base64url.decode`
+ * from `@scure/base` throws on an unpadded string).
+ */
 const toBase64Url = (value: string): string =>
-    btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    toStandardBase64(new TextEncoder().encode(value))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
 
 const fromBase64Url = (value: string): string =>
-    atob(value.replace(/-/g, '+').replace(/_/g, '/'))
+    new TextDecoder().decode(
+        fromStandardBase64(value.replace(/-/g, '+').replace(/_/g, '/')),
+    )
 
 /**
  * Byte arrays cross this boundary as JSON arrays of numbers, never `{$u8}` and

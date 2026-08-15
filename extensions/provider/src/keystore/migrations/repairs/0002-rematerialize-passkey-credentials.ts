@@ -33,18 +33,22 @@ import {
  * Re-writes the flat bare-id record the native Android/iOS passkey credential
  * provider reads, for every passkey credential upstream's `adopt-flat-records`
  * (revision `0002` of `@algorandfoundation/react-native-keystore`'s own
- * manifest) has just split into `k/`+`m/`.
+ * manifest) has just split into `k/`+`m/`, then removes that split pair.
  *
  * Neither provider reads a credential from `k/`+`m/`. iOS's only
  * credential-from-keystore path, `allKeystoreCredentials()`, guards on
  * `dataArray(keyData["publicKey"])` **and** `dataArray(keyData["privateKey"])`
  * — `dataArray` only accepts a JSON number array, and a split `k/` record's
  * `publicKey` is `{"$u8": …}` with no `privateKey` field at all, so the guard
- * fails silently. Android's `credentialFromMetadataRecord` sets
- * `privateKey = ""` and re-derives on demand, which cannot reproduce a
- * migrated Pera 6 credential (case-sensitive `userName` matching versus the
- * provider's lowercasing, and a missing `parentKeyId`/`scheme` that pins the
- * wrong derivation scheme). See `packages/passkeys/src/native/README.md`.
+ * fails silently. Android's `CredentialRepository.getCredential` is worse than
+ * silent: it tries the split layout *first* and returns on a hit before ever
+ * reading the bare id, so a surviving `k/` record — even beside a freshly
+ * rematerialized flat one — wins the race, `credentialFromMetadataRecord`
+ * returns `privateKey = ""`, and `getKeyPair` falls through to
+ * `createDomainKeyPair`: re-derivation, which cannot reproduce a migrated
+ * Pera 6 credential (case-sensitive `userName` matching versus the provider's
+ * lowercasing, and a missing `parentKeyId`/`scheme` that pins the wrong
+ * derivation scheme). See `packages/passkeys/src/native/README.md`.
  *
  * So upstream's adoption — which runs immediately before this module, as the
  * keystore package's own revision `0002` — silently destroys every migrated
@@ -54,25 +58,45 @@ import {
  * a top-level `privateKey` `Uint8Array`, and adopts it — writing `k/`+`m/`
  * and deleting the flat original the provider needs.
  *
- * This is deliberately a full dual-write, not a rename: the split copy stays
- * (the keystore's own reactive store needs it, and Task 7 depends on it being
- * there), and the flat copy comes back beside it. It is not redundant with
- * the split copy — they serve two different readers on two different
- * layouts, and only one of those readers (either provider) can be changed by
- * shipping a new native build, not by this migration.
+ * This is an **un-adopt**, not a dual-write: a dual-write (rematerialize the
+ * flat copy, leave `k/`+`m/` beside it) fixes iOS but not Android, because
+ * Android's split-first lookup shadows the flat copy it can't read from.
+ * Removing `k/`+`m/` once the flat copy is proven readable also dissolves two
+ * dependent symptoms of the split surviving: Android's `getAllCredentials()`
+ * listing the same credential twice (it appends from both branches with no
+ * dedup by `credentialId`), and `deleteCredential` only ever removing bare-id
+ * candidates, so a deleted credential reappears from its orphaned `k/`+`m/`
+ * pair. This restores exactly the pre-branch layout shipped Pera 7 works on
+ * today — the keystore's own reactive store never needs a passkey credential
+ * in `k/`+`m/` (unlike the derivation parent, which stays there; see the
+ * README) — so nothing downstream depends on the split surviving.
+ *
+ * Copy, verify, delete — never the reverse. The flat record is sealed and
+ * read back through the exact envelope+decode the provider (and this
+ * migration's own idempotency check) will use before either half of the
+ * `k/`+`m/` pair is removed. A write that lands as garbage is worse than one
+ * that never lands: the next run's idempotency check (`does the bare id
+ * already hold something?`) would treat it as done and the credential would
+ * be gone from both layouts. So a failed verification rolls the flat write
+ * back and leaves `k/`+`m/` exactly as adoption left them, declined for a
+ * later pass rather than silently orphaned.
  *
  * Cheap and side-effect-free when there is nothing to do: the `k/` bucket is
  * scanned and decoded (plaintext, no master key) first, and the master key is
  * touched only if at least one credential is missing its flat copy. A record
- * whose material cannot be reached (no master key, an unreadable seal) is
- * left alone and recorded through `declined` rather than failing the module —
- * that would reject `keystore.ready` and stop the app booting.
+ * whose material cannot be reached (no master key, an unreadable seal, a
+ * failed verification) is left alone and recorded through `declined` rather
+ * than failing the module — that would reject `keystore.ready` and stop the
+ * app booting.
  */
 
 const PASSKEY_CREDENTIAL_TYPES: ReadonlySet<string> = new Set([
     'hd-derived-p256',
     'xhd-derived-p256',
 ])
+
+const bytesEqual = (a: Uint8Array, b: Uint8Array): boolean =>
+    a.length === b.length && a.every((byte, index) => byte === b[index])
 
 export const migration: Migration<PeraMigrationContext> = {
     id: 2,
@@ -132,6 +156,7 @@ export const migration: Migration<PeraMigrationContext> = {
 
         await utils.secrets.use('keystore-master-key', async unlocked => {
             for (const { id, metadataRaw } of pending) {
+                const metadataKey = METADATA_PREFIX + id
                 const materialKey = MATERIAL_PREFIX + id
                 const sealed = storage.getString(materialKey)
                 if (sealed === undefined) {
@@ -159,15 +184,42 @@ export const migration: Migration<PeraMigrationContext> = {
                         privateKey: toNativeByteArray(privateKey),
                     }
 
-                    storage.set(
-                        id,
-                        await sealNativeCredentialRecord(
-                            subtle,
-                            unlocked,
-                            flatRecord,
-                        ),
+                    const sealedFlat = await sealNativeCredentialRecord(
+                        subtle,
+                        unlocked,
+                        flatRecord,
                     )
+                    storage.set(id, sealedFlat)
+
+                    // Read the write back through the provider's own
+                    // envelope+decode before trusting it enough to delete the
+                    // only other copy of this credential's material.
+                    const reopened = decode(
+                        await openData(subtle, unlocked, sealedFlat),
+                    ) as { privateKey?: Uint8Array }
+                    if (
+                        !(reopened.privateKey instanceof Uint8Array) ||
+                        !bytesEqual(reopened.privateKey, privateKey)
+                    ) {
+                        throw new Error(
+                            `rematerialized record for ${id} did not read back`,
+                        )
+                    }
+
+                    // Un-adopt: only now is the flat copy provably readable,
+                    // so only now is it safe to drop the pair the provider
+                    // can't use (see the module doc for why leaving it would
+                    // shadow the flat copy on Android).
+                    storage.remove(metadataKey)
+                    storage.remove(materialKey)
                 } catch (error) {
+                    // Undoes a flat write this iteration may have made before
+                    // failing — a `remove` on a key that was never set (an
+                    // earlier failure, before any write) is a harmless no-op.
+                    // Leaving a written-but-unverified flat copy behind is the
+                    // dangerous case: the next run's idempotency check sees it
+                    // and treats the credential as already done.
+                    storage.remove(id)
                     untouched.push(id)
                     // Storage keys, never key material — the only thing that
                     // makes an on-device failure diagnosable.

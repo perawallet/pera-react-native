@@ -48,13 +48,25 @@ provider can then read.
 
 `extensions/provider/.../repairs/0002-rematerialize-passkey-credentials.ts` is
 the backstop: it runs after upstream's adoption, in the same launch, and
-re-writes every adopted passkey credential's flat copy from its `k/`+`m/`
-pair. This is a deliberate **dual-write**, not a rename — the split copy stays
-for the keystore's own reactive store (Task 7 depends on it), and the flat
-copy comes back beside it for the providers. It restates
-`nativeProviderRecord.ts`'s seal function rather than importing it, because
-`packages/passkeys` already depends on `@perawallet/wallet-extension-provider`
-and the reverse import would be circular.
+**un-adopts** every migrated passkey credential — rematerialising its flat
+copy from the `k/`+`m/` pair, verifying the write reads back through the same
+envelope+decode a provider or this migration would use, and only then removing
+`k/<id>`+`m/<id>`. This is deliberately not a dual-write: Android's
+`CredentialRepository.getCredential` tries the split layout _first_ and
+returns on a hit before ever reading the bare id, so a `k/` record left beside
+a freshly rematerialized flat one still wins on Android and re-derives the
+wrong key — the exact regression this exists to prevent. Removing the split
+pair once the flat copy is proven readable restores exactly the layout shipped
+Pera 7 works on today. It restates `nativeProviderRecord.ts`'s seal function
+rather than importing it, because `packages/passkeys` already depends on
+`@perawallet/wallet-extension-provider` and the reverse import would be
+circular. A test-only import of just the _reader_ half doesn't create that
+cycle, but adding `@perawallet/wallet-core-passkeys` as an `extensions/provider`
+devDependency still trips turbo's whole-graph cycle check (`pnpm build` fails
+even though the two packages' own `build` scripts run clean side by side) — so
+`extensions/provider`'s `nativeCredentialRecord.spec.ts` instead pins the
+restated writer against a golden envelope captured once, offline, from a real
+round trip through this module's `openNativeProviderRecord`.
 
 ## Still pending: a real phase 3 for credentials
 

@@ -22,6 +22,13 @@
  * for the full contract (why `sealData`/`encode` from this package's own
  * `crypto.ts`/`state.ts` cannot be used — both fail silently against the
  * provider) and for the credential-record field shapes this must match.
+ *
+ * `__tests__/nativeCredentialRecord.spec.ts` pins this module's output against
+ * a golden envelope captured once, offline, from a real round trip through the
+ * real `openNativeProviderRecord` — see that spec's doc for why a live
+ * cross-package import couldn't stay (it fixes the reverse-dependency problem
+ * above, but trips turbo's whole-graph cycle check, which a full `pnpm build`
+ * depends on).
  */
 
 const IV_BYTE_LENGTH = 12
@@ -30,8 +37,19 @@ const GCM_TAG_BYTE_LENGTH = 16
 const toStandardBase64 = (bytes: Uint8Array): string =>
     btoa(String.fromCharCode(...bytes))
 
+/**
+ * UTF-8-encodes before base64-ing, so a non-Latin1 `userName`/`displayName`
+ * doesn't throw `btoa`'s `InvalidCharacterError` mid-write — Android's own
+ * writer does the equivalent (`jsonString.toByteArray(Charsets.UTF_8)` before
+ * `Base64.encodeToString`), and keeps the padding
+ * `Base64.encodeToString(..., URL_SAFE or NO_WRAP)` produces by default,
+ * because the keystore package's own `decode` requires it (`base64url.decode`
+ * from `@scure/base` throws on an unpadded string).
+ */
 const toBase64Url = (value: string): string =>
-    btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    toStandardBase64(new TextEncoder().encode(value))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
 
 /**
  * Byte arrays cross this boundary as JSON arrays of numbers, never `{$u8}`
