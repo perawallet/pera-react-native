@@ -559,12 +559,8 @@ describe('0002-lift-nested-material', () => {
     // pins that it does not touch them, not that they survive. A plain-key
     // credential like this one carries top-level `privateKey`, so upstream's
     // own `adopt-flat-records` adopts it and deletes the bare id in the very
-    // next module — and per `packages/passkeys/src/native/nativeProviderRecord.ts`,
-    // the provider is still bare-id-only pending its own Phase 3, so that
-    // deletion is a real regression for this record shape, not a benign one.
-    // Pre-existing (upstream's adoption ran regardless of the now-removed
-    // `migrateKeystoreLayout`, per Task 4's review) and tracked for the
-    // on-device pass — not something this test asserts is safe.
+    // next module — safely: both native autofill providers read `k/`+`m/` as
+    // of canary.23/.24.
     it('leaves a provider credential with a plain key flat here', async () => {
         const storage = await seeded({
             id: 'cred-plain',
