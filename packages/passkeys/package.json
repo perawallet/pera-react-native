@@ -1,49 +1,53 @@
 {
-    "name": "@perawallet/wallet-core-passkeys",
-    "version": "0.0.0",
-    "private": true,
-    "type": "module",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "default": "./dist/index.js"
-        },
-        "./webauthn": {
-            "types": "./dist/webauthn.d.ts",
-            "default": "./dist/webauthn.js"
-        }
+  "name": "@perawallet/wallet-core-passkeys",
+  "private": true,
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
-    "scripts": {
-        "build": "vite build",
-        "dev": "vite build --watch",
-        "test": "vitest run",
-        "test:unit": "vitest run",
-        "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+    "./webauthn": {
+      "types": "./dist/webauthn.d.ts",
+      "default": "./dist/webauthn.js"
     },
-    "dependencies": {
-        "@algorandfoundation/dp256": "catalog:",
-        "@algorandfoundation/keystore-core": "catalog:",
-        "@algorandfoundation/react-native-keystore": "catalog:",
-        "@babel/runtime": "catalog:",
-        "@noble/hashes": "catalog:",
-        "@perawallet/wallet-core-shared": "workspace:*",
-        "@perawallet/wallet-extension-passkey-autofill": "workspace:*",
-        "@perawallet/wallet-extension-provider": "workspace:*",
-        "@tanstack/react-query": "catalog:",
-        "@tanstack/store": "catalog:",
-        "react": "catalog:"
-    },
-    "devDependencies": {
-        "@perawallet/wallet-core-devtools": "workspace:*",
-        "@testing-library/react": "catalog:",
-        "@types/node": "catalog:",
-        "@types/react": "catalog:",
-        "react-dom": "catalog:",
-        "typescript": "catalog:",
-        "vite": "catalog:",
-        "vite-plugin-dts": "catalog:",
-        "vitest": "catalog:"
+    "./native": {
+      "types": "./dist/native.d.ts",
+      "default": "./dist/native.js"
     }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:unit": "vitest run",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+  },
+  "dependencies": {
+    "@algorandfoundation/dp256": "catalog:",
+    "@algorandfoundation/keystore-core": "catalog:",
+    "@algorandfoundation/react-native-keystore": "catalog:",
+    "@babel/runtime": "catalog:",
+    "@noble/hashes": "catalog:",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-extension-passkey-autofill": "workspace:*",
+    "@perawallet/wallet-extension-provider": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/store": "catalog:",
+    "react": "catalog:"
+  },
+  "devDependencies": {
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@testing-library/react": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
+  }
 }

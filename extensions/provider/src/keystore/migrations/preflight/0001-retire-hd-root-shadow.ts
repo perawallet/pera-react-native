@@ -18,7 +18,7 @@ import {
 import type { PeraMigrationContext } from '../types'
 
 /**
- * The superset `configureHdRootKey` (`@perawallet/wallet-core-passkeys`) scans
+ * The superset `configureParentKey` (`@perawallet/wallet-core-passkeys`) scans
  * when it picks the provider's derivation root, kept in step with
  * `migrateKeystoreLayout`'s copy of the same set. Erring wide is deliberate:
  * one shadow too many is a redundant ciphertext, one too few is a record
