@@ -11,6 +11,7 @@
  */
 
 import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
+import { SubmissionError } from '@perawallet/wallet-core-signing'
 import {
     AppError,
     ErrorCategory,
@@ -75,6 +76,21 @@ export const resolveErrorCopy = (
 
     if (error instanceof AlgodError) {
         return getAlgodMessage(error)
+    }
+
+    // Before the AppError branch: SubmissionError is an AppError subclass and
+    // would otherwise lose its structured algod copy to the generic banner.
+    if (error instanceof SubmissionError) {
+        // No node verdict and chain verification came up empty — the
+        // transaction may still have landed, so neither "failed" nor
+        // "no connection" is honest here.
+        if (error.classification === 'unknown-outcome') {
+            return {
+                title: t('errors.submission.unknown_outcome.title'),
+                body: t('errors.submission.unknown_outcome.body'),
+            }
+        }
+        return getAlgodMessage(error.algodError)
     }
 
     if (error instanceof NoConnectionError) {

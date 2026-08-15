@@ -699,6 +699,12 @@
                 "body": "Ağ işlemi reddetti. Tekrar dene veya sorun devam ederse destek ekibiyle iletişime geç."
             }
         },
+        "submission": {
+            "unknown_outcome": {
+                "title": "İşlem durumu bilinmiyor",
+                "body": "İşleminin gerçekleşip gerçekleşmediğini doğrulayamadık. Bir süre bekle ve tekrar denemeden önce işlem geçmişini kontrol et."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Geçersiz bağlantı",
             "invalid_url_body": "Algılanan bağlantı geçerli görünmüyor. Bağlantıyı kontrol et ve tekrar dene.",
@@ -2470,6 +2476,9 @@
         "common": {
             "from": "Gönderen",
             "to": "Alıcı",
+            "sent_to": "Alıcı",
+            "close_amount": "Kalan bakiye",
+            "close_to": "Kalan bakiyenin alıcısı",
             "fee": "Ücret",
             "tx_fee": "İşlem ücretin",
             "total_fee": "Toplam ücretin",

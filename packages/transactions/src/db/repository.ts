@@ -76,6 +76,7 @@ function toDb(item: TransactionHistoryItem) {
         groupId: item.groupId,
         amount: item.amount,
         closeTo: item.closeTo,
+        closeAmount: item.closeAmount,
         applicationId: item.applicationId
             ? new Decimal(item.applicationId)
             : null,
@@ -102,6 +103,7 @@ function fromDb(row: {
     groupId: Nullable<string>
     amount: Nullable<Decimal>
     closeTo: Nullable<string>
+    closeAmount: Nullable<Decimal>
     applicationId: Nullable<Decimal>
     innerTransactionCount: Nullable<number>
     assetJson: Nullable<string>
@@ -120,6 +122,7 @@ function fromDb(row: {
         groupId: row.groupId,
         amount: row.amount,
         closeTo: row.closeTo,
+        closeAmount: row.closeAmount,
         applicationId: row.applicationId?.toString() ?? null,
         innerTransactionCount: row.innerTransactionCount,
         asset: row.assetJson ? JSON.parse(row.assetJson) : null,
@@ -172,6 +175,13 @@ export async function upsertTransactions({
                     groupId: row.groupId,
                     amount: row.amount,
                     closeTo: row.closeTo,
+                    // The row is shared across wallet accounts and only some
+                    // perspectives can derive the sweep (see
+                    // deriveCloseAmount) — never let a sync that can't see
+                    // it erase one that could.
+                    // Raw sql bypasses decimalColumn's serializer, so bind
+                    // the TEXT representation directly.
+                    closeAmount: sql`COALESCE(${row.closeAmount?.toString() ?? null}, ${TransactionsSchema.closeAmount})`,
                     applicationId: row.applicationId,
                     innerTransactionCount: row.innerTransactionCount,
                     assetJson: row.assetJson,
@@ -281,6 +291,7 @@ export async function getTransactionHistory({
             groupId: TransactionsSchema.groupId,
             amount: TransactionsSchema.amount,
             closeTo: TransactionsSchema.closeTo,
+            closeAmount: TransactionsSchema.closeAmount,
             applicationId: TransactionsSchema.applicationId,
             innerTransactionCount: TransactionsSchema.innerTransactionCount,
             assetJson: TransactionsSchema.assetJson,

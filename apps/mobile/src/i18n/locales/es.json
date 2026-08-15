@@ -699,6 +699,12 @@
                 "body": "La red rechazó la transacción. Inténtalo de nuevo o ponte en contacto con soporte si el problema continúa."
             }
         },
+        "submission": {
+            "unknown_outcome": {
+                "title": "Estado de la transacción desconocido",
+                "body": "No pudimos confirmar si tu transacción se realizó. Espera un momento y revisa tu historial de transacciones antes de intentarlo de nuevo."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Enlace no válido",
             "invalid_url_body": "El enlace detectado no parece ser válido. Revisa el enlace y vuelve a intentarlo.",
@@ -2470,6 +2476,9 @@
         "common": {
             "from": "De",
             "to": "A",
+            "sent_to": "Enviado a",
+            "close_amount": "Saldo restante",
+            "close_to": "Saldo restante a",
             "fee": "Comisión",
             "tx_fee": "Tu comisión de transacción",
             "total_fee": "Tu comisión total",

@@ -1,0 +1,1 @@
+ALTER TABLE `transactions` ADD `close_amount` text;

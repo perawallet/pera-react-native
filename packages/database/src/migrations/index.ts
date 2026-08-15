@@ -14,10 +14,18 @@ import type { MigrationConfig } from '../migrator'
 
 import m0000 from './0000_initial.sql?raw'
 import m0001 from './0001_add_balance_impacts.sql?raw'
+import m0002 from './0002_add_close_amount.sql?raw'
+import m0003 from './0003_resync_transaction_history.sql?raw'
 
 const migrations: MigrationConfig = {
     '0000_initial': m0000,
     '0001_add_balance_impacts': m0001,
+    '0002_add_close_amount': m0002,
+    // Rows cached before the close_amount column (and the balance-impact
+    // derivation) permanently show 0 for close-outs — the syncer only
+    // fetches forward from the newest cached round, so they never heal.
+    // The tables are a cache of remote history; wipe and let it resync.
+    '0003_resync_transaction_history': m0003,
 }
 
 export default migrations

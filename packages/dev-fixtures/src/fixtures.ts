@@ -247,6 +247,7 @@ export const mockTransaction: TransactionHistoryItem = {
     groupId: null,
     amount: new Decimal('1500000'),
     closeTo: null,
+    closeAmount: null,
     asset: null,
     applicationId: null,
     innerTransactionCount: null,

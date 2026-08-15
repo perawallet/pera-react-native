@@ -691,6 +691,12 @@
                 "body": "Das Netzwerk hat die Transaktion abgelehnt. Bitte versuche es erneut oder wende dich an den Support, falls das Problem weiterhin besteht."
             }
         },
+        "submission": {
+            "unknown_outcome": {
+                "title": "Transaktionsstatus unbekannt",
+                "body": "Wir konnten nicht bestätigen, ob deine Transaktion durchgegangen ist. Warte einen Moment und prüfe deinen Transaktionsverlauf, bevor du es erneut versuchst."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Ungültiger Link",
             "invalid_url_body": "Der erkannte Link scheint ungültig zu sein. Bitte überprüfe den Link und versuche es erneut.",
@@ -2462,6 +2468,9 @@
         "common": {
             "from": "Von",
             "to": "An",
+            "sent_to": "Gesendet an",
+            "close_amount": "Restguthaben",
+            "close_to": "Restguthaben an",
             "fee": "Gebühr",
             "tx_fee": "Deine Transaktionsgebühr",
             "total_fee": "Deine Gesamtgebühr",

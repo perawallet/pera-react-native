@@ -11,6 +11,7 @@
  */
 
 import { useMemo } from 'react'
+import { Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 
@@ -24,6 +25,30 @@ import {
 } from './amounts'
 
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+
+const ZERO = new Decimal(0)
+
+/**
+ * Net amount this account moved in a pay/axfer row. `amount` pays the
+ * receiver; a close-out additionally sweeps `closeAmount` to `closeTo`. The
+ * sender pays both legs; the close target only receives the legs addressed
+ * to it. Any other non-sender keeps the paid amount — the historical
+ * behavior, which also covers degenerate rows where the selected account
+ * matches no role (e.g. mid account switch).
+ */
+const netTransferAmount = (
+    transaction: TransactionHistoryItem,
+    userAddress: string,
+    isOutgoing: boolean,
+): Decimal => {
+    const paid = transaction.amount ?? ZERO
+    const closed = transaction.closeAmount ?? ZERO
+    if (isOutgoing) return paid.add(closed)
+    if (transaction.closeTo && transaction.closeTo === userAddress) {
+        return transaction.receiver === userAddress ? paid.add(closed) : closed
+    }
+    return paid
+}
 
 export type UseTransactionAmountsResult = {
     /** Amounts to display, capped at {@link MAX_VISIBLE_AMOUNTS}. */
@@ -60,15 +85,23 @@ export const useTransactionAmounts = (
         }
 
         // Handle payment transactions
-        if (transaction.txType === 'pay' && transaction.amount) {
-            result.push(createAlgoAmount(transaction.amount, isOutgoing))
+        if (
+            transaction.txType === 'pay' &&
+            (transaction.amount || transaction.closeAmount)
+        ) {
+            result.push(
+                createAlgoAmount(
+                    netTransferAmount(transaction, userAddress, isOutgoing),
+                    isOutgoing,
+                ),
+            )
         }
 
         // Handle asset transfers
         if (
             transaction.txType === 'axfer' &&
             transaction.asset &&
-            transaction.amount
+            (transaction.amount || transaction.closeAmount)
         ) {
             const decimals =
                 assetDetails?.decimals ?? transaction.asset.decimals
@@ -76,7 +109,7 @@ export const useTransactionAmounts = (
                 assetDetails?.unitName ?? transaction.asset.unitName
             result.push(
                 createAssetAmount(
-                    transaction.amount,
+                    netTransferAmount(transaction, userAddress, isOutgoing),
                     decimals,
                     unitName,
                     isOutgoing,
@@ -95,7 +128,7 @@ export const useTransactionAmounts = (
         }
 
         return result
-    }, [transaction, isOutgoing, assetDetails])
+    }, [transaction, userAddress, isOutgoing, assetDetails])
 
     const amounts = useMemo(
         () => allAmounts.slice(0, MAX_VISIBLE_AMOUNTS),

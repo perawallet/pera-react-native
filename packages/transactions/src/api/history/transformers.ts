@@ -84,12 +84,57 @@ const transformInterpretedMeaning = (
     }
 }
 
+const ALGO_IMPACT_KEY = '0'
+const ZERO = new Decimal(0)
+
+/**
+ * The Pera backend does not send `close_amount`, but its per-account balance
+ * impacts contain the swept value exactly: the sender's impact nets
+ * amount + close (+ fee on the ALGO impact), and the close target's impact is
+ * the sweep itself (+ amount when it is also the receiver). Deriving here
+ * keeps close-outs rendering correctly without a backend contract change; an
+ * explicit `close_amount` (the indexer path) always wins.
+ */
+const deriveCloseAmount = (
+    item: TransactionHistoryItemApiResponse,
+    accountAddress?: string,
+): Nullable<Decimal> => {
+    if (!accountAddress || !item.close_to || !item.balance_impacts?.length) {
+        return null
+    }
+    if (item.tx_type !== 'pay' && item.tx_type !== 'axfer') return null
+
+    const isPay = item.tx_type === 'pay'
+    const impactKey = isPay ? ALGO_IMPACT_KEY : item.asset?.asset_id
+    const impact = item.balance_impacts.find(i => i.asset_id === impactKey)
+    if (!impact) return null
+
+    const impactAmount = new Decimal(impact.amount)
+    const paid = new Decimal(item.amount ?? '0')
+
+    let closed: Nullable<Decimal> = null
+    if (item.sender === accountAddress) {
+        const fee = isPay ? new Decimal(item.fee) : ZERO
+        closed = impactAmount.negated().sub(paid).sub(fee)
+    } else if (item.close_to === accountAddress) {
+        closed = impactAmount.sub(
+            item.receiver === accountAddress ? paid : ZERO,
+        )
+    }
+
+    // A receiver-only perspective can't see the sweep; a non-positive result
+    // means the impact didn't have the expected shape — don't guess.
+    return closed && closed.gt(0) ? closed : null
+}
+
 /**
  * Transforms a transaction item from API response format (snake_case) to
- * domain format (camelCase).
+ * domain format (camelCase). `accountAddress` is the account the page was
+ * fetched for — it powers the close-amount derivation above.
  */
 export const transformTransactionItem = (
     item: TransactionHistoryItemApiResponse,
+    accountAddress?: string,
 ): TransactionHistoryItem => ({
     id: item.id,
     txType: item.tx_type,
@@ -106,6 +151,10 @@ export const transformTransactionItem = (
             ? new Decimal(item.amount)
             : null,
     closeTo: item.close_to ?? null,
+    closeAmount:
+        item.close_amount !== undefined && item.close_amount !== null
+            ? new Decimal(item.close_amount)
+            : deriveCloseAmount(item, accountAddress),
     asset: transformAssetSummary(item.asset),
     applicationId: item.application_id ?? null,
     innerTransactionCount:
@@ -120,8 +169,11 @@ export const transformTransactionItem = (
  */
 export const transformTransactionHistoryResponse = (
     response: TransactionHistoryApiResponse,
+    accountAddress?: string,
 ): TransactionHistoryResult => ({
-    transactions: response.results.map(transformTransactionItem),
+    transactions: response.results.map(item =>
+        transformTransactionItem(item, accountAddress),
+    ),
     pagination: {
         hasNextPage: !!response.next,
         hasPreviousPage: !!response.previous,

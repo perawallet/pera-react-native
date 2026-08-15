@@ -25,6 +25,7 @@ export const TransactionsSchema = sqliteTable('transactions', {
     groupId: text('group_id'),
     amount: decimalColumn('amount'),
     closeTo: text('close_to'),
+    closeAmount: decimalColumn('close_amount'),
     applicationId: decimalColumn('application_id'),
     innerTransactionCount: integer('inner_transaction_count'),
     assetJson: text('asset_json'),

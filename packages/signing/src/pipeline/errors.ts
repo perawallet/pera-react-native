@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { AlgodError } from '@perawallet/wallet-core-blockchain'
 import {
     AppError,
     ErrorCategory,
@@ -133,6 +134,53 @@ export class HardwareSigningAbortedError extends PipelineError {
             severity: ErrorSeverity.LOW,
             retryable: false,
         })
+    }
+}
+
+/**
+ * How a failed broadcast relates to chain state (PERA-4587 / PERA-4896):
+ *
+ * - `rejected-by-node` — the node answered and refused the transaction. It is
+ *   definitively not on chain; safe to report as a failure.
+ * - `unknown-outcome` — the submit call failed without a node verdict
+ *   (timeout, lost response, connection reset). The transaction may still be
+ *   in the pool and confirm; callers must verify against the chain before
+ *   reporting failure. Retrying the same bytes is safe — the node dedupes.
+ *
+ * "Already in ledger" never reaches this type: it is resolved as success at
+ * the submit boundary.
+ */
+export type SubmissionErrorClassification =
+    | 'rejected-by-node'
+    | 'unknown-outcome'
+
+/**
+ * A broadcast failure that keeps the evidence needed to be honest about it:
+ * the locally derived txIds (computable before the POST) and the structured
+ * algod error. `retryable` is false only for `rejected-by-node` — resending
+ * identical bytes a node already refused cannot succeed.
+ */
+export class SubmissionError extends PipelineError {
+    readonly txIds: string[]
+    readonly classification: SubmissionErrorClassification
+    readonly algodError: AlgodError
+
+    constructor(
+        txIds: string[],
+        classification: SubmissionErrorClassification,
+        algodError: AlgodError,
+    ) {
+        super(
+            `Submission ${classification}: ${algodError.message}`,
+            algodError,
+            {
+                retryable: classification !== 'rejected-by-node',
+                params: { txIds, classification, code: algodError.code },
+            },
+        )
+        this.txIds = txIds
+        this.classification = classification
+        this.algodError = algodError
     }
 }
 

@@ -342,7 +342,11 @@ const productionConfig: Omit<Config, 'discoverBaseUrl'> = {
     remoteConfigRefreshTime: ONE_HOUR,
     algodReadTimeout: TEN_SECONDS,
     algodSubmitTimeout: THIRTY_SECONDS,
-    signingTransportTimeout: THIRTY_SECONDS + 5 * ONE_SECOND,
+    // Must cover algodSubmitTimeout PLUS the post-error landing verification
+    // in submitAndAutoRefresh (2 short waitForConfirmation probes + retry
+    // delay) — if this backstop fires first, a transaction that actually
+    // landed is reported as a timeout failure (PERA-4896).
+    signingTransportTimeout: ONE_MINUTE,
     reactQueryDefaultGCTime: ONE_HOUR,
     reactQueryDefaultStaleTime: ONE_MINUTE,
     reactQueryShortLivedGCTime: 60 * ONE_DAY,
