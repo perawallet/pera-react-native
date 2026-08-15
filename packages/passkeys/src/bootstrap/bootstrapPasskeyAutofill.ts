@@ -22,12 +22,6 @@ import {
 import type { KeyData } from '@algorandfoundation/keystore-core'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { PasskeyAutofillService } from '@perawallet/wallet-extension-passkey-autofill'
-import {
-    fromStandardBase64,
-    openNativeProviderRecord,
-    sealNativeProviderRecord,
-    toNativeByteArray,
-} from '../native/nativeProviderRecord'
 
 export interface BootstrapPasskeyAutofillOptions {
     /** Required. The service registered on the provider. */
@@ -59,6 +53,13 @@ const HD_ROOT_KEY_TYPES = new Set<string>([
 // canary.14's own `fetchSecret`/`commit` reach for the same global, so this is
 // the subtle the keystore's sealed payloads were written with.
 const subtle = (): SubtleCrypto => globalThis.crypto.subtle
+
+// Restated rather than pulled from `@scure/base`: that dependency has to be
+// bundled into `dist/` rather than externalised, and getting that wrong takes
+// down the browser extension's service worker at module-eval — the package
+// root reaches the web bundle even though this module is native-only.
+const fromStandardBase64 = (value: string): Uint8Array =>
+    Uint8Array.from(atob(value), char => char.charCodeAt(0))
 
 /**
  * `storeDisabled` is the expected state when the user hasn't enabled Pera as
@@ -129,7 +130,7 @@ const runBootstrap = async (
             masterKeyBytes.fill(0)
         }
 
-        await configureHdRootKey(service, masterKey)
+        await configureParentKey(service, masterKey)
 
         await service
             .configureIntentActions(
@@ -232,60 +233,13 @@ const readRootMaterial = async (
     }
 }
 
-/**
- * Mirrors the root into the bare-id record the Android credential provider
- * reads (`getHdRootSecret` -> `mmkv.decodeString(hdRootKeyId)`).
- *
- * The provider is a separate process still on the pre-canary.14 layout, so it
- * cannot see `k/`+`m/` at all. This is the dual-write phase 2 exists for: same
- * bytes, same derivation, so every credential already on the device keeps
- * reproducing. Phase 3 deletes this copy once the provider reads `m/` itself.
- *
- * Write-only-when-needed rather than unconditionally: a canary.13 install
- * already holds a working record here, and rewriting it every launch would be
- * churn. An unreadable one is replaced, which makes the sync self-healing.
- */
-const syncNativeProviderHdRoot = async (
-    rootId: string,
-    seed: Uint8Array,
-    masterKey: Buffer,
-): Promise<void> => {
-    const masterKeyBytes = Uint8Array.from(masterKey)
-    const existing = keystoreStorage.getString(rootId)
-    if (existing) {
-        const readable = await openNativeProviderRecord(
-            subtle(),
-            masterKeyBytes,
-            existing,
-        ).then(
-            () => true,
-            () => false,
-        )
-        if (readable) return
-    }
-
-    keystoreStorage.set(
-        rootId,
-        await sealNativeProviderRecord(subtle(), masterKeyBytes, {
-            id: rootId,
-            type: 'hd-root-key',
-            algorithm: 'raw',
-            // `optJSONArray("seed")` is what the provider reaches for first.
-            seed: toNativeByteArray(seed),
-        }),
-    )
-}
-
-const configureHdRootKey = async (
+const configureParentKey = async (
     service: PasskeyAutofillService,
     masterKey: Buffer,
 ): Promise<void> => {
     const hdRoot = findHdRootMetadata()
     if (!hdRoot) return
 
-    // Wired before the material is touched: a canary.13 install already has a
-    // readable bare-id record, so the provider can derive from it even if this
-    // process cannot open `m/`.
     await service
         .setHdRootKeyId(hdRoot.id)
         .catch(err => logger.error(err as Error, { step: 'setHdRootKeyId' }))
@@ -294,10 +248,6 @@ const configureHdRootKey = async (
     if (!seed) return
 
     try {
-        await syncNativeProviderHdRoot(hdRoot.id, seed, masterKey).catch(err =>
-            logger.error(err as Error, { step: 'syncNativeProviderHdRoot' }),
-        )
-
         // Current builds don't implement setDerivedMainKey, so skip
         // materializing a non-zeroable secret string for a call that would no-op.
         // Lights up automatically once native support lands.

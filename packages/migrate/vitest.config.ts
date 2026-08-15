@@ -52,10 +52,6 @@ export default defineConfig({
                 __dirname,
                 '../kms/src/index.ts',
             ),
-            '@perawallet/wallet-core-passkeys/native': path.resolve(
-                __dirname,
-                '../passkeys/src/native.ts',
-            ),
             '@perawallet/wallet-core-database/test-utils': path.resolve(
                 __dirname,
                 '../database/src/test-utils/index.ts',

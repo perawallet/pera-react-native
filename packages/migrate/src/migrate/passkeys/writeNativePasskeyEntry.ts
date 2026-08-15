@@ -13,17 +13,24 @@
 import { Platform } from 'react-native'
 import { subtle as quickCryptoSubtle } from 'react-native-quick-crypto'
 import {
+    MATERIAL_PREFIX,
+    METADATA_PREFIX,
     readMasterKey,
+    sealData,
+    serializeKey,
     storage,
 } from '@algorandfoundation/react-native-keystore'
-import {
-    sealNativeProviderRecord,
-    toNativeByteArray,
-} from '@perawallet/wallet-core-passkeys/native'
+import type { Key } from '@algorandfoundation/react-native-keystore'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 
 export const nativePasskeyEntryExists = (credentialId: string): boolean =>
-    storage.getString(credentialId) != null
+    storage.getString(METADATA_PREFIX + credentialId) != null
+
+// Standard base64, matching `@scure/base`'s `base64.encode` (what
+// `sealData`'s callers elsewhere in the keystore use) — restated so this
+// package doesn't need a direct dependency on `@scure/base` for one call.
+const toStandardBase64 = (bytes: Uint8Array): string =>
+    btoa(String.fromCharCode(...bytes))
 
 export type WriteNativePasskeyEntryParams = {
     /** Standard-base64 SHA-256(SPKI DER) — also the MMKV key. */
@@ -32,7 +39,7 @@ export type WriteNativePasskeyEntryParams = {
     origin: string
     /**
      * WebAuthn `user.id` (base64). Returned to the relying party as the
-     * assertion userHandle. See {@link buildKeystoreKeyData} for the
+     * assertion userHandle. See {@link buildKeyMetadata} for the
      * platform-specific metadata mapping.
      */
     userId: string
@@ -55,15 +62,27 @@ export type WriteNativePasskeyEntryParams = {
     lastUsedAtMs?: number | null
 }
 
-const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
+/**
+ * The plaintext `k/<id>` record. Private-key bytes never appear here — they
+ * are sealed separately at `m/<id>`.
+ *
+ * `name` isn't part of the generic `Key` shape, but it matches what the
+ * provider's own `CredentialRepository.saveCredential` writes for a
+ * natively-created credential (`"Passkey: ${origin}"`) — kept for parity even
+ * though nothing currently reads it back.
+ */
+type NativePasskeyKeyMetadata = Key & { name: string }
+
+const buildKeyMetadata = (
+    params: WriteNativePasskeyEntryParams,
+): NativePasskeyKeyMetadata => ({
     id: params.credentialId,
     type: 'hd-derived-p256',
     algorithm: 'P256',
     extractable: false,
     keyUsages: ['sign'],
     name: `Passkey: ${params.origin}`,
-    privateKey: toNativeByteArray(params.privateKey),
-    publicKey: toNativeByteArray(params.publicKeySpkiDer),
+    publicKey: params.publicKeySpkiDer,
     metadata: {
         origin: params.origin,
         // userHandle is platform-overloaded: Android's picker renders it as the
@@ -99,15 +118,17 @@ export type NativePasskeyWriter = ((
  * secure-storage round-trips into a single fetch keeps that wait short when a
  * user has many passkeys.
  *
- * Persists each credential into the native autofill module's own encrypted MMKV
- * envelope — the module has no JS create-bridge, but its `CredentialRepository`
- * reads the same envelope back under the credentialId key. We bypass the
- * keystore's `importKey`/`generate` helpers: both force a random key id and
- * re-derive a different keypair instead of persisting the one we supply.
+ * Persists each credential directly into the keystore's own `k/`+`m/` layout —
+ * the split the credential provider's `CredentialRepository` reads natively as
+ * of autofill canary.23/.24. We bypass the keystore's `importKey`/`generate`
+ * helpers: both force a random key id and re-derive a different keypair
+ * instead of persisting the one we supply.
  *
- * The envelope comes from `sealNativeProviderRecord`, never the keystore's own
- * `sealData`/`encode` — under canary.14 those are wrong on two axes and both
- * fail silently. See `packages/passkeys/src/native/nativeProviderRecord.ts`.
+ * Writing the split layout directly, rather than a flat bare-id record for
+ * upstream's `adopt-flat-records` revision to pick up, matters because this
+ * migration runs at a different time than provider startup: a flat record
+ * written after that revision has already run (and been recorded in the
+ * migrations ledger) would never be adopted, leaving the credential invisible.
  *
  * A failed fetch isn't cached, so a later write retries rather than inheriting a
  * poisoned key.
@@ -130,11 +151,15 @@ export const createNativePasskeyWriter = (
     const write: NativePasskeyWriter = async params => {
         const masterKey = await resolveMasterKey()
         storage.set(
-            params.credentialId,
-            await sealNativeProviderRecord(
+            METADATA_PREFIX + params.credentialId,
+            serializeKey(buildKeyMetadata(params)),
+        )
+        storage.set(
+            MATERIAL_PREFIX + params.credentialId,
+            await sealData(
                 subtle,
                 masterKey,
-                buildKeystoreKeyData(params),
+                toStandardBase64(params.privateKey),
             ),
         )
     }

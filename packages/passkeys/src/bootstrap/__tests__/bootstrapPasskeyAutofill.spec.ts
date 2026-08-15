@@ -11,7 +11,6 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { openNativeProviderRecord } from '../../native/nativeProviderRecord'
 
 // Standard base64, matching `@scure/base`'s `base64` — restated locally rather
 // than imported so this package needs no bundler-visible dependency for it.
@@ -161,14 +160,6 @@ const ROOT_SEED = new Uint8Array(96).fill(5)
 const seedHdRoot = (id = 'root-id') =>
     seedKeystore({ id, type: 'hd-root-key', algorithm: 'raw' }, ROOT_SEED)
 
-/** The record the credential provider would read back at the bare id. */
-const shadowRecord = async (id = 'root-id') =>
-    (await openNativeProviderRecord(
-        subtle,
-        Uint8Array.from(MASTER_KEY),
-        mocks.store.get(id)!,
-    )) as Record<string, unknown>
-
 describe('bootstrapPasskeyAutofill', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -205,96 +196,6 @@ describe('bootstrapPasskeyAutofill', () => {
             'CREATE_ACTION',
         )
         expect(service.refreshCredentialIdentities).toHaveBeenCalled()
-    })
-
-    // The whole point of phase 2: canary.14 puts the root in `k/`+`m/`, and the
-    // provider is a separate process that only ever reads the bare id.
-    describe('the bare-id shadow the credential provider reads', () => {
-        it('writes the root material where getHdRootSecret looks for it', async () => {
-            const service = makeService()
-            await seedHdRoot()
-
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-
-            expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
-            const record = await shadowRecord()
-            // `optJSONArray("seed")` — a number array, never `{$u8}`.
-            expect(record.seed).toEqual(Array.from(ROOT_SEED))
-        })
-
-        it('leaves an existing readable shadow untouched', async () => {
-            const service = makeService()
-            await seedHdRoot()
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-            const written = mocks.store.get('root-id')
-
-            __resetBootstrapForTests()
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-
-            expect(mocks.store.get('root-id')).toBe(written)
-        })
-
-        // A canary.13 install already has one, in the format the provider
-        // parses. Rewriting it would be churn; losing it would break the user.
-        it('preserves a shipped canary.13 record verbatim', async () => {
-            const service = makeService()
-            await seedHdRoot()
-            const shipped = await (
-                await import('../../native/nativeProviderRecord')
-            ).sealNativeProviderRecord(subtle, Uint8Array.from(MASTER_KEY), {
-                id: 'root-id',
-                type: 'hd-root-key',
-                privateKey: Array.from(ROOT_SEED),
-            })
-            mocks.store.set('root-id', shipped)
-
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-
-            expect(mocks.store.get('root-id')).toBe(shipped)
-        })
-
-        it('rewrites a shadow that no longer decrypts', async () => {
-            const service = makeService()
-            await seedHdRoot()
-            mocks.store.set('root-id', 'corrupt-not-an-envelope')
-
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-
-            expect((await shadowRecord()).seed).toEqual(Array.from(ROOT_SEED))
-        })
-
-        it('still wires the root id when the shadow write fails', async () => {
-            const service = makeService()
-            await seedHdRoot()
-            vi.spyOn(mocks.storage, 'set').mockImplementationOnce(() => {
-                throw new Error('mmkv full')
-            })
-
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-
-            expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
-            expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
-                step: 'syncNativeProviderHdRoot',
-            })
-        })
     })
 
     it('zeroes the master-key bytes after handing them to the native side', async () => {
@@ -431,7 +332,7 @@ describe('bootstrapPasskeyAutofill', () => {
 
         expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
         expect(mocks.openData).toHaveBeenCalledOnce()
-        // And only the root gets a bare-id shadow.
+        // Bootstrap never writes anything back to the keystore.
         expect(mocks.store.has('k1')).toBe(false)
         expect(mocks.store.has('k2')).toBe(false)
     })

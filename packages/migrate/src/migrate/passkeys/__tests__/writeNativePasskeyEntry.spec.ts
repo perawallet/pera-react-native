@@ -11,20 +11,70 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { openNativeProviderRecord } from '@perawallet/wallet-core-passkeys/native'
 
-const { platformMock, masterKeyMock, storageMock } = vi.hoisted(() => ({
-    platformMock: { OS: 'android' as 'android' | 'ios' },
-    masterKeyMock: vi.fn(async () => new Uint8Array(32)),
-    storageMock: { set: vi.fn(), getString: vi.fn() },
-}))
+const {
+    platformMock,
+    masterKeyMock,
+    storageMock,
+    base64,
+    METADATA_PREFIX,
+    MATERIAL_PREFIX,
+} = vi.hoisted(() => {
+    // Standard base64, matching `@scure/base`'s `base64` — restated locally
+    // rather than imported so this package needs no bundler-visible
+    // dependency for it.
+    const base64Impl = {
+        encode: (bytes: Uint8Array): string =>
+            btoa(String.fromCharCode(...bytes)),
+        decode: (value: string): Uint8Array =>
+            Uint8Array.from(atob(value), char => char.charCodeAt(0)),
+    }
+
+    return {
+        platformMock: { OS: 'android' as 'android' | 'ios' },
+        masterKeyMock: vi.fn(async () => new Uint8Array(32)),
+        storageMock: { set: vi.fn(), getString: vi.fn() },
+        base64: base64Impl,
+        METADATA_PREFIX: 'k/',
+        MATERIAL_PREFIX: 'm/',
+    }
+})
 
 vi.mock('react-native', () => ({ Platform: platformMock }))
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
+// Restated over the real primitives rather than imported: the real keystore
+// barrel pulls react-native-mmkv, which has no loadable build here (see
+// bootstrapPasskeyAutofill.spec.ts for the same constraint).
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     readMasterKey: masterKeyMock,
     storage: storageMock,
+    METADATA_PREFIX,
+    MATERIAL_PREFIX,
+    serializeKey: (key: Record<string, unknown>) =>
+        JSON.stringify(key, (_k, value) =>
+            value instanceof Uint8Array ? { $u8: base64.encode(value) } : value,
+        ),
+    sealData: async (
+        subtle: SubtleCrypto,
+        key: Uint8Array,
+        data: string,
+    ): Promise<string> => {
+        const iv = crypto.getRandomValues(new Uint8Array(12))
+        const ciphertext = new Uint8Array(
+            await subtle.encrypt(
+                { name: 'AES-GCM', iv },
+                await subtle.importKey('raw', key, { name: 'AES-GCM' }, false, [
+                    'encrypt',
+                ]),
+                new TextEncoder().encode(data),
+            ),
+        )
+        return JSON.stringify({
+            iv: base64.encode(iv),
+            content: base64.encode(ciphertext),
+        })
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -32,6 +82,32 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         for (const buf of buffers) if (buf) buf.fill(0)
     },
 }))
+
+/** Reverses the restated `serializeKey` above, restoring `Uint8Array` fields. */
+const decode = (data: string): Record<string, unknown> =>
+    JSON.parse(data, (_k, value) =>
+        value && typeof value === 'object' && typeof value.$u8 === 'string'
+            ? base64.decode(value.$u8)
+            : value,
+    )
+
+/** Reverses the restated `sealData` above. */
+const openData = async (
+    subtle: SubtleCrypto,
+    key: Uint8Array,
+    payload: string,
+): Promise<string> => {
+    const { iv, content } = JSON.parse(payload)
+    return new TextDecoder().decode(
+        await subtle.decrypt(
+            { name: 'AES-GCM', iv: base64.decode(iv) },
+            await subtle.importKey('raw', key, { name: 'AES-GCM' }, false, [
+                'decrypt',
+            ]),
+            base64.decode(content),
+        ),
+    )
+}
 
 import {
     createNativePasskeyWriter,
@@ -55,14 +131,32 @@ const entryParams = (credentialId: string): WriteNativePasskeyEntryParams => ({
     privateKey: new Uint8Array(32).fill(3),
 })
 
-/** The record the provider would read back for the last write. */
-const lastWrittenRecord = async () => {
-    const [, payload] = storageMock.set.mock.calls.at(-1) as [string, string]
-    return (await openNativeProviderRecord(
-        subtle,
-        MASTER_KEY,
-        payload,
-    )) as Record<string, unknown>
+const setCallFor = (prefix: string) => {
+    const call = storageMock.set.mock.calls.find(([key]) =>
+        (key as string).startsWith(prefix),
+    ) as [string, string] | undefined
+    if (!call) throw new Error(`no storage.set call for prefix ${prefix}`)
+    return call
+}
+
+type WrittenKeyMetadata = {
+    id: string
+    type: string
+    publicKey?: Uint8Array
+    metadata?: Record<string, unknown>
+}
+
+/** The plaintext metadata record written to `k/<id>`. */
+const lastWrittenMetadata = (): WrittenKeyMetadata => {
+    const [, payload] = setCallFor(METADATA_PREFIX)
+    return decode(payload) as WrittenKeyMetadata
+}
+
+/** The raw private-key bytes sealed at `m/<id>`, opened back with the test master key. */
+const lastWrittenMaterial = async (): Promise<Uint8Array> => {
+    const [, payload] = setCallFor(MATERIAL_PREFIX)
+    const base64Payload = await openData(subtle, MASTER_KEY, payload)
+    return Uint8Array.from(Buffer.from(base64Payload, 'base64'))
 }
 
 const writeFor = async (os: 'android' | 'ios') => {
@@ -74,7 +168,7 @@ const writeFor = async (os: 'android' | 'ios') => {
         },
         subtle,
     )
-    const record = await lastWrittenRecord()
+    const record = lastWrittenMetadata()
     return record.metadata as Record<string, unknown>
 }
 
@@ -84,31 +178,50 @@ beforeEach(() => {
     masterKeyMock.mockImplementation(async () => Uint8Array.from(MASTER_KEY))
 })
 
-describe('writeNativePasskeyEntry provider contract', () => {
-    it('writes an envelope the provider can decrypt, with byte fields as number arrays', async () => {
+describe('writeNativePasskeyEntry split-layout contract', () => {
+    it('writes metadata and material in the split layout', async () => {
         await writeNativePasskeyEntry(entryParams('cred-1'), subtle)
 
-        const [key, payload] = storageMock.set.mock.calls.at(-1) as [
-            string,
-            string,
-        ]
-        expect(key).toBe('cred-1')
-        // `decodeKeyData` only takes its decrypt branch on all three fields;
-        // canary.14's two-field `{iv, content}` silently returns the envelope.
-        expect(Object.keys(JSON.parse(payload)).sort()).toEqual([
-            'content',
-            'iv',
-            'tag',
-        ])
+        const [metadataKey] = setCallFor(METADATA_PREFIX)
+        const [materialKey] = setCallFor(MATERIAL_PREFIX)
+        expect(metadataKey).toBe(`${METADATA_PREFIX}cred-1`)
+        expect(materialKey).toBe(`${MATERIAL_PREFIX}cred-1`)
 
-        const record = await lastWrittenRecord()
-        // `getJSONArray("privateKey")` — not `{$u8}`, and not the object a bare
-        // `JSON.stringify(Uint8Array)` would produce.
-        expect(record.privateKey).toEqual(
-            Array.from(new Uint8Array(32).fill(3)),
+        const metadata = lastWrittenMetadata()
+        expect(metadata.type).toBe('hd-derived-p256')
+        expect(metadata.publicKey).toEqual(new Uint8Array(91).fill(4))
+
+        const material = await lastWrittenMaterial()
+        expect(material).toEqual(new Uint8Array(32).fill(3))
+    })
+
+    it('writes nothing at the bare id', async () => {
+        await writeNativePasskeyEntry(entryParams('cred-1'), subtle)
+
+        expect(storageMock.getString('cred-1')).toBeUndefined()
+        expect(
+            storageMock.set.mock.calls.some(([key]) => key === 'cred-1'),
+        ).toBe(false)
+    })
+
+    it('carries an arbitrary metadata value across verbatim', async () => {
+        // `serializeKey`'s replacer only special-cases `Uint8Array`; every other
+        // value — including an object, which is what a biometric-gated
+        // credential's wrapped key looks like — passes through untouched. A
+        // secret-lifter that only understood byte arrays would drop it instead.
+        const wrappedLike = { iv: 'aXY=', data: 'ZGF0YQ==' }
+        await writeNativePasskeyEntry(
+            {
+                ...entryParams('cred-1'),
+                displayName: JSON.stringify(wrappedLike),
+            },
+            subtle,
         )
-        expect(record.publicKey).toEqual(Array.from(new Uint8Array(91).fill(4)))
-        expect(record.type).toBe('hd-derived-p256')
+
+        const metadata = lastWrittenMetadata()
+        expect(JSON.parse(metadata.metadata?.displayName as string)).toEqual(
+            wrappedLike,
+        )
     })
 })
 
@@ -138,7 +251,8 @@ describe('createNativePasskeyWriter master-key reuse', () => {
         await write(entryParams('cred-3'))
 
         expect(masterKeyMock).toHaveBeenCalledTimes(1)
-        expect(storageMock.set).toHaveBeenCalledTimes(3)
+        // Two `storage.set` calls per write: `k/<id>` metadata + `m/<id>` material.
+        expect(storageMock.set).toHaveBeenCalledTimes(6)
     })
 
     it('does not cache a failed fetch, so a later write retries', async () => {
@@ -151,7 +265,7 @@ describe('createNativePasskeyWriter master-key reuse', () => {
         await write(entryParams('cred-2'))
 
         expect(masterKeyMock).toHaveBeenCalledTimes(2)
-        expect(storageMock.set).toHaveBeenCalledTimes(1)
+        expect(storageMock.set).toHaveBeenCalledTimes(2)
     })
 
     it('dispose zeroes the cached master key', async () => {
