@@ -39,10 +39,12 @@
  *    which restates this module's seal function rather than importing it —
  *    `packages/passkeys` already depends on `@perawallet/wallet-extension-provider`,
  *    so the reverse import would be circular). That module's own
- *    `nativeCredentialRecord.spec.ts` pins the restated writer against a
- *    golden envelope captured once from a real round trip through this
- *    module's `openNativeProviderRecord` — a live cross-package import was
- *    tried and reverted because it trips turbo's whole-graph cycle check.
+ *    `nativeCredentialRecord.spec.ts` proves the restated writer stays
+ *    compatible with this module's real `openNativeProviderRecord` two ways:
+ *    a live round trip (imported by deep relative path, which creates no
+ *    `package.json` edge — a devDependency does, and trips turbo's
+ *    whole-graph cycle check) and a golden envelope pinned from an earlier
+ *    such round trip, kept alongside it.
  * 3. **A still-pending phase 3** — reading credential records back, if and
  *    when the provider ever moves credentials to `k/`+`m/` too, so they can be
  *    migrated into the keystore's own layout without loss. Not started: see

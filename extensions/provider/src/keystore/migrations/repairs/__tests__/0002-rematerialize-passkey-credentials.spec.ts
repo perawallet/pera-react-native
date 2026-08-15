@@ -63,6 +63,7 @@ import {
     sealData,
 } from '../../__fixtures__/keystoreFormats'
 import { createDeclinedRegister } from '../../declined'
+import { sealNativeCredentialRecord } from '../../nativeCredentialRecord'
 import { migration } from '../0002-rematerialize-passkey-credentials'
 import { REPAIRS_MODULE_ID, repairsMigrations } from '../index'
 
@@ -350,19 +351,183 @@ describe('0002-rematerialize-passkey-credentials', () => {
         expect(masterKeyForRead).not.toHaveBeenCalled()
     })
 
-    it('does not rewrite an already-present flat record', async () => {
+    it('still un-adopts when a flat copy already exists, as after a launch killed between the write and the k/+m/ removals', async () => {
         const storage = fakeStorage({})
         await seededCredential(storage, {
             id: 'cred-1',
             publicKey: new Uint8Array(91).fill(4),
             privateKey: new Uint8Array(32).fill(3),
         })
-        storage.set('cred-1', 'PRE-EXISTING-FLAT-RECORD')
+        // "Done" is the absence of k/, not the presence of a flat copy — a
+        // stale or even correct flat record must not stop k/+m/ from being
+        // read, verified, and removed.
+        storage.set('cred-1', 'STALE-FLAT-RECORD-FROM-AN-INTERRUPTED-RUN')
 
         await migration.up(context(storage), utils())
 
-        expect(storage.getString('cred-1')).toBe('PRE-EXISTING-FLAT-RECORD')
-        expect(masterKeyForRead).not.toHaveBeenCalled()
+        expect(masterKeyForRead).toHaveBeenCalled()
+        const flat = storage.getString('cred-1')
+        expect(flat).toBeDefined()
+        expect(flat).not.toBe('STALE-FLAT-RECORD-FROM-AN-INTERRUPTED-RUN')
+        const record = await openFlatProviderRecord(MASTER_KEY, flat!)
+        expect(record.type).toBe('hd-derived-p256')
+        expect(storage.getString(METADATA_PREFIX + 'cred-1')).toBeUndefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'cred-1')).toBeUndefined()
+    })
+
+    it('keeps the rematerialized flat record when removing the split pair partially fails', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        const originalRemove = storage.remove.bind(storage)
+        storage.remove = (key: string) => {
+            // Simulates the metadata removal landing and the material
+            // removal failing right after — the probe that catches a
+            // rollback broad enough to also undo an already-verified write.
+            if (key === MATERIAL_PREFIX + 'cred-1') {
+                throw new Error('storage failure removing m/')
+            }
+            originalRemove(key)
+        }
+
+        await migration.up(context(storage), utils())
+
+        const flat = storage.getString('cred-1')
+        expect(flat).toBeDefined()
+        const record = await openFlatProviderRecord(MASTER_KEY, flat!)
+        expect(record.type).toBe('hd-derived-p256')
+        expect(record.privateKey).toEqual(
+            Array.from(new Uint8Array(32).fill(3)),
+        )
+    })
+
+    it('leaves the split pair intact when the readback decodes successfully but to the wrong private key', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        // A real, decodable envelope — just sealed under the WRONG private
+        // key — so the verify step succeeds at *decoding* and must still
+        // catch the byte mismatch. A predicate reduced to "did decode()
+        // throw" (or a `bytesEqual` that always returns true) would pass this.
+        const wrongRecordSealed = await sealNativeCredentialRecord(
+            subtle,
+            MASTER_KEY,
+            {
+                id: 'cred-1',
+                type: 'hd-derived-p256',
+                privateKey: Array.from(new Uint8Array(32).fill(99)),
+                publicKey: Array.from(new Uint8Array(91).fill(4)),
+            },
+        )
+        let openDataCalls = 0
+        vi.mocked(openData).mockImplementation(async (...args) => {
+            openDataCalls += 1
+            if (openDataCalls === 2) {
+                return realOpenData(subtle, MASTER_KEY, wrongRecordSealed)
+            }
+            return realOpenData(...args)
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('cred-1')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'cred-1')).toBeDefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'cred-1')).toBeDefined()
+    })
+
+    it('leaves the split pair intact when the readback decodes successfully but to the wrong public key', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        const wrongRecordSealed = await sealNativeCredentialRecord(
+            subtle,
+            MASTER_KEY,
+            {
+                id: 'cred-1',
+                type: 'hd-derived-p256',
+                privateKey: Array.from(new Uint8Array(32).fill(3)),
+                publicKey: Array.from(new Uint8Array(91).fill(200)),
+            },
+        )
+        let openDataCalls = 0
+        vi.mocked(openData).mockImplementation(async (...args) => {
+            openDataCalls += 1
+            if (openDataCalls === 2) {
+                return realOpenData(subtle, MASTER_KEY, wrongRecordSealed)
+            }
+            return realOpenData(...args)
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('cred-1')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'cred-1')).toBeDefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'cred-1')).toBeDefined()
+    })
+
+    it('carries the metadata.migration flag upstream stamps on a legacy passkey across the un-adopt', async () => {
+        const storage = fakeStorage({})
+        storage.set(
+            METADATA_PREFIX + 'cred-1',
+            serializeKey({
+                id: 'cred-1',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                extractable: false,
+                keyUsages: ['sign'],
+                publicKey: new Uint8Array(91).fill(4),
+                metadata: {
+                    origin: 'https://webauthn.io',
+                    userHandle: 'u',
+                    migration: 'needed',
+                },
+            } as unknown as Parameters<typeof serializeKey>[0]),
+        )
+        storage.set(
+            MATERIAL_PREFIX + 'cred-1',
+            await sealData(
+                subtle,
+                MASTER_KEY,
+                base64.encode(new Uint8Array(32).fill(3)),
+            ),
+        )
+
+        await migration.up(context(storage), utils())
+
+        const flat = storage.getString('cred-1')
+        expect(flat).toBeDefined()
+        const record = await openFlatProviderRecord(MASTER_KEY, flat!)
+        expect((record.metadata as Record<string, unknown>).migration).toBe(
+            'needed',
+        )
+    })
+
+    it('carries a non-ASCII userHandle through the migration end-to-end', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+            userHandle: 'ünïcode',
+        })
+
+        await migration.up(context(storage), utils())
+
+        const flat = storage.getString('cred-1')
+        expect(flat).toBeDefined()
+        const record = await openFlatProviderRecord(MASTER_KEY, flat!)
+        expect((record.metadata as Record<string, unknown>).userHandle).toBe(
+            'ünïcode',
+        )
     })
 
     it('is a no-op when no credential records exist', async () => {

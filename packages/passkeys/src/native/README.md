@@ -60,13 +60,14 @@ pair once the flat copy is proven readable restores exactly the layout shipped
 Pera 7 works on today. It restates `nativeProviderRecord.ts`'s seal function
 rather than importing it, because `packages/passkeys` already depends on
 `@perawallet/wallet-extension-provider` and the reverse import would be
-circular. A test-only import of just the _reader_ half doesn't create that
-cycle, but adding `@perawallet/wallet-core-passkeys` as an `extensions/provider`
-devDependency still trips turbo's whole-graph cycle check (`pnpm build` fails
-even though the two packages' own `build` scripts run clean side by side) — so
-`extensions/provider`'s `nativeCredentialRecord.spec.ts` instead pins the
-restated writer against a golden envelope captured once, offline, from a real
-round trip through this module's `openNativeProviderRecord`.
+circular. That doesn't rule out a live test-only round trip, though: a
+`package.json` **devDependency** on `@perawallet/wallet-core-passkeys` trips
+turbo's whole-graph cycle check (`pnpm build` fails even though the two
+packages' own `build` scripts run clean side by side), but a **deep relative
+import** creates no such edge and never enters that graph. `extensions/provider`'s
+`nativeCredentialRecord.spec.ts` uses exactly that — a relative import of this
+module's real `openNativeProviderRecord`, sealing here and opening there — kept
+alongside a golden envelope pinned from an earlier such round trip.
 
 ## Still pending: a real phase 3 for credentials
 

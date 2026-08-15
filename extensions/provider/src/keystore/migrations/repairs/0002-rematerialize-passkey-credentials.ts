@@ -69,25 +69,36 @@ import {
  * pair. This restores exactly the pre-branch layout shipped Pera 7 works on
  * today — the keystore's own reactive store never needs a passkey credential
  * in `k/`+`m/` (unlike the derivation parent, which stays there; see the
- * README) — so nothing downstream depends on the split surviving.
+ * README). The `k/`+`m/` **layout** doesn't need to survive, but its
+ * **content** does: upstream's own `migrateLegacyPasskeys` stamps
+ * `metadata.migration` onto a legacy credential's `k/` record moments before
+ * this module deletes it, and that flag is Task 8's entire signal for
+ * surfacing "needs migration" in the passkeys UI. The `...rest` spread below
+ * carries `metadata` (and anything else unrecognised) into the flat record
+ * unmodified, so the flag rides along by construction — pinned by a test, not
+ * merely assumed.
  *
- * Copy, verify, delete — never the reverse. The flat record is sealed and
- * read back through the exact envelope+decode the provider (and this
- * migration's own idempotency check) will use before either half of the
- * `k/`+`m/` pair is removed. A write that lands as garbage is worse than one
- * that never lands: the next run's idempotency check (`does the bare id
- * already hold something?`) would treat it as done and the credential would
- * be gone from both layouts. So a failed verification rolls the flat write
- * back and leaves `k/`+`m/` exactly as adoption left them, declined for a
- * later pass rather than silently orphaned.
+ * Copy, verify, delete — never the reverse, and the delete is a **second,
+ * separate** step from the write-and-verify: once verification passes, a
+ * failure removing `k/`+`m/` must never roll back the flat write, because
+ * that copy is already proven correct and destroying it would leave nothing
+ * readable at all (the rollback that undoes a bad *write* must not also catch
+ * a bad *removal*). A write that lands as garbage is worse than one that
+ * never lands: the next run's resume gate (`is k/ still there?`) would still
+ * reprocess it, but the previous (better) flat copy is gone in the meantime.
+ * So a failed verification rolls the flat write back and leaves `k/`+`m/`
+ * exactly as adoption left them, recorded via `declined` — a durable note, not
+ * a retry: nothing in this codebase currently reads the declined sentinel
+ * (Task 4 already deferred that), so a declined credential's `k/` shadow is
+ * permanent until that follow-up lands, not merely until "a later pass."
  *
  * Cheap and side-effect-free when there is nothing to do: the `k/` bucket is
  * scanned and decoded (plaintext, no master key) first, and the master key is
- * touched only if at least one credential is missing its flat copy. A record
- * whose material cannot be reached (no master key, an unreadable seal, a
- * failed verification) is left alone and recorded through `declined` rather
- * than failing the module — that would reject `keystore.ready` and stop the
- * app booting.
+ * touched only if at least one credential is pending. A record whose material
+ * cannot be reached (no master key, an unreadable seal, a failed
+ * verification) is left alone and recorded through `declined` rather than
+ * failing the module — that would reject `keystore.ready` and stop the app
+ * booting.
  */
 
 const PASSKEY_CREDENTIAL_TYPES: ReadonlySet<string> = new Set([
@@ -112,10 +123,13 @@ export const migration: Migration<PeraMigrationContext> = {
             if (!key.startsWith(METADATA_PREFIX)) continue
             const id = key.slice(METADATA_PREFIX.length)
 
-            // Already has a flat copy — idempotent no-op, and cheaper than
-            // decoding to find out nothing changed.
-            if (storage.getString(id) !== undefined) continue
-
+            // "Done" is the absence of k/, not the presence of a flat copy:
+            // a launch killed between the flat write and the k/+m/ removals
+            // leaves both a flat record AND k/ behind, and the work is not
+            // finished until k/ is gone (Android's split-first lookup means a
+            // surviving k/ still shadows a correct flat copy beside it). So a
+            // record with a pre-existing flat copy is deliberately
+            // reprocessed here, not skipped.
             const metadataRaw = storage.getString(key)
             if (metadataRaw === undefined) continue
 
@@ -193,25 +207,28 @@ export const migration: Migration<PeraMigrationContext> = {
 
                     // Read the write back through the provider's own
                     // envelope+decode before trusting it enough to delete the
-                    // only other copy of this credential's material.
+                    // only other copy of this credential's material. Both key
+                    // fields, not just the private one — iOS's
+                    // allKeystoreCredentials() guards on dataArray(publicKey)
+                    // AND dataArray(privateKey), so a mangled publicKey is
+                    // just as fatal and just as silent as a mangled
+                    // privateKey.
                     const reopened = decode(
                         await openData(subtle, unlocked, sealedFlat),
-                    ) as { privateKey?: Uint8Array }
+                    ) as { privateKey?: Uint8Array; publicKey?: Uint8Array }
+                    const publicKeyVerified =
+                        !(publicKey instanceof Uint8Array) ||
+                        (reopened.publicKey instanceof Uint8Array &&
+                            bytesEqual(reopened.publicKey, publicKey))
                     if (
                         !(reopened.privateKey instanceof Uint8Array) ||
-                        !bytesEqual(reopened.privateKey, privateKey)
+                        !bytesEqual(reopened.privateKey, privateKey) ||
+                        !publicKeyVerified
                     ) {
                         throw new Error(
                             `rematerialized record for ${id} did not read back`,
                         )
                     }
-
-                    // Un-adopt: only now is the flat copy provably readable,
-                    // so only now is it safe to drop the pair the provider
-                    // can't use (see the module doc for why leaving it would
-                    // shadow the flat copy on Android).
-                    storage.remove(metadataKey)
-                    storage.remove(materialKey)
                 } catch (error) {
                     // Undoes a flat write this iteration may have made before
                     // failing — a `remove` on a key that was never set (an
@@ -230,8 +247,33 @@ export const migration: Migration<PeraMigrationContext> = {
                                 : String(error)
                         }`,
                     )
+                    continue
                 } finally {
                     wipeBytes(privateKey)
+                }
+
+                // Reached only once the flat copy is provably readable. A
+                // failure from here on must never roll back to storage.remove
+                // the flat write above — that copy is already proven correct,
+                // and destroying it here would leave nothing readable at all.
+                // Worst case, the split pair lingers for a later pass to
+                // retry (harmless: the next run's resume gate reprocesses any
+                // credential whose k/ is still present).
+                try {
+                    // Un-adopt: only now is it safe to drop the pair the
+                    // provider can't use (see the module doc for why leaving
+                    // it would shadow the flat copy on Android).
+                    storage.remove(metadataKey)
+                    storage.remove(materialKey)
+                } catch (error) {
+                    untouched.push(id)
+                    console.warn(
+                        `[provider] rematerialize-passkey-credentials: entry ${id} rematerialized but left with an orphaned k/+m/ pair: ${
+                            error instanceof Error
+                                ? error.message
+                                : String(error)
+                        }`,
+                    )
                 }
             }
         })

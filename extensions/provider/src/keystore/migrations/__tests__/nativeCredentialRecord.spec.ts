@@ -14,32 +14,64 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sealNativeCredentialRecord } from '../nativeCredentialRecord'
+// Deep relative import, not a package specifier: it creates no
+// `package.json` dependency edge, so it never enters turbo's build graph and
+// cannot trip its whole-graph cyclic-dependency check the way a
+// `@perawallet/wallet-core-passkeys` *devDependency* did (see below). This is
+// how the interop test below gets to run the real reader without the build
+// failure the round-3 report wrongly generalised into "no live import is
+// possible at all."
+import { openNativeProviderRecord } from '../../../../../../packages/passkeys/src/native/nativeProviderRecord'
 
 /**
  * `nativeCredentialRecord.ts` restates
  * `packages/passkeys/src/native/nativeProviderRecord.ts`'s seal function
  * rather than importing it — that module's doc explains why (`packages/passkeys`
  * already depends on `@perawallet/wallet-extension-provider`, so the reverse
- * import would be circular). A **test-only** import of just the reader half
- * doesn't create that runtime cycle, but adding `@perawallet/wallet-core-passkeys`
- * as an `extensions/provider` devDependency still trips turbo's whole-graph
- * cycle check (`pnpm build` fails with "Cyclic dependency detected" even
- * though the two packages' own `build` scripts ran clean side by side) — and a
- * full `pnpm build` is this repo's own completion gate, so that path is closed.
+ * import would be circular). A package-specifier import of just the reader
+ * half is still test-only and still doesn't create a *runtime* cycle, but
+ * adding `@perawallet/wallet-core-passkeys` as an `extensions/provider`
+ * **devDependency** trips turbo's whole-graph cycle check regardless
+ * (`pnpm build` fails with "Cyclic dependency detected" even though the two
+ * packages' own `build` scripts ran clean side by side) — that specific
+ * approach is closed, not cross-package interop testing in general. The deep
+ * **relative** import above sidesteps it entirely: no `package.json` edge, so
+ * turbo's graph never sees it.
  *
- * The fallback the round-3 review allows: pin against a literal golden
- * envelope. `GOLDEN_ENVELOPE` below was captured *once*, offline, by
- * temporarily adding that devDependency, sealing `RECORD` under a
- * deterministic IV with this module's real `sealNativeCredentialRecord`, and
- * opening the result with the real `openNativeProviderRecord` from
- * `@perawallet/wallet-core-passkeys/native` — confirmed to decode back to
- * `RECORD` byte-for-byte, including the non-ASCII `userHandle` (the UTF-8 fix
- * this round made reachable). This test only proves this module's writer
- * hasn't drifted from that captured-good envelope since; it cannot catch a
- * *new* divergence introduced on the other side of the cycle. Re-capture
- * `GOLDEN_ENVELOPE` (same steps) if `sealNativeCredentialRecord`'s wire format
- * ever changes on purpose.
+ * Kept alongside it: a golden-envelope pin. `GOLDEN_ENVELOPE` below was
+ * captured *once*, offline, while the devDependency was still in place —
+ * sealing `RECORD` under a deterministic IV with this module's real
+ * `sealNativeCredentialRecord`, and confirming the real
+ * `openNativeProviderRecord` opened it back to `RECORD` byte-for-byte,
+ * including the non-ASCII `userHandle` (the UTF-8 fix this round made
+ * reachable). It's redundant with the live test below now, but cheaper to run
+ * and keeps failing the same way if the relative import path above ever needs
+ * to move.
  */
+describe('nativeCredentialRecord interop with the real provider reader', () => {
+    const subtle = globalThis.crypto.subtle
+    const masterKey = new Uint8Array(32).fill(9)
+
+    it('is opened correctly by the real openNativeProviderRecord', async () => {
+        const record = {
+            id: 'cred-1',
+            type: 'hd-derived-p256',
+            publicKey: Array.from(new Uint8Array(91).fill(4)),
+            privateKey: Array.from(new Uint8Array(32).fill(3)),
+            metadata: { origin: 'https://webauthn.io', userHandle: 'ünïcode' },
+        }
+
+        const sealed = await sealNativeCredentialRecord(
+            subtle,
+            masterKey,
+            record,
+        )
+        const opened = await openNativeProviderRecord(subtle, masterKey, sealed)
+
+        expect(opened).toEqual(record)
+    })
+})
+
 describe('nativeCredentialRecord matches the real provider reader (golden envelope)', () => {
     const subtle = globalThis.crypto.subtle
     const masterKey = new Uint8Array(32).fill(9)
