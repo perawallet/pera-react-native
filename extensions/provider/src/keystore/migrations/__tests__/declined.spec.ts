@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDeclinedRegister, type NoteStore } from '../declined'
 
 const MODULE = 'com.perawallet.wallet/keystore-preflight'
@@ -28,6 +28,10 @@ const store = (): NoteStore => ({
 describe('createDeclinedRegister', () => {
     beforeEach(() => {
         backing = {}
+    })
+
+    afterEach(() => {
+        vi.restoreAllMocks()
     })
 
     it('reads back what it recorded', () => {
@@ -88,12 +92,15 @@ describe('createDeclinedRegister', () => {
         expect(createDeclinedRegister(store()).read(MODULE)).toEqual(['a', 'b'])
     })
 
-    // `record` is called outside every `try` at all five call sites in the
-    // repairs/preflight revisions — a rejecting `up` rejects `keystore.ready`
-    // and, because the ledger only writes after `up` resolves, re-runs and
-    // re-fails on every subsequent launch. The guard belongs here, once, not
-    // at each call site.
-    it('does not throw when the ledger write fails', () => {
+    // `record` is called outside every `try` at all five call sites, so a
+    // write failure must not escape it. The runner marks this revision applied
+    // the moment `up` resolves, so there's no later run to retry from — the
+    // affected ids are gone for good, and `console.warn` is the only trace
+    // left (per the module doc, `report.failed`/`utils.log` never see it).
+    it('does not throw, and logs, when the ledger write fails', () => {
+        const consoleWarn = vi
+            .spyOn(console, 'warn')
+            .mockImplementation(() => {})
         const throwingStore: NoteStore = {
             getString: () => undefined,
             set: () => {
@@ -104,14 +111,23 @@ describe('createDeclinedRegister', () => {
         expect(() =>
             createDeclinedRegister(throwingStore).record(MODULE, ['a']),
         ).not.toThrow()
+        expect(consoleWarn).toHaveBeenCalledOnce()
+        expect(consoleWarn.mock.calls[0][0]).toContain(MODULE)
     })
 
     // An unreadable ledger inside `record` must not be treated as "nothing
-    // recorded yet" the way a corrupt-JSON note is: that would union the new
-    // ids with an empty set and overwrite whatever was actually on disk,
-    // silently dropping ids a prior run recorded. Skipping the write entirely
-    // is the safer failure mode.
-    it('does not throw, and does not write, when the ledger read fails inside record', () => {
+    // recorded yet" the way a corrupt-JSON note is: a corrupt note's content
+    // is already unrecoverable garbage, but an unreadable one gives no
+    // evidence its content is bad — it might still be perfectly good.
+    // Unioning against `[]` here would overwrite it with only the new ids,
+    // destroying data that might have been recoverable. Skipping the write
+    // entirely, and logging, is the safer failure mode — and, same as the
+    // write-failure case above, permanent: there is no later run of this
+    // revision to retry from.
+    it('does not throw, does not write, and logs, when the ledger read fails inside record', () => {
+        const consoleWarn = vi
+            .spyOn(console, 'warn')
+            .mockImplementation(() => {})
         let setCalls = 0
         const throwingStore: NoteStore = {
             getString: () => {
@@ -126,6 +142,8 @@ describe('createDeclinedRegister', () => {
             createDeclinedRegister(throwingStore).record(MODULE, ['a']),
         ).not.toThrow()
         expect(setCalls).toBe(0)
+        expect(consoleWarn).toHaveBeenCalledOnce()
+        expect(consoleWarn.mock.calls[0][0]).toContain(MODULE)
     })
 
     it('does not throw when store.getString fails inside read', () => {

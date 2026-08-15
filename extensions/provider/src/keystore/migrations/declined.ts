@@ -46,15 +46,6 @@ export type DeclinedRegister = {
 const noteKey = (module: string): string =>
     `com.perawallet.wallet/declined-records/${module}`
 
-/**
- * Backs a {@link DeclinedRegister} with `store`.
- *
- * `store` **must** be the migrations ledger's own MMKV instance, never the
- * keystore's: canary.19 mints the Keychain master key only while the keystore
- * instance is literally empty (`masterKeyForWrite`), so a note written there
- * would block the first write forever and a fresh install could never create an
- * account.
- */
 /** `ok: false` means the read itself threw — distinct from a note that reads back as absent. */
 type RawRead = { ok: true; raw: string | undefined } | { ok: false }
 
@@ -67,12 +58,21 @@ const parseIds = (raw: string | undefined): string[] => {
             ? parsed.filter((id): id is string => typeof id === 'string')
             : []
     } catch {
-        // A corrupt note must not fail the revision that reads it; the
-        // worst case is re-recording ids that were already there.
+        // A corrupt note's content is already unrecoverable garbage — nothing
+        // is lost treating it as empty and letting `record` overwrite it.
         return []
     }
 }
 
+/**
+ * Backs a {@link DeclinedRegister} with `store`.
+ *
+ * `store` **must** be the migrations ledger's own MMKV instance, never the
+ * keystore's: canary.19 mints the Keychain master key only while the keystore
+ * instance is literally empty (`masterKeyForWrite`), so a note written there
+ * would block the first write forever and a fresh install could never create an
+ * account.
+ */
 export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
     // Every call site calls `record` outside its own `try` (that's the whole
     // point of the ledger — it must survive a revision that itself declined
@@ -98,18 +98,33 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
             if (ids.length === 0) return
 
             const result = tryReadRaw(module)
-            // An unreadable ledger can't be safely unioned with `ids`: writing
-            // just the new ids would overwrite whatever was already recorded,
-            // silently dropping it — worse than leaving the ledger untouched
-            // for this run.
-            if (!result.ok) return
+            if (!result.ok) {
+                // Unlike a corrupt note, an unreadable one gives no evidence
+                // its content is bad — it may still be perfectly good and
+                // just transiently inaccessible. Unioning against `[]` here
+                // would overwrite it with only `ids`, destroying data that
+                // might have been recoverable. There is no later run of this
+                // revision to retry from (the runner marks it applied as soon
+                // as `up` resolves), so `ids` go permanently unrecorded —
+                // logged so the loss has a trace somewhere.
+                console.warn(
+                    `[provider] declined-register: could not read the ledger for ${module}, ${ids.length} id(s) left permanently unrecorded: ${ids.join(', ')}`,
+                )
+                return
+            }
 
             const merged = new Set(parseIds(result.raw).concat([...ids]))
             try {
                 store.set(noteKey(module), JSON.stringify([...merged]))
-            } catch {
-                // The affected ids simply go unrecorded this run rather than
-                // rejecting `up`.
+            } catch (error) {
+                // Same permanence as above: this revision is marked applied
+                // the moment `up` resolves, so there is no next run to
+                // succeed where this one failed.
+                console.warn(
+                    `[provider] declined-register: ledger write failed for ${module}, ${ids.length} id(s) left permanently unrecorded: ${
+                        error instanceof Error ? error.message : String(error)
+                    }`,
+                )
             }
         },
     }

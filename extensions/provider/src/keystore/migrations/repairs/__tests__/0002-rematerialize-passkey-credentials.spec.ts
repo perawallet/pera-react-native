@@ -888,9 +888,12 @@ describe('0002-rematerialize-passkey-credentials', () => {
         vi.mocked(openData).mockImplementation(async () => {
             throw new Error('bad tag')
         })
+        let setAttempts = 0
+        const noteBacking: Record<string, string> = {}
         const throwingNoteStore = {
-            getString: () => undefined,
+            getString: (key: string) => noteBacking[key],
             set: () => {
+                setAttempts += 1
                 throw new Error('MMKV ledger write failure')
             },
         }
@@ -904,6 +907,16 @@ describe('0002-rematerialize-passkey-credentials', () => {
                 utils(),
             ),
         ).resolves.toBeUndefined()
+
+        // The guarded write was actually attempted (not a no-op that would
+        // also pass `resolves.toBeUndefined()`), and the credential is left
+        // exactly where the un-adopt's own decline path leaves it — split
+        // pair intact, no flat copy — regardless of the ledger write failing.
+        expect(setAttempts).toBe(1)
+        expect(noteBacking).toEqual({})
+        expect(storage.getString('cred-1')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'cred-1')).toBeDefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'cred-1')).toBeDefined()
     })
 
     // PROBE H: the `MasterKeyNotFoundError` branch calls `context.declined.record`
@@ -919,9 +932,12 @@ describe('0002-rematerialize-passkey-credentials', () => {
         masterKeyForRead = vi.fn(async () => {
             throw new MasterKeyNotFoundError()
         })
+        let setAttempts = 0
+        const noteBacking: Record<string, string> = {}
         const throwingNoteStore = {
-            getString: () => undefined,
+            getString: (key: string) => noteBacking[key],
             set: () => {
+                setAttempts += 1
                 throw new Error('MMKV ledger write failure')
             },
         }
@@ -935,6 +951,50 @@ describe('0002-rematerialize-passkey-credentials', () => {
                 utils(),
             ),
         ).resolves.toBeUndefined()
+
+        expect(setAttempts).toBe(1)
+        expect(noteBacking).toEqual({})
+        expect(storage.getString('cred-1')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'cred-1')).toBeDefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'cred-1')).toBeDefined()
+    })
+
+    // The one path where the fix changes behaviour rather than just
+    // swallowing a failure: an unreadable declined-ledger must not overwrite
+    // whatever a prior run already recorded there.
+    it('does not reject up and leaves a pre-existing declined note untouched when the ledger read fails', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        vi.mocked(openData).mockImplementation(async () => {
+            throw new Error('bad tag')
+        })
+        const priorNote = JSON.stringify(['cred-earlier'])
+        const noteKey = `com.perawallet.wallet/declined-records/${REPAIRS_MODULE_ID}`
+        const noteBacking: Record<string, string> = { [noteKey]: priorNote }
+        const readThrowingNoteStore = {
+            getString: () => {
+                throw new Error('MMKV ledger read failure')
+            },
+            set: (key: string, value: string) => {
+                noteBacking[key] = value
+            },
+        }
+
+        await expect(
+            migration.up(
+                {
+                    ...context(storage),
+                    declined: createDeclinedRegister(readThrowingNoteStore),
+                },
+                utils(),
+            ),
+        ).resolves.toBeUndefined()
+
+        expect(noteBacking[noteKey]).toBe(priorNote)
     })
 
     it('rethrows a master-key read failure that is not MasterKeyNotFoundError', async () => {
