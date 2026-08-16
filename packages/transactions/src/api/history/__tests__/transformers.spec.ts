@@ -57,10 +57,167 @@ describe('transformTransactionItem', () => {
             groupId: null,
             amount: new Decimal(5000000),
             closeTo: null,
+            closeAmount: null,
             asset: null,
             applicationId: null,
             innerTransactionCount: null,
             balanceImpacts: [],
+        })
+    })
+
+    it('maps close_amount onto closeAmount as a Decimal', () => {
+        const apiItem = makeApiItem({
+            amount: '0',
+            close_to: 'CLOSE_ADDR',
+            close_amount: '50854132929',
+        })
+        const result = transformTransactionItem(apiItem)
+
+        expect(result.closeTo).toBe('CLOSE_ADDR')
+        expect(result.closeAmount).toEqual(new Decimal('50854132929'))
+    })
+
+    it('maps an absent close_amount to null', () => {
+        const result = transformTransactionItem(makeApiItem())
+
+        expect(result.closeAmount).toBeNull()
+    })
+
+    describe('closeAmount derivation from balance impacts (backend omits close_amount)', () => {
+        it('derives the swept amount for the sender from the ALGO impact minus amount and fee', () => {
+            // Sender impact nets amount + close + fee. The real close-out
+            // from PERA-4896: amount 0, fee 1000, swept 50_854_132_929.
+            const apiItem = makeApiItem({
+                amount: '0',
+                fee: '1000',
+                close_to: 'CLOSE_ADDR',
+                balance_impacts: [
+                    {
+                        asset_id: '0',
+                        unit_name: 'ALGO',
+                        fraction_decimals: 6,
+                        amount: '-50854133929',
+                    },
+                ],
+            })
+
+            const result = transformTransactionItem(apiItem, 'SENDER_ADDR')
+
+            expect(result.closeAmount).toEqual(new Decimal('50854132929'))
+        })
+
+        it('derives the swept amount for the close-to account from its positive impact', () => {
+            const apiItem = makeApiItem({
+                sender: 'OTHER_SENDER',
+                receiver: 'THIRD_ADDR',
+                amount: '1000000',
+                close_to: 'ME',
+                balance_impacts: [
+                    {
+                        asset_id: '0',
+                        unit_name: 'ALGO',
+                        fraction_decimals: 6,
+                        amount: '2000000',
+                    },
+                ],
+            })
+
+            const result = transformTransactionItem(apiItem, 'ME')
+
+            expect(result.closeAmount).toEqual(new Decimal('2000000'))
+        })
+
+        it('derives the asset opt-out sweep from the asset impact without subtracting the ALGO fee', () => {
+            const apiItem = makeApiItem({
+                tx_type: 'axfer',
+                amount: '0',
+                fee: '1000',
+                close_to: 'CLOSE_ADDR',
+                asset: {
+                    asset_id: '31566704',
+                    name: 'USD Coin',
+                    unit_name: 'USDC',
+                    decimals: 6,
+                },
+                balance_impacts: [
+                    {
+                        asset_id: '31566704',
+                        unit_name: 'USDC',
+                        fraction_decimals: 6,
+                        amount: '-250000',
+                    },
+                    {
+                        asset_id: '0',
+                        unit_name: 'ALGO',
+                        fraction_decimals: 6,
+                        amount: '-1000',
+                    },
+                ],
+            })
+
+            const result = transformTransactionItem(apiItem, 'SENDER_ADDR')
+
+            expect(result.closeAmount).toEqual(new Decimal('250000'))
+        })
+
+        it('prefers an explicit close_amount over derivation', () => {
+            const apiItem = makeApiItem({
+                amount: '0',
+                close_to: 'CLOSE_ADDR',
+                close_amount: '42',
+                balance_impacts: [
+                    {
+                        asset_id: '0',
+                        unit_name: 'ALGO',
+                        fraction_decimals: 6,
+                        amount: '-50854133929',
+                    },
+                ],
+            })
+
+            const result = transformTransactionItem(apiItem, 'SENDER_ADDR')
+
+            expect(result.closeAmount).toEqual(new Decimal('42'))
+        })
+
+        it('leaves closeAmount null for a receiver-only perspective', () => {
+            const apiItem = makeApiItem({
+                sender: 'OTHER_SENDER',
+                receiver: 'ME',
+                amount: '1000000',
+                close_to: 'CLOSE_ADDR',
+                balance_impacts: [
+                    {
+                        asset_id: '0',
+                        unit_name: 'ALGO',
+                        fraction_decimals: 6,
+                        amount: '1000000',
+                    },
+                ],
+            })
+
+            const result = transformTransactionItem(apiItem, 'ME')
+
+            expect(result.closeAmount).toBeNull()
+        })
+
+        it('leaves closeAmount null when no account address is provided', () => {
+            const apiItem = makeApiItem({
+                amount: '0',
+                close_to: 'CLOSE_ADDR',
+                balance_impacts: [
+                    {
+                        asset_id: '0',
+                        unit_name: 'ALGO',
+                        fraction_decimals: 6,
+                        amount: '-50854133929',
+                    },
+                ],
+            })
+
+            const result = transformTransactionItem(apiItem)
+
+            expect(result.closeAmount).toBeNull()
         })
     })
 

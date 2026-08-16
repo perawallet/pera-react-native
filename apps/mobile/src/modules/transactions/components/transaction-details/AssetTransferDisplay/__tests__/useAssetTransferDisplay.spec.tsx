@@ -52,6 +52,35 @@ describe('useAssetTransferDisplay', () => {
         },
     } as unknown as PeraDisplayableTransaction
 
+    it('exposes the sweep separately when the sender opted out of the asset', () => {
+        // An opt-out has amount 0 and the remaining holding in closeAmount —
+        // reading only `amount` renders 0 (PERA-4897).
+        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+            data: { assetId: '123', name: 'Test', decimals: 6 },
+        } as UseQueryResult<PeraAsset, Error>)
+
+        const optOutTx = {
+            ...baseTx,
+            assetTransferTransaction: {
+                receiver: 'RECEIVER',
+                amount: 0n,
+                assetId: 123n,
+                closeTo: 'RECEIVER',
+                closeAmount: 250_000n,
+            },
+        } as unknown as PeraDisplayableTransaction
+
+        const { result } = renderHook(() =>
+            useAssetTransferDisplay(optOutTx, 'SENDER'),
+        )
+
+        // Amount stays the paid leg (0 for an opt-out); the sweep lives in
+        // its own Remainder Amount row.
+        expect(result.current.amount.toString()).toBe('0')
+        expect(result.current.closeToAddress).toBe('RECEIVER')
+        expect(result.current.closeAmountValue?.toString()).toBe('0.25')
+    })
+
     it('returns asset metadata as metadataHash when present', () => {
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: {

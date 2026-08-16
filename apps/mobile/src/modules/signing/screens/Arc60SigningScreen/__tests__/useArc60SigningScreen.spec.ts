@@ -45,11 +45,16 @@ const mockPipeline: MockPipeline = {
     fail: vi.fn(),
 }
 
-vi.mock('@perawallet/wallet-core-signing', () => ({
-    useSigningPipeline: () => mockPipeline,
-    useLastSigningEvent: () => null,
-    isArc60OriginMismatch: () => false,
-}))
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
+    return {
+        ...actual,
+        useSigningPipeline: () => mockPipeline,
+        useLastSigningEvent: () => null,
+        isArc60OriginMismatch: () => false,
+    }
+})
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useFindAccountByAddress: () => null,

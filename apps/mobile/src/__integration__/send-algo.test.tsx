@@ -48,6 +48,7 @@ import { TransactionProcessingScreen } from '@modules/transactions/screens/send-
 import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
 import {
     mockAlgodAccountInformation,
+    mockAlgodPendingTransaction,
     mockAlgodSendRawTransaction,
     mockAlgodStatus,
     mockAlgodTransactionParams,
@@ -494,15 +495,141 @@ describe('Flow: Send ALGO end-to-end (Confirmation → Processing → Success)',
                 },
                 { timeout: 10_000 },
             )
+            // The baseline pending-transaction mock 404s, so the post-error
+            // landing verification comes up empty. The surfaced copy must be
+            // the honest "status unknown" message — not "failed" and not
+            // plain "no connection" — because the transaction may still have
+            // landed (PERA-4896).
             await waitFor(
                 () => {
                     expect(
                         vi.mocked(Notifier.showNotification),
-                    ).toHaveBeenCalled()
+                    ).toHaveBeenCalledWith(
+                        expect.objectContaining({
+                            title: 'errors.submission.unknown_outcome.title',
+                        }),
+                    )
+                },
+                { timeout: 15_000 },
+            )
+            expect(screen.queryByTestId('PWResultView')).toBeNull()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given valid send params, when the submit response is lost but the transaction landed on-chain, then the success screen renders instead of a failure (PERA-4896)',
+        async () => {
+            await seedAlgo25Sender()
+            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal(1))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            // The reported field bug: the POST never gets a response (flaky
+            // mobile connection) but the node received the bytes — the
+            // transaction confirmed two rounds later while the app claimed
+            // failure. The pipeline must verify the locally derived txid
+            // against the chain and resolve as success.
+            const failSpy = vi.fn(() => HttpResponse.error())
+            server.use(
+                http.post('*/v2/transactions', failSpy),
+                mockAlgodPendingTransaction({
+                    response: { 'confirmed-round': 101 },
+                    status: 200,
+                }),
+            )
+
+            renderSendConfirmationStack()
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+
+            fireEvent.click(confirmButton)
+
+            await waitFor(
+                () => {
+                    expect(failSpy).toHaveBeenCalled()
                 },
                 { timeout: 10_000 },
             )
-            expect(screen.queryByTestId('PWResultView')).toBeNull()
+
+            // Success, not an error toast: the chain says the transaction
+            // is confirmed even though the submit call errored.
+            await waitFor(
+                () => {
+                    expect(screen.getByTestId('send_success')).toBeTruthy()
+                },
+                { timeout: 15_000 },
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given valid send params, when algod answers "transaction already in ledger", then the send resolves as success (PERA-4896)',
+        async () => {
+            await seedAlgo25Sender()
+            useSendFundsStore.getState().setSelectedAssetId(ALGO_ASSET_ID)
+            useSendFundsStore.getState().setAmount(new Decimal(1))
+            useSendFundsStore.getState().setDestination(RECEIVER_ADDRESS)
+            useSendFundsStore.getState().setSendMode('normal')
+
+            // A duplicate rejection is proof of success — typically a retry
+            // after a lost response. It must never surface as a failure.
+            const duplicateSpy = vi.fn(() =>
+                HttpResponse.json(
+                    {
+                        message: `TransactionPool.Remember: transaction already in ledger: ${'A'.repeat(52)}`,
+                    },
+                    { status: 400 },
+                ),
+            )
+            server.use(http.post('*/v2/transactions', duplicateSpy))
+
+            renderSendConfirmationStack()
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('send_confirm_button'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            const confirmButton = screen.getByTestId(
+                'send_confirm_button',
+            ) as HTMLButtonElement
+            await waitFor(() => {
+                expect(confirmButton.disabled).toBe(false)
+            })
+
+            fireEvent.click(confirmButton)
+
+            await waitFor(
+                () => {
+                    expect(duplicateSpy).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            await waitFor(
+                () => {
+                    expect(screen.getByTestId('send_success')).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
         },
         SLOW_TEST_TIMEOUT_MS,
     )

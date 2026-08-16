@@ -35,6 +35,7 @@ const baseItem: TransactionHistoryItem = {
     groupId: null,
     amount: new Decimal(2500000),
     closeTo: null,
+    closeAmount: null,
     asset: null,
     applicationId: null,
     innerTransactionCount: null,
@@ -42,6 +43,43 @@ const baseItem: TransactionHistoryItem = {
 }
 
 describe('mapHistoryItemToDisplayableTransaction', () => {
+    it('carries closeAmount into the displayable payment leg', () => {
+        const result = mapHistoryItemToDisplayableTransaction({
+            ...baseItem,
+            amount: new Decimal(0),
+            closeTo: 'CLOSE_ADDR',
+            closeAmount: new Decimal('50854132929'),
+        })
+
+        expect(result?.paymentTransaction).toEqual({
+            amount: 0n,
+            receiver: 'RECEIVER_ADDR',
+            closeRemainderTo: 'CLOSE_ADDR',
+            closeAmount: 50854132929n,
+        })
+    })
+
+    it('carries closeAmount into the displayable asset-transfer leg', () => {
+        const result = mapHistoryItemToDisplayableTransaction({
+            ...baseItem,
+            txType: 'axfer',
+            amount: new Decimal(0),
+            closeTo: 'CLOSE_ADDR',
+            closeAmount: new Decimal('250000'),
+            asset: {
+                assetId: '31566704',
+                name: 'USD Coin',
+                unitName: 'USDC',
+                decimals: 6,
+            },
+        })
+
+        expect(result?.assetTransferTransaction).toMatchObject({
+            closeTo: 'CLOSE_ADDR',
+            closeAmount: 250000n,
+        })
+    })
+
     it('maps a payment row to a displayable payment transaction', () => {
         const result = mapHistoryItemToDisplayableTransaction(baseItem)
 

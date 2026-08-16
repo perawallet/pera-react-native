@@ -86,6 +86,7 @@ const TX_PAYMENT: TransactionHistoryItem = {
     groupId: null,
     amount: new Decimal(1_000_000), // 1 ALGO
     closeTo: null,
+    closeAmount: null,
     asset: null,
     applicationId: null,
     innerTransactionCount: null,
@@ -105,6 +106,7 @@ const TX_ASSET_TRANSFER: TransactionHistoryItem = {
     groupId: null,
     amount: new Decimal(2_500_000),
     closeTo: null,
+    closeAmount: null,
     asset: {
         assetId: '31566704',
         name: 'USD Coin',
@@ -311,6 +313,119 @@ describe('Flow: View transactions → tap into details', () => {
     )
 
     it(
+        'Given a close-out payment ("send max"), the history list shows the swept amount and the details screen shows the close-remainder row (PERA-4897)',
+        async () => {
+            // A close-out carries the whole balance in closeAmount with
+            // amount 0 — the bug rendered these rows as "0 ALGO". Re-seed
+            // with only the close-out so the send row is unambiguous.
+            await resetTestDatabase()
+            await seedAlgoAsset('mainnet')
+            const closeOutTx: TransactionHistoryItem = {
+                ...TX_PAYMENT,
+                id: 'TXCLOSEOUT000000000000000000000000000000000000000003',
+                amount: new Decimal(0),
+                closeTo: HD_TEST_ADDRESS,
+                closeAmount: new Decimal(50_854_132_929),
+            }
+            await upsertTransactions({
+                items: [closeOutTx],
+                accountAddress: ACCOUNT.address,
+                network: 'mainnet',
+            })
+
+            const lookupSpy = vi.fn(() =>
+                HttpResponse.json(
+                    {
+                        'current-round': 100,
+                        transaction: {
+                            id: closeOutTx.id,
+                            'tx-type': 'pay',
+                            sender: closeOutTx.sender,
+                            'confirmed-round': closeOutTx.confirmedRound,
+                            'round-time': closeOutTx.roundTime,
+                            fee: 1000,
+                            'payment-transaction': {
+                                receiver: closeOutTx.receiver,
+                                amount: 0,
+                                'close-remainder-to': HD_TEST_ADDRESS,
+                                'close-amount': 50_854_132_929,
+                            },
+                        },
+                    },
+                    { status: 200 },
+                ),
+            )
+            server.use(
+                http.get(`*/v2/transactions/${closeOutTx.id}`, lookupSpy),
+            )
+
+            renderWithNavigation(AccountHistory, 'AccountHistory', {
+                additionalScreens: [
+                    {
+                        name: 'TransactionDetails',
+                        component: TransactionDetailsScreen,
+                    },
+                ],
+            })
+
+            const SEND_LABEL = 'transactions.list_item.send'
+            await waitFor(
+                () => {
+                    expect(
+                        screen.queryAllByText(
+                            (_, node) =>
+                                (node?.textContent ?? '') === SEND_LABEL,
+                        ).length,
+                    ).toBeGreaterThan(0)
+                },
+                { timeout: 5000 },
+            )
+
+            // The row shows the swept 50,854.132929 ALGO, not 0. Match
+            // loosely on the distinctive "50" + "854" grouping so the
+            // assertion survives decimal-truncation formatting rules.
+            const matches = screen.queryAllByText(
+                (_, node) => (node?.textContent ?? '') === SEND_LABEL,
+            )
+            const leaf =
+                matches.find(el => el.children.length === 0) ?? matches[0]
+            const row = leaf.closest('button')
+            if (!row) {
+                throw new Error('Close-out row button not found')
+            }
+            expect(row.textContent).toMatch(/50[,.\s  ]?854/)
+
+            // Tap into details: the amount reflects the close amount and
+            // the close-remainder row renders with the destination.
+            fireEvent.click(row)
+            await waitFor(
+                () => {
+                    expect(lookupSpy).toHaveBeenCalled()
+                },
+                { timeout: 5000 },
+            )
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('transaction_detail_close_to'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+            // Amount is the paid leg (0) — the sweep renders in its own
+            // Remainder Amount row.
+            expect(
+                screen.getByTestId('transaction_detail_amount').textContent,
+            ).not.toMatch(/50[,.\s  ]?854/)
+            expect(
+                screen.getByTestId('transaction_detail_close_amount')
+                    .textContent,
+            ).toMatch(/50[,.\s  ]?854/)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
         'Given the DB returned a full page of transactions (hasNextPage true), when the consumer triggers handleLoadMore, then the next-page API endpoint is hit and the new transactions are appended',
         async () => {
             // Fewer rows than the DB page size, so SQLite is exhausted in one
@@ -334,6 +449,7 @@ describe('Flow: View transactions → tap into details', () => {
                     groupId: null,
                     amount: new Decimal(1_000_000),
                     closeTo: null,
+                    closeAmount: null,
                     asset: null,
                     applicationId: null,
                     innerTransactionCount: null,

@@ -286,7 +286,7 @@ describe('env-loader', () => {
             remoteConfigRefreshTime: 3600000,
             algodReadTimeout: 10000,
             algodSubmitTimeout: 30000,
-            signingTransportTimeout: 35000,
+            signingTransportTimeout: 60000,
             reactQueryDefaultGCTime: 3600000,
             reactQueryDefaultStaleTime: 60000,
             reactQueryShortLivedGCTime: 86400000,

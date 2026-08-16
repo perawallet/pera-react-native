@@ -699,6 +699,12 @@
                 "body": "The network rejected the transaction. Please try again or contact support if the issue persists."
             }
         },
+        "submission": {
+            "unknown_outcome": {
+                "title": "Transaction status unknown",
+                "body": "We couldn't confirm whether your transaction went through. Wait a moment and check your transaction history before trying again."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Invalid Link",
             "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again.",
@@ -2470,6 +2476,9 @@
         "common": {
             "from": "From",
             "to": "To",
+            "sent_to": "Sent To",
+            "close_amount": "Remainder Amount",
+            "close_to": "Remainder Sent To",
             "fee": "Fee",
             "tx_fee": "Your Transaction Fee",
             "total_fee": "Your Total Fee",

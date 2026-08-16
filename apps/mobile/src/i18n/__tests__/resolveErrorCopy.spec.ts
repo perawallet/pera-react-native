@@ -18,6 +18,7 @@ import {
     PeraNetworkError,
 } from '@perawallet/wallet-core-shared'
 import { AlgodError } from '@perawallet/wallet-core-blockchain'
+import { SubmissionError } from '@perawallet/wallet-core-signing'
 import { resolveErrorCopy } from '../resolveErrorCopy'
 
 // Use the real blockchain package — this spec relies on actual AlgodError
@@ -37,6 +38,45 @@ const getAlgodMessage = vi.fn(() => ({
 }))
 
 describe('resolveErrorCopy', () => {
+    it('renders the status-unknown copy for an unverified unknown-outcome SubmissionError', () => {
+        // The transaction may have landed (lost response, timeout) — calling
+        // it failed or "no connection" would be a lie; the user needs to
+        // check history before retrying (PERA-4896).
+        const algodError = new AlgodError('network_unavailable', {})
+        const result = resolveErrorCopy(
+            new SubmissionError(['TXID'], 'unknown-outcome', algodError),
+            t,
+            undefined,
+            getAlgodMessage,
+        )
+
+        expect(result).toEqual({
+            title: 'errors.submission.unknown_outcome.title',
+            body: 'errors.submission.unknown_outcome.body',
+        })
+    })
+
+    it('renders the wrapped algod copy for a SubmissionError', () => {
+        // A node rejection now reaches the UI wrapped in SubmissionError;
+        // falling into the generic AppError branch would lose the specific
+        // copy (e.g. the overspend explanation).
+        const algodError = new AlgodError('overspend', {
+            address: 'ADDR',
+            balance: 100n,
+            spent: 5000n,
+            missing: 4900n,
+        })
+        const result = resolveErrorCopy(
+            new SubmissionError(['TXID'], 'rejected-by-node', algodError),
+            t,
+            undefined,
+            getAlgodMessage,
+        )
+
+        expect(getAlgodMessage).toHaveBeenCalledWith(algodError)
+        expect(result).toEqual({ title: 'algod title', body: 'algod body' })
+    })
+
     it('maps an offline PeraNetworkError to the no-connection copy', () => {
         const result = resolveErrorCopy(
             new PeraNetworkError('offline'),

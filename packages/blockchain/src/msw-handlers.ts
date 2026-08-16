@@ -18,6 +18,7 @@
 // a test needs both.
 
 import { http, HttpResponse, type HttpHandler } from 'msw'
+import { msgpackRawEncode } from 'algosdk'
 
 // These responses aren't zod-validated here — algokit-utils owns that schema
 // layer. The shapes below mirror its wire-format expectations, so an algokit
@@ -194,15 +195,47 @@ export type MockAlgodPendingTransactionParams = {
  * What `waitForConfirmation` polls. Defaults to 404, not a confirmed round: its
  * job is keeping a fabricated txid off the network, and confirming would resolve
  * the wait and fire a refresh the test never asked for.
+ *
+ * algosdk requests this endpoint with `format=msgpack` and decodes the body as
+ * a `PendingTransactionResponse`, so 2xx responses are msgpack-encoded here (a
+ * JSON body silently decodes to an unconfirmed result and the wait never
+ * ends). The model requires an inner signed transaction, so a minimal valid
+ * `pay` stub is embedded — `waitForConfirmation` only reads
+ * `confirmed-round` / `pool-error`. Error statuses stay JSON, matching algod.
  */
 export const mockAlgodPendingTransaction = ({
     txId,
     response = { message: 'transaction not found' },
     status = 404,
 }: MockAlgodPendingTransactionParams = {}): HttpHandler =>
-    http.get(`*/v2/transactions/pending/${txId ?? ':txId'}`, () =>
-        HttpResponse.json(response, { status }),
-    )
+    http.get(`*/v2/transactions/pending/${txId ?? ':txId'}`, () => {
+        if (status < 200 || status >= 300) {
+            return HttpResponse.json(response, { status })
+        }
+        const bytes = msgpackRawEncode({
+            ...response,
+            txn: {
+                txn: {
+                    type: 'pay',
+                    snd: new Uint8Array(32),
+                    fv: 1,
+                    lv: 2,
+                    gen: 'test-net',
+                    gh: new Uint8Array(32),
+                },
+            },
+        })
+        return HttpResponse.arrayBuffer(
+            bytes.buffer.slice(
+                bytes.byteOffset,
+                bytes.byteOffset + bytes.byteLength,
+            ) as ArrayBuffer,
+            {
+                status,
+                headers: { 'Content-Type': 'application/msgpack' },
+            },
+        )
+    })
 
 export type MockAlgodStatusAfterBlockParams = {
     /** Matches any round when omitted. */

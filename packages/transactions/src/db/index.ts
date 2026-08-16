@@ -15,5 +15,7 @@ export {
     upsertTransactions,
     getTransactionHistory,
     getLatestTransactionRoundTime,
+    getCloseRowsMissingCloseAmount,
+    updateTransactionCloseAmount,
     deleteTransactionsForAccount,
 } from './repository'

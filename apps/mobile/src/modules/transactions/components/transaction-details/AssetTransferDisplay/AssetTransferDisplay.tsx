@@ -51,6 +51,8 @@ export const AssetTransferDisplay = ({
         transferType,
         senderAddress,
         receiverAddress,
+        closeToAddress,
+        closeAmountValue,
         amount,
         amountStyle,
         metadataHash,
@@ -116,6 +118,20 @@ export const AssetTransferDisplay = ({
                     </PWView>
                 </KeyValueRow>
 
+                <KeyValueRow title={t('transactions.common.from')}>
+                    <PWView style={styles.detailRow}>
+                        <AddressDisplay address={senderAddress} />
+                    </PWView>
+                </KeyValueRow>
+
+                {transferType !== 'opt-in' && (
+                    <KeyValueRow title={t('transactions.common.sent_to')}>
+                        <PWView style={styles.detailRow}>
+                            <AddressDisplay address={receiverAddress ?? ''} />
+                        </PWView>
+                    </KeyValueRow>
+                )}
+
                 {transferType !== 'opt-in' && (asset || isAssetPending) && (
                     <KeyValueRow title={t('transactions.common.amount')}>
                         <AssetAmount
@@ -129,17 +145,29 @@ export const AssetTransferDisplay = ({
                     </KeyValueRow>
                 )}
 
-                <KeyValueRow title={t('transactions.common.from')}>
-                    <PWView style={styles.detailRow}>
-                        <AddressDisplay address={senderAddress} />
-                    </PWView>
-                </KeyValueRow>
-
-                {transferType !== 'opt-in' && (
-                    <KeyValueRow title={t('transactions.common.to')}>
+                {closeToAddress && (
+                    <KeyValueRow
+                        testID='transaction_detail_close_to'
+                        title={t('transactions.common.close_to')}
+                    >
                         <PWView style={styles.detailRow}>
-                            <AddressDisplay address={receiverAddress ?? ''} />
+                            <AddressDisplay address={closeToAddress} />
                         </PWView>
+                    </KeyValueRow>
+                )}
+
+                {closeToAddress && closeAmountValue && (
+                    <KeyValueRow
+                        testID='transaction_detail_close_amount'
+                        title={t('transactions.common.close_amount')}
+                    >
+                        <AssetAmount
+                            isLoading={isAssetPending}
+                            asset={asset}
+                            value={closeAmountValue}
+                            showSymbol
+                            ignorePrivacyMode
+                        />
                     </KeyValueRow>
                 )}
 

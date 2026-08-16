@@ -699,6 +699,12 @@
                 "body": "Le réseau a refusé la transaction. Veuillez réessayer ou contacter l’assistance si le problème persiste."
             }
         },
+        "submission": {
+            "unknown_outcome": {
+                "title": "Statut de la transaction inconnu",
+                "body": "Nous n’avons pas pu confirmer si votre transaction a abouti. Patientez un instant et vérifiez votre historique de transactions avant de réessayer."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Lien invalide",
             "invalid_url_body": "Le lien détecté ne semble pas valide. Veuillez vérifier le lien et réessayer.",
@@ -2470,6 +2476,9 @@
         "common": {
             "from": "De",
             "to": "À",
+            "sent_to": "Envoyé à",
+            "close_amount": "Solde restant",
+            "close_to": "Solde restant à",
             "fee": "Frais",
             "tx_fee": "Vos frais de transaction",
             "total_fee": "Vos frais totaux",

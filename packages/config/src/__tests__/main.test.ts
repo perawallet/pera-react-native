@@ -71,7 +71,7 @@ describe('config/main', () => {
     test('exposes bounded-timeout defaults in milliseconds', () => {
         expect(config.algodReadTimeout).toBe(10_000)
         expect(config.algodSubmitTimeout).toBe(30_000)
-        expect(config.signingTransportTimeout).toBe(35_000)
+        expect(config.signingTransportTimeout).toBe(60_000)
     })
 
     test('schema rejects a non-integer algodReadTimeout', () => {

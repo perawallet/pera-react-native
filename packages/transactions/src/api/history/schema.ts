@@ -89,6 +89,7 @@ export const transactionHistoryItemResponseSchema = z.object({
     group_id: z.string().nullable().optional(),
     amount: z.string().nullable().optional(),
     close_to: z.string().nullable().optional(),
+    close_amount: z.string().nullable().optional(),
     asset: transactionAssetSummarySchema.nullable().optional(),
     application_id: uint64IdSchema.nullable().optional(),
     inner_transaction_count: coerceNumber.nullable().optional(),

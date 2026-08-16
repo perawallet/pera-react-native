@@ -20,6 +20,11 @@ import { TransactionTypes, type TransactionHistoryItem } from '../models'
 const toAmountBigInt = (amount: TransactionHistoryItem['amount']): bigint =>
     toBigInt(amount ?? new Decimal(0))
 
+const toCloseAmountBigInt = (
+    closeAmount: TransactionHistoryItem['closeAmount'],
+): bigint | undefined =>
+    closeAmount === null ? undefined : toBigInt(closeAmount)
+
 /**
  * Maps a SQLite history row to the displayable shape Transaction Details
  * renders, so the screen can serve local data while the indexer is
@@ -53,6 +58,7 @@ export const mapHistoryItemToDisplayableTransaction = (
                     amount: toAmountBigInt(item.amount),
                     receiver: item.receiver ?? '',
                     closeRemainderTo: item.closeTo ?? undefined,
+                    closeAmount: toCloseAmountBigInt(item.closeAmount),
                 },
             }
         }
@@ -67,6 +73,7 @@ export const mapHistoryItemToDisplayableTransaction = (
                     amount: toAmountBigInt(item.amount),
                     receiver: item.receiver ?? '',
                     closeTo: item.closeTo ?? undefined,
+                    closeAmount: toCloseAmountBigInt(item.closeAmount),
                     sender: undefined,
                 },
             }

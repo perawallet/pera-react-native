@@ -87,6 +87,7 @@ describe('submitAndAutoRefreshCore', () => {
             algokit,
             encodeSignedTransactions,
             waitForConfirmation,
+            verifyTxnLanded: vi.fn(),
             walletAddresses: [WALLET],
             network: 'mainnet',
             onConfirmed,
@@ -110,6 +111,7 @@ describe('submitAndAutoRefreshCore', () => {
             algokit,
             encodeSignedTransactions,
             waitForConfirmation,
+            verifyTxnLanded: vi.fn(),
             walletAddresses: [WALLET],
             network: 'testnet',
             onConfirmed,
@@ -132,6 +134,7 @@ describe('submitAndAutoRefreshCore', () => {
             algokit,
             encodeSignedTransactions,
             waitForConfirmation,
+            verifyTxnLanded: vi.fn(),
             walletAddresses: [WALLET],
             network: 'mainnet',
             onConfirmed,
@@ -167,6 +170,7 @@ describe('submitAndAutoRefreshCore', () => {
             algokit,
             encodeSignedTransactions,
             waitForConfirmation,
+            verifyTxnLanded: vi.fn(),
             walletAddresses: [WALLET],
             network: 'mainnet',
             onConfirmed,
@@ -188,6 +192,7 @@ describe('submitAndAutoRefreshCore', () => {
             algokit,
             encodeSignedTransactions,
             waitForConfirmation,
+            verifyTxnLanded: vi.fn(),
             walletAddresses: [WALLET],
             network: 'mainnet',
             onConfirmed,
@@ -208,6 +213,7 @@ describe('submitAndAutoRefreshCore', () => {
             algokit,
             encodeSignedTransactions,
             waitForConfirmation,
+            verifyTxnLanded: vi.fn(),
             walletAddresses: [WALLET],
             network: 'mainnet',
             onConfirmed,
@@ -219,6 +225,129 @@ describe('submitAndAutoRefreshCore', () => {
         await vi.waitFor(() =>
             expect(waitForConfirmation).toHaveBeenCalledWith('REALTXID'),
         )
+    })
+
+    test('resolves as success when an unknown-outcome submit failure verifies as landed on-chain', async () => {
+        // The user's scenario in PERA-4896: the POST response is lost on a
+        // flaky connection but the node received the bytes — the transaction
+        // confirms two rounds later while the app claims failure.
+        const timeout = new Error('The operation timed out')
+        timeout.name = 'TimeoutError'
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue(timeout),
+                    }),
+                },
+            },
+        }
+        const verifyTxnLanded = vi.fn().mockResolvedValue(undefined)
+        const waitForConfirmation = vi.fn().mockResolvedValue(undefined)
+        const onConfirmed = vi.fn()
+
+        const signedWithTxId = {
+            txn: {
+                sender: addr(WALLET),
+                payment: { receiver: addr(EXTERNAL), amount: 0n },
+                txID: () => 'LOCAL_TX',
+            },
+            sig: new Uint8Array(),
+        } as unknown as PeraSignedTransaction
+
+        const result = await submitAndAutoRefreshCore({
+            algokit,
+            encodeSignedTransactions,
+            waitForConfirmation,
+            verifyTxnLanded: vi.fn(),
+            verifyTxnLanded,
+            walletAddresses: [WALLET],
+            network: 'mainnet',
+            onConfirmed,
+            signedTxns: [signedWithTxId],
+        })
+        await flushMicrotasks()
+
+        expect(verifyTxnLanded).toHaveBeenCalledWith('LOCAL_TX')
+        expect(result).toEqual({ txIds: ['LOCAL_TX'] })
+        expect(onConfirmed).toHaveBeenCalledWith([WALLET], 'mainnet')
+    })
+
+    test('rethrows the unknown-outcome error after chain verification retries come up empty', async () => {
+        const timeout = new Error('The operation timed out')
+        timeout.name = 'TimeoutError'
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue(timeout),
+                    }),
+                },
+            },
+        }
+        const verifyTxnLanded = vi
+            .fn()
+            .mockRejectedValue(new Error('not found'))
+        const sleep = vi.fn().mockResolvedValue(undefined)
+        const onConfirmed = vi.fn()
+
+        const signedWithTxId = {
+            txn: { sender: addr(WALLET), txID: () => 'LOCAL_TX' },
+            sig: new Uint8Array(),
+        } as unknown as PeraSignedTransaction
+
+        const promise = submitAndAutoRefreshCore({
+            algokit,
+            encodeSignedTransactions,
+            waitForConfirmation: vi.fn(),
+            verifyTxnLanded,
+            sleep,
+            walletAddresses: [WALLET],
+            network: 'mainnet',
+            onConfirmed,
+            signedTxns: [signedWithTxId],
+        })
+
+        await expect(promise).rejects.toThrow('unknown-outcome')
+        expect(verifyTxnLanded).toHaveBeenCalledTimes(2)
+        expect(onConfirmed).not.toHaveBeenCalled()
+    })
+
+    test('does not verify chain state for a definitive node rejection', async () => {
+        const sender = 'B'.repeat(58)
+        const rejection = new Error(
+            `overspend (account ${sender}, data {MicroAlgos:{Raw:100}}, tried to spend {5000})`,
+        )
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi.fn().mockReturnValue({
+                        do: vi.fn().mockRejectedValue(rejection),
+                    }),
+                },
+            },
+        }
+        const verifyTxnLanded = vi.fn()
+
+        const signedWithTxId = {
+            txn: { sender: addr(WALLET), txID: () => 'LOCAL_TX' },
+            sig: new Uint8Array(),
+        } as unknown as PeraSignedTransaction
+
+        await expect(
+            submitAndAutoRefreshCore({
+                algokit,
+                encodeSignedTransactions,
+                waitForConfirmation: vi.fn(),
+                verifyTxnLanded,
+                walletAddresses: [WALLET],
+                network: 'mainnet',
+                onConfirmed: vi.fn(),
+                signedTxns: [signedWithTxId],
+            }),
+        ).rejects.toThrow('overspend')
+
+        expect(verifyTxnLanded).not.toHaveBeenCalled()
     })
 
     test('propagates submission errors to the caller', async () => {
@@ -241,6 +370,7 @@ describe('submitAndAutoRefreshCore', () => {
                 algokit,
                 encodeSignedTransactions,
                 waitForConfirmation,
+                verifyTxnLanded: vi.fn(),
                 walletAddresses: [WALLET],
                 network: 'mainnet',
                 onConfirmed,

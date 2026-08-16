@@ -18,7 +18,7 @@ import { z } from 'zod'
  * have a `total` around 1e16), so narrowing to `number | bigint` would corrupt
  * exactly the values precision-safe parsing exists to protect.
  */
-const amountish = z.union([z.number(), z.string(), z.bigint()])
+export const amountish = z.union([z.number(), z.string(), z.bigint()])
 
 const paymentLegSchema = z.object({
     amount: amountish,

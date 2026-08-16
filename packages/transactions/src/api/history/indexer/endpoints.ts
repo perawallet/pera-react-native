@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { z } from 'zod'
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import {
     fetchIndexerAssetDetails,
@@ -23,6 +24,7 @@ import {
     transformIndexerTransactions,
     type AssetLookup,
 } from './transformers'
+import { amountish } from './schema'
 
 /**
  * Resolves display facts (name/unit/decimals) for every asset referenced in a
@@ -161,4 +163,39 @@ export const fetchMoreIndexerTransactions = async (params: {
     })
 
     return toResult(response.data, accountAddress, network)
+}
+
+const closeAmountLegSchema = z
+    .object({ 'close-amount': amountish.optional() })
+    .optional()
+
+const closeAmountLookupSchema = z.object({
+    transaction: z.object({
+        'payment-transaction': closeAmountLegSchema,
+        'asset-transfer-transaction': closeAmountLegSchema,
+    }),
+})
+
+/**
+ * The swept close amount of a single confirmed transaction (base units,
+ * decimal string), straight from the chain — perspective-free, unlike the
+ * Pera backend's balance-impact derivation. Null when the transaction has no
+ * close leg. Powers sync/close-amount-backfill.ts.
+ */
+export const fetchIndexerCloseAmount = async (
+    txId: string,
+    network: Network,
+): Promise<string | null> => {
+    const response = await queryClient<unknown>({
+        backend: 'indexer',
+        network,
+        method: 'GET',
+        url: `/v2/transactions/${encodeURIComponent(txId)}`,
+    })
+
+    const { transaction } = closeAmountLookupSchema.parse(response.data)
+    const closeAmount =
+        transaction['payment-transaction']?.['close-amount'] ??
+        transaction['asset-transfer-transaction']?.['close-amount']
+    return closeAmount === undefined ? null : BigInt(closeAmount).toString()
 }

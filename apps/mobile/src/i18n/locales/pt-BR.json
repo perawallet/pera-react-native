@@ -699,6 +699,12 @@
                 "body": "A rede recusou a transação. Tente novamente ou entre em contato com o suporte se o problema persistir."
             }
         },
+        "submission": {
+            "unknown_outcome": {
+                "title": "Status da transação desconhecido",
+                "body": "Não foi possível confirmar se sua transação foi concluída. Aguarde um momento e verifique seu histórico de transações antes de tentar novamente."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Link inválido",
             "invalid_url_body": "O link detectado não parece ser válido. Verifique o link e tente novamente.",
@@ -2487,6 +2493,9 @@
         "common": {
             "from": "De",
             "to": "Para",
+            "sent_to": "Enviado para",
+            "close_amount": "Saldo restante",
+            "close_to": "Saldo restante para",
             "fee": "Taxa",
             "tx_fee": "Sua taxa de transação",
             "total_fee": "Sua taxa total",

@@ -46,6 +46,56 @@ describe('usePaymentTransactionDisplay', () => {
         expect(result.current.amount.toString()).toBe('-2.5')
     })
 
+    it('keeps the Amount as the paid leg only for a close-out', () => {
+        // Explorer semantics: the swept remainder gets its own row
+        // (closeAmountValue) — the Amount row shows only what was paid to
+        // the receiver, so the two rows never double-count.
+        const closeOutTx = {
+            ...baseTx,
+            paymentTransaction: {
+                receiver: 'RECEIVER',
+                amount: 1_000_000n,
+                closeRemainderTo: 'CLOSE_TARGET',
+                closeAmount: 50_854_132_929n,
+            },
+        } as unknown as PeraDisplayableTransaction
+
+        const { result } = renderHook(() =>
+            usePaymentTransactionDisplay(closeOutTx, 'SENDER'),
+        )
+
+        expect(result.current.amount.toString()).toBe('-1')
+        expect(result.current.closeToAddress).toBe('CLOSE_TARGET')
+        expect(result.current.closeAmountValue?.toString()).toBe('50854.132929')
+    })
+
+    it('exposes no close-to address for a plain payment', () => {
+        const { result } = renderHook(() =>
+            usePaymentTransactionDisplay(baseTx, 'RECEIVER'),
+        )
+
+        expect(result.current.closeToAddress).toBeUndefined()
+        expect(result.current.closeAmountValue).toBeNull()
+    })
+
+    it('exposes the swept remainder in algos for the Remainder Amount row', () => {
+        const closeOutTx = {
+            ...baseTx,
+            paymentTransaction: {
+                receiver: 'RECEIVER',
+                amount: 0n,
+                closeRemainderTo: 'RECEIVER',
+                closeAmount: 50_854_132_929n,
+            },
+        } as unknown as PeraDisplayableTransaction
+
+        const { result } = renderHook(() =>
+            usePaymentTransactionDisplay(closeOutTx, 'SENDER'),
+        )
+
+        expect(result.current.closeAmountValue?.toString()).toBe('50854.132929')
+    })
+
     it('shows warnings when the transaction has no confirmed round', () => {
         const unconfirmedTx = {
             ...baseTx,
