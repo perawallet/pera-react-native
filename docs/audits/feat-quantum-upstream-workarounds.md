@@ -1,6 +1,6 @@
-# feat/quantum — Upstream Issues for Discussion
+# Upstream Issues for Discussion — provider-migrations canary
 
-Active workarounds in Pera's `feat/quantum` branch caused by upstream
+Active workarounds in Pera caused by upstream
 defects in the Algorand / AF keystore / passkey / autofill ecosystem
 packages. Each entry names the upstream package, the symptom, the root
 cause, what we do in-repo to work around it, and the fix we need from
@@ -15,6 +15,10 @@ entry records what actually moved. Versions at the time of that pass:
 `keystore@1.0.0-canary.17` (pinned), `keystore-core`/`keystore-web@1.0.0-canary.3`,
 `provider-migrations@1.0.0-canary.1`. Entries below that name canary.14 or
 canary.22 are describing when the defect was found, not where it lives now.
+
+**Merge-time action:** an older, divergent copy of this file is sitting
+untracked in the main checkout at the same path. This branch's version is a
+superset — delete that copy when merging rather than resolving against it.
 
 ---
 
@@ -150,13 +154,20 @@ records decode cleanly (or live elsewhere), the skip can be removed.
 **Status:** Open — the encoder mismatch is unchanged in canary.24, and the
 root cause above has been corrected in place. One regression to record.
 
-_Regression:_ the original workaround discriminated foreign envelopes from our
-own by padding, so a genuinely corrupt Pera record still rethrew. That
-discrimination is gone — the current revisions blanket-skip on any
-open-or-decode failure, so a corrupt record of ours is now silently skipped
-too. A shape-based discriminator does survive for a different consumer
-(`isNativeProviderRecordPayload` in
-`packages/passkeys/src/native/nativeProviderRecord.ts`), but it does not guard
+_Regression, and a correction to the original workaround:_ the old code tried
+to tell foreign envelopes from our own by base64 padding on `{iv, tag, content}`
+(`isForeignEnvelope`, `migrateKeystoreLayout.ts` @ `31ccac075^:131-172`). Given
+the corrected root cause above, that test could never have fired for the iOS
+records it targeted — their envelope fields are padded
+(`PasskeyCredentialStore.swift:737-739`); only the payload inside is not. What
+it did do was rethrow on anything else, so a genuinely corrupt Pera record still
+surfaced. The current revisions skip on any open-or-decode failure, which is
+what actually handles K2, but a corrupt record of ours is now skipped silently
+too. Nothing is deleted — the record is left flat on disk — and **M1 below makes
+the rethrow impossible anyway**: a throw in `up` is a permanent boot block, not
+a retry. A shape-based discriminator survives for a different consumer
+(`isNativeProviderRecordPayload`,
+`packages/passkeys/src/native/nativeProviderRecord.ts:201`) but does not guard
 these revisions.
 
 ---
@@ -177,9 +188,9 @@ full engine; when key storage required a real engine (canary.14), the Metro
 alias to the port no longer covered it.
 
 **Workaround:** `extensions/provider/src/keystore/createKeystore.web.ts`
-composes the engine from `@algorandfoundation/keystore-web` (IndexedDB driver
-
-- `createDefaultShims`) via Metro's `.web.ts` platform-extension resolution.
+composes the engine itself — `keystore-core`'s `createKeyStore` over
+`keystore-web`'s IndexedDB driver, with `shims: () => createDefaultShims()` —
+via Metro's `.web.ts` platform-extension resolution.
 
 **Upstream fix:** `keystore-chrome` should either expose its own engine
 factory built on `keystore-core` + a chrome-storage driver, or re-export
@@ -290,7 +301,13 @@ writes at the bare `credentialId`.
 
 **Upstream fix:** Serve `privateKey` from `m/` and accept `{$u8}` byte fields,
 so a credential can live in `k/`+`m/` like every other record. Only then can
-`nativeProviderRecord.ts` and the un-adoption repair below be deleted.
+`nativeProviderRecord.ts` and the un-adoption repair below be deleted. Note
+there are **two** copies of this contract to remove: the module above, and a
+deliberate restatement in
+`extensions/provider/src/keystore/migrations/nativeCredentialRecord.ts`
+(`sealNativeCredentialRecord`, `:71`), kept separate because importing back
+from `packages/passkeys` would be a circular workspace dependency (its own doc
+comment, `:19-24`).
 
 **Status:** Partially closed for the parent, open — and larger — for
 credentials. Do not read "phase 3 landed" as closing this.
@@ -398,15 +415,15 @@ revisions look defensive.
 
 ## Summary by upstream package
 
-| #   | Package                                           | Issue                                                  | Upstream fix needed                                         | Status                                                                     |
-| --- | ------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------- | -------------------------------------------------------------------------- |
-| A1  | algosdk (fork)                                    | Tag has no build output                                | Publish beta to npm with `dist/`                            | Active                                                                     |
-| A2  | algokit-utils + pnpm                              | Peer ignores root override                             | — (pnpm behaviour; resolved by official npm release)        | Active until npm publish                                                   |
-| K1  | react-native-keystore c.19                        | Lone stamp blocks master-key mint                      | `masterKeyForWrite` should ignore non-record marker keys    | Active — gate unchanged since c.14; also why the ledger needs its own MMKV |
-| K2  | react-native-keystore c.19 + passkey-autofill iOS | Unpadded base64 strands migration                      | iOS provider: match the encoder or use a separate namespace | Active — root cause was misattributed; corrupt-record rethrow now lost     |
-| W1  | keystore-web / keystore-chrome                    | Web has no engine (partial port)                       | Port exposes engine or re-exports keystore-web              | Active (Pera's extension) — blocked behind the `keystore` canary.17 pin    |
-| W2  | keystore-web c.3                                  | `createWebKeyStore` resolves shims eagerly             | Accept `shims` thunk                                        | Active                                                                     |
-| P1  | react-native-passkey-autofill c.24                | "Rocca Wallet" hardcoded in UI strings                 | `label`/`displayName` plugin option                         | Active — patch rebased onto c.24; also carries PERA-4714 RP scoping        |
-| P2  | react-native-passkey-autofill c.24                | Provider credential format incompatible with `k/`+`m/` | Serve `privateKey` from `m/`, accept `{$u8}`                | Active — parent moved in c.23/.24, credentials did not; workaround grew    |
-| F1  | @joe-p/react-native-falcon + falcon-1024          | Module-scope side effects crash off-device             | Guard side effects for absent host env                      | Active                                                                     |
-| M1  | provider-migrations c.1                           | A rejecting `up` blocks boot permanently               | Per-revision decline that still advances the ledger         | Active                                                                     |
+| #   | Package                                           | Issue                                                  | Upstream fix needed                                         | Status                                                                                        |
+| --- | ------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| A1  | algosdk (fork)                                    | Tag has no build output                                | Publish beta to npm with `dist/`                            | Active                                                                                        |
+| A2  | algokit-utils + pnpm                              | Peer ignores root override                             | — (pnpm behaviour; resolved by official npm release)        | Active until npm publish                                                                      |
+| K1  | react-native-keystore c.19                        | Lone stamp blocks master-key mint                      | `masterKeyForWrite` should ignore non-record marker keys    | Active — gate unchanged since c.14; also why the ledger needs its own MMKV                    |
+| K2  | react-native-keystore c.19 + passkey-autofill iOS | Unpadded base64 strands migration                      | iOS provider: match the encoder or use a separate namespace | Active — root cause was misattributed; corrupt-record rethrow traded for M1-mandated skipping |
+| W1  | keystore-web / keystore-chrome                    | Web has no engine (partial port)                       | Port exposes engine or re-exports keystore-web              | Active (Pera's extension) — blocked behind the `keystore` canary.17 pin                       |
+| W2  | keystore-web c.3                                  | `createWebKeyStore` resolves shims eagerly             | Accept `shims` thunk                                        | Active                                                                                        |
+| P1  | react-native-passkey-autofill c.24                | "Rocca Wallet" hardcoded in UI strings                 | `label`/`displayName` plugin option                         | Active — patch rebased onto c.24; also carries PERA-4714 RP scoping                           |
+| P2  | react-native-passkey-autofill c.24                | Provider credential format incompatible with `k/`+`m/` | Serve `privateKey` from `m/`, accept `{$u8}`                | Active — parent moved in c.23/.24, credentials did not; workaround grew                       |
+| F1  | @joe-p/react-native-falcon + falcon-1024          | Module-scope side effects crash off-device             | Guard side effects for absent host env                      | Active                                                                                        |
+| M1  | provider-migrations c.1                           | A rejecting `up` blocks boot permanently               | Per-revision decline that still advances the ledger         | Active                                                                                        |

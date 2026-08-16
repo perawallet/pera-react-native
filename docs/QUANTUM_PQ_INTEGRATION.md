@@ -222,11 +222,12 @@ keystore's sealed API, not by this guard — treat the firewall as protection
 against accidental library coupling, not as a security boundary.
 
 **Trap: `packages/kms`'s build output contains only the WASM provider.**
-`packages/kms/dist/index.js` builds to `createWasmFalconProvider` alone —
-`createRNFalconProvider` and `@joe-p/react-native-falcon` appear nowhere in
-it, because the bundler resolves the base `getPQProvider.ts` and never the
-`.native.ts` sibling. Nothing is broken today only because
-`apps/mobile/metro.config.js` rewrites `@perawallet/wallet-core-*` to source,
+`packages/kms/dist/index.js` resolves only the WASM provider — the bundle
+pulls in `falcon-1024` and carries no trace of `@joe-p/react-native-falcon`,
+because the bundler resolves the base `getPQProvider.ts` and never the
+`.native.ts` sibling. (The output is minified, so neither factory name appears
+as text either way; the dependency is the tell.) Nothing is broken today only
+because `apps/mobile/metro.config.js` rewrites `@perawallet/wallet-core-*` to source,
 so the app never loads that build output. Any consumer that resolves the built
 package instead — a node script, a future non-Metro bundler — silently gets
 WASM Falcon on device.
@@ -368,8 +369,10 @@ re-opens them and adds one item that nothing in CI can cover.
    alone cannot fix it.
 
     A revision's `up` must never reject. A rejection fails the whole run, and
-    because the ledger entry is written only after `up` resolves, it re-fails on
-    every subsequent launch with no way out but reinstall.
+    because the ledger entry is written only after `up` resolves, it re-runs
+    next launch. A transient failure (I/O, a cancelled biometric prompt)
+    clears; a deterministic one re-fails forever, with no way out but
+    reinstall.
 
 ### Known broken / deferred after the keystore-custody migration
 

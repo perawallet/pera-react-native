@@ -106,7 +106,8 @@ wallets. The parent is load-bearing rather than a label: upstream's
 parent's raw stored bytes straight into PBKDF2. The 96-byte extended root and
 the 16–32-byte BIP39 entropy are different bytes, so **one mnemonic yields two
 different main keys depending on which you parent on** — and every passkey
-under the wrong one is unrecoverable. Keep the two platforms in step.
+under the wrong one is unrecoverable from the mnemonic alone. Keep the two
+platforms in step.
 
 The provider **persists each credential's private key** (`privateKey`, or
 `privateKeyEnc` when biometric-gated) and `getCredential` loads it back. The HD
