@@ -306,6 +306,24 @@ describe('readFlaggedPasskeyCredentials', () => {
         expect(scan.isComplete).toBe(true)
     })
 
+    // A truncated envelope is OUR record, damaged — not another writer's. No
+    // writer emits a `{`-prefixed payload that is not JSON, so the only way to
+    // reach this is corruption, and calling it "someone else's" would report a
+    // whole-store answer that silently omits a credential which may still need
+    // migrating — unlocking a one-way delete on it.
+    it('reports the scan incomplete when a credential-provider payload is truncated', async () => {
+        const sealed = await sealNativeProviderRecord(
+            subtle,
+            MASTER_KEY,
+            flatRecord({ id: 'cred-1' }),
+        )
+        store.set('cred-1', sealed.slice(0, sealed.length - 10))
+
+        const scan = await readFlaggedPasskeyCredentials(deps())
+
+        expect(scan.isComplete).toBe(false)
+    })
+
     it('reports the scan complete when every record opened', async () => {
         await seed('cred-1', flatRecord({ id: 'cred-1' }))
 

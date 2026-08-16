@@ -45,9 +45,9 @@
  *    a devDependency does, and trips turbo's whole-graph cycle check), a
  *    golden envelope pinned from an earlier such round trip, and a direct
  *    comparison of the restated writer's output against this module's real
- *    `sealNativeProviderRecord` for the same input — the only one of the
- *    three that isn't blind to a writer bug which still round-trips through
- *    its own paired reader.
+ *    `sealNativeProviderRecord` for the same input. The last catches the two
+ *    writers diverging from each other; only the golden pin — a frozen
+ *    literal, with no writer to agree with — catches them drifting together.
  * 3. **A still-pending phase 3** — reading credential records back, if and
  *    when the provider ever moves credentials to `k/`+`m/` too, so they can be
  *    migrated into the keystore's own layout without loss. Not started: see
@@ -204,7 +204,10 @@ export const isNativeProviderRecordPayload = (payload: string): boolean => {
         const envelope = JSON.parse(payload) as Partial<NativeProviderEnvelope>
         return Boolean(envelope.iv && envelope.tag && envelope.content)
     } catch {
-        return false
+        // A `{`-prefixed payload that is not JSON is one of ours, corrupted —
+        // no writer emits that shape. Claiming it for another writer would let
+        // the reader's failure pass as a complete scan.
+        return true
     }
 }
 
