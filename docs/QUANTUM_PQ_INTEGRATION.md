@@ -386,6 +386,56 @@ re-opens them and adds one item that nothing in CI can cover.
     clears; a deterministic one re-fails forever, with no way out but
     reinstall.
 
+### Provider-migrations additions to the checklist (not runnable in CI)
+
+Nothing below is catchable by a JS test — every failure mode needs a real device
+with real persisted data, and most need two builds installed in sequence. Steps
+11 and 12 are the ones a fresh install can never exercise.
+
+10. **Fresh install — the brick regression.** Wipe the app, launch, create a
+    wallet, confirm an account appears and can sign. A `MasterKeyNotFoundError`
+    here means the migrations ledger landed in the keystore's own MMKV instance:
+    `masterKeyForWrite` mints the Keychain master key only while `getAllKeys()`
+    is empty (`react-native-keystore/dist/engine.js:183-184`), so any blob in
+    that instance bricks first-run key creation. The ledger lives in
+    `pera-provider-migrations` for exactly this reason
+    (`extensions/provider/src/keystore/migrations/migrationsLedger.ts`).
+11. **canary.13 install → this build, upgraded in place.** Install a `main`
+    build, create one account of **each** type (hdwallet, algo25, quantum),
+    create a passkey, then install this build over it without wiping. Verify all
+    three accounts are present, each can sign, the existing passkey still
+    authenticates, and a **new** passkey can still be created. Reinstalling
+    between the two builds is what makes this test vacuous.
+12. **`feat/quantum` install → this build, upgraded in place.** Install a
+    pre-migration `feat/quantum` build (already `k/`+`m/`, HD-root shadow
+    present), then this build over it. Verify no account vanishes and the
+    bare-id shadow is gone from MMKV. This is the case
+    `preflight/0001-retire-hd-root-shadow` exists for: upstream's
+    `adopt-flat-records` would otherwise treat the shadow as a legacy flat
+    record and write its stripped metadata over the real `k/<rootId>`, losing
+    `publicKey`, `metadata.scheme` and `bip44Path`.
+13. **Passkeys on both platforms.** iOS simulator and a physical Android device.
+    Create, assert and delete a credential on each. Confirm the
+    `needs-migration` banner appears for a pre-existing credential and clears
+    once it is removed and recreated, and that the credential-provider prompt
+    says "Pera", not "Rocca". Android note: `getStoredCredentials` is iOS-only
+    by design (`extensions/passkey-autofill/src/service.ts:25-31`), so Android's
+    passkey list is legitimately empty for un-adopted credentials — pre-existing,
+    not a regression from this work.
+14. **Relying-party scoping still holds.** Confirm a get-credential request for
+    one origin does not surface credentials belonging to another. This is the
+    whole purpose of the rebased PERA-4714 patch and the easiest thing to lose
+    on a version bump: upstream still ships `processGetCredentialRequest`
+    filtering on `allowCredentials` only, so the patch — not upstream — is what
+    enforces scoping.
+15. **Migration-banner delete gating.** With Pera **not** the active credential
+    provider and at least one flagged passkey present, confirm the banner warns
+    but offers no remove action, and that the row's own trash icon is withheld
+    too. Re-registration is impossible in that state, so offering
+    delete-and-recreate would walk the user into a lockout. Non-flagged passkeys
+    must stay deletable — they are derivable from the recovery passphrase, which
+    is the entire point of the flag.
+
 ### Known broken / deferred after the keystore-custody migration
 
 - **Web runs on an engine the vendored port does not supply.** Metro aliases
