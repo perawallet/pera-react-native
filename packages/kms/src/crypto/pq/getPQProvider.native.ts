@@ -26,6 +26,14 @@ let cached: PQSignatureProvider | undefined
  * `@joe-p/react-native-falcon`, because that module's scope instantiates the
  * native HybridObject. That laziness is about import side effects, not about
  * platform selection, so it remains necessary here.
+ *
+ * Deliberately NOT replaced by upstream's `loadDefaultFalconBinding`
+ * (`@algorandfoundation/react-native-keystore@1.0.0-canary.19`,
+ * `dist/falcon.js:72`, called from `dist/engine.js:207`): that builds the
+ * keystore's own shim set, returning an async `Falcon1024Binding` that is
+ * `undefined` off-device with no WASM fallback. It cannot supply the scheme id
+ * and `generateKeypairFromSeed` that `useKMS.getPQSigningInfo` and the quantum
+ * fixtures need on every platform, including node and vitest.
  */
 export const getPQProvider = (): PQSignatureProvider => {
     if (!cached) {

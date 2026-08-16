@@ -55,9 +55,18 @@ const FORBIDDEN_SPECIFIER_PATTERN = new RegExp(
 )
 
 // Seam A (pure crypto) is the sole remaining sanctioned home for these
-// imports. `@joe-p/algosdk` is no longer forbidden anywhere — the PQ surface
-// ships in official `algosdk` (see pnpm-workspace.yaml), so Seam B
+// imports IN THIS REPO. `@joe-p/algosdk` is no longer forbidden anywhere — the
+// PQ surface ships in official `algosdk` (see pnpm-workspace.yaml), so Seam B
 // (packages/blockchain/src/pq) no longer needs an allowlist entry.
+//
+// It is no longer the app's only edge to the native Falcon module, though:
+// `@algorandfoundation/react-native-keystore` reaches `@joe-p/react-native-falcon`
+// itself, as an optional peer, from `loadDefaultFalconBinding`
+// (`react-native-keystore@1.0.0-canary.19`, `dist/falcon.js:72`, wired into the
+// engine at `dist/engine.js:207`). That edge lives in node_modules, is not
+// scanned here, and cannot be — it is upstream's. So this guard bounds where
+// OUR source may name the PQ libraries; it is not a claim that the bundle
+// contains exactly one reference to them.
 const ALLOWLISTED_SEAM_DIRS = ['packages/kms/src/crypto/pq']
 
 // Scanned roots. `tools/` is deliberately NOT scanned and is an accepted blind
@@ -168,6 +177,32 @@ describe('PQ library import firewall', () => {
         expect(FORBIDDEN_SPECIFIER_PATTERN.test("from 'falcon-1024'")).toBe(
             true,
         )
+        expect(
+            FORBIDDEN_SPECIFIER_PATTERN.test(
+                "from '@joe-p/react-native-falcon'",
+            ),
+        ).toBe(true)
+    })
+
+    it('importing @algorandfoundation/react-native-keystore is allowed, even though it reaches the native Falcon module itself', () => {
+        // The guard is specifier-based, not reachability-based. The RN keystore
+        // is the sanctioned way to get keystore-core types and the sealed
+        // signing surface; that it loads `@joe-p/react-native-falcon` internally
+        // (see the note above ALLOWLISTED_SEAM_DIRS) does not make importing it
+        // a seam breach, and nothing outside Seam A gains raw key material by
+        // doing so.
+        expect(
+            FORBIDDEN_SPECIFIER_PATTERN.test(
+                "from '@algorandfoundation/react-native-keystore'",
+            ),
+        ).toBe(false)
+        expect(
+            FORBIDDEN_SPECIFIER_PATTERN.test(
+                "from '@algorandfoundation/keystore-core'",
+            ),
+        ).toBe(false)
+
+        // ...while naming the native module directly still is.
         expect(
             FORBIDDEN_SPECIFIER_PATTERN.test(
                 "from '@joe-p/react-native-falcon'",
