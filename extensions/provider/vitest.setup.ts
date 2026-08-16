@@ -163,7 +163,8 @@ vi.mock('@perawallet/wallet-extension-passkey-autofill', () => ({
         passkeyAutofill: {
             setMasterKey: vi.fn().mockResolvedValue(undefined),
             setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
-            setDerivedMainKey: vi.fn().mockResolvedValue(undefined),
+            setMainKeyId: vi.fn().mockResolvedValue(undefined),
+            getMainKeyId: vi.fn().mockResolvedValue(null),
             configureIntentActions: vi.fn().mockResolvedValue(undefined),
             clearCredentials: vi.fn().mockResolvedValue(undefined),
             deleteCredential: vi.fn().mockResolvedValue(undefined),

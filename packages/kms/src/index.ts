@@ -56,6 +56,13 @@ export {
 } from './utils'
 export { hdDerivedKeyId } from './hooks/useHDWallet'
 export {
+    findPasskeyMainKey,
+    passkeyMainKeyId,
+    usePasskeyMainKey,
+    PASSKEY_MAIN_KEY_SCHEME,
+    type UsePasskeyMainKeyResult,
+} from './hooks/usePasskeyMainKey'
+export {
     commitSecret,
     hasSecret,
     removeSecret,
