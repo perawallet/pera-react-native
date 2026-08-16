@@ -272,6 +272,22 @@ describe('entropyChildIdOf', () => {
         expect(entropyChildIdOf('seed-123', keys)).toBe('random-child-id')
     })
 
+    // Defence in depth, and parity with the two copies that restate this
+    // predicate: `entropyKey` alone would also match a derived key, and
+    // PBKDF2ing one of those would mint a passkey main key no mnemonic
+    // reproduces.
+    test('ignores an entropyKey flag on a record that is not a secret-key', () => {
+        const mislabelled = [
+            {
+                id: 'not-a-secret',
+                type: 'hd-derived-ed25519',
+                metadata: entropyChildMetadata('seed-123'),
+            },
+        ] as unknown as Key[]
+
+        expect(entropyChildIdOf('seed-123', mislabelled)).toBeUndefined()
+    })
+
     test('ignores non-entropy children of the same seed', () => {
         const onlyDerived = keys.filter(k => k.id !== 'random-child-id')
         expect(entropyChildIdOf('seed-123', onlyDerived)).toBeUndefined()
