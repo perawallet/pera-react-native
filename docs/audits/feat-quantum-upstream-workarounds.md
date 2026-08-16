@@ -1,10 +1,9 @@
 # Upstream Issues for Discussion — provider-migrations canary
 
-Active workarounds in Pera caused by upstream
-defects in the Algorand / AF keystore / passkey / autofill ecosystem
-packages. Each entry names the upstream package, the symptom, the root
-cause, what we do in-repo to work around it, and the fix we need from
-upstream so the workaround can be removed.
+Active workarounds in Pera caused by upstream defects in the Algorand / AF
+keystore / passkey / autofill ecosystem packages. Each entry names the upstream
+package, the symptom, the root cause, what we do in-repo to work around it, and
+the fix we need from upstream so the workaround can be removed.
 
 **Re-verified against the installed tree on the provider-migrations canary
 upgrade.** Every workaround below is still load-bearing — the upgrade closed
@@ -17,8 +16,9 @@ entry records what actually moved. Versions at the time of that pass:
 canary.22 are describing when the defect was found, not where it lives now.
 
 **Merge-time action:** an older, divergent copy of this file is sitting
-untracked in the main checkout at the same path. This branch's version is a
-superset — delete that copy when merging rather than resolving against it.
+untracked in the main checkout at the same path. This branch's version strictly
+supersedes it — every line the older copy has that this one lacks is text this
+pass replaced. Delete that copy when merging rather than resolving against it.
 
 ---
 
@@ -156,7 +156,7 @@ root cause above has been corrected in place. One regression to record.
 
 _Regression, and a correction to the original workaround:_ the old code tried
 to tell foreign envelopes from our own by base64 padding on `{iv, tag, content}`
-(`isForeignEnvelope`, `migrateKeystoreLayout.ts` @ `31ccac075^:131-172`). Given
+(`isForeignEnvelope`, `migrateKeystoreLayout.ts` @ `31ccac075^:131-173`). Given
 the corrected root cause above, that test could never have fired for the iOS
 records it targeted — their envelope fields are padded
 (`PasskeyCredentialStore.swift:737-739`); only the payload inside is not. What

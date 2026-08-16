@@ -222,15 +222,27 @@ keystore's sealed API, not by this guard — treat the firewall as protection
 against accidental library coupling, not as a security boundary.
 
 **Trap: `packages/kms`'s build output contains only the WASM provider.**
-`packages/kms/dist/index.js` resolves only the WASM provider — the bundle
-pulls in `falcon-1024` and carries no trace of `@joe-p/react-native-falcon`,
-because the bundler resolves the base `getPQProvider.ts` and never the
-`.native.ts` sibling. (The output is minified, so neither factory name appears
-as text either way; the dependency is the tell.) Nothing is broken today only
-because `apps/mobile/metro.config.js` rewrites `@perawallet/wallet-core-*` to source,
-so the app never loads that build output. Any consumer that resolves the built
-package instead — a node script, a future non-Metro bundler — silently gets
-WASM Falcon on device.
+`packages/kms/dist/index.js` resolves only the WASM provider, because the
+bundler resolves the base `getPQProvider.ts` and never the `.native.ts`
+sibling. `@joe-p/react-native-falcon` is externalised
+(`packages/kms/vite.config.ts:64`) and appears nowhere in the output;
+`falcon-1024` is not in that external list, so it is inlined whole, Emscripten
+glue included — `__filename` at `:7468`, `wasmBinary` at `:7531`,
+`_falcon_det1024_keygen` at `:7534`.
+
+Verify with `falcon_det1024` or `wasmBinary`, never with `falcon-1024`: that
+string is also `keystore-core`'s `KeyType` value (`FALCON_CHILD_KEY_TYPE`,
+`packages/kms/src/models/keys.ts:52`), and both of its hits in the bundle are
+that literal, not the package — `:52` defines it and `:7766` compares against
+it. `packages/blockchain/src/pq/__tests__/pqLibraryFirewall.spec.ts:50`
+documents the same false positive. The factory names are no help either: the
+bundler renames non-exported locals, so the WASM factory ships as `zp` at
+`:7695`.
+
+Nothing is broken today only because `apps/mobile/metro.config.js` rewrites
+`@perawallet/wallet-core-*` to source, so the app never loads that build output.
+Any consumer that resolves the built package instead — a node script, a future
+non-Metro bundler — silently gets WASM Falcon on device.
 
 ## Scope note
 

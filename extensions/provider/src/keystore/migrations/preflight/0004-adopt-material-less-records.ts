@@ -97,8 +97,10 @@ export const migration: Migration<PeraMigrationContext> = {
                         await openData(subtle, unlocked, sealed),
                     ) as Canary13Record
                 } catch {
-                    // Another process's record (credential provider, iOS's
-                    // unpadded envelope), or not a record at all.
+                    // Another process's record, or not a record at all. The
+                    // iOS credential provider's envelope opens fine — it is
+                    // its plaintext payload that is unpadded base64url, so it
+                    // is `decode` that throws, not `openData`.
                     continue
                 }
 
