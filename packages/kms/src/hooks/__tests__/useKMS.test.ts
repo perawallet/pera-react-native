@@ -466,6 +466,31 @@ describe('useKMS', () => {
         expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('hd-2')
     })
 
+    // The passkey main key hangs off the entropy child, not the root, so a
+    // single-level cascade leaves it behind. A surviving main key is then
+    // reused by `ensurePasskeyMainKey` for the next wallet the user creates,
+    // and every passkey derives from a mnemonic that no longer exists.
+    it('removeKeyAndChildren removes a grandchild such as the passkey main key', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        childOf('hd-1-passkey-main', entropy.id, 'hd-root-key')
+        seedBip39Root('hd-2')
+        const otherEntropy = entropyChildOf('hd-2')
+        childOf('hd-2-passkey-main', otherEntropy.id, 'hd-root-key')
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1-passkey-main')
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith(entropy.id)
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
+        // The other wallet's chain is untouched at every depth.
+        expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('hd-2-passkey-main')
+        expect(mockKeyStoreRemove).not.toHaveBeenCalledWith(otherEntropy.id)
+    })
+
     describe('quantum sign dispatch', () => {
         const QUANTUM_SEED_BYTES = new Uint8Array(32).fill(7)
 

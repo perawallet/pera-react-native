@@ -17,9 +17,10 @@
  * they disagreed, the back-fill would mint a second root beside the app's and
  * the native providers would pick whichever their scan reached first.
  *
- * Deliberately import-free so `@perawallet/wallet-core-kms` can consume it
- * through this package's barrel without the migration modules (and their MMKV
- * imports) coming along.
+ * Import-free so the migration revisions can depend on it without closing a
+ * `passkeyMainKey → migrations → passkeyMainKey` cycle. It does **not** keep
+ * the migration modules off a consumer: the named barrel re-exporting it
+ * (`index.ts:23`) also re-exports `./pera-provider`, which pulls them in.
  */
 
 /** `metadata.scheme` distinguishing this root from the XHD BIP32-Ed25519 one. */

@@ -24,10 +24,14 @@
  * vs the `try` at `:250`). Line numbers are `react-native@0.86.2`. Independent
  * of build, a thrown non-`Error` value with a throwing
  * `toString`/`Symbol.toPrimitive` makes `String(error)` throw.
+ *
+ * `error.message` goes through `String` for the same reason: it is a writable
+ * own property, so the `string` return type is no runtime guarantee, and every
+ * caller embeds the result in a template literal outside this `try`.
  */
 export const safeErrorMessage = (error: unknown): string => {
     try {
-        return error instanceof Error ? error.message : String(error)
+        return String(error instanceof Error ? error.message : error)
     } catch {
         return '<unstringifiable error>'
     }

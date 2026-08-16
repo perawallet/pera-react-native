@@ -49,10 +49,11 @@ const HD_ROOT_KEY_TYPES = new Set<string>([
 ])
 
 /**
- * The deterministic-P256 main key's `metadata.scheme`. Restated rather than
- * imported from `@perawallet/wallet-extension-provider`'s `passkeyMainKeyId`
- * module for the same reason `HD_ROOT_KEY_TYPES` is — this file must stay clear
- * of that package's provider graph.
+ * The deterministic-P256 main key's `metadata.scheme`, restated rather than
+ * imported from `@perawallet/wallet-extension-provider`. The package is a
+ * declared dependency and siblings import it, but this file has no import of
+ * it today, and adding one would pull that package's barrel graph into the
+ * cold-start path this module runs on.
  */
 const PASSKEY_MAIN_KEY_SCHEME = 'pbkdf2-p256'
 

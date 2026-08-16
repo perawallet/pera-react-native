@@ -52,7 +52,7 @@ describe('createPeraKeystore', () => {
     // dp256 binding in `withSubtleDerivedMainKey` only when the caller passes
     // no `dp256` override (keystore-core@1.0.0-canary.3 defaults.js:169), so an
     // explicit stack is how the passkey main key ends up on the pure-JS
-    // 210,000-iteration PBKDF2; and `engine.js:206` only auto-loads Falcon when
+    // 210,000-iteration PBKDF2; and `engine.js:205` only auto-loads Falcon when
     // `shims` is absent. See `passkeyMainKeyDerivation.spec.ts`.
     it('leaves the shim stack to the engine', () => {
         expect(createPeraKeystore(deps())).not.toHaveProperty('shims')

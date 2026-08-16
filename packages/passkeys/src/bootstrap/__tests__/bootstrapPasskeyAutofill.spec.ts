@@ -329,6 +329,24 @@ describe('bootstrapPasskeyAutofill', () => {
         expect(service.setMainKeyId).not.toHaveBeenCalled()
     })
 
+    // A `k/` entry this keystore did not write throws out of the scan. The
+    // outer catch keeps the boot alive, but everything after `configureParentKey`
+    // is skipped and autofill is silently dead until the entry goes away.
+    it('wires the parent and finishes the bootstrap past an undecodable k/ entry', async () => {
+        const service = makeService()
+        mocks.store.set('k/foreign', 'not json at all')
+        await seedPasskeyMainKey()
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        expect(service.setMainKeyId).toHaveBeenCalledWith('main-id')
+        expect(service.configureIntentActions).toHaveBeenCalled()
+        expect(service.refreshCredentialIdentities).toHaveBeenCalled()
+    })
+
     it('never reads root material now that no secret crosses the bridge', async () => {
         const service = makeService()
         await seedHdRoot()

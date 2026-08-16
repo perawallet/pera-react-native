@@ -29,7 +29,7 @@ import {
  * `withSubtleDerivedMainKey` **only when no `dp256` override is passed**
  * (`keystore-core@1.0.0-canary.3` `dist/defaults.js:169`), and the React Native
  * engine calls it that way (`react-native-keystore@1.0.0-canary.19`
- * `dist/engine.js:206-211`, which passes `{ falcon }` alone). Supplying a
+ * `dist/engine.js:205-209`, which passes `{ falcon }` alone). Supplying a
  * `dp256` override would silently swap the host's native PBKDF2 for the
  * bundled pure-JS one — 210,000 `@noble/hashes` iterations, which blocks
  * Hermes.

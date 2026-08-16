@@ -190,6 +190,30 @@ describe('useCreateAccount', () => {
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
+    // The discarded mnemonic's passkey main key must go with it — it is a
+    // grandchild of this root (via the entropy child), and `removeKeyAndChildren`
+    // is the only thing that reaches it.
+    test('rolls the whole new wallet root back when building the account fails', async () => {
+        uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
+        kmsMock.getDerivedPublicKey.mockRejectedValueOnce(
+            new Error('derive boom'),
+        )
+
+        const { result } = renderHook(() => useCreateAccount())
+
+        await act(async () => {
+            await expect(
+                result.current.createHdWalletAccount({
+                    account: 0,
+                    keyIndex: 0,
+                }),
+            ).rejects.toThrow('derive boom')
+        })
+
+        expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('WALLET1')
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
+    })
+
     test('creates a sibling HD account on an existing wallet root', async () => {
         kmsMock.getKey.mockReturnValueOnce({
             id: 'EXISTING_WALLET',

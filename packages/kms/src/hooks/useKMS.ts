@@ -99,18 +99,39 @@ export const useKMS = () => {
 
     /**
      * Removes a top-level key (typically a seed) and every keystore entry
-     * whose `metadata.parentKeyId` points back to it.
+     * reachable from it through `metadata.parentKeyId`.
+     *
+     * The walk is transitive because the tree is deeper than one level: the
+     * passkey main key parents on the BIP39 entropy child, so a direct-children
+     * sweep would leave it behind — and a surviving main key gets adopted by
+     * the next wallet, whose passkeys then derive from a discarded mnemonic.
      */
     const removeKeyAndChildren = useCallback(
         async (rootKeyId: string): Promise<void> => {
             const liveKeys = getKeystoreStore().state.keys
-            for (const k of liveKeys) {
-                if (k.id === rootKeyId) continue
-                const parentKeyId = (k.metadata as Record<string, unknown>)
-                    ?.parentKeyId
-                if (parentKeyId === rootKeyId) {
-                    await keyStore.remove(k.id)
+            const doomed = new Set<string>([rootKeyId])
+            // Re-sweep until nothing new is found: the store is in no
+            // particular order, so a grandchild may precede its parent.
+            let grew = true
+            while (grew) {
+                grew = false
+                for (const k of liveKeys) {
+                    if (doomed.has(k.id)) continue
+                    const parentKeyId = (k.metadata as Record<string, unknown>)
+                        ?.parentKeyId
+                    if (
+                        typeof parentKeyId === 'string' &&
+                        doomed.has(parentKeyId)
+                    ) {
+                        doomed.add(k.id)
+                        grew = true
+                    }
                 }
+            }
+
+            for (const id of doomed) {
+                if (id === rootKeyId) continue
+                await keyStore.remove(id)
             }
             await keyStore.remove(rootKeyId)
         },

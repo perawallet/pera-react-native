@@ -66,4 +66,30 @@ describe('safeErrorMessage', () => {
     it('does not throw for a null-prototype object', () => {
         expect(() => safeErrorMessage(Object.create(null))).not.toThrow()
     })
+
+    // `message` is a writable own property, so the `string` return type is not
+    // a runtime guarantee. Every caller embeds the result in a template
+    // literal, and that concatenation happens outside this helper's `try`.
+    it('returns a string for an Error whose message is a Symbol', () => {
+        const error = Object.assign(new Error(), { message: Symbol('x') })
+
+        const message = safeErrorMessage(error as unknown)
+
+        expect(typeof message).toBe('string')
+        expect(() => `prefix: ${message}`).not.toThrow()
+    })
+
+    it('returns the fallback for an Error whose message has a throwing toString', () => {
+        const error = Object.assign(new Error(), {
+            message: {
+                toString: () => {
+                    throw new TypeError('nope')
+                },
+            },
+        })
+
+        expect(safeErrorMessage(error as unknown)).toBe(
+            '<unstringifiable error>',
+        )
+    })
 })

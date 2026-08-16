@@ -186,6 +186,40 @@ const existingMainKey = (
     storage.set(MATERIAL_PREFIX + params.id, 'sealed-main-key-material')
 }
 
+/**
+ * A child of the same root that the mint must not derive from. Every clause of
+ * the discriminator gets one that defeats exactly that clause. `parentKeyId`
+ * itself is no discriminator: `useAlgo25.ts:92` and `useQuantum.ts:89` write it
+ * on ordinary derived children.
+ */
+const derivedChild = (
+    storage: FakeKeychainStorage,
+    params: {
+        id: string
+        parentKeyId: string
+        type: string
+        entropyKey?: boolean
+    },
+): void => {
+    storage.set(
+        METADATA_PREFIX + params.id,
+        serializeKey({
+            id: params.id,
+            type: params.type,
+            algorithm: 'raw',
+            extractable: false,
+            keyUsages: [],
+            metadata: {
+                storage: 'bytes',
+                parentKeyId: params.parentKeyId,
+                ...(params.entropyKey ? { entropyKey: true } : {}),
+            },
+            version: 1,
+        }),
+    )
+    storage.set(MATERIAL_PREFIX + params.id, 'sealed-derived-material')
+}
+
 const bip39Wallet = async (
     storage: FakeKeychainStorage,
     rootId = 'hd-1',
@@ -278,6 +312,40 @@ describe('0003-mint-passkey-main-key', () => {
         ).resolves.toBeUndefined()
         expect(storage.entries()).toEqual({})
         expect(masterKeyForRead).not.toHaveBeenCalled()
+        // A device with no wallet has declined nothing. `declined.record`
+        // drops an empty id list (`declined.ts:123`), so the warning is the
+        // only observable difference if the early return goes.
+        expect(noteStore).toEqual({})
+        expect(console.warn).not.toHaveBeenCalled()
+    })
+
+    // Two entropy children of one root is not a shape any writer produces, but
+    // if it ever occurs the chosen secret must not come down to `getAllKeys()`
+    // order — the wrong one mints a main key no mnemonic reproduces.
+    it('picks the same entropy child whichever order the scan returns', async () => {
+        const mint = async (first: string, second: string) => {
+            const storage = fakeStorage({})
+            seedRoot(storage, 'hd-1')
+            await entropyChild(storage, { id: first, parentKeyId: 'hd-1' })
+            await entropyChild(storage, {
+                id: second,
+                parentKeyId: 'hd-1',
+                entropy: new Uint8Array(16).fill(11),
+            })
+
+            await migration.up(context(storage), utils())
+
+            return (
+                decode(
+                    storage.getString(
+                        METADATA_PREFIX + passkeyMainKeyId('hd-1'),
+                    )!,
+                ) as { metadata: { parentKeyId: string } }
+            ).metadata.parentKeyId
+        }
+
+        expect(await mint('ent-a', 'ent-b')).toBe('ent-a')
+        expect(await mint('ent-b', 'ent-a')).toBe('ent-a')
     })
 
     it('mints exactly one main key when the device has two bip39 wallets', async () => {
@@ -298,6 +366,59 @@ describe('0003-mint-passkey-main-key', () => {
             })
         // Sorted, so the winner does not depend on `getAllKeys()` order.
         expect(minted).toEqual([METADATA_PREFIX + passkeyMainKeyId('hd-a')])
+    })
+
+    // A wrong parent here is silent and unrecoverable: the record still looks
+    // like a valid main key, but every passkey the device ever derives comes
+    // from a secret the mnemonic does not reproduce.
+    it('derives from the entropy child, not an unflagged secret-key sibling', async () => {
+        const storage = fakeStorage({})
+        seedRoot(storage, 'hd-1')
+        // Sorts ahead of the entropy child, so a weakened predicate wins
+        // outright rather than tying.
+        derivedChild(storage, {
+            id: 'a-secret',
+            parentKeyId: 'hd-1',
+            type: 'secret-key',
+        })
+        await entropyChild(storage, { id: 'ent-1', parentKeyId: 'hd-1' })
+
+        await migration.up(context(storage), utils())
+
+        const mainKeyId = passkeyMainKeyId('hd-1')
+        const record = decode(
+            storage.getString(METADATA_PREFIX + mainKeyId)!,
+        ) as { metadata: { parentKeyId: string } }
+        expect(record.metadata.parentKeyId).toBe('ent-1')
+        const bytes = base64.decode(
+            await realOpenData(
+                subtle,
+                MASTER_KEY,
+                storage.getString(MATERIAL_PREFIX + mainKeyId)!,
+            ),
+        )
+        expect(toHex(bytes)).toBe(MAIN_KEY_VECTOR)
+    })
+
+    // Defence in depth: no writer produces this record, but `entropyKey` alone
+    // would let one do so, and the failure is the silent one above.
+    it('ignores an entropyKey flag on a record that is not a secret-key', async () => {
+        const storage = fakeStorage({})
+        seedRoot(storage, 'hd-1')
+        derivedChild(storage, {
+            id: 'algo25-child',
+            parentKeyId: 'hd-1',
+            type: 'ed25519',
+            entropyKey: true,
+        })
+        await entropyChild(storage, { id: 'ent-1', parentKeyId: 'hd-1' })
+
+        await migration.up(context(storage), utils())
+
+        const record = decode(
+            storage.getString(METADATA_PREFIX + passkeyMainKeyId('hd-1'))!,
+        ) as { metadata: { parentKeyId: string } }
+        expect(record.metadata.parentKeyId).toBe('ent-1')
     })
 
     it('mints past a k/ entry whose read throws', async () => {
@@ -375,11 +496,18 @@ describe('0003-mint-passkey-main-key', () => {
         const storage = fakeStorage({})
         await bip39Wallet(storage)
         storage.remove(MATERIAL_PREFIX + 'ent-1')
+        const consoleWarn = vi.mocked(console.warn)
 
         await expect(
             migration.up(context(storage), utils()),
         ).resolves.toBeUndefined()
 
+        // The named branch, not the generic catch: without it `openData` is
+        // handed `undefined` and the outcome is identical but the diagnostic
+        // is a decoding error rather than "the material is missing".
+        expect(consoleWarn).toHaveBeenCalledWith(
+            expect.stringContaining('has no sealed material'),
+        )
         expect(
             storage.getString(METADATA_PREFIX + passkeyMainKeyId('hd-1')),
         ).toBeUndefined()
@@ -490,6 +618,29 @@ describe('0003-mint-passkey-main-key', () => {
         await expect(
             migration.up(context(storage), utils()),
         ).resolves.toBeUndefined()
+        expect(
+            storage.getString(METADATA_PREFIX + passkeyMainKeyId('hd-1')),
+        ).toBeUndefined()
+        expect(declinedIds()).toEqual(['hd-1'])
+    })
+
+    // Once 0001 and 0002 are ledgered this is the only revision that reads the
+    // master key, so a cancelled or unavailable Keychain (`errSecUserCanceled`,
+    // `errSecInteractionNotAllowed`, Android `KeyPermanentlyInvalidatedException`)
+    // arrives here as a plain `Error`. Rethrowing it would reject `up` and, with
+    // the ledger unwritten, re-fail on every launch.
+    it('resolves and declines when the Keychain read fails for any other reason', async () => {
+        const storage = fakeStorage({})
+        await bip39Wallet(storage)
+        masterKeyForRead = vi.fn(async () => {
+            throw new Error('-128: User canceled the operation.')
+        })
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        expect(masterKeyForRead).toHaveBeenCalled()
         expect(
             storage.getString(METADATA_PREFIX + passkeyMainKeyId('hd-1')),
         ).toBeUndefined()

@@ -16,11 +16,11 @@ import { describe, it, expect } from 'vitest'
 import PasskeyAutofillModule from '../react-native-passkey-autofill'
 
 describe('react-native-passkey-autofill web shim', () => {
-    // Only ids cross this bridge now — `setDerivedMainKey`, which took a hex
-    // string of the root, is gone from both the service and canary.24's native
-    // surface. Re-adding a secret-taking method here would put a non-zeroable
-    // copy on the web heap for a bridge that discards it.
-    it('defines no method that takes key material', () => {
+    // `setDerivedMainKey` took a hex string of the root and is gone from both
+    // the service and canary.24's native surface. Re-adding it here would put a
+    // non-zeroable copy on the web heap for a bridge that discards it.
+    // (`setMasterKey` still takes bytes, but a zeroable `Uint8Array`.)
+    it('does not define setDerivedMainKey', () => {
         expect(PasskeyAutofillModule.setDerivedMainKey).toBeUndefined()
     })
 

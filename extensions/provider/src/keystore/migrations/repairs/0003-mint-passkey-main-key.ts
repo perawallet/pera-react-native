@@ -16,7 +16,6 @@ import type {
     MigrationUtils,
 } from '@algorandfoundation/provider-migrations'
 import {
-    MasterKeyNotFoundError,
     MATERIAL_PREFIX,
     METADATA_PREFIX,
     decode,
@@ -132,12 +131,20 @@ export const migration: Migration<PeraMigrationContext> = {
                 continue
             }
 
+            // All three clauses matter: `parentKeyId` alone also matches every
+            // Algo25/Falcon/passkey child (`useAlgo25.ts:92`), and PBKDF2ing
+            // one of those instead of the BIP39 entropy would mint a main key
+            // no mnemonic reproduces.
             if (
+                record.type === 'secret-key' &&
                 meta.entropyKey === true &&
-                typeof meta.parentKeyId === 'string' &&
-                !entropyChildByParent.has(meta.parentKeyId)
+                typeof meta.parentKeyId === 'string'
             ) {
-                entropyChildByParent.set(meta.parentKeyId, id)
+                const seen = entropyChildByParent.get(meta.parentKeyId)
+                // Lowest id wins, for the same reason the roots are sorted.
+                if (seen === undefined || id < seen) {
+                    entropyChildByParent.set(meta.parentKeyId, id)
+                }
             }
         }
 
@@ -168,18 +175,15 @@ export const migration: Migration<PeraMigrationContext> = {
         try {
             masterKey = await context.masterKeyForRead()
         } catch (error) {
-            if (error instanceof MasterKeyNotFoundError) {
-                // A sealed entropy child cannot exist without a master key, so
-                // this is not reachable through a wallet this revision would
-                // act on — handled as "cannot reach the material" regardless.
-                context.declined.record(utils.revision.module, [target.id])
-                return
-            }
-            // Matches the sibling revisions, all of which rethrow a non-
-            // not-found Keychain failure. Unreachable in practice by the time
-            // this runs: `0001`/`0002` read the master key first and would
-            // have failed the module already.
-            throw error
+            // Every Keychain failure is "cannot reach the material", not just
+            // `MasterKeyNotFoundError`: a cancelled or locked Keychain arrives
+            // as a plain `Error`, and rethrowing it would reject `up` — which,
+            // with the ledger written only afterwards, re-fails every launch.
+            safeWarn(
+                `[provider] mint-passkey-main-key: master key unavailable: ${safeErrorMessage(error)}`,
+            )
+            context.declined.record(utils.revision.module, [target.id])
+            return
         }
 
         utils.secrets.put('keystore-master-key', masterKey)
@@ -217,9 +221,10 @@ export const migration: Migration<PeraMigrationContext> = {
 
                 // The library's own derivation, so the back-filled key is
                 // byte-identical to one `generateDP256Main` would mint. It has
-                // no pure-JS fallback of its own — deliberately: 210,000
-                // `@noble/hashes` iterations would block Hermes for minutes at
-                // launch, and declining is the better failure.
+                // no pure-JS fallback of its own — deliberately: upstream says
+                // 210,000 `@noble/hashes` iterations *can* block Hermes for
+                // minutes (`keystore-core` `dist/shims/dp256.js:28-29`), and
+                // declining is the better failure. Not measured here.
                 mainKey = await genDerivedMainKeyWithSubtle(
                     subtle,
                     entropy,
