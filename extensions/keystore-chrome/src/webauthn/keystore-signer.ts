@@ -40,19 +40,34 @@ import {
  *
  * ## The passkey hierarchy the engine expects
  *
- * `wallet root -> pbkdf2-p256 main key -> hd-derived-p256 credential`
+ * `wallet root -> bip39 entropy child -> pbkdf2-p256 main key -> hd-derived-p256 credential`
  *
  * The engine has no `generate({ type: 'hd-derived-p256' })` branch at all;
  * the only way to mint a credential is `deriveDomainKey(mainKeyId, …)`, and
  * that rejects any parent which is not an `hd-root-key` carrying
- * `metadata.scheme === 'pbkdf2-p256'`. That main key is itself created by
- * `generate({ type: 'hd-root-key', algorithm: 'P256' })`, which PBKDF2s the
- * bytes of whatever `params.parentKeyId` names — the wallet's own root, so
- * the whole chain stays recoverable from the user's seed phrase.
+ * `metadata.scheme === 'pbkdf2-p256'` (`keystore-core` `create.js:774`).
+ *
+ * TRAP — that main key must parent on the **entropy child**, not the wallet
+ * root. `generateDP256Main` runs `withSeed(…, { wantSeed: false })`
+ * (`create.js:449-462`), feeding the parent's raw stored bytes into PBKDF2,
+ * so the 96-byte extended root and the 16/32-byte entropy yield different
+ * main keys from one mnemonic. Mobile's writers (`usePasskeyMainKey`,
+ * `repairs/0003-mint-passkey-main-key`) use the entropy child; this must
+ * agree or a seed phrase restores different passkeys per platform.
  */
 
 /** Distinguishes the passkey main key from the wallet's XHD root, which shares its `hd-root-key` type. */
 const PBKDF2_P256_SCHEME = 'pbkdf2-p256'
+
+/**
+ * Restated from `extensions/provider/src/keystore/passkeyMainKey.ts` rather
+ * than imported: that package resolves `@algorandfoundation/react-native-keystore`
+ * -> `react-native-mmkv`, which is why `@perawallet/wallet-core-passkeys`
+ * splits the `/webauthn` subpath this port consumes (`webauthn.ts:18-25`).
+ * Drift is pinned by `keystore-signer.test.ts`.
+ */
+const passkeyMainKeyId = (seedKeyId: string): string =>
+    `${seedKeyId}-passkey-main`
 
 /**
  * Types a wallet root can carry. `hd-root-key` is what `useHDWallet` writes
@@ -114,11 +129,27 @@ const toFlatXY = (publicKey: Uint8Array): Uint8Array => {
     return flat
 }
 
+/** The seed's BIP39 entropy `secret-key` child, located by its metadata. */
+const entropyChildIdOf = (
+    seedKeyId: string,
+    keys: readonly Key[],
+): string | undefined =>
+    keys.find(key => {
+        const meta = (key.metadata ?? {}) as {
+            parentKeyId?: unknown
+            entropyKey?: unknown
+        }
+        return (
+            key.type === 'secret-key' &&
+            meta.entropyKey === true &&
+            meta.parentKeyId === seedKeyId
+        )
+    })?.id
+
 /**
  * Finds the persisted `pbkdf2-p256` main key, or derives one from the
- * wallet's root. Exactly one is ever created: every credential shares it, so
- * losing it would orphan all of them at once — which is precisely why it
- * hangs off the wallet root and stays reproducible from the seed phrase.
+ * wallet's BIP39 entropy. Exactly one is ever created: every credential
+ * shares it, so losing it would orphan all of them at once.
  */
 const resolveMainKeyId = async (
     keystore: PasskeyKeyStore,
@@ -136,6 +167,13 @@ const resolveMainKeyId = async (
         )
     }
 
+    const entropyChildId = entropyChildIdOf(walletRoot.id, store.state.keys)
+    if (!entropyChildId) {
+        throw new InvalidKeyDataError(
+            `Wallet root ${walletRoot.id} has no BIP39 entropy child; cannot derive a WebAuthn P-256 credential.`,
+        )
+    }
+
     return keystore.generate({
         type: 'hd-root-key',
         // `algorithm: 'P256'` is what selects the PBKDF2 main-key branch over
@@ -143,7 +181,10 @@ const resolveMainKeyId = async (
         algorithm: 'P256',
         extractable: false,
         keyUsages: ['deriveBits', 'deriveKey'],
-        params: { parentKeyId: walletRoot.id },
+        params: {
+            parentKeyId: entropyChildId,
+            id: passkeyMainKeyId(walletRoot.id),
+        },
     })
 }
 
