@@ -39,6 +39,16 @@ export enum ErrorCategory {
     TRANSACTIONS = 'transactions',
 }
 
+export type ErrorMessageKeys = {
+    titleKey: string
+    bodyKey: string
+}
+
+export const messageKeysFor = (base: string): ErrorMessageKeys => ({
+    titleKey: `${base}.title`,
+    bodyKey: `${base}.body`,
+})
+
 /**
  * Metadata attached to every error
  */
@@ -56,6 +66,7 @@ export interface ErrorMetadata {
     params?: Record<string, unknown>
     recoverable: boolean
     retryable: boolean
+    messageKeys?: ErrorMessageKeys
 }
 
 /**

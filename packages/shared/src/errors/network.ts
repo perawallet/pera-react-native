@@ -11,7 +11,13 @@
  */
 
 import { isHTTPError, isNetworkError, isTimeoutError } from 'ky'
-import { AppError, ErrorCategory, ErrorSeverity } from './base'
+import {
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+    messageKeysFor as keysFor,
+    type ErrorMessageKeys,
+} from './base'
 import { NoConnectionError } from './network-validation'
 
 /**
@@ -196,12 +202,7 @@ export const isConnectivityError = (error: unknown): boolean => {
     return isNetworkTransportError(error)
 }
 
-export type NetworkErrorMessageKeys = { titleKey: string; bodyKey: string }
-
-const keysFor = (base: string): NetworkErrorMessageKeys => ({
-    titleKey: `${base}.title`,
-    bodyKey: `${base}.body`,
-})
+export type NetworkErrorMessageKeys = ErrorMessageKeys
 
 /**
  * Single source of truth mapping a typed network error to the i18n *keys* for

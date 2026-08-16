@@ -43,6 +43,7 @@ const mockRegisterHandoff = vi.fn()
 const mockUseSelectedAccount = vi.fn()
 const mockUseSignerFor = vi.fn()
 const mockIsMultisigAccount = vi.fn()
+const mockUseAccountBalancesQuery = vi.fn()
 // Hoisted so it's initialized before the (hoisted) wallet-core-swaps mock factory
 // runs during the package import.
 const { mockValidate } = vi.hoisted(() => ({ mockValidate: vi.fn() }))
@@ -182,6 +183,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     // the guard against a fixed `quantumAccount` fixture below.
     isQuantumAccount: (account: unknown) =>
         (account as { type?: string } | undefined)?.type === 'quantum',
+    useAccountBalancesQuery: (...args: unknown[]) =>
+        mockUseAccountBalancesQuery(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -355,6 +358,11 @@ describe('useSwapExecution', () => {
         // Default: resolved signer mirrors the selected account (the "not
         // rekeyed" case). Rekey tests override this independently.
         mockUseSignerFor.mockImplementation(() => mockUseSelectedAccount())
+
+        // Default: no cached balances, so the frozen-input gate no-ops.
+        mockUseAccountBalancesQuery.mockReturnValue({
+            accountBalances: new Map(),
+        })
     })
 
     it('starts with idle status', () => {
@@ -534,6 +542,39 @@ describe('useSwapExecution', () => {
         expect(outcome).toEqual({ kind: 'stale-quote' })
         expect(mockPrepareTransactions).not.toHaveBeenCalled()
         expect(result.current.status).toBe('idle')
+    })
+
+    it('refuses a frozen input asset before prepare and reports a prepare-phase error', async () => {
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+        mockUseAccountBalancesQuery.mockReturnValue({
+            accountBalances: new Map([
+                [
+                    'SENDER_ADDR',
+                    {
+                        assetBalances: [{ assetId: '0', isFrozen: true }],
+                    },
+                ],
+            ]),
+        })
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-frozen'))
+        })
+
+        expect(outcome).toEqual({
+            kind: 'error',
+            phase: 'prepare',
+            message: 'assets.frozen_info.body',
+        })
+        expect(result.current.status).toBe('error')
+        expect(result.current.error).toEqual({
+            phase: 'prepare',
+            message: 'assets.frozen_info.body',
+        })
+        expect(mockPrepareTransactions).not.toHaveBeenCalled()
     })
 
     it('abandons a cancelled execution after prepare settles, before signing', async () => {

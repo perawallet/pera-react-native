@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity } from '@components/core'
 import { type IconName } from '@components/core/PWIcon/constants'
 import { useStyles } from './styles'
 
@@ -20,7 +20,7 @@ export type AssetSecurityTagProps = {
     iconName: IconName
     label: string
     variant: AssetSecurityTagVariant
-    onPress?: () => void
+    onPress: () => void
     testID?: string
 }
 
@@ -50,24 +50,13 @@ export const AssetSecurityTag = ({
         </>
     )
 
-    if (onPress) {
-        return (
-            <PWTouchableOpacity
-                style={styles.container}
-                onPress={onPress}
-                testID={testID}
-            >
-                {content}
-            </PWTouchableOpacity>
-        )
-    }
-
     return (
-        <PWView
+        <PWTouchableOpacity
             style={styles.container}
+            onPress={onPress}
             testID={testID}
         >
             {content}
-        </PWView>
+        </PWTouchableOpacity>
     )
 }

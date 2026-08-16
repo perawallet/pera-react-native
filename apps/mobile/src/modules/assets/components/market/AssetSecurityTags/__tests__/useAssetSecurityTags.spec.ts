@@ -26,7 +26,7 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('@modules/bottom-sheet', () => ({
     useBottomSheet: () => ({ request: mockRequest }),
 }))
-vi.mock('../AssetSecurityInfoContent', () => ({
+vi.mock('../../AssetSecurityInfoContent', () => ({
     AssetSecurityInfoContent: () => null,
 }))
 

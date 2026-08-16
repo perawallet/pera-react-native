@@ -38,7 +38,7 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { InvalidSendParamsError } from '../errors'
+import { AssetFrozenError, InvalidSendParamsError } from '../errors'
 import { isAlgoAssetId, logger } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -49,6 +49,7 @@ type BaseSendParams = {
     asset?: PeraAsset
     amount?: Decimal
     note?: string
+    isFrozen?: boolean
 }
 
 type SendTransactionParams = BaseSendParams & {
@@ -277,6 +278,10 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 params.amount === undefined
             ) {
                 throw new InvalidSendParamsError()
+            }
+
+            if (params.isFrozen) {
+                throw new AssetFrozenError()
             }
 
             const assetDecimals = params.asset?.decimals ?? 0

@@ -15,6 +15,7 @@ import {
     isAlgoAssetId,
     type Network,
     type Nullable,
+    type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchIndexerAssetDetails } from '../api'
@@ -25,6 +26,14 @@ type AssetAuthorities = {
     freezeAddress: Nullable<string>
     clawbackAddress: Nullable<string>
 }
+
+// Nodes usually omit a cleared authority, but some serialize the all-zero
+// address instead. Both mean "no authority".
+const ZERO_ADDRESS =
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
+
+const activeAuthority = (address: Optional<string>): Nullable<string> =>
+    address && address !== ZERO_ADDRESS ? address : null
 
 type UseAssetAuthoritiesQueryResult = AssetAuthorities & {
     isLoading: boolean
@@ -48,11 +57,13 @@ export const useAssetAuthoritiesQuery = (
         queryFn: async (): Promise<AssetAuthorities> => {
             const response = await fetchIndexerAssetDetails(assetId, network)
             const params = response.asset.params
+            const freeze = activeAuthority(params.freeze)
+            const clawback = activeAuthority(params.clawback)
             return {
-                hasFreeze: !!params.freeze,
-                hasClawback: !!params.clawback,
-                freezeAddress: params.freeze ?? null,
-                clawbackAddress: params.clawback ?? null,
+                hasFreeze: freeze !== null,
+                hasClawback: clawback !== null,
+                freezeAddress: freeze,
+                clawbackAddress: clawback,
             }
         },
         enabled,

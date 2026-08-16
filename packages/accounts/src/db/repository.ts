@@ -664,6 +664,7 @@ export type AccountHoldingsLiteRow = {
     isFavorited: boolean
     /** USD price per whole unit, or null until the price syncs. */
     usdPrice: Nullable<Decimal>
+    isFrozen: boolean
 }
 
 /**
@@ -689,6 +690,7 @@ export async function getAccountHoldingsLite(
         peraMetadataJson: r.peraMetadataJson,
         isFavorited: !!r.isFavorited,
         usdPrice: r.usdPrice != null ? new Decimal(r.usdPrice) : null,
+        isFrozen: r.isFrozen,
     }))
 }
 

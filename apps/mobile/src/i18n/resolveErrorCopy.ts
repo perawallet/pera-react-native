@@ -99,7 +99,16 @@ export const resolveErrorCopy = (
     }
 
     if (error instanceof AppError) {
-        const { messageKey, params, category } = error.metadata
+        const { messageKeys, messageKey, params, category } = error.metadata
+        // A declared title/body pair wins over the category title: an error
+        // like AssetFrozenError names the exact situation, which
+        // 'errors.transaction.title' would flatten back to a generic banner.
+        if (messageKeys) {
+            return {
+                title: t(messageKeys.titleKey),
+                body: t(messageKeys.bodyKey),
+            }
+        }
         if (messageKey) {
             return {
                 title: fallbackTitle ?? t(TITLE_KEY_BY_CATEGORY[category]),

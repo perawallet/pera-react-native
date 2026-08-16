@@ -92,4 +92,39 @@ describe('useAssetAuthoritiesQuery', () => {
         expect(result.current.hasFreeze).toBe(false)
         expect(result.current.hasClawback).toBe(false)
     })
+
+    it('treats the all-zero address as a cleared authority', async () => {
+        const ZERO_ADDRESS =
+            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
+        vi.spyOn(api, 'fetchIndexerAssetDetails').mockResolvedValue(
+            makeIndexerResponse({
+                freeze: ZERO_ADDRESS,
+                clawback: ZERO_ADDRESS,
+            }),
+        )
+
+        const { result } = renderHook(() => useAssetAuthoritiesQuery('123'), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(result.current.hasFreeze).toBe(false)
+        expect(result.current.hasClawback).toBe(false)
+        expect(result.current.freezeAddress).toBeNull()
+        expect(result.current.clawbackAddress).toBeNull()
+    })
+
+    it('still reports a normal address as an active authority', async () => {
+        vi.spyOn(api, 'fetchIndexerAssetDetails').mockResolvedValue(
+            makeIndexerResponse({ freeze: 'FREEZEADDR' }),
+        )
+
+        const { result } = renderHook(() => useAssetAuthoritiesQuery('123'), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(result.current.hasFreeze).toBe(true)
+        expect(result.current.freezeAddress).toBe('FREEZEADDR')
+    })
 })

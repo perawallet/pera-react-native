@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useAssetAuthoritiesQuery } from '@perawallet/wallet-core-assets'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -115,9 +115,19 @@ export const useAssetSecurityTags = (
         isSuccess,
     } = useAssetAuthoritiesQuery(assetId)
 
-    return {
-        isVisible: isSuccess,
-        freezeTag: buildTag('freeze', hasFreeze, freezeAddress),
-        clawbackTag: buildTag('clawback', hasClawback, clawbackAddress),
-    }
+    return useMemo(
+        () => ({
+            isVisible: isSuccess,
+            freezeTag: buildTag('freeze', hasFreeze, freezeAddress),
+            clawbackTag: buildTag('clawback', hasClawback, clawbackAddress),
+        }),
+        [
+            buildTag,
+            hasFreeze,
+            hasClawback,
+            freezeAddress,
+            clawbackAddress,
+            isSuccess,
+        ],
+    )
 }

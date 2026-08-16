@@ -15,6 +15,7 @@ import {
     ErrorCategory,
     type ErrorMetadata,
     ErrorSeverity,
+    messageKeysFor,
     toError,
 } from '@perawallet/wallet-core-shared'
 
@@ -78,6 +79,14 @@ export class NonZeroBalanceError extends TransactionError {
 export class CreatorCannotOptOutError extends TransactionError {
     constructor() {
         super('Asset creators cannot opt out of their own assets.')
+    }
+}
+
+export class AssetFrozenError extends TransactionError {
+    constructor() {
+        super("The sender's holding of this asset is frozen.", undefined, {
+            messageKeys: messageKeysFor('errors.transaction.asset_frozen'),
+        })
     }
 }
 

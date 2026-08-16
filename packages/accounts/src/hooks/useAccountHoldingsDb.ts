@@ -33,7 +33,7 @@ export const getHoldingsFromDb = async (
 
 export const persistHoldingsToDb = async (
     accountAddress: string,
-    holdings: Array<{ assetId: string; amount: Decimal }>,
+    holdings: Array<{ assetId: string; amount: Decimal; isFrozen: boolean }>,
     network: string,
 ): Promise<void> => {
     try {
@@ -57,6 +57,7 @@ export const useHoldingsDbSync = (
             const rows = holdings.map(h => ({
                 assetId: `${h.assetId}`,
                 amount: new Decimal(h.amount.toString()),
+                isFrozen: false,
             }))
 
             void persistHoldingsToDb(accountAddress, rows, network)

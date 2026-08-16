@@ -231,7 +231,13 @@ describe('account repository', () => {
             const changed = await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: new Decimal(10) }],
+                holdings: [
+                    {
+                        assetId: '100',
+                        amount: new Decimal(10),
+                        isFrozen: false,
+                    },
+                ],
                 network: 'mainnet',
             })
             expect(changed).toBe(true)
@@ -239,8 +245,8 @@ describe('account repository', () => {
 
         it('returns false when nothing changed', async () => {
             const holdings = [
-                { assetId: '100', amount: new Decimal(10) },
-                { assetId: '200', amount: new Decimal(20) },
+                { assetId: '100', amount: new Decimal(10), isFrozen: false },
+                { assetId: '200', amount: new Decimal(20), isFrozen: false },
             ]
             await refreshAccountHoldings({
                 db,
@@ -263,8 +269,16 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: new Decimal(10) },
-                    { assetId: '200', amount: new Decimal(20) },
+                    {
+                        assetId: '100',
+                        amount: new Decimal(10),
+                        isFrozen: false,
+                    },
+                    {
+                        assetId: '200',
+                        amount: new Decimal(20),
+                        isFrozen: false,
+                    },
                 ],
                 network: 'mainnet',
             })
@@ -273,8 +287,16 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: new Decimal(10) },
-                    { assetId: '200', amount: new Decimal(999) },
+                    {
+                        assetId: '100',
+                        amount: new Decimal(10),
+                        isFrozen: false,
+                    },
+                    {
+                        assetId: '200',
+                        amount: new Decimal(999),
+                        isFrozen: false,
+                    },
                 ],
                 network: 'mainnet',
             })
@@ -295,8 +317,16 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: new Decimal(10) },
-                    { assetId: '200', amount: new Decimal(20) },
+                    {
+                        assetId: '100',
+                        amount: new Decimal(10),
+                        isFrozen: false,
+                    },
+                    {
+                        assetId: '200',
+                        amount: new Decimal(20),
+                        isFrozen: false,
+                    },
                 ],
                 network: 'mainnet',
             })
@@ -304,7 +334,13 @@ describe('account repository', () => {
             const changed = await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: new Decimal(10) }],
+                holdings: [
+                    {
+                        assetId: '100',
+                        amount: new Decimal(10),
+                        isFrozen: false,
+                    },
+                ],
                 network: 'mainnet',
             })
             expect(changed).toBe(true)
@@ -321,6 +357,7 @@ describe('account repository', () => {
             const holdings = Array.from({ length: 450 }, (_, i) => ({
                 assetId: `${i + 1}`,
                 amount: new Decimal(i + 1),
+                isFrozen: false,
             }))
 
             const changed = await refreshAccountHoldings({
@@ -370,11 +407,15 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: new Decimal(50) },
-                    { assetId: '200', amount: new Decimal(0) },
-                    { assetId: '300', amount: new Decimal(1) },
-                    { assetId: '400', amount: new Decimal(0) },
-                    { assetId: '500', amount: new Decimal(0) },
+                    {
+                        assetId: '100',
+                        amount: new Decimal(50),
+                        isFrozen: false,
+                    },
+                    { assetId: '200', amount: new Decimal(0), isFrozen: false },
+                    { assetId: '300', amount: new Decimal(1), isFrozen: false },
+                    { assetId: '400', amount: new Decimal(0), isFrozen: false },
+                    { assetId: '500', amount: new Decimal(0), isFrozen: false },
                 ],
                 network: 'mainnet',
             })
@@ -1369,10 +1410,22 @@ describe('account repository', () => {
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
                 holdings: [
-                    { assetId: '0', amount: new Decimal(5_000_000) },
-                    { assetId: '100', amount: new Decimal(2_000_000) },
-                    { assetId: '200', amount: new Decimal(1_000_000) },
-                    { assetId: '300', amount: new Decimal(0) },
+                    {
+                        assetId: '0',
+                        amount: new Decimal(5_000_000),
+                        isFrozen: false,
+                    },
+                    {
+                        assetId: '100',
+                        amount: new Decimal(2_000_000),
+                        isFrozen: false,
+                    },
+                    {
+                        assetId: '200',
+                        amount: new Decimal(1_000_000),
+                        isFrozen: false,
+                    },
+                    { assetId: '300', amount: new Decimal(0), isFrozen: false },
                 ],
             })
             await upsertAssets({
@@ -1419,11 +1472,27 @@ describe('account repository', () => {
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
                 holdings: [
-                    { assetId: '0', amount: new Decimal(5_000_000) },
-                    { assetId: '100', amount: new Decimal(2_000_000) },
-                    { assetId: '200', amount: new Decimal(1_000_000) },
-                    { assetId: '300', amount: new Decimal(0) },
-                    { assetId: '999', amount: new Decimal(10) },
+                    {
+                        assetId: '0',
+                        amount: new Decimal(5_000_000),
+                        isFrozen: false,
+                    },
+                    {
+                        assetId: '100',
+                        amount: new Decimal(2_000_000),
+                        isFrozen: false,
+                    },
+                    {
+                        assetId: '200',
+                        amount: new Decimal(1_000_000),
+                        isFrozen: false,
+                    },
+                    { assetId: '300', amount: new Decimal(0), isFrozen: false },
+                    {
+                        assetId: '999',
+                        amount: new Decimal(10),
+                        isFrozen: false,
+                    },
                 ],
             })
 
@@ -1578,6 +1647,94 @@ describe('account repository', () => {
             expect(apple?.usdPrice?.toString()).toBe('3')
             const zebra = rows.find(r => r.assetId === '300')
             expect(zebra?.isFavorited).toBe(true)
+        })
+    })
+
+    describe('holding isFrozen', () => {
+        it('round-trips isFrozen through refreshAccountHoldings', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '1', amount: new Decimal(5), isFrozen: true },
+                    { assetId: '2', amount: new Decimal(7), isFrozen: false },
+                ],
+            })
+
+            const rows = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            expect(rows.find(r => r.assetId === '1')?.isFrozen).toBe(true)
+            expect(rows.find(r => r.assetId === '2')?.isFrozen).toBe(false)
+        })
+
+        it('treats a freeze with an unchanged amount as a change', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '1', amount: new Decimal(5), isFrozen: false },
+                ],
+            })
+
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '1', amount: new Decimal(5), isFrozen: true },
+                ],
+            })
+            expect(changed).toBe(true)
+
+            const rows = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            expect(rows[0]?.isFrozen).toBe(true)
+        })
+
+        it('returns false on a repeat sync with an unchanged frozen holding', async () => {
+            const holdings = [
+                { assetId: '1', amount: new Decimal(5), isFrozen: true },
+            ]
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings,
+            })
+
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings,
+            })
+            expect(changed).toBe(false)
+        })
+
+        it('defaults isFrozen to false when the caller omits it', async () => {
+            await insertAssetHolding({
+                db,
+                accountAddress: 'ADDR1',
+                assetId: '3',
+                network: 'mainnet',
+                amount: '0',
+            })
+
+            const rows = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            expect(rows.find(r => r.assetId === '3')?.isFrozen).toBe(false)
         })
     })
 })

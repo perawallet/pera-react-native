@@ -11,8 +11,9 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { type AssetSecurityTagVariant } from './AssetSecurityTag'
 
-type StyleProps = { variant: 'neutral' | 'warning' }
+type StyleProps = { variant: AssetSecurityTagVariant }
 
 export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
     container: {

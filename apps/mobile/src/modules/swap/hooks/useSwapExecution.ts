@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import {
     useTransactionEncoder,
     useAlgorandClient,
@@ -22,6 +22,7 @@ import {
 import {
     isMultisigAccount,
     useSelectedAccount,
+    useAccountBalancesQuery,
     useSignerFor,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
@@ -142,6 +143,8 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     // (Falcon) via the resolved auth account. Same pattern as
     // `useTransactionConfirmationScreen`'s `isQuantumFee` check.
     const signer = useSignerFor(account?.address)
+    const senderAccounts = useMemo(() => (account ? [account] : []), [account])
+    const { accountBalances } = useAccountBalancesQuery(senderAccounts)
     const deviceId = useDeviceID(network)
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     const { mutateAsync: prepareTransactions } =
@@ -158,6 +161,20 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             const quoteIdStr = quote.quoteIdStr
             if (!quoteIdStr) {
                 const message = 'Swap quote is missing its id'
+                setError({ phase: 'prepare', message })
+                setStatus('error')
+                return { kind: 'error', phase: 'prepare', message }
+            }
+
+            const isInputFrozen =
+                accountBalances
+                    .get(account?.address ?? '')
+                    ?.assetBalances.find(
+                        b => b.assetId === quote.assetIn.assetId,
+                    )?.isFrozen ?? false
+
+            if (isInputFrozen) {
+                const message = t('assets.frozen_info.body')
                 setError({ phase: 'prepare', message })
                 setStatus('error')
                 return { kind: 'error', phase: 'prepare', message }
@@ -440,6 +457,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             network,
             account,
             signer,
+            accountBalances,
             deviceId,
             registerHandoff,
         ],

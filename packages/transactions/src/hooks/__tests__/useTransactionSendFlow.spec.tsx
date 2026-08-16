@@ -17,6 +17,7 @@ import {
     useTransactionSendFlow,
     InvalidSendParamsError,
 } from '../useTransactionSendFlow'
+import { AssetFrozenError } from '../../errors'
 
 // BigInt.prototype.microAlgo() (added by algokit-utils) returns an
 // AlgoAmount wrapper, not a raw bigint. Patch it to return the bigint itself
@@ -624,6 +625,38 @@ describe('useTransactionSendFlow', () => {
         )
         // Rejecting returns the asset to the sender — never credit holdings.
         expect(mockAddToAssetHolding).not.toHaveBeenCalled()
+    })
+
+    describe('frozen holding guard', () => {
+        const baseParams = {
+            sendMode: 'normal' as const,
+            sender: { address: 'A' } as any,
+            receiver: 'B',
+            asset: { assetId: 99n, decimals: 0 } as any,
+            amount: new Decimal(1),
+        }
+
+        it('refuses to build a send for a frozen holding', async () => {
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await expect(
+                    result.current.execute({
+                        params: { ...baseParams, isFrozen: true },
+                    }),
+                ).rejects.toBeInstanceOf(AssetFrozenError)
+            })
+            expect(mockSubmit).not.toHaveBeenCalled()
+        })
+
+        it('builds normally when the holding is not frozen', async () => {
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await result.current.execute({
+                    params: { ...baseParams, isFrozen: false },
+                })
+            })
+            expect(mockSubmit).toHaveBeenCalled()
+        })
     })
 
     it('throws InvalidSendParamsError for an empty assetId string', async () => {

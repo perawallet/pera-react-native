@@ -16,7 +16,12 @@ import {
     ErrorCategory,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
-import { TransactionError, InvalidSendParamsError, RekeyError } from '../errors'
+import {
+    TransactionError,
+    InvalidSendParamsError,
+    AssetFrozenError,
+    RekeyError,
+} from '../errors'
 
 describe('TransactionError', () => {
     it('is an instance of AppError and Error', () => {
@@ -141,6 +146,15 @@ describe('InvalidSendParamsError', () => {
         expect(error.metadata.severity).toBe(ErrorSeverity.HIGH)
         expect(error.metadata.category).toBe(ErrorCategory.TRANSACTIONS)
         expect(error.metadata.retryable).toBe(false)
+    })
+})
+
+describe('AssetFrozenError', () => {
+    it('carries the frozen-transfer message keys', () => {
+        expect(new AssetFrozenError().metadata.messageKeys).toEqual({
+            titleKey: 'errors.transaction.asset_frozen.title',
+            bodyKey: 'errors.transaction.asset_frozen.body',
+        })
     })
 })
 

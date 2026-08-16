@@ -249,6 +249,23 @@ describe('toAlgodError', () => {
         expect(e.originalError).toBe(abort)
     })
 
+    test('maps a frozen-holding rejection to ASSET_FROZEN', () => {
+        const bodyMessage =
+            `TransactionPool.Remember: transaction ${TXID}: ` +
+            `asset 123 frozen in ${ADDR}`
+        const err = makeAlgodHttpError({
+            status: 400,
+            statusText: 'Bad Request',
+            bodyMessage,
+        })
+        const e = toAlgodError(err)
+
+        expect(e).toBeInstanceOf(AlgodError)
+        expect(e.code).toBe(AlgodErrorCode.ASSET_FROZEN)
+        expect(e.params).toEqual({ assetId: 123n, address: ADDR })
+        expect(e.originalError).toBe(err)
+    })
+
     test('retryable flag reflects the code (network_unavailable=true, overspend=false)', () => {
         const network = toAlgodError(
             makeAlgodHttpError({ status: 504, statusText: 'Gateway Timeout' }),
