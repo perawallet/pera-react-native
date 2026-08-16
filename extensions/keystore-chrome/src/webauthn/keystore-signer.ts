@@ -25,35 +25,22 @@ import {
 } from '@perawallet/wallet-core-passkeys/webauthn'
 
 /**
- * Implements the `KeystoreSigner` port over the keystore engine the rest of
- * the extension already uses (`getKeystore()` / `getKeystoreStore()` from
- * `extensions/provider`), so every credential this mints is persisted where
- * Settings > Passkeys and `signP256` can both see it.
+ * TRAP — do not route this through `keystore-chrome`'s own `store.ts`
+ * (`chrome.storage.local`, `keystore:` prefix). Web key storage moved to the
+ * keystore-web engine (IndexedDB), leaving that bucket permanently empty, and
+ * anything written there is invisible to Settings > Passkeys and `signP256`.
  *
- * TRAP — this adapter used to drive `keystore-chrome`'s own `store.ts`
- * (`generateKey`/`fetchSecret`), which persists to `chrome.storage.local`
- * under the `keystore:` prefix. Web key storage has since moved to the
- * keystore-web engine (IndexedDB), leaving that bucket permanently empty:
- * the adapter found no wallet seed and threw `InvalidKeyDataError`, and any
- * credential it had managed to write would have been invisible to the rest
- * of the extension anyway. Route everything through the injected engine.
- *
- * ## The passkey hierarchy the engine expects
- *
- * `wallet root -> bip39 entropy child -> pbkdf2-p256 main key -> hd-derived-p256 credential`
- *
- * The engine has no `generate({ type: 'hd-derived-p256' })` branch at all;
- * the only way to mint a credential is `deriveDomainKey(mainKeyId, …)`, and
- * that rejects any parent which is not an `hd-root-key` carrying
+ * The engine mints credentials only through `deriveDomainKey`, which rejects
+ * any parent that is not an `hd-root-key` carrying
  * `metadata.scheme === 'pbkdf2-p256'` (`keystore-core` `create.js:774`).
  *
- * TRAP — that main key must parent on the **entropy child**, not the wallet
- * root. `generateDP256Main` runs `withSeed(…, { wantSeed: false })`
- * (`create.js:449-462`), feeding the parent's raw stored bytes into PBKDF2,
- * so the 96-byte extended root and the 16/32-byte entropy yield different
- * main keys from one mnemonic. Mobile's writers (`usePasskeyMainKey`,
- * `repairs/0003-mint-passkey-main-key`) use the entropy child; this must
- * agree or a seed phrase restores different passkeys per platform.
+ * TRAP — that main key must parent on the wallet's **entropy child**, not the
+ * wallet root: `generateDP256Main` PBKDF2s the parent's raw stored bytes
+ * (`create.js:449-462`, `wantSeed: false`), so the 96-byte extended root and
+ * the 16/32-byte entropy give different main keys from one mnemonic. Mobile's
+ * writers (`usePasskeyMainKey`, `repairs/0003-mint-passkey-main-key`) use the
+ * entropy child and sort their root pick; `resolveMainKeyId` matches both, or a
+ * seed phrase restores different passkeys per platform.
  */
 
 /** Distinguishes the passkey main key from the wallet's XHD root, which shares its `hd-root-key` type. */
@@ -64,7 +51,10 @@ const PBKDF2_P256_SCHEME = 'pbkdf2-p256'
  * than imported: that package resolves `@algorandfoundation/react-native-keystore`
  * -> `react-native-mmkv`, which is why `@perawallet/wallet-core-passkeys`
  * splits the `/webauthn` subpath this port consumes (`webauthn.ts:18-25`).
- * Drift is pinned by `keystore-signer.test.ts`.
+ *
+ * Both copies assert the same literal — `keystore-signer.test.ts` here,
+ * `passkeyMainKey.spec.ts` in provider — so either one drifting alone fails its
+ * own suite.
  */
 const passkeyMainKeyId = (seedKeyId: string): string =>
     `${seedKeyId}-passkey-main`
@@ -158,14 +148,29 @@ const resolveMainKeyId = async (
     const existing = store.state.keys.find(isPasskeyMainKey)
     if (existing) return existing.id
 
-    const walletRoot = store.state.keys.find(
-        key => WALLET_ROOT_TYPES.has(key.type) && !isPasskeyMainKey(key),
-    )
-    if (!walletRoot) {
+    // Lowest-sorted root with an entropy child wins, matching `repairs/0003`
+    // (`:156-162`) and `useKMS.removeKeyAndChildren`: the device gets exactly
+    // one main key, so a store-order pick would name a different root here than
+    // mobile does from the same seeds.
+    const roots = store.state.keys
+        .filter(
+            key => WALLET_ROOT_TYPES.has(key.type) && !isPasskeyMainKey(key),
+        )
+        // Code-unit order, NOT `localeCompare`: the other two writers use a
+        // bare `.sort()`, and a locale-aware collation would disagree with them
+        // on case and punctuation.
+        .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    const [firstRoot] = roots
+    if (!firstRoot) {
         throw new InvalidKeyDataError(
             'No wallet root found in the keystore; cannot derive a WebAuthn P-256 credential.',
         )
     }
+    // Falling back to `firstRoot` keeps the "no entropy child" error below for
+    // the case where no root has one at all.
+    const walletRoot =
+        roots.find(root => entropyChildIdOf(root.id, store.state.keys)) ??
+        firstRoot
 
     const entropyChildId = entropyChildIdOf(walletRoot.id, store.state.keys)
     if (!entropyChildId) {
