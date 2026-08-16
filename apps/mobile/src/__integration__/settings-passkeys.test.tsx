@@ -361,8 +361,11 @@ describe('Flow: Settings → Passkeys', () => {
 
     // R7: removing the credential is irreversible and the replacement can only
     // be registered while Pera is the active provider. `resolveState` reports
-    // `populated` here — a passkey to show outranks the provider check — so
-    // the banner is on screen and only the action has to be withheld.
+    // `populated` here — a passkey to show outranks the provider check — so the
+    // banner is on screen and the warning stays; every route to the delete flow
+    // is what has to be withheld, the banner's CTA and the row's trash icon
+    // alike. (The row's own removal flow is exercised in
+    // `settings-passkeys-delete.test.tsx`.)
     it(
         'Given a flagged passkey but Pera is not the active provider, when the screen mounts, then the banner warns without offering to remove it',
         async () => {
@@ -385,6 +388,10 @@ describe('Flow: Settings → Passkeys', () => {
                     `settings_passkeys_migration_recreate_${FLAGGED_PASSKEY_ID}`,
                 ),
             ).toBeFalsy()
+            // The flagged credential is the only row on screen, so the list's
+            // remove action must be gone too — otherwise the banner's blocked
+            // note is contradicted two taps below it.
+            expect(screen.queryByTestId('touchable-icon-trash')).toBeFalsy()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

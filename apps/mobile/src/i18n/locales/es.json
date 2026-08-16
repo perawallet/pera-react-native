@@ -2308,7 +2308,7 @@
             "migration_warning_title": "La recuperación no está disponible",
             "migration_warning_body": "Cada passkey de la lista de abajo todavía te permite iniciar sesión, pero no se puede recuperar con tu passphrase de recuperación. Elimínala y vuelve a crearla en el sitio para que sea recuperable. Hazlo solo mientras aún puedas iniciar sesión en ese sitio de otra forma.",
             "migration_warning_cta": "Eliminar",
-            "migration_warning_blocked": "Ahora mismo no se ofrece eliminarla porque Pera no es tu proveedor de passkeys activo: no podrías crear una de repuesto. Actívalo primero en los ajustes de tu dispositivo.",
+            "migration_warning_blocked": "Ahora mismo no se ofrece eliminarla porque Pera no es tu proveedor de passkeys activo: no podrías crear una de repuesto. Vuelve a poner Pera como tu proveedor de passkeys para poder eliminarla.",
             "migration_warning_dismiss": "Ahora no",
             "loading": "Comprobando passkeys...",
             "error_title": "Algo ha ido mal",

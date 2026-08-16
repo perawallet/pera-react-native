@@ -2300,7 +2300,7 @@
             "migration_warning_title": "Wiederherstellung nicht möglich",
             "migration_warning_body": "Jeder unten aufgeführte Passkey meldet dich weiterhin an, kann aber nicht aus deiner Wiederherstellungsphrase wiederhergestellt werden. Entferne ihn und erstelle ihn auf der Website neu, damit er wiederherstellbar wird. Tu das nur, solange du dich bei dieser Website noch auf einem anderen Weg anmelden kannst.",
             "migration_warning_cta": "Entfernen",
-            "migration_warning_blocked": "Das Entfernen wird gerade nicht angeboten, weil Pera nicht dein aktiver Passkey-Anbieter ist — du könntest keinen Ersatz erstellen. Aktiviere Pera zuerst in deinen Geräteeinstellungen.",
+            "migration_warning_blocked": "Das Entfernen wird gerade nicht angeboten, weil Pera nicht dein aktiver Passkey-Anbieter ist — du könntest keinen Ersatz erstellen. Mach Pera wieder zu deinem Passkey-Anbieter, um ihn zu entfernen.",
             "migration_warning_dismiss": "Jetzt nicht",
             "loading": "Passkeys werden geprüft...",
             "error_title": "Etwas ist schiefgelaufen",

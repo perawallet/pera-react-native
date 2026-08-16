@@ -2308,7 +2308,7 @@
             "migration_warning_title": "Recovery isn't available",
             "migration_warning_body": "Each passkey listed below still signs you in, but can't be restored from your recovery passphrase. Remove it and create it again on the site to make it recoverable. Only do this while you can still sign in to that site another way.",
             "migration_warning_cta": "Remove",
-            "migration_warning_blocked": "Removing isn't offered right now because Pera isn't your active passkey provider — you couldn't create a replacement. Turn it back on in your device settings first.",
+            "migration_warning_blocked": "Removing isn't offered right now because Pera isn't your active passkey provider — you couldn't create a replacement. Make Pera your passkey provider again to remove it.",
             "migration_warning_dismiss": "Not now",
             "loading": "Checking passkeys...",
             "error_title": "Something went wrong",

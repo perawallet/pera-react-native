@@ -2308,7 +2308,7 @@
             "migration_warning_title": "Restauration indisponible",
             "migration_warning_body": "Chaque passkey listé ci-dessous vous connecte toujours, mais ne peut pas être restauré à partir de votre passphrase de récupération. Supprimez-le et recréez-le sur le site pour le rendre récupérable. Ne le faites que tant que vous pouvez encore vous connecter à ce site d’une autre manière.",
             "migration_warning_cta": "Supprimer",
-            "migration_warning_blocked": "La suppression n’est pas proposée pour le moment, car Pera n’est pas votre fournisseur de passkeys actif : vous ne pourriez pas en créer un nouveau. Activez-le d’abord dans les réglages de votre appareil.",
+            "migration_warning_blocked": "La suppression n’est pas proposée pour le moment, car Pera n’est pas votre fournisseur de passkeys actif : vous ne pourriez pas en créer un nouveau. Redéfinissez Pera comme votre fournisseur de passkeys pour pouvoir le supprimer.",
             "migration_warning_dismiss": "Pas maintenant",
             "loading": "Vérification des passkeys…",
             "error_title": "Une erreur s’est produite",

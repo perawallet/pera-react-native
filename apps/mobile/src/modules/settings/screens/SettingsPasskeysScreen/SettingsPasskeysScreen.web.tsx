@@ -30,6 +30,12 @@ import { useStyles } from './styles'
 // list at all times, making the interception state directly controllable and
 // visible instead. See useSettingsPasskeysScreen.web.tsx for how "active" is
 // derived from that toggle rather than the native isProviderActive signal.
+// Native withholds removal of a migration-flagged passkey while Pera is not the
+// OS credential provider, because re-registering needs a settings trip the user
+// may not complete. Web has no such state: the interception toggle above the
+// list is the only thing gating re-registration, so nothing here is one-way.
+const alwaysRemovable = () => true
+
 export const SettingsPasskeyScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -68,6 +74,7 @@ export const SettingsPasskeyScreen = () => {
             content = (
                 <PasskeysList
                     passkeys={screen.passkeys}
+                    canRemove={alwaysRemovable}
                     onRequestDelete={screen.onRequestDelete}
                 />
             )

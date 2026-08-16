@@ -13,6 +13,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { AppState } from 'react-native'
+import type { Passkey } from '@perawallet/wallet-core-passkeys'
 import { useSettingsPasskeysScreen } from '../useSettingsPasskeysScreen'
 
 const mocks = vi.hoisted(() => ({
@@ -85,6 +86,17 @@ vi.mock('@analytics', () => ({
     PasskeysEvent: { Deleted: 'passkeys_deleted' },
 }))
 
+const flaggedPasskey = { id: 'cred-1', needsMigration: true } as Passkey
+const unflaggedPasskey = { id: 'cred-2', needsMigration: false } as Passkey
+
+const expectBannerGates = (gates: {
+    isManaging: boolean
+    isProviderActive?: boolean
+}) =>
+    expect(mocks.usePasskeyMigrationBanner).toHaveBeenCalledWith(
+        expect.objectContaining(gates),
+    )
+
 describe('useSettingsPasskeysScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -107,74 +119,48 @@ describe('useSettingsPasskeysScreen', () => {
         } as unknown as ReturnType<typeof AppState.addEventListener>)
     })
 
-    it('is not managing while the status or the list is still loading', () => {
+    it('does not let the banner show while the status or the list is still loading', () => {
         mocks.isPasskeysLoading = true
 
         const { result } = renderHook(() => useSettingsPasskeysScreen())
 
         expect(result.current.state).toBe('loading')
-        expect(result.current.isManaging).toBe(false)
+        expectBannerGates({ isManaging: false })
     })
 
-    it('is not managing when the list errored', () => {
+    it('does not let the banner show when the list errored', () => {
         mocks.isPasskeysError = true
 
         const { result } = renderHook(() => useSettingsPasskeysScreen())
 
         expect(result.current.state).toBe('error')
-        expect(result.current.isManaging).toBe(false)
+        expectBannerGates({ isManaging: false })
     })
 
-    // The prerequisites are deliberately all met here: `canScan` is true in
-    // this exact state, so passing it in `isManaging`'s place would still
-    // compile and still pass every other assertion in this file.
-    it('is not managing while the provider is off, even though a scan is still offered', () => {
+    // Both banner gates are wired here rather than in the screen body, so the
+    // wiring is checkable. This state separates the managed-content gate from
+    // the scanner one: the prerequisites are all met, so `canScan` is true (and
+    // passing it in `isManaging`'s place would still compile) while the screen
+    // is not managing anything.
+    it('hands the banner the managed-content gate, not the scanner gate', () => {
         mocks.isProviderActive = false
 
         const { result } = renderHook(() => useSettingsPasskeysScreen())
 
         expect(result.current.state).toBe('disabled')
         expect(result.current.canScan).toBe(true)
-        expect(result.current.isManaging).toBe(false)
+        expectBannerGates({ isManaging: false, isProviderActive: false })
     })
 
-    it('is managing once the provider is on and the list is empty', () => {
+    it('lets the banner show once the provider is on and the list is empty', () => {
         const { result } = renderHook(() => useSettingsPasskeysScreen())
 
         expect(result.current.state).toBe('empty')
-        expect(result.current.isManaging).toBe(true)
-    })
-
-    it('is managing with passkeys to show, whatever the provider reports', () => {
-        mocks.passkeys = [{ id: 'cred-1' }]
-        mocks.isProviderActive = false
-
-        const { result } = renderHook(() => useSettingsPasskeysScreen())
-
-        expect(result.current.state).toBe('populated')
-        expect(result.current.isManaging).toBe(true)
-    })
-
-    // Both banner gates are wired here rather than in the screen body, so the
-    // wiring is checkable. This state is the one that separates them: the
-    // provider is off, `canScan` is true (so passing it in `isManaging`'s
-    // place would still compile and still be right here), and `isManaging` is
-    // false.
-    it('hands the banner the managed-content gate, not the scanner gate', () => {
-        mocks.isProviderActive = false
-
-        renderHook(() => useSettingsPasskeysScreen())
-
-        expect(mocks.usePasskeyMigrationBanner).toHaveBeenCalledWith(
-            expect.objectContaining({
-                isManaging: false,
-                isProviderActive: false,
-            }),
-        )
+        expectBannerGates({ isManaging: true })
     })
 
     // The other half: `populated` wins over `disabled` in `resolveState`, so
-    // `isManaging` is true while a replacement passkey cannot be registered.
+    // the screen is managing while a replacement passkey cannot be registered.
     // Passing `isManaging` for `isProviderActive` would pass the case above.
     it('hands the banner the raw provider state, not the managed-content gate', () => {
         mocks.passkeys = [{ id: 'cred-1' }]
@@ -182,13 +168,39 @@ describe('useSettingsPasskeysScreen', () => {
 
         const { result } = renderHook(() => useSettingsPasskeysScreen())
 
-        expect(result.current.isManaging).toBe(true)
-        expect(mocks.usePasskeyMigrationBanner).toHaveBeenCalledWith(
-            expect.objectContaining({
-                isManaging: true,
-                isProviderActive: false,
-            }),
-        )
+        expect(result.current.state).toBe('populated')
+        expectBannerGates({ isManaging: true, isProviderActive: false })
+    })
+
+    // R7 again, at the row this time: the banner's CTA is not the only way to
+    // reach the delete flow, so the same rule has to hold for the list.
+    it('withholds removal of a flagged passkey while the provider is off', () => {
+        mocks.passkeys = [{ id: 'cred-1' }]
+        mocks.isProviderActive = false
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.canRemove(flaggedPasskey)).toBe(false)
+    })
+
+    // The flag means "not derivable from the recovery passphrase". Everything
+    // without it is, so withholding those would cost the user an action for no
+    // protection at all.
+    it('keeps an unflagged passkey removable while the provider is off', () => {
+        mocks.passkeys = [{ id: 'cred-1' }]
+        mocks.isProviderActive = false
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.canRemove(unflaggedPasskey)).toBe(true)
+    })
+
+    it('offers removal of a flagged passkey once the provider is active', () => {
+        mocks.passkeys = [{ id: 'cred-1' }]
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.canRemove(flaggedPasskey)).toBe(true)
     })
 
     it('exposes the banner state it composed', () => {

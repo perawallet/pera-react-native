@@ -54,12 +54,13 @@ export type UseSettingsPasskeysScreenResult = {
     /** The prerequisite notice to render (empty / populated states only). */
     notice: PasskeysNotice
     /**
-     * Whether the screen is showing the managed-passkey content. Gates
-     * everything that renders above it — the prerequisite notice and the
-     * migration banner — so nothing stacks on top of a loading, errored or
-     * provider-disabled screen.
+     * Whether a row may offer its remove action. Removal is one-way and a
+     * flagged passkey can only be replaced while Pera is the active provider,
+     * so removing one with the provider off locks the user out of that site.
+     * Unflagged passkeys are derivable from the recovery passphrase and stay
+     * removable either way.
      */
-    isManaging: boolean
+    canRemove: (passkey: Passkey) => boolean
     /**
      * The migration banner's own state. Composed here rather than in the
      * screen body so its two gates are wired from the values they belong to:
@@ -160,9 +161,15 @@ export const useSettingsPasskeysScreen =
             [onRequestDelete],
         )
 
+        const isProviderActive = status.isProviderActive
+        const canRemove = useCallback(
+            (passkey: Passkey) => isProviderActive || !passkey.needsMigration,
+            [isProviderActive],
+        )
+
         const migration = usePasskeyMigrationBanner({
             isManaging,
-            isProviderActive: status.isProviderActive,
+            isProviderActive,
             onRequestDelete: handleRequestDelete,
         })
 
@@ -178,7 +185,7 @@ export const useSettingsPasskeysScreen =
             state,
             passkeys: list.passkeys,
             notice,
-            isManaging,
+            canRemove,
             migration,
             canScan:
                 state !== 'loading' &&
@@ -201,9 +208,7 @@ const resolveState = (
     if (status.isLoading || list.isLoading) return 'loading'
     if (list.isError) return 'error'
     // Existing passkeys are proof the provider is/was working — never nag to
-    // enable it when there are credentials to show. (Android can't reliably
-    // read provider state until the service is first invoked, so this also
-    // avoids a false "disabled" once the user actually has passkeys.)
+    // enable it when there are credentials to show.
     if (list.passkeys.length > 0) return 'populated'
     if (!status.isProviderActive) return 'disabled'
     return 'empty'

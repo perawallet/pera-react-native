@@ -179,7 +179,8 @@ describe('usePasskeyMigrationBanner', () => {
     // on top of a loading, errored or provider-disabled screen. It is not the
     // lockout gate: `resolveState` returns `populated` before it consults the
     // provider, so a provider-off screen with at least one passkey is still
-    // "managing" — `canRecreate` is what withholds the action there.
+    // "managing". `canRecreate` withholds the banner's own action there, and
+    // the screen's `canRemove` withholds the matching one on the list row.
     it('stays hidden while the screen is not managing passkeys', async () => {
         mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
             passkey({ keyId: 'flat-1' }),

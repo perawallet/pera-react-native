@@ -2324,7 +2324,7 @@
             "migration_warning_title": "Recuperação indisponível",
             "migration_warning_body": "Cada passkey listada abaixo ainda faz seu login, mas não pode ser restaurada pela sua passphrase de recuperação. Remova-a e crie-a novamente no site para que ela fique recuperável. Faça isso apenas enquanto você ainda conseguir entrar nesse site de outra forma.",
             "migration_warning_cta": "Remover",
-            "migration_warning_blocked": "Remover não está disponível agora porque a Pera não é seu provedor de passkeys ativo — você não conseguiria criar uma substituta. Ative-a primeiro nas configurações do dispositivo.",
+            "migration_warning_blocked": "Remover não está disponível agora porque a Pera não é seu provedor de passkeys ativo — você não conseguiria criar uma substituta. Defina a Pera como seu provedor de passkeys novamente para poder removê-la.",
             "migration_warning_dismiss": "Agora não",
             "loading": "Verificando passkeys...",
             "error_title": "Algo deu errado",

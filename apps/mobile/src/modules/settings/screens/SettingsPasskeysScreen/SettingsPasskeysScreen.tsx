@@ -72,6 +72,7 @@ export const SettingsPasskeyScreen = () => {
             content = (
                 <PasskeysList
                     passkeys={screen.passkeys}
+                    canRemove={screen.canRemove}
                     onRequestDelete={screen.onRequestDelete}
                 />
             )

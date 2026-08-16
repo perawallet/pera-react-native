@@ -25,7 +25,7 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
@@ -33,6 +33,7 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
+import { PASSKEY_MIGRATION_NEEDED } from '@perawallet/wallet-core-passkeys'
 import {
     AccountTypes,
     DerivationTypes,
@@ -110,6 +111,18 @@ const tapButtonByLabel = (label: string) => {
     if (!button) throw new Error(`No button labelled "${label}"`)
     fireEvent.click(button)
 }
+
+const importKeystorePasskey = (id: string, isFlagged: boolean) =>
+    getKeyStore().import({
+        id,
+        type: 'hd-derived-p256',
+        metadata: {
+            origin: 'example.com',
+            userHandle: 'alice',
+            createdAt: 1_700_000_000_000,
+            ...(isFlagged ? { migration: PASSKEY_MIGRATION_NEEDED } : {}),
+        },
+    })
 
 const hasButtonWithLabel = (label: string): boolean =>
     screen
@@ -242,6 +255,57 @@ describe('Flow: Settings → Passkeys removal', () => {
             // The removal failed, so the passkey is still listed.
             expect(
                 screen.getByTestId('settings_passkeys_item_keystore-cred'),
+            ).toBeTruthy()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    // R7: a flagged passkey can't be recovered from the recovery passphrase and
+    // its replacement can only be registered while Pera is the active provider,
+    // so removing one with the provider off is a one-way lockout. The list row
+    // is a second way to reach that delete — withholding it only on the
+    // migration banner leaves the hole open two taps below. Unflagged rows are
+    // derivable again from the passphrase, so they stay removable.
+    it(
+        'withholds removal of a flagged passkey while the provider is off, without withholding it for the rest',
+        async () => {
+            getAutofill().isProviderActive.mockResolvedValue(false)
+            await importKeystorePasskey('flagged-cred', true)
+            await importKeystorePasskey('plain-cred', false)
+
+            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('settings_passkeys_item_plain-cred'),
+                ).toBeTruthy(),
+            )
+
+            const flaggedRow = screen.getByTestId(
+                'settings_passkeys_item_flagged-cred',
+            )
+            expect(
+                within(flaggedRow).queryByTestId('touchable-icon-trash'),
+            ).toBeFalsy()
+
+            fireEvent.click(
+                within(
+                    screen.getByTestId('settings_passkeys_item_plain-cred'),
+                ).getByTestId('touchable-icon-trash'),
+            )
+            await waitFor(() =>
+                expect(
+                    hasButtonWithLabel('settings.passkeys.remove_confirm'),
+                ).toBe(true),
+            )
+            tapButtonByLabel('settings.passkeys.remove_confirm')
+
+            await waitFor(() =>
+                expect(
+                    screen.queryByTestId('settings_passkeys_item_plain-cred'),
+                ).toBeFalsy(),
+            )
+            expect(
+                screen.getByTestId('settings_passkeys_item_flagged-cred'),
             ).toBeTruthy()
         },
         SLOW_TEST_TIMEOUT_MS,
