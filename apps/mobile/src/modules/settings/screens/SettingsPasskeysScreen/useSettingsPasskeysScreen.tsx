@@ -18,6 +18,10 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { isActiveAppState } from '@utils/app-state'
+import {
+    usePasskeyMigrationBanner,
+    type UsePasskeyMigrationBannerResult,
+} from '../../components/PasskeyMigrationBanner'
 import { openCredentialProviderSettings } from './openCredentialProviderSettings'
 import {
     usePasskeyAutofillStatus,
@@ -56,6 +60,14 @@ export type UseSettingsPasskeysScreenResult = {
      * provider-disabled screen.
      */
     isManaging: boolean
+    /**
+     * The migration banner's own state. Composed here rather than in the
+     * screen body so its two gates are wired from the values they belong to:
+     * `isManaging` for whether the banner shows at all, and the raw provider
+     * state — not `state === 'disabled'`, which additionally requires an empty
+     * list — for whether a replacement passkey could actually be registered.
+     */
+    migration: UsePasskeyMigrationBannerResult
     /**
      * Whether to offer the QR scanner entry point. Hidden while the screen is
      * still resolving (loading) or errored, when there's no HD wallet to derive
@@ -143,6 +155,17 @@ export const useSettingsPasskeysScreen =
             !biometric.isLoading && !biometric.hasStrongBiometricOrCredential
         const isManaging = state === 'empty' || state === 'populated'
 
+        const handleRequestDelete = useCallback(
+            (passkey: Passkey) => void onRequestDelete(passkey),
+            [onRequestDelete],
+        )
+
+        const migration = usePasskeyMigrationBanner({
+            isManaging,
+            isProviderActive: status.isProviderActive,
+            onRequestDelete: handleRequestDelete,
+        })
+
         const notice: PasskeysNotice = !isManaging
             ? null
             : !hasHDWallet
@@ -156,6 +179,7 @@ export const useSettingsPasskeysScreen =
             passkeys: list.passkeys,
             notice,
             isManaging,
+            migration,
             canScan:
                 state !== 'loading' &&
                 state !== 'error' &&
@@ -164,8 +188,7 @@ export const useSettingsPasskeysScreen =
             isScannerVisible: scanner.isOpen,
             onOpenScanner: scanner.open,
             onCloseScanner: scanner.close,
-            onRequestDelete: (passkey: Passkey) =>
-                void onRequestDelete(passkey),
+            onRequestDelete: handleRequestDelete,
             onOpenProviderSettings,
             onDismissError,
         }

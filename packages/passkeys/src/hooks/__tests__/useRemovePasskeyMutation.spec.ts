@@ -108,14 +108,15 @@ describe('useRemovePasskeyMutation', () => {
         expect(passkeysQueryKeyRoot).toEqual(['passkeys'])
     })
 
-    // Restated, not imported: the key belongs to
+    // The suffix is restated — the key belongs to
     // `apps/mobile/.../PasskeyMigrationBanner/usePasskeyMigrationBanner.ts`,
-    // and mobile depends on this package rather than the reverse. It is a
-    // *sibling* of `passkeysQueryKey`, so only the shared root reaches it —
-    // invalidating `passkeysQueryKey` leaves the banner listing a credential
-    // the user just deleted.
+    // and mobile depends on this package rather than the reverse — but the
+    // root is the exported one both sides build from. It makes the banner's
+    // key a *sibling* of `passkeysQueryKey`, so only the shared root reaches
+    // it: invalidating `passkeysQueryKey` would leave the banner listing a
+    // credential the user just deleted.
     it('invalidates sibling passkey queries, not just the native-credentials key', async () => {
-        const flaggedKey = ['passkeys', 'needs-migration']
+        const flaggedKey = [...passkeysQueryKeyRoot, 'needs-migration']
         const { result } = renderHook(() => useRemovePasskeyMutation(), {
             wrapper: createWrapper(),
         })
@@ -146,10 +147,12 @@ describe('useRemovePasskeyMutation', () => {
         expect(mocks.refreshCredentialIdentities).toHaveBeenCalled()
     })
 
-    // The banner's delete-and-recreate action targets exactly these rows. The
-    // un-adopt in `repairs/0002-rematerialize-passkey-credentials` already
-    // deleted their k/ record, so the keystore has nothing left to remove —
-    // this pins the source attribution that keeps it out of the path.
+    // The banner's delete-and-recreate action targets exactly these rows: the
+    // un-adopt in `repairs/0002-rematerialize-passkey-credentials` deleted the
+    // k/ record, so the keystore has nothing left to remove. Its own removal
+    // can fail and orphan the k/+m/ pair (`:372-380`), but such a credential is
+    // then keystore-sourced too and the banner's union attributes it that way,
+    // so it arrives here on the branch above.
     it('skips keystore removal for a flat provider-store passkey', async () => {
         const { result } = renderHook(() => useRemovePasskeyMutation(), {
             wrapper: createWrapper(),

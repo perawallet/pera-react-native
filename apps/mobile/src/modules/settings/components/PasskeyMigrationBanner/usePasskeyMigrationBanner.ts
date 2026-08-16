@@ -14,6 +14,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { subtle } from 'react-native-quick-crypto'
 import {
+    passkeysQueryKeyRoot,
     readFlaggedPasskeyCredentials,
     usePasskeysQuery,
     type Passkey,
@@ -22,11 +23,16 @@ import {
 export type UsePasskeyMigrationBannerParams = {
     /**
      * Whether the screen is showing the managed-passkey content, the same gate
-     * the prerequisite callouts use. Notably false for `disabled`, where the
-     * user cannot register a replacement and the banner's advice would lead
-     * straight into a lockout.
+     * the prerequisite callouts use — false while loading, errored, or
+     * provider-disabled with nothing to list.
      */
     isManaging: boolean
+    /**
+     * Whether Pera is the OS's active credential provider. Not implied by
+     * `isManaging`: a screen with passkeys to show resolves to `populated`
+     * whatever the provider reports.
+     */
+    isProviderActive: boolean
     /** The screen's confirm-then-delete flow. Never bypassed. */
     onRequestDelete: (passkey: Passkey) => void
 }
@@ -34,14 +40,23 @@ export type UsePasskeyMigrationBannerParams = {
 export type UsePasskeyMigrationBannerResult = {
     affected: Passkey[]
     isVisible: boolean
+    /**
+     * Whether to offer delete-and-recreate. The warning stands on its own, but
+     * the action is one-way — with the provider switched off the credential
+     * would be gone and the replacement unregisterable.
+     */
+    canRecreate: boolean
     onRecreate: (passkey: Passkey) => void
     onDismiss: () => void
 }
 
-// Must stay under the `passkeys` root: `useRemovePasskeyMutation` invalidates
-// that root, and TanStack matches by prefix, so a key outside it would leave
-// the banner listing a credential the user just deleted.
-const flaggedPasskeysQueryKey = ['passkeys', 'needs-migration'] as const
+// Built from the shared root because `useRemovePasskeyMutation` invalidates
+// that root and TanStack matches by prefix — a key outside it would leave the
+// banner listing a credential the user just deleted.
+const flaggedPasskeysQueryKey = [
+    ...passkeysQueryKeyRoot,
+    'needs-migration',
+] as const
 
 /**
  * The two places a `needs-migration` marker can still be read, unioned:
@@ -55,6 +70,7 @@ const flaggedPasskeysQueryKey = ['passkeys', 'needs-migration'] as const
  */
 export const usePasskeyMigrationBanner = ({
     isManaging,
+    isProviderActive,
     onRequestDelete,
 }: UsePasskeyMigrationBannerParams): UsePasskeyMigrationBannerResult => {
     const { passkeys } = usePasskeysQuery()
@@ -86,6 +102,7 @@ export const usePasskeyMigrationBanner = ({
     return {
         affected,
         isVisible: isManaging && !isDismissed && affected.length > 0,
+        canRecreate: isProviderActive,
         onRecreate: onRequestDelete,
         onDismiss,
     }

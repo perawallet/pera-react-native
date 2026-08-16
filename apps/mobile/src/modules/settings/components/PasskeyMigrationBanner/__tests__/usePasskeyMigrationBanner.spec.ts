@@ -21,9 +21,13 @@ const mocks = vi.hoisted(() => ({
     readFlaggedPasskeyCredentials: vi.fn(),
 }))
 
+// `passkeysQueryKeyRoot`'s real value is pinned package-side by
+// `useRemovePasskeyMutation.spec.ts`; here it only has to be the same array the
+// hook builds its key from and the invalidation below targets.
 vi.mock('@perawallet/wallet-core-passkeys', () => ({
     usePasskeysQuery: mocks.usePasskeysQuery,
     readFlaggedPasskeyCredentials: mocks.readFlaggedPasskeyCredentials,
+    passkeysQueryKeyRoot: ['passkeys'],
 }))
 
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
@@ -58,11 +62,15 @@ const createWrapper = () => {
         )
 }
 
-const render = ({ isManaging = true }: { isManaging?: boolean } = {}) =>
+const render = ({
+    isManaging = true,
+    isProviderActive = true,
+}: { isManaging?: boolean; isProviderActive?: boolean } = {}) =>
     renderHook(
         () =>
             usePasskeyMigrationBanner({
                 isManaging,
+                isProviderActive,
                 onRequestDelete: onRequestDelete as (p: Passkey) => void,
             }),
         { wrapper: createWrapper() },
@@ -149,7 +157,7 @@ describe('usePasskeyMigrationBanner', () => {
     // descendant, so only an invalidation of the shared `['passkeys']` root
     // reaches it — which is what `useRemovePasskeyMutation` now issues. Without
     // it the banner keeps offering "Remove" for a credential already gone.
-    it('re-reads the flat store when a delete invalidates the shared passkeys root', async () => {
+    it('re-reads the flat store when the shared passkeys root is invalidated', async () => {
         mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
             passkey({ keyId: 'flat-1' }),
         ])
@@ -167,10 +175,11 @@ describe('usePasskeyMigrationBanner', () => {
         expect(result.current.isVisible).toBe(false)
     })
 
-    // Same predicate the screen's prerequisite callouts use. `disabled` is the
-    // one that matters: re-registration is impossible while Pera is not the
-    // active credential provider, so offering delete-and-recreate there is an
-    // invitation to lock yourself out.
+    // Same predicate the screen's prerequisite callouts use, so nothing stacks
+    // on top of a loading, errored or provider-disabled screen. It is not the
+    // lockout gate: `resolveState` returns `populated` before it consults the
+    // provider, so a provider-off screen with at least one passkey is still
+    // "managing" — `canRecreate` is what withholds the action there.
     it('stays hidden while the screen is not managing passkeys', async () => {
         mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
             passkey({ keyId: 'flat-1' }),
@@ -180,6 +189,33 @@ describe('usePasskeyMigrationBanner', () => {
 
         await waitFor(() => expect(result.current.affected).toHaveLength(1))
         expect(result.current.isVisible).toBe(false)
+    })
+
+    // The warning itself is true regardless of the provider state and the user
+    // should still see it. What must not be offered is delete-and-recreate:
+    // removing the credential is irreversible, and the replacement can only be
+    // registered once Pera is the active provider again.
+    it('keeps warning but withholds the recreate action while the provider is off', async () => {
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
+            passkey({ keyId: 'flat-1' }),
+        ])
+
+        const { result } = render({ isProviderActive: false })
+
+        await waitFor(() => expect(result.current.isVisible).toBe(true))
+        expect(result.current.affected).toHaveLength(1)
+        expect(result.current.canRecreate).toBe(false)
+    })
+
+    it('offers the recreate action once the provider is active', async () => {
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
+            passkey({ keyId: 'flat-1' }),
+        ])
+
+        const { result } = render()
+
+        await waitFor(() => expect(result.current.isVisible).toBe(true))
+        expect(result.current.canRecreate).toBe(true)
     })
 
     it('hides on dismiss without deleting anything', async () => {

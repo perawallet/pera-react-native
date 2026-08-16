@@ -18,6 +18,8 @@ import { useStyles } from './styles'
 
 export type PasskeyMigrationBannerProps = {
     affected: Passkey[]
+    /** When false the rows are listed without their remove action. */
+    canRecreate: boolean
     onRecreate: (passkey: Passkey) => void
     onDismiss: () => void
     style?: StyleProp<ViewStyle>
@@ -31,6 +33,7 @@ export type PasskeyMigrationBannerProps = {
  */
 export const PasskeyMigrationBanner = ({
     affected,
+    canRecreate,
     onRecreate,
     onDismiss,
     style,
@@ -70,15 +73,29 @@ export const PasskeyMigrationBanner = ({
                         >
                             {passkey.displayName}
                         </PWText>
-                        <PWButton
-                            variant='destructiveLight'
-                            paddingStyle='dense'
-                            title={t('settings.passkeys.migration_warning_cta')}
-                            onPress={() => onRecreate(passkey)}
-                            testID={`settings_passkeys_migration_recreate_${passkey.id}`}
-                        />
+                        {canRecreate && (
+                            <PWButton
+                                variant='destructiveLight'
+                                paddingStyle='dense'
+                                title={t(
+                                    'settings.passkeys.migration_warning_cta',
+                                )}
+                                onPress={() => onRecreate(passkey)}
+                                testID={`settings_passkeys_migration_recreate_${passkey.id}`}
+                            />
+                        )}
                     </PWView>
                 ))}
+
+                {!canRecreate && (
+                    <PWText
+                        variant='caption'
+                        style={styles.body}
+                        testID='settings_passkeys_migration_blocked'
+                    >
+                        {t('settings.passkeys.migration_warning_blocked')}
+                    </PWText>
+                )}
 
                 <PWView style={styles.actions}>
                     <PWButton

@@ -35,6 +35,7 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
+import { PASSKEY_MIGRATION_NEEDED } from '@perawallet/wallet-core-passkeys'
 import {
     AccountTypes,
     DerivationTypes,
@@ -120,6 +121,35 @@ const wireAutofill = ({
 }
 
 const seedHDWallet = () => useAccountsStore.getState().setAccounts([HD_ACCOUNT])
+
+type KeyStore = {
+    import: (key: {
+        id: string
+        type: string
+        metadata: Record<string, unknown>
+    }) => Promise<string>
+}
+
+const getKeyStore = (): KeyStore =>
+    (getProvider() as unknown as { key: { store: KeyStore } }).key.store
+
+// A credential upstream's `migrateLegacyPasskeys` stamped and
+// `repairs/0002-rematerialize-passkey-credentials` declined to un-adopt: it
+// keeps its k/ record, so it reaches the banner through `usePasskeysQuery`
+// rather than through the flat provider store.
+const FLAGGED_PASSKEY_ID = 'keystore-cred'
+
+const seedFlaggedKeystorePasskey = () =>
+    getKeyStore().import({
+        id: FLAGGED_PASSKEY_ID,
+        type: 'hd-derived-p256',
+        metadata: {
+            origin: 'example.com',
+            userHandle: 'alice',
+            createdAt: 1_700_000_000_000,
+            migration: PASSKEY_MIGRATION_NEEDED,
+        },
+    })
 
 type BiometricLevel = 'none' | 'secret' | 'weak' | 'strong'
 
@@ -298,6 +328,62 @@ describe('Flow: Settings → Passkeys', () => {
             ).toBeFalsy()
             expect(
                 screen.queryByTestId('settings_passkeys_biometric_notice'),
+            ).toBeFalsy()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a flagged passkey and Pera is the active provider, when the screen mounts, then the migration banner offers to remove it',
+        async () => {
+            wireAutofill({ providerActive: true })
+            seedHDWallet()
+            await seedFlaggedKeystorePasskey()
+
+            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId('settings_passkeys_migration_banner'),
+                ).toBeTruthy()
+            })
+            expect(
+                screen.getByTestId(
+                    `settings_passkeys_migration_recreate_${FLAGGED_PASSKEY_ID}`,
+                ),
+            ).toBeTruthy()
+            expect(
+                screen.queryByTestId('settings_passkeys_migration_blocked'),
+            ).toBeFalsy()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    // R7: removing the credential is irreversible and the replacement can only
+    // be registered while Pera is the active provider. `resolveState` reports
+    // `populated` here — a passkey to show outranks the provider check — so
+    // the banner is on screen and only the action has to be withheld.
+    it(
+        'Given a flagged passkey but Pera is not the active provider, when the screen mounts, then the banner warns without offering to remove it',
+        async () => {
+            wireAutofill({ providerActive: false })
+            seedHDWallet()
+            await seedFlaggedKeystorePasskey()
+
+            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId('settings_passkeys_migration_banner'),
+                ).toBeTruthy()
+            })
+            expect(
+                screen.getByTestId('settings_passkeys_migration_blocked'),
+            ).toBeTruthy()
+            expect(
+                screen.queryByTestId(
+                    `settings_passkeys_migration_recreate_${FLAGGED_PASSKEY_ID}`,
+                ),
             ).toBeFalsy()
         },
         SLOW_TEST_TIMEOUT_MS,

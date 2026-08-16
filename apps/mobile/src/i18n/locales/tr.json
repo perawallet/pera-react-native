@@ -2308,6 +2308,7 @@
             "migration_warning_title": "Kurtarma kullanılamıyor",
             "migration_warning_body": "Aşağıda listelenen her passkey ile hâlâ giriş yapabilirsin ama kurtarma passphrase’inden geri getirilemez. Kurtarılabilir olması için onu kaldır ve sitede yeniden oluştur. Bunu yalnızca o siteye başka bir yolla giriş yapabildiğin sürece yap.",
             "migration_warning_cta": "Kaldır",
+            "migration_warning_blocked": "Pera şu anda etkin passkey sağlayıcın olmadığı için kaldırma seçeneği sunulmuyor — yenisini oluşturamazsın. Önce cihaz ayarlarından Pera’yı etkinleştir.",
             "migration_warning_dismiss": "Şimdi değil",
             "loading": "Passkey’ler kontrol ediliyor...",
             "error_title": "Bir şeyler ters gitti",
