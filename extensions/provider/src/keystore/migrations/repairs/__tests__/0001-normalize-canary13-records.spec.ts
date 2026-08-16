@@ -464,6 +464,46 @@ describe('0001-normalize-canary13-records', () => {
         expect(storage.entries()).toEqual(before)
     })
 
+    // The nowhere-to-be-sealed warn is the one log in this module that sits
+    // INSIDE the `try`, so an unguarded `console.warn` that throws does not
+    // reject `up` — the sibling `catch` swallows it. It corrupts the run
+    // instead: the record is rolled back and pushed onto `untouched` a second
+    // time, so the report claims twice as many failures as there were.
+    // Message-scoped because the same fixture also reaches the already-pinned
+    // catch-block warn.
+    it('does not double-count a record when console.warn throws during the nowhere-to-be-sealed log', async () => {
+        const storage = await seeded(
+            {
+                id: 'key-c',
+                type: 'ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                metadata: {
+                    signAlgorithm: { name: 'Ed25519' },
+                    storage: 'bytes',
+                    backup: {
+                        label: 'paper',
+                        privateKey: new Uint8Array(64).fill(13),
+                    },
+                },
+            },
+            new Uint8Array(48).fill(4),
+        )
+        vi.spyOn(console, 'warn').mockImplementation(message => {
+            if (String(message).includes('nowhere to be sealed')) {
+                throw new Error('LogBox is not ready')
+            }
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(logWarn).toHaveBeenCalledWith(
+            expect.stringContaining('1 keystore record(s) un-normalised'),
+            { entries: ['key-c'] },
+            REPAIRS_MODULE_ID,
+        )
+    })
+
     // The same shape, but the nested copy IS what is already sealed there —
     // then dropping it from plaintext loses nothing and must still happen.
     it('strips a nested copy of material already sealed under the same id', async () => {

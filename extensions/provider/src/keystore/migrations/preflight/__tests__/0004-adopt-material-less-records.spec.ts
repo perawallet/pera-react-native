@@ -268,6 +268,29 @@ describe('0004-adopt-material-less-records', () => {
         ).toEqual(['watch-1'])
     })
 
+    // The `left flat` warn sits in a `catch` with no enclosing `try` between
+    // it and `up`'s body, so an unguarded `console.warn` that throws (RN
+    // patches it in dev) escapes `up` verbatim and bricks boot.
+    it('does not reject up when console.warn itself throws during the left-flat log', async () => {
+        const storage = await seeded({
+            id: 'watch-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(3),
+        })
+        storage.set = () => {
+            throw new Error('MMKV write failed')
+        }
+        vi.spyOn(console, 'warn').mockImplementation(() => {
+            throw new Error('LogBox is not ready')
+        })
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+    })
+
     it('adopts the material-less record while leaving a real key beside it alone', async () => {
         const storage = await seeded(
             {

@@ -645,6 +645,54 @@ describe('0002-lift-nested-material', () => {
         )
     })
 
+    // The `left flat` warn sits in a `try`/`finally` with no `catch` at all, so
+    // an unguarded `console.warn` that throws (RN patches it in dev) escapes
+    // `up` verbatim and bricks boot.
+    it('does not reject up when console.warn itself throws during the left-flat log', async () => {
+        const storage = await seeded(nestedAndTopLevel())
+        const set = storage.set
+        storage.set = (key, value) => {
+            if (!key.startsWith('k/')) set(key, value)
+        }
+        vi.spyOn(console, 'warn').mockImplementation(() => {
+            throw new Error('LogBox is not ready')
+        })
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        storage.set = set
+    })
+
+    // `adopt`'s own `reason:` conversion runs in a `catch` whose only caller is
+    // the uncaught `try` above, so a thrown value with a throwing `toString`
+    // reaches `up` the same way. `console.warn` is a no-op here on purpose —
+    // this pins the stringify guard, not the log guard.
+    it('does not reject up when the record’s failure cannot be stringified', async () => {
+        const storage = await seeded(nestedAndTopLevel())
+        const set = storage.set
+        storage.set = (key, value) => {
+            if (key.startsWith('k/')) {
+                throw {
+                    toString: () => {
+                        throw new Error('cannot stringify')
+                    },
+                }
+            }
+            set(key, value)
+        }
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        storage.set = set
+        expect(console.warn).toHaveBeenCalledWith(
+            expect.stringContaining('derived-1'),
+        )
+    })
+
     it('reports nothing when every record was taken', async () => {
         const storage = await seeded(nestedAndTopLevel())
 

@@ -16,9 +16,14 @@
  * booting, and since the ledger only writes after `up` resolves, the same
  * failure would re-run and re-fail on every subsequent launch. A diagnostic
  * `console.warn` on the way to that resolution must uphold the same
- * constraint: it cannot itself throw. `console.warn` does, under React
- * Native's LogBox patch in some states, and a thrown non-`Error` value with a
- * throwing `toString`/`Symbol.toPrimitive` makes `String(error)` throw too.
+ * constraint: it cannot itself throw. It is not contractually total — React
+ * Native reassigns it in dev builds only (`LogBox.js:112`, inside the
+ * `if (__DEV__)` at `:66`; the release `else` at `:267` never touches
+ * `console`), and that dev replacement calls `String(args[0])` and
+ * `originalConsoleWarn` outside its own `try` (`registerWarning`, `:243`/`:247`
+ * vs the `try` at `:250`). Line numbers are `react-native@0.86.2`. Independent
+ * of build, a thrown non-`Error` value with a throwing
+ * `toString`/`Symbol.toPrimitive` makes `String(error)` throw.
  */
 export const safeErrorMessage = (error: unknown): string => {
     try {

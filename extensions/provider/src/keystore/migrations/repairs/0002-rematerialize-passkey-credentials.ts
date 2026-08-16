@@ -101,7 +101,9 @@ import {
  * merely a prior run that "declined." A completed decline is final:
  * recorded via `declined`, a durable note that nothing in this codebase
  * currently reads back (Task 4 already deferred that consuming revision),
- * so a declined credential's `k/` shadow is permanent, not revisited.
+ * so a declined credential's `k/` shadow is permanent, not revisited —
+ * unless the ledger's own write fails too, which reports the module failed
+ * and re-runs it next launch.
  *
  * Cheap and side-effect-free when there is nothing to do: the `k/` bucket is
  * scanned and decoded (plaintext, no master key) first, and the master key is
@@ -363,8 +365,9 @@ export const migration: Migration<PeraMigrationContext> = {
                 // already resolves (this catch doesn't rethrow), there is no
                 // next run to notice: this same revision only re-scans on a
                 // process killed before `up` resolves, and once resolved the
-                // ledger marks it done regardless of outcome. So a failed
-                // removal here is permanent, not "a later pass" — declined
+                // ledger marks it done regardless of outcome (unless the
+                // ledger's own write fails too). So a failed removal here is
+                // effectively permanent, not "a later pass" — declined
                 // and logged, the same as any other un-rematerializable
                 // credential.
                 try {

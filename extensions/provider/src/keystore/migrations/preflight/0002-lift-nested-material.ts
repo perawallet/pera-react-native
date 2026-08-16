@@ -233,9 +233,10 @@ export const migration: Migration<PeraMigrationContext> = {
                         // `failed` one needs it more: it stays flat, upstream
                         // adopts it next module, and its nested private key
                         // reaches plaintext `k/` — the hazard this revision
-                        // exists to prevent. Neither is ever retried, because
-                        // the runner marks this revision applied as soon as
-                        // `up` resolves.
+                        // exists to prevent. Neither is normally retried:
+                        // once `up` resolves the runner marks this revision
+                        // applied, barring a ledger write that fails too or a
+                        // process killed mid-run.
                         untouched.push(storageKey)
                         // Storage keys, not key material — the same identifiers
                         // `migrateKeystoreLayout` already logs, and the only

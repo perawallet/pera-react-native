@@ -204,6 +204,45 @@ describe('createDeclinedRegister', () => {
         expect(message).toContain('MMKV ledger read failure')
     })
 
+    // The read-failure branch's own log, distinct from the write-failure one
+    // above: `set` is never reached here, so only this branch's guard is
+    // under test.
+    it('does not throw when console.warn itself throws during the read-failure log inside record', () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {
+            throw new Error('LogBox is not ready')
+        })
+        let setCalls = 0
+        const throwingStore: NoteStore = {
+            getString: () => {
+                throw new Error('MMKV ledger read failure')
+            },
+            set: () => {
+                setCalls += 1
+            },
+        }
+
+        expect(() =>
+            createDeclinedRegister(throwingStore).record(MODULE, ['a']),
+        ).not.toThrow()
+        expect(setCalls).toBe(0)
+    })
+
+    it('does not throw when console.warn itself throws inside read', () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {
+            throw new Error('LogBox is not ready')
+        })
+        const throwingStore: NoteStore = {
+            getString: () => {
+                throw new Error('MMKV ledger read failure')
+            },
+            set: () => {},
+        }
+
+        expect(() =>
+            createDeclinedRegister(throwingStore).read(MODULE),
+        ).not.toThrow()
+    })
+
     it('does not throw, and logs, when store.getString fails inside read', () => {
         const consoleWarn = vi
             .spyOn(console, 'warn')

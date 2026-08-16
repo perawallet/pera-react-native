@@ -27,8 +27,8 @@ export type NoteStore = {
  * The migration runner marks a revision applied whenever `up` resolves, and
  * these revisions resolve by design — failing the module would reject
  * `keystore.ready` and stop the app booting. So a record the revision declined
- * is never revisited: `report.failed` stays empty, `utils.log` reaches no
- * registered logger, and `console.warn` reaches Metro in dev and the platform
+ * is normally never revisited: `report.failed` stays empty, `utils.log` reaches
+ * no registered logger, and `console.warn` reaches Metro in dev and the platform
  * log (`logcat`/`os_log`) in release — retrievable from an attached device,
  * but not from a user in the field, who is never going to plug in and send a
  * log capture. Without a note on disk it is permanently un-migrated,
@@ -39,6 +39,12 @@ export type NoteStore = {
  * to the console.
  */
 export type DeclinedRegister = {
+    /**
+     * No production caller yet — the consuming revision that acts on these
+     * notes is still deferred (Task 4). Kept because a write-only ledger has
+     * no way to be proven correct: this is what the revision specs read the
+     * note back through.
+     */
     read: (module: string) => string[]
     /** Unions `ids` into whatever the module has already recorded. */
     record: (module: string, ids: readonly string[]) => void
@@ -122,12 +128,11 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
                 // its content is bad — it may still be perfectly good and
                 // just transiently inaccessible. Unioning against `[]` here
                 // would overwrite it with only `ids`, destroying data that
-                // might have been recoverable. Once `up` resolves the runner
-                // marks this revision applied — unless the ledger write
-                // (which shares this same MMKV instance) fails too, in which
-                // case the module is reported failed and re-runs next
-                // launch. Between that and a process killed mid-run, this
-                // loss is likely, not certainly, permanent.
+                // might have been recoverable. Whether `ids` are lost for
+                // good then depends on the ledger's own write, on this same
+                // MMKV instance: if it succeeds the runner marks this
+                // revision applied and there is no re-run, and a failing
+                // `getString` here does not imply a failing `set` there.
                 safeWarn(
                     `[provider] declined-register: could not read the ledger for ${module}, ${ids.length} id(s) left unrecorded (${ids.join(', ')}): ${safeErrorMessage(result.error)}`,
                 )
@@ -141,10 +146,10 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
                 // This same MMKV instance backs the migration ledger too
                 // (`migrationsLedger.ts`), so a failing write here usually
                 // means the ledger's own write fails right after — the
-                // module is then reported failed rather than applied, and
-                // re-runs next launch. Between that and a process killed
-                // mid-run, treat this loss as likely, not certainly,
-                // permanent.
+                // module is reported failed rather than applied, and re-runs
+                // next launch. The loss is therefore usually recovered; it is
+                // permanent only if this write fails while the ledger's
+                // succeeds, or the process is killed mid-run.
                 safeWarn(
                     `[provider] declined-register: ledger write failed for ${module}, ${ids.length} id(s) left unrecorded (${ids.join(', ')}): ${safeErrorMessage(error)}`,
                 )

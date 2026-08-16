@@ -441,6 +441,32 @@ describe('0002-rematerialize-passkey-credentials', () => {
         expect(consoleWarn).toHaveBeenCalled()
     })
 
+    // Same fixture, but the orphaned-pair warn itself throws. That warn sits in
+    // a `catch` with no enclosing `try` between it and `up`'s body, so an
+    // unguarded `console.warn` escapes `up` verbatim and bricks boot.
+    it('does not reject up when console.warn itself throws during the orphaned-pair log', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        const originalRemove = storage.remove.bind(storage)
+        storage.remove = (key: string) => {
+            if (key === MATERIAL_PREFIX + 'cred-1') {
+                throw new Error('storage failure removing m/')
+            }
+            originalRemove(key)
+        }
+        vi.spyOn(console, 'warn').mockImplementation(() => {
+            throw new Error('LogBox is not ready')
+        })
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+    })
+
     it('restores the previously-verified flat record rather than deleting it when a re-run cannot reach the material', async () => {
         const storage = fakeStorage({})
         await seededCredential(storage, {
@@ -581,6 +607,56 @@ describe('0002-rematerialize-passkey-credentials', () => {
             migration.up(context(storage), utils()),
         ).resolves.toBeUndefined()
         expect(consoleWarn).toHaveBeenCalled()
+    })
+
+    // Probe B's fixture, plus a `console.warn` that throws for the
+    // rollback-failure line only. Scoped that way on purpose: the same fixture
+    // also reaches the un-rematerialize warn (already pinned), so throwing for
+    // every message would pass whichever of the two lost its guard.
+    it('does not reject up when console.warn itself throws during the rollback-failure log', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        const wrongRecordSealed = await sealNativeCredentialRecord(
+            subtle,
+            MASTER_KEY,
+            {
+                id: 'cred-1',
+                type: 'hd-derived-p256',
+                privateKey: Array.from(new Uint8Array(32).fill(99)),
+                publicKey: Array.from(new Uint8Array(91).fill(4)),
+            },
+        )
+        let openDataCalls = 0
+        vi.mocked(openData).mockImplementation(async (...args) => {
+            openDataCalls += 1
+            if (openDataCalls === 2) {
+                return realOpenData(subtle, MASTER_KEY, wrongRecordSealed)
+            }
+            return realOpenData(...args)
+        })
+        const originalRemove = storage.remove.bind(storage)
+        storage.remove = (key: string) => {
+            if (key === 'cred-1') {
+                throw new Error('MMKV remove failure')
+            }
+            originalRemove(key)
+        }
+        let rollbackLogs = 0
+        vi.spyOn(console, 'warn').mockImplementation(message => {
+            if (String(message).includes('rollback itself failed')) {
+                rollbackLogs += 1
+                throw new Error('LogBox is not ready')
+            }
+        })
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+        expect(rollbackLogs).toBe(1)
     })
 
     it('leaves the bare id untouched on a later failure when the prior-flat read itself throws', async () => {
