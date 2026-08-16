@@ -189,8 +189,13 @@ describe('PQ library import firewall', () => {
         // is the sanctioned way to get keystore-core types and the sealed
         // signing surface; that it loads `@joe-p/react-native-falcon` internally
         // (see the note above ALLOWLISTED_SEAM_DIRS) does not make importing it
-        // a seam breach, and nothing outside Seam A gains raw key material by
-        // doing so.
+        // a seam breach. Note this guard bounds SPECIFIERS, not key-material
+        // reach: the RN keystore publicly exports `loadDefaultFalconBinding`
+        // (`dist/falcon.d.ts:61`, re-exported by `dist/index.d.ts`) and
+        // keystore-core a WASM `createFalconBinding` (`dist/defaults.d.ts:76`,
+        // re-exported by `dist/index.d.ts`), so raw Falcon material is
+        // obtainable from anywhere without naming a banned specifier. Custody
+        // is enforced by the keystore's sealed API, not by this guard.
         expect(
             FORBIDDEN_SPECIFIER_PATTERN.test(
                 "from '@algorandfoundation/react-native-keystore'",
