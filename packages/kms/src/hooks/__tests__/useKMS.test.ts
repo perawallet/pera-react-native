@@ -537,6 +537,35 @@ describe('useKMS', () => {
         })
     })
 
+    // Which survivor inherits must not depend on store order, or the device
+    // disagrees with `repairs/0003` about where the one main key belongs.
+    it('removeKeyAndChildren re-mints from the lowest-sorted survivor, whatever the store order', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
+        // Deliberately out of order: hd-3 is seeded first.
+        seedBip39Root('hd-3')
+        entropyChildOf('hd-3')
+        seedBip39Root('hd-2')
+        const lowestEntropy = entropyChildOf('hd-2')
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(1)
+        expect(mockKeyStoreGenerate.mock.calls[0]?.[0]).toMatchObject({
+            params: { parentKeyId: lowestEntropy.id, id: 'hd-2-passkey-main' },
+        })
+    })
+
     it('removeKeyAndChildren does not re-mint when the deleted wallet was the last one', async () => {
         seedBip39Root('hd-1')
         const entropy = entropyChildOf('hd-1')
@@ -557,9 +586,18 @@ describe('useKMS', () => {
         expect(mockKeyStoreGenerate).not.toHaveBeenCalled()
     })
 
+    // A device is only supposed to hold one main key, but if it somehow holds
+    // two, deleting one wallet must not mint a third alongside the survivor.
     it('removeKeyAndChildren leaves a surviving main key alone rather than minting a second', async () => {
         seedBip39Root('hd-1')
-        entropyChildOf('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
         seedBip39Root('hd-2')
         const otherEntropy = entropyChildOf('hd-2')
         mockKeystoreKeys.push({
@@ -575,6 +613,24 @@ describe('useKMS', () => {
             await result.current.removeKeyAndChildren('hd-1')
         })
 
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1-passkey-main')
+        expect(mockKeyStoreGenerate).not.toHaveBeenCalled()
+    })
+
+    // Deleting a wallet is not an occasion to mint a main key the device never
+    // had — only to replace one this deletion destroyed.
+    it('removeKeyAndChildren mints nothing when the device had no main key at all', async () => {
+        seedBip39Root('hd-1')
+        entropyChildOf('hd-1')
+        seedBip39Root('hd-2')
+        entropyChildOf('hd-2')
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
         expect(mockKeyStoreGenerate).not.toHaveBeenCalled()
     })
 

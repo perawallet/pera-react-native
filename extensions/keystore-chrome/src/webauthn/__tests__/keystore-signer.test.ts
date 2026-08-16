@@ -167,6 +167,35 @@ const createFakeEngine = (store: Store<KeyStoreState>): FakeEngine => {
         metadata: { storage: 'bytes', scheme: 'bip39' },
     } as Key)
 
+    // Decoys, deliberately ahead of the real entropy child so a predicate that
+    // drops any one clause picks one of these instead. Each defeats exactly one
+    // clause: wrong type, missing flag, wrong parent. PBKDF2ing any of them
+    // would mint a main key no mnemonic reproduces.
+    material.set('decoy-wrong-type', new Uint8Array(32).fill(1))
+    put({
+        id: 'decoy-wrong-type',
+        type: 'hd-derived-ed25519',
+        algorithm: 'raw',
+        extractable: false,
+        metadata: { parentKeyId: WALLET_ROOT_ID, entropyKey: true },
+    } as Key)
+    material.set('decoy-unflagged', new Uint8Array(32).fill(2))
+    put({
+        id: 'decoy-unflagged',
+        type: 'secret-key',
+        algorithm: 'raw',
+        extractable: false,
+        metadata: { parentKeyId: WALLET_ROOT_ID },
+    } as Key)
+    material.set('decoy-other-wallet', new Uint8Array(32).fill(3))
+    put({
+        id: 'decoy-other-wallet',
+        type: 'secret-key',
+        algorithm: 'raw',
+        extractable: false,
+        metadata: { parentKeyId: 'some-other-root', entropyKey: true },
+    } as Key)
+
     // The 32-byte BIP39 entropy, stored apart from the root by `useHDWallet`.
     material.set(ENTROPY_CHILD_ID, ENTROPY_BYTES)
     put({
