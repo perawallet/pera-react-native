@@ -235,6 +235,12 @@
             "total_supply": "Gesamtangebot",
             "no_freeze": "Kein Freeze",
             "no_clawback": "Kein Clawback",
+            "freeze": "Freeze",
+            "clawback": "Clawback",
+            "freeze_info_body": "Eine „Freeze“-Adresse ist das Konto, das dafür zuständig ist, die Verteilung des Tokens einzufrieren, sodass niemand darauf zugreifen kann.",
+            "clawback_info_body": "Eine Clawback-Adresse ist eine Kontoadresse, die das Asset/Token von einem anderen Konto zurückholen kann. Das kann nützlich sein, wenn du z. B. die Verteilung deines Tokens einschränken können möchtest.",
+            "freeze_address": "Freeze-Adresse",
+            "clawback_address": "Clawback-Adresse",
             "description": "Beschreibung",
             "social_media": "Soziale Medien",
             "chart_empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
@@ -287,6 +293,11 @@
             "bodyWithDependents": "Wir haben leider ein Problem in Version 7.1.0 festgestellt: die Art, wie die Adresse für Quantum-Konten aus deinen 25 Wörtern abgeleitet wird, sodass sie nicht mit anderen Tools übereinstimmt.\n\nDein Guthaben ist sicher und dein Konto funktioniert normal.\n\nEin anderes Konto ist derzeit auf dieses Konto rekeyed, verlasse es also noch nicht – es ist im Moment dessen einziger Signaturgeber. Um Kompatibilitätsprobleme zu vermeiden, empfehlen wir dennoch, ein neues Quantum-Konto zu erstellen und dein Guthaben zu verschieben, sobald das andere Konto rekeyed wurde, damit deine Wiederherstellungsphrase überall funktioniert.\n\nWir entschuldigen uns für die Unannehmlichkeiten und danken dir für dein Verständnis.",
             "markerLabel": "Über dieses Quantum-Konto",
             "dismiss": "Verstanden"
+        }
+    },
+    "assets": {
+        "frozen_info": {
+            "body": "Dieses Asset ist für dieses Konto eingefroren und kann nicht gesendet oder getauscht werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
         }
     },
     "account_details": {
@@ -769,7 +780,11 @@
         },
         "transaction": {
             "title": "Bei der Verarbeitung dieser Transaktion ist ein Fehler aufgetreten",
-            "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht."
+            "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht.",
+            "asset_frozen": {
+                "title": "Asset eingefroren",
+                "body": "Dieses Asset ist für dein Konto eingefroren und kann nicht gesendet werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
+            }
         },
         "kms": {
             "key_not_found": "Der Signaturschlüssel für dieses Konto konnte nicht gefunden werden.",

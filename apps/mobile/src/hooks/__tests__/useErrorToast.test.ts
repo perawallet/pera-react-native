@@ -317,7 +317,7 @@ describe('useErrorToast', () => {
         )
     })
 
-    it('renders the typed copy for an error carrying messageKeys', () => {
+    it('renders the typed copy for an error declaring its own title key', () => {
         const { result } = renderHook(() => useErrorToast())
 
         act(() => {

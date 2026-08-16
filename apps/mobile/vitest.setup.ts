@@ -2366,6 +2366,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         severity: string
         category: string
         messageKey?: string
+        titleKey?: string
         params?: Record<string, unknown>
         recoverable: boolean
         retryable: boolean
@@ -2418,11 +2419,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             }
         }
     }
-
-    const messageKeysFor = (base: string) => ({
-        titleKey: `${base}.title`,
-        bodyKey: `${base}.body`,
-    })
 
     // Mirrors packages/shared/src/errors/network.ts — kept minimal but
     // faithful to the real `kind` taxonomy and key-mapping switch so tests
@@ -2699,7 +2695,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             return e.name === 'HTTPError' && (e.response?.status ?? 0) >= 500
         },
         AppError,
-        messageKeysFor,
         PeraNetworkError,
         isPeraNetworkError,
         PeraServiceUnavailableError,

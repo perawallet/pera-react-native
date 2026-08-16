@@ -235,6 +235,12 @@
             "total_supply": "Toplam arz",
             "no_freeze": "Dondurma yok",
             "no_clawback": "Clawback yok",
+            "freeze": "Dondurma",
+            "clawback": "Clawback",
+            "freeze_info_body": "“Freeze” adresi, token’ın dağıtımını dondurmaktan sorumlu olan ve kimsenin ona erişememesini sağlayan hesaptır.",
+            "clawback_info_body": "Clawback adresi, varlığı/token’ı başka bir hesaptan geri çekebilen hesap adresidir. Örneğin token’ının dağıtımını kısıtlayabilmek istiyorsan bu işine yarayabilir.",
+            "freeze_address": "Dondurma adresi",
+            "clawback_address": "Clawback adresi",
             "description": "Açıklama",
             "social_media": "Sosyal medya",
             "chart_empty_body": "Bir bakiye geçmişin oluştuğunda burada bir grafik göreceksin",
@@ -287,6 +293,11 @@
             "bodyWithDependents": "Ne yazık ki 7.1.0 sürümünde, Quantum hesapları için adresin 25 kelimeden türetilme biçiminde bir sorun tespit ettik; bu da adresi diğer araçlarla uyumsuz hale getiriyor.\n\nVarlıkların güvende ve hesabın normal şekilde çalışıyor.\n\nBaşka bir hesap bu hesaba rekey yapılmış durumda, bu yüzden şimdilik bu hesabı kullanmayı bırakma — şu anda o hesabın tek imzalayıcısı bu hesap. Ancak uyumluluk sorunlarını önlemek için, diğer hesabın rekey işlemi tamamlandıktan sonra yeni bir Quantum hesabı oluşturup varlıklarını taşımanı öneririz, böylece kurtarma ifaden her yerde çalışır.\n\nYaşanan aksaklık için özür diler, anlayışın için teşekkür ederiz.",
             "markerLabel": "Bu Quantum hesabı hakkında",
             "dismiss": "Anladım"
+        }
+    },
+    "assets": {
+        "frozen_info": {
+            "body": "Bu varlık bu hesap için donduruldu; gönderilemez veya swap edilemez. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
         }
     },
     "account_details": {
@@ -777,7 +788,11 @@
         },
         "transaction": {
             "title": "Bu işlem gerçekleştirilirken bir hata oluştu",
-            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç."
+            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç.",
+            "asset_frozen": {
+                "title": "Varlık donduruldu",
+                "body": "Bu varlık senin hesabın için donduruldu ve gönderilemez. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
+            }
         },
         "kms": {
             "key_not_found": "Bu hesabın imza anahtarı bulunamadı.",

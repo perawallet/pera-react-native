@@ -235,6 +235,12 @@
             "total_supply": "Offre totale",
             "no_freeze": "Sans gel",
             "no_clawback": "Sans clawback",
+            "freeze": "Gel",
+            "clawback": "Clawback",
+            "freeze_info_body": "Une adresse de gel (« freeze ») est le compte chargé de geler la distribution du token, afin que personne ne puisse y accéder.",
+            "clawback_info_body": "Une adresse de clawback est une adresse de compte capable de récupérer l’actif/token depuis un autre compte. Cela peut être utile si vous souhaitez, par exemple, pouvoir restreindre la distribution de votre token.",
+            "freeze_address": "Adresse de gel",
+            "clawback_address": "Adresse de clawback",
             "description": "Description",
             "social_media": "Réseaux sociaux",
             "chart_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
@@ -287,6 +293,11 @@
             "bodyWithDependents": "Nous avons malheureusement découvert un problème dans la version 7.1.0 concernant la façon dont l’adresse des comptes Quantum est dérivée à partir de vos 25 mots, ce qui la rend incompatible avec les autres outils.\n\nVos fonds sont en sécurité et votre compte fonctionne normalement.\n\nUn autre compte a un rekey vers celui-ci, ne vous en éloignez donc pas pour le moment — il en est actuellement l’unique signataire. Cependant, pour éviter tout problème de compatibilité, nous vous recommandons de créer un nouveau compte Quantum et d’y transférer vos fonds une fois le rekey de l’autre compte effectué, afin que votre phrase de récupération fonctionne partout.\n\nNous nous excusons pour la gêne occasionnée et vous remercions de votre compréhension.",
             "markerLabel": "À propos de ce compte Quantum",
             "dismiss": "Compris"
+        }
+    },
+    "assets": {
+        "frozen_info": {
+            "body": "Cet actif est gelé pour ce compte : il ne peut être ni envoyé ni échangé via Swap. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
         }
     },
     "account_details": {
@@ -777,7 +788,11 @@
         },
         "transaction": {
             "title": "Une erreur est survenue lors du traitement de cette transaction",
-            "body": "Un problème semble être survenu. Veuillez réessayer et contacter l’assistance si le problème persiste."
+            "body": "Un problème semble être survenu. Veuillez réessayer et contacter l’assistance si le problème persiste.",
+            "asset_frozen": {
+                "title": "Actif gelé",
+                "body": "Cet actif est gelé pour votre compte et ne peut pas être envoyé. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
+            }
         },
         "kms": {
             "key_not_found": "Impossible de trouver la clé de signature de ce compte.",

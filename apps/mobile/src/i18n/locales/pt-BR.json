@@ -235,6 +235,12 @@
             "total_supply": "Fornecimento total",
             "no_freeze": "Sem congelamento",
             "no_clawback": "Sem clawback",
+            "freeze": "Congelamento",
+            "clawback": "Clawback",
+            "freeze_info_body": "Um endereço de congelamento (“freeze”) é a conta responsável por congelar a distribuição do token, de modo que ninguém possa acessá-lo.",
+            "clawback_info_body": "Um endereço de clawback é um endereço de conta que pode retirar o ativo/token de outra conta. Isso pode ser útil se, por exemplo, você quiser restringir a distribuição do seu token.",
+            "freeze_address": "Endereço de congelamento",
+            "clawback_address": "Endereço de clawback",
             "description": "Descrição",
             "social_media": "Redes sociais",
             "chart_empty_body": "Um gráfico aparecerá aqui quando você tiver histórico de saldo",
@@ -287,6 +293,11 @@
             "bodyWithDependents": "Infelizmente identificamos um problema na versão 7.1.0 na forma como o endereço das contas Quantum é derivado das suas 25 palavras, o que o torna incompatível com outras ferramentas.\n\nSeus fundos estão seguros e sua conta funciona normalmente.\n\nOutra conta está com rekey para esta, então não deixe de usá-la por enquanto — ela é a única signatária dessa conta no momento. No entanto, para evitar problemas de compatibilidade, recomendamos criar uma nova conta Quantum e mover seus fundos assim que o rekey da outra conta for refeito, assim sua frase de recuperação funciona em qualquer lugar.\n\nPedimos desculpas pelo transtorno e agradecemos sua compreensão.",
             "markerLabel": "Sobre esta conta Quantum",
             "dismiss": "Entendi"
+        }
+    },
+    "assets": {
+        "frozen_info": {
+            "body": "Este ativo está congelado para esta conta e não pode ser enviado nem convertido. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
         }
     },
     "account_details": {
@@ -777,7 +788,11 @@
         },
         "transaction": {
             "title": "Ocorreu um erro ao processar esta transação",
-            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir."
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir.",
+            "asset_frozen": {
+                "title": "Ativo congelado",
+                "body": "Este ativo está congelado para a sua conta e não pode ser enviado. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
+            }
         },
         "kms": {
             "key_not_found": "Não foi possível encontrar a chave de assinatura desta conta.",

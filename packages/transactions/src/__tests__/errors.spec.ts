@@ -151,10 +151,10 @@ describe('InvalidSendParamsError', () => {
 
 describe('AssetFrozenError', () => {
     it('carries the frozen-transfer message keys', () => {
-        expect(new AssetFrozenError().metadata.messageKeys).toEqual({
-            titleKey: 'errors.transaction.asset_frozen.title',
-            bodyKey: 'errors.transaction.asset_frozen.body',
-        })
+        const { titleKey, messageKey } = new AssetFrozenError().metadata
+
+        expect(titleKey).toBe('errors.transaction.asset_frozen.title')
+        expect(messageKey).toBe('errors.transaction.asset_frozen.body')
     })
 })
 

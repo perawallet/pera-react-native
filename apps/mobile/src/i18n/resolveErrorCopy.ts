@@ -33,7 +33,8 @@ export type AlgodMessageFn = (err: unknown) => ErrorCopy
 
 /**
  * Errors declare a body key, not a title. Titles come from the category so a
- * new error never has to invent one.
+ * new error never has to invent one — `metadata.titleKey` is the opt-out, for
+ * errors specific enough to name the situation themselves.
  *
  * Exhaustive `Record` on purpose: adding an `ErrorCategory` is a compile error
  * until someone classifies it here.
@@ -99,19 +100,12 @@ export const resolveErrorCopy = (
     }
 
     if (error instanceof AppError) {
-        const { messageKeys, messageKey, params, category } = error.metadata
-        // A declared title/body pair wins over the category title: an error
-        // like AssetFrozenError names the exact situation, which
-        // 'errors.transaction.title' would flatten back to a generic banner.
-        if (messageKeys) {
-            return {
-                title: t(messageKeys.titleKey),
-                body: t(messageKeys.bodyKey),
-            }
-        }
+        const { messageKey, titleKey, params, category } = error.metadata
         if (messageKey) {
             return {
-                title: fallbackTitle ?? t(TITLE_KEY_BY_CATEGORY[category]),
+                title: titleKey
+                    ? t(titleKey)
+                    : (fallbackTitle ?? t(TITLE_KEY_BY_CATEGORY[category])),
                 body: t(messageKey, params),
             }
         }
