@@ -147,11 +147,12 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
                 // (`migrationsLedger.ts`), so a failing write here usually
                 // means the ledger's own write fails right after — the module
                 // is reported failed rather than applied. That is not a
-                // recovery: `applyMigrations` throws `MigrationFailedError`
-                // for anything in `report.failed` (apply.js:148), which
-                // rejects `keystore.ready` (extension.js:109) and blocks boot
-                // — and with the ledger unwritten it does so again every
-                // launch. Treat this loss as permanent.
+                // recovery: anything in `report.failed` throws
+                // `MigrationFailedError`, which `singleton.ts:49` passes to
+                // `createPeraKeystore` as `before`, and a rejected `before`
+                // rejects `keystore.ready` too (`react-native-keystore`
+                // `engine.js:197-198`), blocking boot — and with the ledger
+                // unwritten it does so again every launch. Loss is permanent.
                 safeWarn(
                     `[provider] declined-register: ledger write failed for ${module}, ${ids.length} id(s) left unrecorded (${ids.join(', ')}): ${safeErrorMessage(error)}`,
                 )

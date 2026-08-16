@@ -47,20 +47,19 @@ import {
  * `sealNativeCredentialRecord`, and confirming the real
  * `openNativeProviderRecord` opened it back to `RECORD` byte-for-byte,
  * including the non-ASCII `userHandle` (the UTF-8 fix this round made
- * reachable). It's redundant with the live test below now, but cheaper to run
- * and keeps failing the same way if the relative import path above ever needs
- * to move.
+ * reachable). It is asserted as a frozen literal, not re-derived, which is
+ * what makes it irreplaceable — see below.
  *
- * Neither of the above guards the *writer* half by itself: both are a
- * seal-here/open-there round trip, symmetric and blind to which side of the
- * split introduced a bug — a writer mutation that still round-trips correctly
- * through its own paired reader (e.g. a GCM tag boundary shifted by one byte,
- * consistently sealed and opened the same wrong way) passes both. The
- * `'produces the identical envelope as the real sealNativeProviderRecord'`
- * test below is the one that isn't blind to that: it compares the two WRITER
- * implementations' output directly, so any divergence between them — in
- * either direction — fails it regardless of whether either one's own
- * self-round-trip still happens to work.
+ * The live round trip is symmetric, so it is blind to which side of the split
+ * introduced a bug. The `'produces the identical envelope as the real
+ * sealNativeProviderRecord'` test below covers that: it compares the two
+ * WRITER implementations directly, so either one drifting from the other
+ * fails it. What it cannot see is both writers drifting *together* — change
+ * `GCM_TAG_BYTE_LENGTH` to the same wrong value in `nativeCredentialRecord.ts`
+ * and in `packages/passkeys`' `nativeProviderRecord.ts` and it still passes,
+ * by construction. The golden pin is the only check that fails there, because
+ * a frozen literal has no writer to agree with. Deleting it as "redundant"
+ * would leave coordinated drift of both writers caught by nothing.
  */
 describe('nativeCredentialRecord interop with the real provider reader', () => {
     const subtle = globalThis.crypto.subtle

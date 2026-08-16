@@ -63,10 +63,12 @@ import { PASSKEY_MAIN_KEY_SCHEME, passkeyMainKeyId } from '../../passkeyMainKey'
  * touches material.
  *
  * Nothing here fails the module. A rejecting `up` lands in `report.failed`,
- * which throws `MigrationFailedError` (`provider-migrations` `apply.js:148`)
- * and rejects `keystore.ready` (`react-native-keystore` `extension.js:109`),
- * blocking boot — and because the ledger is written only after `up` resolves,
- * it would do so again on every launch. A wallet with no main key still works:
+ * which throws `MigrationFailedError` (`provider-migrations` `apply.js:149`);
+ * `singleton.ts:49` passes that promise to `createPeraKeystore` as `before`,
+ * and a rejected `before` rejects `keystore.ready` too (`react-native-keystore`
+ * `engine.js:197-198`), blocking boot — and because the ledger is written only
+ * after `up` resolves, it would do so again on every launch. A wallet with no
+ * main key still works:
  * `selectParentKey` falls back to `candidates.first`, so new credentials go on
  * deriving from the XHD root exactly as they did before this revision existed,
  * and already-issued ones are unaffected either way (they pin their scheme).

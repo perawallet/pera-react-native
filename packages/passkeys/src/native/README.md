@@ -67,14 +67,15 @@ packages' own `build` scripts run clean side by side), but a **deep relative
 import** creates no such edge and never enters that graph. `extensions/provider`'s
 `nativeCredentialRecord.spec.ts` uses exactly that — a relative import of this
 module's real `openNativeProviderRecord`, sealing here and opening there — kept
-alongside a golden envelope pinned from an earlier such round trip. Neither
-round trip guards the _writer_ half alone, though: both are symmetric
-seal-here/open-there checks, blind to a writer bug that still round-trips
-through its own paired reader (a GCM tag boundary shifted by one byte, sealed
-and opened the same wrong way both times, passes both). The spec's third
-check — comparing this module's real `sealNativeProviderRecord` output
-directly against the restated writer's, for the same input — is the one that
-isn't blind to that.
+alongside a golden envelope pinned from an earlier such round trip. The live
+round trip is symmetric, so it cannot say which side of the split introduced a
+bug. The spec's third check — comparing this module's real
+`sealNativeProviderRecord` output directly against the restated writer's, for
+the same input — catches the two writers diverging from each other, but by
+construction not both drifting together: shift `GCM_TAG_BYTE_LENGTH` to the
+same wrong value on both sides and it still passes. The golden envelope is the
+only check that fails there, because it is asserted as a frozen literal rather
+than re-derived, and so has no writer to agree with.
 
 ## Still pending: a real phase 3 for credentials
 
