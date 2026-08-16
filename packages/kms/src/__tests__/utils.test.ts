@@ -256,6 +256,14 @@ describe('entropyChildMetadata', () => {
 describe('entropyChildIdOf', () => {
     const keys = [
         { id: 'seed-123', type: 'seed', metadata: { scheme: 'bip39' } },
+        // Deliberately ahead of the real entropy child: `commitSecret` writes
+        // other per-seed secrets as `secret-key` too, so a predicate that drops
+        // the `entropyKey` clause picks this one up instead.
+        {
+            id: 'unflagged-secret',
+            type: 'secret-key',
+            metadata: { parentKeyId: 'seed-123' },
+        },
         {
             id: 'random-child-id',
             type: 'secret-key',
