@@ -20,6 +20,13 @@ import {
 } from '@perawallet/wallet-core-passkeys'
 
 export type UsePasskeyMigrationBannerParams = {
+    /**
+     * Whether the screen is showing the managed-passkey content, the same gate
+     * the prerequisite callouts use. Notably false for `disabled`, where the
+     * user cannot register a replacement and the banner's advice would lead
+     * straight into a lockout.
+     */
+    isManaging: boolean
     /** The screen's confirm-then-delete flow. Never bypassed. */
     onRequestDelete: (passkey: Passkey) => void
 }
@@ -31,7 +38,10 @@ export type UsePasskeyMigrationBannerResult = {
     onDismiss: () => void
 }
 
-export const flaggedPasskeysQueryKey = ['passkeys', 'needs-migration'] as const
+// Must stay under the `passkeys` root: `useRemovePasskeyMutation` invalidates
+// that root, and TanStack matches by prefix, so a key outside it would leave
+// the banner listing a credential the user just deleted.
+const flaggedPasskeysQueryKey = ['passkeys', 'needs-migration'] as const
 
 /**
  * The two places a `needs-migration` marker can still be read, unioned:
@@ -44,6 +54,7 @@ export const flaggedPasskeysQueryKey = ['passkeys', 'needs-migration'] as const
  *   un-adopt and whose `k/` record therefore survives.
  */
 export const usePasskeyMigrationBanner = ({
+    isManaging,
     onRequestDelete,
 }: UsePasskeyMigrationBannerParams): UsePasskeyMigrationBannerResult => {
     const { passkeys } = usePasskeysQuery()
@@ -74,7 +85,7 @@ export const usePasskeyMigrationBanner = ({
 
     return {
         affected,
-        isVisible: !isDismissed && affected.length > 0,
+        isVisible: isManaging && !isDismissed && affected.length > 0,
         onRecreate: onRequestDelete,
         onDismiss,
     }

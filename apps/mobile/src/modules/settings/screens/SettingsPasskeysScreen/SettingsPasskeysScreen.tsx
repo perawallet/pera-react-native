@@ -34,6 +34,7 @@ export const SettingsPasskeyScreen = () => {
     const { t } = useLanguage()
     const screen = useSettingsPasskeysScreen()
     const migration = usePasskeyMigrationBanner({
+        isManaging: screen.isManaging,
         onRequestDelete: screen.onRequestDelete,
     })
 

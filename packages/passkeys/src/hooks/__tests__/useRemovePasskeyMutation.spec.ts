@@ -28,7 +28,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 import { useRemovePasskeyMutation } from '../useRemovePasskeyMutation'
-import { passkeysQueryKey } from '../usePasskeysQuery'
+import { passkeysQueryKey, passkeysQueryKeyRoot } from '../usePasskeysQuery'
 
 const keystorePasskey: Passkey = {
     id: 'cred-a',
@@ -102,7 +102,34 @@ describe('useRemovePasskeyMutation', () => {
         expect(mocks.deleteCredential).toHaveBeenCalledWith('cred-a')
         expect(mocks.removeKey).toHaveBeenCalledWith('cred-a')
         expect(mocks.refreshCredentialIdentities).toHaveBeenCalled()
-        expect(invalidate).toHaveBeenCalledWith({ queryKey: passkeysQueryKey })
+        expect(invalidate).toHaveBeenCalledWith({
+            queryKey: passkeysQueryKeyRoot,
+        })
+        expect(passkeysQueryKeyRoot).toEqual(['passkeys'])
+    })
+
+    // Restated, not imported: the key belongs to
+    // `apps/mobile/.../PasskeyMigrationBanner/usePasskeyMigrationBanner.ts`,
+    // and mobile depends on this package rather than the reverse. It is a
+    // *sibling* of `passkeysQueryKey`, so only the shared root reaches it —
+    // invalidating `passkeysQueryKey` leaves the banner listing a credential
+    // the user just deleted.
+    it('invalidates sibling passkey queries, not just the native-credentials key', async () => {
+        const flaggedKey = ['passkeys', 'needs-migration']
+        const { result } = renderHook(() => useRemovePasskeyMutation(), {
+            wrapper: createWrapper(),
+        })
+        queryClient.setQueryData(flaggedKey, [])
+        queryClient.setQueryData(passkeysQueryKey, [])
+
+        await act(async () => {
+            await result.current.removePasskey(keystorePasskey)
+        })
+
+        expect(queryClient.getQueryState(flaggedKey)?.isInvalidated).toBe(true)
+        expect(queryClient.getQueryState(passkeysQueryKey)?.isInvalidated).toBe(
+            true,
+        )
     })
 
     it('skips keystore removal for a native-only passkey', async () => {
@@ -119,10 +146,10 @@ describe('useRemovePasskeyMutation', () => {
         expect(mocks.refreshCredentialIdentities).toHaveBeenCalled()
     })
 
-    // The banner's delete-and-recreate action targets exactly these rows. A
-    // flagged credential has no k/ record left to remove — the un-adopt in
-    // `repairs/0002-rematerialize-passkey-credentials` deleted it — so routing
-    // it through the keystore would reject and strand the credential.
+    // The banner's delete-and-recreate action targets exactly these rows. The
+    // un-adopt in `repairs/0002-rematerialize-passkey-credentials` already
+    // deleted their k/ record, so the keystore has nothing left to remove —
+    // this pins the source attribution that keeps it out of the path.
     it('skips keystore removal for a flat provider-store passkey', async () => {
         const { result } = renderHook(() => useRemovePasskeyMutation(), {
             wrapper: createWrapper(),

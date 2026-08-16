@@ -44,9 +44,10 @@ const passkey = (overrides: Partial<Passkey>): Passkey => ({
 })
 
 let onRequestDelete: ReturnType<typeof vi.fn>
+let queryClient: QueryClient
 
 const createWrapper = () => {
-    const queryClient = new QueryClient({
+    queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
     })
     return ({ children }: { children: React.ReactNode }) =>
@@ -57,10 +58,11 @@ const createWrapper = () => {
         )
 }
 
-const render = () =>
+const render = ({ isManaging = true }: { isManaging?: boolean } = {}) =>
     renderHook(
         () =>
             usePasskeyMigrationBanner({
+                isManaging,
                 onRequestDelete: onRequestDelete as (p: Passkey) => void,
             }),
         { wrapper: createWrapper() },
@@ -116,13 +118,18 @@ describe('usePasskeyMigrationBanner', () => {
     // The second flagged credential is what makes this test non-vacuous:
     // waiting on `isVisible` alone would settle on the keystore row before the
     // flat read resolves, and never observe the union at all.
-    it('lists a credential once when both sources report it', async () => {
+    //
+    // The surviving row must be the keystore one. `useRemovePasskeyMutation`
+    // gates keystore removal on `source === 'keystore'`, so letting the flat
+    // copy win for a credential that still has a k/ record would skip
+    // `provider.key.store.remove` and strand the k/+m/ pair.
+    it('lists a credential once when both sources report it, keeping the keystore attribution', async () => {
         mocks.usePasskeysQuery.mockReturnValue({
             passkeys: [passkey({ keyId: 'both', source: 'keystore' })],
         })
         mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
-            passkey({ keyId: 'both' }),
-            passkey({ keyId: 'flat-only' }),
+            passkey({ keyId: 'both', source: 'provider' }),
+            passkey({ keyId: 'flat-only', source: 'provider' }),
         ])
 
         const { result } = render()
@@ -132,6 +139,47 @@ describe('usePasskeyMigrationBanner', () => {
             'both',
             'flat-only',
         ])
+        expect(result.current.affected.map(p => p.source)).toEqual([
+            'keystore',
+            'provider',
+        ])
+    })
+
+    // The banner's query key is a sibling of `passkeysQueryKey`, not a
+    // descendant, so only an invalidation of the shared `['passkeys']` root
+    // reaches it — which is what `useRemovePasskeyMutation` now issues. Without
+    // it the banner keeps offering "Remove" for a credential already gone.
+    it('re-reads the flat store when a delete invalidates the shared passkeys root', async () => {
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
+            passkey({ keyId: 'flat-1' }),
+        ])
+
+        const { result } = render()
+        await waitFor(() => expect(result.current.isVisible).toBe(true))
+
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([])
+        await act(async () => {
+            await queryClient.invalidateQueries({ queryKey: ['passkeys'] })
+        })
+
+        await waitFor(() => expect(result.current.affected).toEqual([]))
+        expect(mocks.readFlaggedPasskeyCredentials).toHaveBeenCalledTimes(2)
+        expect(result.current.isVisible).toBe(false)
+    })
+
+    // Same predicate the screen's prerequisite callouts use. `disabled` is the
+    // one that matters: re-registration is impossible while Pera is not the
+    // active credential provider, so offering delete-and-recreate there is an
+    // invitation to lock yourself out.
+    it('stays hidden while the screen is not managing passkeys', async () => {
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
+            passkey({ keyId: 'flat-1' }),
+        ])
+
+        const { result } = render({ isManaging: false })
+
+        await waitFor(() => expect(result.current.affected).toHaveLength(1))
+        expect(result.current.isVisible).toBe(false)
     })
 
     it('hides on dismiss without deleting anything', async () => {

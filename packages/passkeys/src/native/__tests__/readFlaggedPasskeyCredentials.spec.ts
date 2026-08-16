@@ -178,6 +178,20 @@ describe('readFlaggedPasskeyCredentials', () => {
         expect(mocks.defaultStorage.getAllKeys).toHaveBeenCalled()
     })
 
+    // The scan's own working copy, distinct from the Buffer the default read
+    // zeroes below: an injected `readMasterKey` never goes through
+    // `readMasterKeyBytes`, so only the scan-exit wipe can clear this one.
+    it('zeroes the master key it scanned with once the scan is over', async () => {
+        await seed('cred-1', flatRecord({ id: 'cred-1' }))
+        const injected = MASTER_KEY.slice()
+        readMasterKey.mockResolvedValue(injected)
+
+        const flagged = await readFlaggedPasskeyCredentials(deps())
+
+        expect(flagged.map(p => p.keyId)).toEqual(['cred-1'])
+        expect([...injected]).toEqual(Array(32).fill(0))
+    })
+
     it('zeroes the keystore Buffer the default master-key read hands back', async () => {
         await seed('cred-1', flatRecord({ id: 'cred-1' }))
         const buffer = Buffer.from(MASTER_KEY)

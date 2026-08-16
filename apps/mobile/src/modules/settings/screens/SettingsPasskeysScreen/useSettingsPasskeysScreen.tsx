@@ -50,6 +50,13 @@ export type UseSettingsPasskeysScreenResult = {
     /** The prerequisite notice to render (empty / populated states only). */
     notice: PasskeysNotice
     /**
+     * Whether the screen is showing the managed-passkey content. Gates
+     * everything that renders above it — the prerequisite notice and the
+     * migration banner — so nothing stacks on top of a loading, errored or
+     * provider-disabled screen.
+     */
+    isManaging: boolean
+    /**
      * Whether to offer the QR scanner entry point. Hidden while the screen is
      * still resolving (loading) or errored, when there's no HD wallet to derive
      * from, and when the device has no screen lock (no strong biometric and no
@@ -148,6 +155,7 @@ export const useSettingsPasskeysScreen =
             state,
             passkeys: list.passkeys,
             notice,
+            isManaging,
             canScan:
                 state !== 'loading' &&
                 state !== 'error' &&
