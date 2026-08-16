@@ -184,18 +184,22 @@ export const migration: Migration<PeraMigrationContext> = {
         try {
             masterKey = await context.masterKeyForRead()
         } catch (error) {
-            if (error instanceof MasterKeyNotFoundError) {
-                // A credential's k/+m/ pair cannot exist without a master key
-                // having sealed its material, so this should not happen in
-                // practice — but a vanished master key is "cannot reach the
-                // material" the same as any other read failure, not a crash.
-                context.declined.record(
-                    utils.revision.module,
-                    pending.map(({ id }) => id),
+            // A credential's k/+m/ pair cannot exist without a master key
+            // having sealed its material, so `MasterKeyNotFoundError` should
+            // not happen in practice; a cancelled or locked Keychain arrives
+            // as a plain `Error` and is far likelier. Both are "cannot reach
+            // the material", and rejecting `up` would re-fail every launch
+            // because the ledger is written only after `up` resolves.
+            if (!(error instanceof MasterKeyNotFoundError)) {
+                safeWarn(
+                    `[provider] rematerialize-passkey-credentials: master key unavailable: ${safeErrorMessage(error)}`,
                 )
-                return
             }
-            throw error
+            context.declined.record(
+                utils.revision.module,
+                pending.map(({ id }) => id),
+            )
+            return
         }
 
         utils.secrets.put('keystore-master-key', masterKey)

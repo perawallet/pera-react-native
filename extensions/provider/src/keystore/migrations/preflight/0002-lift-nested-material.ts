@@ -174,7 +174,16 @@ export const migration: Migration<PeraMigrationContext> = {
             masterKey = await context.masterKeyForRead()
         } catch (error) {
             if (error instanceof MasterKeyNotFoundError) return
-            throw error
+            // A cancelled or locked Keychain arrives as a plain `Error`
+            // (`readMasterKey` throws `MasterKeyNotFoundError` only on a falsey
+            // credential). Rethrowing would reject `up`, and the ledger is
+            // written only after `up` resolves, so it would re-fail every
+            // launch. Left flat, these records are upstream's to adopt.
+            safeWarn(
+                `[provider] lift-nested-material: master key unavailable, left ${candidates.length} record(s) flat: ${safeErrorMessage(error)}`,
+            )
+            context.declined.record(utils.revision.module, candidates)
+            return
         }
 
         // The run-scoped scratch owns the plaintext master key from here, so it

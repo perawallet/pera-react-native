@@ -331,17 +331,25 @@ describe('0002-lift-nested-material', () => {
         expect(storage.entries()).toEqual(before)
     })
 
-    // Anything other than a missing master key — a cancelled unlock, hardware
-    // failure — is a real problem the runner must see, not silence.
-    it('rethrows a master-key read failure that is not MasterKeyNotFoundError', async () => {
+    // A cancelled or unavailable Keychain (`errSecUserCanceled`,
+    // `errSecInteractionNotAllowed`, Android `KeyPermanentlyInvalidatedException`)
+    // arrives as a plain `Error`, not `MasterKeyNotFoundError`. Rethrowing it
+    // would reject `up` and, with the ledger written only afterwards, re-fail
+    // on every launch. Declining leaves the records flat for upstream instead.
+    it('resolves and declines when the master-key read fails for any other reason', async () => {
         const storage = await seeded(nestedAndTopLevel())
+        const before = storage.entries()
         masterKeyForRead = vi.fn(async () => {
             throw new Error('unlock cancelled')
         })
 
-        await expect(migration.up(context(storage), utils())).rejects.toThrow(
-            'unlock cancelled',
-        )
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+        expect(storage.entries()).toEqual(before)
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual(['derived-1'])
     })
 
     // Reading the master key is the only step that can raise a biometric

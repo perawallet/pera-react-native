@@ -629,8 +629,8 @@ describe('0003-mint-passkey-main-key', () => {
     // arrives as a plain `Error`, not `MasterKeyNotFoundError`. Rethrowing it
     // would reject `up` and, with the ledger unwritten, re-fail on every launch.
     // Once 0001 and 0002 are ledgered this is the only revision in THIS module
-    // that reads the master key; `preflight/0002:174` and `preflight/0004:79`
-    // also read it, and both still rethrow.
+    // that reads the master key; `preflight/0002` and `preflight/0004` also
+    // read it, and both decline the same way.
     it('resolves and declines when the Keychain read fails for any other reason', async () => {
         const storage = fakeStorage({})
         await bip39Wallet(storage)

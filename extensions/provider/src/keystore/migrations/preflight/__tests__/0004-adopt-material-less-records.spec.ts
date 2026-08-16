@@ -379,7 +379,9 @@ describe('0004-adopt-material-less-records', () => {
         expect(storage.entries()).toEqual(before)
     })
 
-    it('rethrows a master-key read failure that is not MasterKeyNotFoundError', async () => {
+    // Same reasoning as `0002`: a plain `Error` from a cancelled or locked
+    // Keychain must not reject `up`, or the module re-fails on every launch.
+    it('resolves and declines when the master-key read fails for any other reason', async () => {
         const storage = await seeded({
             id: 'watch-1',
             type: 'ed25519',
@@ -387,13 +389,18 @@ describe('0004-adopt-material-less-records', () => {
             extractable: false,
             publicKey: new Uint8Array(32).fill(3),
         })
+        const before = storage.entries()
         masterKeyForRead = vi.fn(async () => {
             throw new Error('unlock cancelled')
         })
 
-        await expect(migration.up(context(storage), utils())).rejects.toThrow(
-            'unlock cancelled',
-        )
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+        expect(storage.entries()).toEqual(before)
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual(['watch-1'])
     })
 
     // Reading the master key is the only step that can raise a biometric

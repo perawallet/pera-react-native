@@ -79,7 +79,14 @@ export const migration: Migration<PeraMigrationContext> = {
             masterKey = await context.masterKeyForRead()
         } catch (error) {
             if (error instanceof MasterKeyNotFoundError) return
-            throw error
+            // See `0002`: a plain `Error` here is a cancelled or locked
+            // Keychain, and rejecting `up` would re-fail on every launch
+            // because the ledger is written only after `up` resolves.
+            safeWarn(
+                `[provider] adopt-material-less-records: master key unavailable, left ${candidates.length} record(s) flat: ${safeErrorMessage(error)}`,
+            )
+            context.declined.record(utils.revision.module, candidates)
+            return
         }
 
         utils.secrets.put('keystore-master-key', masterKey)

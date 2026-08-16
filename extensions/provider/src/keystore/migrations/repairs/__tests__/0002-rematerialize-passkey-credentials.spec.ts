@@ -1218,7 +1218,10 @@ describe('0002-rematerialize-passkey-credentials', () => {
         expect(noteBacking[noteKey]).toBe(priorNote)
     })
 
-    it('rethrows a master-key read failure that is not MasterKeyNotFoundError', async () => {
+    // A cancelled or locked Keychain arrives as a plain `Error`, not
+    // `MasterKeyNotFoundError`. It is "cannot reach the material" all the
+    // same, and rejecting `up` would re-fail every launch.
+    it('resolves and declines when the master-key read fails for any other reason', async () => {
         const storage = fakeStorage({})
         await seededCredential(storage, {
             id: 'cred-1',
@@ -1229,9 +1232,12 @@ describe('0002-rematerialize-passkey-credentials', () => {
             throw new Error('unlock cancelled')
         })
 
-        await expect(migration.up(context(storage), utils())).rejects.toThrow(
-            'unlock cancelled',
-        )
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(REPAIRS_MODULE_ID),
+        ).toEqual(['cred-1'])
     })
 
     it('does not disturb an unrelated record beside a rematerialized credential', async () => {
