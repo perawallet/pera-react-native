@@ -39,6 +39,7 @@ const keystorePasskey: Passkey = {
     algorithm: 'P256',
     createdAt: 100,
     source: 'keystore',
+    needsMigration: false,
 }
 
 const nativePasskey: Passkey = {
@@ -46,6 +47,14 @@ const nativePasskey: Passkey = {
     id: 'native-x',
     keyId: 'native-x',
     source: 'native',
+}
+
+const providerPasskey: Passkey = {
+    ...keystorePasskey,
+    id: 'flat-x',
+    keyId: 'flat-x',
+    source: 'provider',
+    needsMigration: true,
 }
 
 let queryClient: QueryClient
@@ -108,6 +117,23 @@ describe('useRemovePasskeyMutation', () => {
         expect(mocks.deleteCredential).toHaveBeenCalledWith('native-x')
         expect(mocks.removeKey).not.toHaveBeenCalled()
         expect(mocks.refreshCredentialIdentities).toHaveBeenCalled()
+    })
+
+    // The banner's delete-and-recreate action targets exactly these rows. A
+    // flagged credential has no k/ record left to remove — the un-adopt in
+    // `repairs/0002-rematerialize-passkey-credentials` deleted it — so routing
+    // it through the keystore would reject and strand the credential.
+    it('skips keystore removal for a flat provider-store passkey', async () => {
+        const { result } = renderHook(() => useRemovePasskeyMutation(), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.removePasskey(providerPasskey)
+        })
+
+        expect(mocks.deleteCredential).toHaveBeenCalledWith('flat-x')
+        expect(mocks.removeKey).not.toHaveBeenCalled()
     })
 
     it('still removes the keystore key when the best-effort native delete rejects', async () => {
