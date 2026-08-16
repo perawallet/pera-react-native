@@ -62,8 +62,9 @@ export type UseSettingsPasskeysScreenResult = {
      * off a source that has a metadata bag, so a `source: 'native'` row —
      * which is what a credential `repairs/0002` un-adopted comes back as —
      * reports `false` whether or not it is flagged. The migration read is
-     * unioned in for exactly those, and a row stays unremovable until that read
-     * has answered.
+     * unioned in for exactly those, and such a row stays unremovable until that
+     * read reports it examined every record — not merely until it resolves,
+     * which it also does when it read nothing at all.
      */
     canRemove: (passkey: Passkey) => boolean
     /**
@@ -174,21 +175,24 @@ export const useSettingsPasskeysScreen =
             onRequestDelete: handleRequestDelete,
         })
 
-        const { affected, isFlagSourceSettled } = migration
-        const flaggedKeyIds = useMemo(
-            () => new Set(affected.map(passkey => passkey.keyId)),
+        const { affected, isFlagSourceComplete } = migration
+        const flaggedIds = useMemo(
+            () => new Set(affected.map(passkey => passkey.id)),
             [affected],
         )
 
         const canRemove = useCallback(
             (passkey: Passkey) => {
                 if (isProviderActive) return true
-                if (!isFlagSourceSettled) return false
-                return !(
-                    passkey.needsMigration || flaggedKeyIds.has(passkey.keyId)
-                )
+                if (passkey.needsMigration || flaggedIds.has(passkey.id))
+                    return false
+                // Only a keystore row's `needsMigration` is an answer: it is
+                // read off that row's own `k/` metadata. Every other source has
+                // no metadata bag, so their `false` is a default — and an
+                // incomplete flat scan leaves nothing to check it against.
+                return passkey.source === 'keystore' || isFlagSourceComplete
             },
-            [isProviderActive, isFlagSourceSettled, flaggedKeyIds],
+            [isProviderActive, isFlagSourceComplete, flaggedIds],
         )
 
         const notice: PasskeysNotice = !isManaging

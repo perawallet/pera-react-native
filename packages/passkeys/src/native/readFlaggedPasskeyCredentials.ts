@@ -17,7 +17,10 @@ import {
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
 import { flatRecordToPasskey, type Passkey } from '../models/passkey'
-import { openNativeProviderRecord } from './nativeProviderRecord'
+import {
+    isNativeProviderRecordPayload,
+    openNativeProviderRecord,
+} from './nativeProviderRecord'
 
 /**
  * Unlike its siblings in this folder, this module is **not** dependency-free
@@ -53,14 +56,33 @@ export type FlaggedPasskeyStorage = {
 
 export type ReadFlaggedPasskeyCredentialsDeps = {
     /**
-     * Callers supply this rather than the module importing it: the mobile app
-     * has `react-native-quick-crypto`, this package deliberately does not, and
-     * a bundler-visible import here would land in the browser extension's
-     * bundle through the package root.
+     * Callers supply this rather than the module importing it:
+     * `react-native-quick-crypto` is not a dependency of this package (see its
+     * `package.json`), and every caller already has a `SubtleCrypto` to hand —
+     * the mobile app from that module, tests from `globalThis.crypto`.
      */
     subtle: SubtleCrypto
     storage?: FlaggedPasskeyStorage
     readMasterKey?: () => Promise<Uint8Array>
+}
+
+export type FlaggedPasskeyScan = {
+    flagged: Passkey[]
+    /**
+     * Whether every bare-id entry was actually examined. False when the key
+     * listing or the master key could not be read, or when an entry that *is*
+     * a credential-provider payload could not be opened.
+     *
+     * Without it `flagged: []` is ambiguous — this function never rejects (see
+     * below), so a total failure and a clean scan of an unflagged keystore look
+     * identical. A caller gating an irreversible action must branch on this,
+     * not on the emptiness of `flagged`.
+     *
+     * An entry that is not a provider payload at all (the keystore's own legacy
+     * `{iv, content}` writer shares the bare-id namespace) does not clear it:
+     * that entry was examined, it simply isn't a credential record.
+     */
+    isComplete: boolean
 }
 
 /**
@@ -77,16 +99,18 @@ const readMasterKeyBytes = async (): Promise<Uint8Array> => {
 }
 
 /**
- * Every credential whose record carries the marker. Returns `[]` rather than
- * rejecting on any read failure: this feeds an advisory banner on a settings
- * screen, so a keychain that will not open must degrade to "nothing to warn
- * about", never to an error state over the passkey list itself.
+ * Every credential whose record carries the marker, plus whether the scan that
+ * found them saw everything. Never rejects on a read failure: this feeds an
+ * advisory banner on a settings screen, so a keychain that will not open must
+ * degrade to "nothing to warn about", never to an error state over the passkey
+ * list itself. {@link FlaggedPasskeyScan.isComplete} is what carries the
+ * failure instead.
  */
 export const readFlaggedPasskeyCredentials = async ({
     subtle,
     storage = keystoreStorage,
     readMasterKey: readKey = readMasterKeyBytes,
-}: ReadFlaggedPasskeyCredentialsDeps): Promise<Passkey[]> => {
+}: ReadFlaggedPasskeyCredentialsDeps): Promise<FlaggedPasskeyScan> => {
     let bareIds: string[]
     try {
         bareIds = storage
@@ -97,30 +121,38 @@ export const readFlaggedPasskeyCredentials = async ({
                     !key.startsWith(MATERIAL_PREFIX),
             )
     } catch {
-        return []
+        return { flagged: [], isComplete: false }
     }
 
     // Opening a record needs the master key, so answer "nothing to open"
     // before asking for it.
-    if (bareIds.length === 0) return []
+    if (bareIds.length === 0) return { flagged: [], isComplete: true }
 
     let masterKey: Uint8Array
     try {
         masterKey = await readKey()
     } catch {
-        return []
+        return { flagged: [], isComplete: false }
     }
 
     try {
         const flagged: Passkey[] = []
+        let isComplete = true
         for (const id of bareIds) {
             let payload: string | undefined
             try {
                 payload = storage.getString(id)
             } catch {
+                isComplete = false
                 continue
             }
-            if (payload === undefined) continue
+            // Listed a moment ago and unreadable now: an entry we cannot rule
+            // out, not one we ruled out.
+            if (payload === undefined) {
+                isComplete = false
+                continue
+            }
+            if (!isNativeProviderRecordPayload(payload)) continue
 
             try {
                 const record = await openNativeProviderRecord(
@@ -131,12 +163,12 @@ export const readFlaggedPasskeyCredentials = async ({
                 const passkey = flatRecordToPasskey(record)
                 if (passkey?.needsMigration) flagged.push(passkey)
             } catch {
-                // Not a record this app can open — a differently-sealed entry,
-                // or one belonging to another writer. Nothing to warn about.
-                continue
+                // Shaped like a record but sealed with something this app
+                // cannot open, so its marker — if any — stays unread.
+                isComplete = false
             }
         }
-        return flagged
+        return { flagged, isComplete }
     } finally {
         masterKey.fill(0)
     }

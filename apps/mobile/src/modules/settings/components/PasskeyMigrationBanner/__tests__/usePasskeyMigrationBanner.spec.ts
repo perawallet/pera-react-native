@@ -34,8 +34,12 @@ vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
 import { usePasskeyMigrationBanner } from '../usePasskeyMigrationBanner'
 
+// `id` defaults off `keyId` rather than to a constant, because the two are
+// distinct fields with distinct rules: `id` is `toUrlSafeBase64(keyId)`, so a
+// fixture that hardcodes both to the same literal makes an id-join and a
+// keyId-join indistinguishable. The dedupe test below overrides them apart.
 const passkey = (overrides: Partial<Passkey>): Passkey => ({
-    id: 'id',
+    id: overrides.keyId ?? 'id',
     keyId: 'id',
     displayName: 'alice',
     origin: 'webauthn.io',
@@ -45,6 +49,14 @@ const passkey = (overrides: Partial<Passkey>): Passkey => ({
     source: 'provider',
     needsMigration: true,
     ...overrides,
+})
+
+// The read's own shape: `flagged` alone cannot say whether the scan saw
+// everything, and `readFlaggedPasskeyCredentials` degrades every documented
+// failure to a resolved empty list rather than rejecting.
+const scan = (flagged: Passkey[], isComplete = true) => ({
+    flagged,
+    isComplete,
 })
 
 let onRequestDelete: ReturnType<typeof vi.fn>
@@ -81,7 +93,7 @@ describe('usePasskeyMigrationBanner', () => {
         vi.clearAllMocks()
         onRequestDelete = vi.fn()
         mocks.usePasskeysQuery.mockReturnValue({ passkeys: [] })
-        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([])
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(scan([]))
     })
 
     it('stays hidden when nothing is flagged', async () => {
@@ -99,9 +111,9 @@ describe('usePasskeyMigrationBanner', () => {
     })
 
     it('surfaces a credential the flat provider store flags, which the passkey list never sees', async () => {
-        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
-            passkey({ keyId: 'flat-1' }),
-        ])
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(
+            scan([passkey({ keyId: 'flat-1' })]),
+        )
 
         const { result } = render()
 
@@ -131,20 +143,36 @@ describe('usePasskeyMigrationBanner', () => {
     // gates keystore removal on `source === 'keystore'`, so letting the flat
     // copy win for a credential that still has a k/ record would skip
     // `provider.key.store.remove` and strand the k/+m/ pair.
-    it('lists a credential once when both sources report it, keeping the keystore attribution', async () => {
+    //
+    // Deduped on `id`, not `keyId`: `id` is `toUrlSafeBase64(keyId)` and both
+    // native stores carry a `credentialIdCandidates` normaliser precisely
+    // because the same credential's raw id has been persisted in both standard
+    // and url-safe base64. `BOTH_*` below is one credential recorded each way,
+    // so a keyId-join would list it twice and offer two Remove buttons for one
+    // passkey. `mergePasskeys` dedupes on `id` for the same reason.
+    it('lists a credential once when both sources report it under differently-encoded ids, keeping the keystore attribution', async () => {
+        const BOTH_ID = 'q-_ABC'
         mocks.usePasskeysQuery.mockReturnValue({
-            passkeys: [passkey({ keyId: 'both', source: 'keystore' })],
+            passkeys: [
+                passkey({
+                    id: BOTH_ID,
+                    keyId: 'q+/ABC==',
+                    source: 'keystore',
+                }),
+            ],
         })
-        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
-            passkey({ keyId: 'both', source: 'provider' }),
-            passkey({ keyId: 'flat-only', source: 'provider' }),
-        ])
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(
+            scan([
+                passkey({ id: BOTH_ID, keyId: 'q-_ABC=', source: 'provider' }),
+                passkey({ keyId: 'flat-only', source: 'provider' }),
+            ]),
+        )
 
         const { result } = render()
 
         await waitFor(() => expect(result.current.affected).toHaveLength(2))
-        expect(result.current.affected.map(p => p.keyId)).toEqual([
-            'both',
+        expect(result.current.affected.map(p => p.id)).toEqual([
+            BOTH_ID,
             'flat-only',
         ])
         expect(result.current.affected.map(p => p.source)).toEqual([
@@ -158,14 +186,14 @@ describe('usePasskeyMigrationBanner', () => {
     // reaches it — which is what `useRemovePasskeyMutation` now issues. Without
     // it the banner keeps offering "Remove" for a credential already gone.
     it('re-reads the flat store when the shared passkeys root is invalidated', async () => {
-        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
-            passkey({ keyId: 'flat-1' }),
-        ])
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(
+            scan([passkey({ keyId: 'flat-1' })]),
+        )
 
         const { result } = render()
         await waitFor(() => expect(result.current.isVisible).toBe(true))
 
-        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([])
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(scan([]))
         await act(async () => {
             await queryClient.invalidateQueries({ queryKey: ['passkeys'] })
         })
@@ -185,9 +213,9 @@ describe('usePasskeyMigrationBanner', () => {
     // `needsMigration` is unreadable (`source: 'native'`) is known to be
     // flagged at all.
     it('stays hidden while the screen is not managing passkeys', async () => {
-        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
-            passkey({ keyId: 'flat-1' }),
-        ])
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(
+            scan([passkey({ keyId: 'flat-1' })]),
+        )
 
         const { result } = render({ isManaging: false })
 
@@ -200,9 +228,9 @@ describe('usePasskeyMigrationBanner', () => {
     // removing the credential is irreversible, and the replacement can only be
     // registered once Pera is the active provider again.
     it('keeps warning but withholds the recreate action while the provider is off', async () => {
-        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
-            passkey({ keyId: 'flat-1' }),
-        ])
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(
+            scan([passkey({ keyId: 'flat-1' })]),
+        )
 
         const { result } = render({ isProviderActive: false })
 
@@ -212,9 +240,9 @@ describe('usePasskeyMigrationBanner', () => {
     })
 
     it('offers the recreate action once the provider is active', async () => {
-        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
-            passkey({ keyId: 'flat-1' }),
-        ])
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(
+            scan([passkey({ keyId: 'flat-1' })]),
+        )
 
         const { result } = render()
 
@@ -223,9 +251,9 @@ describe('usePasskeyMigrationBanner', () => {
     })
 
     it('hides on dismiss without deleting anything', async () => {
-        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
-            passkey({ keyId: 'flat-1' }),
-        ])
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(
+            scan([passkey({ keyId: 'flat-1' })]),
+        )
 
         const { result } = render()
         await waitFor(() => expect(result.current.isVisible).toBe(true))
@@ -242,7 +270,7 @@ describe('usePasskeyMigrationBanner', () => {
     // screen's existing confirmation flow.
     it('routes recreate through the confirming delete flow rather than deleting directly', async () => {
         const flagged = passkey({ keyId: 'flat-1' })
-        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([flagged])
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(scan([flagged]))
 
         const { result } = render()
         await waitFor(() => expect(result.current.isVisible).toBe(true))
@@ -272,7 +300,7 @@ describe('usePasskeyMigrationBanner', () => {
     // apart — a `source: 'native'` row has no readable marker of its own, so
     // "not known yet" read as "not flagged" is a one-way delete offered on the
     // one credential that can't come back.
-    it('reports the flat read unsettled while it is still in flight', async () => {
+    it('reports the flag source incomplete while the read is still in flight', async () => {
         mocks.readFlaggedPasskeyCredentials.mockReturnValue(
             new Promise(() => {}),
         )
@@ -283,14 +311,14 @@ describe('usePasskeyMigrationBanner', () => {
             expect(mocks.readFlaggedPasskeyCredentials).toHaveBeenCalled(),
         )
         expect(result.current.affected).toEqual([])
-        expect(result.current.isFlagSourceSettled).toBe(false)
+        expect(result.current.isFlagSourceComplete).toBe(false)
     })
 
-    // A failed read knows nothing about which credentials are flagged, and
-    // `readFlaggedPasskeyCredentials` already degrades its own recoverable
-    // failures to `[]` — so a rejection reaching here is the case where the
-    // empty list is least trustworthy, not most.
-    it('leaves the flat read unsettled when it fails', async () => {
+    // Waits for the query to actually reach `error`. Waiting only on the mock
+    // having been called observes the *pending* state, where every candidate
+    // gate reads false — which is how a previous round's version of this test
+    // stayed green against a gate that could not detect failure at all.
+    it('reports the flag source incomplete once the read has failed', async () => {
         mocks.readFlaggedPasskeyCredentials.mockRejectedValue(
             new Error('keychain unavailable'),
         )
@@ -298,18 +326,56 @@ describe('usePasskeyMigrationBanner', () => {
         const { result } = render()
 
         await waitFor(() =>
-            expect(mocks.readFlaggedPasskeyCredentials).toHaveBeenCalled(),
+            expect(
+                queryClient.getQueryState(['passkeys', 'needs-migration'])
+                    ?.status,
+            ).toBe('error'),
         )
-        expect(result.current.isFlagSourceSettled).toBe(false)
+        expect(result.current.isFlagSourceComplete).toBe(false)
     })
 
-    it('reports the flat read settled once it resolves', async () => {
-        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([])
+    // The failure this whole gate exists for, and the one a rejection can never
+    // represent: `readFlaggedPasskeyCredentials` catches `getAllKeys` throwing,
+    // an unreadable master key and an unopenable record alike, and *resolves*
+    // with an empty list. The query is a clean success; only `isComplete` says
+    // the empty list means nothing.
+    it('reports the flag source incomplete when a resolved read could not examine everything', async () => {
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(scan([], false))
 
         const { result } = render()
 
         await waitFor(() =>
-            expect(result.current.isFlagSourceSettled).toBe(true),
+            expect(
+                queryClient.getQueryState(['passkeys', 'needs-migration'])
+                    ?.status,
+            ).toBe('success'),
+        )
+        expect(result.current.affected).toEqual([])
+        expect(result.current.isFlagSourceComplete).toBe(false)
+    })
+
+    // The partial case: an incomplete scan still reports what it did find, so
+    // the warning does not disappear just because one neighbouring record was
+    // unreadable.
+    it('still surfaces what an incomplete read did find', async () => {
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(
+            scan([passkey({ keyId: 'flat-1' })], false),
+        )
+
+        const { result } = render()
+
+        await waitFor(() => expect(result.current.isVisible).toBe(true))
+        expect(result.current.affected.map(p => p.keyId)).toEqual(['flat-1'])
+        expect(result.current.isFlagSourceComplete).toBe(false)
+    })
+
+    it('reports the flag source complete once a whole-store read resolves', async () => {
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue(scan([]))
+
+        const { result } = render()
+
+        await waitFor(() =>
+            expect(result.current.isFlagSourceComplete).toBe(true),
         )
     })
 })

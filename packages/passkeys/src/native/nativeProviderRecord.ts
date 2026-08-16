@@ -190,6 +190,24 @@ export const sealNativeProviderRecord = async (
  * `{iv, tag, content}` and unsealed base64url JSON. Phase 3's migration needs
  * both; dropping the unsealed case would silently lose those records.
  */
+/**
+ * Whether `payload` is one of the two shapes {@link openNativeProviderRecord}
+ * accepts — i.e. whether a failure to open it means "written by someone else"
+ * or "a record we could not read". A scan that gates a one-way action needs
+ * that apart: the keystore's own legacy bare-id writer emits `{iv, content}`
+ * with no `tag`, which shares the namespace but was never a credential record.
+ * Kept beside the reader so the two cannot drift.
+ */
+export const isNativeProviderRecordPayload = (payload: string): boolean => {
+    if (!payload.startsWith('{')) return true
+    try {
+        const envelope = JSON.parse(payload) as Partial<NativeProviderEnvelope>
+        return Boolean(envelope.iv && envelope.tag && envelope.content)
+    } catch {
+        return false
+    }
+}
+
 export const openNativeProviderRecord = async (
     subtle: SubtleCrypto,
     masterKey: Uint8Array,

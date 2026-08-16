@@ -48,8 +48,15 @@ export type UseSettingsPasskeysScreenResult = {
      * Whether a row may offer its remove action. Same shape as native's gate,
      * against web's own prerequisite for re-registering: the interception
      * toggle sits above the list and is one tap away, where native needs a trip
-     * to OS settings. Web has no flat provider records, so a row's own
-     * `needsMigration` is the whole signal here.
+     * to OS settings.
+     *
+     * Defence in depth only — `needsMigration` is never `true` here. The
+     * marker is written solely by `react-native-keystore`'s
+     * `migrations/0001-flag-legacy-passkeys`, and on web Metro resolves that
+     * package to `extensions/keystore-chrome` while the engine comes from
+     * `@algorandfoundation/keystore-web`; neither carries the migration. Web
+     * also has no flat provider records, so there is no second source to union
+     * in either.
      */
     canRemove: (passkey: Passkey) => boolean
     canScan: boolean

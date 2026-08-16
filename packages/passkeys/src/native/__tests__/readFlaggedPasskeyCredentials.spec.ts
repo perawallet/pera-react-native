@@ -107,7 +107,7 @@ describe('readFlaggedPasskeyCredentials', () => {
     it('projects a flagged flat credential, attributed to the provider store', async () => {
         await seed('cred-1', flatRecord({ id: 'cred-1' }))
 
-        const flagged = await readFlaggedPasskeyCredentials(deps())
+        const { flagged } = await readFlaggedPasskeyCredentials(deps())
 
         expect(flagged).toHaveLength(1)
         expect(flagged[0]).toMatchObject({
@@ -127,26 +127,34 @@ describe('readFlaggedPasskeyCredentials', () => {
             }),
         )
 
-        await expect(readFlaggedPasskeyCredentials(deps())).resolves.toEqual([])
+        await expect(
+            readFlaggedPasskeyCredentials(deps()),
+        ).resolves.toMatchObject({ flagged: [] })
     })
 
     it('skips a flagged record whose type is not a passkey credential type', async () => {
         await seed('root-1', flatRecord({ id: 'root-1', type: 'hd-root-key' }))
 
-        await expect(readFlaggedPasskeyCredentials(deps())).resolves.toEqual([])
+        await expect(
+            readFlaggedPasskeyCredentials(deps()),
+        ).resolves.toMatchObject({ flagged: [] })
     })
 
     it('reads bare ids only: a flagged record parked under k/ or m/ is not a provider record', async () => {
         await seed(METADATA_PREFIX + 'cred-1', flatRecord({ id: 'cred-1' }))
         await seed(MATERIAL_PREFIX + 'cred-1', flatRecord({ id: 'cred-1' }))
 
-        await expect(readFlaggedPasskeyCredentials(deps())).resolves.toEqual([])
+        await expect(
+            readFlaggedPasskeyCredentials(deps()),
+        ).resolves.toMatchObject({ flagged: [] })
     })
 
     it('never touches the master key when there is no bare-id record to open', async () => {
         store.set(METADATA_PREFIX + 'cred-1', 'whatever')
 
-        await expect(readFlaggedPasskeyCredentials(deps())).resolves.toEqual([])
+        await expect(
+            readFlaggedPasskeyCredentials(deps()),
+        ).resolves.toMatchObject({ flagged: [] })
         expect(readMasterKey).not.toHaveBeenCalled()
     })
 
@@ -154,7 +162,7 @@ describe('readFlaggedPasskeyCredentials', () => {
         store.set('broken', '{"iv":"AAAA","tag":"AAAA","content":"AAAA"}')
         await seed('cred-1', flatRecord({ id: 'cred-1' }))
 
-        const flagged = await readFlaggedPasskeyCredentials(deps())
+        const { flagged } = await readFlaggedPasskeyCredentials(deps())
 
         expect(flagged.map(p => p.keyId)).toEqual(['cred-1'])
     })
@@ -163,7 +171,9 @@ describe('readFlaggedPasskeyCredentials', () => {
         await seed('cred-1', flatRecord({ id: 'cred-1' }))
         readMasterKey.mockRejectedValue(new Error('no master key'))
 
-        await expect(readFlaggedPasskeyCredentials(deps())).resolves.toEqual([])
+        await expect(
+            readFlaggedPasskeyCredentials(deps()),
+        ).resolves.toMatchObject({ flagged: [] })
     })
 
     // The app supplies only `subtle`; everything else falls back to the
@@ -172,7 +182,7 @@ describe('readFlaggedPasskeyCredentials', () => {
         await seed('cred-1', flatRecord({ id: 'cred-1' }))
         mocks.defaultReadMasterKey.mockResolvedValue(Buffer.from(MASTER_KEY))
 
-        const flagged = await readFlaggedPasskeyCredentials({ subtle })
+        const { flagged } = await readFlaggedPasskeyCredentials({ subtle })
 
         expect(flagged.map(p => p.keyId)).toEqual(['cred-1'])
         expect(mocks.defaultStorage.getAllKeys).toHaveBeenCalled()
@@ -186,7 +196,7 @@ describe('readFlaggedPasskeyCredentials', () => {
         const injected = MASTER_KEY.slice()
         readMasterKey.mockResolvedValue(injected)
 
-        const flagged = await readFlaggedPasskeyCredentials(deps())
+        const { flagged } = await readFlaggedPasskeyCredentials(deps())
 
         expect(flagged.map(p => p.keyId)).toEqual(['cred-1'])
         expect([...injected]).toEqual(Array(32).fill(0))
@@ -197,9 +207,110 @@ describe('readFlaggedPasskeyCredentials', () => {
         const buffer = Buffer.from(MASTER_KEY)
         mocks.defaultReadMasterKey.mockResolvedValue(buffer)
 
-        const flagged = await readFlaggedPasskeyCredentials({ subtle })
+        const { flagged } = await readFlaggedPasskeyCredentials({ subtle })
 
         expect(flagged).toHaveLength(1)
         expect([...buffer]).toEqual(Array(32).fill(0))
+    })
+
+    // Completeness. Every failure below still resolves — a rejection here would
+    // surface as a broken passkey screen — so `isComplete` is the only channel
+    // that can tell "nothing is flagged" apart from "nothing could be read".
+    // A consumer gating a one-way delete reads it, not the emptiness of the
+    // list.
+    it('reports the scan incomplete when the key listing cannot be read', async () => {
+        const scan = await readFlaggedPasskeyCredentials({
+            subtle,
+            storage: {
+                getAllKeys: () => {
+                    throw new Error('mmkv unavailable')
+                },
+                getString: () => undefined,
+            },
+            readMasterKey: readMasterKey as () => Promise<Uint8Array>,
+        })
+
+        expect(scan.isComplete).toBe(false)
+    })
+
+    it('reports the scan incomplete when the master key cannot be read', async () => {
+        await seed('cred-1', flatRecord({ id: 'cred-1' }))
+        readMasterKey.mockRejectedValue(new Error('no master key'))
+
+        const scan = await readFlaggedPasskeyCredentials(deps())
+
+        expect(scan.isComplete).toBe(false)
+    })
+
+    it('reports the scan incomplete when a sealed record cannot be opened, and still returns its readable neighbour', async () => {
+        store.set('broken', '{"iv":"AAAA","tag":"AAAA","content":"AAAA"}')
+        await seed('cred-1', flatRecord({ id: 'cred-1' }))
+
+        const scan = await readFlaggedPasskeyCredentials(deps())
+
+        expect(scan.flagged.map(p => p.keyId)).toEqual(['cred-1'])
+        expect(scan.isComplete).toBe(false)
+    })
+
+    it('reports the scan incomplete when a listed key cannot be fetched', async () => {
+        const scan = await readFlaggedPasskeyCredentials({
+            subtle,
+            storage: {
+                getAllKeys: () => ['unfetchable'],
+                getString: () => {
+                    throw new Error('mmkv read failed')
+                },
+            },
+            readMasterKey: readMasterKey as () => Promise<Uint8Array>,
+        })
+
+        expect(scan.isComplete).toBe(false)
+    })
+
+    // The floor, so the gate this feeds cannot be satisfied by never reporting
+    // completeness: an empty bare-id namespace really is a whole-store answer.
+    it('reports the scan complete when there is nothing to open', async () => {
+        store.set(METADATA_PREFIX + 'cred-1', 'whatever')
+
+        const scan = await readFlaggedPasskeyCredentials(deps())
+
+        expect(scan).toEqual({ flagged: [], isComplete: true })
+    })
+
+    it('reports the scan incomplete when a listed key has no payload', async () => {
+        const scan = await readFlaggedPasskeyCredentials({
+            subtle,
+            storage: {
+                getAllKeys: () => ['vanished'],
+                getString: () => undefined,
+            },
+            readMasterKey: readMasterKey as () => Promise<Uint8Array>,
+        })
+
+        expect(scan.isComplete).toBe(false)
+    })
+
+    // The other half, and the one that keeps the gate from jamming shut: an
+    // entry that is not a credential-provider payload at all was examined
+    // successfully — it is another writer's, not a record we failed to read.
+    // The keystore's own legacy bare-id writer emits `{iv, content}` with no
+    // `tag`, so this shape is a real neighbour, not a hypothetical.
+    it('reports the scan complete when a neighbouring entry is not a credential-provider payload', async () => {
+        store.set('legacy', '{"iv":"AAAA","content":"AAAA"}')
+        store.set('plain', '{"id":"plain","type":"ed25519"}')
+        await seed('cred-1', flatRecord({ id: 'cred-1' }))
+
+        const scan = await readFlaggedPasskeyCredentials(deps())
+
+        expect(scan.flagged.map(p => p.keyId)).toEqual(['cred-1'])
+        expect(scan.isComplete).toBe(true)
+    })
+
+    it('reports the scan complete when every record opened', async () => {
+        await seed('cred-1', flatRecord({ id: 'cred-1' }))
+
+        const scan = await readFlaggedPasskeyCredentials(deps())
+
+        expect(scan.isComplete).toBe(true)
     })
 })

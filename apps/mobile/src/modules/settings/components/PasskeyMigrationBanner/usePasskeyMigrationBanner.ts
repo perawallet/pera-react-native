@@ -47,12 +47,16 @@ export type UsePasskeyMigrationBannerResult = {
      */
     canRecreate: boolean
     /**
-     * Whether the flat-record read has produced an answer yet. Until it has,
-     * `affected` is not "nothing is flagged" but "not known yet" — and a
-     * `source: 'native'` row carries no marker of its own to fall back on, so
-     * a consumer gating a one-way action has to withhold rather than guess.
+     * Whether the flat-record read actually examined every record. Not merely
+     * "has resolved": `readFlaggedPasskeyCredentials` catches an unreadable
+     * key listing, an unreadable master key and an unopenable record alike and
+     * *resolves* with an empty list, so a resolved read is compatible with
+     * having learnt nothing. Until this is true, `affected` is not "nothing is
+     * flagged" but "not known" — and a `source: 'native'` row carries no marker
+     * of its own to fall back on, so a consumer gating a one-way action has to
+     * withhold rather than guess.
      */
-    isFlagSourceSettled: boolean
+    isFlagSourceComplete: boolean
     onRecreate: (passkey: Passkey) => void
     onDismiss: () => void
 }
@@ -92,16 +96,20 @@ export const usePasskeyMigrationBanner = ({
         staleTime: 30_000,
     })
 
+    // Keyed on `id`, the url-safe-normalised credential id `mergePasskeys`
+    // also dedupes on — not on the raw `keyId`. Both native credential stores
+    // carry a `credentialIdCandidates` normaliser because the same credential's
+    // raw id has been persisted in both standard and url-safe base64, so a
+    // keyId-join would list one credential twice.
     const affected = useMemo(() => {
-        const byKeyId = new Map<string, Passkey>()
+        const byId = new Map<string, Passkey>()
         for (const candidate of [
             ...passkeys.filter(p => p.needsMigration),
-            ...(flaggedQuery.data ?? []),
+            ...(flaggedQuery.data?.flagged ?? []),
         ]) {
-            if (!byKeyId.has(candidate.keyId))
-                byKeyId.set(candidate.keyId, candidate)
+            if (!byId.has(candidate.id)) byId.set(candidate.id, candidate)
         }
-        return [...byKeyId.values()]
+        return [...byId.values()]
     }, [passkeys, flaggedQuery.data])
 
     const onDismiss = useCallback(() => setIsDismissed(true), [])
@@ -110,10 +118,13 @@ export const usePasskeyMigrationBanner = ({
         affected,
         isVisible: isManaging && !isDismissed && affected.length > 0,
         canRecreate: isProviderActive,
-        // Success, not "no longer pending": a failed read knows nothing about
-        // which credentials are flagged, and treating that as "none are" is
-        // the one wrong answer that is irreversible.
-        isFlagSourceSettled: flaggedQuery.isSuccess,
+        // `isSuccess` alone is not enough — and neither is "no longer
+        // pending". The read resolves on every failure it can catch, so its
+        // own `isComplete` is the only thing that separates "nothing is
+        // flagged" from "nothing could be read"; treating the second as the
+        // first is the one wrong answer that is irreversible.
+        isFlagSourceComplete:
+            flaggedQuery.isSuccess && flaggedQuery.data.isComplete,
         onRecreate: onRequestDelete,
         onDismiss,
     }

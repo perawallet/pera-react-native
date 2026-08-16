@@ -94,6 +94,7 @@ const flaggedPasskey = {
 const unflaggedPasskey = {
     id: 'cred-2',
     keyId: 'cred-2',
+    source: 'keystore',
     needsMigration: false,
 } as Passkey
 // What a credential `repairs/0002` un-adopted looks like on the list: the
@@ -109,13 +110,13 @@ const unreadableFlagPasskey = {
 const setMigration = (overrides: {
     affected?: Passkey[]
     isVisible?: boolean
-    isFlagSourceSettled?: boolean
+    isFlagSourceComplete?: boolean
 }) =>
     mocks.usePasskeyMigrationBanner.mockReturnValue({
         affected: [],
         isVisible: false,
         canRecreate: false,
-        isFlagSourceSettled: true,
+        isFlagSourceComplete: true,
         onRecreate: vi.fn(),
         onDismiss: vi.fn(),
         ...overrides,
@@ -253,17 +254,64 @@ describe('useSettingsPasskeysScreen', () => {
         expect(result.current.canRemove(unreadableFlagPasskey)).toBe(false)
     })
 
-    // An unsettled read reports no affected credentials, which is
-    // indistinguishable from "none are flagged" — so removal waits rather than
-    // offering a one-way action on a credential that may well be flagged.
-    it('withholds removal from every row until the migration read has answered', () => {
-        mocks.passkeys = [{ id: 'cred-2' }]
+    // An incomplete read reports no affected credentials, which is
+    // indistinguishable from "none are flagged" — so a row that has no marker
+    // of its own waits rather than offering a one-way action on a credential
+    // that may well be flagged. `isComplete` covers the in-flight read AND
+    // every failure the read swallows into a resolved empty list.
+    it('withholds removal from a native row while the migration read is incomplete', () => {
+        mocks.passkeys = [{ id: 'cred-3' }]
         mocks.isProviderActive = false
-        setMigration({ isFlagSourceSettled: false })
+        setMigration({ isFlagSourceComplete: false })
 
         const { result } = renderHook(() => useSettingsPasskeysScreen())
 
-        expect(result.current.canRemove(unflaggedPasskey)).toBe(false)
+        expect(result.current.canRemove(unreadableFlagPasskey)).toBe(false)
+    })
+
+    // The other side, so the gate above cannot be satisfied by refusing
+    // everything. A keystore row's `needsMigration` is read off its own `k/`
+    // metadata by `usePasskeysQuery`, a source the flat read is not involved
+    // in — so `false` there is a real answer even when the flat scan learnt
+    // nothing, and blocking it would cost the user an action for no protection.
+    it('keeps an unflagged keystore row removable while the migration read is incomplete', () => {
+        mocks.passkeys = [{ id: 'cred-2' }]
+        mocks.isProviderActive = false
+        setMigration({ isFlagSourceComplete: false })
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.canRemove(unflaggedPasskey)).toBe(true)
+    })
+
+    // Joined on `id` — the url-safe-normalised credential id both sources
+    // agree on — not on the raw `keyId`. The native stores normalise through
+    // `credentialIdCandidates` because the same credential's raw id has been
+    // persisted in both standard and url-safe base64, so a keyId-join silently
+    // misses the flag and hands the row a trash icon.
+    // Neither side's raw id equals the normalised one, and the two differ from
+    // each other — so joining on `keyId` misses whichever side is mutated, and
+    // an asymmetric join (`id` one side, `keyId` the other) misses too.
+    it('withholds removal of a flagged credential the flat read reports under a differently-encoded keyId', () => {
+        const row = {
+            id: 'q-_ABC',
+            keyId: 'q-_ABC=',
+            source: 'native',
+            needsMigration: false,
+        } as Passkey
+        const flatCopy = {
+            id: 'q-_ABC',
+            keyId: 'q+/ABC==',
+            source: 'provider',
+            needsMigration: true,
+        } as Passkey
+        mocks.passkeys = [{ id: 'q-_ABC' }]
+        mocks.isProviderActive = false
+        setMigration({ affected: [flatCopy] })
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.canRemove(row)).toBe(false)
     })
 
     it('exposes the banner state it composed', () => {

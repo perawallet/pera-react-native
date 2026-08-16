@@ -29,6 +29,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
+import * as keystore from '@test-utils/algorand-keystore-test'
 import {
     readMasterKey,
     resetTestKeystore,
@@ -426,6 +427,140 @@ describe('Flow: Settings → Passkeys removal', () => {
             expect(
                 screen.getByTestId('settings_passkeys_item_native-flagged'),
             ).toBeTruthy()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    // The three ways the flat migration read can learn nothing. All of them
+    // *resolve* — `readFlaggedPasskeyCredentials` catches each one and returns
+    // an empty list rather than rejecting, which is exactly why a gate keyed on
+    // "the query succeeded" cannot see them. Each case below drives the real
+    // screen and asserts the same three things:
+    //
+    //  - the warning is still on screen (the keystore-backed flagged row keeps
+    //    its own marker, which no failure of the flat read can take away);
+    //  - neither native row offers the trash icon, because a `source: 'native'`
+    //    row's `needsMigration: false` is a hardcoded default, not an answer;
+    //  - the keystore row that nothing flags still deletes, so the gate has not
+    //    simply jammed shut.
+    const seedFailureModeScreen = async () => {
+        getAutofill().isProviderActive.mockResolvedValue(false)
+        await importKeystorePasskey('flagged-keystore', true)
+        await importKeystorePasskey('plain-keystore', false)
+        getAutofill().getStoredCredentials.mockResolvedValue([
+            nativeCredential('native-flagged'),
+            nativeCredential('native-plain'),
+        ])
+    }
+
+    const expectFlaggedCredentialsProtected = async () => {
+        // The warning survives the failed read.
+        await waitFor(() =>
+            expect(
+                screen.getByTestId('settings_passkeys_migration_banner'),
+            ).toBeTruthy(),
+        )
+        expect(
+            screen.getByTestId('settings_passkeys_migration_blocked'),
+        ).toBeTruthy()
+
+        // Exactly one trash icon on a four-row list: only the keystore row that
+        // its own metadata says is unflagged.
+        const plainKeystoreRow = screen.getByTestId(
+            'settings_passkeys_item_plain-keystore',
+        )
+        await within(plainKeystoreRow).findByTestId('touchable-icon-trash')
+        expect(screen.getAllByTestId('touchable-icon-trash')).toHaveLength(1)
+
+        for (const id of [
+            'flagged-keystore',
+            'native-flagged',
+            'native-plain',
+        ]) {
+            expect(
+                within(
+                    screen.getByTestId(`settings_passkeys_item_${id}`),
+                ).queryByTestId('touchable-icon-trash'),
+            ).toBeFalsy()
+        }
+
+        // Drive the surviving icon all the way through the real removal, so
+        // "the flagged credentials were not deleted" is a statement about the
+        // gate rather than about a screen where deletion is broken.
+        fireEvent.click(
+            within(plainKeystoreRow).getByTestId('touchable-icon-trash'),
+        )
+        await waitFor(() =>
+            expect(hasButtonWithLabel('settings.passkeys.remove_confirm')).toBe(
+                true,
+            ),
+        )
+        tapButtonByLabel('settings.passkeys.remove_confirm')
+        await waitFor(() =>
+            expect(
+                screen.queryByTestId('settings_passkeys_item_plain-keystore'),
+            ).toBeFalsy(),
+        )
+
+        for (const id of ['flagged-keystore', 'native-flagged']) {
+            expect(getAutofill().deleteCredential).not.toHaveBeenCalledWith(id)
+            expect(
+                screen.getByTestId(`settings_passkeys_item_${id}`),
+            ).toBeTruthy()
+        }
+    }
+
+    it(
+        'protects flagged credentials when the key listing itself cannot be read',
+        async () => {
+            await seedFailureModeScreen()
+            vi.spyOn(storage, 'getAllKeys').mockImplementation(() => {
+                throw new Error('mmkv unavailable')
+            })
+
+            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+            await screen.findByTestId('settings_passkeys_item_native-plain')
+
+            await expectFlaggedCredentialsProtected()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'protects flagged credentials when the master key cannot be read',
+        async () => {
+            await seedFailureModeScreen()
+            // Seeded first: the flat record is sealed with the very key the
+            // scan is about to be denied.
+            await seedFlaggedFlatRecord('native-flagged')
+            vi.spyOn(keystore, 'readMasterKey').mockRejectedValue(
+                new Error('keychain locked'),
+            )
+
+            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+            await screen.findByTestId('settings_passkeys_item_native-plain')
+
+            await expectFlaggedCredentialsProtected()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'protects flagged credentials when a record cannot be opened',
+        async () => {
+            await seedFailureModeScreen()
+            await seedFlaggedFlatRecord('native-flagged')
+            // Envelope-shaped but sealed with something else, so the scan
+            // cannot rule out a marker inside it.
+            storage.set(
+                'sealed-elsewhere',
+                '{"iv":"AAAA","tag":"AAAA","content":"AAAA"}',
+            )
+
+            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+            await screen.findByTestId('settings_passkeys_item_native-plain')
+
+            await expectFlaggedCredentialsProtected()
         },
         SLOW_TEST_TIMEOUT_MS,
     )
