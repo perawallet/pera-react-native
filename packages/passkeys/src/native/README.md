@@ -97,6 +97,17 @@ Credentials are **P256** (`hd-derived-p256`), derived by
 `dP256.genDomainSpecificKeypair(rootSecret, origin, userHandle)`. Falcon and the
 quantum key types are unrelated and unaffected.
 
+The `pbkdf2-p256` main key those credentials hang off is parented on the
+**BIP39 entropy child**, not the wallet root — on mobile
+(`usePasskeyMainKey.ts`) and in the browser extension (`keystore-signer.ts`)
+alike, with `repairs/0003-mint-passkey-main-key.ts` back-filling existing
+wallets. The parent is load-bearing rather than a label: upstream's
+`generateDP256Main` calls `withSeed(…, { wantSeed: false })`, which feeds the
+parent's raw stored bytes straight into PBKDF2. The 96-byte extended root and
+the 16–32-byte BIP39 entropy are different bytes, so **one mnemonic yields two
+different main keys depending on which you parent on** — and every passkey
+under the wrong one is unrecoverable. Keep the two platforms in step.
+
 The provider **persists each credential's private key** (`privateKey`, or
 `privateKeyEnc` when biometric-gated) and `getCredential` loads it back. The HD
 root is consulted **only when minting a new credential**. Two consequences worth

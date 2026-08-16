@@ -210,6 +210,27 @@ cannot see: it asserts that importing the PQ barrel **and**
 `getPQProvider.native.ts` does not _evaluate_ either Falcon library, which is
 what actually crashes the app at startup.
 
+**What the firewall does not do is bound reach to key material.** It bounds
+_specifiers_. The keystore packages publicly export Falcon binding factories —
+`loadDefaultFalconBinding` from `@algorandfoundation/react-native-keystore`,
+`createFalconBinding` from `@algorandfoundation/keystore-core` — and a binding
+will generate a keypair and hand back a raw `privateKey`. So any file can
+obtain **freshly generated** Falcon material without naming a forbidden
+specifier. What it cannot do is read the keystore's existing sealed records;
+that still needs the Keychain master key. Custody is enforced by the
+keystore's sealed API, not by this guard — treat the firewall as protection
+against accidental library coupling, not as a security boundary.
+
+**Trap: `packages/kms`'s build output contains only the WASM provider.**
+`packages/kms/dist/index.js` builds to `createWasmFalconProvider` alone —
+`createRNFalconProvider` and `@joe-p/react-native-falcon` appear nowhere in
+it, because the bundler resolves the base `getPQProvider.ts` and never the
+`.native.ts` sibling. Nothing is broken today only because
+`apps/mobile/metro.config.js` rewrites `@perawallet/wallet-core-*` to source,
+so the app never loads that build output. Any consumer that resolves the built
+package instead — a node script, a future non-Metro bundler — silently gets
+WASM Falcon on device.
+
 ## Scope note
 
 PQ-018 (the seam integration) established the seams. Submission is no longer
@@ -335,45 +356,45 @@ re-opens them and adds one item that nothing in CI can cover.
    patch that upstream ships unapplied and this work deliberately did not add.
 9. Upgrade an existing canary.13 install in place — do not reinstall, or the
    one interesting path goes untested. canary.14 changed the MMKV layout from a
-   bare `<keyId>` blob to `m/<id>` (sealed material) + `k/<id>` (metadata), and
-   `extensions/provider/src/keystore/migrateKeystoreLayout.ts` re-indexes,
-   re-seals and re-labels the old records on first launch. Confirm the boot log
-   reports every account (`Keystore layout migrated`, `failed: 0`) and that a
-   quantum account minted before keystore custody is re-minted from its parent
-   (`Quantum key material repaired`) — that account holds a public key only,
+   bare `<keyId>` blob to `m/<id>` (sealed material) + `k/<id>` (metadata).
+   That re-indexing is no longer Pera's to do: the keystore now runs its own
+   adoption revision, and Pera contributes revisions around it under
+   `extensions/provider/src/keystore/migrations/` — `preflight/` before
+   upstream's, `repairs/` after. Confirm every account survives the upgrade, and
+   that a quantum account minted before keystore custody is re-minted from its
+   parent (`Quantum key material repaired`,
+   `apps/mobile/src/useAppBootstrap.ts`) — that account holds a public key only,
    because signing used to re-derive from the seed each time, so a migration
    alone cannot fix it.
 
-### Known broken / deferred after the canary.14 migration
+    A revision's `up` must never reject. A rejection fails the whole run, and
+    because the ledger entry is written only after `up` resolves, it re-fails on
+    every subsequent launch with no way out but reinstall.
 
-- **Web is knowingly broken.** Metro aliases
+### Known broken / deferred after the keystore-custody migration
+
+- **Web runs on an engine the vendored port does not supply.** Metro aliases
   `@algorandfoundation/react-native-keystore` to the vendored
   `extensions/keystore-chrome` for `platform === 'web'`, and that package is a
-  hand-port of canary.12 with no engine factory and no WebCrypto seal helpers.
-  `extensions/keystore-chrome/src/canary14-unsupported.ts` throws with a
-  message naming the cause rather than failing opaquely several frames deeper.
-  The fix is the deferred `@algorandfoundation/keystore-web` port, which needs
-  its own plan.
-- **Android passkeys are split-brain.**
-  `react-native-passkey-autofill@canary.22`'s native credential provider writes
-  a bare `credentialId` record shaped `{iv, tag, content}`, while canary.14
-  reads and writes `m/`/`k/`-prefixed ids shaped `{iv, content}`. The two ends
-  no longer meet. This is externally blocked on an upstream release and must be
-  raised with the library authors; it is not fixable from this repo.
-  It is, however, actively **destroyable** from this repo, which is why
-  `migrateKeystoreLayout` skips those records instead of migrating them: the
-  provider uses the same MMKV instance (`PASSKEYS_MMKV_ID = "keystore"`) and the
-  same `app-secret` master key, so its credentials decrypt as ordinary
-  canary.13 entries. Migrating one deletes the bare id the provider reads back
-  by and drops its biometric-wrapped `privateKeyEnc`, which is an object rather
-  than key bytes. They are identified by `type: 'hd-derived-p256'` plus
-  `metadata.origin` and `metadata.userHandle`.
-- **Update:** `bootstrapPasskeyAutofill`'s HD-root resolver (renamed
-  `configureParentKey`) is no longer the no-op described above — it now scans
-  the plaintext `k/` bucket directly (`findHdRootMetadata`) rather than going
-  through `fetchSecret`, and correctly finds the root. See
-  `packages/passkeys/src/native/README.md` for the current state of the
-  Android/iOS passkey split.
+  partial port with no engine factory. Key storage on web works anyway:
+  `extensions/provider/src/keystore/createKeystore.web.ts` composes the engine
+  itself, running `keystore-core`'s orchestrator over `keystore-web`'s
+  IndexedDB driver, and Metro's `.web.ts` resolution picks it. What is still
+  deferred is folding that into `keystore-chrome` so the alias covers key
+  storage on its own — that port is also still written against the pre-split
+  `@algorandfoundation/keystore@1.0.0-canary.17` flat function API.
+- **Passkey credentials are still bare-id on both platforms.** The "phase 3"
+  move to the `k/`+`m/` layout landed upstream in autofill canary.23/.24 for
+  the **derivation parent only**. Both providers now find the root by scanning
+  `k/`, which is why the HD-root shadow record and its dual-write are gone.
+  **Credential records did not move**, so the two ends still do not meet there:
+  iOS's only keystore-to-credential path guards on a JSON-number-array
+  `privateKey` that a split record does not carry, and Android's metadata path
+  re-derives instead, which cannot reproduce a credential migrated from Pera 6.
+  `packages/passkeys/src/native/README.md` is the maintained account of that
+  split, of the flat-record contract in `nativeProviderRecord.ts`, and of the
+  repair revision that undoes upstream's adoption of those flat records. Read
+  it before touching any of them.
 
 ## PQ-023 — unified signing path, generic `PQSignature` (landed)
 
