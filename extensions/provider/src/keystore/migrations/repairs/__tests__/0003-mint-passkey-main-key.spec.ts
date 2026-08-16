@@ -624,11 +624,13 @@ describe('0003-mint-passkey-main-key', () => {
         expect(declinedIds()).toEqual(['hd-1'])
     })
 
-    // Once 0001 and 0002 are ledgered this is the only revision that reads the
-    // master key, so a cancelled or unavailable Keychain (`errSecUserCanceled`,
+    // A cancelled or unavailable Keychain (`errSecUserCanceled`,
     // `errSecInteractionNotAllowed`, Android `KeyPermanentlyInvalidatedException`)
-    // arrives here as a plain `Error`. Rethrowing it would reject `up` and, with
-    // the ledger unwritten, re-fail on every launch.
+    // arrives as a plain `Error`, not `MasterKeyNotFoundError`. Rethrowing it
+    // would reject `up` and, with the ledger unwritten, re-fail on every launch.
+    // Once 0001 and 0002 are ledgered this is the only revision in THIS module
+    // that reads the master key; `preflight/0002:174` and `preflight/0004:79`
+    // also read it, and both still rethrow.
     it('resolves and declines when the Keychain read fails for any other reason', async () => {
         const storage = fakeStorage({})
         await bip39Wallet(storage)

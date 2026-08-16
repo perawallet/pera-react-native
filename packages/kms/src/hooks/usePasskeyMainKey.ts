@@ -24,7 +24,7 @@ import { useKMSService } from './useKMSServices'
 // key for wallets that predate this hook.
 export { PASSKEY_MAIN_KEY_SCHEME, passkeyMainKeyId }
 
-const isPasskeyMainKey = (key: Key): boolean =>
+export const isPasskeyMainKey = (key: Key): boolean =>
     key.type === 'hd-root-key' &&
     (key.metadata as { scheme?: unknown } | undefined)?.scheme ===
         PASSKEY_MAIN_KEY_SCHEME

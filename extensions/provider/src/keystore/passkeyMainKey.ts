@@ -19,8 +19,9 @@
  *
  * Import-free so the migration revisions can depend on it without closing a
  * `passkeyMainKey → migrations → passkeyMainKey` cycle. It does **not** keep
- * the migration modules off a consumer: the named barrel re-exporting it
- * (`index.ts:23`) also re-exports `./pera-provider`, which pulls them in.
+ * the migration modules off a consumer: the barrel that re-exports it
+ * (`index.ts:24-27`) also re-exports `./pera-provider` (`index.ts:20`), which
+ * pulls them in.
  */
 
 /** `metadata.scheme` distinguishing this root from the XHD BIP32-Ed25519 one. */

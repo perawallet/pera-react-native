@@ -131,10 +131,11 @@ export const migration: Migration<PeraMigrationContext> = {
                 continue
             }
 
-            // All three clauses matter: `parentKeyId` alone also matches every
-            // Algo25/Falcon/passkey child (`useAlgo25.ts:92`), and PBKDF2ing
-            // one of those instead of the BIP39 entropy would mint a main key
-            // no mnemonic reproduces.
+            // The type and `entropyKey` clauses both matter: `parentKeyId`
+            // alone also matches every Algo25/Falcon/passkey child
+            // (`useAlgo25.ts:92`), and PBKDF2ing one of those instead of the
+            // BIP39 entropy would mint a main key no mnemonic reproduces. (The
+            // `typeof` clause is a type narrowing, not a behaviour guard.)
             if (
                 record.type === 'secret-key' &&
                 meta.entropyKey === true &&
@@ -220,11 +221,10 @@ export const migration: Migration<PeraMigrationContext> = {
                 )
 
                 // The library's own derivation, so the back-filled key is
-                // byte-identical to one `generateDP256Main` would mint. It has
-                // no pure-JS fallback of its own — deliberately: upstream says
-                // 210,000 `@noble/hashes` iterations *can* block Hermes for
-                // minutes (`keystore-core` `dist/shims/dp256.js:28-29`), and
-                // declining is the better failure. Not measured here.
+                // byte-identical to one `generateDP256Main` would mint. No
+                // pure-JS fallback on purpose: upstream says 210,000
+                // `@noble/hashes` iterations *can* block Hermes for minutes
+                // (`keystore-core` `dist/shims/dp256.js:28-29`).
                 mainKey = await genDerivedMainKeyWithSubtle(
                     subtle,
                     entropy,

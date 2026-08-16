@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import type { Key } from '@algorandfoundation/keystore-core'
 import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     InvalidKeyError,
     KeyManagementError,
@@ -33,6 +34,7 @@ import { useQuantum } from './useQuantum'
 export type { QuantumKeyResult } from './useQuantum'
 import { useHDWallet } from './useHDWallet'
 export type { HDWalletKeyResult } from './useHDWallet'
+import { isPasskeyMainKey, usePasskeyMainKey } from './usePasskeyMainKey'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from './useKMSServices'
 import { useKeystoreKeys } from './useKeystoreState'
@@ -57,6 +59,7 @@ export const useKMS = () => {
     } = useHDWallet()
     const { deleteKey, keyStore, withExportedKey, checkAccess } =
         useKMSService()
+    const { ensurePasskeyMainKey } = usePasskeyMainKey()
 
     // All seed keys mapped by id for quick lookup. No private data is exposed here
     const seeds = useMemo(() => {
@@ -105,6 +108,17 @@ export const useKMS = () => {
      * passkey main key parents on the BIP39 entropy child, so a direct-children
      * sweep would leave it behind — and a surviving main key gets adopted by
      * the next wallet, whose passkeys then derive from a discarded mnemonic.
+     *
+     * The device has exactly one passkey main key, so deleting the wallet that
+     * owns it takes it from every other wallet too. It is re-minted from a
+     * surviving root below, because nothing else would: `ensurePasskeyMainKey`'s
+     * only other caller is wallet creation, and `repairs/0003` is ledgered
+     * one-shot. Without the re-mint the device falls back to the deprecated
+     * XHD-root derivation for every subsequent passkey.
+     *
+     * Credentials the native provider wrote keep working across all of this —
+     * those records carry their own `privateKey`
+     * (`PasskeyCredentialStore.swift:295-304`).
      */
     const removeKeyAndChildren = useCallback(
         async (rootKeyId: string): Promise<void> => {
@@ -134,8 +148,32 @@ export const useKMS = () => {
                 await keyStore.remove(id)
             }
             await keyStore.remove(rootKeyId)
+
+            const survivors = liveKeys.filter(k => !doomed.has(k.id))
+            const lostMainKey =
+                liveKeys.some(k => doomed.has(k.id) && isPasskeyMainKey(k)) &&
+                !survivors.some(isPasskeyMainKey)
+            if (!lostMainKey) return
+
+            // Lowest-sorted root wins, matching `repairs/0003`, so the choice
+            // does not depend on store order.
+            const heir = survivors
+                .filter(isSeedKey)
+                .map(k => k.id)
+                .sort()
+                .find(id => entropyChildIdOf(id, survivors))
+            if (!heir) return
+
+            try {
+                await ensurePasskeyMainKey(heir)
+            } catch (error) {
+                // The deletion itself succeeded; surfacing a re-mint failure as
+                // a failed wallet removal would be the bigger lie. Passkeys
+                // then fall back to the deprecated XHD-root derivation.
+                logger.error('passkey main key re-mint failed', { error })
+            }
         },
-        [keyStore],
+        [keyStore, ensurePasskeyMainKey],
     )
 
     const getKey = useCallback(
