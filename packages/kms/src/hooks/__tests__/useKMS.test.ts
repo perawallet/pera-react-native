@@ -116,6 +116,39 @@ vi.mock('../../storage/secrets', () => ({
     withSecret: (...args: any[]) => mockWithSecret(...args),
 }))
 
+// The REAL `ensurePasskeyMainKey`, wrapped in a spy. Real, because the guards
+// around the re-mint are only meaningful against its own `findPasskeyMainKey`
+// early return; spied, because "did not even ask" is the only observable
+// difference between a guard that fires and one that has been removed.
+const mockEnsurePasskeyMainKey = vi.fn()
+vi.mock('../usePasskeyMainKey', async importOriginal => {
+    const actual = await importOriginal<typeof import('../usePasskeyMainKey')>()
+    return {
+        ...actual,
+        usePasskeyMainKey: () => {
+            const { ensurePasskeyMainKey } = actual.usePasskeyMainKey()
+            mockEnsurePasskeyMainKey.mockImplementation(ensurePasskeyMainKey)
+            return {
+                ensurePasskeyMainKey: (...args: any[]) =>
+                    mockEnsurePasskeyMainKey(...args),
+            }
+        },
+    }
+})
+
+const mockLoggerError = vi.fn()
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        logger: {
+            ...actual.logger,
+            error: (...args: any[]) => mockLoggerError(...args),
+        },
+    }
+})
+
 import { useKMS } from '../useKMS'
 
 // THROWAWAY TEST VECTOR — same as useQuantum.test.ts / algo25-integration; NEVER fund it.
@@ -584,6 +617,10 @@ describe('useKMS', () => {
 
         expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1-passkey-main')
         expect(mockKeyStoreGenerate).not.toHaveBeenCalled()
+        // The `if (!heir) return` guard, not `ensurePasskeyMainKey` throwing on
+        // an undefined seed id: with no survivors there is nothing to ask about.
+        expect(mockEnsurePasskeyMainKey).not.toHaveBeenCalled()
+        expect(mockLoggerError).not.toHaveBeenCalled()
     })
 
     // A device is only supposed to hold one main key, but if it somehow holds
@@ -615,6 +652,10 @@ describe('useKMS', () => {
 
         expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1-passkey-main')
         expect(mockKeyStoreGenerate).not.toHaveBeenCalled()
+        // The `!survivors.some(isPasskeyMainKey)` clause, not
+        // `ensurePasskeyMainKey`'s own early return: a main key survived, so the
+        // re-mint is never even attempted.
+        expect(mockEnsurePasskeyMainKey).not.toHaveBeenCalled()
     })
 
     // Deleting a wallet is not an occasion to mint a main key the device never
@@ -632,6 +673,74 @@ describe('useKMS', () => {
 
         expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
         expect(mockKeyStoreGenerate).not.toHaveBeenCalled()
+    })
+
+    // An Algo25 or watch-only survivor has no BIP39 entropy to PBKDF2. Stopping
+    // at the lowest-sorted survivor would leave the device with no main key at
+    // all, even though an eligible bip39 root sorted right behind it.
+    it('removeKeyAndChildren skips a survivor with no entropy child and takes the next eligible root', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
+        // Sorts ahead of hd-3 among the survivors, and has no entropy child.
+        seedAlgo25Root('hd-2')
+        seedBip39Root('hd-3')
+        const eligibleEntropy = entropyChildOf('hd-3')
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockEnsurePasskeyMainKey).toHaveBeenCalledWith('hd-3')
+        expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(1)
+        expect(mockKeyStoreGenerate.mock.calls[0]?.[0]).toMatchObject({
+            params: {
+                parentKeyId: eligibleEntropy.id,
+                id: 'hd-3-passkey-main',
+            },
+        })
+    })
+
+    // The deletion has already been committed by the time the re-mint runs, so
+    // a Keychain failure there must not surface as a failed wallet removal
+    // (`useRemoveAccountByAddress.ts:51` would show exactly that).
+    it('removeKeyAndChildren completes even when the re-mint rejects', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
+        seedBip39Root('hd-2')
+        entropyChildOf('hd-2')
+        mockKeyStoreGenerate.mockRejectedValueOnce(
+            new Error('keychain unavailable'),
+        )
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await expect(
+                result.current.removeKeyAndChildren('hd-1'),
+            ).resolves.toBeUndefined()
+        })
+
+        // Non-vacuous: the re-mint was actually reached and actually rejected.
+        expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(1)
+        expect(mockLoggerError).toHaveBeenCalledWith(
+            'passkey main key re-mint failed',
+            expect.anything(),
+        )
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
     })
 
     describe('quantum sign dispatch', () => {

@@ -102,23 +102,23 @@ export const useKMS = () => {
 
     /**
      * Removes a top-level key (typically a seed) and every keystore entry
-     * reachable from it through `metadata.parentKeyId`.
+     * reachable from it through `metadata.parentKeyId`. Transitive, because the
+     * passkey main key parents on the BIP39 entropy child and a surviving main
+     * key gets adopted by the next wallet, whose passkeys would then derive
+     * from a discarded mnemonic.
      *
-     * The walk is transitive because the tree is deeper than one level: the
-     * passkey main key parents on the BIP39 entropy child, so a direct-children
-     * sweep would leave it behind — and a surviving main key gets adopted by
-     * the next wallet, whose passkeys then derive from a discarded mnemonic.
+     * The device has exactly one main key, so this can strip it from every
+     * other wallet. Nothing else would re-mint it (`ensurePasskeyMainKey`'s only
+     * other caller is wallet creation, and `repairs/0003` is ledgered one-shot),
+     * so this does, below.
      *
-     * The device has exactly one passkey main key, so deleting the wallet that
-     * owns it takes it from every other wallet too. It is re-minted from a
-     * surviving root below, because nothing else would: `ensurePasskeyMainKey`'s
-     * only other caller is wallet creation, and `repairs/0003` is ledgered
-     * one-shot. Without the re-mint the device falls back to the deprecated
-     * XHD-root derivation for every subsequent passkey.
-     *
-     * Credentials the native provider wrote keep working across all of this —
-     * those records carry their own `privateKey`
-     * (`PasskeyCredentialStore.swift:295-304`).
+     * Credentials are NOT spared as a class: the extension's `hd-derived-p256`
+     * records are `k/` entries parented on the main key and hold no private key
+     * of their own, so this destroys them. The native provider's credentials
+     * survive only because they sit at bare ids
+     * (`PasskeyCredentialStore.swift:310`), outside the `k/` namespace the
+     * keystore driver enumerates (`react-native-keystore/dist/storage/driver.js:123`),
+     * so they never appear in `liveKeys` at all.
      */
     const removeKeyAndChildren = useCallback(
         async (rootKeyId: string): Promise<void> => {
@@ -155,8 +155,10 @@ export const useKMS = () => {
                 !survivors.some(isPasskeyMainKey)
             if (!lostMainKey) return
 
-            // Lowest-sorted root wins, matching `repairs/0003`, so the choice
-            // does not depend on store order.
+            // Lowest-sorted root with an entropy child wins, matching
+            // `repairs/0003` and the extension's `resolveMainKeyId`, so the
+            // choice never depends on store order. `isSeedKey` states the
+            // intent; `entropyChildIdOf` alone would already exclude non-roots.
             const heir = survivors
                 .filter(isSeedKey)
                 .map(k => k.id)
