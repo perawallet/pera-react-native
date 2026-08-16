@@ -44,6 +44,14 @@ export type UseSettingsPasskeysScreenResult = {
     state: SettingsPasskeysScreenState
     passkeys: Passkey[]
     notice: PasskeysNotice
+    /**
+     * Whether a row may offer its remove action. Same shape as native's gate,
+     * against web's own prerequisite for re-registering: the interception
+     * toggle sits above the list and is one tap away, where native needs a trip
+     * to OS settings. Web has no flat provider records, so a row's own
+     * `needsMigration` is the whole signal here.
+     */
+    canRemove: (passkey: Passkey) => boolean
     canScan: boolean
     isScannerVisible: boolean
     onOpenScanner: () => void
@@ -138,6 +146,12 @@ export const useSettingsPasskeysScreen =
             list.refetch()
         }, [list])
 
+        const canRemove = useCallback(
+            (passkey: Passkey) =>
+                isInterceptionEnabled || !passkey.needsMigration,
+            [isInterceptionEnabled],
+        )
+
         const state = resolveState(isInterceptionEnabled, list)
         const lacksDeviceAuthentication =
             !biometric.isLoading && !biometric.hasStrongBiometricOrCredential
@@ -155,6 +169,7 @@ export const useSettingsPasskeysScreen =
             state,
             passkeys: list.passkeys,
             notice,
+            canRemove,
             canScan:
                 state !== 'loading' &&
                 state !== 'error' &&

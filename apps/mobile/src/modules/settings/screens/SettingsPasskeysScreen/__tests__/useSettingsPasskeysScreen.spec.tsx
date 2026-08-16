@@ -86,8 +86,40 @@ vi.mock('@analytics', () => ({
     PasskeysEvent: { Deleted: 'passkeys_deleted' },
 }))
 
-const flaggedPasskey = { id: 'cred-1', needsMigration: true } as Passkey
-const unflaggedPasskey = { id: 'cred-2', needsMigration: false } as Passkey
+const flaggedPasskey = {
+    id: 'cred-1',
+    keyId: 'cred-1',
+    needsMigration: true,
+} as Passkey
+const unflaggedPasskey = {
+    id: 'cred-2',
+    keyId: 'cred-2',
+    needsMigration: false,
+} as Passkey
+// What a credential `repairs/0002` un-adopted looks like on the list: the
+// native identity store has no metadata bag, so the row reports `false`
+// whether or not the flat record carries the marker.
+const unreadableFlagPasskey = {
+    id: 'cred-3',
+    keyId: 'cred-3',
+    source: 'native',
+    needsMigration: false,
+} as Passkey
+
+const setMigration = (overrides: {
+    affected?: Passkey[]
+    isVisible?: boolean
+    isFlagSourceSettled?: boolean
+}) =>
+    mocks.usePasskeyMigrationBanner.mockReturnValue({
+        affected: [],
+        isVisible: false,
+        canRecreate: false,
+        isFlagSourceSettled: true,
+        onRecreate: vi.fn(),
+        onDismiss: vi.fn(),
+        ...overrides,
+    })
 
 const expectBannerGates = (gates: {
     isManaging: boolean
@@ -107,13 +139,7 @@ describe('useSettingsPasskeysScreen', () => {
         mocks.isProviderActive = true
         mocks.hasHDWallet = true
         mocks.hasStrongBiometricOrCredential = true
-        mocks.usePasskeyMigrationBanner.mockReturnValue({
-            affected: [],
-            isVisible: false,
-            canRecreate: false,
-            onRecreate: vi.fn(),
-            onDismiss: vi.fn(),
-        })
+        setMigration({})
         vi.spyOn(AppState, 'addEventListener').mockReturnValue({
             remove: vi.fn(),
         } as unknown as ReturnType<typeof AppState.addEventListener>)
@@ -195,22 +221,53 @@ describe('useSettingsPasskeysScreen', () => {
         expect(result.current.canRemove(unflaggedPasskey)).toBe(true)
     })
 
-    it('offers removal of a flagged passkey once the provider is active', () => {
+    // Paired rather than asserted alone: `canRemove` returns true for anything
+    // once the provider is active, so a one-sided assertion here holds even if
+    // the flag stops being consulted at all.
+    it('offers removal of a flagged passkey once the provider is active, and only then', () => {
         mocks.passkeys = [{ id: 'cred-1' }]
+        mocks.isProviderActive = false
 
-        const { result } = renderHook(() => useSettingsPasskeysScreen())
+        const { result, rerender } = renderHook(() =>
+            useSettingsPasskeysScreen(),
+        )
+        expect(result.current.canRemove(flaggedPasskey)).toBe(false)
+
+        mocks.isProviderActive = true
+        rerender()
 
         expect(result.current.canRemove(flaggedPasskey)).toBe(true)
     })
 
+    // The hole three rounds of gating missed: `needsMigration` is hardcoded
+    // `false` for a `source: 'native'` row, which is what every credential
+    // `repairs/0002` un-adopted comes back as — the majority. The migration
+    // read is the only place their flag survives, so the gate has to union it.
+    it('withholds removal of a credential only the migration read knows is flagged', () => {
+        mocks.passkeys = [{ id: 'cred-3' }]
+        mocks.isProviderActive = false
+        setMigration({ affected: [unreadableFlagPasskey] })
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.canRemove(unreadableFlagPasskey)).toBe(false)
+    })
+
+    // An unsettled read reports no affected credentials, which is
+    // indistinguishable from "none are flagged" — so removal waits rather than
+    // offering a one-way action on a credential that may well be flagged.
+    it('withholds removal from every row until the migration read has answered', () => {
+        mocks.passkeys = [{ id: 'cred-2' }]
+        mocks.isProviderActive = false
+        setMigration({ isFlagSourceSettled: false })
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.canRemove(unflaggedPasskey)).toBe(false)
+    })
+
     it('exposes the banner state it composed', () => {
-        mocks.usePasskeyMigrationBanner.mockReturnValue({
-            affected: [],
-            isVisible: true,
-            canRecreate: false,
-            onRecreate: vi.fn(),
-            onDismiss: vi.fn(),
-        })
+        setMigration({ isVisible: true })
 
         const { result } = renderHook(() => useSettingsPasskeysScreen())
 

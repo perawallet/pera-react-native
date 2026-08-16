@@ -29,11 +29,18 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { Notifier } from 'react-native-notifier'
 
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
-import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
+import {
+    readMasterKey,
+    resetTestKeystore,
+    storage,
+} from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
-import { PASSKEY_MIGRATION_NEEDED } from '@perawallet/wallet-core-passkeys'
+import {
+    PASSKEY_MIGRATION_NEEDED,
+    sealNativeProviderRecord,
+} from '@perawallet/wallet-core-passkeys'
 import {
     AccountTypes,
     DerivationTypes,
@@ -123,6 +130,42 @@ const importKeystorePasskey = (id: string, isFlagged: boolean) =>
             ...(isFlagged ? { migration: PASSKEY_MIGRATION_NEEDED } : {}),
         },
     })
+
+const nativeCredential = (credentialId: string): NativeStoredCredential => ({
+    credentialId,
+    rpId: 'example.com',
+    userHandle: 'alice',
+    name: credentialId,
+    createdAt: 1_700_000_000_000,
+})
+
+// The majority shape of a flagged credential after the upgrade: upstream's
+// `migrateLegacyPasskeys` stamps `metadata.migration` on the `k/` record and
+// `repairs/0002-rematerialize-passkey-credentials` then deletes that record,
+// leaving the marker only in the flat bare-id record the native providers
+// read. The credential therefore reaches the screen as a native
+// identity-store row — `source: 'native'`, whose shape has no metadata bag and
+// so always reports `needsMigration: false`.
+const seedFlaggedFlatRecord = async (id: string) => {
+    const masterKey = Uint8Array.from(await readMasterKey())
+    const sealed = await sealNativeProviderRecord(
+        globalThis.crypto.subtle,
+        masterKey,
+        {
+            id,
+            type: 'hd-derived-p256',
+            publicKey: [1, 2, 3],
+            privateKey: [4, 5, 6],
+            metadata: {
+                origin: 'example.com',
+                userHandle: 'alice',
+                createdAt: 1_700_000_000_000,
+                migration: PASSKEY_MIGRATION_NEEDED,
+            },
+        },
+    )
+    storage.set(id, sealed)
+}
 
 const hasButtonWithLabel = (label: string): boolean =>
     screen
@@ -264,8 +307,12 @@ describe('Flow: Settings → Passkeys removal', () => {
     // its replacement can only be registered while Pera is the active provider,
     // so removing one with the provider off is a one-way lockout. The list row
     // is a second way to reach that delete — withholding it only on the
-    // migration banner leaves the hole open two taps below. Unflagged rows are
-    // derivable again from the passphrase, so they stay removable.
+    // migration banner leaves the hole open two taps below. A row neither
+    // source reports as flagged is derivable again from the passphrase, so it
+    // stays removable.
+    //
+    // Both rows here are keystore-backed, the one source that carries the
+    // marker on the row itself; the un-adopted majority is the case below.
     it(
         'withholds removal of a flagged passkey while the provider is off, without withholding it for the rest',
         async () => {
@@ -287,11 +334,12 @@ describe('Flow: Settings → Passkeys removal', () => {
                 within(flaggedRow).queryByTestId('touchable-icon-trash'),
             ).toBeFalsy()
 
-            fireEvent.click(
-                within(
-                    screen.getByTestId('settings_passkeys_item_plain-cred'),
-                ).getByTestId('touchable-icon-trash'),
-            )
+            // The row renders before the migration read settles, and until it
+            // does no row offers removal — so wait for the icon, not the row.
+            const plainTrash = await within(
+                screen.getByTestId('settings_passkeys_item_plain-cred'),
+            ).findByTestId('touchable-icon-trash')
+            fireEvent.click(plainTrash)
             await waitFor(() =>
                 expect(
                     hasButtonWithLabel('settings.passkeys.remove_confirm'),
@@ -306,6 +354,77 @@ describe('Flow: Settings → Passkeys removal', () => {
             )
             expect(
                 screen.getByTestId('settings_passkeys_item_flagged-cred'),
+            ).toBeTruthy()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    // The case above is the minority one: a credential `repairs/0002` declined
+    // to un-adopt, so its `k/` record survives and `usePasskeysQuery` can read
+    // the marker off it. For every credential the repair did un-adopt — all but
+    // that one — the row is a `source: 'native'` projection of the native
+    // identity store, whose shape carries no metadata bag, so `needsMigration`
+    // is hardcoded `false` and gating on it alone leaves the trash icon on the
+    // one row that must never offer it.
+    it(
+        'withholds removal of a flagged credential the passkey list reports unflagged, while the rest of the list still deletes',
+        async () => {
+            getAutofill().isProviderActive.mockResolvedValue(false)
+            await seedFlaggedFlatRecord('native-flagged')
+            getAutofill().getStoredCredentials.mockResolvedValue([
+                nativeCredential('native-flagged'),
+                nativeCredential('native-plain'),
+            ])
+
+            renderWithNavigation(SettingsPasskeyScreen, 'SettingsPasskeys')
+            const plainRow = await screen.findByTestId(
+                'settings_passkeys_item_native-plain',
+            )
+            // The banner reads the same flat record, so its presence is what
+            // says the marker was found at all — without it this test would
+            // pass on a screen that simply never learned the credential exists.
+            await waitFor(() =>
+                expect(
+                    screen.getByTestId('settings_passkeys_migration_blocked'),
+                ).toBeTruthy(),
+            )
+
+            // Exactly one trash icon on a two-row list: the flagged row has
+            // none and the unflagged one is untouched.
+            await waitFor(() =>
+                expect(
+                    screen.getAllByTestId('touchable-icon-trash'),
+                ).toHaveLength(1),
+            )
+            expect(
+                within(
+                    screen.getByTestId('settings_passkeys_item_native-flagged'),
+                ).queryByTestId('touchable-icon-trash'),
+            ).toBeFalsy()
+
+            // Drive the surviving icon all the way through the real removal, so
+            // "the flagged credential was not deleted" is a statement about the
+            // gate rather than about a screen where deletion is broken.
+            fireEvent.click(
+                within(plainRow).getByTestId('touchable-icon-trash'),
+            )
+            await waitFor(() =>
+                expect(
+                    hasButtonWithLabel('settings.passkeys.remove_confirm'),
+                ).toBe(true),
+            )
+            tapButtonByLabel('settings.passkeys.remove_confirm')
+
+            await waitFor(() =>
+                expect(getAutofill().deleteCredential).toHaveBeenCalledWith(
+                    'native-plain',
+                ),
+            )
+            expect(getAutofill().deleteCredential).not.toHaveBeenCalledWith(
+                'native-flagged',
+            )
+            expect(
+                screen.getByTestId('settings_passkeys_item_native-flagged'),
             ).toBeTruthy()
         },
         SLOW_TEST_TIMEOUT_MS,

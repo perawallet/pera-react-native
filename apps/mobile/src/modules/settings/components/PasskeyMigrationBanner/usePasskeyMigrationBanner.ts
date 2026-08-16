@@ -46,6 +46,13 @@ export type UsePasskeyMigrationBannerResult = {
      * would be gone and the replacement unregisterable.
      */
     canRecreate: boolean
+    /**
+     * Whether the flat-record read has produced an answer yet. Until it has,
+     * `affected` is not "nothing is flagged" but "not known yet" — and a
+     * `source: 'native'` row carries no marker of its own to fall back on, so
+     * a consumer gating a one-way action has to withhold rather than guess.
+     */
+    isFlagSourceSettled: boolean
     onRecreate: (passkey: Passkey) => void
     onDismiss: () => void
 }
@@ -103,6 +110,10 @@ export const usePasskeyMigrationBanner = ({
         affected,
         isVisible: isManaging && !isDismissed && affected.length > 0,
         canRecreate: isProviderActive,
+        // Success, not "no longer pending": a failed read knows nothing about
+        // which credentials are flagged, and treating that as "none are" is
+        // the one wrong answer that is irreversible.
+        isFlagSourceSettled: flaggedQuery.isSuccess,
         onRecreate: onRequestDelete,
         onDismiss,
     }

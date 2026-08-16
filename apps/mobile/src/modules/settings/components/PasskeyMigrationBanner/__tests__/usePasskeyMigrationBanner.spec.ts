@@ -180,7 +180,10 @@ describe('usePasskeyMigrationBanner', () => {
     // lockout gate: `resolveState` returns `populated` before it consults the
     // provider, so a provider-off screen with at least one passkey is still
     // "managing". `canRecreate` withholds the banner's own action there, and
-    // the screen's `canRemove` withholds the matching one on the list row.
+    // the screen's `canRemove` withholds the matching one on the list row —
+    // reading `affected` below, which is the only place a row whose own
+    // `needsMigration` is unreadable (`source: 'native'`) is known to be
+    // flagged at all.
     it('stays hidden while the screen is not managing passkeys', async () => {
         mocks.readFlaggedPasskeyCredentials.mockResolvedValue([
             passkey({ keyId: 'flat-1' }),
@@ -262,5 +265,51 @@ describe('usePasskeyMigrationBanner', () => {
             expect(mocks.readFlaggedPasskeyCredentials).toHaveBeenCalled(),
         )
         expect(result.current.isVisible).toBe(false)
+    })
+
+    // An empty `affected` means "flagged: none" only once the read has
+    // answered. The screen's row gate is the consumer that must tell the two
+    // apart — a `source: 'native'` row has no readable marker of its own, so
+    // "not known yet" read as "not flagged" is a one-way delete offered on the
+    // one credential that can't come back.
+    it('reports the flat read unsettled while it is still in flight', async () => {
+        mocks.readFlaggedPasskeyCredentials.mockReturnValue(
+            new Promise(() => {}),
+        )
+
+        const { result } = render()
+
+        await waitFor(() =>
+            expect(mocks.readFlaggedPasskeyCredentials).toHaveBeenCalled(),
+        )
+        expect(result.current.affected).toEqual([])
+        expect(result.current.isFlagSourceSettled).toBe(false)
+    })
+
+    // A failed read knows nothing about which credentials are flagged, and
+    // `readFlaggedPasskeyCredentials` already degrades its own recoverable
+    // failures to `[]` — so a rejection reaching here is the case where the
+    // empty list is least trustworthy, not most.
+    it('leaves the flat read unsettled when it fails', async () => {
+        mocks.readFlaggedPasskeyCredentials.mockRejectedValue(
+            new Error('keychain unavailable'),
+        )
+
+        const { result } = render()
+
+        await waitFor(() =>
+            expect(mocks.readFlaggedPasskeyCredentials).toHaveBeenCalled(),
+        )
+        expect(result.current.isFlagSourceSettled).toBe(false)
+    })
+
+    it('reports the flat read settled once it resolves', async () => {
+        mocks.readFlaggedPasskeyCredentials.mockResolvedValue([])
+
+        const { result } = render()
+
+        await waitFor(() =>
+            expect(result.current.isFlagSourceSettled).toBe(true),
+        )
     })
 })

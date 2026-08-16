@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { AppState } from 'react-native'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -57,8 +57,13 @@ export type UseSettingsPasskeysScreenResult = {
      * Whether a row may offer its remove action. Removal is one-way and a
      * flagged passkey can only be replaced while Pera is the active provider,
      * so removing one with the provider off locks the user out of that site.
-     * Unflagged passkeys are derivable from the recovery passphrase and stay
-     * removable either way.
+     *
+     * `passkey.needsMigration` alone does not answer this: it is only readable
+     * off a source that has a metadata bag, so a `source: 'native'` row —
+     * which is what a credential `repairs/0002` un-adopted comes back as —
+     * reports `false` whether or not it is flagged. The migration read is
+     * unioned in for exactly those, and a row stays unremovable until that read
+     * has answered.
      */
     canRemove: (passkey: Passkey) => boolean
     /**
@@ -162,16 +167,29 @@ export const useSettingsPasskeysScreen =
         )
 
         const isProviderActive = status.isProviderActive
-        const canRemove = useCallback(
-            (passkey: Passkey) => isProviderActive || !passkey.needsMigration,
-            [isProviderActive],
-        )
 
         const migration = usePasskeyMigrationBanner({
             isManaging,
             isProviderActive,
             onRequestDelete: handleRequestDelete,
         })
+
+        const { affected, isFlagSourceSettled } = migration
+        const flaggedKeyIds = useMemo(
+            () => new Set(affected.map(passkey => passkey.keyId)),
+            [affected],
+        )
+
+        const canRemove = useCallback(
+            (passkey: Passkey) => {
+                if (isProviderActive) return true
+                if (!isFlagSourceSettled) return false
+                return !(
+                    passkey.needsMigration || flaggedKeyIds.has(passkey.keyId)
+                )
+            },
+            [isProviderActive, isFlagSourceSettled, flaggedKeyIds],
+        )
 
         const notice: PasskeysNotice = !isManaging
             ? null
