@@ -291,6 +291,35 @@ describe('0004-adopt-material-less-records', () => {
         ).resolves.toBeUndefined()
     })
 
+    // The stringify half of the same line. `safeErrorMessage(error)` is an
+    // argument to `safeWarn`, so it is evaluated before `safeWarn`'s `try` is
+    // entered — a throwing `toString` on whatever storage threw escapes `up`.
+    it('does not reject up when the left-flat failure cannot be stringified', async () => {
+        const storage = await seeded({
+            id: 'watch-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(3),
+        })
+        storage.set = () => {
+            throw {
+                toString: () => {
+                    throw new Error('cannot stringify')
+                },
+            }
+        }
+        const consoleWarn = vi.spyOn(console, 'warn')
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        expect(consoleWarn).toHaveBeenCalledWith(
+            expect.stringContaining('entry watch-1 left flat:'),
+        )
+    })
+
     it('adopts the material-less record while leaving a real key beside it alone', async () => {
         const storage = await seeded(
             {

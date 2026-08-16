@@ -338,6 +338,40 @@ describe('0002-rematerialize-passkey-credentials', () => {
         ).resolves.toBeUndefined()
     })
 
+    // The stringify half of the same line: `safeErrorMessage(error)` is an
+    // argument, so it is evaluated before `safeWarn`'s `try` is entered, and
+    // the caught value is whatever the envelope threw — not necessarily an
+    // `Error`.
+    it('does not reject up when the un-rematerialize failure cannot be stringified', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        let openDataCalls = 0
+        vi.mocked(openData).mockImplementation(async (...args) => {
+            openDataCalls += 1
+            if (openDataCalls === 2) {
+                throw {
+                    toString: () => {
+                        throw new Error('cannot stringify')
+                    },
+                }
+            }
+            return realOpenData(...args)
+        })
+        const consoleWarn = vi.spyOn(console, 'warn')
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        expect(consoleWarn).toHaveBeenCalledWith(
+            expect.stringContaining('left un-rematerialized:'),
+        )
+    })
+
     it('never mentions key material when a rematerialization failure is logged', async () => {
         const storage = fakeStorage({})
         await seededCredential(storage, {
@@ -465,6 +499,37 @@ describe('0002-rematerialize-passkey-credentials', () => {
         await expect(
             migration.up(context(storage), utils()),
         ).resolves.toBeUndefined()
+    })
+
+    // The stringify half of the same line: `safeErrorMessage(error)` is an
+    // argument, so it is evaluated before `safeWarn`'s `try` is entered.
+    it('does not reject up when the orphaned-pair failure cannot be stringified', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        const originalRemove = storage.remove.bind(storage)
+        storage.remove = (key: string) => {
+            if (key === MATERIAL_PREFIX + 'cred-1') {
+                throw {
+                    toString: () => {
+                        throw new Error('cannot stringify')
+                    },
+                }
+            }
+            originalRemove(key)
+        }
+        const consoleWarn = vi.spyOn(console, 'warn')
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        expect(consoleWarn).toHaveBeenCalledWith(
+            expect.stringContaining('orphaned k/+m/ pair:'),
+        )
     })
 
     it('restores the previously-verified flat record rather than deleting it when a re-run cannot reach the material', async () => {
@@ -657,6 +722,57 @@ describe('0002-rematerialize-passkey-credentials', () => {
             migration.up(context(storage), utils()),
         ).resolves.toBeUndefined()
         expect(rollbackLogs).toBe(1)
+    })
+
+    // Same fixture again, but the rollback throws a value that cannot be
+    // stringified. `safeErrorMessage(rollbackError)` is an argument to
+    // `safeWarn`, so it runs outside `safeWarn`'s `try`; the enclosing `catch`
+    // is the one already handling `error`, so a throw here escapes `up`.
+    it('does not reject up when the rollback failure cannot be stringified', async () => {
+        const storage = fakeStorage({})
+        await seededCredential(storage, {
+            id: 'cred-1',
+            publicKey: new Uint8Array(91).fill(4),
+            privateKey: new Uint8Array(32).fill(3),
+        })
+        const wrongRecordSealed = await sealNativeCredentialRecord(
+            subtle,
+            MASTER_KEY,
+            {
+                id: 'cred-1',
+                type: 'hd-derived-p256',
+                privateKey: Array.from(new Uint8Array(32).fill(99)),
+                publicKey: Array.from(new Uint8Array(91).fill(4)),
+            },
+        )
+        let openDataCalls = 0
+        vi.mocked(openData).mockImplementation(async (...args) => {
+            openDataCalls += 1
+            if (openDataCalls === 2) {
+                return realOpenData(subtle, MASTER_KEY, wrongRecordSealed)
+            }
+            return realOpenData(...args)
+        })
+        const originalRemove = storage.remove.bind(storage)
+        storage.remove = (key: string) => {
+            if (key === 'cred-1') {
+                throw {
+                    toString: () => {
+                        throw new Error('cannot stringify')
+                    },
+                }
+            }
+            originalRemove(key)
+        }
+        const consoleWarn = vi.spyOn(console, 'warn')
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        expect(consoleWarn).toHaveBeenCalledWith(
+            expect.stringContaining('rollback itself failed'),
+        )
     })
 
     it('leaves the bare id untouched on a later failure when the prior-flat read itself throws', async () => {

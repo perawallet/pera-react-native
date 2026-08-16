@@ -227,6 +227,38 @@ describe('createDeclinedRegister', () => {
         expect(setCalls).toBe(0)
     })
 
+    // The stringify half of that same read-failure line: `safeErrorMessage`
+    // runs while the template literal is built, i.e. as an argument, outside
+    // `safeWarn`'s own `try`. Every production caller reaches `record` from
+    // outside its own `try`, so a throw here escapes `up`.
+    it('does not throw when the read failure inside record cannot be stringified', () => {
+        const consoleWarn = vi
+            .spyOn(console, 'warn')
+            .mockImplementation(() => {})
+        let setCalls = 0
+        const throwingStore: NoteStore = {
+            getString: () => {
+                throw {
+                    toString: () => {
+                        throw new Error('cannot stringify')
+                    },
+                }
+            },
+            set: () => {
+                setCalls += 1
+            },
+        }
+
+        expect(() =>
+            createDeclinedRegister(throwingStore).record(MODULE, ['a']),
+        ).not.toThrow()
+        expect(setCalls).toBe(0)
+        expect(consoleWarn).toHaveBeenCalledOnce()
+        expect(consoleWarn.mock.calls[0][0]).toContain(
+            'could not read the ledger',
+        )
+    })
+
     it('does not throw when console.warn itself throws inside read', () => {
         vi.spyOn(console, 'warn').mockImplementation(() => {
             throw new Error('LogBox is not ready')

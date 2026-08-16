@@ -145,11 +145,13 @@ export const createDeclinedRegister = (store: NoteStore): DeclinedRegister => {
             } catch (error) {
                 // This same MMKV instance backs the migration ledger too
                 // (`migrationsLedger.ts`), so a failing write here usually
-                // means the ledger's own write fails right after — the
-                // module is reported failed rather than applied, and re-runs
-                // next launch. The loss is therefore usually recovered; it is
-                // permanent only if this write fails while the ledger's
-                // succeeds, or the process is killed mid-run.
+                // means the ledger's own write fails right after — the module
+                // is reported failed rather than applied. That is not a
+                // recovery: `applyMigrations` throws `MigrationFailedError`
+                // for anything in `report.failed` (apply.js:148), which
+                // rejects `keystore.ready` (extension.js:109) and blocks boot
+                // — and with the ledger unwritten it does so again every
+                // launch. Treat this loss as permanent.
                 safeWarn(
                     `[provider] declined-register: ledger write failed for ${module}, ${ids.length} id(s) left unrecorded (${ids.join(', ')}): ${safeErrorMessage(error)}`,
                 )

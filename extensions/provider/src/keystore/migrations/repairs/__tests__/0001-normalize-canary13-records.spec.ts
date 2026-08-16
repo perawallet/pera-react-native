@@ -489,14 +489,20 @@ describe('0001-normalize-canary13-records', () => {
             },
             new Uint8Array(48).fill(4),
         )
+        let sealedLogs = 0
         vi.spyOn(console, 'warn').mockImplementation(message => {
             if (String(message).includes('nowhere to be sealed')) {
+                sealedLogs += 1
                 throw new Error('LogBox is not ready')
             }
         })
 
         await migration.up(context(storage), utils())
 
+        // Without this the scoping is silently self-disarming: reword the
+        // production log and the `includes` stops matching, nothing throws,
+        // and the assertion below passes with the guard removed.
+        expect(sealedLogs).toBe(1)
         expect(logWarn).toHaveBeenCalledWith(
             expect.stringContaining('1 keystore record(s) un-normalised'),
             { entries: ['key-c'] },
@@ -887,6 +893,51 @@ describe('0001-normalize-canary13-records', () => {
         await expect(
             migration.up(context(storage), utils()),
         ).resolves.toBeUndefined()
+    })
+
+    // The stringify half of the same line. `safeErrorMessage(error)` is
+    // evaluated while building the template literal — an argument, so outside
+    // `safeWarn`'s own `try` — and the caught value comes from storage, which
+    // is free to throw anything at all.
+    it('does not reject up when the untouched entry’s failure cannot be stringified', async () => {
+        const storage = await seeded({
+            id: 'derived-1',
+            type: 'hd-derived-ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            metadata: {
+                rootKey: {
+                    id: 'root-1',
+                    privateKey: new Uint8Array(64).fill(11),
+                },
+            },
+        })
+        const set = storage.set
+        let thrown = 0
+        storage.set = (key, value) => {
+            // Once only: the rollback that follows the throw writes through
+            // this same prefix and must be allowed to complete.
+            if (key.startsWith(MATERIAL_PREFIX) && thrown === 0) {
+                thrown += 1
+                throw {
+                    toString: () => {
+                        throw new Error('cannot stringify')
+                    },
+                }
+            }
+            set(key, value)
+        }
+        const consoleWarn = vi.spyOn(console, 'warn')
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        storage.set = set
+        expect(thrown).toBe(1)
+        expect(consoleWarn).toHaveBeenCalledWith(
+            expect.stringContaining('entry derived-1 left untouched:'),
+        )
     })
 
     // Reading the master key is the only step that can raise a biometric

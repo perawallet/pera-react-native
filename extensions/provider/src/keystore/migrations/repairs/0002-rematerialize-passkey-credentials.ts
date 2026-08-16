@@ -101,9 +101,7 @@ import {
  * merely a prior run that "declined." A completed decline is final:
  * recorded via `declined`, a durable note that nothing in this codebase
  * currently reads back (Task 4 already deferred that consuming revision),
- * so a declined credential's `k/` shadow is permanent, not revisited —
- * unless the ledger's own write fails too, which reports the module failed
- * and re-runs it next launch.
+ * so a declined credential's `k/` shadow is permanent, not revisited.
  *
  * Cheap and side-effect-free when there is nothing to do: the `k/` bucket is
  * scanned and decoded (plaintext, no master key) first, and the master key is
