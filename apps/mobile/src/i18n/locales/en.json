@@ -1789,6 +1789,14 @@
             "pin_notnow": "Not now"
         }
     },
+    "quantum": {
+        "dapp_warning": {
+            "title": "Limited dApp Compatibility",
+            "body": "Quantum accounts are new, so not every dApp has upgraded to support them yet. As a result, some transactions may fail or come with different fees than usual. If you run into an issue, reaching out to that dApp directly and asking them to add PQ support can help speed things along. You're welcome to continue, or switch to a non-Quantum account for full compatibility in the meantime. <0>Learn more</0>",
+            "confirm": "Continue",
+            "cancel": "Cancel"
+        }
+    },
     "rekey": {
         "signing": {
             "source_name": "Rekey Account",

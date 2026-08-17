@@ -1789,6 +1789,14 @@
             "pin_notnow": "Şimdi değil"
         }
     },
+    "quantum": {
+        "dapp_warning": {
+            "title": "Sınırlı dApp uyumluluğu",
+            "body": "Quantum hesapları yeni olduğu için her dApp henüz bunları desteklemek üzere güncellenmedi. Bu nedenle bazı işlemler başarısız olabilir veya normalden farklı ücretler içerebilir. Bir sorunla karşılaşırsan, doğrudan o dApp ile iletişime geçip PQ desteği eklemelerini istemen süreci hızlandırabilir. Devam edebilirsin ya da bu sırada tam uyumluluk için Quantum olmayan bir hesaba geçebilirsin. <0>Daha fazla bilgi</0>",
+            "confirm": "Devam et",
+            "cancel": "İptal"
+        }
+    },
     "rekey": {
         "signing": {
             "source_name": "Rekey hesabı",

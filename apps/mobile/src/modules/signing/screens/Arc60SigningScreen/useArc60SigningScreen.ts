@@ -18,6 +18,8 @@ import {
     type Arc60SignRequest,
     type SigningLifecycleEvent,
     isArc60OriginMismatch,
+    isExternalCallbackSource,
+    resolveAllSignerAddresses,
     useLastSigningEvent,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
@@ -28,6 +30,7 @@ import {
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
+import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 import type { SigningStackParamList } from '@modules/signing/routes'
@@ -59,6 +62,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const { t } = useLanguage()
     const { getMessage } = useAlgodErrorMessage()
     const pipeline = useSigningPipeline()
+    const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const request =
         (pipeline.currentRequest as Optional<Arc60SignRequest>) ?? null
 
@@ -85,8 +89,23 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
 
     const handleApprove = useCallback(() => {
         if (isCardRequest) trackEvent(CardEvent.CreateArbTxConfirm)
-        pipeline.next()
-    }, [pipeline, isCardRequest])
+
+        void (async () => {
+            // This screen drives the pipeline itself, so the sign-time backstop
+            // in SigningActionButtons never runs for ARC-60.
+            if (request && isExternalCallbackSource(request.sourceType)) {
+                const decision = await confirmQuantumDappUsage(
+                    resolveAllSignerAddresses(request),
+                )
+                if (decision === 'cancel') {
+                    pipeline.fail()
+                    return
+                }
+            }
+
+            pipeline.next()
+        })()
+    }, [pipeline, isCardRequest, request, confirmQuantumDappUsage])
 
     const handleReject = useCallback(() => {
         if (isCardRequest) trackEvent(CardEvent.CreateArbTxClose)

@@ -1789,6 +1789,14 @@
             "pin_notnow": "Ahora no"
         }
     },
+    "quantum": {
+        "dapp_warning": {
+            "title": "Compatibilidad limitada con dApps",
+            "body": "Las cuentas Quantum son nuevas, así que no todas las dApps se han actualizado todavía para admitirlas. Como resultado, algunas transacciones pueden fallar o tener comisiones distintas a las habituales. Si tienes algún problema, puede ayudar contactar directamente con esa dApp y pedirle que añada compatibilidad con PQ. Puedes continuar si lo deseas, o cambiar a una cuenta no Quantum para tener compatibilidad total mientras tanto. <0>Más información</0>",
+            "confirm": "Continuar",
+            "cancel": "Cancelar"
+        }
+    },
     "rekey": {
         "signing": {
             "source_name": "Rekey de cuenta",

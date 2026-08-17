@@ -17,9 +17,12 @@ import {
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataMessage,
     type SigningLifecycleEvent,
+    isExternalCallbackSource,
+    resolveAllSignerAddresses,
     useLastSigningEvent,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
+import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -41,6 +44,7 @@ export const useArbitraryDataSigningScreen =
     (): UseArbitraryDataSigningScreenResult => {
         const navigation = useNavigation<NavigationProp>()
         const pipeline = useSigningPipeline()
+        const { confirmQuantumDappUsage } = useQuantumDappWarning()
         const request =
             (pipeline.currentRequest as ArbitraryDataSignRequest) ?? null
 
@@ -61,8 +65,22 @@ export const useArbitraryDataSigningScreen =
         const isApproving = !!signingStarted
 
         const handleApprove = useCallback(() => {
-            pipeline.next()
-        }, [pipeline])
+            void (async () => {
+                // This screen drives the pipeline itself, so the sign-time
+                // backstop in SigningActionButtons never runs for this request.
+                if (request && isExternalCallbackSource(request.sourceType)) {
+                    const decision = await confirmQuantumDappUsage(
+                        resolveAllSignerAddresses(request),
+                    )
+                    if (decision === 'cancel') {
+                        pipeline.fail()
+                        return
+                    }
+                }
+
+                pipeline.next()
+            })()
+        }, [pipeline, request, confirmQuantumDappUsage])
 
         const handleReject = useCallback(() => {
             pipeline.fail()
