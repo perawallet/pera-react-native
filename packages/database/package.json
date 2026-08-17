@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "@types/better-sqlite3": "^7.6.0",
+    "@types/better-sqlite3": "^9.6.0",
     "better-sqlite3": "^13.0.3",
     "drizzle-kit": "^0.31.10",
     "typescript": "catalog:",
