@@ -346,6 +346,16 @@ const SearchableListFullInner = <T,>(
     return (
         <PWView style={styles.root}>
             {list}
+            {/*
+                Known Fabric hazard, deliberately not pinned. Conditional
+                `opacity: 0` plus the pointerEvents flip are both in
+                formsStackingContext (ViewShadowNode.cpp), so toggling the
+                overlay creates/destroys this view and reparents its subtree
+                mid-commit — the same shape that crashed AutoLockGuard with
+                `addViewAt ... index=3 count=2` (#1279). Left alone because no
+                concurrent mount is known to race it; `collapsable={false}` is
+                the fix if one turns up.
+            */}
             <PWView
                 style={[
                     styles.searchOverlay,
