@@ -316,8 +316,11 @@ describe('0002-lift-nested-material', () => {
     })
 
     // Not a fresh install — that returns at `candidates.length === 0`, below.
-    // Flat records with no master key were never sealed under one, so there is
-    // nothing to lift and upstream declines them identically (`legacy.js:86-89`).
+    // The fixture here *was* sealed: what makes resolving safe is that upstream
+    // takes the identical branch (`legacy.js:87-88`) and is ledgered too, so
+    // nothing adopts behind us — not any claim that nothing was ever sealed.
+    // Recording a decline would be just as wrong as writing, hence both
+    // assertions.
     it('is a no-op when the master key is missing, not a throw', async () => {
         const storage = await seeded(nestedAndTopLevel())
         const before = storage.entries()
@@ -329,9 +332,12 @@ describe('0002-lift-nested-material', () => {
             migration.up(context(storage), utils()),
         ).resolves.toBeUndefined()
         expect(storage.entries()).toEqual(before)
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual([])
     })
 
-    // Declining here would be worse than blocking boot: `apply.js:123` ledgers
+    // Declining here would be worse than blocking boot: `apply.js:125` ledgers
     // this revision the moment `up` resolves, so the next launch skips it while
     // upstream adopts the same record and writes its nested private key into
     // plaintext `k/`. Throwing keeps the revision pending for a retry.

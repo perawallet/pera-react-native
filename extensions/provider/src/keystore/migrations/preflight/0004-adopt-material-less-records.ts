@@ -78,13 +78,18 @@ export const migration: Migration<PeraMigrationContext> = {
         try {
             masterKey = await context.masterKeyForRead()
         } catch (error) {
-            // Nothing was ever sealed under a master key, so there is nothing
-            // to adopt; upstream takes the same branch (`legacy.js:86-89`).
+            // Upstream reads a falsey Keychain result the same way
+            // (`legacy.js:87-88`): its revision returns, resolves and is
+            // ledgered too, so nothing adopts behind us. Parity is what makes
+            // resolving safe — not a guarantee that nothing was ever sealed
+            // (`crypto.js:27-29`: falsey can also mean a failed read).
             if (error instanceof MasterKeyNotFoundError) return
-            // DO NOT turn this into a decline — see `0002`. Throwing keeps the
-            // revision unledgered (`apply.js:123`) so it retries next launch;
-            // declining ledgers it, and upstream skips these targets for
-            // carrying no material (`legacy.js:104-109`), so nothing ever
+            // DO NOT turn this into a decline — see `0002`. Unlike the
+            // per-record failure path below (one record, deterministic), this
+            // is every candidate at once and usually transient. Throwing keeps
+            // the revision unledgered (`apply.js:125`) so it retries next
+            // launch; declining ledgers it, and upstream skips these targets
+            // for carrying no material (`legacy.js:104-109`), so nothing ever
             // adopts them and the accounts stay invisible to `listMeta()`.
             throw error
         }

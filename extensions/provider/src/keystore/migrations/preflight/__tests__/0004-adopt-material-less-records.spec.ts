@@ -359,8 +359,11 @@ describe('0004-adopt-material-less-records', () => {
     })
 
     // Not a fresh install — that returns at `candidates.length === 0`, below.
-    // Flat records with no master key were never sealed under one, so there is
-    // nothing to adopt and upstream declines them identically (`legacy.js:86-89`).
+    // The fixture here *was* sealed: what makes resolving safe is that upstream
+    // takes the identical branch (`legacy.js:87-88`) and is ledgered too, so
+    // nothing adopts behind us — not any claim that nothing was ever sealed.
+    // Recording a decline would be just as wrong as writing, hence both
+    // assertions.
     it('is a no-op when the master key is missing, not a throw', async () => {
         const storage = await seeded({
             id: 'watch-1',
@@ -378,9 +381,12 @@ describe('0004-adopt-material-less-records', () => {
             migration.up(context(storage), utils()),
         ).resolves.toBeUndefined()
         expect(storage.entries()).toEqual(before)
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual([])
     })
 
-    // Same reasoning as `0002`: declining ledgers this revision (`apply.js:123`)
+    // Same reasoning as `0002`: declining ledgers this revision (`apply.js:125`)
     // and the next launch skips it, so its targets — which upstream refuses
     // (`storage/legacy.js:104-109`) — are never adopted by anything, ever.
     // Throwing keeps it pending.

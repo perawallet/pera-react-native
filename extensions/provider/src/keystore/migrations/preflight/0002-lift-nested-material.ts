@@ -156,7 +156,8 @@ const adopt = async (
  *
  * MMKV keys are scanned before the master key is touched, so a device with
  * nothing to adopt raises no biometric prompt at launch. A missing master key
- * is a fresh install rather than a failure — exactly upstream's reading.
+ * resolves rather than throwing, matching the branch upstream takes for the
+ * same error — see the `MasterKeyNotFoundError` arm below.
  */
 export const migration: Migration<PeraMigrationContext> = {
     id: 2,
@@ -173,16 +174,22 @@ export const migration: Migration<PeraMigrationContext> = {
         try {
             masterKey = await context.masterKeyForRead()
         } catch (error) {
-            // Nothing was ever sealed under a master key, so there is nothing
-            // to lift; upstream takes the same branch (`legacy.js:86-89`).
+            // Upstream reads a falsey Keychain result the same way
+            // (`legacy.js:87-88`): its revision returns, resolves and is
+            // ledgered too, so nothing adopts behind us. Parity is what makes
+            // resolving safe — not a guarantee that nothing was ever sealed
+            // (`crypto.js:27-29`: falsey can also mean a failed read).
             if (error instanceof MasterKeyNotFoundError) return
-            // DO NOT turn this into a decline — third attempt, always wrong.
-            // Blocking boot is the safe failure: the ledger is written only
-            // after `up` resolves (`apply.js:123`), so a throw retries next
-            // launch, while a decline ledgers this revision, the next launch
-            // skips it, and upstream then adopts the record — writing
-            // `metadata.rootKey.privateKey` into plaintext `k/`
-            // (`legacy.js:118-121`), permanently.
+            // DO NOT turn this into a decline — third attempt, each wrong.
+            // Unlike the per-record `failed` path below (one record, a
+            // deterministic failure, where throwing would brick boot forever),
+            // this is every candidate at once and usually transient — a
+            // cancelled prompt. Blocking boot buys a retry: the ledger is
+            // written only after `up` resolves (`apply.js:125`), so a throw
+            // retries next launch. Declining is permanent — it ledgers this
+            // revision, the next launch skips it, and upstream adopts the
+            // record, writing `metadata.rootKey.privateKey` into plaintext
+            // `k/` (`legacy.js:113,120`).
             throw error
         }
 
