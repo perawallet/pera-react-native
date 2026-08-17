@@ -47,10 +47,28 @@ const trackPageErrors = (targetPage: Page): Error[] => {
 // Escape doesn't work — RNW's Modal never wires it to onRequestClose. The
 // sheet is bottom-anchored and capped at SHEET_MAX_RATIO, so a point near the
 // top of the viewport is always backdrop.
+//
+// A single fire-and-forget click isn't enough: it can land mid enter-animation
+// or on a nudge that raced over the backdrop, leaving the sheet open. Specs
+// share one page in serial mode, so an unclosed sheet doesn't fail the test
+// that opened it — it silently covers the tab bar and times out the NEXT spec
+// that touches this page (that's how a leaked Send sheet surfaced three tests
+// later as "settings opens from the menu tab"). Click, confirm the sheet
+// unmounted, retry, and assert closure here so any genuine failure lands on the
+// test that owns the sheet.
 const dismissSheet = async (targetPage: Page): Promise<void> => {
-    await targetPage
-        .getByTestId('pw-bottom-sheet-backdrop')
-        .click({ position: { x: 10, y: 10 } })
+    const backdrop = targetPage.getByTestId('pw-bottom-sheet-backdrop')
+    for (let attempt = 0; attempt < 5; attempt++) {
+        if (!(await backdrop.isVisible().catch(() => false))) return
+        await dismissPinPromptIfPresent(targetPage)
+        await backdrop.click({ position: { x: 10, y: 10 } }).catch(() => {})
+        const closed = await backdrop
+            .waitFor({ state: 'hidden', timeout: 2000 })
+            .then(() => true)
+            .catch(() => false)
+        if (closed) return
+    }
+    await expect(backdrop).toBeHidden({ timeout: 5000 })
 }
 
 // RoundButton renders its label as a SIBLING of the touchable, not a child, so
