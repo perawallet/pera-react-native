@@ -1806,8 +1806,8 @@
     },
     "quantum": {
         "dapp_warning": {
-            "title": "Alguns dApps podem ainda não oferecer suporte a contas Quantum",
-            "body": "As contas Quantum são novas e o suporte a elas precisa ser adicionado por cada dApp. Um dApp que ainda não fez isso pode não reconhecer seu endereço, exibi-lo incorretamente ou recusar as taxas de transação que essas contas exigem. Seus fundos não correm risco. <0>Saiba mais</0>",
+            "title": "Compatibilidade limitada com dApps",
+            "body": "As contas Quantum são novas, então nem todo dApp foi atualizado para oferecer suporte a elas ainda. Como resultado, algumas transações podem falhar ou vir com taxas diferentes do habitual. Se você tiver algum problema, entrar em contato diretamente com esse dApp e pedir que adicionem suporte a PQ pode ajudar a acelerar as coisas. Você pode continuar, ou trocar para uma conta não Quantum para compatibilidade total nesse meio-tempo.",
             "confirm": "Continuar",
             "cancel": "Cancelar"
         }

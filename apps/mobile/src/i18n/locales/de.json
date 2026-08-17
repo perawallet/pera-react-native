@@ -1783,8 +1783,8 @@
     },
     "quantum": {
         "dapp_warning": {
-            "title": "Einige dApps unterstützen Quantum-Konten möglicherweise noch nicht",
-            "body": "Quantum-Konten sind neu, und die Unterstützung dafür muss von jeder dApp einzeln hinzugefügt werden. Eine dApp, die das noch nicht getan hat, erkennt deine Adresse möglicherweise nicht, zeigt sie falsch an oder lehnt die für diese Konten erforderlichen Transaktionsgebühren ab. Dein Guthaben ist nicht gefährdet. <0>Mehr erfahren</0>",
+            "title": "Eingeschränkte dApp-Kompatibilität",
+            "body": "Quantum-Konten sind neu, daher hat noch nicht jede dApp die Unterstützung dafür hinzugefügt. Dadurch können manche Transaktionen fehlschlagen oder andere Gebühren als gewohnt anfallen. Falls du auf ein Problem stößt, kann es helfen, dich direkt an die jeweilige dApp zu wenden und sie zu bitten, PQ-Unterstützung hinzuzufügen. Du kannst gerne fortfahren oder in der Zwischenzeit zu einem Nicht-Quantum-Konto wechseln, um volle Kompatibilität zu erhalten.",
             "confirm": "Fortfahren",
             "cancel": "Abbrechen"
         }

@@ -1791,8 +1791,8 @@
     },
     "quantum": {
         "dapp_warning": {
-            "title": "Some dApps may not support Quantum accounts yet",
-            "body": "Quantum accounts are new, and support for them has to be added by each dApp. A dApp that hasn't added it yet may not recognise your address, may display it incorrectly, or may decline the transaction fees these accounts require. Your funds are not at risk. <0>Learn more</0>",
+            "title": "Limited dApp Compatibility",
+            "body": "Quantum accounts are new, so not every dApp has upgraded to support them yet. As a result, some transactions may fail or come with different fees than usual. If you run into an issue, reaching out to that dApp directly and asking them to add PQ support can help speed things along. You're welcome to continue, or switch to a non-Quantum account for full compatibility in the meantime.",
             "confirm": "Continue",
             "cancel": "Cancel"
         }
