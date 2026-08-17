@@ -156,6 +156,7 @@ describe('useAccountOverview', () => {
         expect(arg?.options).toEqual({
             size: 'modal',
             enablePanDownToClose: false,
+            enableCloseOnBackdropPress: false,
             autoCreateContainer: false,
         })
     })

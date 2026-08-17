@@ -54,6 +54,7 @@ export const useAccountOverview = ({
             options: {
                 size: 'modal',
                 enablePanDownToClose: false,
+                enableCloseOnBackdropPress: false,
                 autoCreateContainer: false,
             },
         })
