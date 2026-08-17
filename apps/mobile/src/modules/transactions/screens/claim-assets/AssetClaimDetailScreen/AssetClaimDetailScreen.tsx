@@ -21,7 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
-import { AssetNameBadge } from '@modules/assets/components'
+import { AssetIcon, AssetNameBadge } from '@modules/assets/components'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAssetClaimDetailScreen } from './useAssetClaimDetailScreen'
@@ -30,6 +30,7 @@ import { PreferredAmount } from '@components/PreferredAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
+import { isCollectible } from '@perawallet/wallet-core-assets'
 import { EmptyView } from '@components/EmptyView'
 
 export const AssetClaimDetailScreen = () => {
@@ -96,6 +97,18 @@ export const AssetClaimDetailScreen = () => {
             }
         >
             <PWView style={styles.amountSection}>
+                <PWView
+                    style={styles.assetPreview}
+                    testID='arc59_claim_asset_preview'
+                >
+                    <AssetIcon
+                        asset={request.asset}
+                        size='3xl'
+                        shape={
+                            isCollectible(request.asset) ? 'square' : 'circle'
+                        }
+                    />
+                </PWView>
                 <AssetNameBadge
                     name={request.asset.name ?? ''}
                     verificationTier={

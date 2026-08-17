@@ -177,6 +177,7 @@ export const mapArc59AssetRequest = (
                 .verification_tier as PeraAssetVerificationTier,
             isVerified: raw.asset.is_verified,
             isDeleted: raw.asset.is_deleted,
+            type: raw.asset.type,
             logo: raw.asset.logo,
             collectible: raw.asset.collectible
                 ? {
