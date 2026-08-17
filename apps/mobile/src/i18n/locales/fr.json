@@ -1789,6 +1789,14 @@
             "pin_notnow": "Pas maintenant"
         }
     },
+    "quantum": {
+        "dapp_warning": {
+            "title": "Certaines dApps ne prennent pas encore en charge les comptes Quantum",
+            "body": "Les comptes Quantum sont récents et leur prise en charge doit être ajoutée par chaque dApp. Une dApp qui ne l'a pas encore fait pourrait ne pas reconnaître votre adresse, l'afficher de manière incorrecte ou refuser les frais de transaction que ces comptes exigent. Vos fonds ne courent aucun risque. <0>En savoir plus</0>",
+            "confirm": "Continuer",
+            "cancel": "Annuler"
+        }
+    },
     "rekey": {
         "signing": {
             "source_name": "Rekey de compte",

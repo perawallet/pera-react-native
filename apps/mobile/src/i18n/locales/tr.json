@@ -1789,6 +1789,14 @@
             "pin_notnow": "Şimdi değil"
         }
     },
+    "quantum": {
+        "dapp_warning": {
+            "title": "Bazı dApp'ler Quantum hesaplarını henüz desteklemiyor olabilir",
+            "body": "Quantum hesapları yenidir ve desteğin her dApp tarafından ayrı ayrı eklenmesi gerekir. Bunu henüz yapmamış bir dApp adresinizi tanımayabilir, hatalı gösterebilir veya bu hesapların gerektirdiği işlem ücretlerini reddedebilir. Varlıklarınız risk altında değildir. <0>Daha fazla bilgi</0>",
+            "confirm": "Devam et",
+            "cancel": "İptal"
+        }
+    },
     "rekey": {
         "signing": {
             "source_name": "Rekey hesabı",

@@ -1789,6 +1789,14 @@
             "pin_notnow": "Ahora no"
         }
     },
+    "quantum": {
+        "dapp_warning": {
+            "title": "Puede que algunas dApps aún no admitan cuentas Quantum",
+            "body": "Las cuentas Quantum son nuevas y cada dApp debe añadir su compatibilidad por separado. Una dApp que aún no lo haya hecho puede no reconocer tu dirección, mostrarla de forma incorrecta o rechazar las comisiones de transacción que estas cuentas requieren. Tus fondos no corren riesgo. <0>Más información</0>",
+            "confirm": "Continuar",
+            "cancel": "Cancelar"
+        }
+    },
     "rekey": {
         "signing": {
             "source_name": "Rekey de cuenta",
