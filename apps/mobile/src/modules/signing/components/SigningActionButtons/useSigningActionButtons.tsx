@@ -197,6 +197,12 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                     resolveAllSignerAddresses(currentRequest),
                 )
                 if (decision === 'cancel') {
+                    if (walletConnectTxPayload) {
+                        trackEvent(
+                            WalletConnectEvent.TransactionDeclined,
+                            walletConnectTxPayload,
+                        )
+                    }
                     pipeline.fail()
                     return
                 }

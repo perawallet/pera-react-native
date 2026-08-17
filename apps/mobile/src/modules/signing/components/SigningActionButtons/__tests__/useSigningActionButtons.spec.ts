@@ -646,6 +646,11 @@ describe('useSigningActionButtons', () => {
 
             expect(mockFail).toHaveBeenCalledTimes(1)
             expect(mockNext).not.toHaveBeenCalled()
+            expect(trackEvent).toHaveBeenCalledWith('wc_transaction_declined', {
+                dapp_name: '',
+                dapp_url: '',
+                transaction_count: 0,
+            })
         })
 
         it('proceeds to signing when the quantum dApp warning is confirmed', async () => {
@@ -657,6 +662,9 @@ describe('useSigningActionButtons', () => {
             })
 
             expect(mockNext).toHaveBeenCalledTimes(1)
+            expect(mockConfirmQuantumDappUsage).toHaveBeenCalledWith([
+                'QUANTUMADDRESS',
+            ])
         })
 
         it('never consults the warning for a local sign request', async () => {

@@ -27,7 +27,7 @@ import { useIsQuantumDappWarningEnabled } from './useIsQuantumDappWarningEnabled
 export type UseQuantumDappWarningResult = {
     // Resolves 'continue' unless a quantum account is involved, the warning
     // is enabled and unacknowledged. Rejects if no BottomSheetManager is
-    // mounted — callers must treat a throw as 'cancel', never proceed past it.
+    // mounted — callers must never proceed past that throw.
     confirmQuantumDappUsage: (
         addresses: string[],
     ) => Promise<QuantumDappWarningDecision>
@@ -62,6 +62,8 @@ export const useQuantumDappWarning = (): UseQuantumDappWarningResult => {
                 },
             })
 
+            // Dismiss (cancel, backdrop, unmount) settles as undefined; fail
+            // closed rather than treat that as an implicit continue.
             if (result !== 'continue') return 'cancel'
 
             setPreference(UserPreferences.quantumDappWarningAcknowledged, true)
