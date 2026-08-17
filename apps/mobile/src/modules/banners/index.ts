@@ -22,4 +22,7 @@
 // `@modules/banners/screens/BannersCarouselModalScreen`) so a screen that
 // doesn't need the carousel doesn't pull it into its bundle graph either.
 export * from './components/HomeBannersStrip'
+// `animations` (useBannerReveal) has no react-native-pager-view dependency, so
+// it is safe to re-export here — see the bundle-leak note above.
+export * from './components/animations'
 export * from './hooks'

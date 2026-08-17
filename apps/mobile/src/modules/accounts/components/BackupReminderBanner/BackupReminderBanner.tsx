@@ -10,41 +10,18 @@
  limitations under the License
  */
 
-import { memo, useEffect, useState } from 'react'
-import Animated, {
-    withTiming,
-    type EntryAnimationsValues,
-} from 'react-native-reanimated'
+import { memo } from 'react'
+import Animated from 'react-native-reanimated'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { useBannerReveal } from '@modules/banners'
 import {
     BACKUP_REMINDER_BANNER_REVEAL_DELAY,
     BACKUP_REMINDER_BANNER_REVEAL_DURATION,
 } from '@constants/ui'
 import { useBackupReminderBanner } from './useBackupReminderBanner'
 import { useStyles } from './styles'
-
-// Entering animation: grow height from 0 to natural while fading in. Uses the
-// `targetHeight` reanimated provides so the banner ends at its real height
-// without us hardcoding it.
-const expandAndFadeEntering = (values: EntryAnimationsValues) => {
-    'worklet'
-    return {
-        initialValues: {
-            opacity: 0,
-            height: 0,
-        },
-        animations: {
-            opacity: withTiming(1, {
-                duration: BACKUP_REMINDER_BANNER_REVEAL_DURATION,
-            }),
-            height: withTiming(values.targetHeight, {
-                duration: BACKUP_REMINDER_BANNER_REVEAL_DURATION,
-            }),
-        },
-    }
-}
 
 type BackupReminderBannerProps = {
     account: WalletAccount
@@ -58,48 +35,55 @@ const BackupReminderBannerComponent = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { isVisible, onPress } = useBackupReminderBanner(account)
-    // The reveal-delay timer starts only after the parent finishes its initial
-    // load, so the banner animates in as a second beat instead of riding the
-    // skeleton-to-content swap.
-    const [hasDelayed, setHasDelayed] = useState(false)
+    // Measure-then-animate rather than a layout `entering` prop: on Android the
+    // layout-animation engine racing a Fabric mount crashes with
+    // `addViewAt: failed to insert view` (PERA-4861 migrators land here on a
+    // migration-saturated UI thread). The `delayMs` reproduces the old "second
+    // beat after load" — measurement starts on mount, gated below on `!isLoading`.
+    const { animatedStyle, isMeasured, onMeasureLayout } = useBannerReveal({
+        delayMs: BACKUP_REMINDER_BANNER_REVEAL_DELAY,
+        durationMs: BACKUP_REMINDER_BANNER_REVEAL_DURATION,
+    })
 
-    useEffect(() => {
-        if (isLoading || hasDelayed) return
-        const timer = setTimeout(
-            () => setHasDelayed(true),
-            BACKUP_REMINDER_BANNER_REVEAL_DELAY,
-        )
-        return () => clearTimeout(timer)
-    }, [isLoading, hasDelayed])
+    if (!isVisible || isLoading) return null
 
-    if (!isVisible || !hasDelayed) return null
+    const content = (
+        <PWView
+            style={styles.container}
+            testID='backup_reminder_banner'
+        >
+            <PWIcon
+                name='info'
+                variant='white'
+                size='sm'
+            />
+            <PWText style={styles.text}>{t('backup.banner.text')}</PWText>
+            <PWTouchableOpacity
+                style={styles.ctaButton}
+                onPress={onPress}
+                testID='backup_reminder_banner_cta'
+            >
+                <PWText style={styles.ctaText}>{t('backup.banner.cta')}</PWText>
+            </PWTouchableOpacity>
+        </PWView>
+    )
 
     return (
-        <Animated.View
-            entering={expandAndFadeEntering}
-            style={styles.enterWrapper}
-        >
-            <PWView
-                style={styles.container}
-                testID='backup_reminder_banner'
-            >
-                <PWIcon
-                    name='info'
-                    variant='white'
-                    size='sm'
-                />
-                <PWText style={styles.text}>{t('backup.banner.text')}</PWText>
-                <PWTouchableOpacity
-                    style={styles.ctaButton}
-                    onPress={onPress}
-                    testID='backup_reminder_banner_cta'
+        <>
+            {!isMeasured && (
+                <PWView
+                    style={styles.measurer}
+                    onLayout={onMeasureLayout}
+                    pointerEvents='none'
+                    aria-hidden
                 >
-                    <PWText style={styles.ctaText}>
-                        {t('backup.banner.cta')}
-                    </PWText>
-                </PWTouchableOpacity>
-            </PWView>
-        </Animated.View>
+                    {content}
+                </PWView>
+            )}
+            <Animated.View style={[styles.enterWrapper, animatedStyle]}>
+                {isMeasured && content}
+            </Animated.View>
+        </>
     )
 }
 

@@ -64,6 +64,16 @@ export type PWFlatListProps<T> = FlashListProps<T> & {
  */
 const DEFAULT_DRAW_DISTANCE = 1000
 
+/**
+ * FlashList leaves the recycle pool unbounded (`Number.MAX_SAFE_INTEGER`), so a
+ * long scroll accumulates off-screen recycled views without limit. Each one is a
+ * detach/reattach the Android Fabric mount queue has to reconcile, which feeds
+ * the mount-desync crash (`addViewAt: failed to insert view`). Capping the pool
+ * bounds that churn; it touches only cells already scrolled off, not the
+ * `drawDistance` prepared window, so scroll performance is unaffected.
+ */
+const DEFAULT_MAX_RECYCLE_POOL = 50
+
 const ListSeparator = () => {
     const styles = useStyles()
 
@@ -87,6 +97,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             showsVerticalScrollIndicator = false,
             showsHorizontalScrollIndicator = false,
             drawDistance = DEFAULT_DRAW_DISTANCE,
+            maxItemsInRecyclePool = DEFAULT_MAX_RECYCLE_POOL,
             // RN's default ('never') makes the first tap dismiss the keyboard
             // instead of hitting the row; 'handled' lets the row receive it.
             keyboardShouldPersistTaps = 'handled',
@@ -141,6 +152,7 @@ export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
             showsVerticalScrollIndicator,
             showsHorizontalScrollIndicator,
             drawDistance,
+            maxItemsInRecyclePool,
             keyboardShouldPersistTaps,
             ItemSeparatorComponent: resolvedSeparator,
             contentContainerStyle: StyleSheet.flatten([

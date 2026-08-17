@@ -15,9 +15,17 @@ import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     enterWrapper: {
-        // Clip while the entering animation grows height from 0; otherwise
-        // children overflow visibly during the animation.
+        // Clip while the reveal grows height from 0; otherwise children
+        // overflow visibly during the animation.
         overflow: 'hidden',
+    },
+    // Off-screen copy rendered once to measure the banner's natural height,
+    // which drives the reveal animation.
+    measurer: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        opacity: 0,
     },
     container: {
         flexDirection: 'row',
