@@ -11,21 +11,18 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { openNativeProviderRecord } from '@perawallet/wallet-core-passkeys/native'
 
-const { platformMock, encodeMock, encryptMock, masterKeyMock, storageMock } =
-    vi.hoisted(() => ({
-        platformMock: { OS: 'android' as 'android' | 'ios' },
-        encodeMock: vi.fn((value: unknown) => value),
-        encryptMock: vi.fn(() => new Uint8Array([1])),
-        masterKeyMock: vi.fn(async () => new Uint8Array(32)),
-        storageMock: { set: vi.fn(), getString: vi.fn() },
-    }))
+const { platformMock, masterKeyMock, storageMock } = vi.hoisted(() => ({
+    platformMock: { OS: 'android' as 'android' | 'ios' },
+    masterKeyMock: vi.fn(async () => new Uint8Array(32)),
+    storageMock: { set: vi.fn(), getString: vi.fn() },
+}))
 
 vi.mock('react-native', () => ({ Platform: platformMock }))
+vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
-    encode: encodeMock,
-    encryptData: encryptMock,
     readMasterKey: masterKeyMock,
     storage: storageMock,
 }))
@@ -45,38 +42,74 @@ import {
 const OPAQUE_USER_ID = 'dXNlci1pZA' // WebAuthn user.id (base64, opaque)
 const HUMAN_USER_NAME = 'alice@example.com' // WebAuthn user.name (display)
 
-const writeFor = async (os: 'android' | 'ios') => {
-    platformMock.OS = os
-    await writeNativePasskeyEntry({
-        credentialId: 'cred-1',
-        origin: 'https://webauthn.io',
-        userId: OPAQUE_USER_ID,
-        userName: HUMAN_USER_NAME,
-        displayName: 'Alice',
-        publicKeySpkiDer: new Uint8Array(91),
-        privateKey: new Uint8Array(32),
-    })
-    const keyData = encodeMock.mock.calls.at(-1)?.[0] as {
-        metadata: Record<string, unknown>
-    }
-    return keyData.metadata
-}
+const subtle = globalThis.crypto.subtle
+/** Every test's master key, so a written record can be opened back up. */
+const MASTER_KEY = new Uint8Array(32).fill(7)
 
 const entryParams = (credentialId: string): WriteNativePasskeyEntryParams => ({
     credentialId,
     origin: 'https://webauthn.io',
     userId: OPAQUE_USER_ID,
     userName: HUMAN_USER_NAME,
-    publicKeySpkiDer: new Uint8Array(91),
-    privateKey: new Uint8Array(32),
+    publicKeySpkiDer: new Uint8Array(91).fill(4),
+    privateKey: new Uint8Array(32).fill(3),
 })
 
+/** The record the provider would read back for the last write. */
+const lastWrittenRecord = async () => {
+    const [, payload] = storageMock.set.mock.calls.at(-1) as [string, string]
+    return (await openNativeProviderRecord(
+        subtle,
+        MASTER_KEY,
+        payload,
+    )) as Record<string, unknown>
+}
+
+const writeFor = async (os: 'android' | 'ios') => {
+    platformMock.OS = os
+    await writeNativePasskeyEntry(
+        {
+            ...entryParams('cred-1'),
+            displayName: 'Alice',
+        },
+        subtle,
+    )
+    const record = await lastWrittenRecord()
+    return record.metadata as Record<string, unknown>
+}
+
 beforeEach(() => {
-    encodeMock.mockClear()
-    encryptMock.mockClear()
     storageMock.set.mockClear()
     masterKeyMock.mockClear()
-    masterKeyMock.mockImplementation(async () => new Uint8Array(32))
+    masterKeyMock.mockImplementation(async () => Uint8Array.from(MASTER_KEY))
+})
+
+describe('writeNativePasskeyEntry provider contract', () => {
+    it('writes an envelope the provider can decrypt, with byte fields as number arrays', async () => {
+        await writeNativePasskeyEntry(entryParams('cred-1'), subtle)
+
+        const [key, payload] = storageMock.set.mock.calls.at(-1) as [
+            string,
+            string,
+        ]
+        expect(key).toBe('cred-1')
+        // `decodeKeyData` only takes its decrypt branch on all three fields;
+        // canary.14's two-field `{iv, content}` silently returns the envelope.
+        expect(Object.keys(JSON.parse(payload)).sort()).toEqual([
+            'content',
+            'iv',
+            'tag',
+        ])
+
+        const record = await lastWrittenRecord()
+        // `getJSONArray("privateKey")` — not `{$u8}`, and not the object a bare
+        // `JSON.stringify(Uint8Array)` would produce.
+        expect(record.privateKey).toEqual(
+            Array.from(new Uint8Array(32).fill(3)),
+        )
+        expect(record.publicKey).toEqual(Array.from(new Uint8Array(91).fill(4)))
+        expect(record.type).toBe('hd-derived-p256')
+    })
 })
 
 describe('writeNativePasskeyEntry metadata mapping', () => {
@@ -98,7 +131,7 @@ describe('writeNativePasskeyEntry metadata mapping', () => {
 
 describe('createNativePasskeyWriter master-key reuse', () => {
     it('fetches the master key once and reuses it across writes', async () => {
-        const write = createNativePasskeyWriter()
+        const write = createNativePasskeyWriter(subtle)
 
         await write(entryParams('cred-1'))
         await write(entryParams('cred-2'))
@@ -110,7 +143,7 @@ describe('createNativePasskeyWriter master-key reuse', () => {
 
     it('does not cache a failed fetch, so a later write retries', async () => {
         masterKeyMock.mockRejectedValueOnce(new Error('keychain locked'))
-        const write = createNativePasskeyWriter()
+        const write = createNativePasskeyWriter(subtle)
 
         await expect(write(entryParams('cred-1'))).rejects.toThrow(
             'keychain locked',
@@ -122,9 +155,9 @@ describe('createNativePasskeyWriter master-key reuse', () => {
     })
 
     it('dispose zeroes the cached master key', async () => {
-        const masterKey = new Uint8Array(32).fill(7)
+        const masterKey = Uint8Array.from(MASTER_KEY)
         masterKeyMock.mockResolvedValue(masterKey)
-        const write = createNativePasskeyWriter()
+        const write = createNativePasskeyWriter(subtle)
 
         await write(entryParams('cred-1'))
         await write.dispose()
@@ -133,7 +166,7 @@ describe('createNativePasskeyWriter master-key reuse', () => {
     })
 
     it('dispose resolves as a no-op when no master key was fetched', async () => {
-        const write = createNativePasskeyWriter()
+        const write = createNativePasskeyWriter(subtle)
 
         await expect(write.dispose()).resolves.toBeUndefined()
         expect(masterKeyMock).not.toHaveBeenCalled()

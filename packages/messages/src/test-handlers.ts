@@ -17,10 +17,8 @@ export {
     mockMessageStatus,
     mockNotificationList,
     mockUpdateLastSeenNotification,
-    mockUpdateNotificationEnabled,
     type MockNotificationStatusParams,
     type MockMessageStatusParams,
     type MockNotificationListParams,
     type MockUpdateLastSeenNotificationParams,
-    type MockUpdateNotificationEnabledParams,
 } from './api/notifications/msw-handlers'

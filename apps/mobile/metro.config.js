@@ -294,9 +294,18 @@ const customResolveRequest = (context, moduleName, platform) => {
             }
         }
     }
-    // Web builds swap the RN keystore for the chrome implementation with the
-    // same export surface (extensions/keystore-chrome). Native keeps the real
+    // Web builds swap the RN keystore for the chrome implementation
+    // (extensions/keystore-chrome). Native keeps the real
     // react-native-keystore (Keychain + MMKV).
+    //
+    // This alias no longer covers key storage. The two surfaces stopped being
+    // equivalent when the app moved to canary.14 — the port implements
+    // canary.12 and has no engine factory — so the web build gets its engine
+    // from @algorandfoundation/keystore-web instead, via the `.web.ts` files
+    // beside extensions/provider's createKeystore and keystore/maintenance.
+    // What still resolves here is everything the extension owns and the RN
+    // package happens to share a name with: the password vault, auto-lock,
+    // passkey unlock and the WebAuthn signer.
     if (
         platform === 'web' &&
         moduleName === '@algorandfoundation/react-native-keystore'

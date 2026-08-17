@@ -12,16 +12,21 @@
 
 import { useCallback, useRef, useState } from 'react'
 import {
-    useNotificationPreferences,
-    useAccountNotificationEnabledMutation,
-} from '@perawallet/wallet-core-messages'
+    buildDeviceAccountRegistrations,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
+import { useDevice } from '@perawallet/wallet-core-device'
+import { assertOnline } from '@perawallet/wallet-core-shared'
 import { useErrorToast } from './useErrorToast'
 import { useLanguage } from './useLanguage'
 
 export type UseAccountNotificationToggleResult = {
     /**
-     * Writes the store optimistically so the switch moves at once, then PATCHes,
-     * reverting on rejection. Resolves `true` only when the backend accepted.
+     * Writes the store optimistically so the switch moves at once, then
+     * re-registers the device with the flag applied inline (v3 has no
+     * per-account route), reverting on rejection. Resolves `true` only when the
+     * backend accepted.
      *
      * Deliberately no queue or replay: the store is persisted, so it must never
      * hold a value the backend wasn't told about.
@@ -67,8 +72,10 @@ export const clearAccountNotificationToggleGuardForTests = (): void => {
 
 export const useAccountNotificationToggle =
     (): UseAccountNotificationToggleResult => {
-        const { setAccountEnabled } = useNotificationPreferences()
-        const { mutateAsync } = useAccountNotificationEnabledMutation()
+        const { disabledAccounts, setAccountEnabled } =
+            useNotificationPreferences()
+        const accounts = useAllAccounts()
+        const { registerDevice } = useDevice()
         const { showError } = useErrorToast()
         const { t } = useLanguage()
 
@@ -96,7 +103,27 @@ export const useAccountNotificationToggle =
                 setAccountEnabled(address, enabled)
 
                 try {
-                    await mutateAsync({ accountID: address, status: enabled })
+                    // Fail fast offline instead of trusting the native
+                    // transport to reject (PERA-4863). Registration runs under
+                    // networkMode 'always', and iOS rejects promptly while
+                    // Android in airplane mode does not — so without this the
+                    // rollback below never ran and the persisted store diverged
+                    // from the backend.
+                    assertOnline()
+
+                    // v3 has no per-account route: notification flags ride
+                    // inline on the full accounts array. Compute the post-
+                    // toggle disabled set explicitly rather than re-reading
+                    // the store, which has not re-rendered this closure yet.
+                    const nextDisabled = enabled
+                        ? disabledAccounts.filter(
+                              disabled => disabled !== address,
+                          )
+                        : [...new Set([...disabledAccounts, address])]
+
+                    await registerDevice(
+                        buildDeviceAccountRegistrations(accounts, nextDisabled),
+                    )
                     return true
                 } catch (error) {
                     setAccountEnabled(address, !enabled)
@@ -108,7 +135,14 @@ export const useAccountNotificationToggle =
                     setPendingAddresses([...ownPendingAddressesRef.current])
                 }
             },
-            [setAccountEnabled, mutateAsync, showError, t],
+            [
+                setAccountEnabled,
+                disabledAccounts,
+                accounts,
+                registerDevice,
+                showError,
+                t,
+            ],
         )
 
         const isTogglePending = useCallback(

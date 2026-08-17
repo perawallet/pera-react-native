@@ -32,10 +32,6 @@ export {
     deriveLiquidAuthMainKey,
 } from './crypto/hdwallet-utils'
 export { algo25SecretKeyToMnemonic } from './crypto/algo25-utils'
-export {
-    FALCON_PUBLIC_KEY_LENGTH,
-    FALCON_SIGNATURE_LENGTH,
-} from './crypto/falcon-utils'
 // Re-exported so consumers that need to derive a real Falcon keypair outside
 // the hook (e.g. quantum test fixtures) use the same PQ provider `useQuantum`
 // and `useKMS` do, rather than hand-rolling their own derivation.
@@ -60,13 +56,15 @@ export {
 } from './utils'
 export { hdDerivedKeyId } from './hooks/useHDWallet'
 export {
+    findPasskeyMainKey,
+    passkeyMainKeyId,
+    usePasskeyMainKey,
+    PASSKEY_MAIN_KEY_SCHEME,
+    type UsePasskeyMainKeyResult,
+} from './hooks/usePasskeyMainKey'
+export {
     commitSecret,
     hasSecret,
     removeSecret,
     withSecret,
 } from './storage/secrets'
-
-// `installKMSKeystoreHooks` is intentionally NOT re-exported here — it pulls
-// `@algorandfoundation/react-native-keystore` (MMKV native), which would
-// break sibling-package vitest runs. Import it from
-// `@perawallet/wallet-core-kms/bootstrap` in the app's entry module.

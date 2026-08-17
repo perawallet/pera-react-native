@@ -12,10 +12,10 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { KeyStoreExtension } from '@algorandfoundation/keystore'
+import type { KeyStoreExtension } from '@algorandfoundation/keystore-core'
 import type { Passkey } from '../models/passkey'
 import { usePasskeyAutofillService } from './usePasskeyAutofillService'
-import { passkeysQueryKey } from './usePasskeysQuery'
+import { passkeysQueryKeyRoot } from './usePasskeysQuery'
 
 export type UseRemovePasskeyMutationResult = {
     removePasskey: (passkey: Passkey) => Promise<void>
@@ -29,7 +29,7 @@ export type UseRemovePasskeyMutationResult = {
  *  1. Delete from the native autofill identity store (best-effort).
  *  2. Remove the corresponding keystore key (when keystore-backed).
  *  3. Trigger a native identity refresh so iOS Autofill drops the row.
- *  4. Invalidate the native-credentials query so the UI reflects the new state.
+ *  4. Invalidate every passkey query so the UI reflects the new state.
  */
 export const useRemovePasskeyMutation = (): UseRemovePasskeyMutationResult => {
     const service = usePasskeyAutofillService()
@@ -47,7 +47,9 @@ export const useRemovePasskeyMutation = (): UseRemovePasskeyMutationResult => {
             await service.refreshCredentialIdentities().catch(() => undefined)
         },
         onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: passkeysQueryKey })
+            void queryClient.invalidateQueries({
+                queryKey: passkeysQueryKeyRoot,
+            })
         },
     })
 

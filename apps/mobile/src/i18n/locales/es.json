@@ -1558,7 +1558,9 @@
             "addresses_count": "{{count}} direcciones",
             "select_all": "Seleccionar todo",
             "already_imported": "ya importada",
-            "finish_button": "Finalizar creación de cuenta"
+            "finish_button": "Finalizar creación de cuenta",
+            "all_imported_title": "Ya están en tu wallet",
+            "all_imported_body": "Todas las direcciones que deriva tu wallet ya están en Pera, incluidas las que solo estás observando. Elimina una dirección para volver a añadirla con su clave privada."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} cuentas con rekey encontradas",
@@ -2333,6 +2335,11 @@
             "remove_body": "Estás a punto de eliminar esta passkey. ¿Seguro que quieres continuar?",
             "remove_confirm": "Eliminar",
             "remove_cancel": "Conservar",
+            "migration_warning_title": "La recuperación no está disponible",
+            "migration_warning_body": "Cada passkey de la lista de abajo todavía te permite iniciar sesión, pero no se puede recuperar con tu passphrase de recuperación. Elimínala y vuelve a crearla en el sitio para que sea recuperable. Hazlo solo mientras aún puedas iniciar sesión en ese sitio de otra forma.",
+            "migration_warning_cta": "Eliminar",
+            "migration_warning_blocked": "Ahora mismo no se ofrece eliminarla porque Pera no es tu proveedor de passkeys activo: no podrías crear una de repuesto. Volverá a estar disponible cuando Pera sea tu proveedor de passkeys activo.",
+            "migration_warning_dismiss": "Ahora no",
             "loading": "Comprobando passkeys...",
             "error_title": "Algo ha ido mal",
             "error_body": "Vuelve a intentarlo.",
@@ -2800,7 +2807,9 @@
             "success_body": "Swap de {{fromAsset}} a {{toAsset}} completado correctamente",
             "user_rejected": "Swap cancelado",
             "pending_cosign_title": "Solicitud de swap enviada",
-            "pending_cosign_body": "Tu swap necesita otra firma. Se completará cuando el otro firmante lo apruebe desde su bandeja de entrada."
+            "pending_cosign_body": "Tu swap necesita otra firma. Se completará cuando el otro firmante lo apruebe desde su bandeja de entrada.",
+            "quantum_fee_unsupported": "Las cuentas Quantum aún no pueden intercambiar. La comisión del swap la fijan nuestros servidores y no cubre la comisión más alta que necesita una firma Quantum.",
+            "quantum_multisig_unsupported": "Las cuentas Quantum no pueden intercambiar desde una cuenta compartida. Las claves Quantum no pueden participar en la firma multisig."
         },
         "signing": {
             "source_name": "Swap",

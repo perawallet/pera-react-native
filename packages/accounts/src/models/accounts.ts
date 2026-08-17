@@ -35,6 +35,38 @@ export const AccountTypes = {
 
 export type AccountType = (typeof AccountTypes)[keyof typeof AccountTypes]
 
+/**
+ * Precedence used to resolve two accounts that share an address: higher wins.
+ *
+ * `quantum` ranks highest because misreporting it is the expensive failure —
+ * the backend prices a quantum account's swap quotes at the Ed25519 minimum
+ * fee and the chain rejects the swap, with no client-side symptom. `watch`
+ * ranks lowest because it carries no signing capability, so dropping it in
+ * favour of anything else can only ever gain the user capability.
+ *
+ * In practice only `watch` can genuinely collide with another type — an
+ * Algorand address is derived from its key, so one address cannot be two
+ * different signing schemes — but the order is total so the rule stays
+ * deterministic rather than a special case.
+ *
+ * `as const` is load-bearing, not decoration: `satisfies Record<K, number>`
+ * alone widens every value to `number`, which would make the cross-enum
+ * equality assertion in `device-accounts.ts` pass vacuously. The literal types
+ * are what make a reordering of one table a compile error.
+ *
+ * Mirrored, over the wire enum, by `DEVICE_ACCOUNT_TYPE_RANK` in
+ * `@perawallet/wallet-core-device`. The two are held in sync by that
+ * assertion — update both together.
+ */
+export const ACCOUNT_TYPE_RANK = {
+    quantum: 6,
+    hardware: 5,
+    hdWallet: 4,
+    algo25: 3,
+    multisig: 2,
+    watch: 1,
+} as const satisfies Record<AccountType, number>
+
 export type ImportAccountType = 'hdWallet' | 'algo25' | 'quantum'
 
 export type HDWalletDetails = {

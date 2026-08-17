@@ -12,11 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type {
-    PeraSignedTransaction,
-    PeraSignedTxnResult,
-    QuantumSignedTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import type { SignableGroup } from '../../pipeline/types'
 import { buildGroupSignerTypeMap, resolveInitialContext } from '../actions'
 import type { SigningMachineInput } from '../context'
@@ -231,27 +227,29 @@ describe('buildGroupSignerTypeMap', () => {
         })
     })
 
-    describe('quantum classification (PQ-006 / PERA-4488)', () => {
-        it('classifies a non-rekeyed quantum sender as quantum', () => {
-            // Quantum accounts carry a keyPairId, so the pre-existing
-            // hasSigningKeys check would have swallowed them into localKey.
-            // The quantum branch must run BEFORE hasSigningKeys.
+    describe('quantum classification (PQ-023 / PERA-4653)', () => {
+        it('classifies a quantum account as localKey, like algo25 and HD', () => {
+            // Quantum accounts carry a keyPairId, so they satisfy
+            // hasSigningKeys just like algo25/HD — there is no separate
+            // 'quantum' ResolvedSignerType any more (createQuantumStrategy /
+            // quantumSignerActor are deleted; the scheme is resolved inside
+            // useLocalKeyTransactionSigner instead).
             const sender = quantum(PARTICIPANT)
             const group = buildGroup({ source: { type: 'local' } })
 
             const map = buildGroupSignerTypeMap([group], [sender])
 
-            expect(map.get(PARTICIPANT)).toBe('quantum')
+            expect(map.get(PARTICIPANT)).toBe('localKey')
         })
 
-        it('classifies a local-key sender rekeyed to a quantum auth as quantum (auth-account rule)', () => {
+        it('classifies a local-key sender rekeyed to a quantum auth account as localKey', () => {
             const sender = algo25(PARTICIPANT, AUTH)
             const auth = quantum(AUTH)
             const group = buildGroup({ source: { type: 'local' } })
 
             const map = buildGroupSignerTypeMap([group], [sender, auth])
 
-            expect(map.get(PARTICIPANT)).toBe('quantum')
+            expect(map.get(PARTICIPANT)).toBe('localKey')
         })
 
         it('classifies a quantum sender rekeyed to a local-key auth as localKey (auth-account rule)', () => {
@@ -264,10 +262,10 @@ describe('buildGroupSignerTypeMap', () => {
             expect(map.get(PARTICIPANT)).toBe('localKey')
         })
 
-        it('classifies a multisig sender as multisig, never quantum, even when it lists quantum participants (regression)', () => {
+        it('still classifies a multisig with quantum participants as multisig', () => {
             // A quantum key can never satisfy a multisig slot (slots verify
             // Ed25519 only), so a multisig account must always route to the
-            // multisig strategy — the quantum branch must not intercept it.
+            // multisig strategy regardless of its participants' types.
             const sender = multisig(PARTICIPANT, ['Q1', 'Q2'])
             const group = buildGroup({ source: { type: 'local' } })
 
@@ -341,14 +339,21 @@ describe('buildGroupSignerTypeMap', () => {
     })
 })
 
-describe('quantum-signed transactions over the callback transport (PQ-017 / PERA-4490)', () => {
+describe('quantum-signed transactions over the callback transport (PQ-017 / PERA-4653)', () => {
+    // A quantum (post-quantum) signature is just a `PeraSignedTransaction`
+    // with `pqsig` set instead of `sig` (PERA-4653 deleted the
+    // `QuantumSignedTransaction` byte carrier) — so there is nothing
+    // carrier-specific left for the callback transport to special-case; a
+    // signed array with a pqsig entry forwards exactly like an all-`sig`
+    // one.
     const plainSigned = (id: string): PeraSignedTransaction =>
         ({ txn: { sender: id } }) as unknown as PeraSignedTransaction
 
-    const quantumCarrier = (): QuantumSignedTransaction => ({
-        txn: { sender: 'Q' } as never,
-        pqSignedBytes: new Uint8Array([1, 2, 3]),
-    })
+    const pqSigned = (): PeraSignedTransaction =>
+        ({
+            txn: { sender: 'Q' },
+            pqsig: { sig: new Uint8Array([1, 2, 3]) },
+        }) as unknown as PeraSignedTransaction
 
     const userAddr = makeTestAddress(11)
     const dappAddr = makeTestAddress(12)
@@ -363,7 +368,6 @@ describe('quantum-signed transactions over the callback transport (PQ-017 / PERA
             request,
             allAccounts: [userAccount],
             signTransactions: vi.fn(),
-            signQuantumTransactions: vi.fn(),
             signArbitraryData: vi.fn(),
             signArc60: vi.fn(),
             createTransport: vi.fn(),
@@ -371,12 +375,7 @@ describe('quantum-signed transactions over the callback transport (PQ-017 / PERA
             encodeTransaction: vi.fn(),
         }) as unknown as SigningMachineInput
 
-    it('forwards a mixed signed array containing a QuantumSignedTransaction carrier to the approve callback unchanged', async () => {
-        // The callback transport (WalletConnect / webview / deeplink /
-        // local-callback) used to throw here (assertNoQuantumSignedTransactions).
-        // Now that the byte-encoding path is carrier-aware, the gate is gone —
-        // the dApp receives the pqsig carrier verbatim, unchanged from what
-        // the signing strategy produced.
+    it('forwards a mixed signed array containing a pqsig-signed transaction to the approve callback unchanged', async () => {
         const txApprove = vi.fn(async () => undefined)
         const request: TransactionSignRequest = {
             id: 'req-quantum-cb',
@@ -395,10 +394,7 @@ describe('quantum-signed transactions over the callback transport (PQ-017 / PERA
         const context = resolveInitialContext(baseInput(request))
         const { callbacks } = context.signableGroups![0].source
 
-        const signed: PeraSignedTxnResult[] = [
-            plainSigned('A'),
-            quantumCarrier(),
-        ]
+        const signed: PeraSignedTransaction[] = [plainSigned('A'), pqSigned()]
 
         await callbacks?.approve?.({
             signedData: { type: 'transactions', signed },

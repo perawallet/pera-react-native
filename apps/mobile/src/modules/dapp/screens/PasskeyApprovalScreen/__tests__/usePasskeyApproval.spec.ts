@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => {
         deserializeCreateOptions: vi.fn(),
         deserializeGetOptions: vi.fn(),
         createKeystoreSigner: vi.fn(),
+        getKeystore: vi.fn(),
         getKeystoreStore: vi.fn(),
         resolvePasskey: vi.fn(),
         rejectPasskey: vi.fn(),
@@ -52,6 +53,7 @@ vi.mock('@perawallet/wallet-extension-keystore-chrome', () => ({
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getKeystore: mocks.getKeystore,
     getKeystoreStore: mocks.getKeystoreStore,
 }))
 
@@ -94,6 +96,11 @@ const GET_APPROVAL = {
     options: { rpId: 'webauthn.io' },
 }
 
+const FAKE_KEYSTORE = {
+    generate: vi.fn(),
+    deriveDomainKey: vi.fn(),
+    sign: vi.fn(),
+}
 const FAKE_STORE = { state: { keys: [] } }
 const FAKE_SIGNER = { fake: 'signer' }
 const DESERIALIZED_CREATE = { rp: { id: 'webauthn.io' }, deserialized: true }
@@ -109,6 +116,7 @@ describe('usePasskeyApproval', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         vi.spyOn(window, 'close').mockImplementation(() => {})
+        mocks.getKeystore.mockReturnValue(FAKE_KEYSTORE)
         mocks.getKeystoreStore.mockReturnValue(FAKE_STORE)
         mocks.createKeystoreSigner.mockReturnValue(FAKE_SIGNER)
         mocks.deserializeCreateOptions.mockReturnValue(DESERIALIZED_CREATE)
@@ -145,7 +153,12 @@ describe('usePasskeyApproval', () => {
             CREATE_APPROVAL.options,
         )
         expect(mocks.getKeystoreStore).toHaveBeenCalledTimes(1)
-        expect(mocks.createKeystoreSigner).toHaveBeenCalledWith(FAKE_STORE)
+        // Engine first, reactive store second: the engine mints and signs,
+        // the store is where the derived public key is read back from.
+        expect(mocks.createKeystoreSigner).toHaveBeenCalledWith(
+            FAKE_KEYSTORE,
+            FAKE_STORE,
+        )
         expect(mocks.createCredential).toHaveBeenCalledWith(
             DESERIALIZED_CREATE,
             FAKE_SIGNER,

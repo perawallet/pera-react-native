@@ -1006,7 +1006,8 @@ vi.mock('@perawallet/wallet-extension-passkey-autofill', () => {
     const passkeyAutofill = {
         setMasterKey: vi.fn().mockResolvedValue(undefined),
         setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
-        setDerivedMainKey: vi.fn().mockResolvedValue(undefined),
+        setMainKeyId: vi.fn().mockResolvedValue(undefined),
+        getMainKeyId: vi.fn().mockResolvedValue(null),
         configureIntentActions: vi.fn().mockResolvedValue(undefined),
         clearCredentials: vi.fn().mockResolvedValue(undefined),
         deleteCredential: vi.fn().mockResolvedValue(undefined),
@@ -1617,6 +1618,8 @@ vi.mock('react-native-quick-crypto', () => ({
         createHmac: vi.fn(),
         randomBytes: vi.fn(),
     },
+    // Named: the keystore engine is constructed with this at module scope.
+    subtle: globalThis.crypto?.subtle,
 }))
 
 // Basic NativeEventEmitter dependency to avoid errors when no native module is provided

@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import type { Key, KeyStoreState } from '@algorandfoundation/keystore'
+import type { Key, KeyStoreState } from '@algorandfoundation/keystore-core'
 
 // Minimal fake matching the slice of TanStack Store API we use:
 // `state` getter, `setState(updater)`, `subscribe(listener)` returning

@@ -19,7 +19,6 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import type {
     PeraSignedTransaction,
-    PeraSignedTxnResult,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
@@ -88,7 +87,7 @@ const requestSignatures = (
     groupContext: PeraTransaction[],
     signableIndices: number[],
     sourceMetadata: TransactionSignRequest['sourceMetadata'],
-): Promise<PeraSignedTxnResult[]> =>
+): Promise<PeraSignedTransaction[]> =>
     new Promise((resolve, reject) => {
         const request: TransactionSignRequest = {
             id: generateOrderedUniqueId(),
@@ -102,8 +101,9 @@ const requestSignatures = (
             approve: async signed => {
                 // Single full-group headless sign (no per-slot padding), so
                 // every entry is expected to be present — the null filter is
-                // defensive only. Quantum carriers are kept unchanged so the
-                // carrier-aware submitAndAutoRefresh can broadcast them.
+                // defensive only. A quantum signature is just a
+                // `PeraSignedTransaction` with `pqsig` set, so it flows
+                // through the ordinary submitAndAutoRefresh path unchanged.
                 resolve(compactSignedResults(signed))
             },
             reject: async () => {

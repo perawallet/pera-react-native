@@ -76,25 +76,17 @@ export const PanelButton = (props: PanelButtonProps) => {
                 )}
                 <PWView style={themeStyle.textContainerStyle}>
                     <PWView style={themeStyle.titleContainerStyle}>
-                        <PWView style={themeStyle.titleRowStyle}>
-                            <PWText
-                                style={themeStyle.textStyle}
-                                variant={titleWeight}
-                                // Keep the title on one line when a badge sits
-                                // beside it — on higher-density devices the
-                                // scaled title + badge would otherwise wrap.
-                                truncate={!!badge}
-                                {...getTestProps(testID, 'text')}
-                            >
-                                {title}
-                            </PWText>
-                            {!!badge && (
-                                <PWBadge
-                                    variant={badge.variant}
-                                    value={badge.label}
-                                />
-                            )}
-                        </PWView>
+                        <PWText
+                            style={themeStyle.textStyle}
+                            variant={titleWeight}
+                            // A badged row is a highlighted one; keeping its
+                            // title to a single line holds the row height
+                            // steady across devices and font scales.
+                            truncate={!!badge}
+                            {...getTestProps(testID, 'text')}
+                        >
+                            {title}
+                        </PWText>
                         {rightIcon && <PWIcon name={rightIcon} />}
                     </PWView>
                     {!!description && (
@@ -102,26 +94,40 @@ export const PanelButton = (props: PanelButtonProps) => {
                             {description}
                         </PWText>
                     )}
-                    {!!learnMore && (
-                        <PWTouchableOpacity
-                            style={themeStyle.learnMoreStyle}
-                            onPress={event => {
-                                // Keep the tap on the link only — don't also
-                                // trigger the row's onPress.
-                                event?.stopPropagation?.()
-                                learnMore.onPress()
-                            }}
-                            {...getTestProps(testID, 'learn_more')}
-                        >
-                            {/*
-                              linkPositive keeps the teal link tone in both
-                              themes (link's dark tone is the brand yellow),
-                              per the Quantum "Learn more" design.
-                            */}
-                            <PWText variant='linkPositive'>
-                                {learnMore.label}
-                            </PWText>
-                        </PWTouchableOpacity>
+                    {(!!learnMore || !!badge) && (
+                        <PWView style={themeStyle.footerRowStyle}>
+                            {!!learnMore && (
+                                <PWTouchableOpacity
+                                    style={themeStyle.learnMoreStyle}
+                                    onPress={event => {
+                                        // Keep the tap on the link only — don't
+                                        // also trigger the row's onPress.
+                                        event?.stopPropagation?.()
+                                        learnMore.onPress()
+                                    }}
+                                    {...getTestProps(testID, 'learn_more')}
+                                >
+                                    {/*
+                                      linkPositive keeps the teal link tone in
+                                      both themes (link's dark tone is the brand
+                                      yellow), per the Quantum "Learn more"
+                                      design.
+                                    */}
+                                    <PWText variant='linkPositive'>
+                                        {learnMore.label}
+                                    </PWText>
+                                </PWTouchableOpacity>
+                            )}
+                            {!!badge && (
+                                <PWBadge
+                                    variant={badge.variant}
+                                    value={badge.label}
+                                    containerStyle={
+                                        themeStyle.badgeContainerStyle
+                                    }
+                                />
+                            )}
+                        </PWView>
                     )}
                 </PWView>
             </PWView>

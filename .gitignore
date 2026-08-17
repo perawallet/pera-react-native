@@ -51,7 +51,8 @@ opencode.json
 
 # Documentation
 docs/ui-automation-test-ids.md
-docs/superpowers
+docs/superpowers/
+docs/audits/
 .claude/*.lock
 
 # Subagent-driven-development scratch workspace

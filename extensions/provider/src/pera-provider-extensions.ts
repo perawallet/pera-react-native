@@ -15,7 +15,11 @@ import type {
     ProviderOptions,
 } from '@algorandfoundation/wallet-provider'
 import type { WithKeyStore } from '@algorandfoundation/react-native-keystore'
-import type { KeyStoreExtension } from '@algorandfoundation/keystore'
+import type { KeyStoreExtension } from '@algorandfoundation/keystore-core'
+import type {
+    WithMigrations,
+    MigrationsExtension,
+} from '@algorandfoundation/provider-migrations'
 import type {
     WithPlatformExtension,
     PlatformExtension,
@@ -25,6 +29,8 @@ import type {
     PasskeyAutofillExtension,
 } from '@perawallet/wallet-extension-passkey-autofill'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import type { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
+import type { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs'
 
 // Re-exported so pera-provider.ts / pera-provider.web.ts can build their
 // `new (...)` signature without importing `ProviderOptions` separately.
@@ -55,22 +61,27 @@ export type LedgerUsbExtension = (provider: {
 }) => object
 
 export type PeraExtensions = readonly [
+    typeof WithMigrations,
     typeof WithPlatformExtension,
     LedgerBleExtension,
     LedgerUsbExtension,
+    typeof WithPeraKeystorePreflight,
     typeof WithKeyStore,
+    typeof WithPeraKeystoreRepairs,
     typeof WithPasskeyAutofill,
 ]
 
 /**
- * Shared public shape of the composed Pera Wallet Provider: platform
- * services, Ledger hardware wallet (native or web transport), keystore, and
- * passkey autofill. `pera-provider.ts` (native) and `pera-provider.web.ts`
- * (web) each build their own concrete `Provider.withExtensions([...])` value
- * with their own concrete Ledger imports, but both reference this single
- * type so the two files can't drift apart on the provider's public shape.
+ * Shared public shape of the composed Pera Wallet Provider: data migrations,
+ * platform services, Ledger hardware wallet (native or web transport),
+ * keystore, and passkey autofill. `pera-provider.ts` (native) and
+ * `pera-provider.web.ts` (web) each build their own concrete
+ * `Provider.withExtensions([...])` value with their own concrete Ledger
+ * imports, but both reference this single type so the two files can't drift
+ * apart on the provider's public shape.
  */
 export type PeraProvider = Provider<PeraExtensions> &
+    MigrationsExtension &
     PlatformExtension &
     KeyStoreExtension &
     PasskeyAutofillExtension

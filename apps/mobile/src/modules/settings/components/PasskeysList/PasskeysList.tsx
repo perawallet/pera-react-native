@@ -18,6 +18,8 @@ import { useStyles } from './styles'
 
 export type PasskeysListProps = {
     passkeys: Passkey[]
+    /** Rows this returns false for are rendered without a remove action. */
+    canRemove: (passkey: Passkey) => boolean
     onRequestDelete: (passkey: Passkey) => void
 }
 
@@ -28,6 +30,7 @@ const ItemSeparator = () => {
 
 export const PasskeysList = ({
     passkeys,
+    canRemove,
     onRequestDelete,
 }: PasskeysListProps) => {
     const insets = useSafeAreaInsets()
@@ -43,7 +46,9 @@ export const PasskeysList = ({
             renderItem={({ item }) => (
                 <PasskeyListItem
                     passkey={item}
-                    onRemovePress={onRequestDelete}
+                    onRemovePress={
+                        canRemove(item) ? onRequestDelete : undefined
+                    }
                     testID={`settings_passkeys_item_${item.id}`}
                 />
             )}

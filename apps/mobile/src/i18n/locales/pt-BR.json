@@ -1562,7 +1562,9 @@
             "addresses_count": "{{count}} endereços",
             "select_all": "Selecionar todos",
             "already_imported": "já importado",
-            "finish_button": "Concluir criação da conta"
+            "finish_button": "Concluir criação da conta",
+            "all_imported_title": "Já está na sua wallet",
+            "all_imported_body": "Todos os endereços que esta wallet deriva já estão na Pera, incluindo os que você apenas observa. Remova um endereço para adicioná-lo novamente com a chave privada dele."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} contas com rekey encontradas",
@@ -2349,6 +2351,11 @@
             "remove_body": "Você está prestes a remover esta passkey. Tem certeza de que deseja continuar?",
             "remove_confirm": "Remover",
             "remove_cancel": "Manter",
+            "migration_warning_title": "Recuperação indisponível",
+            "migration_warning_body": "Cada passkey listada abaixo ainda faz seu login, mas não pode ser restaurada pela sua passphrase de recuperação. Remova-a e crie-a novamente no site para que ela fique recuperável. Faça isso apenas enquanto você ainda conseguir entrar nesse site de outra forma.",
+            "migration_warning_cta": "Remover",
+            "migration_warning_blocked": "Remover não está disponível agora porque a Pera não é seu provedor de passkeys ativo — você não conseguiria criar uma substituta. Ficará disponível novamente quando a Pera for seu provedor de passkeys ativo.",
+            "migration_warning_dismiss": "Agora não",
             "loading": "Verificando passkeys...",
             "error_title": "Algo deu errado",
             "error_body": "Tente novamente.",
@@ -2823,7 +2830,9 @@
             "success_body": "Conversão de {{fromAsset}} para {{toAsset}} concluída com sucesso",
             "user_rejected": "Conversão cancelada",
             "pending_cosign_title": "Solicitação de conversão enviada",
-            "pending_cosign_body": "Sua conversão precisa de outra assinatura. Ela será concluída quando o outro signatário aprovar na caixa de entrada dele."
+            "pending_cosign_body": "Sua conversão precisa de outra assinatura. Ela será concluída quando o outro signatário aprovar na caixa de entrada dele.",
+            "quantum_fee_unsupported": "Contas Quantum ainda não podem converter. A taxa de conversão é definida pelos nossos servidores e não cobre a taxa mais alta que uma assinatura Quantum exige.",
+            "quantum_multisig_unsupported": "Contas Quantum não podem converter a partir de uma conta compartilhada. Chaves Quantum não podem participar da assinatura Multisig."
         },
         "signing": {
             "source_name": "Converter",

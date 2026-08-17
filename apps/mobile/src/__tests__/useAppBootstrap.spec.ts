@@ -43,7 +43,8 @@ const mocks = vi.hoisted(() => {
     }
     return {
         provider,
-        hydrateKeystore: vi.fn(),
+        keystoreReady: vi.fn(),
+        runKeystoreMaintenance: vi.fn(),
         getProvider: vi.fn(() => provider),
         initializeDatabase: vi.fn(),
         getDatabase: vi.fn(() => ({})),
@@ -71,7 +72,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     usePeraProvider: () => mocks.provider,
-    hydrateKeystore: mocks.hydrateKeystore,
+    runKeystoreMaintenance: mocks.runKeystoreMaintenance,
     getProvider: mocks.getProvider,
 }))
 
@@ -198,7 +199,10 @@ describe('useAppBootstrap', () => {
         mocks.provider.initialize.mockResolvedValue({
             notifications: Promise.resolve({ token: 'fcm-token' }),
         })
-        mocks.hydrateKeystore.mockResolvedValue(undefined)
+        mocks.keystoreReady.mockResolvedValue(undefined)
+        mocks.runKeystoreMaintenance.mockResolvedValue({
+            repair: { repaired: 0, failed: 0 },
+        })
         mocks.initializeDatabase.mockResolvedValue(undefined)
         mocks.seedAlgoAsset.mockResolvedValue(undefined)
         mocks.runPasskeyAutofillBootstrap.mockResolvedValue(undefined)
@@ -279,6 +283,37 @@ describe('useAppBootstrap', () => {
         expect(result.current.bootstrapped).toBe(false)
         expect(result.current.initError).toBe(true)
         expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1)
+    })
+
+    // Sequencing the passes is the provider's job (see
+    // extensions/provider's runKeystoreMaintenance spec); the app only has to
+    // wait for it before declaring itself bootstrapped.
+    test('waits for keystore maintenance before bootstrapping', async () => {
+        vi.useFakeTimers()
+        renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.runKeystoreMaintenance).toHaveBeenCalledTimes(1)
+    })
+
+    // An unreadable master key with records still on disk must not boot into
+    // an empty wallet — that is what prompts a destructive re-onboard.
+    it('fails bootstrap when keystore maintenance throws', async () => {
+        mocks.runKeystoreMaintenance.mockRejectedValue(
+            new Error('master key unreadable'),
+        )
+        vi.useFakeTimers()
+        const { result } = renderHook(() => useAppBootstrap())
+
+        await act(async () => {
+            await vi.runAllTimersAsync()
+        })
+
+        expect(result.current.bootstrapped).toBe(false)
+        expect(result.current.initError).toBe(true)
     })
 
     it('tolerates token undefined from initialize (fcmToken null, no error)', async () => {

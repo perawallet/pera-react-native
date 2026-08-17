@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { Networks } from '@perawallet/wallet-core-config'
 import {
     runMigrations,
     migrations,
@@ -39,28 +40,31 @@ describe('seedAlgoAsset', () => {
         teardown()
     })
 
-    it('seeds ALGO into both mainnet and testnet', async () => {
+    // Asserts EVERY network in `Networks`, not a hand-picked pair. The seed
+    // used to name mainnet and testnet literally and this test mirrored it, so
+    // both went stale the moment betanet and the custom slot were added — the
+    // ALGO row was missing there and `InputScreen` (which gates on `!asset`)
+    // spun forever, making Send unusable. Driving the assertion off the enum
+    // means adding a network fails here until it is seeded.
+    it('seeds ALGO into every network', async () => {
         await seedAlgoAsset(db)
 
-        const mainnet = await getAssetsByIds({
-            db,
-            assetIds: [ALGO_ASSET_ID],
-            network: 'mainnet',
-        })
-        const testnet = await getAssetsByIds({
-            db,
-            assetIds: [ALGO_ASSET_ID],
-            network: 'testnet',
-        })
+        const networks = Object.values(Networks)
+        expect(networks.length).toBeGreaterThan(2)
 
-        expect(mainnet).toHaveLength(1)
-        expect(mainnet[0].assetId).toBe(ALGO_ASSET_ID)
-        expect(mainnet[0].name).toBe('Algo')
-        expect(mainnet[0].unitName).toBe('ALGO')
-        expect(mainnet[0].decimals).toBe(6)
+        for (const network of networks) {
+            const rows = await getAssetsByIds({
+                db,
+                assetIds: [ALGO_ASSET_ID],
+                network,
+            })
 
-        expect(testnet).toHaveLength(1)
-        expect(testnet[0].assetId).toBe(ALGO_ASSET_ID)
+            expect(rows, `ALGO must be seeded for ${network}`).toHaveLength(1)
+            expect(rows[0].assetId).toBe(ALGO_ASSET_ID)
+            expect(rows[0].name).toBe('Algo')
+            expect(rows[0].unitName).toBe('ALGO')
+            expect(rows[0].decimals).toBe(6)
+        }
     })
 
     it('is idempotent — running twice does not duplicate', async () => {

@@ -20,6 +20,10 @@ const mocks = vi.hoisted(() => ({
     generate: vi.fn(),
     remove: vi.fn(),
     exportKey: vi.fn(),
+    secretsPut: vi.fn(),
+    secretsGet: vi.fn(),
+    // Swapped to undefined by the "backend without secrets" test.
+    secrets: null as unknown,
     lastValueSnapshot: null as Uint8Array | null,
 }))
 
@@ -49,6 +53,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
                 generate: mocks.generate,
                 remove: mocks.remove,
                 export: mocks.exportKey,
+                get secrets() {
+                    return mocks.secrets
+                },
             },
         },
     }),
@@ -62,76 +69,76 @@ describe('secrets', () => {
         // Mutate, don't reassign — the mock factory captures this array by
         // reference.
         mocks.keys.length = 0
-        // Default `generate` simulates the platform keystore: prepends a
-        // secret-key entry to the reactive `keys` array without dedupe so
-        // the upsert tests can exercise the cleanup that `commitSecret`
-        // performs.
-        mocks.generate.mockImplementation(
-            async (options: {
-                type: string
-                params?: {
-                    id?: string
-                    params?: { value?: Uint8Array }
-                }
-            }) => {
-                const id = options.params?.id ?? 'generated-id'
-                mocks.keys.unshift({ id, type: options.type })
-                // Snapshot the secret bytes synchronously so the test
-                // can inspect what was passed in. `commitSecret` zeros
-                // its defensive valueCopy in a finally once we resolve,
-                // so the live reference would otherwise be all zeros by
-                // the time the assertion runs.
-                const value = options.params?.params?.value
-                if (value instanceof Uint8Array) {
-                    mocks.lastValueSnapshot = new Uint8Array(value)
-                }
+        mocks.secrets = { put: mocks.secretsPut, get: mocks.secretsGet }
+        // Mirrors the platform keystore: records a secret-key entry in the
+        // reactive `keys` array without dedupe, so the upsert tests can
+        // exercise the cleanup `commitSecret` performs.
+        mocks.secretsPut.mockImplementation(
+            async (
+                value: Uint8Array,
+                options?: { id?: string; metadata?: Record<string, unknown> },
+            ) => {
+                const id = options?.id ?? 'generated-id'
+                mocks.keys.unshift({ id, type: 'secret-key' })
+                // Snapshot synchronously: `commitSecret` zeros its defensive
+                // copy in a finally once this resolves, so the live reference
+                // would be all zeros by the time an assertion reads it.
+                mocks.lastValueSnapshot = new Uint8Array(value)
                 return id
             },
         )
     })
 
     describe('commitSecret', () => {
-        test('writes a canonical secret-key entry via keyStore.generate with nested params.value', async () => {
+        test('writes the secret through the keystore secrets API', async () => {
             await commitSecret({
                 id: 'pera.pinCode',
                 bytes: new Uint8Array([1, 2, 3, 4]),
             })
 
-            expect(mocks.generate).toHaveBeenCalledTimes(1)
-            const arg = mocks.generate.mock.calls[0][0]
-            expect(arg).toMatchObject({
-                type: 'secret-key',
-                algorithm: 'raw',
-                extractable: true,
-                keyUsages: [],
-            })
-            // The id is at `params.id` (read by rn-keystore as the
-            // top-level keyData.id). The actual secret bytes nest one
-            // level deeper at `params.params.value` because
-            // `generateSecretKey` in @algorandfoundation/keystore reads
-            // `keyData.metadata.params` for the value, and rn-keystore
-            // hangs our params under metadata via `metadata: {...params}`.
-            expect(arg.params.id).toBe('pera.pinCode')
-            // Read the snapshot stashed by the mock at call time —
-            // commitSecret zeros its defensive copy after generate
-            // resolves, so `arg.params.params.value` is now all zeros.
+            expect(mocks.secretsPut).toHaveBeenCalledTimes(1)
+            const [, options] = mocks.secretsPut.mock.calls[0]
+            expect(options).toEqual({ id: 'pera.pinCode' })
             expect(Array.from(mocks.lastValueSnapshot!)).toEqual([1, 2, 3, 4])
         })
 
-        test('passes through metadata via params.params.metadata when provided', async () => {
+        test('does not route secrets through generate', async () => {
+            await commitSecret({
+                id: 'pera.pinCode',
+                bytes: new Uint8Array([1]),
+            })
+
+            // `generate` has no `secret-key` branch in canary.14: it falls
+            // through to the host key path and throws "Unrecognized algorithm
+            // name" on `algorithm: 'raw'`.
+            expect(mocks.generate).not.toHaveBeenCalled()
+        })
+
+        test('passes metadata through to the secrets entry', async () => {
             await commitSecret({
                 id: 'k',
                 bytes: new Uint8Array([0, 0]),
                 metadata: { createdAt: 'iso' },
             })
 
-            const arg = mocks.generate.mock.calls[0][0]
-            expect(arg.params.params.metadata).toEqual({ createdAt: 'iso' })
+            const [, options] = mocks.secretsPut.mock.calls[0]
+            expect(options).toEqual({
+                id: 'k',
+                metadata: { createdAt: 'iso' },
+            })
+        })
+
+        test('throws when the backend does not implement secrets', async () => {
+            mocks.secrets = undefined
+
+            await expect(
+                commitSecret({ id: 'k', bytes: new Uint8Array([1]) }),
+            ).rejects.toThrow('Keystore backend does not implement secrets')
         })
     })
 
     describe('commitSecret upsert / error paths', () => {
-        test('upserts atomically: generates first, then dedupes the reactive store', async () => {
+        test('upserts atomically: writes first, then dedupes the reactive store', async () => {
             mocks.keys.push({ id: 'pera.pinCode', type: 'secret-key' })
 
             await commitSecret({
@@ -139,12 +146,11 @@ describe('secrets', () => {
                 bytes: new Uint8Array([7]),
             })
 
-            // generate() ran (and our mock impl prepended), but remove did
-            // NOT — we never deleted the prior entry from MMKV before
-            // writing the new one. The MMKV layer overwrites under the
-            // same id, and the reactive store is left with a single
-            // deduplicated entry.
-            expect(mocks.generate).toHaveBeenCalledTimes(1)
+            // The write ran (and our mock prepended), but remove did NOT — we
+            // never delete the prior entry before writing the new one. MMKV
+            // overwrites under the same id and the reactive store is left with
+            // a single deduplicated entry.
+            expect(mocks.secretsPut).toHaveBeenCalledTimes(1)
             expect(mocks.remove).not.toHaveBeenCalled()
             expect(mocks.keys).toHaveLength(1)
             expect(mocks.keys[0]).toEqual({
@@ -153,10 +159,10 @@ describe('secrets', () => {
             })
         })
 
-        test('preserves the existing entry when generate() throws', async () => {
+        test('preserves the existing entry when the write throws', async () => {
             const original = { id: 'pera.pinCode', type: 'secret-key' }
             mocks.keys.push(original)
-            mocks.generate.mockImplementationOnce(async () => {
+            mocks.secretsPut.mockImplementationOnce(async () => {
                 throw new Error('boom')
             })
 
@@ -167,20 +173,15 @@ describe('secrets', () => {
                 }),
             ).rejects.toThrow('boom')
 
-            // The previous entry is still there — we did not delete first,
-            // so a failed generate is safe.
             expect(mocks.remove).not.toHaveBeenCalled()
             expect(mocks.keys).toEqual([original])
         })
 
-        test('fresh insert (no existing entry) generates without dedupe work', async () => {
-            await commitSecret({
-                id: 'fresh',
-                bytes: new Uint8Array([1]),
-            })
+        test('fresh insert (no existing entry) writes without dedupe work', async () => {
+            await commitSecret({ id: 'fresh', bytes: new Uint8Array([1]) })
 
             expect(mocks.remove).not.toHaveBeenCalled()
-            expect(mocks.generate).toHaveBeenCalledTimes(1)
+            expect(mocks.secretsPut).toHaveBeenCalledTimes(1)
             expect(mocks.keys).toHaveLength(1)
             expect(mocks.keys[0].id).toBe('fresh')
         })
@@ -189,29 +190,43 @@ describe('secrets', () => {
     describe('withSecret', () => {
         test('returns null and does not invoke handler when the id is not in the store', async () => {
             const handler = vi.fn()
+
             const result = await withSecret('missing', handler)
+
             expect(result).toBeNull()
             expect(handler).not.toHaveBeenCalled()
-            expect(mocks.exportKey).not.toHaveBeenCalled()
+            expect(mocks.secretsGet).not.toHaveBeenCalled()
         })
 
-        test('returns the handler result and zeros the bytes after success', async () => {
+        test('reads the material through the secrets API, not export', async () => {
             mocks.keys.push({ id: 'pera.pinCode', type: 'secret-key' })
-            const bytes = new Uint8Array([1, 2, 3])
-            mocks.exportKey.mockResolvedValueOnce({ privateKey: bytes })
+            mocks.secretsGet.mockResolvedValueOnce(new Uint8Array([1, 2, 3]))
 
             const result = await withSecret('pera.pinCode', b =>
                 Array.from(b).reduce((sum, n) => sum + n, 0),
             )
 
             expect(result).toBe(6)
+            expect(mocks.secretsGet).toHaveBeenCalledWith('pera.pinCode')
+            // canary.14's `export` returns public metadata only — reading a
+            // secret through it silently yields undefined material.
+            expect(mocks.exportKey).not.toHaveBeenCalled()
+        })
+
+        test('zeros the bytes after the handler succeeds', async () => {
+            mocks.keys.push({ id: 'pera.pinCode', type: 'secret-key' })
+            const bytes = new Uint8Array([1, 2, 3])
+            mocks.secretsGet.mockResolvedValueOnce(bytes)
+
+            await withSecret('pera.pinCode', () => 'done')
+
             expect(Array.from(bytes)).toEqual([0, 0, 0])
         })
 
         test('zeros the bytes even when the handler throws', async () => {
             mocks.keys.push({ id: 'pera.pinCode', type: 'secret-key' })
             const bytes = new Uint8Array([7, 8, 9])
-            mocks.exportKey.mockResolvedValueOnce({ privateKey: bytes })
+            mocks.secretsGet.mockResolvedValueOnce(bytes)
 
             await expect(
                 withSecret('pera.pinCode', () => {
@@ -222,9 +237,9 @@ describe('secrets', () => {
             expect(Array.from(bytes)).toEqual([0, 0, 0])
         })
 
-        test('returns null when the keystore export has no privateKey', async () => {
+        test('returns null when the secret holds no bytes', async () => {
             mocks.keys.push({ id: 'pera.pinCode', type: 'secret-key' })
-            mocks.exportKey.mockResolvedValueOnce({})
+            mocks.secretsGet.mockResolvedValueOnce(undefined)
             const handler = vi.fn()
 
             const result = await withSecret('pera.pinCode', handler)

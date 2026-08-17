@@ -58,4 +58,7 @@ export {
     verifyPasskey,
     disablePasskeyUnlock,
 } from './vault/passkey'
-export { createKeystoreSigner } from './webauthn/keystore-signer'
+export {
+    createKeystoreSigner,
+    type PasskeyKeyStore,
+} from './webauthn/keystore-signer'

@@ -29,7 +29,7 @@ import {
     toWholeUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
+import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { bottomSheetNotifier, PWText, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -130,7 +130,11 @@ export const useInputScreen = () => {
         setValueAndRef,
     ])
 
-    const { data: params } = useSuggestedParametersQuery()
+    // PQ-aware: a quantum signer's fee is a multiple of the network minimum,
+    // and this is the same resolver the confirmation screen displays from —
+    // any amount derived here must reserve the fee the transaction will
+    // actually carry, not the base one.
+    const { minFee } = useMinFeeForSender(selectedAccount?.address)
     const { data: accountInformation } = useAccountInformationQuery(
         selectedAccount?.address ?? '',
     )
@@ -160,12 +164,12 @@ export const useInputScreen = () => {
                 accountInformation?.minBalance ?? 0n,
                 ALGO_ASSET,
             )
-            const fee = toWholeUnits(params?.minFee ?? 0, ALGO_ASSET)
+            const fee = toWholeUnits(minFee ?? 0n, ALGO_ASSET)
             return Decimal.max(balance.sub(minBalance).sub(fee), new Decimal(0))
         } else {
             return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
         }
-    }, [selectedAssetId, params, accountInformation, tokenBalance])
+    }, [selectedAssetId, minFee, accountInformation, tokenBalance])
 
     const totalBalance = useMemo(() => {
         if (isAlgoAssetId(selectedAssetId)) {
@@ -279,7 +283,7 @@ export const useInputScreen = () => {
     }, [requestBottomSheet, t, minBalanceDisplay, styles.confirmMessage])
 
     const confirmCloseAccount = useCallback(() => {
-        const fee = toWholeUnits(params?.minFee ?? 0, ALGO_ASSET)
+        const fee = toWholeUnits(minFee ?? 0n, ALGO_ASSET)
         const closeAmount = Decimal.max(totalBalance.sub(fee), new Decimal(0))
         setIsCloseAccount(true)
         setAmount(closeAmount)
@@ -287,7 +291,7 @@ export const useInputScreen = () => {
         proceedToDestination()
     }, [
         totalBalance,
-        params,
+        minFee,
         proceedToDestination,
         setAmount,
         setIsCloseAccount,
@@ -422,7 +426,6 @@ export const useInputScreen = () => {
     return {
         asset,
         accountAssetBalance,
-        params,
         accountInformation,
         minBalanceDisplay,
         cryptoValue: value,

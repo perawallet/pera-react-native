@@ -90,8 +90,7 @@ describe('useDeleteDeviceMutation', () => {
     })
 
     it('deletes devices on both testnet and mainnet when both are registered', async () => {
-        const mockResponse = { id: 'device-id', platform: 'ios' }
-        vi.mocked(deleteDevice).mockResolvedValue(mockResponse)
+        vi.mocked(deleteDevice).mockResolvedValue(undefined)
 
         const { result } = renderHook(() => useDeleteDeviceMutation(), {
             wrapper: createWrapper(),
@@ -106,15 +105,9 @@ describe('useDeleteDeviceMutation', () => {
         expect(deleteDevice).toHaveBeenCalledTimes(2)
         expect(deleteDevice).toHaveBeenCalledWith(Networks.testnet, {
             id: 'testnet-device-id',
-            push_token: 'test-push-token',
-            platform: 'ios',
-            accounts: [],
         })
         expect(deleteDevice).toHaveBeenCalledWith(Networks.mainnet, {
             id: 'mainnet-device-id',
-            push_token: 'test-push-token',
-            platform: 'ios',
-            accounts: [],
         })
         expect(result.current.data).toBeUndefined()
     })
@@ -136,7 +129,7 @@ describe('useDeleteDeviceMutation', () => {
         expect(result.current.data).toBeUndefined()
     })
 
-    it('returns undefined when no push token is available', async () => {
+    it('deletes a network whose device id exists even without a push token', async () => {
         vi.mocked(useDeviceStore).mockImplementation(selector => {
             const state = {
                 pushToken: null,
@@ -147,6 +140,7 @@ describe('useDeleteDeviceMutation', () => {
             }
             return selector(state as never)
         })
+        vi.mocked(deleteDevice).mockResolvedValue(undefined)
 
         const { result } = renderHook(() => useDeleteDeviceMutation(), {
             wrapper: createWrapper(),
@@ -158,7 +152,16 @@ describe('useDeleteDeviceMutation', () => {
             expect(result.current.isSuccess).toBe(true)
         })
 
-        expect(deleteDevice).not.toHaveBeenCalled()
+        // v1 required both id and push token, so a device whose push
+        // permission was never granted could not be deleted at all. v3
+        // accepts `id` alone, so both networks now get deleted properly.
+        expect(deleteDevice).toHaveBeenCalledTimes(2)
+        expect(deleteDevice).toHaveBeenCalledWith(Networks.testnet, {
+            id: 'testnet-device-id',
+        })
+        expect(deleteDevice).toHaveBeenCalledWith(Networks.mainnet, {
+            id: 'mainnet-device-id',
+        })
         expect(result.current.data).toBeUndefined()
     })
 
@@ -185,8 +188,7 @@ describe('useDeleteDeviceMutation', () => {
             return null
         })
 
-        const mockResponse = { id: 'device-id', platform: 'ios' }
-        vi.mocked(deleteDevice).mockResolvedValue(mockResponse)
+        vi.mocked(deleteDevice).mockResolvedValue(undefined)
 
         const { result } = renderHook(() => useDeleteDeviceMutation(), {
             wrapper: createWrapper(),
@@ -201,9 +203,6 @@ describe('useDeleteDeviceMutation', () => {
         expect(deleteDevice).toHaveBeenCalledTimes(1)
         expect(deleteDevice).toHaveBeenCalledWith(Networks.testnet, {
             id: 'testnet-device-id',
-            push_token: 'test-push-token',
-            platform: 'ios',
-            accounts: [],
         })
         expect(result.current.data).toBeUndefined()
     })
@@ -214,8 +213,7 @@ describe('useDeleteDeviceMutation', () => {
             return null
         })
 
-        const mockResponse = { id: 'device-id', platform: 'ios' }
-        vi.mocked(deleteDevice).mockResolvedValue(mockResponse)
+        vi.mocked(deleteDevice).mockResolvedValue(undefined)
 
         const { result } = renderHook(() => useDeleteDeviceMutation(), {
             wrapper: createWrapper(),
@@ -230,16 +228,12 @@ describe('useDeleteDeviceMutation', () => {
         expect(deleteDevice).toHaveBeenCalledTimes(1)
         expect(deleteDevice).toHaveBeenCalledWith(Networks.mainnet, {
             id: 'mainnet-device-id',
-            push_token: 'test-push-token',
-            platform: 'ios',
-            accounts: [],
         })
         expect(result.current.data).toBeUndefined()
     })
 
     it('accepts custom mutation options', async () => {
-        const mockResponse = { id: 'device-id', platform: 'ios' }
-        vi.mocked(deleteDevice).mockResolvedValue(mockResponse)
+        vi.mocked(deleteDevice).mockResolvedValue(undefined)
         const onSuccess = vi.fn()
 
         const { result } = renderHook(

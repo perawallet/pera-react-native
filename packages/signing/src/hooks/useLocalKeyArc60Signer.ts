@@ -17,6 +17,7 @@ import {
     InvalidBip44PathError,
     isAlgo25Account,
     isHDWalletAccount,
+    isQuantumAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -98,16 +99,21 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
                         throw caught
                     }
                 }
-            } else if (isAlgo25Account(account)) {
+            } else if (isAlgo25Account(account) || isQuantumAccount(account)) {
+                // Neither Algo25 nor quantum accounts are BIP-44 derived, so
+                // an hdPath is meaningless for them and is rejected rather
+                // than ignored.
                 if (stdSigData.hdPath) {
                     throw new Arc60FailedHdPathError(
                         stdSigData.hdPath,
-                        'Algo25 accounts have no BIP44 derivation path',
+                        `${account.type} accounts have no BIP44 derivation path`,
                     )
                 }
             } else {
-                // canSignArbitraryData ⇒ Algo25 or HDWallet; this branch is
-                // a defensive type-system fallback.
+                // canSignArbitraryData ⇒ hasSigningKeys, which is true for
+                // Algo25, HDWallet and quantum; this branch is a defensive
+                // type-system fallback for any account type not yet handled
+                // above.
                 throw new Arc60InvalidSignerError(
                     account.address,
                     `unsupported account type ${account.type}`,

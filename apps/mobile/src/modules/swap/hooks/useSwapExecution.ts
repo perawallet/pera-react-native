@@ -22,6 +22,7 @@ import {
 import {
     isMultisigAccount,
     useSelectedAccount,
+    useSignerFor,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
@@ -52,6 +53,7 @@ import {
 } from './swapGroupPlan'
 import {
     isUserRejectionError,
+    QuantumSwapBlockedError,
     requestSwapSignatures,
     requestSwapProposal,
     reportSwapFailure,
@@ -124,6 +126,12 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     const algorandClient = useAlgorandClient()
     const { network } = useNetwork()
     const account = useSelectedAccount()
+    // The quantum guard must key off the effective SIGNER, not the selected
+    // account's own nominal type: a standard/HD or multisig account rekeyed
+    // to a quantum auth account still has `type !== 'quantum'` but signs
+    // (Falcon) via the resolved auth account. Same pattern as
+    // `useTransactionConfirmationScreen`'s `isQuantumFee` check.
+    const signer = useSignerFor(account?.address)
     const deviceId = useDeviceID(network)
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     const { mutateAsync: prepareTransactions } =
@@ -252,6 +260,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     )
                     await requestSwapProposal(
                         addSignRequest,
+                        signer,
                         {
                             name: t('swap.signing.source_name'),
                             description: t('swap.signing.source_description'),
@@ -288,7 +297,12 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     }
                     const message = isRejection
                         ? t('swap.execution.user_rejected')
-                        : t('swap.execution.error_body')
+                        : // Guard rejections carry an i18n key of their own;
+                          // everything else gets the generic localized copy
+                          // rather than the raw error text (PERA-4795).
+                          e instanceof QuantumSwapBlockedError
+                          ? t(e.translationKey)
+                          : t('swap.execution.error_body')
                     setError({ phase: 'signing', message })
                     setStatus('error')
                     if (isRejection) {
@@ -300,7 +314,11 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             }
 
             // Phase 2: Sign transactions via the signing pipeline.
-            // Skip the pipeline entirely when every txn is already pre-signed.
+            // Skip the pipeline entirely when every txn is already pre-signed
+            // — the quantum guard inside `requestSwapSignatures` therefore
+            // doesn't run in that shape either, which is correct: there is
+            // nothing left for the account to sign, so there's no fee to
+            // raise and no signature to invalidate.
             let flatSigned: PeraSignedTransaction[]
             try {
                 setStatus('signing')
@@ -308,6 +326,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     unsignedTxs.length > 0
                         ? await requestSwapSignatures(
                               addSignRequest,
+                              signer,
                               {
                                   name: t('swap.signing.source_name'),
                                   description: t(
@@ -325,7 +344,12 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 }
                 const message = isRejection
                     ? t('swap.execution.user_rejected')
-                    : t('swap.execution.error_body')
+                    : // Guard rejections carry an i18n key of their own;
+                      // everything else gets the generic localized copy rather
+                      // than the raw error text (PERA-4795).
+                      e instanceof QuantumSwapBlockedError
+                      ? t(e.translationKey)
+                      : t('swap.execution.error_body')
                 setError({ phase: 'signing', message })
                 setStatus('error')
                 if (isRejection) {
@@ -400,6 +424,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             getMessage,
             network,
             account,
+            signer,
             deviceId,
             registerHandoff,
         ],

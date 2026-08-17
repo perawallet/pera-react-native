@@ -10,10 +10,26 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest'
-import type { Key } from '@algorandfoundation/keystore'
+import { describe, expect, it, vi } from 'vitest'
+import type { Key } from '@algorandfoundation/keystore-core'
+
+// The keystore's package root pulls react-native-mmkv, which has no loadable
+// build here — but `dist/storage/driver.js`, where the marker is defined, only
+// imports keystore-core and @scure/base. Same technique as
+// `extensions/provider`'s migration specs.
+vi.mock('@algorandfoundation/react-native-keystore', async () => {
+    const driver =
+        await import('../../../node_modules/@algorandfoundation/react-native-keystore/dist/storage/driver.js')
+    return { PASSKEY_MIGRATION_NEEDED: driver.PASSKEY_MIGRATION_NEEDED }
+})
+
+import { PASSKEY_MIGRATION_NEEDED as UPSTREAM_MARKER } from '@algorandfoundation/react-native-keystore'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
-import { credentialToPasskey, keyToPasskey } from '../passkey'
+import {
+    credentialToPasskey,
+    keyToPasskey,
+    PASSKEY_MIGRATION_NEEDED,
+} from '../passkey'
 
 const buildPasskeyKey = (metadata: Record<string, unknown>): Key =>
     ({
@@ -35,6 +51,12 @@ const buildNativeCredential = (
 
 // toUrlSafeBase64 unit tests live in @perawallet/wallet-core-shared
 // (utils/__tests__/strings.test.ts) — the helper moved there.
+
+// The restated copy in `../passkey` is what the model compares against; this
+// is the only thing standing between it and silent drift from the keystore.
+it('restates the keystore marker exactly', () => {
+    expect(PASSKEY_MIGRATION_NEEDED).toBe(UPSTREAM_MARKER)
+})
 
 describe('keyToPasskey', () => {
     it('uses the native userHandle (WebAuthn user.name) as the display name when no explicit name is stored', () => {
@@ -65,6 +87,42 @@ describe('keyToPasskey', () => {
         expect(
             keyToPasskey(buildPasskeyKey({ origin: 'webauthn.io' })),
         ).toBeNull()
+    })
+
+    it('marks a record the keystore flagged as needing migration', () => {
+        const passkey = keyToPasskey(
+            buildPasskeyKey({
+                origin: 'webauthn.io',
+                userHandle: 'will-android-pera7',
+                migration: PASSKEY_MIGRATION_NEEDED,
+            }),
+        )
+
+        expect(passkey?.needsMigration).toBe(true)
+    })
+
+    it('does not mark a new-scheme pbkdf2-p256 credential, which upstream never flags', () => {
+        const passkey = keyToPasskey(
+            buildPasskeyKey({
+                origin: 'webauthn.io',
+                userHandle: 'will-android-pera7',
+                scheme: 'pbkdf2-p256',
+            }),
+        )
+
+        expect(passkey?.needsMigration).toBe(false)
+    })
+
+    it('does not mark a record whose migration marker is some other value', () => {
+        const passkey = keyToPasskey(
+            buildPasskeyKey({
+                origin: 'webauthn.io',
+                userHandle: 'will-android-pera7',
+                migration: 'completed',
+            }),
+        )
+
+        expect(passkey?.needsMigration).toBe(false)
     })
 })
 

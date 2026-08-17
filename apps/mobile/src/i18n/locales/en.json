@@ -1558,7 +1558,9 @@
             "addresses_count": "{{count}} addresses",
             "select_all": "Select all",
             "already_imported": "already imported",
-            "finish_button": "Finish Account Creation"
+            "finish_button": "Finish Account Creation",
+            "all_imported_title": "Already in your wallet",
+            "all_imported_body": "Every address this wallet derives is already in Pera — including any you are only watching. Remove an address to re-add it with its private key."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed accounts found",
@@ -2333,6 +2335,11 @@
             "remove_body": "You are about to remove this passkey. Are you sure you want to proceed?",
             "remove_confirm": "Remove",
             "remove_cancel": "Keep it",
+            "migration_warning_title": "Recovery isn't available",
+            "migration_warning_body": "Each passkey listed below still signs you in, but can't be restored from your recovery passphrase. Remove it and create it again on the site to make it recoverable. Only do this while you can still sign in to that site another way.",
+            "migration_warning_cta": "Remove",
+            "migration_warning_blocked": "Removing isn't offered right now because Pera isn't your active passkey provider — you couldn't create a replacement. It becomes available again once Pera is your active passkey provider.",
+            "migration_warning_dismiss": "Not now",
             "loading": "Checking passkeys...",
             "error_title": "Something went wrong",
             "error_body": "Please try again.",
@@ -2800,7 +2807,9 @@
             "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled",
             "pending_cosign_title": "Swap request sent",
-            "pending_cosign_body": "Your swap needs another signature. It will complete once the other signer approves it from their inbox."
+            "pending_cosign_body": "Your swap needs another signature. It will complete once the other signer approves it from their inbox.",
+            "quantum_fee_unsupported": "Quantum accounts can't swap yet. The swap fee is set by our servers and doesn't cover the higher fee a quantum signature needs.",
+            "quantum_multisig_unsupported": "Quantum accounts can't swap from a shared account. Quantum keys can't take part in multisignature signing."
         },
         "signing": {
             "source_name": "Swap",

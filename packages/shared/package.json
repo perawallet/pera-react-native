@@ -32,6 +32,7 @@
   "dependencies": {
     "@babel/runtime": "catalog:",
     "@algorandfoundation/algokit-utils": "catalog:",
+    "algosdk": "catalog:",
     "@perawallet/wallet-core-config": "workspace:*",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@tanstack/react-query": "catalog:",

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { AppState } from 'react-native'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useBottomSheet } from '@modules/bottom-sheet'
@@ -18,6 +18,10 @@ import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { isActiveAppState } from '@utils/app-state'
+import {
+    usePasskeyMigrationBanner,
+    type UsePasskeyMigrationBannerResult,
+} from '../../components/PasskeyMigrationBanner'
 import { openCredentialProviderSettings } from './openCredentialProviderSettings'
 import {
     usePasskeyAutofillStatus,
@@ -49,6 +53,28 @@ export type UseSettingsPasskeysScreenResult = {
     passkeys: Passkey[]
     /** The prerequisite notice to render (empty / populated states only). */
     notice: PasskeysNotice
+    /**
+     * Whether a row may offer its remove action. Removal is one-way and a
+     * flagged passkey can only be replaced while Pera is the active provider,
+     * so removing one with the provider off locks the user out of that site.
+     *
+     * `passkey.needsMigration` alone does not answer this: it is only readable
+     * off a source that has a metadata bag, so a `source: 'native'` row —
+     * which is what a credential `repairs/0002` un-adopted comes back as —
+     * reports `false` whether or not it is flagged. The migration read is
+     * unioned in for exactly those, and such a row stays unremovable until that
+     * read reports it examined every record — not merely until it resolves,
+     * which it also does when it read nothing at all.
+     */
+    canRemove: (passkey: Passkey) => boolean
+    /**
+     * The migration banner's own state. Composed here rather than in the
+     * screen body so its two gates are wired from the values they belong to:
+     * `isManaging` for whether the banner shows at all, and the raw provider
+     * state — not `state === 'disabled'`, which additionally requires an empty
+     * list — for whether a replacement passkey could actually be registered.
+     */
+    migration: UsePasskeyMigrationBannerResult
     /**
      * Whether to offer the QR scanner entry point. Hidden while the screen is
      * still resolving (loading) or errored, when there's no HD wallet to derive
@@ -136,6 +162,39 @@ export const useSettingsPasskeysScreen =
             !biometric.isLoading && !biometric.hasStrongBiometricOrCredential
         const isManaging = state === 'empty' || state === 'populated'
 
+        const handleRequestDelete = useCallback(
+            (passkey: Passkey) => void onRequestDelete(passkey),
+            [onRequestDelete],
+        )
+
+        const isProviderActive = status.isProviderActive
+
+        const migration = usePasskeyMigrationBanner({
+            isManaging,
+            isProviderActive,
+            onRequestDelete: handleRequestDelete,
+        })
+
+        const { affected, isFlagSourceComplete } = migration
+        const flaggedIds = useMemo(
+            () => new Set(affected.map(passkey => passkey.id)),
+            [affected],
+        )
+
+        const canRemove = useCallback(
+            (passkey: Passkey) => {
+                if (isProviderActive) return true
+                if (passkey.needsMigration || flaggedIds.has(passkey.id))
+                    return false
+                // Only a keystore row's `needsMigration` is an answer: it is
+                // read off that row's own `k/` metadata. Every other source has
+                // no metadata bag, so their `false` is a default — and an
+                // incomplete flat scan leaves nothing to check it against.
+                return passkey.source === 'keystore' || isFlagSourceComplete
+            },
+            [isProviderActive, isFlagSourceComplete, flaggedIds],
+        )
+
         const notice: PasskeysNotice = !isManaging
             ? null
             : !hasHDWallet
@@ -148,6 +207,8 @@ export const useSettingsPasskeysScreen =
             state,
             passkeys: list.passkeys,
             notice,
+            canRemove,
+            migration,
             canScan:
                 state !== 'loading' &&
                 state !== 'error' &&
@@ -156,8 +217,7 @@ export const useSettingsPasskeysScreen =
             isScannerVisible: scanner.isOpen,
             onOpenScanner: scanner.open,
             onCloseScanner: scanner.close,
-            onRequestDelete: (passkey: Passkey) =>
-                void onRequestDelete(passkey),
+            onRequestDelete: handleRequestDelete,
             onOpenProviderSettings,
             onDismissError,
         }
@@ -170,9 +230,7 @@ const resolveState = (
     if (status.isLoading || list.isLoading) return 'loading'
     if (list.isError) return 'error'
     // Existing passkeys are proof the provider is/was working — never nag to
-    // enable it when there are credentials to show. (Android can't reliably
-    // read provider state until the service is first invoked, so this also
-    // avoids a false "disabled" once the user actually has passkeys.)
+    // enable it when there are credentials to show.
     if (list.passkeys.length > 0) return 'populated'
     if (!status.isProviderActive) return 'disabled'
     return 'empty'

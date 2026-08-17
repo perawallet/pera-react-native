@@ -17,24 +17,18 @@ import { isValidAddress, seedFromMnemonic } from 'algosdk'
 
 const mockKeyStoreImport = vi.fn()
 const mockKeyStoreRemove = vi.fn()
-
-vi.mock('@algorandfoundation/keystore', () => ({
-    clearKeyData: vi.fn(),
-}))
+const mockKeyStoreGenerate = vi.fn()
+const mockKeyStoreExport = vi.fn()
 
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
         keyStore: {
             import: (...args: unknown[]) => mockKeyStoreImport(...args),
             remove: (...args: unknown[]) => mockKeyStoreRemove(...args),
+            generate: (...args: unknown[]) => mockKeyStoreGenerate(...args),
+            export: (...args: unknown[]) => mockKeyStoreExport(...args),
         },
     }),
-}))
-
-const mockCommitQuantumChildKey = vi.fn()
-vi.mock('../../storage/quantum-child', () => ({
-    commitQuantumChildKey: (...args: unknown[]) =>
-        mockCommitQuantumChildKey(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -49,7 +43,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 
 import { useQuantum, type QuantumKeyResult } from '../useQuantum'
 import { quantumSignKeyId, FALCON_CHILD_KEY_TYPE } from '../../models'
-import { FALCON_PUBLIC_KEY_LENGTH } from '../../crypto/falcon-utils'
 import { SeedScheme } from '../../constants'
 import { getPQProvider } from '../../crypto/pq'
 import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
@@ -58,11 +51,41 @@ import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
 const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
 
+// The address `apps/mobile/src/__integration__/__fixtures__/quantum.ts` derives
+// for this mnemonic, pinned as a literal from before custody moved into the
+// keystore. Custody changed; derivation must not.
+const KNOWN_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC =
+    'TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU'
+
+/** Public keys the keystore double minted, keyed by the id it minted them under. */
+const generatedKeys = new Map<string, Uint8Array>()
+
 describe('useQuantum', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        generatedKeys.clear()
         mockKeyStoreImport.mockResolvedValue('my-key')
-        mockCommitQuantumChildKey.mockResolvedValue(undefined)
+        // Stands in for keystore-core's `falcon-1024` generator: derive the
+        // keypair from `params.seed`, record only the public half on the entry,
+        // and hand it back through `export` as plain metadata. It resolves the
+        // id the same way the engine does — `params.id ?? randomUUID()` — so a
+        // caller that stopped passing one gets a random id here too.
+        mockKeyStoreGenerate.mockImplementation(
+            async (options: {
+                params?: { id?: string; seed: Uint8Array }
+            }): Promise<string> => {
+                const id = options.params?.id ?? crypto.randomUUID()
+                const { publicKey } = getPQProvider().generateKeypairFromSeed(
+                    options.params!.seed,
+                )
+                generatedKeys.set(id, publicKey)
+                return id
+            },
+        )
+        mockKeyStoreExport.mockImplementation(async (id: string) => ({
+            id,
+            publicKey: generatedKeys.get(id),
+        }))
     })
 
     describe('createQuantumKey', () => {
@@ -126,20 +149,24 @@ describe('useQuantum', () => {
             expect(arg.metadata.pera.createdAt).toBeDefined()
         })
 
-        test('commits the quantum child with the quantum id, parentKeyId and 1,793-byte public key', async () => {
+        test('links the child to its parent seed and derives the address from the key the keystore minted', async () => {
             const { result } = renderHook(() => useQuantum())
+            let created: Optional<QuantumKeyResult>
             await act(async () => {
-                await result.current.createQuantumKey({
+                created = await result.current.createQuantumKey({
                     id: 'my-key',
                     mnemonic: TEST_MNEMONIC,
                 })
             })
 
-            expect(mockCommitQuantumChildKey).toHaveBeenCalledTimes(1)
-            const arg = mockCommitQuantumChildKey.mock.calls[0][0]
-            expect(arg.id).toBe(quantumSignKeyId('my-key'))
-            expect(arg.parentKeyId).toBe('my-key')
-            expect(arg.publicKey).toHaveLength(FALCON_PUBLIC_KEY_LENGTH)
+            expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(1)
+            const { params } = mockKeyStoreGenerate.mock.calls[0][0]
+            expect(params.id).toBe(quantumSignKeyId('my-key'))
+            expect(params.parentKeyId).toBe('my-key')
+
+            const publicKey = generatedKeys.get(quantumSignKeyId('my-key'))!
+            expect(publicKey).toHaveLength(getPQProvider().publicKeyLength)
+            expect(created!.address).toBe(deriveQuantumAddress(publicKey))
         })
 
         test('generates a random 32-byte seed and a uuid id when no params given', async () => {
@@ -153,13 +180,6 @@ describe('useQuantum', () => {
         })
 
         test('same mnemonic produces the same public key and address across fresh hook instances', async () => {
-            const publicKeys: number[][] = []
-            mockCommitQuantumChildKey.mockImplementation(
-                async (params: { publicKey: Uint8Array }) => {
-                    publicKeys.push(Array.from(params.publicKey))
-                },
-            )
-
             const addresses: string[] = []
             for (let i = 0; i < 2; i++) {
                 const { result, unmount } = renderHook(() => useQuantum())
@@ -174,11 +194,13 @@ describe('useQuantum', () => {
             }
 
             expect(addresses[0]).toBe(addresses[1])
-            expect(publicKeys[0]).toEqual(publicKeys[1])
+            expect(Array.from(generatedKeys.get('key-0-quantum')!)).toEqual(
+                Array.from(generatedKeys.get('key-1-quantum')!),
+            )
         })
 
-        test('rolls back the seed if the quantum child commit fails', async () => {
-            mockCommitQuantumChildKey.mockRejectedValueOnce(new Error('boom'))
+        test('rolls back the seed if minting the quantum child fails', async () => {
+            mockKeyStoreGenerate.mockRejectedValueOnce(new Error('boom'))
 
             const { result } = renderHook(() => useQuantum())
             await expect(
@@ -206,6 +228,69 @@ describe('useQuantum', () => {
             const seed = seedFromMnemonic(TEST_MNEMONIC)
             const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
             expect(created!.address).toBe(deriveQuantumAddress(publicKey))
+        })
+
+        test('mints the signing child through the keystore Falcon generator', async () => {
+            const { result } = renderHook(() => useQuantum())
+
+            let created: Optional<QuantumKeyResult>
+            await act(async () => {
+                created = await result.current.createQuantumKey({
+                    mnemonic: TEST_MNEMONIC,
+                })
+            })
+
+            expect(mockKeyStoreGenerate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: FALCON_CHILD_KEY_TYPE,
+                    algorithm: 'Falcon-1024',
+                    extractable: false,
+                    keyUsages: ['sign', 'verify'],
+                    params: expect.objectContaining({
+                        seed: expect.any(Uint8Array),
+                    }),
+                }),
+            )
+            expect(created!.signKeyId).toBe(
+                quantumSignKeyId(created!.seedKey.id),
+            )
+        })
+
+        // The address is derived from the Falcon public key, so a custody change
+        // that altered derivation would silently move every quantum account.
+        test('derives the same address as the pre-migration provider path', async () => {
+            const { result } = renderHook(() => useQuantum())
+
+            let created: Optional<QuantumKeyResult>
+            await act(async () => {
+                created = await result.current.createQuantumKey({
+                    mnemonic: TEST_MNEMONIC,
+                })
+            })
+
+            expect(created!.address).toBe(
+                KNOWN_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC,
+            )
+        })
+
+        // `id` is not a declared field on GenerateOptions — the engine resolves
+        // it as `params?.id ?? crypto.randomUUID()`. Nothing type-checks that,
+        // so pin it: a silently random id would break account.keyPairId and
+        // resolveSeedKey's `-quantum` suffix lookup.
+        test('honours the deterministic child id rather than minting a random one', async () => {
+            const { result } = renderHook(() => useQuantum())
+
+            let created: Optional<QuantumKeyResult>
+            await act(async () => {
+                created = await result.current.createQuantumKey({
+                    mnemonic: TEST_MNEMONIC,
+                })
+            })
+
+            expect(created!.signKeyId).toBe(`${created!.seedKey.id}-quantum`)
+            expect(created!.signKeyId).not.toMatch(
+                /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+            )
         })
     })
 })

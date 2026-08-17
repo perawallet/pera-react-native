@@ -1558,7 +1558,9 @@
             "addresses_count": "{{count}} adres",
             "select_all": "Tümünü seç",
             "already_imported": "zaten içe aktarıldı",
-            "finish_button": "Hesap oluşturmayı tamamla"
+            "finish_button": "Hesap oluşturmayı tamamla",
+            "all_imported_title": "Zaten cüzdanında",
+            "all_imported_body": "Bu cüzdanın türettiği tüm adresler zaten Pera’da — yalnızca izlediklerin dahil. Bir adresi özel anahtarıyla yeniden eklemek için önce onu kaldır."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekey yapılmış hesap bulundu",
@@ -2333,6 +2335,11 @@
             "remove_body": "Bu passkey’i kaldırmak üzeresin. Devam etmek istediğinden emin misin?",
             "remove_confirm": "Kaldır",
             "remove_cancel": "Kalsın",
+            "migration_warning_title": "Kurtarma kullanılamıyor",
+            "migration_warning_body": "Aşağıda listelenen her passkey ile hâlâ giriş yapabilirsin ama kurtarma passphrase’inden geri getirilemez. Kurtarılabilir olması için onu kaldır ve sitede yeniden oluştur. Bunu yalnızca o siteye başka bir yolla giriş yapabildiğin sürece yap.",
+            "migration_warning_cta": "Kaldır",
+            "migration_warning_blocked": "Pera şu anda etkin passkey sağlayıcın olmadığı için kaldırma seçeneği sunulmuyor — yenisini oluşturamazsın. Pera yeniden etkin passkey sağlayıcın olduğunda bu seçenek tekrar sunulur.",
+            "migration_warning_dismiss": "Şimdi değil",
             "loading": "Passkey’ler kontrol ediliyor...",
             "error_title": "Bir şeyler ters gitti",
             "error_body": "Lütfen tekrar dene.",
@@ -2800,7 +2807,9 @@
             "success_body": "Swap başarıyla tamamlandı: {{fromAsset}} → {{toAsset}}",
             "user_rejected": "Swap iptal edildi",
             "pending_cosign_title": "Swap talebi gönderildi",
-            "pending_cosign_body": "Bu swap için bir imza daha gerekiyor. Diğer imzalayan kişi gelen kutusundan onayladığında işlem tamamlanacak."
+            "pending_cosign_body": "Bu swap için bir imza daha gerekiyor. Diğer imzalayan kişi gelen kutusundan onayladığında işlem tamamlanacak.",
+            "quantum_fee_unsupported": "Quantum hesaplar henüz swap yapamaz. Swap ücreti sunucularımız tarafından belirlenir ve Quantum imzanın gerektirdiği daha yüksek ücreti karşılamaz.",
+            "quantum_multisig_unsupported": "Quantum hesaplar paylaşılan bir hesaptan swap yapamaz. Quantum anahtarlar Multisig imzalamaya katılamaz."
         },
         "signing": {
             "source_name": "Swap",

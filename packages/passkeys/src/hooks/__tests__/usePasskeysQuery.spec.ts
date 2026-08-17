@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
-import type { Key, KeyStoreState } from '@algorandfoundation/keystore'
+import type { Key, KeyStoreState } from '@algorandfoundation/keystore-core'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
 
 const mocks = vi.hoisted(() => ({
@@ -65,6 +65,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
     logger: { warn: vi.fn(), error: vi.fn() },
 }))
 
+import { PASSKEY_MIGRATION_NEEDED } from '../../models/passkey'
 import { usePasskeysQuery } from '../usePasskeysQuery'
 
 const createWrapper = () => {
@@ -205,5 +206,36 @@ describe('usePasskeysQuery', () => {
         await waitFor(() => expect(result.current.passkeys).toHaveLength(1))
         expect(result.current.isError).toBe(false)
         expect(result.current.passkeys[0].source).toBe('keystore')
+    })
+
+    // Reachable only for a credential `repairs/0002-rematerialize-passkey-credentials`
+    // declined to un-adopt: its k/ pair survives, so it is still in the
+    // reactive store, and its marker rides on the same metadata bag.
+    it('surfaces the keystore migration marker on a k/-backed row that survived the un-adopt', async () => {
+        keystoreStore.setKeys([
+            passkeyKey('flagged', {
+                origin: 'webauthn.io',
+                userHandle: 'alice',
+                createdAt: 200,
+                migration: PASSKEY_MIGRATION_NEEDED,
+            }),
+            passkeyKey('unflagged', {
+                origin: 'webauthn.io',
+                userHandle: 'bob',
+                createdAt: 100,
+            }),
+        ])
+
+        const { result } = renderHook(() => usePasskeysQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => expect(result.current.passkeys).toHaveLength(2))
+        expect(
+            result.current.passkeys.map(p => [p.keyId, p.needsMigration]),
+        ).toEqual([
+            ['flagged', true],
+            ['unflagged', false],
+        ])
     })
 })

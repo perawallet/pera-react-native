@@ -1550,7 +1550,9 @@
             "addresses_count": "{{count}} Adressen",
             "select_all": "Alle auswählen",
             "already_imported": "bereits importiert",
-            "finish_button": "Kontoerstellung abschließen"
+            "finish_button": "Kontoerstellung abschließen",
+            "all_imported_title": "Bereits in deinem Wallet",
+            "all_imported_body": "Alle Adressen, die dieses Wallet ableitet, sind bereits in Pera — einschließlich derer, die du nur beobachtest. Entferne eine Adresse, um sie mit ihrem privaten Schlüssel erneut hinzuzufügen."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed Konten gefunden",
@@ -2325,6 +2327,11 @@
             "remove_body": "Du bist dabei, diesen Passkey zu entfernen. Möchtest du wirklich fortfahren?",
             "remove_confirm": "Entfernen",
             "remove_cancel": "Behalten",
+            "migration_warning_title": "Wiederherstellung nicht möglich",
+            "migration_warning_body": "Jeder unten aufgeführte Passkey meldet dich weiterhin an, kann aber nicht aus deiner Wiederherstellungsphrase wiederhergestellt werden. Entferne ihn und erstelle ihn auf der Website neu, damit er wiederherstellbar wird. Tu das nur, solange du dich bei dieser Website noch auf einem anderen Weg anmelden kannst.",
+            "migration_warning_cta": "Entfernen",
+            "migration_warning_blocked": "Das Entfernen wird gerade nicht angeboten, weil Pera nicht dein aktiver Passkey-Anbieter ist — du könntest keinen Ersatz erstellen. Es wird wieder angeboten, sobald Pera dein aktiver Passkey-Anbieter ist.",
+            "migration_warning_dismiss": "Jetzt nicht",
             "loading": "Passkeys werden geprüft...",
             "error_title": "Etwas ist schiefgelaufen",
             "error_body": "Bitte versuche es erneut.",
@@ -2792,7 +2799,9 @@
             "success_body": "Tausch von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
             "user_rejected": "Tausch abgebrochen",
             "pending_cosign_title": "Tauschanfrage gesendet",
-            "pending_cosign_body": "Dein Tausch benötigt eine weitere Signatur. Er wird abgeschlossen, sobald der andere Signierer ihn in seinem Posteingang genehmigt."
+            "pending_cosign_body": "Dein Tausch benötigt eine weitere Signatur. Er wird abgeschlossen, sobald der andere Signierer ihn in seinem Posteingang genehmigt.",
+            "quantum_fee_unsupported": "Quantum-Konten können noch nicht tauschen. Die Tauschgebühr wird von unseren Servern festgelegt und deckt die höhere Gebühr nicht ab, die eine Quantum-Signatur benötigt.",
+            "quantum_multisig_unsupported": "Quantum-Konten können nicht aus einem Gemeinschaftskonto tauschen. Quantum-Schlüssel können nicht an der Multisignatur-Signierung teilnehmen."
         },
         "signing": {
             "source_name": "Tausch",

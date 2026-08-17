@@ -98,13 +98,21 @@ export const ImportSelectAddressesScreen = () => {
                     />
 
                     {areAllImported ? (
+                        // Distinct from `searching_accounts.no_new_addresses`,
+                        // which says nothing was FOUND. Reaching this screen
+                        // means discovery did return addresses (see
+                        // `useSearchAccountsScreen`, which throws on an empty
+                        // result) — they were all filtered out because they are
+                        // already in the accounts store. `useAllAccounts` is
+                        // unfiltered, so a watch account for the same address
+                        // lands here too, which is not obvious to the user.
                         <EmptyView
                             style={styles.emptyState}
                             title={t(
-                                'onboarding.searching_accounts.no_new_addresses_title',
+                                'onboarding.import_select_addresses.all_imported_title',
                             )}
                             body={t(
-                                'onboarding.searching_accounts.no_new_addresses_body',
+                                'onboarding.import_select_addresses.all_imported_body',
                             )}
                         />
                     ) : (

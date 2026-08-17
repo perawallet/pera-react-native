@@ -26,6 +26,17 @@ import { http, HttpResponse } from 'msw'
 import * as Clipboard from 'expo-clipboard'
 import { Notifier } from 'react-native-notifier'
 
+// The mute-notifications flow below (PERA-4705) now re-registers the whole
+// device via `useDevice().registerDevice` instead of a per-account PATCH, so
+// it reaches `getProvider().deviceInfo.getAppVersion()`. The default driver
+// mock in vitest.setup.ts predates that payload (its `deviceInfo` stub only
+// exposes `getVersion`) — unmock it (and the platform package it needs a real
+// `MemoryKeyValueStorage` from) to route `getProvider()` through the real
+// in-memory driver at test-utils/platform-driver-test.ts. Mirrors
+// migration-inbox.test.tsx.
+vi.unmock('@perawallet/wallet-extension-platform-driver')
+vi.unmock('@perawallet/wallet-extension-platform')
+
 import { server } from '@test-utils/msw-server'
 import { renderWithNavigation } from '@test-utils/renderWithNavigation'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
@@ -35,7 +46,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCardSessionStore } from '@perawallet/wallet-core-card'
-import { useDeviceStore } from '@perawallet/wallet-core-device'
+import {
+    useDeviceStore,
+    type DeviceRegistrationRequest,
+} from '@perawallet/wallet-core-device'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
@@ -381,12 +395,12 @@ describe('Flow: Account management', () => {
             useAccountsStore
                 .getState()
                 .setSelectedAccountAddress(ACCOUNT_A.address)
-            // useAccountNotificationEnabledMutation falls back to
-            // `deviceID ?? ''` when the device isn't registered, which would
-            // PATCH `/v1/devices//accounts/...` — a URL no handler matches.
-            // Seed a known device id (both networks, since the test env's
-            // default network isn't pinned here) so the request below is
-            // addressable; the shared afterEach resets it for other tests.
+            // v3 has no per-account route: `useAccountNotificationToggle`
+            // re-registers the whole device via `useDevice().registerDevice`
+            // instead. Seed a known device id (both networks, since the test
+            // env's default network isn't pinned here) so the registration
+            // reuses it rather than minting a new one; the shared afterEach
+            // resets it for other tests.
             useDeviceStore.getState().setDeviceID('mainnet', 'test-device-id')
             useDeviceStore.getState().setDeviceID('testnet', 'test-device-id')
             // Sanity: notifications are enabled by default — we want to
@@ -397,27 +411,20 @@ describe('Flow: Account management', () => {
             )
             expect(notifBefore.current.disabledAccounts).toEqual([])
 
-            // The toggle now genuinely PATCHes the backend (that's the whole
-            // point of PERA-4585's fix) — mock it here rather than letting the
-            // request escape to the real network. Captures the payload too, so
-            // this pins the property Task 3 exists to guarantee: the right
+            // The toggle now genuinely re-registers the device (that's the
+            // whole point of PERA-4585's fix, carried forward onto v3 by
+            // PERA-4705) — mock it here rather than letting the request
+            // escape to the real network. Captures the payload too, so this
+            // pins the property Task 3 exists to guarantee: the right
             // account and status are actually sent, not just the local store
             // flip.
-            let patchBody: Record<string, unknown> | undefined
+            let deviceBody: DeviceRegistrationRequest | undefined
             server.use(
-                http.patch(
-                    `*/v1/devices/test-device-id/accounts/${ACCOUNT_A.address}/`,
-                    async ({ request }) => {
-                        patchBody = (await request.json()) as Record<
-                            string,
-                            unknown
-                        >
-                        return HttpResponse.json(
-                            { has_new_notification: false },
-                            { status: 200 },
-                        )
-                    },
-                ),
+                http.post('*/api/v3/devices', async ({ request }) => {
+                    deviceBody =
+                        (await request.json()) as DeviceRegistrationRequest
+                    return HttpResponse.json({ id: 'test-device-id' })
+                }),
             )
 
             renderWithNavigation(
@@ -458,10 +465,23 @@ describe('Flow: Account management', () => {
                 expect(titles).toContain('account_options.notifications_muted')
             })
 
-            // The success toast only fires after the PATCH resolves, so by
-            // this point the request has already landed — confirm it carried
-            // the correct (disabled) status for this account.
-            expect(patchBody).toEqual({ receive_notifications: false })
+            // The success toast only fires after the registration resolves,
+            // so by this point the request has already landed — confirm the
+            // v3 body carried the correct `receive_notifications` flag for
+            // each account: disabled for the one just muted, still enabled
+            // for the untouched sibling.
+            expect(deviceBody?.accounts).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({
+                        address: ACCOUNT_A.address,
+                        receive_notifications: false,
+                    }),
+                    expect.objectContaining({
+                        address: ACCOUNT_B.address,
+                        receive_notifications: true,
+                    }),
+                ]),
+            )
         },
         SLOW_TEST_TIMEOUT_MS,
     )

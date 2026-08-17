@@ -46,7 +46,6 @@ export default defineConfig({
                 'react/jsx-runtime',
                 'zustand',
                 '@tanstack/react-query',
-                '@algorandfoundation/keystore',
                 '@algorandfoundation/wallet-provider',
                 '@perawallet/wallet-core-config',
                 '@perawallet/wallet-core-hardware-wallet',

@@ -21,7 +21,7 @@
     "@algorandfoundation/algokit-utils": "catalog:",
     "algosdk": "catalog:",
     "@babel/runtime": "catalog:",
-    "@joe-p/algosdk": "catalog:",
+    "@noble/hashes": "catalog:",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-database": "workspace:*",
     "@perawallet/wallet-core-remote-config": "workspace:*",

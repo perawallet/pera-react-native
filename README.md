@@ -93,6 +93,7 @@ Prerequisites: Docker (running) and the AlgoKit CLI
 ```sh
 pnpm localnet             # start the LocalNet (algod :4001, indexer :8980, kmd :4002)
 pnpm localnet:fund --new 100   # create + fund a throwaway account (prints mnemonic)
+pnpm localnet:fund --new-quantum 100  # create + fund a throwaway quantum (post-quantum) account (prints seed hex)
 pnpm ios                  # or: pnpm android
 pnpm localnet:stop        # stop the LocalNet
 ```
@@ -109,6 +110,57 @@ Two things to watch:
   machine. Use the host's LAN address (e.g. `http://192.168.1.50:4001`).
 - `pnpm localnet:reset` regenerates the genesis hash, so re-enter the custom
   config afterwards.
+
+### Quantum (post-quantum) verification
+
+```sh
+pnpm localnet:quantum-check
+```
+
+Runs an end-to-end check of a quantum-signed transaction against LocalNet:
+derives a Falcon-1024 address, funds it, builds a payment with a PQ-raised
+fee, checks the assembled PQ envelope against algosdk's own PQ signer, then
+broadcasts and waits for confirmation.
+
+The **default** LocalNet (`algod` 4.7.4-stable) has no `pqsig` support, so the
+script reports **PENDING** (exit 0) once broadcast is rejected for that reason
+specifically; any other failure reports FAIL (non-zero exit).
+
+To get a real **PASS: confirmed in round N**, point LocalNet at a
+`pqsig`-capable node. Two things are needed together — the `master` image and a
+genesis whose consensus enables Falcon-1024 (v42, inherited by `future`). Edit
+`~/.config/algokit/sandbox/`:
+
+```sh
+# docker-compose.yml          -> image: algorand/algod:master
+# algod_network_template.json -> add  "ConsensusProtocol": "future",  under "Genesis"
+docker compose -f ~/.config/algokit/sandbox/docker-compose.yml down -v
+docker compose -f ~/.config/algokit/sandbox/docker-compose.yml up -d
+pnpm localnet:quantum-check   # -> PASS: confirmed in round N
+```
+
+The check talks to `localhost:4001` directly, so it needs no app config. To
+exercise the **app** against this node, re-enter the custom network in
+**Settings → Developer → Node Settings** — recreating the containers changes the
+genesis hash, so the previously saved config no longer matches.
+
+Note `algokit localnet start/reset` **rewrites both files**, so re-apply the two
+edits after running either. `algorand/algod:nightly` is not a substitute — it
+still lacks `pqsig`. See `docs/QUANTUM_PQ_INTEGRATION.md` (PQ-023).
+
+> **This swap kills the indexer, but the app still works.** Consensus v42 also
+> enables `LoadTracking`, adding a `ld` field to the block header. The published
+> `conduit-localnet` and `indexer` images predate it and cannot decode it, so
+> conduit dies with `error decoding block for round 1: msgpack decode error ...
+key ld` and the indexer stays pinned at round 0
+> (`docker logs algokit_sandbox_conduit`; `curl -s localhost:8980/health`).
+> Balances, the asset list and sending are **unaffected** — `account-syncer.ts`
+> reads them from algod, and holdings only fall back to the indexer past algod's
+> resource cap (the large-account path). Expect indexer-backed surfaces
+> (transaction history, large accounts) to be empty. If a balance reads 0.00 on
+> LocalNet, it is far more likely a stale `account_balances` row than the
+> indexer: pull-to-refresh does NOT re-fetch when a row already exists, so
+> **relaunch the app** after funding.
 
 ## Workspace layout
 

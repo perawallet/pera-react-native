@@ -22,6 +22,7 @@
 
 import { KeyContext, XHDWalletAPI } from '@algorandfoundation/xhd-wallet-api'
 import { crypto_sign_keypair } from '@algorandfoundation/xhd-wallet-api/dist/sumo.facade.js'
+import { sha512 } from '@noble/hashes/sha2'
 import { type Optional } from '@perawallet/wallet-core-shared'
 
 // Types come from `@tanstack/store` and `@algorandfoundation/keystore`,
@@ -48,7 +49,76 @@ type KeyData = Key & {
         [k: string]: unknown
     }
 }
-type KeyStoreState = { keys: Key[]; status: string }
+type KeyStoreCapability = { algorithm: string; source: 'host' | 'shim' }
+type KeyStoreState = {
+    keys: Key[]
+    status: string
+    algorithms?: KeyStoreCapability[]
+}
+
+// Mirrors `DEFAULT_HOST_ALGORITHMS` plus the React Native engine's default shim
+// stack, which is what `state.algorithms` reports once `ready` resolves. Falcon
+// is the one entry tests actually assert on: on device it only appears when the
+// native binding resolved, so a UI gating quantum on it must see it here too.
+const ALGORITHMS: KeyStoreCapability[] = [
+    { algorithm: 'Ed25519', source: 'host' },
+    { algorithm: 'ECDSA', source: 'host' },
+    { algorithm: 'ECDH', source: 'host' },
+    { algorithm: 'RSASSA-PKCS1-v1_5', source: 'host' },
+    { algorithm: 'AES-GCM', source: 'host' },
+    { algorithm: 'BIP32-Ed25519', source: 'shim' },
+    { algorithm: 'Falcon-1024', source: 'shim' },
+    { algorithm: 'Deterministic-P256', source: 'shim' },
+    { algorithm: 'BIP39', source: 'shim' },
+    { algorithm: 'Algo25', source: 'shim' },
+]
+
+const FALCON_KEY_TYPE = 'falcon-1024'
+
+// Length of a real compressed Falcon-1024 signature for this build (max 1423,
+// typical 1228). Size-sensitive flows assert on it — the WC PQ-fee test checks
+// the quantum slot's carrier is >1000 bytes — so the double must not emit a
+// 64-byte stub the way it does for Ed25519.
+const FALCON_SIGNATURE_BYTES = 1228
+
+/**
+ * A Falcon-SHAPED signature: correct length, stable per (secret key, payload),
+ * and different for a different payload — but not a verifiable Falcon
+ * signature. That is deliberate. Real signatures would have to come from the
+ * Falcon library, which only `packages/kms/src/crypto/pq` may import, and the
+ * production keystore signs from sealed material that never reaches JS, so
+ * there is no `sign(secretKey, …)` entry point left to borrow. Keystore-Falcon
+ * byte parity is proven where it is meaningful, in
+ * `packages/kms/src/crypto/pq/__tests__/keystoreFalconParity.spec.ts`; nothing
+ * in the integration suite verifies a signature cryptographically.
+ */
+const falconShapedSignature = (
+    secretKey: Uint8Array,
+    data: Uint8Array,
+): Uint8Array => {
+    const signature = new Uint8Array(FALCON_SIGNATURE_BYTES)
+    for (let offset = 0, counter = 0; offset < signature.length; counter++) {
+        const block = sha512
+            .create()
+            .update(secretKey)
+            .update(data)
+            .update(Uint8Array.of(counter))
+            .digest()
+        signature.set(block.subarray(0, signature.length - offset), offset)
+        offset += block.length
+    }
+    return signature
+}
+
+// Reached through kms's PQ seam rather than the Falcon library directly: the
+// seam is the only sanctioned home for that import (see
+// `packages/blockchain/src/pq/__tests__/pqLibraryFirewall.spec.ts`), and going
+// through it is also what guarantees a child minted here lands on the address
+// the shared quantum fixture derives. Imported lazily because kms reaches the
+// provider singleton, which imports this module — a top-level import would
+// close the cycle at module-evaluation time.
+const loadPQProvider = async () =>
+    (await import('@perawallet/wallet-core-kms')).getPQProvider()
 
 // Module-level in-memory key map. Mirrors what production stores in MMKV
 // (minus encryption). Keep this exported so tests can reset between runs
@@ -81,36 +151,45 @@ export const storage = {
 // is meaningless; the encrypt/decrypt funcs just pass through.
 const TEST_MASTER_KEY = Buffer.alloc(32)
 export const readMasterKey = async (): Promise<Buffer> => TEST_MASTER_KEY
-
-// Real encryption binds ciphertext to its storage key as GCM AAD (see
-// extensions/keystore-chrome/src/storage/crypto.ts) — a payload encrypted
-// under one keyId must not decrypt under another. A plain passthrough here
-// couldn't have caught the production bug where decryptData was called
-// without its keyId, so this fakes that binding with a prefix instead of
-// real crypto: encryptData tags the payload with its keyId, decryptData
-// rejects a mismatched one.
-export const encryptData = (
-    _key: Buffer,
+export const sealData = async (
+    _subtle: SubtleCrypto,
+    _key: Buffer | Uint8Array,
     data: string,
-    keyId: string,
-): string => `${keyId}:${data}`
-export const decryptData = (
-    _key: Buffer,
+): Promise<string> => data
+export const openData = async (
+    _subtle: SubtleCrypto,
+    _key: Buffer | Uint8Array,
     payload: string,
-    keyId: string,
-): string => {
-    const prefix = `${keyId}:`
-    if (!payload.startsWith(prefix)) {
-        throw new Error(
-            `Test keystore: decryptData keyId mismatch (expected payload encrypted under "${keyId}")`,
-        )
-    }
-    return payload.slice(prefix.length)
-}
+): Promise<string> => payload
 export const encode = (key: KeyData): string =>
     JSON.stringify(key, replaceUint8Array)
 export const decode = (data: string): KeyData =>
     JSON.parse(data, reviveUint8Array) as KeyData
+
+// canary.14 builds the engine outside `WithKeyStore` and the provider singleton
+// hands the result back in as `options.api.keystore`, so the engine — not the
+// extension — owns every operation. The double has to be built the same way, or
+// integration tests would exercise an API object production never reaches.
+export const createReactNativeKeyStore = (options: {
+    store: Store<KeyStoreState>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    hooks?: any
+    subtle?: SubtleCrypto
+}): TestKeyStore => {
+    reactiveStoreRef = options.store
+    // The real engine publishes `algorithms` onto the reactive store as part of
+    // `ready`, once its shim stack is layered. Nothing here is async, so this
+    // merges rather than replacing state — the engine's clobbering write is a
+    // hydration detail the double has no persisted metadata to reproduce.
+    options.store.setState((s: KeyStoreState) => ({
+        ...s,
+        algorithms: ALGORITHMS,
+    }))
+    return {
+        ...createKeyStoreApi(options.store, options.hooks),
+        ready: Promise.resolve(),
+    }
+}
 
 // Mutates the reactive store with the metadata representation of a Key
 // (privateKey/seed bytes are stripped from the metadata mirror — kept only
@@ -170,9 +249,9 @@ export const clear = async ({
     store.setState((s: KeyStoreState) => ({ ...s, keys: [] }))
 }
 
-// Used by secrets.withSecret via `getProvider().key.store.export(id)`.
 // Returns the full KeyData including privateKey — caller is expected to zero
-// the bytes after use.
+// the bytes after use. Note the real canary.14 `export` returns public
+// metadata ONLY; secrets are read back through `secrets.get` instead.
 const exportKey = async (id: string): Promise<KeyData> => {
     const entry = keyData.get(id)
     if (!entry) throw new Error(`Key not found: ${id}`)
@@ -181,52 +260,59 @@ const exportKey = async (id: string): Promise<KeyData> => {
     return cloneKeyData(entry)
 }
 
-// `WithKeyStore` extension. Production wires this via `Provider.withExtensions
-// ([WithPlatformExtension, ..., WithKeyStore])`. The extension reads the
-// `keystore.store` option and exposes it (plus a KeyStoreAPI surface) on the
-// provider instance. We provide enough of that surface for `typedSecret.ts`
-// and the kms hooks to function.
-//
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const WithKeyStore = (_provider: any, options: any) => {
-    const reactiveStore: Optional<Store<KeyStoreState>> =
-        options?.keystore?.store
+export type TestKeyStore = ReturnType<typeof createKeyStoreApi> & {
+    ready: Promise<void>
+}
 
-    if (reactiveStore) reactiveStoreRef = reactiveStore
-    const hooks = options?.keystore?.hooks
-
+// The `KeyStoreAPI` surface the engine owns. `createReactNativeKeyStore` builds
+// it (matching production, where the singleton passes the result in as
+// `options.api.keystore`); `WithKeyStore` only falls back to building its own
+// when no backend was injected.
+const createKeyStoreApi = (
+    reactiveStore: Store<KeyStoreState>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    hooks?: any,
+) => {
     const xhdApi = new XHDWalletAPI()
     let derivedSeq = 0
     const newDerivedKeyId = (): string =>
         `test-derived-${Date.now().toString(36)}-${++derivedSeq}`
 
-    const api = {
-        // Mirrors the production keystore's `generate` for the two derived
-        // key types the kms layer mints:
+    return {
+        // Mirrors the production keystore's `generate` for the derived key
+        // types the kms layer mints:
         // - `ed25519` (standalone signing child of an algo25 seed) — derives
         //   the keypair from `parentKey.privateKey.slice(0, 32)` via tweetnacl.
         // - `hd-derived-ed25519` (XHD child of a bip39 seed) — derives the
         //   public key via the same `XHDWalletAPI.keyGen` call as the real
-        //   keystore. Other types throw — flow tests should opt in.
-        async generate(options: {
-            type?: string
-            extractable?: boolean
-            keyUsages?: string[]
-            algorithm?: string
-            params?: {
-                id?: string
-                parentKeyId?: string
-                account?: number
-                index?: number
-                context?: number
-                derivation?: number
-                value?: Uint8Array | string
+        //   keystore.
+        // - the Falcon quantum signing child — derives the real Falcon keypair
+        //   from the seed, so the addresses the flow tests assert are the ones
+        //   a real keystore would mint.
+        // Other types throw — flow tests should opt in.
+        async generate(
+            options: {
+                type?: string
+                extractable?: boolean
+                keyUsages?: string[]
+                algorithm?: string
                 params?: {
+                    id?: string
+                    parentKeyId?: string
+                    account?: number
+                    index?: number
+                    context?: number
+                    derivation?: number
+                    seed?: Uint8Array
                     value?: Uint8Array | string
-                    metadata?: Record<string, unknown>
+                    params?: {
+                        value?: Uint8Array | string
+                        metadata?: Record<string, unknown>
+                    }
                 }
-            }
-        }): Promise<string> {
+            },
+            _ctx?: unknown,
+        ): Promise<string> {
             const type = options?.type
             const params = options?.params ?? {}
 
@@ -324,8 +410,30 @@ export const WithKeyStore = (_provider: any, options: any) => {
                 return id
             }
 
+            if (type === FALCON_KEY_TYPE) {
+                // The engine resolves the seed from `params.seed` and falls
+                // back to the parent's stored bytes; both reach the same
+                // Falcon-1024 primitive the quantum fixtures derive from, so
+                // the minted public key — and therefore the address — matches.
+                const seed = params.seed ?? parent.privateKey
+                const { publicKey, secretKey } = (
+                    await loadPQProvider()
+                ).generateKeypairFromSeed(new Uint8Array(seed))
+                const id = params.id ?? newDerivedKeyId()
+                const derived: KeyData = {
+                    id,
+                    type: FALCON_KEY_TYPE,
+                    algorithm: 'Falcon-1024',
+                    publicKey: new Uint8Array(publicKey),
+                    privateKey: new Uint8Array(secretKey),
+                    metadata: { parentKeyId },
+                }
+                await commit({ store: reactiveStore, keyData: derived })
+                return id
+            }
+
             throw new Error(
-                `Test keystore: generate() supports 'ed25519' | 'hd-derived-ed25519' only, got: ${String(
+                `Test keystore: generate() supports 'ed25519' | 'hd-derived-ed25519' | '${FALCON_KEY_TYPE}' only, got: ${String(
                     type,
                 )}`,
             )
@@ -337,6 +445,7 @@ export const WithKeyStore = (_provider: any, options: any) => {
             seedId: string,
             path: string,
             opts?: { mode?: string; id?: string },
+            _ctx?: unknown,
         ): Promise<string> {
             if (!reactiveStore) throw new Error('Keystore store missing')
             const parent = keyData.get(seedId)
@@ -384,27 +493,98 @@ export const WithKeyStore = (_provider: any, options: any) => {
             await commit({ store: reactiveStore, keyData: derived })
             return id
         },
-        async import(data: KeyData): Promise<string> {
-            if (!reactiveStore) throw new Error('Keystore store missing')
+        async import(
+            data: KeyData,
+            _format?: string,
+            _ctx?: unknown,
+        ): Promise<string> {
             await commit({ store: reactiveStore, keyData: data })
             return data.id
         },
-        export: exportKey,
-        async remove(id: string): Promise<void> {
-            if (!reactiveStore) throw new Error('Keystore store missing')
+        async export(
+            id: string,
+            _options?: unknown,
+            _ctx?: unknown,
+        ): Promise<KeyData> {
+            return exportKey(id)
+        },
+        async remove(id: string, _ctx?: unknown): Promise<void> {
             await removeKey({ store: reactiveStore, keyId: id })
         },
-        async sign(id: string, _data: Uint8Array): Promise<Uint8Array> {
-            if (!keyData.has(id)) throw new Error(`Key not found: ${id}`)
+        // Secrets are the one entry kind the engine reads back in plaintext,
+        // so they get their own channel rather than riding `export`.
+        secrets: {
+            async put(
+                value: Uint8Array | string,
+                options?: { id?: string; metadata?: Record<string, unknown> },
+                _ctx?: unknown,
+            ): Promise<string> {
+                const id = options?.id ?? newDerivedKeyId()
+                const bytes =
+                    typeof value === 'string'
+                        ? new TextEncoder().encode(value)
+                        : Uint8Array.from(value)
+                await commit({
+                    store: reactiveStore,
+                    keyData: {
+                        id,
+                        type: 'secret-key',
+                        algorithm: 'raw',
+                        extractable: true,
+                        keyUsages: [],
+                        privateKey: bytes,
+                        metadata: { storage: 'bytes', ...options?.metadata },
+                    } as KeyData,
+                })
+                return id
+            },
+            async get(id: string, _ctx?: unknown): Promise<Uint8Array> {
+                const entry = keyData.get(id)
+                if (!entry?.privateKey)
+                    throw new Error(`Secret not found: ${id}`)
+                // Defensive copy: the caller zeroes these bytes after use.
+                return Uint8Array.from(entry.privateKey)
+            },
+            async remove(id: string, _ctx?: unknown): Promise<void> {
+                await removeKey({ store: reactiveStore, keyId: id })
+            },
+            async list(): Promise<Key[]> {
+                return reactiveStore.state.keys.filter(
+                    k => k.type === 'secret-key',
+                )
+            },
+        },
+        // canary.14 puts `ctx` LAST: `sign(id, data, algorithm?, ctx?)`. Keep
+        // the arity — a caller written against the old `(id, ctx, data)` order
+        // would otherwise pass here and fail against the real library.
+        async sign(
+            id: string,
+            data: Uint8Array,
+            _algorithm?: string,
+            _ctx?: unknown,
+        ): Promise<Uint8Array> {
+            const entry = keyData.get(id)
+            if (!entry) throw new Error(`Key not found: ${id}`)
+            if (entry.type === FALCON_KEY_TYPE && entry.privateKey) {
+                return falconShapedSignature(entry.privateKey, data)
+            }
             // 64-byte deterministic stub. Real flows that care about
             // signature contents should override at the test level.
             return new Uint8Array(64)
         },
-        async verify(): Promise<boolean> {
-            return true
+        async verify(
+            id: string,
+            _data: Uint8Array,
+            _signature: Uint8Array,
+            _algorithm?: string,
+        ): Promise<boolean> {
+            return keyData.has(id)
         },
         async derive(_options: unknown): Promise<string> {
             throw new Error('Test keystore: derive() not implemented')
+        },
+        async clear(_ctx?: unknown): Promise<void> {
+            await clear({ store: reactiveStore })
         },
         // The real `key.store` carries the same hook surface — used by kms to
         // wrap `signing` and friends. We attach the provider's hook collection
@@ -412,11 +592,29 @@ export const WithKeyStore = (_provider: any, options: any) => {
         // route here.
         hooks,
     }
+}
+
+// `WithKeyStore` extension. Production wires this via `Provider.withExtensions
+// ([WithPlatformExtension, ..., WithKeyStore])` and passes the engine it already
+// built as `options.api.keystore`, which the extension then uses as-is.
+//
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const WithKeyStore = (_provider: any, options: any) => {
+    const reactiveStore: Store<KeyStoreState> = options?.keystore?.store
+    if (reactiveStore) reactiveStoreRef = reactiveStore
+
+    const keystore =
+        options?.api?.keystore ??
+        createReactNativeKeyStore({
+            store: reactiveStore,
+            hooks: options?.keystore?.hooks,
+            subtle: options?.keystore?.subtle,
+        })
 
     // Reactive surface — kms's `useKeystoreKeys` reads `state.keys` via
     // `getKeystoreStore()`, which is sourced separately in `singleton.ts`,
-    // not from this extension. So the `keys` / `status` properties below are
-    // only for completeness with `KeyStoreExtension`.
+    // not from this extension. So the properties below are only for
+    // completeness with `KeyStoreExtension`.
     return {
         get keys(): Key[] {
             return reactiveStore?.state.keys ?? []
@@ -424,7 +622,10 @@ export const WithKeyStore = (_provider: any, options: any) => {
         get status(): string {
             return reactiveStore?.state.status ?? 'idle'
         },
-        key: { store: api },
+        get algorithms(): KeyStoreCapability[] {
+            return reactiveStore?.state.algorithms ?? []
+        },
+        key: { store: keystore },
     }
 }
 

@@ -20,7 +20,7 @@ export const SeedScheme = {
     Algo25: 'algo25',
     /**
      * Deliberately NOT named after the signature algorithm — that lives on the
-     * signing child's `type` (`'falcon1024'`), so swapping schemes later needs
+     * signing child's `type` (`'falcon-1024'`), so swapping schemes later needs
      * no seed-metadata migration.
      */
     Quantum: 'quantum',

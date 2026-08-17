@@ -12,7 +12,7 @@
 
 import ReactNativePasskeyAutofill from '@algorandfoundation/react-native-passkey-autofill'
 import type { Extension } from '@algorandfoundation/wallet-provider'
-import type { KeyStoreExtension } from '@algorandfoundation/keystore'
+import type { KeyStoreExtension } from '@algorandfoundation/keystore-core'
 import {
     PasskeyAutofillService,
     type PasskeyAutofillNativeAPI,

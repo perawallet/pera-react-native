@@ -15,6 +15,13 @@ export const name = '@perawallet/wallet-core-passkeys'
 export * from './models'
 export * from './hooks'
 export * from './bootstrap'
+// The Android credential provider's on-disk contract. Exported because
+// `packages/migrate` writes records the provider must be able to read, and
+// phase 3 (below) reads them back to migrate them into `k/`+`m/`.
+export * from './native/nativeProviderRecord'
+// Deliberately root-only, never on the `./native` entry: unlike its siblings
+// this one depends on the keystore package.
+export * from './native/readFlaggedPasskeyCredentials'
 export * from './errors'
 export * from './authenticator/authenticator'
 export * from './authenticator/wire'

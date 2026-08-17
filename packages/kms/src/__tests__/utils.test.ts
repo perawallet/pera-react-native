@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 
 vi.mock('algosdk', async importOriginal => ({
     ...(await importOriginal<typeof import('algosdk')>()),
@@ -61,6 +61,16 @@ describe('seedSchemeOf', () => {
         expect(
             seedSchemeOf(seedKey({ metadata: { scheme: SeedScheme.Quantum } })),
         ).toBe(SeedScheme.Quantum)
+    })
+
+    test('returns "bip39" for an XHD root key', () => {
+        const rootKey = seedKey({
+            type: 'hd-root-key',
+            metadata: { scheme: SeedScheme.Bip39 },
+        })
+
+        expect(seedSchemeOf(rootKey)).toBe(SeedScheme.Bip39)
+        expect(isSeedKey(rootKey)).toBe(true)
     })
 
     test('returns null for a seed with no scheme metadata', () => {
@@ -246,6 +256,14 @@ describe('entropyChildMetadata', () => {
 describe('entropyChildIdOf', () => {
     const keys = [
         { id: 'seed-123', type: 'seed', metadata: { scheme: 'bip39' } },
+        // Deliberately ahead of the real entropy child: `commitSecret` writes
+        // other per-seed secrets as `secret-key` too, so a predicate that drops
+        // the `entropyKey` clause picks this one up instead.
+        {
+            id: 'unflagged-secret',
+            type: 'secret-key',
+            metadata: { parentKeyId: 'seed-123' },
+        },
         {
             id: 'random-child-id',
             type: 'secret-key',
@@ -260,6 +278,22 @@ describe('entropyChildIdOf', () => {
 
     test('finds the entropy child by its metadata, regardless of id', () => {
         expect(entropyChildIdOf('seed-123', keys)).toBe('random-child-id')
+    })
+
+    // Defence in depth, and parity with the two copies that restate this
+    // predicate: `entropyKey` alone would also match a derived key, and
+    // PBKDF2ing one of those would mint a passkey main key no mnemonic
+    // reproduces.
+    test('ignores an entropyKey flag on a record that is not a secret-key', () => {
+        const mislabelled = [
+            {
+                id: 'not-a-secret',
+                type: 'hd-derived-ed25519',
+                metadata: entropyChildMetadata('seed-123'),
+            },
+        ] as unknown as Key[]
+
+        expect(entropyChildIdOf('seed-123', mislabelled)).toBeUndefined()
     })
 
     test('ignores non-entropy children of the same seed', () => {

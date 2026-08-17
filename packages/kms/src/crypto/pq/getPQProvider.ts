@@ -10,33 +10,30 @@
  limitations under the License
  */
 
-import { createRNFalconProvider } from './rnFalconProvider'
 import type { PQSignatureProvider } from './types'
 import { createWasmFalconProvider } from './wasmFalconProvider'
 
 let cached: PQSignatureProvider | undefined
 
 /**
- * Whether we are executing inside the React Native runtime. React Native
- * defines `navigator.product === 'ReactNative'`; node and jsdom (tests) do
- * not, so this stays `false` there and the WASM provider is selected. The
- * `typeof` guard avoids a ReferenceError under node versions without a global
- * `navigator`.
- */
-const isReactNative = (): boolean =>
-    typeof navigator !== 'undefined' && navigator.product === 'ReactNative'
-
-/**
- * Returns the active PQ signature provider (memoized). On-device (React
- * Native) this is the native nitro Falcon-1024 module; in node/test
- * environments it is the WASM provider. Both satisfy the same pure
- * {@link PQSignatureProvider} contract.
+ * Returns the active PQ signature provider (memoized).
+ *
+ * This is the off-device implementation (WASM Falcon-1024), used by node,
+ * vitest and the web/extension build. On iOS and Android, Metro resolves
+ * `getPQProvider.native.ts` instead, which returns the native Nitro provider.
+ * The platform choice is therefore made by the bundler, not by a runtime
+ * check — both files export the same name and satisfy the same pure
+ * {@link PQSignatureProvider} contract, so no consumer branches on platform.
+ *
+ * Note the inverted convention: elsewhere in this repo the base file is the
+ * native one and `.web.*` overrides it. Here the base must be the off-device
+ * provider, because `getPQProvider` is reached through a RELATIVE import
+ * inside `packages/kms` — a vitest `alias` entry matches specifiers and
+ * cannot redirect it, so node/test resolution has to be correct by default.
  */
 export const getPQProvider = (): PQSignatureProvider => {
     if (!cached) {
-        cached = isReactNative()
-            ? createRNFalconProvider()
-            : createWasmFalconProvider()
+        cached = createWasmFalconProvider()
     }
     return cached
 }

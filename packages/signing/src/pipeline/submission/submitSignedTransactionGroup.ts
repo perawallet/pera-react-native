@@ -13,7 +13,7 @@
 import {
     toAlgodError,
     type AlgodError,
-    type PeraSignedTxnResult,
+    type PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { concatBytes } from '@perawallet/wallet-core-shared'
 import { SubmissionError } from '../errors'
@@ -53,7 +53,7 @@ const NO_NODE_VERDICT_CODES: ReadonlySet<AlgodError['code']> = new Set([
 export const submitSignedTransactionGroup = async (
     algokit: AlgokitClientInterface,
     encodeSignedTransactions: EncodeSignedTransactionsFn,
-    signedTxns: PeraSignedTxnResult[],
+    signedTxns: PeraSignedTransaction[],
 ): Promise<string[]> => {
     const encoded = encodeSignedTransactions(signedTxns)
     const concatenated = concatBytes(...encoded)

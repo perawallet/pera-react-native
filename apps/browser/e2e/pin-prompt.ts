@@ -55,3 +55,27 @@ export const clickThroughPinPrompt = async (
     // hanging until the whole test's timeout budget is exhausted.
     await locator.click({ timeout: 10_000 })
 }
+
+// Opportunistic dismissal is not enough once the nudge can swallow sheets.
+// PERA-4870 mounted PromptContainer on this shell for the first time, and a
+// pending prompt holds every NEW bottom-sheet presentation until it is
+// answered (bottom-sheet `presentationHolds`). The nudge fires on a wall-clock
+// delay from the moment the account exists, so it routinely lands *inside* a
+// later `toBeVisible()` wait — where it silently holds the sheet the test is
+// waiting for, and no `clickThroughPinPrompt` is running to clear it. The
+// sheet is queued, not dropped, but the wait expires first.
+//
+// So specs that open sheets settle the nudge once, up front, instead of
+// racing it. Bounded and swallowed: specs that never reach a funded account
+// (onboarding-only flows) never raise it, and the tolerant path keeps this
+// usable from any post-onboarding point.
+export const settlePinPrompt = async (targetPage: Page): Promise<void> => {
+    const notNow = targetPage.getByTestId('pin_security_prompt_not_now_button')
+    const appeared = await notNow
+        .waitFor({ state: 'visible', timeout: 15_000 })
+        .then(() => true)
+        .catch(() => false)
+    if (!appeared) return
+    await notNow.click({ timeout: 5000 }).catch(() => {})
+    await notNow.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => {})
+}

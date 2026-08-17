@@ -85,13 +85,32 @@ async function checkActivityBatch(
         }
         return activityMap
     } catch (error) {
-        // Fast-lookup is best-effort: a transient indexer failure marks the
-        // batch as inactive so HD scanning advances via the gap limit
-        // instead of stalling. The user can re-import to pick up addresses
-        // missed this way. The rekeyed-account scan (`checkRekeyed`) chose
-        // the opposite trade-off and surfaces failures — this path is the
-        // hot one during onboarding and degrading silently is intentional.
-        logger.warn('fastLookup failed; treating batch as inactive', {
+        // Fast-lookup is best-effort: a failed probe marks the batch as
+        // inactive so HD scanning advances via the gap limit instead of
+        // stalling. The user can re-import to pick up addresses missed this
+        // way. The rekeyed-account scan (`checkRekeyed`) chose the opposite
+        // trade-off and surfaces failures — this path is the hot one during
+        // onboarding and degrading silently is intentional.
+        //
+        // The probe is the **Pera backend** (`fetchAccountFastLookup` ->
+        // `queryClient({ backend: 'pera' })`), NOT the indexer. That matters
+        // for two reasons:
+        //
+        //  - On a network with no Pera deployment — betanet, and any custom
+        //    node such as an fnet instance — `backendUrl` is empty, so
+        //    `queryClient` throws `PeraServiceUnavailableError` before a
+        //    socket opens. Every address in every batch therefore reports as
+        //    non-existent and discovery finds nothing, falling back to the
+        //    single master account in `discoverAccounts`. This is a hard,
+        //    deterministic failure on those networks, not a transient blip:
+        //    "service structurally absent" is currently indistinguishable
+        //    from "address not on chain". `fetchAccountExists` (the
+        //    single-address sibling) deliberately throws instead, for exactly
+        //    this reason.
+        //  - The indexer *can* answer the same question and is reachable on
+        //    those networks, so a fallback is possible. Doing so is tracked
+        //    separately — see `docs/prompts/pera-backend-public-fallback.md`.
+        logger.warn('Pera fast-lookup failed; treating batch as inactive', {
             source: 'account-discovery.checkActivityBatch',
             batchSize: addresses.length,
             error,

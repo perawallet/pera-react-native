@@ -21,6 +21,9 @@ updates:
         - "*"
       exclude:
         - "@algorandfoundation/keystore"
+        - "@algorandfoundation/keystore-core"
+        - "@algorandfoundation/keystore-node"
+        - "@algorandfoundation/keystore-web"
         - "@algorandfoundation/react-native-keystore"
         - "@algorandfoundation/react-native-passkey-autofill"
         - "expo"

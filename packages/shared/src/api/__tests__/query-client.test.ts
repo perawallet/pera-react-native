@@ -959,6 +959,31 @@ describe('queryClient', () => {
     })
 
     it('should set Content-Type and API key headers via setStandardHeaders', async () => {
+        // capturedHooks is a shared singleton overwritten by every `ky.create`
+        // call (see "does not re-append the request logger" above), so it ends
+        // up holding the last-created client's hooks rather than the pera
+        // client's — grab the real `setStandardHeaders` directly off the
+        // mainnet pera client's create() call instead.
+        //
+        // Two things this must NOT assume, both since the runtime-network work
+        // made client construction lazy:
+        //  - that importing the module creates any client at all. It does not
+        //    ("NEVER at module import time" — see `ensureClientsBuilt`), so a
+        //    request has to run first to trigger the build.
+        //  - that the pera client is `mock.calls[0]`. `ensureClientsBuilt`
+        //    builds every network's algod/indexer/pera in one pass, so the
+        //    client is located by its prefix, not by call order.
+        type PeraClientConfig = {
+            prefix: string
+            hooks: {
+                beforeRequest: Array<
+                    (state: { request: { headers: Headers } }) => void
+                >
+            }
+        }
+
+        vi.resetModules()
+        mockKy.create.mockClear()
         const { queryClient } = await import('../query-client')
         mockJson.mockResolvedValue({ success: true })
 
@@ -969,9 +994,22 @@ describe('queryClient', () => {
             method: 'GET',
         })
 
-        // The mock request object should have headers set by setStandardHeaders
-        // This is verified by the fact that the request completes successfully
-        expect(mockKy).toHaveBeenCalled()
+        const mainnetPeraClientConfig = mockKy.create.mock.calls.find(
+            ([clientConfig]: [PeraClientConfig]) =>
+                clientConfig.prefix === 'https://mainnet.pera.algo',
+        )?.[0] as PeraClientConfig | undefined
+
+        expect(mainnetPeraClientConfig).toBeDefined()
+
+        const [setStandardHeaders] = (
+            mainnetPeraClientConfig as PeraClientConfig
+        ).hooks.beforeRequest
+
+        const request = { headers: new Headers() }
+        setStandardHeaders({ request })
+
+        expect(request.headers.get('content-type')).toBe('application/json')
+        expect(request.headers.get('x-api-key')).toBe('test-api-key')
     })
 
     it('returns undefined data for 200 with an empty body (no SyntaxError)', async () => {

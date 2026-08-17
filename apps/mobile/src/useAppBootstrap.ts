@@ -37,7 +37,7 @@ import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
     getProvider,
-    hydrateKeystore,
+    runKeystoreMaintenance,
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
@@ -168,10 +168,23 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 // do startup hydration and setup in parallel to speed up time
                 // to interactive. Keystore/database failures must fail the whole
                 // bootstrap; only the passkey branch is allowed to fail silently.
-                const keystoreBranch = hydrateKeystore().catch(err => {
-                    logger.error('Keystore hydration failed', { error: err })
-                    throw err
-                })
+                //
+                // A throw here (an unreadable master key) deliberately fails
+                // bootstrap: the alternative is presenting an empty wallet,
+                // which is what prompts users to wipe and re-onboard on top of
+                // keys that were still on disk.
+                const keystoreBranch = runKeystoreMaintenance()
+                    .then(({ repair }) => {
+                        if (repair.repaired > 0 || repair.failed > 0) {
+                            logger.info('Quantum key material repaired', repair)
+                        }
+                    })
+                    .catch(err => {
+                        logger.error('Keystore hydration failed', {
+                            error: err,
+                        })
+                        throw err
+                    })
 
                 const passkeyBranch = runPasskeyAutofillBootstrap().catch(err =>
                     logger.error('Passkey autofill bootstrap failed', {

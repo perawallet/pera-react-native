@@ -87,13 +87,6 @@ vi.mock('@perawallet/wallet-core-kms', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-device', () => ({
-    useUpdateDeviceMutation: vi.fn(() => ({
-        mutateAsync: vi.fn(async () => ({})),
-    })),
-    useDeviceID: vi.fn(() => 'device-id'),
-}))
-
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         deviceInfo: {

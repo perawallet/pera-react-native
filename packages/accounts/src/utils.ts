@@ -323,9 +323,12 @@ type RekeySourceFields = Pick<BaseWalletAccount, 'address' | 'rekeyAddress'>
  * Mirrors Android
  * `RekeyToStandardAccountSelectionPreviewUseCase.isAccountEligibleToRekey`.
  *
- * Quantum targets are gated on `isQuantumTargetEnabled`: until quantum signing
- * ships (PQ-006), rekeying to a quantum account is a one-way door — undo would
- * resolve a quantum auth that no signer supports yet.
+ * Quantum targets are gated on `isQuantumTargetEnabled`, and that gate is a
+ * hard functional limit rather than a rollout toggle. Signing works locally,
+ * but mainnet and testnet algod still reject the `pqsig` field, so on those
+ * networks the rekey is a one-way door that strands the funds: every later
+ * transaction needs a `pqsig`, *including the rekey-back that would undo it*.
+ * See `docs/QUANTUM_PQ_INTEGRATION.md`.
  */
 export const isEligibleRekeyTarget = (
     target: WalletAccount,

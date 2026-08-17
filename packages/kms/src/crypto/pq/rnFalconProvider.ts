@@ -25,10 +25,13 @@ import type { PQSignatureProvider } from './types'
  * `Falcon` type) so the pure-logic KMS package does not take a compile-time
  * dependency on `react-native-nitro-modules`' `HybridObject` types.
  *
- * All buffers are raw `ArrayBuffer`s: keys and signatures are exact-length
- * Falcon-1024 byte blobs. `signCompressed` signs the raw `message` bytes as
- * given (no hashing/digesting), matching the {@link PQSignatureProvider}
- * contract.
+ * All buffers are raw `ArrayBuffer`s: keys are exact-length Falcon-1024 byte
+ * blobs. `signCompressed`/`verify` are deliberately absent even though the
+ * native module exposes them: the keystore adapts the SAME native module onto
+ * its own signing shim (`createFalconBinding`, in
+ * `@algorandfoundation/react-native-keystore@1.0.0-canary.19`
+ * `dist/falcon.js`) and signs from sealed material, so nothing here ever holds
+ * a secret key to sign with.
  */
 type NativeFalconModule = {
     /** Falcon-1024 public-key length in bytes (1793). */
@@ -37,7 +40,6 @@ type NativeFalconModule = {
         publicKey: ArrayBuffer
         privateKey: ArrayBuffer
     }
-    signCompressed(privateKey: ArrayBuffer, message: ArrayBuffer): ArrayBuffer
 }
 
 /**
@@ -55,12 +57,20 @@ const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
 /**
  * Native on-device Falcon-1024 signature provider backed by the nitro module.
  *
- * Loaded lazily via `require` (not a top-level `import`) so that merely
- * importing this file — e.g. through `getPQProvider`'s static import graph in
- * node/test environments, which never take the React Native branch — does not
- * pull in the native module (whose entry point instantiates the HybridObject
- * at load time and throws off-device). The `require` only executes on-device,
- * when `getPQProvider` selects this provider.
+ * Provider selection is a build-time choice, not a runtime branch: Metro
+ * resolves `getPQProvider.native.ts` (which calls this factory) in place of
+ * the base `getPQProvider.ts` (WASM) for the `ios`/`android` platforms, via
+ * its standard `.native.*` platform-extension resolution — there is no
+ * runtime check deciding between them.
+ *
+ * That selection does not make this file's `require` safe to make eager,
+ * though: the pq barrel (`index.ts`) re-exports `createRNFalconProvider`
+ * directly, independent of which `getPQProvider` variant the bundler picked.
+ * So merely importing the barrel — e.g. in node/test environments, off-device
+ * — still imports this file. Loaded lazily via `require` (not a top-level
+ * `import`), the native module's entry point (which instantiates the
+ * HybridObject at load time and throws off-device) is only evaluated when
+ * `createRNFalconProvider` is actually called, not on import.
  */
 export const createRNFalconProvider = (): PQSignatureProvider => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -79,14 +89,6 @@ export const createRNFalconProvider = (): PQSignatureProvider => {
                 publicKey: new Uint8Array(publicKey),
                 secretKey: new Uint8Array(privateKey),
             }
-        },
-        sign(secretKey, message) {
-            return new Uint8Array(
-                FalconModule.signCompressed(
-                    toArrayBuffer(secretKey),
-                    toArrayBuffer(message),
-                ),
-            )
         },
     }
 }

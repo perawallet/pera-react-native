@@ -30,9 +30,30 @@ vi.mock('falcon-1024', () => {
     )
 })
 
+// Same guard for the native module. `@joe-p/react-native-falcon`'s module
+// scope instantiates the native HybridObject, so an eager import crashes the
+// app at startup exactly like the falcon-1024 glue does — and
+// `getPQProvider.native.ts` is the file Metro actually resolves on device, so
+// it is the one that matters most. Neither this spec (which previously only
+// imported the barrel, and the barrel resolves the NON-native factory under
+// node) nor the source-scanning tests covered it: those only assert WHICH
+// factory is named, not that the `require` inside it stays lazy.
+vi.mock('@joe-p/react-native-falcon', () => {
+    throw new Error(
+        '@joe-p/react-native-falcon was evaluated at import time — its module ' +
+            'scope instantiates the native HybridObject, which crashes the app ' +
+            'at startup. Load it lazily inside createRNFalconProvider instead.',
+    )
+})
+
 describe('PQ provider import-time side effects', () => {
     test('importing the pq barrel graph does not evaluate falcon-1024', async () => {
         const { getPQProvider } = await import('../index')
+        expect(getPQProvider).toBeTypeOf('function')
+    })
+
+    test('importing the native entry point does not evaluate the native Falcon module', async () => {
+        const { getPQProvider } = await import('../getPQProvider.native')
         expect(getPQProvider).toBeTypeOf('function')
     })
 })

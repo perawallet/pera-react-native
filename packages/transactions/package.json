@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
+    "algosdk": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",

@@ -24,7 +24,7 @@ import type {
  *
  * The native surface is **platform-dependent**: several methods
  * (`getStoredCredentials`, `refreshCredentialIdentities`,
- * `replaceCredentialIdentities`, `setDerivedMainKey`, `getDiagnostics`) are
+ * `replaceCredentialIdentities`, `getDiagnostics`) are
  * implemented on iOS only — on Android the credential provider reads MMKV
  * directly so they're simply not registered. Every call therefore goes
  * through {@link PasskeyAutofillService.invoke} which no-ops when the method
@@ -32,9 +32,12 @@ import type {
  */
 export interface PasskeyAutofillNativeAPI {
     setMasterKey(secret: Uint8Array): Promise<void>
+    setMainKeyId(id: string): Promise<void>
+    getMainKeyId?(): Promise<string | null>
+    /** @deprecated use {@link PasskeyAutofillNativeAPI.setMainKeyId} */
     setHdRootKeyId(id: string): Promise<void>
+    /** @deprecated use {@link PasskeyAutofillNativeAPI.getMainKeyId} */
     getHdRootKeyId?(): Promise<string | null>
-    setDerivedMainKey?(hex: string): Promise<void>
     configureIntentActions(get: string, create: string): Promise<void>
     clearCredentials(): Promise<void>
     deleteCredential(credentialId: string): Promise<void>
@@ -88,30 +91,28 @@ export class PasskeyAutofillService {
         return this.invoke('setMasterKey', [secret], undefined)
     }
 
+    /**
+     * Points the credential providers at the deterministic-P256 main key. An
+     * id, never a secret: both providers read the material themselves out of
+     * the shared keystore.
+     */
+    setMainKeyId(id: string): Promise<void> {
+        return this.invoke('setMainKeyId', [id], undefined)
+    }
+
+    getMainKeyId(): Promise<string | null> {
+        return this.invoke<string | null>('getMainKeyId', [], null)
+    }
+
+    /**
+     * Deprecated upstream in favour of {@link setMainKeyId}, and on iOS
+     * canary.24 both land in the same `defaultMainKeyIdKey` slot
+     * (`ReactNativePasskeyAutofillModule.swift:41`/`:61` → `saveMainKeyId`) —
+     * so this is for a wallet that has no main key yet, not a second slot to
+     * fill alongside one.
+     */
     setHdRootKeyId(id: string): Promise<void> {
         return this.invoke('setHdRootKeyId', [id], undefined)
-    }
-
-    /**
-     * Whether the underlying native module actually implements
-     * `setDerivedMainKey`. Lets callers avoid even *building* the derived-key
-     * hex string (a secret) when nothing on the native side would consume it —
-     * the method is absent on current iOS/Android builds, so the string would
-     * otherwise be materialized only to be discarded by a no-op.
-     */
-    get supportsDerivedMainKey(): boolean {
-        return typeof this.native.setDerivedMainKey === 'function'
-    }
-
-    /**
-     * Forward-compatible. Newer canary builds of the autofill module expose
-     * `setDerivedMainKey` so the native side can derive credentials without
-     * round-tripping through the keystore on every assertion. Older builds
-     * (and Android) derive on demand, so this no-ops when absent — guard the
-     * call with {@link supportsDerivedMainKey} to skip stringifying the secret.
-     */
-    setDerivedMainKey(hex: string): Promise<void> {
-        return this.invoke('setDerivedMainKey', [normalizeHex(hex)], undefined)
     }
 
     /**
@@ -180,19 +181,4 @@ export class PasskeyAutofillService {
         }
         return this.native.addListener(eventName, cb)
     }
-}
-
-const normalizeHex = (input: string): string => {
-    const hasEdgeWhitespace =
-        input.length > 0 && (/^\s/.test(input) || /\s$/.test(input))
-    const hasPrefix = input.startsWith('0x') || input.startsWith('0X')
-    // Already-clean hex (the only form internally generated for secret
-    // material) is returned untouched. `.trim()`/`.slice()` each allocate a
-    // fresh, immutable copy of the secret that lingers in memory until GC, so
-    // we avoid them unless the input genuinely needs normalizing.
-    if (!hasEdgeWhitespace && !hasPrefix) return input
-    const trimmed = hasEdgeWhitespace ? input.trim() : input
-    return trimmed.startsWith('0x') || trimmed.startsWith('0X')
-        ? trimmed.slice(2)
-        : trimmed
 }

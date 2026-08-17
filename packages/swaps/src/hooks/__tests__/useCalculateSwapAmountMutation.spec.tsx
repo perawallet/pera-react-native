@@ -22,6 +22,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
 }))
 
+const mocks = vi.hoisted(() => ({
+    useDeviceID: vi.fn<() => string | null>(),
+}))
+
+vi.mock('@perawallet/wallet-core-device', () => ({
+    useDeviceID: mocks.useDeviceID,
+}))
+
 vi.mock('../../api', () => ({
     calculateSwapAmount: vi.fn(),
 }))
@@ -65,9 +73,10 @@ function createThrowOnErrorWrapper() {
 describe('swaps/useCalculateSwapAmountMutation', () => {
     beforeEach(() => {
         vi.mocked(calculateSwapAmount).mockResolvedValue(mockResult)
+        mocks.useDeviceID.mockReturnValue('123456')
     })
 
-    test('calls calculateSwapAmount and returns result', async () => {
+    test('calls calculateSwapAmount with the registered device id and returns result', async () => {
         const { result } = renderHook(() => useCalculateSwapAmountMutation(), {
             wrapper: createWrapper(),
         })
@@ -78,8 +87,30 @@ describe('swaps/useCalculateSwapAmountMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(calculateSwapAmount).toHaveBeenCalledWith(mockRequest, 'mainnet')
+        expect(calculateSwapAmount).toHaveBeenCalledWith(
+            { ...mockRequest, device: '123456' },
+            'mainnet',
+        )
         expect(result.current.data).toEqual(mockResult)
+    })
+
+    test('omits device entirely before the device has registered', async () => {
+        mocks.useDeviceID.mockReturnValue(null)
+
+        const { result } = renderHook(() => useCalculateSwapAmountMutation(), {
+            wrapper: createWrapper(),
+        })
+
+        act(() => {
+            result.current.mutate(mockRequest)
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        // Not `device: null` — the key must be absent from the body.
+        const [sent] = vi.mocked(calculateSwapAmount).mock.lastCall!
+        expect(sent).toEqual(mockRequest)
+        expect('device' in sent).toBe(false)
     })
 
     test('flags isError without re-throwing under the global throwOnError default', async () => {

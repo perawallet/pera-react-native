@@ -11,11 +11,14 @@
  */
 
 import { Provider } from '@algorandfoundation/wallet-provider'
-import { WithKeyStore } from '@algorandfoundation/react-native-keystore'
+import { WithKeyStore } from '@algorandfoundation/keystore-web'
+import { WithMigrations } from '@algorandfoundation/provider-migrations'
 import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-driver'
 import { WithLedgerWebBleExtension } from '@perawallet/wallet-extension-ledger-web-ble'
 import { WithLedgerWebUsbExtension } from '@perawallet/wallet-extension-ledger-web-usb'
 import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
+import { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
+import { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs'
 import type {
     PeraExtensions,
     PeraProvider as PeraProviderShape,
@@ -29,8 +32,11 @@ export type PeraProvider = PeraProviderShape
  * resolution picks this file in place of `pera-provider.ts` for web
  * bundles (the mobile web export and the browser extension it ships as),
  * swapping the native Ledger BLE/USB transports for their Web
- * Bluetooth/WebHID counterparts. Every other extension — platform services,
- * keystore, passkey autofill — is composed identically to the native file.
+ * Bluetooth/WebHID counterparts, and the keystore extension for
+ * keystore-web's (the singleton injects a concrete engine through
+ * `options.api.keystore`, so this only decides which package's Provider
+ * wrapper reads it). Platform services and passkey autofill are composed
+ * identically to the native file.
  */
 export const PeraProvider: {
     new (
@@ -40,9 +46,18 @@ export const PeraProvider: {
     ): PeraProviderShape
     EXTENSIONS: PeraExtensions
 } & typeof Provider = Provider.withExtensions([
+    // First, and load-bearing: every later extension registers its migrations
+    // through `provider.migrations`, which does not exist until this has run.
+    WithMigrations,
     WithPlatformExtension,
     WithLedgerWebBleExtension,
     WithLedgerWebUsbExtension,
+    // Metro resolves the `.web.ts` no-op sibling here. Kept in the same slot as
+    // the native file so the two arrays can't drift out of order.
+    WithPeraKeystorePreflight,
     WithKeyStore,
+    // Metro resolves the `.web.ts` no-op sibling here too. Kept in the same
+    // slot as the native file so the two arrays can't drift out of order.
+    WithPeraKeystoreRepairs,
     WithPasskeyAutofill,
 ] as const)

@@ -10,20 +10,38 @@
  limitations under the License
  */
 
+// Type-only import: erased at compile time, so this does NOT pull algosdk (or
+// anything else) into the pure-crypto seam at runtime. It exists so the
+// provider contract names the same scheme-id vocabulary the rest of the app
+// uses, rather than a hardcoded literal that a second PQ scheme would have to
+// widen by hand.
+import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
+
 /**
- * Pure post-quantum signature provider contract.
+ * Pure post-quantum signature provider contract: scheme identity plus
+ * deterministic keypair derivation.
+ *
+ * It does NOT sign. The keystore owns custody — it derives and seals the
+ * Falcon private key itself and signs internally, so no secret key is
+ * available to hand a provider. What remains is used for address derivation
+ * and as an oracle independent of the keystore, which is what lets the quantum
+ * fixtures cross-check the keystore's own derivation instead of confirming it
+ * against itself.
  *
  * Implementations MUST be pure crypto: no algosdk imports, no address
- * derivation, no digest/hash computation over `message` inside `sign`.
- * Digest contracts belong to the signer / Seam B, out of scope here.
+ * derivation. Digest contracts belong to the signer / Seam B, out of scope
+ * here.
  */
 export interface PQSignatureProvider {
-    readonly scheme: 'falcon1024'
+    /**
+     * Which PQ scheme this provider implements. `useKMS.getPQSigningInfo`
+     * reports THIS value rather than a literal of its own, so a provider for a
+     * second scheme is self-describing all the way to the wire format.
+     */
+    readonly scheme: PQSchemeId
     readonly publicKeyLength: number
     generateKeypairFromSeed(seed: Uint8Array): {
         publicKey: Uint8Array
         secretKey: Uint8Array
     }
-    /** Signs the raw `message` bytes as given; does not hash/digest them. */
-    sign(secretKey: Uint8Array, message: Uint8Array): Uint8Array
 }

@@ -20,11 +20,10 @@
 //
 // Sharing `navigationRef` across both containers is safe: onboarding and main
 // are exclusive shell states, so they never mount simultaneously.
-import React, { useMemo } from 'react'
+import React from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useDeviceRegistration } from '@perawallet/wallet-core-device'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useTokenListener } from '@modules/token'
 import { PromptContainer } from '@modules/prompts'
@@ -67,6 +66,7 @@ import { createAppStackNavigator } from './createAppStackNavigator'
 import { createExpandedRedirect } from './createExpandedRedirect.web'
 import { useExpandedFlowNavigation } from './useExpandedFlowNavigation.web'
 import { routeCapabilities } from '@routes/capabilities'
+import { useDeviceAccountRegistrations } from '@hooks/useDeviceAccountRegistrations'
 import { type RootStackParamList } from './types'
 
 const RootStack = createAppStackNavigator<RootStackParamList>()
@@ -106,12 +106,7 @@ export const WebMainRoutes = ({
 }: WebMainRoutesProps): React.JSX.Element => {
     const isDarkMode = useIsDarkMode()
     const isPeraCardEnabled = useIsPeraCardEnabled()
-    const accounts = useAllAccounts()
-    const addresses = useMemo(
-        () => accounts?.map(account => account.address) ?? [],
-        [accounts],
-    )
-    useDeviceRegistration(addresses)
+    useDeviceRegistration(useDeviceAccountRegistrations())
     // Native mounts all of these in RootComponent, which the web shell
     // replaces — without them the extension registers devices with no push
     // token and drops notification-tap deeplinks. The received listener is a

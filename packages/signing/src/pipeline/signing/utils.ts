@@ -18,6 +18,7 @@ import {
     hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
+    isQuantumAccount,
     RekeyTargetNotFoundError,
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -51,9 +52,17 @@ export const getLocalParticipants = (
             a => a.address === participantAddress,
         )
         if (!localAccount) return []
+        // Quantum participants are excluded even though they have signing
+        // keys: multisig slots verify Ed25519 signatures only, and algosdk's
+        // own PQ signer throws "FALCON-1024 does not support multisig
+        // signing" — a quantum participant can never contribute a usable
+        // subsignature. Mirrors canSignViaParticipants in
+        // packages/accounts/src/utils.ts; keep both in agreement rather than
+        // "fixing" this by admitting quantum instead.
         if (
-            !hasSigningKeys(localAccount) &&
-            !isHardwareWalletAccount(localAccount)
+            (!hasSigningKeys(localAccount) &&
+                !isHardwareWalletAccount(localAccount)) ||
+            isQuantumAccount(localAccount)
         )
             return []
         return [localAccount]

@@ -26,7 +26,11 @@ import {
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
+import {
+    clickThroughPinPrompt,
+    dismissPinPromptIfPresent,
+    settlePinPrompt,
+} from './pin-prompt'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -90,6 +94,10 @@ test.beforeAll(async () => {
         timeout: 30_000,
     })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
+
+    // Settle the security nudge before any sheet-opening test runs: while it
+    // is pending it holds every new bottom-sheet presentation.
+    await settlePinPrompt(page)
 })
 
 test.afterAll(async () => {

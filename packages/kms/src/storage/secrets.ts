@@ -16,6 +16,18 @@ import {
     getProvider,
 } from '@perawallet/wallet-extension-provider'
 import { zeroBytes } from '../crypto/secure-memory'
+import { KeyManagementError } from '../errors'
+
+/** `secrets` is optional on the KeyStore contract, so a backend may omit it. */
+const secretStore = () => {
+    const { secrets } = getProvider().key.store
+    if (!secrets) {
+        throw new KeyManagementError(
+            'Keystore backend does not implement secrets',
+        )
+    }
+    return secrets
+}
 
 /**
  * Stores an arbitrary byte payload in the keystore as a canonical
@@ -27,24 +39,16 @@ export const commitSecret = async (params: {
     bytes: Uint8Array
     metadata?: Record<string, unknown>
 }): Promise<void> => {
-    const keyStore = getProvider().key.store
-
     const valueCopy = new Uint8Array(params.bytes)
     try {
-        await keyStore.generate({
-            type: 'secret-key',
-            algorithm: 'raw',
-            extractable: true,
-            keyUsages: [],
-            params: {
-                id: params.id,
-                params: {
-                    value: valueCopy,
-                    ...(params.metadata !== undefined
-                        ? { metadata: params.metadata }
-                        : {}),
-                },
-            },
+        // NOT `generate`: its type router has no `secret-key` branch, so the
+        // call falls through to the host key path and dies on `algorithm:
+        // 'raw'` with "Unrecognized algorithm name".
+        await secretStore().put(valueCopy, {
+            id: params.id,
+            ...(params.metadata !== undefined
+                ? { metadata: params.metadata }
+                : {}),
         })
     } finally {
         zeroBytes(valueCopy)
@@ -81,8 +85,10 @@ export const withSecret = async <T>(
     handler: (bytes: Uint8Array) => T | Promise<T>,
 ): Promise<Nullable<T>> => {
     if (!hasSecret(id)) return null
-    const data = await getProvider().key.store.export(id)
-    const bytes = data.privateKey
+    // Secrets are the one entry kind meant to be read back, and `secrets.get`
+    // is that channel: `export` returns public metadata only, so reading a
+    // secret through it silently yields nothing.
+    const bytes = await secretStore().get(id)
     if (!bytes) return null
     try {
         return await handler(bytes)

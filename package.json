@@ -32,10 +32,12 @@
     "localnet:reset": "bash tools/localnet.sh reset",
     "localnet:status": "bash tools/localnet.sh status",
     "localnet:fund": "tsx tools/localnet-fund.ts",
+    "localnet:quantum-check": "tsx tools/localnet-quantum-check.ts",
     "bump-version": "bash tools/bump-version.sh",
     "audit": "pnpm audit --prod --audit-level=high",
     "lint:bundle": "bash tools/check-prod-bundle.sh",
     "check:ssl-pins": "node tools/check-pinned-chains.mjs",
+    "check:single-algosdk": "node tools/check-single-algosdk.mjs",
     "fallow": "fallow --skip health"
   },
   "devDependencies": {
@@ -47,6 +49,7 @@
     "eslint": "catalog:",
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-unused-imports": "catalog:",
+    "falcon-1024": "catalog:",
     "fallow": "3.14.0",
     "msw": "catalog:",
     "oxfmt": "catalog:",
