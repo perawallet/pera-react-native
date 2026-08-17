@@ -15,6 +15,7 @@ import { fireEvent, render, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useCameraDevice } from 'react-native-vision-camera'
 import { QRScannerView } from '../QRScannerView'
+import { LockOverlayProvider } from '@hooks/useIsLockOverlayVisible'
 
 // The camera module is lazily imported by QRScannerView; rejecting that import
 // exercises the error boundary + retry path (PERA-4465). The throw lives in an
@@ -94,6 +95,53 @@ describe('QRScannerView', () => {
             />,
         )
         expect(screen.queryByText(CUSTOM_TITLE)).toBeNull()
+    })
+
+    describe('app lock', () => {
+        const renderWithLockOverlay = (
+            isLockOverlayVisible: boolean,
+            onClose: () => void,
+        ) => (
+            <LockOverlayProvider value={isLockOverlayVisible}>
+                <QRScannerView
+                    isVisible={true}
+                    animationType='none'
+                    title={CUSTOM_TITLE}
+                    onClose={onClose}
+                    onSuccess={vi.fn()}
+                />
+            </LockOverlayProvider>
+        )
+
+        beforeEach(() => {
+            vi.mocked(useCameraDevice).mockReturnValue({
+                id: 'mock-device',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- minimal device stub
+            } as any)
+        })
+
+        it('tears down the scanner while the lock overlay is up', () => {
+            const onClose = vi.fn()
+            const { rerender } = render(renderWithLockOverlay(false, onClose))
+            expect(screen.getByText(CUSTOM_TITLE)).toBeTruthy()
+
+            rerender(renderWithLockOverlay(true, onClose))
+
+            expect(screen.queryByText(CUSTOM_TITLE)).toBeNull()
+            // The parent owns onClose and some parents navigate on it — routing
+            // must not move underneath a locked app.
+            expect(onClose).not.toHaveBeenCalled()
+        })
+
+        it('restores the scanner once the lock overlay clears', () => {
+            const onClose = vi.fn()
+            const { rerender } = render(renderWithLockOverlay(false, onClose))
+            rerender(renderWithLockOverlay(true, onClose))
+
+            rerender(renderWithLockOverlay(false, onClose))
+
+            expect(screen.getByText(CUSTOM_TITLE)).toBeTruthy()
+        })
     })
 
     describe('camera module load failure (PERA-4465)', () => {

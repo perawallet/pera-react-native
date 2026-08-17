@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { render, screen } from '@test-utils/render'
 import { AutoLockGuard } from '../AutoLockGuard'
-import { useIsLockOverlayVisible } from '../lockOverlayContext'
+import { useIsLockOverlayVisible } from '@hooks/useIsLockOverlayVisible'
 import { useAutoLockListener } from '../useAutoLockListener'
 import { useLockScreen } from '../useLockScreen'
 import { PWText } from '@components/core'

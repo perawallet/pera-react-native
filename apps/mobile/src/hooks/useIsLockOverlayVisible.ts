@@ -12,6 +12,10 @@
 
 import { createContext, useContext } from 'react'
 
+// AutoLockGuard owns the Provider; this lives outside @modules/security because
+// @components/core consumes it (PWDropdown), and reaching it through the
+// security barrel would drag @perawallet/wallet-core-security — a persisted
+// store that hydrates at module eval — into core's graph.
 const IS_LOCK_OVERLAY_VISIBLE_OUTSIDE_GUARD = false
 
 const LockOverlayContext = createContext(IS_LOCK_OVERLAY_VISIBLE_OUTSIDE_GUARD)
