@@ -31,7 +31,7 @@
         "@perawallet/wallet-extension-platform-chrome": "workspace:*",
         "@perawallet/wallet-extension-platform-driver": "workspace:*",
         "@sqlite.org/sqlite-wasm": "catalog:",
-        "firebase": "^12.16.0"
+        "firebase": "^12.17.1"
     },
     "devDependencies": {
         "@noble/hashes": "catalog:",
@@ -50,6 +50,6 @@
         "react-native-web": "^0.21.2",
         "typescript": "catalog:",
         "vitest": "catalog:",
-        "ws": "^8.20.1"
+        "ws": "^8.21.3"
     }
 }

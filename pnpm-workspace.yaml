@@ -12,7 +12,7 @@ catalog:
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.22
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
-  "@lottiefiles/dotlottie-react": 0.19.12
+  "@lottiefiles/dotlottie-react": 0.19.13
   "@babel/runtime": ^7.29.2
   "@expo/app-integrity": ~57.0.0
   "@joe-p/algosdk": 3.7.0-beta.1
@@ -30,13 +30,13 @@ catalog:
   "@react-native-firebase/crashlytics": ^26.0.0
   "@react-native-firebase/messaging": ^26.0.0
   "@react-native-firebase/remote-config": ^26.0.0
-  "@scure/base": 2.2.0
+  "@scure/base": 2.3.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
   "@tanstack/query-async-storage-persister": ^5.99.0
   "@tanstack/react-query": ^5.99.0
   "@tanstack/react-query-persist-client": ^5.99.0
-  "@tanstack/store": 0.11.0
+  "@tanstack/store": 0.11.1
   "@testing-library/react": 16.3.2
   "@types/chrome": ^0.2.2
   "@types/node": ^20.19.39
