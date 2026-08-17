@@ -25,6 +25,7 @@ export const UserPreferences = {
     swapIntroductionSeen: 'swap-introduction-seen',
     onrampIntroductionSeen: 'onramp-introduction-seen',
     onrampXoTermsAccepted: 'onramp-xo-terms-accepted',
+    quantumDappWarningAcknowledged: 'quantum-dapp-warning-acknowledged',
 
     // Web-only master toggle for WebAuthn interception. Deliberately
     // camelCase (breaking this map's kebab-case convention) — it must match
@@ -52,5 +53,6 @@ export const OneTimeUserPreferenceFlags = [
     UserPreferences.swapIntroductionSeen,
     UserPreferences.onrampIntroductionSeen,
     UserPreferences.onrampXoTermsAccepted,
+    UserPreferences.quantumDappWarningAcknowledged,
     UserPreferences._securityPinSetupPrompt,
 ] as const
