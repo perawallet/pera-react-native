@@ -16,13 +16,9 @@ import {
 } from '@perawallet/wallet-core-remote-config'
 import { useIsQuantumAccountsEnabled } from './useIsQuantumAccountsEnabled'
 
-/**
- * Gates the one-time "this dApp may not support Quantum accounts" warning.
- * Defaults ON: the flag exists so the warning can be switched *off* once dApps
- * have implemented PQ support. Composing `useIsQuantumAccountsEnabled` rather
- * than re-reading its flag inherits the web capability gate and the
- * dev/staging dark-launch fallback for free.
- */
+// Defaults ON so it can be switched *off* once dApps support PQ. Composes
+// useIsQuantumAccountsEnabled rather than re-reading its flag to inherit the
+// web capability gate and the dev/staging fallback.
 export const useIsQuantumDappWarningEnabled = (): boolean => {
     const remoteConfig = useRemoteConfig()
     const isQuantumEnabled = useIsQuantumAccountsEnabled()
