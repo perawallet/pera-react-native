@@ -257,7 +257,7 @@ index a4169e2e756f2bcd4ae298c027c186bed61420bd..e7f8c9408b30d0a6d2389628c41ca3c1
    <dict>
      <key>ASCredentialProviderExtensionSupportedDomains</key>
 diff --git a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
-index d64561f675a22330593acb51a21392cb8652dd32..2da64dedcdf77e6c473e2fbd51bdf1f371e2eed8 100644
+index d64561f675a22330593acb51a21392cb8652dd32..0cd9d828947bec38b7eba3bd01b619c28d90e4e1 100644
 --- a/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
 +++ b/ios/AutofillCredentialProvider/CredentialProviderViewController.swift
 @@ -149,7 +149,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
@@ -269,7 +269,24 @@ index d64561f675a22330593acb51a21392cb8652dd32..2da64dedcdf77e6c473e2fbd51bdf1f3
          return
        }
  
-@@ -309,7 +309,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -191,9 +191,15 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+         attestationObject: WebAuthn.attestationObject(authenticatorData: authData)
+       )
+ 
++      // PERA LOCAL PATCH: upstream canary.24 defect, not a Pera preference —
++      // `derivedParentSecret` is undeclared here and the extension does not
++      // compile. `parent.bytes` is the same value line 163 derives the
++      // credential from, and the same secret `attachPrfAssertionOutput`
++      // re-derives PRF from on every later assertion. Drop this hunk when
++      // upstream fixes it; keep it on every version bump until then.
+       attachPrfRegistrationOutput(
+         to: registrationCredential,
+-        derivedParentSecret: derivedParentSecret,
++        derivedParentSecret: parent.bytes,
+         relyingPartyIdentifier: identity.relyingPartyIdentifier,
+         userHandle: userHandle
+       )
+@@ -309,7 +315,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy assertion start")
@@ -278,7 +295,7 @@ index d64561f675a22330593acb51a21392cb8652dd32..2da64dedcdf77e6c473e2fbd51bdf1f3
        DispatchQueue.main.async {
          guard let self else {
            return
-@@ -407,7 +407,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
+@@ -407,7 +413,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
      store?.appendDiagnostic("evaluatePolicy start")
