@@ -10,8 +10,12 @@
  limitations under the License
  */
 
+import { Trans } from 'react-i18next'
+import { config } from '@perawallet/wallet-core-config'
+import { PWText } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
+import { useWebView } from '@modules/webview'
 
 export type QuantumDappWarningDecision = 'continue' | 'cancel'
 
@@ -22,13 +26,33 @@ export type QuantumDappWarningDecision = 'continue' | 'cancel'
  */
 export const QuantumDappWarningSheet = () => {
     const { t } = useLanguage()
+    const { pushWebView } = useWebView()
+
+    const handleLearnMore = () =>
+        pushWebView({
+            url: config.quantumAccountSupportUrl,
+            id: 'quantum-account-support',
+        })
 
     return (
         <ConfirmActionContent<QuantumDappWarningDecision>
             icon='warning'
             iconVariant='error'
             title={t('quantum.dapp_warning.title')}
-            message={t('quantum.dapp_warning.body')}
+            message={
+                <PWText variant='body'>
+                    <Trans
+                        i18nKey='quantum.dapp_warning.body'
+                        components={[
+                            <PWText
+                                key='learn-more'
+                                variant='link'
+                                onPress={handleLearnMore}
+                            />,
+                        ]}
+                    />
+                </PWText>
+            }
             confirmLabel={t('quantum.dapp_warning.confirm')}
             cancelLabel={t('quantum.dapp_warning.cancel')}
             confirmValue='continue'
