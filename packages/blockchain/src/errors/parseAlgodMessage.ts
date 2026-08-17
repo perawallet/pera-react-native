@@ -83,6 +83,21 @@ const matchMissingOptIn: Matcher = message => {
     }
 }
 
+// "asset N frozen in ADDR"
+const ASSET_FROZEN_RE = new RegExp(`asset (\\d+) frozen in (${ADDRESS})`)
+
+const matchAssetFrozen: Matcher = message => {
+    const m = ASSET_FROZEN_RE.exec(message)
+    if (!m) return null
+    return {
+        code: AlgodErrorCode.ASSET_FROZEN,
+        params: {
+            address: m[2],
+            assetId: BigInt(m[1]),
+        },
+    }
+}
+
 // "transaction already in ledger: TXID"
 const DUPLICATE_TXN_RE = new RegExp(
     `transaction already in ledger:\\s*(${TXID})`,
@@ -199,6 +214,7 @@ const MATCHERS: readonly Matcher[] = [
     matchOverspend,
     matchBelowMinBalance,
     matchMissingOptIn,
+    matchAssetFrozen,
     matchDuplicateTxn,
     matchExpiredTxn,
     matchNotAuthorized,

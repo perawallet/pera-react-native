@@ -107,7 +107,7 @@ describe('fetchAndPersistAccount', () => {
             status: 'Online',
             authAddr: { toString: () => 'REKEY_ADDR' },
             assets: [
-                { assetId: 10n, amount: 500n, isFrozen: false },
+                { assetId: 10n, amount: 500n, isFrozen: true },
                 { assetId: 20n, amount: 0n, isFrozen: false },
             ],
         })
@@ -136,9 +136,13 @@ describe('fetchAndPersistAccount', () => {
             network: 'mainnet',
             holdings: [
                 // ALGO injected as a base-units (microalgos) holding, first.
-                { assetId: '0', amount: new Decimal(1_500_000) },
-                { assetId: '10', amount: new Decimal(500) },
-                { assetId: '20', amount: new Decimal(0) },
+                {
+                    assetId: '0',
+                    amount: new Decimal(1_500_000),
+                    isFrozen: false,
+                },
+                { assetId: '10', amount: new Decimal(500), isFrozen: true },
+                { assetId: '20', amount: new Decimal(0), isFrozen: false },
             ],
         })
 
@@ -185,7 +189,9 @@ describe('fetchAndPersistAccount', () => {
         // No ASAs, but ALGO is always injected as a holding.
         expect(mockRefreshAccountHoldings).toHaveBeenCalledWith(
             expect.objectContaining({
-                holdings: [{ assetId: '0', amount: new Decimal(0) }],
+                holdings: [
+                    { assetId: '0', amount: new Decimal(0), isFrozen: false },
+                ],
             }),
         )
     })
@@ -202,8 +208,8 @@ describe('fetchAndPersistAccount', () => {
         expect(mockRefreshAccountHoldings).toHaveBeenCalledWith(
             expect.objectContaining({
                 holdings: [
-                    { assetId: '0', amount: new Decimal(0) },
-                    { assetId: '42', amount: new Decimal(0) },
+                    { assetId: '0', amount: new Decimal(0), isFrozen: false },
+                    { assetId: '42', amount: new Decimal(0), isFrozen: false },
                 ],
             }),
         )
@@ -225,7 +231,7 @@ describe('fetchAndPersistAccount', () => {
         })
         mockLookupAccountAssetsDo
             .mockResolvedValueOnce({
-                assets: [{ assetId: 1n, amount: 1n }],
+                assets: [{ assetId: 1n, amount: 1n, isFrozen: true }],
                 nextToken: 'page2',
             })
             .mockResolvedValueOnce({
@@ -252,9 +258,9 @@ describe('fetchAndPersistAccount', () => {
         expect(mockRefreshAccountHoldings).toHaveBeenCalledWith(
             expect.objectContaining({
                 holdings: [
-                    { assetId: '0', amount: new Decimal(0) },
-                    { assetId: '1', amount: new Decimal(1) },
-                    { assetId: '2', amount: new Decimal(2) },
+                    { assetId: '0', amount: new Decimal(0), isFrozen: false },
+                    { assetId: '1', amount: new Decimal(1), isFrozen: true },
+                    { assetId: '2', amount: new Decimal(2), isFrozen: false },
                 ],
             }),
         )
@@ -307,8 +313,8 @@ describe('fetchAndPersistAccount', () => {
         expect(mockRefreshAccountHoldings).toHaveBeenCalledWith(
             expect.objectContaining({
                 holdings: [
-                    { assetId: '0', amount: new Decimal(0) },
-                    { assetId: '7', amount: new Decimal(3) },
+                    { assetId: '0', amount: new Decimal(0), isFrozen: false },
+                    { assetId: '7', amount: new Decimal(3), isFrozen: false },
                 ],
             }),
         )

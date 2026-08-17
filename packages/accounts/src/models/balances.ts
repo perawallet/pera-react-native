@@ -22,6 +22,8 @@ export type AssetWithAccountBalance = {
     algoValue: Decimal
     /** USD price per whole unit of the asset, joined from the DB read. */
     usdPrice?: Decimal
+    /** Holding-level freeze from algod — frozen assets can't be transferred. */
+    isFrozen: boolean
 }
 
 export type AccountBalancesWithTotals = {

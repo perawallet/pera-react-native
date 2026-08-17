@@ -666,6 +666,10 @@
                 "title": "Varlık kabul edilmiyor",
                 "body": "Alıcı hesap, {{assetId}} ID’li varlığı henüz eklememiş. Alıcıdan varlığı eklemesini iste veya ASA Inbox üzerinden gönder."
             },
+            "asset_frozen": {
+                "title": "Varlık donduruldu",
+                "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Varlığı çözdürmek için varlığı oluşturanla iletişime geç."
+            },
             "duplicate_txn": {
                 "title": "Zaten gönderildi",
                 "body": "Bu işlem ağ tarafından zaten işlendi."

@@ -55,7 +55,7 @@ export type AccountSyncResult = {
     observedRound: Nullable<number>
 }
 
-type HoldingInput = { assetId: string; amount: Decimal }
+type HoldingInput = { assetId: string; amount: Decimal; isFrozen: boolean }
 
 // On a fresh import the background sync and every balance/summary query call
 // this with no balance row yet, firing N parallel account and holdings fetches
@@ -185,6 +185,7 @@ async function fetchAccountSnapshot(
             const holdings: HoldingInput[] = (info.assets ?? []).map(asset => ({
                 assetId: `${asset.assetId}`,
                 amount: new Decimal((asset.amount ?? 0n).toString()),
+                isFrozen: asset.isFrozen ?? false,
             }))
             return { info, holdings, observedRound: toRound(info.round) }
         } catch (error) {
@@ -223,6 +224,7 @@ async function fetchAllHoldings(
             holdings.push({
                 assetId: `${asset.assetId}`,
                 amount: new Decimal((asset.amount ?? 0n).toString()),
+                isFrozen: asset.isFrozen ?? false,
             })
         }
         next = page.nextToken
@@ -298,6 +300,7 @@ async function doFetchAndPersistAccount(
     holdings.unshift({
         assetId: ALGO_ASSET_ID,
         amount: new Decimal(info.amount.toString()),
+        isFrozen: false,
     })
 
     const holdingsChanged = await refreshAccountHoldings({

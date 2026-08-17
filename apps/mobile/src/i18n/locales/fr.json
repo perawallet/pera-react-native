@@ -666,6 +666,10 @@
                 "title": "Actif non accepté",
                 "body": "Le compte destinataire n’a pas ajouté l’actif {{assetId}}. Demandez au destinataire de l’ajouter, ou envoyez-le via la boîte de réception d’actifs."
             },
+            "asset_frozen": {
+                "title": "Actif gelé",
+                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Contactez le créateur de l’actif pour le dégeler."
+            },
             "duplicate_txn": {
                 "title": "Déjà soumise",
                 "body": "Cette transaction a déjà été traitée par le réseau."

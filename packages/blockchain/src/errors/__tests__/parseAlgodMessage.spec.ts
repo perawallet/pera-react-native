@@ -96,6 +96,19 @@ describe('parseAlgodMessage', () => {
         })
     })
 
+    describe('asset_frozen', () => {
+        test('parses asset-frozen-in-account', () => {
+            const message = `TransactionPool.Remember: transaction ${TXID}: asset 98655914 frozen in ${ADDR}`
+            expect(parseAlgodMessage(message)).toEqual({
+                code: AlgodErrorCode.ASSET_FROZEN,
+                params: {
+                    address: ADDR,
+                    assetId: 98655914n,
+                },
+            })
+        })
+    })
+
     describe('duplicate_txn', () => {
         test('parses transaction-already-in-ledger', () => {
             const message = `TransactionPool.Remember: transaction already in ledger: ${TXID}`

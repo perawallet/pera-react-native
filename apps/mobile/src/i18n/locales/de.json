@@ -658,6 +658,10 @@
                 "title": "Asset nicht akzeptiert",
                 "body": "Das empfangende Konto hat sich nicht für das Asset {{assetId}} angemeldet. Bitte den Empfänger, sich anzumelden, oder sende über den ASA-Posteingang."
             },
+            "asset_frozen": {
+                "title": "Asset eingefroren",
+                "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Wende dich an den Ersteller des Assets, um es freigeben zu lassen."
+            },
             "duplicate_txn": {
                 "title": "Bereits übermittelt",
                 "body": "Diese Transaktion wurde bereits vom Netzwerk verarbeitet."

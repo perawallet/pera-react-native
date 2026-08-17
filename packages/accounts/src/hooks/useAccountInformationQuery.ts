@@ -60,7 +60,7 @@ export const useAccountInformationQuery = (address: string) => {
                     .map(h => ({
                         assetId: BigInt(h.assetId),
                         amount: toBigInt(h.amount),
-                        isFrozen: false,
+                        isFrozen: h.isFrozen,
                     })),
             }
         },

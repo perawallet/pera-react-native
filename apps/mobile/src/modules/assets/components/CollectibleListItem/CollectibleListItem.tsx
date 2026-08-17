@@ -11,7 +11,14 @@
  */
 
 import React from 'react'
-import { PWListItemLayout, PWText, PWView, PWIcon } from '@components/core'
+import {
+    PWBadge,
+    PWListItemLayout,
+    PWText,
+    PWView,
+    PWIcon,
+} from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 import { CollectibleThumbnail } from '../CollectibleThumbnail'
 import { useStyles } from './styles'
 import { type CollectibleItemProps } from '@modules/assets/types/collectible'
@@ -21,8 +28,10 @@ const CollectibleListItemBase = ({
     item,
     onPress,
     style,
+    showFrozenBadge = false,
 }: CollectibleItemProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const {
         thumbnailUrl,
         showAmount,
@@ -71,6 +80,13 @@ const CollectibleListItemBase = ({
                         <PWIcon
                             name={verificationIconName}
                             size='xs'
+                        />
+                    ) : null}
+                    {showFrozenBadge ? (
+                        <PWBadge
+                            variant='secondary'
+                            value={t('transactions.asset_freeze.frozen')}
+                            testID='frozen-badge'
                         />
                     ) : null}
                 </PWView>

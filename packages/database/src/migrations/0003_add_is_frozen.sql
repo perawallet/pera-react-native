@@ -1,0 +1,1 @@
+ALTER TABLE `account_asset_holdings` ADD `is_frozen` integer DEFAULT 0 NOT NULL;

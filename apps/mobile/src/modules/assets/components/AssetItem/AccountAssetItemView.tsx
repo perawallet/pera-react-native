@@ -35,6 +35,8 @@ export type AccountAssetItemViewProps = {
     logoUrl?: string
     showBalance?: boolean
     skipFetch?: boolean
+    /** Marks a holding-level frozen asset (selection contexts). */
+    showFrozenBadge?: boolean
 } & PWTouchableOpacityProps
 
 export const AccountAssetItemView = ({
@@ -44,6 +46,7 @@ export const AccountAssetItemView = ({
     logoUrl,
     showBalance = true,
     skipFetch = false,
+    showFrozenBadge = false,
     onPress,
     ...rest
 }: AccountAssetItemViewProps) => {
@@ -87,8 +90,11 @@ export const AccountAssetItemView = ({
         return (
             <CollectibleListItem
                 item={item}
-                onPress={onPress}
+                // PWListItemLayout has no disabled prop; dropping the handler
+                // makes a frozen collectible row non-selectable.
+                onPress={rest.disabled ? undefined : onPress}
                 style={rest.style}
+                showFrozenBadge={showFrozenBadge}
             />
         )
     }
@@ -129,6 +135,7 @@ export const AccountAssetItemView = ({
             iconSize={iconSize}
             showFavorite
             showDeletedLabel
+            showFrozenBadge={showFrozenBadge}
             copyableAssetId
             onPress={onPress}
             {...rest}
