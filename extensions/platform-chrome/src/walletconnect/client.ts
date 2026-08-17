@@ -89,6 +89,18 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
     ? Omit<T, K>
     : never
 
+/** Bounded so `useWalletConnectPairing.web.ts`'s own 10s send timeout
+ * (`WC_PAIR_TIMEOUT_MS`) always loses to a genuine give-up here, never to a
+ * still-running retry loop. */
+const WC_CONTROL_ACK_BUDGET_MS = 8000
+/** Comfortably shorter than a fresh offscreen boot (document creation plus DB
+ * migrations before the WC listener registers — see `runOffscreenApp`), so a
+ * recreated host is caught on its first available tick. */
+const WC_CONTROL_RETRY_DELAY_MS = 400
+
+const sleep = (ms: number): Promise<void> =>
+    new Promise(resolve => setTimeout(resolve, ms))
+
 /**
  * Sends a WC control message (pair, disconnect, approve-session,
  * reject-session, …) to whichever context is running `startWcHost` —
@@ -101,32 +113,49 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
  * `useWalletConnectProvider.web.tsx` and `ConnectionView.web.tsx` were an
  * earlier, since-deleted approach — no UI surface calls `useWalletConnect`
  * on web today.
+ *
+ * An unanswered send retries within a bounded budget instead of failing
+ * outright. The host is legitimately absent in ways the system recovers from
+ * on its own: the offscreen document self-closes after a db-worker death and
+ * is recreated on the next ensure, and even an alive document registers its
+ * WC listener only late in an async boot (after DB migrations —
+ * `runOffscreenApp`). `ensureOffscreenHost` guarantees the *document*, not
+ * the listener, so a send landing in that window gets no ack — the DB
+ * channel bridges the same window with `ensureHostAvailable`'s ping loop
+ * (`services/database.ts`), and without the equivalent here a pair pasted
+ * during a recreate cycle surfaced a "WalletConnect failed" toast while the
+ * rest of the UI (whose DB calls retried) looked perfectly healthy.
+ * Retrying is safe: the host acks synchronously with consumption, so no ack
+ * means the command did not execute.
  */
 export const sendWcControlMessage = async (
     message: DistributiveOmit<WcControlMessage, 'scope'>,
 ): Promise<void> => {
-    // The offscreen document is the only host for these commands, and it may
-    // be absent — it self-closes after a db-worker death, and a cold browser
-    // start can deliver a UI action before the service worker has re-created
-    // it. Asking the SW to ensure it first is what the page-initiated pair
-    // route already does ("rather than dropping the very first pair on a cold
-    // start", connect-modal-pair.ts); without it the UI route was a
-    // works-on-the-second-try bug, and now that an unanswered send is a hard
-    // error it would be a deterministic failure instead.
-    await ensureOffscreenHost()
-    const response: unknown = await chrome.runtime.sendMessage({
-        scope: WC_CONTROL_SCOPE,
-        ...message,
-    })
-    // No ack means no host consumed it — in practice the offscreen document
-    // is absent (self-closed after a worker death, or not yet recreated on a
-    // cold start). Surfacing that is the point: the connector command did not
-    // happen, and a caller that treated the send as success would report a
-    // pairing or disconnect that never occurred.
-    if (!isWcAck(response)) {
-        throw new Error(
-            `WalletConnect control message '${message.kind}' was not handled`,
-        )
+    const deadline = Date.now() + WC_CONTROL_ACK_BUDGET_MS
+    for (;;) {
+        await ensureOffscreenHost()
+        let response: unknown
+        try {
+            response = await chrome.runtime.sendMessage({
+                scope: WC_CONTROL_SCOPE,
+                ...message,
+            })
+        } catch {
+            // Transport-shaped only ("receiving end does not exist" / "port
+            // closed before a response") — the same transient no-host state
+            // as an unanswered send.
+            response = undefined
+        }
+        if (isWcAck(response)) return
+        if (Date.now() + WC_CONTROL_RETRY_DELAY_MS > deadline) {
+            // Budget exhausted with no host ack: the command genuinely did
+            // not happen, and a caller that treated the send as success
+            // would report a pairing or disconnect that never occurred.
+            throw new Error(
+                `WalletConnect control message '${message.kind}' was not handled`,
+            )
+        }
+        await sleep(WC_CONTROL_RETRY_DELAY_MS)
     }
 }
 

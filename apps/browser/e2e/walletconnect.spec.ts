@@ -635,4 +635,149 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         ).toEqual([])
         await approvalPage.close()
     })
+
+    // Deterministic reproduction of the CI flake this file used to carry: the
+    // offscreen document legitimately dies and gets recreated (a db-worker
+    // death makes runOffscreenApp window.close() it), and the recreated
+    // document registers its WC control listener only late in an async boot —
+    // after DB migrations. A pair control message sent into that window used
+    // to fail fast ("WalletConnect failed" toast ~1s after submit) while the
+    // DB channel's own retry loop kept every screen looking healthy.
+    // sendWcControlMessage now retries within a bounded budget; this closes
+    // the document at the worst possible moment (between fill and submit) and
+    // proves the pairing still lands.
+    test('pairing sent while the offscreen document is recreating still lands', async () => {
+        for (const openPage of context.pages()) {
+            await openPage.close()
+        }
+
+        const pairingPage = await context.newPage()
+        const pairingErrors = trackPageErrors(pairingPage)
+        await pairingPage.goto(
+            `chrome-extension://${extensionId}/expanded.html`,
+        )
+        const unlockInput = pairingPage.getByTestId('unlock-password-input')
+        if (await unlockInput.isVisible({ timeout: 5000 }).catch(() => false)) {
+            await unlockInput.fill(PASSWORD)
+            await pairingPage.getByTestId('unlock-submit').click()
+        }
+        await expect(pairingPage.getByTestId('account_screen')).toBeVisible({
+            timeout: 20_000,
+        })
+
+        await dismissPinPromptIfPresent(pairingPage)
+        await clickThroughPinPrompt(
+            pairingPage,
+            pairingPage.getByTestId('tab_menu_button'),
+        )
+        await expect(pairingPage.getByTestId('menu_screen')).toBeVisible({
+            timeout: 20_000,
+        })
+        await clickThroughPinPrompt(
+            pairingPage,
+            pairingPage.getByTestId('menu_settings_button'),
+        )
+        await expect(pairingPage.getByTestId('settings_screen')).toBeVisible({
+            timeout: 20_000,
+        })
+        await clickThroughPinPrompt(
+            pairingPage,
+            pairingPage.getByTestId('settings_item_connections'),
+        )
+        await expect(
+            pairingPage.getByTestId('connections_settings_screen'),
+        ).toBeVisible({ timeout: 20_000 })
+
+        // A second dApp-side pairing over the same fake bridge. The previous
+        // connector's approved session lives on wallet-side (revived on the
+        // offscreen reboot below); only its socket is retired here so
+        // afterAll's single transportClose stays sufficient.
+        dappConnector.transportClose()
+        dappConnector = new WalletConnect({
+            bridge: bridge.url,
+            clientMeta: {
+                name: 'Fake E2E DApp Reboot',
+                description: 'offscreen-recreation e2e fixture',
+                url: 'https://fake-e2e-dapp-reboot.test',
+                icons: [],
+            },
+        })
+        await dappConnector.createSession({ chainId: 4160 })
+        const uri = dappConnector.uri
+
+        // The list is non-empty by now (the first test's session is
+        // persisted), so the scanner opens from the header's camera icon —
+        // the empty state's connect button is gone with the empty state.
+        await clickThroughPinPrompt(
+            pairingPage,
+            pairingPage.getByTestId('connections_settings_scan_button'),
+        )
+        await expect(pairingPage.getByTestId('qr-scanner-sheet')).toBeVisible({
+            timeout: 20_000,
+        })
+        await pairingPage.getByTestId('qr-paste-input').fill(uri)
+
+        // Kill the offscreen document AFTER the fill so nothing on this page
+        // has time to trigger its recreation before the submit: the pair
+        // control message must be the send that lands in the recreate+boot
+        // window. closeDocument is the same terminal state as the db-worker
+        // death path, minus the crash.
+        let [serviceWorker] = context.serviceWorkers()
+        if (!serviceWorker) {
+            serviceWorker = await context.waitForEvent('serviceworker')
+        }
+        await serviceWorker.evaluate(() =>
+            (
+                globalThis as unknown as {
+                    chrome: {
+                        offscreen: { closeDocument: () => Promise<void> }
+                    }
+                }
+            ).chrome.offscreen.closeDocument(),
+        )
+
+        await clickThroughPinPrompt(
+            pairingPage,
+            pairingPage.getByTestId('qr-paste-submit'),
+        )
+
+        // openWcApprovalPopup polls through `page` — point it at the live
+        // surface first. Reaching the approval at all proves the pair
+        // bridged the recreated document's boot.
+        page = pairingPage
+        const { approvalPage, approvalErrors } = await openWcApprovalPopup()
+
+        const approvalUnlock = approvalPage.getByTestId('unlock-password-input')
+        if (
+            await approvalUnlock.isVisible({ timeout: 5000 }).catch(() => false)
+        ) {
+            await approvalUnlock.fill(PASSWORD)
+            await approvalPage.getByTestId('unlock-submit').click()
+        }
+        await expect(
+            approvalPage.getByTestId('wc-connect-peer-name'),
+        ).toBeVisible({ timeout: 20_000 })
+        const connectButton = approvalPage.getByTestId('wc-connect-connect')
+        const alreadySelected =
+            (await connectButton.getAttribute('aria-disabled')) !== 'true'
+        if (!alreadySelected) {
+            await expect(
+                approvalPage.getByRole('checkbox').first(),
+            ).toBeVisible({ timeout: 20_000 })
+            await approvalPage.getByRole('checkbox').first().click()
+        }
+        await expect(connectButton).not.toHaveAttribute('aria-disabled', 'true')
+
+        const connected = waitForConnectorConnect(dappConnector)
+        await connectButton.click()
+        const { accounts } = await connected
+        expect(accounts.length).toBeGreaterThan(0)
+
+        await approvalPage.close()
+        expect(
+            approvalErrors,
+            'approval popup threw an uncaught error',
+        ).toEqual([])
+        expect(pairingErrors, 'page threw an uncaught error').toEqual([])
+    })
 })

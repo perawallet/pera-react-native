@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createChromeFake, type ChromeFake } from '../../test-utils/chrome'
 import {
     onPairOutcome,
@@ -43,6 +43,10 @@ describe('sendWcControlMessage', () => {
         globalThis.chrome = fake.chrome
     })
 
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     it('stamps the control scope onto the message before sending it', async () => {
         const handler = vi.fn(() => true)
         onWcControlMessage(handler)
@@ -54,6 +58,43 @@ describe('sendWcControlMessage', () => {
             kind: 'disconnect',
             clientId: 'abc',
         })
+    })
+
+    // The offscreen WC listener registers late in an async boot (after DB
+    // migrations — runOffscreenApp), and the document itself self-closes and
+    // gets recreated after a db-worker death. A send landing in that window
+    // is unanswered but the command never executed, so it must retry rather
+    // than surface a permanent failure (the CI flake: a pair dropped with a
+    // "WalletConnect failed" toast ~1s after paste).
+    it('retries an unanswered send until the host appears, then resolves on its ack', async () => {
+        vi.useFakeTimers()
+        const handler = vi.fn(() => true)
+        // Host "finishes booting" two retry windows in.
+        setTimeout(() => onWcControlMessage(handler), 1000)
+
+        const send = sendWcControlMessage({ kind: 'reconnect-all' })
+        await vi.advanceTimersByTimeAsync(3000)
+
+        await expect(send).resolves.toBeUndefined()
+        expect(handler).toHaveBeenCalledWith({
+            scope: 'pera-wc-control',
+            kind: 'reconnect-all',
+        })
+    })
+
+    it('gives up with the not-handled error once the ack budget is exhausted', async () => {
+        vi.useFakeTimers()
+
+        const send = sendWcControlMessage({
+            kind: 'disconnect',
+            clientId: 'abc',
+        })
+        const assertion = expect(send).rejects.toThrow(
+            "WalletConnect control message 'disconnect' was not handled",
+        )
+        await vi.advanceTimersByTimeAsync(10_000)
+
+        await assertion
     })
 })
 
