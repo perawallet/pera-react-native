@@ -20,9 +20,8 @@ import { useWebView } from '@modules/webview'
 export type QuantumDappWarningDecision = 'continue' | 'cancel'
 
 /**
- * Cancel is destructive here — it rejects the dApp outright — so backdrop
- * press and pan-down are disabled by the caller. Continue and Cancel are the
- * only two exits, which is why this resolves a closed union rather than the
+ * Cancel is destructive here — it rejects the dApp outright — which is why
+ * this resolves a closed `'continue' | 'cancel'` union rather than the
  * boolean `ConfirmActionContent` defaults to.
  */
 export const QuantumDappWarningSheet = () => {
