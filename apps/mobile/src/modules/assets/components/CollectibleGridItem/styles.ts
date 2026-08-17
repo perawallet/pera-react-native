@@ -58,14 +58,6 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.borderRadius.xs,
         paddingHorizontal: theme.spacing.sm,
     },
-    eyeIconContainer: {
-        position: 'absolute',
-        bottom: theme.spacing.sm,
-        left: theme.spacing.sm,
-        backgroundColor: theme.colors.nftIconBg,
-        borderRadius: theme.borderRadius.xs,
-        padding: theme.spacing.xs,
-    },
     amountBadgeText: {
         color: theme.colors.textWhite,
     },
