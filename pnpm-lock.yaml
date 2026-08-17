@@ -37,8 +37,8 @@ catalogs:
       specifier: 0.1.0
       version: 0.1.0
     '@ledgerhq/errors':
-      specifier: ^6.35.0
-      version: 6.37.0
+      specifier: ^7.0.0
+      version: 7.0.0
     '@ledgerhq/hw-transport-web-ble':
       specifier: ^6.35.0
       version: 6.35.0
@@ -1058,7 +1058,7 @@ importers:
         version: 8.17.0
       '@ledgerhq/errors':
         specifier: 'catalog:'
-        version: 6.37.0
+        version: 7.0.0
       '@ledgerhq/react-native-hw-transport-ble':
         specifier: ^6.39.1
         version: 6.41.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -1107,7 +1107,7 @@ importers:
         version: 1.4.3
       '@ledgerhq/errors':
         specifier: 'catalog:'
-        version: 6.37.0
+        version: 7.0.0
       '@ledgerhq/react-native-hid':
         specifier: 'catalog:'
         version: 6.39.5(react-native@0.86.2(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.3))
@@ -1156,7 +1156,7 @@ importers:
         version: 8.17.0
       '@ledgerhq/errors':
         specifier: 'catalog:'
-        version: 6.37.0
+        version: 7.0.0
       '@perawallet/wallet-core-hardware-wallet':
         specifier: workspace:*
         version: link:../../packages/hardware-wallet
@@ -1196,7 +1196,7 @@ importers:
         version: 1.4.3
       '@ledgerhq/errors':
         specifier: 'catalog:'
-        version: 6.37.0
+        version: 7.0.0
       '@ledgerhq/hw-transport-web-ble':
         specifier: 'catalog:'
         version: 6.35.0
@@ -1242,7 +1242,7 @@ importers:
         version: 1.4.3
       '@ledgerhq/errors':
         specifier: 'catalog:'
-        version: 6.37.0
+        version: 7.0.0
       '@ledgerhq/hw-transport-webhid':
         specifier: 'catalog:'
         version: 6.36.0
@@ -6255,6 +6255,9 @@ packages:
   '@ledgerhq/errors@6.37.0':
     resolution: {integrity: sha512-T5yiKI5UX7ugeocdTF3TUsCIN2BH41Bio4ZeN410YFjFOf3es08n/5JyMzzKwzRgP0blG3HfBf7s7vJKqCSAeg==}
 
+  '@ledgerhq/errors@7.0.0':
+    resolution: {integrity: sha512-+Q/vykUlNeIxiM+I3cu1B660WLkzlmIsHLTV9QNV5D2/Ocplx3QMg52NYq2X7OAfGQnfH1rQvhn/NrjT+t9wBA==}
+
   '@ledgerhq/hw-transport-web-ble@6.35.0':
     resolution: {integrity: sha512-nc4FAWZ0GtZO9ydDCKlvDzOEVdUXlGL/0nWPIOeCE5xxuXug5iR0uhC4Bl0qwlUCEnhewmXwLJsCFcCdr/N4QQ==}
 
@@ -7517,6 +7520,7 @@ packages:
   '@xmldom/xmldom@0.8.13':
     resolution: {integrity: sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw==}
     engines: {node: '>=10.0.0'}
+    deprecated: this version has critical issues, please update to the latest version
 
   '@xstate/react@6.1.0':
     resolution: {integrity: sha512-ep9F0jGTI63B/jE8GHdMpUqtuz7yRebNaKv8EMUaiSi29NOglywc2X2YSOV/ygbIK+LtmgZ0q9anoEA2iBSEOw==}
@@ -13668,6 +13672,8 @@ snapshots:
       semver: 7.8.5
 
   '@ledgerhq/errors@6.37.0': {}
+
+  '@ledgerhq/errors@7.0.0': {}
 
   '@ledgerhq/hw-transport-web-ble@6.35.0':
     dependencies:
