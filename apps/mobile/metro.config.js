@@ -263,7 +263,12 @@ const customResolveRequest = (context, moduleName, platform) => {
         };
     }
 
-    // Resolve @perawallet workspace packages to source files for development
+    // Resolve @perawallet workspace packages to source files for development.
+    // Convenience only — every package's dist must be correct on its own. This
+    // used to also be what kept quantum accounts on the native Falcon provider,
+    // since kms's dist carried only the WASM one; kms now ships a second bundle
+    // behind a `react-native` export condition, held by
+    // tools/check-kms-pq-dist.mjs.
     if (moduleName === '@perawallet/wallet-core') {
         const sourcePath = path.resolve(monorepoRoot, 'packages', 'core', 'src', 'index.ts');
         try {
