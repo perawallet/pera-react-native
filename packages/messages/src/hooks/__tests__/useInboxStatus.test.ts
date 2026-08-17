@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
+import { config } from '@perawallet/wallet-core-config'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useInboxStatus } from '../useInboxStatus'
 import {
@@ -108,6 +109,63 @@ describe('useInboxStatus', () => {
         expect(result.current.unreadInboxCount).toBe(2)
         expect(result.current.hasUnreadInboxItems).toBe(true)
         expect(result.current.hasUnreadItems).toBe(true)
+    })
+
+    describe('poll cadence', () => {
+        beforeEach(() => {
+            vi.useFakeTimers({ shouldAdvanceTime: true })
+        })
+
+        afterEach(() => {
+            vi.useRealTimers()
+        })
+
+        it('polls message-status at the normal cadence while healthy', async () => {
+            vi.mocked(fetchMessageStatus).mockResolvedValue({
+                hasUnreadItems: false,
+                hasUnreadNotifications: false,
+                hasUnreadInboxItems: false,
+                unreadInboxCount: 0,
+            })
+
+            renderHook(() => useInboxStatus(), { wrapper: createWrapper() })
+
+            await waitFor(() => {
+                expect(fetchMessageStatus).toHaveBeenCalledTimes(1)
+            })
+
+            await vi.advanceTimersByTimeAsync(config.notificationRefreshTime)
+            expect(fetchMessageStatus).toHaveBeenCalledTimes(2)
+        })
+
+        it('slows the v3 probe while erroring so it does not double-poll with the v1 fallback', async () => {
+            vi.mocked(fetchMessageStatus).mockRejectedValue(
+                new Error('v3 unavailable'),
+            )
+            vi.mocked(fetchNotificationStatus).mockResolvedValue({
+                has_new_notification: false,
+            })
+
+            renderHook(() => useInboxStatus(), { wrapper: createWrapper() })
+
+            await waitFor(() => {
+                expect(fetchMessageStatus).toHaveBeenCalledTimes(1)
+            })
+
+            // At the normal cadence the failing v3 endpoint must stay quiet —
+            // only the v1 fallback keeps the badge fresh.
+            await vi.advanceTimersByTimeAsync(config.notificationRefreshTime)
+            expect(fetchMessageStatus).toHaveBeenCalledTimes(1)
+            await waitFor(() => {
+                expect(fetchNotificationStatus).toHaveBeenCalledTimes(2)
+            })
+
+            // The recovery probe still fires eventually (10× cadence).
+            await vi.advanceTimersByTimeAsync(
+                config.notificationRefreshTime * 10,
+            )
+            expect(fetchMessageStatus).toHaveBeenCalledTimes(2)
+        })
     })
 
     it('returns strict false/0 defaults when deviceID is missing', () => {

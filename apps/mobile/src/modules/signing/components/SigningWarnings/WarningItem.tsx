@@ -31,17 +31,26 @@ type WarningItemProps = {
 
 type AddressWarning = Extract<
     TransactionWarning,
-    { type: 'close' | 'rekey' | 'asset-freeze' }
+    { type: 'close-account' | 'close-asset' | 'rekey' | 'asset-freeze' }
 >
 
 const getWarningConfig = (type: AddressWarning['type'], isGroup: boolean) => {
     switch (type) {
-        case 'close': {
+        case 'close-account': {
             return {
                 icon: 'trash' as const,
                 messageKey: isGroup
-                    ? 'transactions.warning.close_group_warning'
-                    : 'transactions.warning.close_warning',
+                    ? 'transactions.warning.close_account_group_warning'
+                    : 'transactions.warning.close_account_warning',
+                boldKey: null,
+            }
+        }
+        case 'close-asset': {
+            return {
+                icon: 'unlink' as const,
+                messageKey: isGroup
+                    ? 'transactions.warning.close_asset_group_warning'
+                    : 'transactions.warning.close_asset_warning',
                 boldKey: null,
             }
         }

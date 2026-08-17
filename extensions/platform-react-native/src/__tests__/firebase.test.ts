@@ -679,9 +679,25 @@ describe('RNFirebaseService', () => {
             it('should record Error instances', () => {
                 const error = new Error('Test error')
                 service.recordNonFatalError(error)
+                // Third argument is jsErrorName, omitted so the error's own
+                // stack does the Crashlytics grouping.
                 expect(crashlytics.recordError).toHaveBeenCalledWith(
                     expect.anything(),
                     error,
+                    undefined,
+                )
+            })
+
+            // jsErrorName injects a synthetic top stack frame, which is what
+            // Crashlytics fingerprints on — without it every logger.error call
+            // site collapses into a single issue.
+            it('should pass a grouping key through as jsErrorName', () => {
+                const error = new Error('Test error')
+                service.recordNonFatalError(error, 'Request error encountered')
+                expect(crashlytics.recordError).toHaveBeenCalledWith(
+                    expect.anything(),
+                    error,
+                    'Request error encountered',
                 )
             })
 
@@ -690,6 +706,7 @@ describe('RNFirebaseService', () => {
                 expect(crashlytics.recordError).toHaveBeenCalledWith(
                     expect.anything(),
                     expect.any(Error),
+                    undefined,
                 )
             })
 

@@ -10,7 +10,18 @@
  limitations under the License
  */
 
-import { eq, and, desc, lt, lte, gte, sql, notExists } from 'drizzle-orm'
+import {
+    eq,
+    and,
+    desc,
+    isNotNull,
+    isNull,
+    lt,
+    lte,
+    gte,
+    sql,
+    notExists,
+} from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type {
@@ -76,6 +87,7 @@ function toDb(item: TransactionHistoryItem) {
         groupId: item.groupId,
         amount: item.amount,
         closeTo: item.closeTo,
+        closeAmount: item.closeAmount,
         applicationId: item.applicationId
             ? new Decimal(item.applicationId)
             : null,
@@ -102,6 +114,7 @@ function fromDb(row: {
     groupId: Nullable<string>
     amount: Nullable<Decimal>
     closeTo: Nullable<string>
+    closeAmount: Nullable<Decimal>
     applicationId: Nullable<Decimal>
     innerTransactionCount: Nullable<number>
     assetJson: Nullable<string>
@@ -120,6 +133,7 @@ function fromDb(row: {
         groupId: row.groupId,
         amount: row.amount,
         closeTo: row.closeTo,
+        closeAmount: row.closeAmount,
         applicationId: row.applicationId?.toString() ?? null,
         innerTransactionCount: row.innerTransactionCount,
         asset: row.assetJson ? JSON.parse(row.assetJson) : null,
@@ -172,6 +186,13 @@ export async function upsertTransactions({
                     groupId: row.groupId,
                     amount: row.amount,
                     closeTo: row.closeTo,
+                    // The row is shared across wallet accounts and only some
+                    // perspectives can derive the sweep (see
+                    // deriveCloseAmount) — never let a sync that can't see
+                    // it erase one that could.
+                    // Raw sql bypasses decimalColumn's serializer, so bind
+                    // the TEXT representation directly.
+                    closeAmount: sql`COALESCE(${row.closeAmount?.toString() ?? null}, ${TransactionsSchema.closeAmount})`,
                     applicationId: row.applicationId,
                     innerTransactionCount: row.innerTransactionCount,
                     assetJson: row.assetJson,
@@ -281,6 +302,7 @@ export async function getTransactionHistory({
             groupId: TransactionsSchema.groupId,
             amount: TransactionsSchema.amount,
             closeTo: TransactionsSchema.closeTo,
+            closeAmount: TransactionsSchema.closeAmount,
             applicationId: TransactionsSchema.applicationId,
             innerTransactionCount: TransactionsSchema.innerTransactionCount,
             assetJson: TransactionsSchema.assetJson,
@@ -308,6 +330,63 @@ export async function getTransactionHistory({
         .all()
 
     return rows.map(fromDb)
+}
+
+type GetCloseRowsMissingCloseAmountParams = {
+    db?: Database
+    network: string
+    /** Bounded per pass — survivors keep matching and retry next sync. */
+    limit?: number
+}
+
+/**
+ * Close-involving rows whose swept amount is unknown: rows cached before the
+ * close_amount column existed, or fetched from a perspective that couldn't
+ * derive it. These are the chain-backfill work list (see
+ * sync/close-amount-backfill.ts).
+ */
+export async function getCloseRowsMissingCloseAmount({
+    db = getDatabase(),
+    network,
+    limit = 20,
+}: GetCloseRowsMissingCloseAmountParams): Promise<Array<{ id: string }>> {
+    return db
+        .select({ id: TransactionsSchema.id })
+        .from(TransactionsSchema)
+        .where(
+            and(
+                eq(TransactionsSchema.network, network),
+                isNotNull(TransactionsSchema.closeTo),
+                isNull(TransactionsSchema.closeAmount),
+            ),
+        )
+        .limit(limit)
+        .all()
+}
+
+type UpdateTransactionCloseAmountParams = {
+    db?: Database
+    id: string
+    network: string
+    closeAmount: Decimal
+}
+
+export async function updateTransactionCloseAmount({
+    db = getDatabase(),
+    id,
+    network,
+    closeAmount,
+}: UpdateTransactionCloseAmountParams): Promise<void> {
+    await db
+        .update(TransactionsSchema)
+        .set({ closeAmount })
+        .where(
+            and(
+                eq(TransactionsSchema.id, id),
+                eq(TransactionsSchema.network, network),
+            ),
+        )
+        .run()
 }
 
 type GetLatestTransactionRoundTimeParams = {

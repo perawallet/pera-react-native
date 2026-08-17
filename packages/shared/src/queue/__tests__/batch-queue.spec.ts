@@ -194,3 +194,122 @@ describe('BatchQueue', () => {
         expect(executor.mock.calls[1][0]).toEqual(['b'])
     })
 })
+
+describe('BatchQueue debounce', () => {
+    const upperExecutor = () =>
+        vi
+            .fn()
+            .mockImplementation(
+                async (keys: string[]) =>
+                    new Map(keys.map(k => [k, k.toUpperCase()])),
+            )
+
+    it('defers dispatch while enqueues keep arriving', async () => {
+        const executor = upperExecutor()
+        const queue = new BatchQueue<string, string, string>(executor, {
+            delayMs: 30,
+            debounce: true,
+        })
+
+        const pending = [queue.enqueue('a', 'main')]
+        // Each step is shorter than delayMs, so a fixed window would have
+        // dispatched partway through; debouncing must not.
+        for (const key of ['b', 'c', 'd']) {
+            await wait(15)
+            pending.push(queue.enqueue(key, 'main'))
+            expect(executor).not.toHaveBeenCalled()
+        }
+
+        await Promise.all(pending)
+
+        expect(executor).toHaveBeenCalledTimes(1)
+        expect(new Set(executor.mock.calls[0][0])).toEqual(
+            new Set(['a', 'b', 'c', 'd']),
+        )
+    })
+
+    it('dispatches once the enqueues stop', async () => {
+        const executor = upperExecutor()
+        const queue = new BatchQueue<string, string, string>(executor, {
+            delayMs: 20,
+            debounce: true,
+        })
+
+        const value = await queue.enqueue('a', 'main')
+
+        expect(value).toBe('A')
+        expect(executor).toHaveBeenCalledTimes(1)
+    })
+
+    it('dispatches immediately at maxBatchSize without waiting out the timer', async () => {
+        const executor = upperExecutor()
+        const queue = new BatchQueue<string, string, string>(executor, {
+            // Long enough that a timer-driven dispatch would fail the test.
+            delayMs: 5000,
+            debounce: true,
+            maxBatchSize: 3,
+        })
+
+        const results = await Promise.all([
+            queue.enqueue('a', 'main'),
+            queue.enqueue('b', 'main'),
+            queue.enqueue('c', 'main'),
+        ])
+
+        expect(executor).toHaveBeenCalledTimes(1)
+        expect(results).toEqual(['A', 'B', 'C'])
+    })
+
+    // The starvation case debounce alone cannot handle: enqueues arriving
+    // slightly faster than delayMs restart the timer forever, and a count cap
+    // never trips because the batch stays small.
+    it('dispatches at maxWaitMs even while enqueues keep arriving', async () => {
+        const executor = upperExecutor()
+        const queue = new BatchQueue<string, string, string>(executor, {
+            delayMs: 30,
+            debounce: true,
+            maxWaitMs: 60,
+            maxBatchSize: 100,
+        })
+
+        queue.enqueue('a', 'main')
+        for (const key of ['b', 'c', 'd', 'e', 'f']) {
+            await wait(20)
+            queue.enqueue(key, 'main')
+        }
+
+        expect(executor).toHaveBeenCalled()
+    })
+
+    // maxWaitMs is measured per window; a fresh window must get the full
+    // budget rather than inheriting the previous window's spent one.
+    it('gives each window its own maxWait budget', async () => {
+        const executor = upperExecutor()
+        const queue = new BatchQueue<string, string, string>(executor, {
+            delayMs: 20,
+            debounce: true,
+            maxWaitMs: 50,
+        })
+
+        await queue.enqueue('a', 'main')
+        expect(executor).toHaveBeenCalledTimes(1)
+
+        // Second window: still debounced, so an enqueue inside delayMs
+        // coalesces rather than dispatching instantly.
+        const second = queue.enqueue('b', 'main')
+        await wait(10)
+        const third = queue.enqueue('c', 'main')
+        await Promise.all([second, third])
+
+        expect(executor).toHaveBeenCalledTimes(2)
+        expect(new Set(executor.mock.calls[1][0])).toEqual(new Set(['b', 'c']))
+    })
+
+    it('keeps the positional delayMs form working', async () => {
+        const executor = upperExecutor()
+        const queue = new BatchQueue<string, string, string>(executor, 10)
+
+        expect(await queue.enqueue('a', 'main')).toBe('A')
+        expect(executor).toHaveBeenCalledTimes(1)
+    })
+})

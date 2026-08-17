@@ -502,6 +502,29 @@ describe('bootstrapPasskeyAutofill', () => {
         expect(service.setMasterKey).not.toHaveBeenCalled()
     })
 
+    // The shape Crashlytics actually saw: the error carries the right `name` but
+    // fails `instanceof`, because the keystore class it came from is a different
+    // module instance than the one this file imported. The mocked class above
+    // makes `instanceof` succeed, so only a foreign error reproduces it.
+    it('skips quietly when the missing-key error fails instanceof but carries the name', async () => {
+        const service = makeService()
+        const foreignError = new Error('Master key not found')
+        foreignError.name = 'MasterKeyNotFoundError'
+        mocks.readMasterKey.mockRejectedValue(foreignError)
+
+        await expect(
+            bootstrapPasskeyAutofill({
+                service: service as never,
+                intentActions,
+            }),
+        ).resolves.toBeUndefined()
+
+        expect(foreignError instanceof mocks.MasterKeyNotFoundError).toBe(false)
+        expect(mocks.error).not.toHaveBeenCalled()
+        expect(mocks.warn).toHaveBeenCalled()
+        expect(service.setMasterKey).not.toHaveBeenCalled()
+    })
+
     it('wires a root whose sealed material cannot be opened', async () => {
         const service = makeService()
         await seedKeystore({ id: 'root-id', type: 'hd-root-key' })

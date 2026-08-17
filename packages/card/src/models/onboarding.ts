@@ -116,6 +116,15 @@ export const signInSchema = z.object({
 
 export type SignInFormValues = z.infer<typeof signInSchema>
 
+/** Validation for the forgot-password email screen. */
+export const forgotPasswordEmailSchema = z.object({
+    email: z.string().trim().email(),
+})
+
+export type ForgotPasswordEmailFormValues = z.infer<
+    typeof forgotPasswordEmailSchema
+>
+
 /** Validation for the phone-send onboarding step (calling code + number). */
 export const phoneSendSchema = z.object({
     /** International dialing code, digits only, no leading '+'. */

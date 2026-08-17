@@ -60,6 +60,13 @@ const closeToOf = (tx: IndexerTransaction): string | undefined =>
     tx['payment-transaction']?.['close-remainder-to'] ??
     tx['asset-transfer-transaction']?.['close-to']
 
+const closeAmountOf = (tx: IndexerTransaction): string | undefined => {
+    const closeAmount =
+        tx['payment-transaction']?.['close-amount'] ??
+        tx['asset-transfer-transaction']?.['close-amount']
+    return closeAmount === undefined ? undefined : toAmountString(closeAmount)
+}
+
 const applicationIdOf = (tx: IndexerTransaction): string | null => {
     const id = tx['application-transaction']?.['application-id']
     return id === undefined ? null : BigInt(id).toString()
@@ -104,6 +111,7 @@ const transformRow = (
         group_id: tx.group ?? null,
         amount: amountOf(tx) ?? null,
         close_to: closeToOf(tx) ?? null,
+        close_amount: closeAmountOf(tx) ?? null,
         asset: assetKey
             ? {
                   asset_id: assetKey,

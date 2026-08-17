@@ -14,33 +14,27 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import {
-    useAllAccounts,
-    useSigningAccounts,
-} from '@perawallet/wallet-core-accounts'
-import { fetchInbox, type InboxResponse } from '../api/inbox'
-import { getInboxQueryKey } from './querykeys'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { type InboxResponse } from '../api/inbox'
+import { useInboxQueryOptions } from './useInboxQuery'
 import { useDeleteMultisigInvitationMutation } from './useDeleteMultisigInvitationMutation'
 
 export const useCleanupDuplicateMultisigInvitations = (): void => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network) ?? ''
-    const signingAccounts = useSigningAccounts()
+    // Shares the inbox query with useInboxQuery: spreading the owner's
+    // options keeps the two observers' query-level config (queryFn, retry)
+    // identical — only the per-observer select differs.
+    const inboxQueryOptions = useInboxQueryOptions()
     const allAccounts = useAllAccounts()
 
-    const addresses = useMemo(
-        () => signingAccounts.map(a => a.address),
-        [signingAccounts],
-    )
     const localAddresses = useMemo(
         () => new Set(allAccounts.map(a => a.address)),
         [allAccounts],
     )
 
     const { data: duplicateAddresses } = useQuery({
-        queryKey: getInboxQueryKey(network, deviceID, addresses),
-        queryFn: () => fetchInbox(network, deviceID, addresses),
-        enabled: !!deviceID.length && !!addresses.length,
+        ...inboxQueryOptions,
         select: useCallback(
             (data: InboxResponse) =>
                 data.joint_account_import_requests

@@ -174,6 +174,81 @@ describe('transformIndexerTransactions', () => {
         ])
     })
 
+    test('emits close_to and close_amount for a close-out payment', () => {
+        // A "send max" builds amount=0 with the whole balance in
+        // close-amount; dropping close_amount is how history ends up
+        // showing "0 ALGO" for a full-balance send (PERA-4897).
+        const closeOut = {
+            'current-round': 1,
+            transactions: [
+                {
+                    id: 'CLOSETX',
+                    'tx-type': 'pay',
+                    sender: ME,
+                    fee: 1000,
+                    'confirmed-round': 400,
+                    'round-time': 1700000400,
+                    'payment-transaction': {
+                        amount: 0,
+                        receiver: 'BBBB',
+                        'close-remainder-to': 'BBBB',
+                        'close-amount': 50854132929,
+                    },
+                },
+            ],
+        }
+
+        const [row] = transformIndexerTransactions(
+            closeOut,
+            ME,
+            new Map(),
+        ).results
+
+        expect(row.close_to).toBe('BBBB')
+        expect(row.close_amount).toBe('50854132929')
+    })
+
+    test('emits close_amount for an asset opt-out transfer', () => {
+        const optOut = {
+            'current-round': 1,
+            transactions: [
+                {
+                    id: 'OPTOUTTX',
+                    'tx-type': 'axfer',
+                    sender: ME,
+                    fee: 1000,
+                    'confirmed-round': 401,
+                    'round-time': 1700000401,
+                    'asset-transfer-transaction': {
+                        'asset-id': 7,
+                        amount: 0,
+                        receiver: 'BBBB',
+                        'close-to': 'BBBB',
+                        'close-amount': 250000,
+                    },
+                },
+            ],
+        }
+
+        const [row] = transformIndexerTransactions(
+            optOut,
+            ME,
+            new Map(),
+        ).results
+
+        expect(row.close_amount).toBe('250000')
+    })
+
+    test('emits a null close_amount when the payment has no close leg', () => {
+        const [first] = transformIndexerTransactions(
+            response,
+            ME,
+            new Map(),
+        ).results
+
+        expect(first.close_amount).toBeNull()
+    })
+
     test('preserves precision for an amount above 2^53 arriving as a string', () => {
         // parsePrecisionSafeJson surfaces uint64 values above 2^53-1 as
         // decimal strings rather than rounding them — real fnet assets have

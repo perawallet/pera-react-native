@@ -699,6 +699,12 @@
                 "body": "A rede recusou a transação. Tente novamente ou entre em contato com o suporte se o problema persistir."
             }
         },
+        "submission": {
+            "unknown_outcome": {
+                "title": "Status da transação desconhecido",
+                "body": "Não foi possível confirmar se sua transação foi concluída. Aguarde um momento e verifique seu histórico de transações antes de tentar novamente."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Link inválido",
             "invalid_url_body": "O link detectado não parece ser válido. Verifique o link e tente novamente.",
@@ -1037,9 +1043,32 @@
             "otp_body": "Digite o código de verificação que enviamos para concluir o login.",
             "otp_invalid": "Esse código não está correto. Tente novamente.",
             "send_again": "Enviar novamente",
-            "send_again_in": "Enviar novamente em {{count}}s",
-            "coming_soon_title": "Em breve",
-            "coming_soon_body": "A redefinição de senha ainda não está disponível. Volte em breve."
+            "send_again_in": "Enviar novamente em {{count}}s"
+        },
+        "forgot_password": {
+            "navigation_title": "Redefinir senha",
+            "email_body": "Digite o endereço de e-mail da sua conta Pera Card e enviaremos um código de verificação.",
+            "email_placeholder": "Digite seu endereço de e-mail",
+            "email_invalid": "Digite um endereço de e-mail válido",
+            "send_code_button": "Enviar código",
+            "verify_navigation_title": "Confirme seu e-mail",
+            "verify_body": "Use o código de verificação que acabamos de enviar para {{email}} para continuar redefinindo sua senha.",
+            "send_again": "Enviar novamente",
+            "send_again_in_one": "Enviar novamente em {{count}} segundo",
+            "send_again_in_other": "Enviar novamente em {{count}} segundos",
+            "verify_button": "Continuar",
+            "code_invalid": "Esse código está incorreto ou expirou. Tente novamente.",
+            "new_password_navigation_title": "Criar nova senha",
+            "password_placeholder": "Digite sua nova senha",
+            "confirm_placeholder": "Confirme sua nova senha",
+            "passwords_mismatch": "As senhas não coincidem",
+            "reset_button": "Redefinir senha",
+            "confirm_failed_title": "Não foi possível redefinir a senha",
+            "token_expired_body": "Seu código pode ter expirado. Digite um novo código e tente novamente.",
+            "success_title": "Senha redefinida",
+            "success_body": "Agora você pode entrar com sua nova senha.",
+            "error_title": "Algo deu errado",
+            "error_body": "Não conseguimos concluir a solicitação. Tente novamente."
         },
         "create_account": {
             "navigation_title": "Criar conta Baanx",
@@ -1398,6 +1427,7 @@
             "accounts_subtitle_other": "Você precisa de pelo menos {{count}} contas para assinar",
             "confirmed": "Transação concluída com sucesso",
             "submitting": "Todas as assinaturas foram coletadas. Enviando transação…",
+            "delivery_failed": "Não foi possível enviar para o aplicativo que solicitou: a conexão foi perdida.",
             "failed_default": "A transação falhou",
             "load_error": "Não foi possível carregar esta transação. Ela pode ter expirado ou sido removida.",
             "retry": "Tentar novamente",
@@ -2470,6 +2500,9 @@
         "common": {
             "from": "De",
             "to": "Para",
+            "sent_to": "Enviado para",
+            "close_amount": "Saldo restante",
+            "close_to": "Saldo restante para",
             "fee": "Taxa",
             "tx_fee": "Sua taxa de transação",
             "total_fee": "Sua taxa total",
@@ -2522,9 +2555,11 @@
             "title_cta_zero": "{{count}} ações potencialmente perigosas encontradas",
             "title_cta_one": "Ação potencialmente perigosa encontrada",
             "title_cta_other": "{{count}} ações potencialmente perigosas encontradas",
-            "close_group_warning": "Este grupo de transações fecha uma das suas contas e envia os fundos restantes para outro endereço. Revise com atenção antes de assinar.",
+            "close_account_group_warning": "Este grupo de transações fecha uma das suas contas e envia os fundos restantes para outro endereço. Revise com atenção antes de assinar.",
+            "close_asset_group_warning": "Este grupo de transações faz opt-out de um ativo em uma das suas contas e envia o saldo restante desse ativo para outro endereço. Revise com atenção antes de assinar.",
             "rekey_group_warning": "Este grupo de transações faz rekey de uma das suas contas para outro endereço, transferindo a propriedade da sua conta nesse processo.",
-            "close_warning": "Esta transação fecha a conta e envia os fundos restantes para o seguinte endereço: {{address}}",
+            "close_account_warning": "Esta transação fecha a conta e envia os fundos restantes para o seguinte endereço: {{address}}",
+            "close_asset_warning": "Esta transação faz opt-out de um ativo na conta e envia o saldo restante desse ativo para o seguinte endereço: {{address}}",
             "rekey_warning": "Esta transação faz rekey da conta para o seguinte endereço: {{address}}.",
             "rekey_warning_bold": "Isso transfere o controle total da sua conta para outro endereço. Revise com atenção antes de assinar.",
             "from_account": "De: {{address}}",
@@ -2742,6 +2777,8 @@
             "insufficient_balance": "O valor excede seu saldo disponível.",
             "no_balance_title": "Nada para converter",
             "no_balance_body": "Esta conta não possui {{unit}}.",
+            "balance_too_low_title": "Saldo muito baixo",
+            "balance_too_low_body": "Seu saldo disponível de {{unit}} é muito baixo para converter.",
             "percentage_error_title": "Não foi possível calcular o valor",
             "percentage_error_body": "Tente novamente em instantes.",
             "you_pay": "Você paga",

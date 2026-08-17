@@ -38,6 +38,7 @@ import {
     getAssetPricesQueryKey,
     getAssetPriceHistoryQueryKey,
     getAssetDetailsQueryKey,
+    getRemoteAssetDetailsQueryKey,
     getPublicAssetDetailsQueryKey,
     getIndexerAssetDetailsQueryKey,
     isAssetPriceHistoryQuery,
@@ -148,11 +149,23 @@ describe('invalidateAssetQueries', () => {
 })
 
 describe('detail query keys', () => {
-    test('getAssetDetailsQueryKey includes id, useDB flag, and network', () => {
-        expect(getAssetDetailsQueryKey('123', true, 'mainnet')).toEqual([
+    test('getAssetDetailsQueryKey includes id and network', () => {
+        expect(getAssetDetailsQueryKey('123', 'mainnet')).toEqual([
             MODULE_PREFIX,
-            { assetId: '123', useDB: true, network: 'mainnet' },
+            'detail',
+            { assetId: '123', network: 'mainnet' },
         ])
+    })
+
+    test('getRemoteAssetDetailsQueryKey is distinct from the canonical entry', () => {
+        expect(getRemoteAssetDetailsQueryKey('123', 'mainnet')).toEqual([
+            MODULE_PREFIX,
+            'detail-remote',
+            { assetId: '123', network: 'mainnet' },
+        ])
+        expect(getRemoteAssetDetailsQueryKey('123', 'mainnet')).not.toEqual(
+            getAssetDetailsQueryKey('123', 'mainnet'),
+        )
     })
 
     test('getPublicAssetDetailsQueryKey includes the public namespace', () => {

@@ -192,6 +192,7 @@ describe('useMultisigTransportAdapters', () => {
                 signRequestId: 'sr-1',
                 status: 'pending',
                 rawTransactionsBase64: ['oQ=='],
+                proposerAddress: 'PARTICIPANT_A',
             })
         })
 
@@ -242,6 +243,7 @@ describe('useMultisigTransportAdapters', () => {
                 signRequestId: 'sr-1',
                 status: 'ready',
                 rawTransactionsBase64: ['oQ==', 'og=='],
+                proposerAddress: 'PARTICIPANT_A',
             })
         })
 
@@ -280,6 +282,7 @@ describe('useMultisigTransportAdapters', () => {
                 signRequestId: 'sr-1',
                 status: 'pending',
                 rawTransactionsBase64: ['oQ==', 'og=='],
+                proposerAddress: 'PARTICIPANT_A',
             })
         })
 

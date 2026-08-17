@@ -21,12 +21,23 @@ export type StatusBannerVariant =
     | 'success'
     | 'failure'
 
+/**
+ * @param isUndeliverable - the signatures are complete but the wallet could
+ * not hand the signed transaction back to the dApp that requested it. The
+ * backend keeps such a record at `ready`/`submitting` and never broadcasts it
+ * (`sync` requests are the wallet's to deliver), so the intermediate banner
+ * would promise a submission that can never happen.
+ */
 export const getStatusBannerVariant = (
     status: SignRequestStatus | null,
     isFailureWithinRecoveryWindow = false,
+    isUndeliverable = false,
 ): StatusBannerVariant => {
     if (!status) return 'waiting'
     if (status === 'confirmed') return 'success'
+    if (isUndeliverable && (status === 'ready' || status === 'submitting')) {
+        return 'failure'
+    }
     // A `failed` status on an async (in-app) broadcast can be a transient
     // backend false-negative for a transaction that actually confirmed on
     // chain. While still inside the recovery window, keep the request on the

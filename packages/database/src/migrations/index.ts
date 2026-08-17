@@ -14,10 +14,15 @@ import type { MigrationConfig } from '../migrator'
 
 import m0000 from './0000_initial.sql?raw'
 import m0001 from './0001_add_balance_impacts.sql?raw'
+import m0002 from './0002_add_close_amount.sql?raw'
 
+// Rows cached before the close_amount column heal in place via the chain
+// backfill (packages/transactions sync/close-amount-backfill.ts) — no
+// cache-wiping migration needed.
 const migrations: MigrationConfig = {
     '0000_initial': m0000,
     '0001_add_balance_impacts': m0001,
+    '0002_add_close_amount': m0002,
 }
 
 export default migrations

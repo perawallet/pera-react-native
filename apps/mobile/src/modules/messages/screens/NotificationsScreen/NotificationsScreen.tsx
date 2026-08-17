@@ -36,7 +36,6 @@ export const NotificationsScreen = () => {
         keyExtractor,
         handleNotificationPress,
         listRef,
-        handleScroll,
     } = useNotificationsScreen()
 
     const renderItem = useCallback(
@@ -52,11 +51,17 @@ export const NotificationsScreen = () => {
     return (
         <PWScreen scroll='never'>
             <PWFlatList
+                pauseSyncOnInteraction
                 ref={listRef}
                 data={notifications}
                 renderItem={renderItem}
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
+                // Newest-first list: reveal freshly-prepended notifications when
+                // the user is near the top, natively and atomically with layout.
+                // A JS-side scrollToOffset reveal loses to MVCP's re-anchoring on
+                // later layout passes (PERA-4406) — don't reintroduce one.
+                maintainVisibleContentPosition={{
+                    autoscrollToTopThreshold: 200,
+                }}
                 onEndReached={() => void loadMoreItems()}
                 onEndReachedThreshold={0.1}
                 keyExtractor={keyExtractor}

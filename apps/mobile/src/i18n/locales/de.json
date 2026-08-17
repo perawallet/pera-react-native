@@ -691,6 +691,12 @@
                 "body": "Das Netzwerk hat die Transaktion abgelehnt. Bitte versuche es erneut oder wende dich an den Support, falls das Problem weiterhin besteht."
             }
         },
+        "submission": {
+            "unknown_outcome": {
+                "title": "Transaktionsstatus unbekannt",
+                "body": "Wir konnten nicht bestätigen, ob deine Transaktion durchgegangen ist. Warte einen Moment und prüfe deinen Transaktionsverlauf, bevor du es erneut versuchst."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Ungültiger Link",
             "invalid_url_body": "Der erkannte Link scheint ungültig zu sein. Bitte überprüfe den Link und versuche es erneut.",
@@ -1029,9 +1035,32 @@
             "otp_body": "Gib den Bestätigungscode ein, den wir dir gesendet haben, um die Anmeldung abzuschließen.",
             "otp_invalid": "Dieser Code ist nicht korrekt. Bitte versuche es erneut.",
             "send_again": "Erneut senden",
-            "send_again_in": "Erneut senden in {{count}}s",
-            "coming_soon_title": "Demnächst verfügbar",
-            "coming_soon_body": "Das Zurücksetzen des Passworts ist noch nicht verfügbar. Schau bald wieder vorbei."
+            "send_again_in": "Erneut senden in {{count}}s"
+        },
+        "forgot_password": {
+            "navigation_title": "Passwort zurücksetzen",
+            "email_body": "Gib die E-Mail-Adresse für dein Pera Card Konto ein und wir senden dir einen Bestätigungscode.",
+            "email_placeholder": "Gib deine E-Mail-Adresse ein",
+            "email_invalid": "Gib eine gültige E-Mail-Adresse ein",
+            "send_code_button": "Code senden",
+            "verify_navigation_title": "Bestätige deine E-Mail",
+            "verify_body": "Verwende den Bestätigungscode, den wir gerade an {{email}} gesendet haben, um mit dem Zurücksetzen deines Passworts fortzufahren.",
+            "send_again": "Erneut senden",
+            "send_again_in_one": "Erneut senden in {{count}} Sekunde",
+            "send_again_in_other": "Erneut senden in {{count}} Sekunden",
+            "verify_button": "Weiter",
+            "code_invalid": "Dieser Code ist falsch oder abgelaufen. Bitte versuche es erneut.",
+            "new_password_navigation_title": "Neues Passwort erstellen",
+            "password_placeholder": "Gib dein neues Passwort ein",
+            "confirm_placeholder": "Bestätige dein neues Passwort",
+            "passwords_mismatch": "Passwörter stimmen nicht überein",
+            "reset_button": "Passwort zurücksetzen",
+            "confirm_failed_title": "Passwort konnte nicht zurückgesetzt werden",
+            "token_expired_body": "Dein Code ist möglicherweise abgelaufen. Gib einen neuen Code ein und versuche es erneut.",
+            "success_title": "Passwort zurückgesetzt",
+            "success_body": "Du kannst dich jetzt mit deinem neuen Passwort anmelden.",
+            "error_title": "Etwas ist schiefgelaufen",
+            "error_body": "Wir konnten die Anfrage nicht abschließen. Bitte versuche es erneut."
         },
         "create_account": {
             "navigation_title": "Baanx-Konto erstellen",
@@ -1386,6 +1415,7 @@
             "accounts_subtitle_other": "Du benötigst mindestens {{count}} Konten zum Signieren",
             "confirmed": "Transaktion erfolgreich abgeschlossen",
             "submitting": "Alle Signaturen gesammelt. Transaktion wird übermittelt…",
+            "delivery_failed": "Konnte nicht an die anfragende App gesendet werden – die Verbindung wurde getrennt.",
             "failed_default": "Transaktion fehlgeschlagen",
             "load_error": "Diese Transaktion konnte nicht geladen werden. Sie ist möglicherweise abgelaufen oder wurde entfernt.",
             "retry": "Erneut versuchen",
@@ -2445,6 +2475,9 @@
         "common": {
             "from": "Von",
             "to": "An",
+            "sent_to": "Gesendet an",
+            "close_amount": "Restguthaben",
+            "close_to": "Restguthaben an",
             "fee": "Gebühr",
             "tx_fee": "Deine Transaktionsgebühr",
             "total_fee": "Deine Gesamtgebühr",
@@ -2495,9 +2528,11 @@
             "title_cta_group_other": "{{count}} potenziell gefährliche Aktionen gefunden",
             "title_cta_one": "Potenziell gefährliche Aktion gefunden",
             "title_cta_other": "{{count}} potenziell gefährliche Aktionen gefunden",
-            "close_group_warning": "Diese Transaktionsgruppe schließt eines deiner Konten und sendet das verbleibende Guthaben an eine andere Adresse.  Bitte prüfe sorgfältig, bevor du signierst.",
+            "close_account_group_warning": "Diese Transaktionsgruppe schließt eines deiner Konten und sendet das verbleibende Guthaben an eine andere Adresse. Bitte prüfe sorgfältig, bevor du signierst.",
+            "close_asset_group_warning": "Diese Transaktionsgruppe führt für eines deiner Konten ein Opt-out aus einem Asset durch und sendet das verbleibende Guthaben dieses Assets an eine andere Adresse. Bitte prüfe sorgfältig, bevor du signierst.",
             "rekey_group_warning": "Diese Transaktionsgruppe rekeyed eines deiner Konten zu einer anderen Adresse und überträgt dabei den Besitz deines Kontos.",
-            "close_warning": "Diese Transaktion schließt das Konto und sendet das verbleibende Guthaben an die folgende Adresse: {{address}}",
+            "close_account_warning": "Diese Transaktion schließt das Konto und sendet das verbleibende Guthaben an die folgende Adresse: {{address}}",
+            "close_asset_warning": "Diese Transaktion führt für das Konto ein Opt-out aus einem Asset durch und sendet das verbleibende Guthaben dieses Assets an die folgende Adresse: {{address}}",
             "rekey_warning": "Diese Transaktion rekeyed das Konto zur folgenden Adresse: {{address}}.",
             "rekey_warning_bold": "Dies überträgt die vollständige Kontrolle über dein Konto an eine andere Adresse. Bitte prüfe sorgfältig, bevor du signierst.",
             "from_account": "Von: {{address}}",
@@ -2711,6 +2746,8 @@
             "insufficient_balance": "Der Betrag übersteigt dein verfügbares Guthaben.",
             "no_balance_title": "Nichts zum Tauschen",
             "no_balance_body": "Dieses Konto hält kein {{unit}}.",
+            "balance_too_low_title": "Guthaben zu niedrig",
+            "balance_too_low_body": "Dein verfügbares {{unit}}-Guthaben ist zum Tauschen zu gering.",
             "percentage_error_title": "Betrag konnte nicht berechnet werden",
             "percentage_error_body": "Bitte versuche es in einem Moment erneut.",
             "you_pay": "Du zahlst",

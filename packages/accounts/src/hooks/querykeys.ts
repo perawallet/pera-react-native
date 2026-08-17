@@ -166,6 +166,24 @@ export function invalidateAccountQueries(queryClient: QueryClient): void {
     })
 }
 
+// Multi-account aggregate keys (balance-history) hold the address list in a
+// plural `addresses` payload field; a match means the aggregate covers at
+// least one target account.
+const queryKeyTargetsAccountAggregate = (
+    queryKey: QueryKey,
+    targets: Set<string>,
+): boolean =>
+    queryKey.some(part => {
+        if (typeof part !== 'object' || part === null) return false
+        const { addresses } = part as Record<string, unknown>
+        return (
+            Array.isArray(addresses) &&
+            addresses.some(
+                address => typeof address === 'string' && targets.has(address),
+            )
+        )
+    })
+
 /**
  * Scoped variant of {@link invalidateAccountQueries}: invalidates only the
  * account queries whose key payload targets one of the given addresses.
@@ -175,18 +193,27 @@ export function invalidateAccountQueries(queryClient: QueryClient): void {
  * for asset balance-history), so the sync service can refresh just the accounts
  * that actually changed this tick instead of fanning a wide DB re-read across
  * every mounted account query. Keys without a single-account payload (e.g.
- * network-scoped owned-asset-ids, multi-account balance-history) are left alone.
+ * network-scoped owned-asset-ids, multi-account balance-history) are left alone
+ * by default; `includeMultiAccountKeys` additionally invalidates multi-account
+ * aggregates (the wealth-chart balance-history) whose `addresses` payload
+ * intersects the targets — wanted by the post-submission refresh, where the
+ * chart must reflect the send, but not by the sync tick, whose broad
+ * asset-phase invalidation already covers periodic drift.
  */
 export function invalidateAccountQueriesForAddresses(
     queryClient: QueryClient,
     addresses: string[],
+    options?: { includeMultiAccountKeys?: boolean },
 ): void {
     if (addresses.length === 0) return
     const targets = new Set(addresses)
+    const includeMultiAccountKeys = options?.includeMultiAccountKeys ?? false
     void queryClient.invalidateQueries({
         predicate: query =>
             query.queryKey[0] === MODULE_PREFIX &&
-            queryKeyTargetsAccount(query.queryKey, targets),
+            (queryKeyTargetsAccount(query.queryKey, targets) ||
+                (includeMultiAccountKeys &&
+                    queryKeyTargetsAccountAggregate(query.queryKey, targets))),
     })
 }
 

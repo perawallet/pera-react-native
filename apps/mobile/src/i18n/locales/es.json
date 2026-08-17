@@ -699,6 +699,12 @@
                 "body": "La red rechazó la transacción. Inténtalo de nuevo o ponte en contacto con soporte si el problema continúa."
             }
         },
+        "submission": {
+            "unknown_outcome": {
+                "title": "Estado de la transacción desconocido",
+                "body": "No pudimos confirmar si tu transacción se realizó. Espera un momento y revisa tu historial de transacciones antes de intentarlo de nuevo."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Enlace no válido",
             "invalid_url_body": "El enlace detectado no parece ser válido. Revisa el enlace y vuelve a intentarlo.",
@@ -1037,9 +1043,32 @@
             "otp_body": "Introduce el código de verificación que te enviamos para terminar de iniciar sesión.",
             "otp_invalid": "Ese código no es correcto. Vuelve a intentarlo.",
             "send_again": "Reenviar",
-            "send_again_in": "Reenviar en {{count}}s",
-            "coming_soon_title": "Próximamente",
-            "coming_soon_body": "El restablecimiento de contraseña aún no está disponible. Vuelve pronto."
+            "send_again_in": "Reenviar en {{count}}s"
+        },
+        "forgot_password": {
+            "navigation_title": "Restablecer contraseña",
+            "email_body": "Introduce el correo electrónico de tu cuenta de Pera Card y te enviaremos un código de verificación.",
+            "email_placeholder": "Introduce tu correo electrónico",
+            "email_invalid": "Introduce un correo electrónico válido",
+            "send_code_button": "Enviar código",
+            "verify_navigation_title": "Confirma tu correo",
+            "verify_body": "Usa el código de verificación que acabamos de enviar a {{email}} para continuar restableciendo tu contraseña.",
+            "send_again": "Reenviar",
+            "send_again_in_one": "Reenviar en {{count}} segundo",
+            "send_again_in_other": "Reenviar en {{count}} segundos",
+            "verify_button": "Continuar",
+            "code_invalid": "Ese código es incorrecto o ha caducado. Vuelve a intentarlo.",
+            "new_password_navigation_title": "Crear nueva contraseña",
+            "password_placeholder": "Introduce tu nueva contraseña",
+            "confirm_placeholder": "Confirma tu nueva contraseña",
+            "passwords_mismatch": "Las contraseñas no coinciden",
+            "reset_button": "Restablecer contraseña",
+            "confirm_failed_title": "No pudimos restablecer tu contraseña",
+            "token_expired_body": "Tu código puede haber caducado. Introduce un código nuevo y vuelve a intentarlo.",
+            "success_title": "Contraseña restablecida",
+            "success_body": "Ya puedes iniciar sesión con tu nueva contraseña.",
+            "error_title": "Algo salió mal",
+            "error_body": "No pudimos completar la solicitud. Vuelve a intentarlo."
         },
         "create_account": {
             "navigation_title": "Crear cuenta de Baanx",
@@ -1394,6 +1423,7 @@
             "accounts_subtitle_other": "Necesitas al menos {{count}} cuentas para firmar",
             "confirmed": "Transacción completada correctamente",
             "submitting": "Todas las firmas recogidas. Enviando la transacción…",
+            "delivery_failed": "No se pudo enviar a la aplicación que lo solicitó: se perdió la conexión.",
             "failed_default": "La transacción falló",
             "load_error": "No se pudo cargar esta transacción. Es posible que haya caducado o se haya eliminado.",
             "retry": "Volver a intentar",
@@ -2453,6 +2483,9 @@
         "common": {
             "from": "De",
             "to": "A",
+            "sent_to": "Enviado a",
+            "close_amount": "Saldo restante",
+            "close_to": "Saldo restante a",
             "fee": "Comisión",
             "tx_fee": "Tu comisión de transacción",
             "total_fee": "Tu comisión total",
@@ -2503,9 +2536,11 @@
             "title_cta_group_other": "Se han detectado {{count}} acciones potencialmente peligrosas",
             "title_cta_one": "Se ha detectado una acción potencialmente peligrosa",
             "title_cta_other": "Se han detectado {{count}} acciones potencialmente peligrosas",
-            "close_group_warning": "Este grupo de transacciones cierra una de tus cuentas y envía los fondos restantes a otra dirección. Revísalo con atención antes de firmar.",
+            "close_account_group_warning": "Este grupo de transacciones cierra una de tus cuentas y envía los fondos restantes a otra dirección. Revísalo con atención antes de firmar.",
+            "close_asset_group_warning": "Este grupo de transacciones hace opt-out de un activo en una de tus cuentas y envía el saldo restante de ese activo a otra dirección. Revísalo con atención antes de firmar.",
             "rekey_group_warning": "Este grupo de transacciones hace rekey de una de tus cuentas a otra dirección, transfiriendo la propiedad de tu cuenta en el proceso.",
-            "close_warning": "Esta transacción cierra la cuenta y envía los fondos restantes a la siguiente dirección: {{address}}",
+            "close_account_warning": "Esta transacción cierra la cuenta y envía los fondos restantes a la siguiente dirección: {{address}}",
+            "close_asset_warning": "Esta transacción hace opt-out de un activo en la cuenta y envía el saldo restante de ese activo a la siguiente dirección: {{address}}",
             "rekey_warning": "Esta transacción hace rekey de la cuenta a la siguiente dirección: {{address}}.",
             "rekey_warning_bold": "Esto transfiere el control total de tu cuenta a otra dirección. Revísalo con atención antes de firmar.",
             "from_account": "De: {{address}}",
@@ -2719,6 +2754,8 @@
             "insufficient_balance": "La cantidad supera tu saldo disponible.",
             "no_balance_title": "Nada que intercambiar",
             "no_balance_body": "Esta cuenta no tiene {{unit}}.",
+            "balance_too_low_title": "Saldo demasiado bajo",
+            "balance_too_low_body": "Tu saldo disponible de {{unit}} es demasiado bajo para intercambiar.",
             "percentage_error_title": "No se pudo calcular la cantidad",
             "percentage_error_body": "Vuelve a intentarlo en un momento.",
             "you_pay": "Pagas",

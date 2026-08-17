@@ -54,7 +54,6 @@ describe('SigningCompletedContent', () => {
                     isTransaction
                     returnToDapp={{
                         browserName: 'Chrome',
-                        dappUrl: 'https://dapp.example.org',
                         dappName: 'TestDApp',
                     }}
                 />
@@ -68,19 +67,17 @@ describe('SigningCompletedContent', () => {
             ),
         )
 
-        expect(Linking.openURL).toHaveBeenCalledWith(
-            'googlechromes://dapp.example.org',
-        )
+        expect(Linking.openURL).toHaveBeenCalledWith('googlechrome://')
         useBottomSheetStore.getState().remove('sheet-1')
         await expect(promise).resolves.toBe(true)
     })
 
-    it('hides the CTA when the origin has no usable dapp url (iOS)', () => {
+    it('hides the CTA when the browser has no focus scheme (iOS Safari)', () => {
         render(
             <BottomSheetIdContext.Provider value='sheet-1'>
                 <SigningCompletedContent
                     isTransaction
-                    returnToDapp={{ browserName: 'Chrome' }}
+                    returnToDapp={{ browserName: 'Mobile Safari' }}
                 />
             </BottomSheetIdContext.Provider>,
         )

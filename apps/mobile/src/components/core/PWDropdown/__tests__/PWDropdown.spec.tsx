@@ -14,6 +14,7 @@ import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { PWDropdown } from '../PWDropdown'
 import { PWText } from '@components/core/PWText'
+import { LockOverlayProvider } from '@hooks/useIsLockOverlayVisible'
 
 describe('PWDropdown', () => {
     it('renders trigger and shows items on press', () => {
@@ -65,5 +66,43 @@ describe('PWDropdown', () => {
         fireEvent.click(screen.getByText('Trigger'))
 
         expect(screen.getAllByTestId('icon-check')).toHaveLength(1)
+    })
+
+    it('closes an open menu when the lock overlay goes up', () => {
+        const items = [{ label: 'Item 1', onPress: vi.fn() }]
+        const renderWithLockOverlay = (isLockOverlayVisible: boolean) => (
+            <LockOverlayProvider value={isLockOverlayVisible}>
+                <PWDropdown items={items}>
+                    <PWText>Trigger</PWText>
+                </PWDropdown>
+            </LockOverlayProvider>
+        )
+
+        const { rerender } = render(renderWithLockOverlay(false))
+        fireEvent.click(screen.getByText('Trigger'))
+        expect(screen.getByText('Item 1')).toBeTruthy()
+
+        rerender(renderWithLockOverlay(true))
+
+        expect(screen.queryByText('Item 1')).toBeNull()
+    })
+
+    it('does not reopen the menu once the lock overlay clears', () => {
+        const items = [{ label: 'Item 1', onPress: vi.fn() }]
+        const renderWithLockOverlay = (isLockOverlayVisible: boolean) => (
+            <LockOverlayProvider value={isLockOverlayVisible}>
+                <PWDropdown items={items}>
+                    <PWText>Trigger</PWText>
+                </PWDropdown>
+            </LockOverlayProvider>
+        )
+
+        const { rerender } = render(renderWithLockOverlay(false))
+        fireEvent.click(screen.getByText('Trigger'))
+        rerender(renderWithLockOverlay(true))
+
+        rerender(renderWithLockOverlay(false))
+
+        expect(screen.queryByText('Item 1')).toBeNull()
     })
 })

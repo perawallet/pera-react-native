@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
     useAlgorandClient,
     useNetwork,
@@ -19,7 +20,7 @@ import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
 import { fetchIndexerAssetDetails } from '@perawallet/wallet-core-assets'
 import {
     deleteAssetHoldings,
-    useAccountBalancesInvalidator,
+    invalidateAccountQueriesForAddresses,
 } from '@perawallet/wallet-core-accounts'
 import { toError } from '@perawallet/wallet-core-shared'
 import { CreatorCannotOptOutError, NonZeroBalanceError } from '../errors'
@@ -57,7 +58,7 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
     const algokit = useAlgorandClient()
     const { submit } = useSignAndSubmitGroup()
     const { network } = useNetwork()
-    const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
+    const queryClient = useQueryClient()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<Nullable<Error>>(null)
 
@@ -157,7 +158,10 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
                     assetIds: paramsList.map(p => String(p.assetId)),
                     network,
                 })
-                invalidateBalances()
+                // Same as the opt-in: the delete must invalidate every
+                // staleTime-Infinity account read; the sync diff won't see
+                // the already-persisted change (PERA-4845).
+                invalidateAccountQueriesForAddresses(queryClient, [sender])
 
                 return { txIds }
             } catch (err) {
@@ -168,7 +172,7 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
                 setIsLoading(false)
             }
         },
-        [algokit, resolveCreator, submit, network, invalidateBalances],
+        [algokit, resolveCreator, submit, network, queryClient],
     )
 
     return {

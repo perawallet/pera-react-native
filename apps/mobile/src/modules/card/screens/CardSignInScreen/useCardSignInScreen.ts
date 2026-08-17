@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useForm, type Control, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
@@ -27,6 +27,8 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCountdown } from '@hooks/useCountdown'
+import { useRoute, type RouteProp } from '@react-navigation/native'
+import { type PeraCardStackParamList } from '../../routes/types'
 import { CARD_VERIFICATION_CODE_LENGTH } from '../cardVerificationConstants'
 import { getOnboardingResumeRoute } from './getOnboardingResumeRoute'
 
@@ -59,7 +61,7 @@ export type UseCardSignInScreenResult = {
 
 export const useCardSignInScreen = (): UseCardSignInScreenResult => {
     const { t } = useLanguage()
-    const { errorToast, successToast, infoToast } = useToast()
+    const { errorToast, successToast } = useToast()
     const navigation = useAppNavigation()
     const login = useCardLoginMutation()
     const sendOtp = useSendLoginOtpMutation()
@@ -68,6 +70,7 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
         control,
         handleSubmit,
         getValues,
+        setValue,
         setError,
         formState: { isValid, errors },
     } = useForm<SignInFormValues>({
@@ -75,6 +78,13 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
         mode: 'onChange',
         defaultValues: { email: '', password: '' },
     })
+
+    const route = useRoute<RouteProp<PeraCardStackParamList, 'CardSignIn'>>()
+
+    useEffect(() => {
+        const email = route.params?.email
+        if (email) setValue('email', email, { shouldValidate: true })
+    }, [route.params?.email, setValue])
 
     const [isOtpRequired, setIsOtpRequired] = useState(false)
     // `userId` from the login attempt that required 2FA — /v1/auth/login/otp
@@ -267,12 +277,10 @@ export const useCardSignInScreen = (): UseCardSignInScreenResult => {
 
     const handleForgotPassword = useCallback(() => {
         trackEvent(CardEvent.RecoverForgotPassword)
-        // TODO(card): wire to the real forgot-password flow once designed.
-        infoToast(
-            t('peraCard.sign_in.coming_soon_title'),
-            t('peraCard.sign_in.coming_soon_body'),
-        )
-    }, [infoToast, t])
+        navigation.navigate('CardForgotPassword', {
+            email: getValues().email || undefined,
+        })
+    }, [navigation, getValues])
 
     return {
         control,

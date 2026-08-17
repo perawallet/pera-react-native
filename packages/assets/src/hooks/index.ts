@@ -20,12 +20,10 @@ export * from './useToggleAssetFavoriteMutation'
 export * from './useToggleAssetPriceAlertMutation'
 export * from './useAssetSearchQuery'
 export * from './mappers'
-export * from './useAssetByIdQuery'
 
 export {
     invalidateAssetQueries,
     isAssetQuery,
     getAssetsQueryKey,
-    getAssetByIdQueryKey,
     isAssetPriceHistoryQuery,
 } from './querykeys'

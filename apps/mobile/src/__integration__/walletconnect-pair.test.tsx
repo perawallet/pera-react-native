@@ -482,9 +482,7 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
                 })
                 fireEvent.click(findReturnButton()!)
 
-                expect(Linking.openURL).toHaveBeenCalledWith(
-                    'googlechromes://browser-dapp.example',
-                )
+                expect(Linking.openURL).toHaveBeenCalledWith('googlechrome://')
                 // Sheet settled: pairing context consumed, session origin
                 // recorded for the sign flow.
                 await waitFor(() => {

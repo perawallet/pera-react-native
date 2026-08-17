@@ -39,15 +39,19 @@ export const aggregateTransactionWarnings = (
         const authorizer = authorizerByIndex?.get(index) ?? tx.sender
 
         if (userAccountAddresses.has(authorizer)) {
-            const closeAddress =
-                tx.paymentTransaction?.closeRemainderTo ??
-                tx.assetTransferTransaction?.closeTo
-
-            if (closeAddress) {
+            if (tx.paymentTransaction?.closeRemainderTo) {
                 warnings.push({
-                    type: 'close',
+                    type: 'close-account',
                     senderAddress: tx.sender,
-                    targetAddress: closeAddress,
+                    targetAddress: tx.paymentTransaction.closeRemainderTo,
+                })
+            }
+
+            if (tx.assetTransferTransaction?.closeTo) {
+                warnings.push({
+                    type: 'close-asset',
+                    senderAddress: tx.sender,
+                    targetAddress: tx.assetTransferTransaction.closeTo,
                 })
             }
 

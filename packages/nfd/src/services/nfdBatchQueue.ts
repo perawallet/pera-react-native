@@ -14,14 +14,22 @@ import { BatchQueue } from '@perawallet/wallet-core-shared/queue'
 import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import { fetchAndPersistNfds } from '../sync/nfd-syncer'
 import { getNfdsByAddresses } from '../db'
+import {
+    NFD_BATCH_DEBOUNCE_MS,
+    NFD_BATCH_MAX_SIZE,
+    NFD_BATCH_MAX_WAIT_MS,
+} from '../constants'
 import type { NfdName } from '../models'
-
-const NFD_BATCH_DELAY_MS = 100
 
 /**
  * On-demand NFD batch queue. Used by `useNfdForAddressQuery` to coalesce
- * concurrent address lookups (e.g. a transaction list mounting 20 rows
- * over a few render commits) into a single bulk-read HTTP call.
+ * address lookups into a single bulk-read HTTP call.
+ *
+ * Debounced rather than a fixed window: a list being scrolled mounts rows
+ * continuously, and a fixed window dispatches once per window for as long as
+ * that lasts. Deferring until the scroll settles collapses it to one request.
+ * Names are decorative, so the added latency costs nothing a user would call
+ * broken — a row renders its truncated address until its name arrives.
  */
 export const nfdBatchQueue = new BatchQueue<string, Nullable<NfdName>, Network>(
     async (addresses, network) => {
@@ -34,5 +42,10 @@ export const nfdBatchQueue = new BatchQueue<string, Nullable<NfdName>, Network>(
         }
         return map
     },
-    NFD_BATCH_DELAY_MS,
+    {
+        delayMs: NFD_BATCH_DEBOUNCE_MS,
+        debounce: true,
+        maxBatchSize: NFD_BATCH_MAX_SIZE,
+        maxWaitMs: NFD_BATCH_MAX_WAIT_MS,
+    },
 )

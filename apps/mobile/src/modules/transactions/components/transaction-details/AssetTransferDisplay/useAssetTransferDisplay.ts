@@ -39,6 +39,15 @@ export const useAssetTransferDisplay = (
 
     const senderAddress = transaction.sender
     const receiverAddress = assetTransfer?.receiver
+    const closeToAddress = assetTransfer?.closeTo
+    const closeAmountValue = useMemo(() => {
+        if (assetTransfer?.closeAmount === undefined) return null
+        return new Decimal(assetTransfer.closeAmount.toString()).dividedBy(
+            new Decimal(10 ** (asset?.decimals ?? 6)),
+        )
+    }, [assetTransfer?.closeAmount, asset?.decimals])
+    // The paid leg only — an opt-out's swept holding renders in its own
+    // Remainder Amount row (closeAmountValue), so the two never double-count.
     const amount = useMemo(() => {
         const amount = new Decimal(assetTransfer?.amount?.toString() ?? '0')
         return amount
@@ -77,6 +86,8 @@ export const useAssetTransferDisplay = (
         assetTransfer,
         senderAddress,
         receiverAddress,
+        closeToAddress,
+        closeAmountValue,
         amount,
         amountStyle,
         metadataHash,

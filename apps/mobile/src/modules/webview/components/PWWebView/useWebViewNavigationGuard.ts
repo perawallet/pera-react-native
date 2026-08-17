@@ -89,6 +89,8 @@ const isPeraUniversalLink = (url: string): boolean =>
  *   OS/QR-sourced deeplinks come through a different path and are unaffected.
  * - WC wake links carry no actionable URI, so they don't parse as deeplinks and
  *   are swallowed to keep them off the OS chooser.
+ * - blob: URLs backed by http(s), like Vestige's chart iframes, load in place
+ *   and are never handed off; a blob only resolves in its creating page.
  * - Other non-http(s) is refused rather than handed to a WebView that can't load
  *   a foreign scheme. `mailto:`/`tel:`/`sms:` go through `Linking` first, since
  *   `originWhitelist={['*']}` disables react-native-webview's own fallback.
@@ -129,6 +131,14 @@ export const useWebViewNavigationGuard = ({
         (request: ShouldStartLoadRequest): boolean => {
             const { url } = request
             const isWebUrl = /^https?:/i.test(url)
+
+            // Vestige's charts live in iframes with blob:https://... sources
+            // (see pera-ios #135). A blob URL only resolves in the page
+            // context that created it, so it loads in place; no handoff to
+            // the in-app browser or the OS could ever render it.
+            if (/^blob:https?:/i.test(url)) {
+                return true
+            }
 
             // Ahead of the plain-web early return below: social links ARE
             // ordinary https URLs, so checking them after it would never run.

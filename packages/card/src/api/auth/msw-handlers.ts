@@ -16,11 +16,17 @@ import {
     loginResponseSchema,
     oauthAuthorizeResponseSchema,
     oauthInitiateResponseSchema,
+    passwordResetConfirmResponseSchema,
+    passwordResetRequestResponseSchema,
+    passwordResetVerifyResponseSchema,
     sendLoginOtpResponseSchema,
     tokenResponseSchema,
     type LoginApiResponse,
     type OauthAuthorizeApiResponse,
     type OauthInitiateApiResponse,
+    type PasswordResetConfirmApiResponse,
+    type PasswordResetRequestApiResponse,
+    type PasswordResetVerifyApiResponse,
     type SendLoginOtpApiResponse,
     type TokenApiResponse,
 } from './schema'
@@ -170,4 +176,61 @@ export const mockOauthChain = ({
             HttpResponse.json(tokenResponse, { status: 200 }),
         ),
     ]
+}
+
+export type MockPasswordResetRequestParams = {
+    response?: PasswordResetRequestApiResponse
+    status?: number
+}
+
+export const mockPasswordResetRequest = ({
+    response = { success: true },
+    status = 200,
+}: MockPasswordResetRequestParams = {}): HttpHandler => {
+    validateMockResponse(
+        passwordResetRequestResponseSchema,
+        response,
+        'mockPasswordResetRequest',
+    )
+    return http.post('*/v1/auth/password/reset/request', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
+
+export type MockPasswordResetVerifyParams = {
+    response?: PasswordResetVerifyApiResponse
+    status?: number
+}
+
+export const mockPasswordResetVerify = ({
+    response = { token: 'reset-token-1' },
+    status = 200,
+}: MockPasswordResetVerifyParams = {}): HttpHandler => {
+    validateMockResponse(
+        passwordResetVerifyResponseSchema,
+        response,
+        'mockPasswordResetVerify',
+    )
+    return http.post('*/v1/auth/password/reset/verify', () =>
+        HttpResponse.json(response, { status }),
+    )
+}
+
+export type MockPasswordResetConfirmParams = {
+    response?: PasswordResetConfirmApiResponse
+    status?: number
+}
+
+export const mockPasswordResetConfirm = ({
+    response = { success: true },
+    status = 200,
+}: MockPasswordResetConfirmParams = {}): HttpHandler => {
+    validateMockResponse(
+        passwordResetConfirmResponseSchema,
+        response,
+        'mockPasswordResetConfirm',
+    )
+    return http.post('*/v1/auth/password/reset/confirm', () =>
+        HttpResponse.json(response, { status }),
+    )
 }

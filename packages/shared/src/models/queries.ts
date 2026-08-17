@@ -32,6 +32,37 @@ export type RequestConfiguration<TData = unknown> = {
     headers?: HeadersInit
     /** Per-attempt timeout in ms. Overrides ky's 10s default; `false` disables it. */
     timeout?: number | false
+    /**
+     * Per-request retry overrides, deep-merged into the client's retry config
+     * (ky merges nested options rather than replacing them), so omitted keys
+     * keep the client's values.
+     *
+     * The key use is `methods`: ky's default retry method list excludes POST,
+     * so a POST is never retried no matter how the failure classifies. Opt an
+     * idempotent POST in with `{ methods: ['post'] }`.
+     */
+    retry?: RequestRetryOverrides
+}
+
+/**
+ * Structural subset of ky's `RetryOptions` — kept local so the model layer
+ * doesn't depend on the HTTP client.
+ */
+export type RequestRetryOverrides = {
+    limit?: number
+    /** Lowercase HTTP methods, e.g. `['post']`. */
+    methods?: string[]
+    statusCodes?: number[]
+    /**
+     * `true` forces a retry and bypasses every built-in check; `undefined`
+     * falls through to ky's default handling (timeout, then `statusCodes`);
+     * `false` refuses outright. Return `undefined` rather than `false` to add
+     * a retry reason without discarding the defaults.
+     */
+    shouldRetry?: (state: {
+        error: Error
+        retryCount: number
+    }) => boolean | undefined | Promise<boolean | undefined>
 }
 
 export type ResponseConfiguration<TData = unknown> = {

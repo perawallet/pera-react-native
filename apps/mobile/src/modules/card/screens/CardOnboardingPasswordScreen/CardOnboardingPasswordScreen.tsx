@@ -13,8 +13,8 @@
 import { Controller } from 'react-hook-form'
 import { PWButton, PWInput, PWScreen, PWView } from '@components/core'
 import { CardConsentCheckboxRow } from '@modules/card/components/CardConsentCheckboxRow'
+import { PasswordRequirements } from '@modules/card/components/PasswordRequirements'
 import { useLanguage } from '@hooks/useLanguage'
-import { PasswordRequirements } from './PasswordRequirements'
 import { useCardOnboardingPasswordScreen } from './useCardOnboardingPasswordScreen'
 import { useStyles } from './styles'
 

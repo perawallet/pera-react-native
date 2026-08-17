@@ -96,6 +96,12 @@ export interface TransactionHistoryItem {
     /** Base units. */
     amount: Nullable<Decimal>
     closeTo: Nullable<string>
+    /**
+     * Base units swept to `closeTo` when the sender closed the account (pay)
+     * or holding (axfer). Separate from `amount` — a close-out sends its whole
+     * balance here with `amount` 0.
+     */
+    closeAmount: Nullable<Decimal>
     asset: Nullable<TransactionAssetSummary>
     applicationId: Nullable<string>
     innerTransactionCount: Nullable<number>

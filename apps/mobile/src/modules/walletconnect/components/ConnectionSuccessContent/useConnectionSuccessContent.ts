@@ -34,10 +34,7 @@ export const useConnectionSuccessContent = (
     )
 
     const dAppName = request.peerMeta.name ?? ''
-    const returnArgs = {
-        browserName: returnContext?.browserName,
-        dappUrl: request.peerMeta.url || undefined,
-    }
+    const returnArgs = { browserName: returnContext?.browserName }
     const showReturnCta =
         returnContext?.origin === 'external-browser' &&
         canReturnToDapp(returnArgs)

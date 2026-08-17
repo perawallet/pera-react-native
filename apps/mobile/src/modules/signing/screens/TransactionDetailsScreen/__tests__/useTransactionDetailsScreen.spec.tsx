@@ -60,6 +60,7 @@ const historyItem: TransactionHistoryItem = {
     groupId: null,
     amount: new Decimal(2_500_000),
     closeTo: null,
+    closeAmount: null,
     asset: null,
     applicationId: null,
     innerTransactionCount: null,

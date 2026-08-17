@@ -197,6 +197,20 @@ export const useSwapForm = (): UseSwapFormResult => {
         resetAssetPair()
     }, [selectedAccount?.address, resetAmounts, resetAssetPair])
 
+    // The typed amount is denominated in the pay asset, so it cannot survive
+    // the pay asset changing: quoting the old number against the new asset's
+    // decimals produces a wrong quote. The pair also changes outside this hook
+    // (pair-history and top-pair taps write straight into the store), hence an
+    // effect on the store value rather than only the selection handler.
+    // handleSwapDirection opts out by pre-setting the ref: its carry of the
+    // amounts across the flip is deliberate.
+    const previousFromAssetRef = useRef(fromAsset)
+    useEffect(() => {
+        if (previousFromAssetRef.current === fromAsset) return
+        previousFromAssetRef.current = fromAsset
+        resetAmounts()
+    }, [fromAsset, resetAmounts])
+
     // Leaving the tab must clear the form: the screen stays mounted, so without
     // this the next visit opens on the previous session's amounts.
     useFocusEffect(
@@ -250,6 +264,7 @@ export const useSwapForm = (): UseSwapFormResult => {
     )
 
     const handleSwapDirection = useCallback(() => {
+        previousFromAssetRef.current = toAsset
         setFromAsset(toAsset)
         setToAsset(fromAsset)
         setPayAmount(receiveAmount)
@@ -286,12 +301,22 @@ export const useSwapForm = (): UseSwapFormResult => {
                     asset_out_id: uint64IdToNumber(toAsset),
                     percentage: String(percentage / 100),
                 })
-                if (result.amount) {
+                if (result.amount && !result.amount.isZero()) {
                     const displayAmount = baseUnitsToDisplayUnits(
                         result.amount,
                         payAsset?.decimals ?? 0,
                     )
                     setPayAmount(displayAmount)
+                } else {
+                    // The backend clamps the swappable amount at zero when
+                    // fee reserves consume the balance; filling the field
+                    // with 0 would read as a dead button too.
+                    infoToast(
+                        t('swap.form.balance_too_low_title'),
+                        t('swap.form.balance_too_low_body', {
+                            unit: payAsset?.unitName ?? fromAsset,
+                        }),
+                    )
                 }
             } catch {
                 // Already logged by the query client; the user needs to know the
@@ -335,12 +360,15 @@ export const useSwapForm = (): UseSwapFormResult => {
                 autoCreateContainer: false,
             },
         })
-        if (!assetId) return
+        // Re-picking the current asset must be a full no-op: clearing the
+        // quotes without changing any quote input would strand the fetch
+        // state as loading with nothing in flight.
+        if (!assetId || assetId === fromAsset) return
         setFromAsset(assetId)
-        setReceiveAmount(null)
-        setSelectedProviderName(null)
-        resetQuotes()
-    }, [requestBottomSheet, toAsset, setFromAsset, fromAsset, resetQuotes])
+        // The effect above also resets, but only after a paint; reset here
+        // too so no frame shows the old amount against the new asset.
+        resetAmounts()
+    }, [requestBottomSheet, toAsset, setFromAsset, fromAsset, resetAmounts])
 
     const handleOpenReceiveAssetSelection = useCallback(async () => {
         trackEvent(SwapEvent.SelectToToken, {

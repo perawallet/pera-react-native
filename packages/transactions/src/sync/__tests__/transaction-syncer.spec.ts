@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
     getLatestTransactionRoundTime: vi.fn(),
     fetchTransactionHistory: vi.fn(),
     upsertTransactions: vi.fn(),
+    backfillMissingCloseAmounts: vi.fn(),
 }))
 
 vi.mock('../../api/history', () => ({
@@ -25,6 +26,10 @@ vi.mock('../../api/history', () => ({
 vi.mock('../../db', () => ({
     getLatestTransactionRoundTime: mocks.getLatestTransactionRoundTime,
     upsertTransactions: mocks.upsertTransactions,
+}))
+
+vi.mock('../close-amount-backfill', () => ({
+    backfillMissingCloseAmounts: mocks.backfillMissingCloseAmounts,
 }))
 
 import { fetchAndPersistTransactions } from '../transaction-syncer'
@@ -39,6 +44,7 @@ beforeEach(() => {
     mocks.getLatestTransactionRoundTime.mockResolvedValue(null)
     mocks.fetchTransactionHistory.mockResolvedValue({ transactions: [] })
     mocks.upsertTransactions.mockResolvedValue(undefined)
+    mocks.backfillMissingCloseAmounts.mockResolvedValue(undefined)
 })
 
 describe('fetchAndPersistTransactions', () => {
@@ -97,5 +103,13 @@ describe('fetchAndPersistTransactions', () => {
         await fetchAndPersistTransactions(ADDRESS, NETWORK)
 
         expect(mocks.upsertTransactions).not.toHaveBeenCalled()
+    })
+
+    it('runs the close-amount backfill after persisting the page', async () => {
+        await fetchAndPersistTransactions(ADDRESS, NETWORK)
+
+        expect(mocks.backfillMissingCloseAmounts).toHaveBeenCalledWith({
+            network: NETWORK,
+        })
     })
 })

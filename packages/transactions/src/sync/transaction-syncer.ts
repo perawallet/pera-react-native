@@ -13,6 +13,7 @@
 import type { Network, Optional } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory } from '../api/history'
 import { getLatestTransactionRoundTime, upsertTransactions } from '../db'
+import { backfillMissingCloseAmounts } from './close-amount-backfill'
 
 export async function fetchAndPersistTransactions(
     address: string,
@@ -45,4 +46,9 @@ export async function fetchAndPersistTransactions(
             network,
         })
     }
+
+    // Heal close rows whose swept amount the backend/derivation couldn't
+    // provide (rows cached before the close_amount column, receiver-only
+    // perspectives). Best-effort and bounded; never fails the sync.
+    await backfillMissingCloseAmounts({ network })
 }

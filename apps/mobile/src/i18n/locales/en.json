@@ -699,6 +699,12 @@
                 "body": "The network rejected the transaction. Please try again or contact support if the issue persists."
             }
         },
+        "submission": {
+            "unknown_outcome": {
+                "title": "Transaction status unknown",
+                "body": "We couldn't confirm whether your transaction went through. Wait a moment and check your transaction history before trying again."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Invalid Link",
             "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again.",
@@ -1037,9 +1043,32 @@
             "otp_body": "Enter the verification code we sent you to finish signing in.",
             "otp_invalid": "That code isn't correct. Please try again.",
             "send_again": "Send again",
-            "send_again_in": "Send again in {{count}}s",
-            "coming_soon_title": "Coming soon",
-            "coming_soon_body": "Password reset isn't available just yet. Check back soon."
+            "send_again_in": "Send again in {{count}}s"
+        },
+        "forgot_password": {
+            "navigation_title": "Reset Password",
+            "email_body": "Enter the email address for your Pera Card account and we'll send you a verification code.",
+            "email_placeholder": "Enter your email address",
+            "email_invalid": "Enter a valid email address",
+            "send_code_button": "Send Code",
+            "verify_navigation_title": "Confirm your Email",
+            "verify_body": "Use the verification code we just sent to {{email}} to continue resetting your password.",
+            "send_again": "Send it again",
+            "send_again_in_one": "Send it again in {{count}} second",
+            "send_again_in_other": "Send it again in {{count}} seconds",
+            "verify_button": "Continue",
+            "code_invalid": "That code is incorrect or expired. Please try again.",
+            "new_password_navigation_title": "Create New Password",
+            "password_placeholder": "Enter your new password",
+            "confirm_placeholder": "Confirm your new password",
+            "passwords_mismatch": "Passwords do not match",
+            "reset_button": "Reset Password",
+            "confirm_failed_title": "Couldn't reset password",
+            "token_expired_body": "Your code may have expired. Enter a new code and try again.",
+            "success_title": "Password reset",
+            "success_body": "You can now sign in with your new password.",
+            "error_title": "Something went wrong",
+            "error_body": "We couldn't complete the request. Please try again."
         },
         "create_account": {
             "navigation_title": "Create Baanx Account",
@@ -1394,6 +1423,7 @@
             "accounts_subtitle_other": "You need at least {{count}} accounts to sign",
             "confirmed": "Transaction successfully completed",
             "submitting": "All signatures collected. Submitting transaction…",
+            "delivery_failed": "Couldn't send this to the app that requested it — the connection was lost.",
             "failed_default": "Transaction failed",
             "load_error": "Couldn't load this transaction. It may have expired or been removed.",
             "retry": "Try Again",
@@ -2453,6 +2483,9 @@
         "common": {
             "from": "From",
             "to": "To",
+            "sent_to": "Sent To",
+            "close_amount": "Remainder Amount",
+            "close_to": "Remainder Sent To",
             "fee": "Fee",
             "tx_fee": "Your Transaction Fee",
             "total_fee": "Your Total Fee",
@@ -2503,9 +2536,11 @@
             "title_cta_group_other": "{{count}} potentially dangerous actions found",
             "title_cta_one": "Potentially dangerous action found",
             "title_cta_other": "{{count}} potentially dangerous actions found",
-            "close_group_warning": "This transaction group closes one of your accounts and sends remaining funds another address.  Please review carefully before signing.",
+            "close_account_group_warning": "This transaction group closes one of your accounts and sends the remaining balance to another address. Please review carefully before signing.",
+            "close_asset_group_warning": "This transaction group opts one of your accounts out of an asset and sends any remaining balance of that asset to another address. Please review carefully before signing.",
             "rekey_group_warning": "This transaction group rekeys one of your accounts to another address, transferring ownership of your account in the process.",
-            "close_warning": "This transaction closes the account and send remaining funds to the following address: {{address}}",
+            "close_account_warning": "This transaction closes the account and sends the remaining balance to the following address: {{address}}",
+            "close_asset_warning": "This transaction opts the account out of an asset and sends any remaining balance of that asset to the following address: {{address}}",
             "rekey_warning": "This transaction rekeys the account to the following address: {{address}}.",
             "rekey_warning_bold": "This transfers full control of your account to another address. Please review carefully before signing.",
             "from_account": "From: {{address}}",
@@ -2719,6 +2754,8 @@
             "insufficient_balance": "The amount exceeds your available balance.",
             "no_balance_title": "Nothing to swap",
             "no_balance_body": "This account holds no {{unit}}.",
+            "balance_too_low_title": "Balance too low",
+            "balance_too_low_body": "Your available {{unit}} balance is too small to swap.",
             "percentage_error_title": "Couldn't calculate the amount",
             "percentage_error_body": "Please try again in a moment.",
             "you_pay": "You pay",

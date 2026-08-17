@@ -18,7 +18,7 @@ import type {
     SourceMetadata,
     TransportResult,
 } from '../types'
-import { NetworkChangedError, TransportError } from '../errors'
+import { NetworkChangedError, SubmissionError, TransportError } from '../errors'
 import {
     submitAndAutoRefresh,
     type AlgokitClientInterface,
@@ -76,6 +76,13 @@ export const createAlgodTransport = (
                     signed,
                 )
             } catch (error) {
+                // A classified submit failure keeps its txIds, classification
+                // and retryability — wrapping it in TransportError would
+                // collapse "node rejected" and "outcome unknown" back into
+                // one retryable-looking failure (PERA-4587 / PERA-4896).
+                if (error instanceof SubmissionError) {
+                    throw error
+                }
                 const err = toError(error)
                 throw new TransportError(err.message, err)
             }

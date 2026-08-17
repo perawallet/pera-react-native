@@ -98,6 +98,13 @@ vi.mock('@algorandfoundation/provider-migrations', () => ({
     }),
 }))
 
+// `vi.resetModules()` below makes every test re-import the whole singleton
+// graph — keystore engine, migrations, platform extensions. That transform and
+// import cost, not any assertion here, is what exceeds the 5s default when the
+// full monorepo suite saturates the CPU. Still low enough that a genuinely
+// unsettled `before` — the failure this file exists to catch — fails loudly.
+vi.setConfig({ testTimeout: 20_000 })
+
 describe('singleton migrations construction wiring', () => {
     beforeEach(() => {
         vi.resetModules()

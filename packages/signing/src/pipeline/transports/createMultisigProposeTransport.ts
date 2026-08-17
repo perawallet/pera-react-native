@@ -44,6 +44,12 @@ export type ProposeSignRequestFn = (params: {
      * bytes differ from what the user reviewed.
      */
     rawTransactionsBase64: string[]
+    /**
+     * Proposing participant's address. Pinned on the handoff because the poll
+     * response declares it optional and some deployments echo null, leaving
+     * the resolver unable to cancel an orphaned request.
+     */
+    proposerAddress?: string
 }>
 
 /** Multisig metadata needed by the resolver listener to build subsigs. */
@@ -217,6 +223,7 @@ export const createMultisigProposeTransport = (
                         network: capturedNetwork,
                         sourceType: source.type,
                         registeredAt: Date.now(),
+                        proposerAddress: response.proposerAddress,
                         // Live-session delivery (any source). Dropped when the
                         // store persists; a resumed WC handoff falls back to
                         // `recovery` below.

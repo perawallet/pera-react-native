@@ -64,3 +64,30 @@ export const tokenResponseSchema = z.object({
     refresh_token_expires_in: z.number().optional().nullable(),
 })
 export type TokenApiResponse = z.infer<typeof tokenResponseSchema>
+
+// POST /v1/auth/password/reset/request. Baanx answers {success: true} even
+// for unknown emails (no account enumeration), so `false` is unexpected and
+// treated as an error by the endpoint.
+export const passwordResetRequestResponseSchema = z.object({
+    success: z.boolean().optional().nullable(),
+})
+export type PasswordResetRequestApiResponse = z.infer<
+    typeof passwordResetRequestResponseSchema
+>
+
+// POST /v1/auth/password/reset/verify. `token` is the single-use reset key
+// consumed by the confirm step; it expires after a short period.
+export const passwordResetVerifyResponseSchema = z.object({
+    token: z.string(),
+})
+export type PasswordResetVerifyApiResponse = z.infer<
+    typeof passwordResetVerifyResponseSchema
+>
+
+// POST /v1/auth/password/reset/confirm.
+export const passwordResetConfirmResponseSchema = z.object({
+    success: z.boolean().optional().nullable(),
+})
+export type PasswordResetConfirmApiResponse = z.infer<
+    typeof passwordResetConfirmResponseSchema
+>

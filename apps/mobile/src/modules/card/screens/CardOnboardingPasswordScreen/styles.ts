@@ -23,24 +23,6 @@ export const useStyles = makeStyles(theme => ({
     confirmGroup: {
         gap: theme.spacing.md,
     },
-    requirements: {
-        gap: theme.spacing.sm,
-    },
-    requirementRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    requirementText: {
-        color: theme.colors.textGrayLighter,
-    },
-    requirementMet: {
-        color: theme.colors.positive,
-    },
-    hint: {
-        color: theme.colors.textGrayLighter,
-        marginTop: theme.spacing.xs,
-    },
     checkboxes: {
         gap: theme.spacing.md,
     },

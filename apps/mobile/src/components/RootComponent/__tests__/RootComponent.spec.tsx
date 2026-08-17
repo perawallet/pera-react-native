@@ -62,6 +62,9 @@ vi.mock('@modules/network', () => ({
 vi.mock('@modules/token', () => ({
     useTokenListener: vi.fn(),
 }))
+vi.mock('@hooks/useNotificationReceivedListener', () => ({
+    useNotificationReceivedListener: vi.fn(),
+}))
 vi.mock('@hooks/useNotificationDeeplinkListener', () => ({
     useNotificationDeeplinkListener: vi.fn(),
 }))
@@ -111,6 +114,17 @@ vi.mock('@modules/onboarding/components/TermsAndConditionsSheet', () => ({
     ),
 }))
 
+// The banner surface is queued by the prompt container now, so it is part of
+// the container's import graph. Stubbed here for the same reason the terms
+// prompt is: this file tests the mount point, not what a prompt renders.
+vi.mock('@modules/prompts/hooks/useBannerPrompt', () => ({
+    useBannerPrompt: () => ({ isDue: false, isForced: false }),
+}))
+vi.mock('@modules/prompts/components/BannerPrompt', () => ({
+    BANNER_PROMPT_ID: 'banner_prompt',
+    BannerPrompt: () => <div data-testid='banner-prompt'>banner-prompt</div>,
+}))
+
 // AutoLockGuard's own JSX (the display-hiding wrapper + LockOverlayProvider)
 // stays real; only its two data-fetching hooks are stubbed so the guard's
 // active/inactive state is directly controllable per test.
@@ -156,17 +170,15 @@ describe('RootComponent PromptContainer mount point', () => {
         vi.clearAllMocks()
     })
 
-    it('shows the T&C prompt after the display delay once the lock guard clears', () => {
+    it('shows the T&C prompt as soon as the lock guard clears', () => {
         setGuardActive(false)
 
         render(<RootComponent fcmToken={null} />)
 
-        expect(screen.queryByTestId('terms-acceptance-prompt')).toBeNull()
-
-        act(() => {
-            vi.advanceTimersByTime(3000)
-        })
-
+        // No display delay for a gate. It holds bottom-sheet presentation from
+        // the moment it is due, so waiting would leave a window where the app
+        // looks usable but silently discards sheets (PERA-4874). The reveal
+        // animation carries the beat the delay used to.
         expect(screen.getByTestId('terms-acceptance-prompt')).toBeTruthy()
     })
 

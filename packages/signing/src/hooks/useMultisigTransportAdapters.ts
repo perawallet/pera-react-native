@@ -214,6 +214,9 @@ export const useMultisigTransportAdapters =
                     signRequestId,
                     status: latestResponse.status,
                     rawTransactionsBase64,
+                    // From the request, not the response, for the same reason
+                    // the cache seed backfills it above.
+                    proposerAddress: proposer.address,
                 }
             },
             [encodeTransactionRaw, network, queryClient],

@@ -19,6 +19,9 @@ import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
 import { PeraCardIntroScreen } from '../screens/PeraCardIntroScreen'
 import { CardSignInScreen } from '../screens/CardSignInScreen'
+import { CardForgotPasswordScreen } from '../screens/CardForgotPasswordScreen'
+import { CardForgotPasswordVerifyScreen } from '../screens/CardForgotPasswordVerifyScreen'
+import { CardForgotPasswordNewPasswordScreen } from '../screens/CardForgotPasswordNewPasswordScreen'
 import { CardOnboardingStackNavigator } from './card-onboarding'
 import { type PeraCardStackParamList } from './types'
 
@@ -52,6 +55,25 @@ export const PeraCardStackNavigator = () => {
                 name='CardSignIn'
                 options={{ title: 'peraCard.sign_in.navigation_title' }}
                 component={CardSignInScreen}
+            />
+            <PeraCardStack.Screen
+                name='CardForgotPassword'
+                options={{ title: 'peraCard.forgot_password.navigation_title' }}
+                component={CardForgotPasswordScreen}
+            />
+            <PeraCardStack.Screen
+                name='CardForgotPasswordVerify'
+                options={{
+                    title: 'peraCard.forgot_password.verify_navigation_title',
+                }}
+                component={CardForgotPasswordVerifyScreen}
+            />
+            <PeraCardStack.Screen
+                name='CardForgotPasswordNewPassword'
+                options={{
+                    title: 'peraCard.forgot_password.new_password_navigation_title',
+                }}
+                component={CardForgotPasswordNewPasswordScreen}
             />
             <PeraCardStack.Screen
                 name='CardOnboarding'

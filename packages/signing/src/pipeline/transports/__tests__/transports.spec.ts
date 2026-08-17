@@ -18,7 +18,11 @@ import { createWalletConnectTransport } from '../createWalletConnectTransport'
 import { createMultisigCosignTransport } from '../createMultisigCosignTransport'
 import { createMultisigProposeTransport } from '../createMultisigProposeTransport'
 import { walletConnectHandoffs } from '../../walletConnectHandoffs'
-import { NetworkChangedError, TransportError } from '../../errors'
+import {
+    NetworkChangedError,
+    SubmissionError,
+    TransportError,
+} from '../../errors'
 import type {
     SigningResult,
     SourceMetadata,
@@ -28,13 +32,20 @@ import type {
 
 const getNetworkMock = vi.fn(() => ({ network: 'testnet' }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetworkStore: {
-        getState: () => getNetworkMock(),
-        subscribe: () => () => {},
-    },
-    encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1, 0xa2])),
-}))
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...actual,
+        useNetworkStore: {
+            getState: () => getNetworkMock(),
+            subscribe: () => () => {},
+        },
+        encodeTransactionRaw: vi.fn(() => new Uint8Array([0xa1, 0xa2])),
+    }
+})
 
 const transactionResult: SigningResult = {
     signedData: {
@@ -150,7 +161,7 @@ describe('createAlgodTransport', () => {
         ).rejects.toThrow('only supports transaction data')
     })
 
-    test('wraps submission errors in TransportError', async () => {
+    test('forwards classified SubmissionErrors unwrapped so retryability survives to the machine', async () => {
         const algokit = {
             client: {
                 algod: {
@@ -168,10 +179,10 @@ describe('createAlgodTransport', () => {
 
         await expect(
             transport.send(transactionResult, { type: 'local' }),
-        ).rejects.toThrow(TransportError)
+        ).rejects.toThrow(SubmissionError)
     })
 
-    test('wraps non-Error rejections in TransportError', async () => {
+    test('forwards non-Error rejections as classified SubmissionErrors', async () => {
         const algokit = {
             client: {
                 algod: {
@@ -189,7 +200,7 @@ describe('createAlgodTransport', () => {
 
         await expect(
             transport.send(transactionResult, { type: 'local' }),
-        ).rejects.toThrow(TransportError)
+        ).rejects.toThrow(SubmissionError)
     })
 
     test('aborts with NetworkChangedError when live network differs from captured', async () => {
@@ -268,7 +279,7 @@ describe('createAlgodTransport', () => {
         }
 
         await expect(transport.send(transactionResult, source)).rejects.toThrow(
-            TransportError,
+            SubmissionError,
         )
         expect(approve).not.toHaveBeenCalled()
     })

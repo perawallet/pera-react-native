@@ -20,8 +20,18 @@ import { useSettingsStore } from '@perawallet/wallet-core-settings'
 /** Persisted key (settings `preferences` bag) for the last accepted T&C version. */
 export const ACCEPTED_TERMS_VERSION_KEY = 'acceptedTermsVersion'
 
-/** Fallback when remote config has no value yet. */
-const DEFAULT_TERMS_VERSION = '1'
+/**
+ * Fallback while remote config is unresolved. Empty on purpose: the
+ * `currentVersion !== ''` guard below then holds the gate closed until a real
+ * version activates. A placeholder here reads as a genuine version, so the user
+ * accepts it, the real value activates moments later and the gate fires a
+ * second time — the duplicate T&Cs in PERA-4874, worst on a first launch after
+ * migration when the config cache is cold.
+ *
+ * Consequence: if `terms_version` is never set in remote config, the gate never
+ * fires. There is no in-repo default to fall back on.
+ */
+const DEFAULT_TERMS_VERSION = ''
 
 export type UseTermsAcceptanceResult = {
     /** The current required T&C version from remote config. */

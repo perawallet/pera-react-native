@@ -11,4 +11,5 @@
  */
 
 export { MediaCarousel } from './MediaCarousel'
-export type { MediaCarouselProps, MediaItem } from './MediaCarousel'
+export type { MediaCarouselProps } from './MediaCarousel'
+export type { MediaItem } from './resolveMediaImageUri'

@@ -239,11 +239,14 @@ const { mockKy, mockJson, mockText, mockStatus, capturedHooks } = vi.hoisted(
 // Name-based stand-ins for ky's error classifiers — enough fidelity for the
 // beforeError hook branches under test.
 class MockHTTPError extends Error {
-    response?: { status: number }
-    constructor(status: number) {
+    response?: { status: number; headers: Headers }
+    constructor(status: number, headers: Record<string, string> = {}) {
         super(`Request failed with status code ${status}`)
         this.name = 'HTTPError'
-        this.response = { status }
+        // Real ky hands back a `Response`, so `headers` is always present and
+        // `.get()` returns null for an absent header — the logError branches
+        // read it directly.
+        this.response = { status, headers: new Headers(headers) }
     }
 }
 
@@ -487,6 +490,40 @@ describe('queryClient', () => {
 
         const options = mockKy.mock.calls.at(-1)?.[1]
         expect(options).not.toHaveProperty('timeout')
+    })
+
+    it('forwards a per-request retry override to ky', async () => {
+        const { queryClient, IDEMPOTENT_POST_RETRY } =
+            await import('../query-client')
+        mockJson.mockResolvedValue({ success: true })
+
+        await queryClient({
+            backend: 'pera',
+            network: 'mainnet',
+            url: '/integrity/challenge',
+            method: 'POST',
+            retry: IDEMPOTENT_POST_RETRY,
+        })
+
+        expect(mockKy).toHaveBeenCalledWith(
+            'integrity/challenge',
+            expect.objectContaining({ retry: IDEMPOTENT_POST_RETRY }),
+        )
+    })
+
+    it('omits retry so the client-level config applies when none is provided', async () => {
+        const { queryClient } = await import('../query-client')
+        mockJson.mockResolvedValue({ success: true })
+
+        await queryClient({
+            backend: 'pera',
+            network: 'mainnet',
+            url: '/test',
+            method: 'GET',
+        })
+
+        const options = mockKy.mock.calls.at(-1)?.[1]
+        expect(options).not.toHaveProperty('retry')
     })
 
     it('lazily builds all 16 clients on first use, never at import time', async () => {
@@ -1073,6 +1110,66 @@ describe('queryClient', () => {
             expect(mockLogger.warn).not.toHaveBeenCalled()
         })
 
+        // RN rejects with a plain `Error`, so ky never wraps it in NetworkError
+        // and this used to fall through to error level — it was ~84% of the
+        // Android app's Crashlytics volume.
+        it('logs an unwrapped platform network error at warn level, not error', async () => {
+            const dnsError = new Error(
+                'fetch failed: java.net.UnknownHostException: Unable to resolve host "mainnet.api.perawallet.app": No address associated with hostname',
+            )
+
+            const result = await runBeforeError(dnsError)
+
+            expect(result).toBe(dnsError)
+            expect(mockLogger.warn).toHaveBeenCalledWith(
+                'Request did not complete',
+                expect.objectContaining({
+                    url: 'https://mainnet.pera.algo/v1/assets',
+                }),
+            )
+            expect(mockLogger.error).not.toHaveBeenCalled()
+        })
+
+        // The sync service already detects 429s and backs off, and omits them
+        // from its own failure logging; error level here re-added the noise it
+        // was deliberately suppressing, one event per request in a burst.
+        it('logs a rate limit at warn level, not error', async () => {
+            const rateLimited = new MockHTTPError(429, { 'Retry-After': '30' })
+
+            const result = await runBeforeError(rateLimited as unknown as Error)
+
+            expect(result).toBe(rateLimited)
+            expect(mockLogger.warn).toHaveBeenCalledWith(
+                'Request rate limited',
+                expect.objectContaining({ status: 429, retryAfter: '30' }),
+            )
+            expect(mockLogger.error).not.toHaveBeenCalled()
+        })
+
+        it('omits retryAfter when the response carries no Retry-After', async () => {
+            const rateLimited = new MockHTTPError(429)
+
+            await runBeforeError(rateLimited as unknown as Error)
+
+            expect(mockLogger.warn).toHaveBeenCalledWith(
+                'Request rate limited',
+                expect.objectContaining({ retryAfter: undefined }),
+            )
+        })
+
+        // Other 4xx/5xx must keep reporting at error level — they are real
+        // failures, unlike a throttle.
+        it('still logs a non-429 HTTP failure at error level', async () => {
+            const serverError = new MockHTTPError(500)
+
+            await runBeforeError(serverError as unknown as Error)
+
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                'Request error encountered',
+                expect.objectContaining({ status: 500 }),
+            )
+        })
+
         it('still logs unexpected errors at error level', async () => {
             const unexpectedError = new Error('boom')
 
@@ -1084,5 +1181,47 @@ describe('queryClient', () => {
                 expect.objectContaining({ message: 'boom' }),
             )
         })
+    })
+})
+
+describe('IDEMPOTENT_POST_RETRY', () => {
+    // ky refuses the retry on the method check before it ever inspects the
+    // error, and its default list omits POST.
+    it('opts POST into retrying at all', async () => {
+        const { IDEMPOTENT_POST_RETRY } = await import('../query-client')
+
+        expect(IDEMPOTENT_POST_RETRY.methods).toEqual(['post'])
+    })
+
+    // Why shouldRetry is needed on top of `methods`: past the method check,
+    // ky's last-resort gate for a non-HTTP, non-timeout failure is its own
+    // `isNetworkError`, which does not recognize React Native's plain-`Error`
+    // network failures. Forcing `true` is what bypasses that gate.
+    it.each([
+        'fetch failed: java.net.ConnectException: Failed to connect to ...',
+        'fetch failed: java.net.UnknownHostException: Unable to resolve host "mainnet.api.perawallet.app"',
+        'Network request failed',
+    ])('forces a retry for RN transport failure: %s', async message => {
+        const { IDEMPOTENT_POST_RETRY } = await import('../query-client')
+
+        expect(
+            await IDEMPOTENT_POST_RETRY.shouldRetry?.({
+                error: new Error(message),
+                retryCount: 1,
+            }),
+        ).toBe(true)
+    })
+
+    // `undefined`, not `false`: `false` would suppress ky's own statusCodes
+    // handling and stop 5xx/408 from retrying.
+    it('defers to ky for anything that is not a transport failure', async () => {
+        const { IDEMPOTENT_POST_RETRY } = await import('../query-client')
+
+        expect(
+            await IDEMPOTENT_POST_RETRY.shouldRetry?.({
+                error: new Error('Attestation rejected'),
+                retryCount: 1,
+            }),
+        ).toBeUndefined()
     })
 })

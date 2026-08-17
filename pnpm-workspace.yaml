@@ -15,7 +15,7 @@ catalog:
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.24
   "@algorandfoundation/wallet-provider": 1.0.0-canary.5
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
-  "@lottiefiles/dotlottie-react": 0.19.12
+  "@lottiefiles/dotlottie-react": 0.19.13
   "@babel/runtime": ^7.29.2
   "@expo/app-integrity": ~57.0.0
   "@joe-p/react-native-falcon": 0.1.0
@@ -32,13 +32,13 @@ catalog:
   "@react-native-firebase/crashlytics": ^26.0.0
   "@react-native-firebase/messaging": ^26.0.0
   "@react-native-firebase/remote-config": ^26.0.0
-  "@scure/base": 2.2.0
+  "@scure/base": 2.3.0
   "@scure/bip39": ^2.2.0
   "@sqlite.org/sqlite-wasm": 3.53.0-build1
   "@tanstack/query-async-storage-persister": ^5.99.0
   "@tanstack/react-query": ^5.99.0
   "@tanstack/react-query-persist-client": ^5.99.0
-  "@tanstack/store": 0.11.0
+  "@tanstack/store": 0.11.1
   "@testing-library/react": 16.3.2
   "@types/chrome": ^0.2.2
   "@types/node": ^20.19.39
@@ -85,7 +85,7 @@ catalog:
   jsdom: ^27.4.0
   ky: ^2.0.2
   msw: ^2.14.6
-  oxfmt: ^0.61.0
+  oxfmt: ^0.62.0
   react: 19.2.3
   react-dom: 19.2.3
   react-native: 0.86.2
@@ -98,7 +98,7 @@ catalog:
   typescript: ^5.9.3
   util: ^0.12.5
   uuid: 14.0.1
-  vite: ^8.2.0
+  vite: ^8.2.1
   vite-plugin-dts: ^5.0.0
   vitest: ^4.1.9
   xstate: ^5.28.0
@@ -133,8 +133,9 @@ minimumReleaseAgeExclude:
   - '@joe-p/react-native-falcon'
   - falcon-1024
   - fast-uri
-  # 3.3.17 is the GHSA-2v37-7h3g-55p8 fix and is younger than the 7-day gate.
-  # Same sole maintainer (ai <andrey@sitnik.es>) as 3.3.16, no install scripts.
+  # 3.3.18 is the GHSA-2v37-7h3g-55p8 fix and is younger than the 7-day gate.
+  # Same sole maintainer (ai <andrey@sitnik.es>) as 3.3.17, no install scripts,
+  # SLSA provenance on both.
   - nanoid
   - expo
   - expo-*
@@ -229,14 +230,20 @@ overrides:
   js-yaml@>=5.0.0 <5.2.2: '>=5.2.2'
   lodash@4: 4.18.1
   # GHSA-2v37-7h3g-55p8 (custom generators loop forever when size is 0). Exact
-  # target, not '>=3.3.17': an open range resolves to nanoid 6.
+  # target, not '>=3.3.18': an open range resolves to nanoid 6.
+  #
+  # 3.3.17 was an incomplete backport — it guarded the sync entrypoints but left
+  # async/index.native.js unguarded, so GitHub re-ranged the advisory to <3.3.18
+  # and our old pin became the vulnerable version. Check the advisory range, not
+  # our last target, before assuming this line is still patched.
   #
   # pnpm matches this selector against the *declared* spec, not the resolved
   # version, so `^3.3.1` is captured too — which is how the old '>=3.3.8' entry
   # silently pulled @gorhom/portal up to nanoid 6. That resolution shipped in
-  # v7.0.0 and is not vulnerable (the advisory is <3.3.17), so it is pinned below
-  # rather than dragged back to 3.x by this line.
-  nanoid@<3.3.17: 3.3.17
+  # v7.0.0 and is not vulnerable (the advisory covers <3.3.18 and >=4.0.0 <5.1.6,
+  # and 6.x is outside both), so it is pinned below rather than dragged back to
+  # 3.x by this line.
+  nanoid@<3.3.18: 3.3.18
   # Keep the production-proven resolution: in the tree since #996 and shipped in
   # v7.0.0. Deliberately outside @gorhom/portal's declared `^3.3.1`.
   '@gorhom/portal>nanoid': 6.0.0

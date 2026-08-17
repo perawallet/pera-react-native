@@ -10,12 +10,27 @@
  limitations under the License
  */
 
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import {
+    toAlgodError,
+    type AlgodError,
+    type PeraSignedTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import { concatBytes } from '@perawallet/wallet-core-shared'
+import { SubmissionError } from '../errors'
 import type {
     AlgokitClientInterface,
     EncodeSignedTransactionsFn,
 } from './types'
+
+/**
+ * Codes that carry no node verdict — the request may or may not have reached
+ * the pool, so the transaction's fate is unknown until verified on-chain.
+ * Every other code is an actual node response, i.e. a definitive rejection.
+ */
+const NO_NODE_VERDICT_CODES: ReadonlySet<AlgodError['code']> = new Set([
+    'network_unavailable',
+    'unknown_node_error',
+])
 
 /**
  * Encode, concatenate, and submit a single group of signed transactions to
@@ -43,9 +58,35 @@ export const submitSignedTransactionGroup = async (
     const encoded = encodeSignedTransactions(signedTxns)
     const concatenated = concatBytes(...encoded)
 
-    const response = (await algokit.client.algod
-        .sendRawTransaction(concatenated)
-        .do()) as { txid?: string | string[] }
+    // Derived before the POST so a failed broadcast still knows which
+    // transactions to verify against the chain (PERA-4587 / PERA-4896).
+    const localIds: string[] = []
+    for (const signedTxn of signedTxns) {
+        if (signedTxn.txn.txID) {
+            localIds.push(signedTxn.txn.txID())
+        }
+    }
+
+    let response: { txid?: string | string[] }
+    try {
+        response = (await algokit.client.algod
+            .sendRawTransaction(concatenated)
+            .do()) as { txid?: string | string[] }
+    } catch (error) {
+        const algodError = toAlgodError(error)
+        // "Already in ledger" is proof of success — the bytes are committed
+        // (typically a retry after a lost response). Report the txIds.
+        if (algodError.code === 'duplicate_txn') {
+            return localIds
+        }
+        throw new SubmissionError(
+            localIds,
+            NO_NODE_VERDICT_CODES.has(algodError.code)
+                ? 'unknown-outcome'
+                : 'rejected-by-node',
+            algodError,
+        )
+    }
 
     const ids: string[] = []
     if (typeof response?.txid === 'string') {
@@ -54,13 +95,5 @@ export const submitSignedTransactionGroup = async (
         ids.push(...response.txid)
     }
 
-    if (ids.length === 0) {
-        for (const signedTxn of signedTxns) {
-            if (signedTxn.txn.txID) {
-                ids.push(signedTxn.txn.txID())
-            }
-        }
-    }
-
-    return ids
+    return ids.length > 0 ? ids : localIds
 }

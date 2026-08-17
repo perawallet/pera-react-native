@@ -16,7 +16,7 @@ import { useStyles } from './AutoLockGuard.style'
 import { PWView, PWLoadingOverlay } from '@components/core'
 import { PinEntry } from '../PinEntry'
 import { useLanguage } from '@hooks/useLanguage'
-import { LockOverlayProvider } from './lockOverlayContext'
+import { LockOverlayProvider } from '@hooks/useIsLockOverlayVisible'
 import { LockoutView } from './LockoutView'
 import { useLockScreen } from './useLockScreen'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -44,10 +44,21 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     return (
         <>
             <PWView
+                // Both props toggled below (opacity, pointerEvents) are in
+                // Fabric's formsStackingContext set, so without this the guard
+                // flip flattens/unflattens this node — Fabric creates the view
+                // and reparents the whole app subtree mid-commit. Colliding with
+                // the migration splash → home swap, that drops an insert and
+                // crashes with `addViewAt ... index=3 count=2`.
+                collapsable={false}
                 style={[
                     styles.childrenContainer,
                     isGuardActive && styles.childrenHidden,
                 ]}
+                // The children are invisible but still mounted and laid out, so
+                // they remain hit-testable without this — a tap could reach a
+                // control the user cannot see.
+                pointerEvents={isGuardActive ? 'none' : 'auto'}
             >
                 <LockOverlayProvider value={isGuardActive}>
                     {children}

@@ -116,7 +116,9 @@ describe('useSettingsDeveloperNodeSettingsScreen (web)', () => {
         })
 
         expect(mocks.setNetwork).toHaveBeenCalledWith(Networks.testnet)
-        expect(mocks.invalidateQueries).toHaveBeenCalledOnce()
+        // Invalidation is owned by the shell's useNetworkSwitchInvalidation,
+        // not this hook — a second call here would double-refetch.
+        expect(mocks.invalidateQueries).not.toHaveBeenCalled()
         expect(mocks.restart).toHaveBeenCalledOnce()
         await waitFor(() => expect(result.current.isSwitching).toBe(false))
     })

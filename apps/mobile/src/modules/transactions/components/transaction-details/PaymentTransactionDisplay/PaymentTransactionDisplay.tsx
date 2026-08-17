@@ -46,6 +46,8 @@ export const PaymentTransactionDisplay = ({
         showWarnings,
         receiverAddress,
         senderAddress,
+        closeToAddress,
+        closeAmountValue,
         payment,
     } = usePaymentTransactionDisplay(transaction, referenceAddress)
 
@@ -69,6 +71,24 @@ export const PaymentTransactionDisplay = ({
 
             <PWView style={styles.detailContainer}>
                 <KeyValueRow
+                    testID='transaction_detail_from'
+                    title={t('transactions.common.from')}
+                >
+                    <PWView style={styles.detailRow}>
+                        <AddressDisplay address={senderAddress} />
+                    </PWView>
+                </KeyValueRow>
+
+                <KeyValueRow
+                    testID='transaction_detail_to'
+                    title={t('transactions.common.sent_to')}
+                >
+                    <PWView style={styles.detailRow}>
+                        <AddressDisplay address={receiverAddress ?? ''} />
+                    </PWView>
+                </KeyValueRow>
+
+                <KeyValueRow
                     testID='transaction_detail_amount'
                     title={t('transactions.common.amount')}
                 >
@@ -81,23 +101,30 @@ export const PaymentTransactionDisplay = ({
                     />
                 </KeyValueRow>
 
-                <KeyValueRow
-                    testID='transaction_detail_from'
-                    title={t('transactions.common.from')}
-                >
-                    <PWView style={styles.detailRow}>
-                        <AddressDisplay address={senderAddress} />
-                    </PWView>
-                </KeyValueRow>
+                {closeToAddress && (
+                    <KeyValueRow
+                        testID='transaction_detail_close_to'
+                        title={t('transactions.common.close_to')}
+                    >
+                        <PWView style={styles.detailRow}>
+                            <AddressDisplay address={closeToAddress} />
+                        </PWView>
+                    </KeyValueRow>
+                )}
 
-                <KeyValueRow
-                    testID='transaction_detail_to'
-                    title={t('transactions.common.to')}
-                >
-                    <PWView style={styles.detailRow}>
-                        <AddressDisplay address={receiverAddress ?? ''} />
-                    </PWView>
-                </KeyValueRow>
+                {closeToAddress && closeAmountValue && (
+                    <KeyValueRow
+                        testID='transaction_detail_close_amount'
+                        title={t('transactions.common.close_amount')}
+                    >
+                        <AssetAmount
+                            asset={ALGO_ASSET}
+                            value={closeAmountValue}
+                            showSymbol
+                            ignorePrivacyMode
+                        />
+                    </KeyValueRow>
+                )}
 
                 <TransactionFeeRow transaction={transaction} />
 

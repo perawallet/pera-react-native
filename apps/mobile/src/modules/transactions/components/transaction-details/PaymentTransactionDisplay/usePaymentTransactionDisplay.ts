@@ -15,6 +15,8 @@ import {
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
+import type { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 
 export const usePaymentTransactionDisplay = (
@@ -27,6 +29,16 @@ export const usePaymentTransactionDisplay = (
 
     const receiverAddress = payment?.receiver
     const senderAddress = transaction.sender
+    const closeToAddress = payment?.closeRemainderTo
+    const closeAmountValue = useMemo(
+        (): Nullable<Decimal> =>
+            payment?.closeAmount === undefined
+                ? null
+                : microAlgosToAlgos(payment.closeAmount),
+        [payment?.closeAmount],
+    )
+    // The paid leg only — a close-out's swept remainder renders in its own
+    // Remainder Amount row (closeAmountValue), so the two never double-count.
     const amount = useMemo(() => {
         const algos = microAlgosToAlgos(payment?.amount ?? 0n)
         if (senderAddress === referenceAddress) {
@@ -38,7 +50,10 @@ export const usePaymentTransactionDisplay = (
     const amountStyle = useMemo(() => {
         if (senderAddress === referenceAddress) {
             return styles.amountNegative
-        } else if (receiverAddress === referenceAddress) {
+        } else if (
+            receiverAddress === referenceAddress ||
+            closeToAddress === referenceAddress
+        ) {
             return styles.amountPositive
         }
         return undefined
@@ -46,6 +61,7 @@ export const usePaymentTransactionDisplay = (
         styles.amountNegative,
         receiverAddress,
         senderAddress,
+        closeToAddress,
         styles.amountPositive,
         referenceAddress,
     ])
@@ -61,6 +77,8 @@ export const usePaymentTransactionDisplay = (
         showWarnings,
         receiverAddress,
         senderAddress,
+        closeToAddress,
+        closeAmountValue,
         transaction,
     }
 }

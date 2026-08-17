@@ -699,6 +699,12 @@
                 "body": "Le réseau a refusé la transaction. Veuillez réessayer ou contacter l’assistance si le problème persiste."
             }
         },
+        "submission": {
+            "unknown_outcome": {
+                "title": "Statut de la transaction inconnu",
+                "body": "Nous n’avons pas pu confirmer si votre transaction a abouti. Patientez un instant et vérifiez votre historique de transactions avant de réessayer."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Lien invalide",
             "invalid_url_body": "Le lien détecté ne semble pas valide. Veuillez vérifier le lien et réessayer.",
@@ -1037,9 +1043,32 @@
             "otp_body": "Saisissez le code de vérification que nous vous avons envoyé pour terminer la connexion.",
             "otp_invalid": "Ce code est incorrect. Veuillez réessayer.",
             "send_again": "Renvoyer",
-            "send_again_in": "Renvoyer dans {{count}} s",
-            "coming_soon_title": "Bientôt disponible",
-            "coming_soon_body": "La réinitialisation du mot de passe n’est pas encore disponible. Revenez bientôt."
+            "send_again_in": "Renvoyer dans {{count}} s"
+        },
+        "forgot_password": {
+            "navigation_title": "Réinitialiser le mot de passe",
+            "email_body": "Saisissez l’adresse e-mail de votre compte Pera Card et nous vous enverrons un code de vérification.",
+            "email_placeholder": "Saisissez votre adresse e-mail",
+            "email_invalid": "Saisissez une adresse e-mail valide",
+            "send_code_button": "Envoyer le code",
+            "verify_navigation_title": "Confirmez votre e-mail",
+            "verify_body": "Utilisez le code de vérification que nous venons d’envoyer à {{email}} pour continuer la réinitialisation de votre mot de passe.",
+            "send_again": "Renvoyer le code",
+            "send_again_in_one": "Renvoyer dans {{count}} seconde",
+            "send_again_in_other": "Renvoyer dans {{count}} secondes",
+            "verify_button": "Continuer",
+            "code_invalid": "Ce code est incorrect ou a expiré. Veuillez réessayer.",
+            "new_password_navigation_title": "Créer un nouveau mot de passe",
+            "password_placeholder": "Saisissez votre nouveau mot de passe",
+            "confirm_placeholder": "Confirmez votre nouveau mot de passe",
+            "passwords_mismatch": "Les mots de passe ne correspondent pas",
+            "reset_button": "Réinitialiser le mot de passe",
+            "confirm_failed_title": "Impossible de réinitialiser le mot de passe",
+            "token_expired_body": "Votre code a peut-être expiré. Veuillez saisir un nouveau code et réessayer.",
+            "success_title": "Mot de passe réinitialisé",
+            "success_body": "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.",
+            "error_title": "Une erreur est survenue",
+            "error_body": "Nous n’avons pas pu traiter votre demande. Veuillez réessayer."
         },
         "create_account": {
             "navigation_title": "Créer un compte Baanx",
@@ -1394,6 +1423,7 @@
             "accounts_subtitle_other": "Il vous faut au moins {{count}} comptes pour signer",
             "confirmed": "Transaction effectuée avec succès",
             "submitting": "Toutes les signatures ont été collectées. Envoi de la transaction…",
+            "delivery_failed": "Impossible d'envoyer ceci à l'application qui l'a demandé : la connexion a été perdue.",
             "failed_default": "La transaction a échoué",
             "load_error": "Impossible de charger cette transaction. Elle a peut-être expiré ou été supprimée.",
             "retry": "Réessayer",
@@ -2453,6 +2483,9 @@
         "common": {
             "from": "De",
             "to": "À",
+            "sent_to": "Envoyé à",
+            "close_amount": "Solde restant",
+            "close_to": "Solde restant à",
             "fee": "Frais",
             "tx_fee": "Vos frais de transaction",
             "total_fee": "Vos frais totaux",
@@ -2503,9 +2536,11 @@
             "title_cta_group_other": "{{count}} actions potentiellement dangereuses détectées",
             "title_cta_one": "Action potentiellement dangereuse détectée",
             "title_cta_other": "{{count}} actions potentiellement dangereuses détectées",
-            "close_group_warning": "Ce groupe de transactions clôture l’un de vos comptes et envoie les fonds restants vers une autre adresse. Veuillez l’examiner attentivement avant de signer.",
+            "close_account_group_warning": "Ce groupe de transactions clôture l’un de vos comptes et envoie les fonds restants vers une autre adresse. Veuillez l’examiner attentivement avant de signer.",
+            "close_asset_group_warning": "Ce groupe de transactions effectue un opt-out d’un actif pour l’un de vos comptes et envoie le solde restant de cet actif vers une autre adresse. Veuillez l’examiner attentivement avant de signer.",
             "rekey_group_warning": "Ce groupe de transactions effectue un rekey de l’un de vos comptes vers une autre adresse, ce qui en transfère la propriété.",
-            "close_warning": "Cette transaction clôture le compte et envoie les fonds restants à l’adresse suivante : {{address}}",
+            "close_account_warning": "Cette transaction clôture le compte et envoie les fonds restants à l’adresse suivante : {{address}}",
+            "close_asset_warning": "Cette transaction effectue un opt-out du compte pour un actif et envoie le solde restant de cet actif à l’adresse suivante : {{address}}",
             "rekey_warning": "Cette transaction effectue un rekey du compte vers l’adresse suivante : {{address}}.",
             "rekey_warning_bold": "Cela transfère le contrôle total de votre compte à une autre adresse. Veuillez l’examiner attentivement avant de signer.",
             "from_account": "De : {{address}}",
@@ -2719,6 +2754,8 @@
             "insufficient_balance": "Le montant dépasse votre solde disponible.",
             "no_balance_title": "Rien à échanger",
             "no_balance_body": "Ce compte ne détient aucun {{unit}}.",
+            "balance_too_low_title": "Solde trop faible",
+            "balance_too_low_body": "Votre solde {{unit}} disponible est trop faible pour être échangé.",
             "percentage_error_title": "Impossible de calculer le montant",
             "percentage_error_body": "Veuillez réessayer dans un instant.",
             "you_pay": "Vous payez",

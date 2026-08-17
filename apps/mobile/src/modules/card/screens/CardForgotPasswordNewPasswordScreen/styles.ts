@@ -10,13 +10,17 @@
  limitations under the License
  */
 
-import { createContext, useContext } from 'react'
+import { makeStyles } from '@rneui/themed'
 
-const IS_LOCK_OVERLAY_VISIBLE_OUTSIDE_GUARD = false
-
-const LockOverlayContext = createContext(IS_LOCK_OVERLAY_VISIBLE_OUTSIDE_GUARD)
-
-export const LockOverlayProvider = LockOverlayContext.Provider
-
-export const useIsLockOverlayVisible = (): boolean =>
-    useContext(LockOverlayContext)
+export const useStyles = makeStyles(theme => ({
+    content: {
+        paddingTop: theme.spacing.xl,
+        gap: theme.spacing.xxl,
+    },
+    fields: {
+        gap: theme.spacing.xl,
+    },
+    confirmGroup: {
+        gap: theme.spacing.md,
+    },
+}))

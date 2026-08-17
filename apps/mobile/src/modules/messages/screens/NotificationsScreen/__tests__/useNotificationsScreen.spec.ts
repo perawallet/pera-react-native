@@ -12,10 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-    shouldRevealNewest,
-    useNotificationsScreen,
-} from '../useNotificationsScreen'
+import { useNotificationsScreen } from '../useNotificationsScreen'
 import {
     useInboxStatus,
     useNotificationsListQuery,
@@ -127,33 +124,5 @@ describe('useNotificationsScreen', () => {
         unmount()
 
         expect(mockMarkAsRead).not.toHaveBeenCalled()
-    })
-})
-
-describe('shouldRevealNewest', () => {
-    const THRESHOLD = 200
-
-    it('reveals a newly-arrived notification when near the top', () => {
-        expect(shouldRevealNewest('41', '42', 0, THRESHOLD)).toBe(true)
-    })
-
-    it('holds position when the user is scrolled past the threshold', () => {
-        expect(shouldRevealNewest('41', '42', 500, THRESHOLD)).toBe(false)
-    })
-
-    it('does nothing when the newest notification is unchanged', () => {
-        expect(shouldRevealNewest('42', '42', 0, THRESHOLD)).toBe(false)
-    })
-
-    it('skips the initial load (no previous newest id)', () => {
-        expect(shouldRevealNewest(undefined, '42', 0, THRESHOLD)).toBe(false)
-    })
-
-    it('does nothing when the list becomes empty', () => {
-        expect(shouldRevealNewest('42', undefined, 0, THRESHOLD)).toBe(false)
-    })
-
-    it('reveals exactly at the threshold boundary', () => {
-        expect(shouldRevealNewest('41', '42', THRESHOLD, THRESHOLD)).toBe(true)
     })
 })

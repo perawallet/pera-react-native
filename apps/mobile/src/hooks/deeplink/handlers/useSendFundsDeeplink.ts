@@ -70,6 +70,7 @@ export const useSendFundsDeeplink = (): SendFundsDeeplinkHandler => {
                 {
                     size: 'modal',
                     enablePanDownToClose: false,
+                    enableCloseOnBackdropPress: false,
                     autoCreateContainer: false,
                 },
             )

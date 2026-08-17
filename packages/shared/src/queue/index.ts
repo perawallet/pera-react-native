@@ -10,4 +10,8 @@
  limitations under the License
  */
 
-export { BatchQueue, type BatchExecutor } from './batch-queue'
+export {
+    BatchQueue,
+    type BatchExecutor,
+    type BatchQueueOptions,
+} from './batch-queue'

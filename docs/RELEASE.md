@@ -1,6 +1,22 @@
 ## Production store submission (tag `v.*`)
 
-A `v.*` tag triggers the Bitrise `release-builds` pipeline → `ios-production` + `android-production`.
+An rc (`-rc.N`) or stable (`vX.Y.Z`) tag triggers the Bitrise `release-builds` pipeline → `ios-production` + `android-production`.
+
+Staging and production are built by separate pipelines so a nightly does not burn four build machines:
+
+| Tag              | Pipeline         | Builds                                  | Smoke gate |
+| ---------------- | ---------------- | --------------------------------------- | ---------- |
+| `vX.Y.Z-alpha.N` | `nightly-builds` | `ios-staging` + `android-staging`       | yes        |
+| `vX.Y.Z-rc.N`    | `release-builds` | `ios-production` + `android-production` | no         |
+| `vX.Y.Z`         | `release-builds` | `ios-production` + `android-production` | no         |
+
+The smoke gate only runs on staging builds: they are the only ones that bake `DISABLE_SCREEN_CAPTURE_PREVENTION`, and Appium cannot drive a `FLAG_SECURE` surface — a production build hangs rather than failing usefully. An rc is therefore covered by the nightlies it descends from, not directly. Production is likewise not built nightly, so a production-only break (scheme, signing, flavor) surfaces at rc time rather than the next morning.
+
+### Cutting a golden release
+
+Run the **Promote RC to Release** workflow from the Actions tab. It tags the most recent rc's commit with the equivalent stable version (`v7.0.2-rc.3` → `v7.0.2`), publishes the GitHub Release, and fires the production builds. Leave the input blank to promote the highest rc, or name an older one explicitly.
+
+It tags the rc's _commit_, not `main` — that commit is what was built and put in front of QA. No version bump is needed afterwards: `create-nightly-tag.sh` sees the new stable tag and rolls subsequent prereleases to the next patch.
 
 ### iOS
 

@@ -99,11 +99,24 @@ export const getAlgoQueryKey = (network: Network) => {
     return [MODULE_PREFIX, { algo: ALGO_ASSET_ID, network }]
 }
 
-export const getAssetDetailsQueryKey = (
+/** Canonical single-asset cache entry (DB-backed read path). */
+export const getAssetDetailsQueryKey = (assetId: string, network: Network) => [
+    MODULE_PREFIX,
+    'detail',
+    { assetId, network },
+]
+
+/**
+ * The always-remote single-asset entry (collectible detail): kept distinct
+ * from the canonical DB-backed entry because bulk-synced DB rows may carry a
+ * sparser collectible payload (media, traits) than the detail endpoints —
+ * sharing one entry would let a DB-sourced read permanently satisfy the
+ * screen that needs the rich one (staleTime is Infinity).
+ */
+export const getRemoteAssetDetailsQueryKey = (
     assetId: string,
-    useDB: boolean,
     network: Network,
-) => [MODULE_PREFIX, { assetId, useDB, network }]
+) => [MODULE_PREFIX, 'detail-remote', { assetId, network }]
 
 export const getPublicAssetDetailsQueryKey = (assetId: string) => [
     MODULE_PREFIX,
@@ -122,9 +135,3 @@ export function invalidateAssetQueries(queryClient: QueryClient): void {
         predicate: query => query.queryKey[0] === MODULE_PREFIX,
     })
 }
-
-export const getAssetByIdQueryKey = (assetId: string, network: Network) => [
-    MODULE_PREFIX,
-    'byId',
-    { assetId, network },
-]

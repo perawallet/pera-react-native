@@ -16,6 +16,7 @@ import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
+import { SubmissionError } from '../errors'
 import { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
 import { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
 import { getOnConfirmedHandler } from './onConfirmedRegistry'
@@ -25,6 +26,19 @@ import type {
 } from './types'
 
 const DEFAULT_ROUNDS_TO_WAIT = 10
+
+/**
+ * Post-error verification window. Kept deliberately smaller than the main
+ * confirmation wait: a transaction that reached the pool confirms within a
+ * couple of rounds, and the whole submit + verify chain must finish inside
+ * the signing machine's SUBMIT_TIMEOUT backstop.
+ */
+const VERIFY_ROUNDS_TO_WAIT = 4
+const VERIFY_ATTEMPTS = 2
+const VERIFY_RETRY_DELAY_MS = 2000
+
+const defaultSleep = (ms: number): Promise<void> =>
+    new Promise(resolve => setTimeout(resolve, ms))
 
 /**
  * Inputs for the testable core helper.
@@ -37,6 +51,14 @@ export interface SubmitAndAutoRefreshCoreInput {
      * resolve once the round is final and reject on timeout / network error.
      */
     waitForConfirmation: (txId: string) => Promise<void>
+    /**
+     * Short-window "did it land?" probe used only after an unknown-outcome
+     * submit failure. Resolve = the transaction is confirmed on-chain;
+     * reject = not found within the window (or the chain is unreachable).
+     */
+    verifyTxnLanded: (txId: string) => Promise<void>
+    /** Injectable delay between verification attempts (tests). */
+    sleep?: (ms: number) => Promise<void>
     walletAddresses: readonly string[]
     network: Network
     /**
@@ -75,15 +97,59 @@ export interface SubmitAndAutoRefreshCoreInput {
 export const submitAndAutoRefreshCore = async (
     input: SubmitAndAutoRefreshCoreInput,
 ): Promise<{ txIds: string[] }> => {
-    const txIds = await submitSignedTransactionGroup(
-        input.algokit,
-        input.encodeSignedTransactions,
-        [...input.signedTxns],
-    )
+    let txIds: string[]
+    try {
+        txIds = await submitSignedTransactionGroup(
+            input.algokit,
+            input.encodeSignedTransactions,
+            [...input.signedTxns],
+        )
+    } catch (error) {
+        // A submit failure with no node verdict is ambiguous: the bytes may
+        // already be in the pool (lost response, timeout). Check the chain
+        // before letting "failed" propagate — this is exactly the case where
+        // the report would be a lie (PERA-4896).
+        if (
+            !(error instanceof SubmissionError) ||
+            error.classification !== 'unknown-outcome' ||
+            error.txIds.length === 0
+        ) {
+            throw error
+        }
+        const landed = await verifyLandedWithRetries(input, error.txIds[0]!)
+        if (!landed) throw error
+        txIds = error.txIds
+    }
 
     void backgroundConfirmAndRefresh(input, txIds)
 
     return { txIds }
+}
+
+const verifyLandedWithRetries = async (
+    input: SubmitAndAutoRefreshCoreInput,
+    txId: string,
+): Promise<boolean> => {
+    const sleep = input.sleep ?? defaultSleep
+    for (let attempt = 1; attempt <= VERIFY_ATTEMPTS; attempt++) {
+        try {
+            await input.verifyTxnLanded(txId)
+            logger.info(
+                'submitAndAutoRefresh: unknown-outcome submission verified as landed',
+                { txId },
+            )
+            return true
+        } catch (error) {
+            logger.warn(
+                'submitAndAutoRefresh: post-error landing verification attempt failed',
+                { error, txId, attempt },
+            )
+        }
+        if (attempt < VERIFY_ATTEMPTS) {
+            await sleep(VERIFY_RETRY_DELAY_MS)
+        }
+    }
+    return false
 }
 
 const backgroundConfirmAndRefresh = async (
@@ -155,6 +221,12 @@ export const submitAndAutoRefresh = async (
                 (algokit as unknown as AlgorandClient).client.algod,
                 txId,
                 DEFAULT_ROUNDS_TO_WAIT,
+            ).then(() => undefined),
+        verifyTxnLanded: txId =>
+            algosdkWaitForConfirmation(
+                (algokit as unknown as AlgorandClient).client.algod,
+                txId,
+                VERIFY_ROUNDS_TO_WAIT,
             ).then(() => undefined),
         walletAddresses,
         network,

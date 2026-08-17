@@ -398,12 +398,25 @@ test.describe('offscreen ownership of a real WC v1 session (Task 11)', () => {
         // — PWBottomSheet.web only renders children while `isRendered`, which
         // it clears once its close animation finishes) and reopen it fresh,
         // guaranteeing a new `handlingRef` before this pairs for real.
-        await dismissPinPromptIfPresent(page)
         const scannerSheet = page.getByTestId('qr-scanner-sheet')
-        if (await scannerSheet.isVisible().catch(() => false)) {
-            await page.getByTestId('pw-bottom-sheet-backdrop').click()
-            await expect(scannerSheet).not.toBeVisible({ timeout: 5000 })
+        // Retry the backdrop press until the sheet actually unmounts: a single
+        // click can land mid enter-animation or on a nudge that raced over the
+        // backdrop, and a miss here leaves the scanner open so the reopen below
+        // never fires — surfacing as a bare timeout on this test.
+        for (let attempt = 0; attempt < 5; attempt++) {
+            if (!(await scannerSheet.isVisible().catch(() => false))) break
+            await dismissPinPromptIfPresent(page)
+            await page
+                .getByTestId('pw-bottom-sheet-backdrop')
+                .click()
+                .catch(() => {})
+            const closed = await scannerSheet
+                .waitFor({ state: 'hidden', timeout: 2000 })
+                .then(() => true)
+                .catch(() => false)
+            if (closed) break
         }
+        await expect(scannerSheet).not.toBeVisible({ timeout: 5000 })
         await clickThroughPinPrompt(
             page,
             page.getByTestId('connections_settings_connect_button'),

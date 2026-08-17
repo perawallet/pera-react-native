@@ -1,0 +1,57 @@
+name: Promote RC to Release
+
+# Cuts a golden release from a release candidate: tags the rc's commit with the
+# equivalent stable version (v7.0.2-rc.3 -> v7.0.2) and pushes it, which fires
+# Bitrise's `release-builds` pipeline for the production builds.
+#
+# Manual only, and deliberately so — this is the step that decides what ships.
+#
+# The GitHub Release is published here rather than left to github-release.yml:
+# a tag pushed with GITHUB_TOKEN does not trigger further workflows, so that
+# workflow's `push: tags` trigger never sees this tag. create-nightly-tag.sh
+# documents the same constraint.
+#
+# No version bump is needed afterwards. create-nightly-tag.sh detects the new
+# stable tag and rolls subsequent prereleases to the next patch on its own.
+
+on:
+  workflow_dispatch:
+    inputs:
+      rc_tag:
+        description: "RC tag to promote (blank = highest v*-rc.N)"
+        required: false
+        type: string
+
+# Least-privilege default; the job elevates to write so it can push and release.
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    name: Promote release candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history + tags: the script resolves the rc from existing tags
+          # and checks its commit is reachable from origin/main.
+          fetch-depth: 0
+          fetch-tags: true
+          # Keep the GITHUB_TOKEN credential so the script's `git push` works.
+          persist-credentials: true
+
+      - name: Promote rc tag
+        id: promote
+        env:
+          RC_TAG: ${{ inputs.rc_tag }}
+        run: ./tools/promote-rc-tag.sh
+
+      - name: Publish GitHub release
+        if: steps.promote.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./tools/publish-github-release.sh "${{ steps.promote.outputs.tag }}"

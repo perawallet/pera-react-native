@@ -155,6 +155,86 @@ describe('logging', () => {
             ).toContain('critical message')
         })
 
+        // Every logger.error(<string>, ctx) call synthesizes its Error inside
+        // reportError, so all 80-odd such sites share an identical stack. A
+        // reporter that fingerprints on the stack merges them into one issue;
+        // groupingKey is what separates them.
+        test('sets groupingKey to the bare message for a string log', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.error('Request error encountered', { status: 500 })
+
+            expect(errorReporter).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    groupingKey: 'Request error encountered',
+                }),
+            )
+        })
+
+        // Interpolated context would make every event a distinct issue, which
+        // is the opposite failure to the one groupingKey fixes.
+        test('keeps context out of groupingKey even though the message carries it', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.error('Sync step failed', { subject: 'ADDR1' })
+
+            const payload = errorReporter.mock.calls[0]?.[0] as {
+                error: Error
+                groupingKey?: string
+            }
+            expect(payload.groupingKey).toBe('Sync step failed')
+            expect(payload.error.message).toContain('ADDR1')
+        })
+
+        // An Error argument brings a real stack that already points at the
+        // throw site; naming it too would prepend a shared frame above distinct
+        // stacks and merge sites that the stack had correctly separated.
+        test('omits groupingKey when given an Error, letting its stack group it', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.error(new Error('boom'), { step: 'attest' })
+
+            const payload = errorReporter.mock.calls[0]?.[0] as {
+                groupingKey?: string
+            }
+            expect(payload.groupingKey).toBeUndefined()
+        })
+
+        test.each(['error', 'cause', 'reason'])(
+            'adopts the stack of an Error passed in context.%s',
+            key => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+                const cause = new Error('underlying')
+                cause.stack =
+                    'Error: underlying\n    at realOrigin (app.ts:1:1)'
+
+                logger.error('wrapper message', { [key]: cause })
+
+                const payload = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                }
+                expect(payload.error.stack).toBe(cause.stack)
+                // The message still carries the context, so the adopted stack
+                // adds origin without losing detail.
+                expect(payload.error.message).toContain('wrapper message')
+            },
+        )
+
+        test('leaves the synthesized stack alone when context holds no Error', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.error('no cause here', { error: 'just a string' })
+
+            const payload = errorReporter.mock.calls[0]?.[0] as { error: Error }
+            expect(payload.error.stack).toBeDefined()
+            expect(payload.error.message).toContain('no cause here')
+        })
+
         test('does not forward warn logs to configured error reporter', () => {
             const errorReporter = vi.fn()
             logger.setErrorReporter(errorReporter)
@@ -389,6 +469,17 @@ describe('logging', () => {
             expect(out.mnemonic).toBe('[REDACTED]')
             expect(out.privateKey).toBe('[REDACTED]')
             expect(out.user).toBe('will')
+        })
+
+        test('keeps keyPairId and publicKey diagnostics unredacted', () => {
+            const out = redactSensitiveContext({
+                keyPairId: 'kp-1',
+                publicKey: 'BASE64PUBKEY',
+            })
+            expect(out).toEqual({
+                keyPairId: 'kp-1',
+                publicKey: 'BASE64PUBKEY',
+            })
         })
 
         test('redacts sensitive keys in nested objects', () => {

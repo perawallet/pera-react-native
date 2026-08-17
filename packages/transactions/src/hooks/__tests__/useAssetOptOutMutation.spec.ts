@@ -10,13 +10,18 @@
  limitations under the License
  */
 
+import { createElement, type ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
     useAssetOptOutMutation,
     NonZeroBalanceError,
     CreatorCannotOptOutError,
 } from '../useAssetOptOutMutation'
+
+const wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client: new QueryClient() }, children)
 
 const mockSubmit = vi.fn()
 const mockAccountInformation = vi.fn()
@@ -54,7 +59,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     deleteAssetHoldings: (...args: unknown[]) =>
         mockDeleteAssetHoldings(...args),
-    useAccountBalancesInvalidator: () => ({ invalidate: mockInvalidate }),
+    invalidateAccountQueriesForAddresses: (...args: unknown[]) =>
+        mockInvalidate(...args),
 }))
 
 const baseAccount = {
@@ -77,7 +83,9 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('opts out of a single asset via the pipeline helper', async () => {
-        const { result } = renderHook(() => useAssetOptOutMutation())
+        const { result } = renderHook(() => useAssetOptOutMutation(), {
+            wrapper,
+        })
 
         await act(async () => {
             const res = await result.current.optOut({
@@ -109,7 +117,12 @@ describe('useAssetOptOutMutation', () => {
             assetIds: ['12345'],
             network: 'testnet',
         })
+        // Scoped, not balances-only: the holdings delete must refresh every
+        // staleTime-Infinity account read (PERA-4845).
         expect(mockInvalidate).toHaveBeenCalledTimes(1)
+        expect(mockInvalidate).toHaveBeenCalledWith(expect.anything(), [
+            'SENDER',
+        ])
     })
 
     it('opts out of multiple assets in a single grouped pipeline request', async () => {
@@ -128,7 +141,9 @@ describe('useAssetOptOutMutation', () => {
             ],
         })
 
-        const { result } = renderHook(() => useAssetOptOutMutation())
+        const { result } = renderHook(() => useAssetOptOutMutation(), {
+            wrapper,
+        })
 
         await act(async () => {
             const res = await result.current.optOut([
@@ -160,7 +175,9 @@ describe('useAssetOptOutMutation', () => {
             assets: [{ assetId: 12345n, amount: 5n }],
         })
 
-        const { result } = renderHook(() => useAssetOptOutMutation())
+        const { result } = renderHook(() => useAssetOptOutMutation(), {
+            wrapper,
+        })
 
         await act(async () => {
             await expect(
@@ -176,7 +193,9 @@ describe('useAssetOptOutMutation', () => {
     })
 
     it('throws CreatorCannotOptOutError when sender == creator', async () => {
-        const { result } = renderHook(() => useAssetOptOutMutation())
+        const { result } = renderHook(() => useAssetOptOutMutation(), {
+            wrapper,
+        })
 
         await act(async () => {
             await expect(
@@ -197,7 +216,9 @@ describe('useAssetOptOutMutation', () => {
             assets: [],
         })
 
-        const { result } = renderHook(() => useAssetOptOutMutation())
+        const { result } = renderHook(() => useAssetOptOutMutation(), {
+            wrapper,
+        })
 
         await act(async () => {
             const res = await result.current.optOut({
@@ -228,7 +249,9 @@ describe('useAssetOptOutMutation', () => {
         })
         mockSubmit.mockResolvedValueOnce({ txIds: ['tx1'] })
 
-        const { result } = renderHook(() => useAssetOptOutMutation())
+        const { result } = renderHook(() => useAssetOptOutMutation(), {
+            wrapper,
+        })
 
         await act(async () => {
             const res = await result.current.optOut([
@@ -251,7 +274,9 @@ describe('useAssetOptOutMutation', () => {
 
     it('does not call deleteAssetHoldings when submit fails', async () => {
         mockSubmit.mockRejectedValueOnce(new Error('user cancelled'))
-        const { result } = renderHook(() => useAssetOptOutMutation())
+        const { result } = renderHook(() => useAssetOptOutMutation(), {
+            wrapper,
+        })
 
         await act(async () => {
             await expect(

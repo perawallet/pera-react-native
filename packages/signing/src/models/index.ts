@@ -152,7 +152,11 @@ export type SigningStore = BaseStoreState & {
 
 export type TransactionWarning =
     | {
-          type: 'close' | 'rekey' | 'asset-freeze'
+          // 'close-account' is a payment close-remainder-to: the whole account
+          // is emptied and deleted. 'close-asset' is an asset-transfer close-to:
+          // the sender opts out of that one ASA. Both warrant a warning, but
+          // they are not the same severity and must not share copy. [PERA-4902]
+          type: 'close-account' | 'close-asset' | 'rekey' | 'asset-freeze'
           senderAddress: string
           targetAddress: string
       }

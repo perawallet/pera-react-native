@@ -85,9 +85,12 @@ const AssetSelectorContent = ({
                         </PWText>
                     </>
                 ) : (
+                    // Placeholder is a CTA phrase; shrink it to fit rather than
+                    // ellipsize ("Choose an asset" clips to "Choose an ass…").
                     <PWText
                         variant='h4'
-                        truncate
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
                         style={styles.assetName}
                     >
                         {label}

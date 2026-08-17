@@ -11,6 +11,7 @@
  */
 
 import { ONE_DAY, ONE_HOUR, ONE_MINUTE } from '@perawallet/wallet-core-config'
+import type { Optional } from './types'
 
 /**
  * Validates that a string is in the correct ISO 8601 date format (YYYY-MM-DD).
@@ -66,17 +67,54 @@ export const isoDateToUnixSeconds = (isoDate?: string): number => {
 }
 
 /**
+ * `toLocaleDateString(locale, options)` builds a fresh `Intl.DateTimeFormat` on
+ * every call, which dominates the cost of this function under Hermes — the same
+ * reason `getDecimalFormatter` in ./strings caches its formatter. Hoisted and
+ * lazily built so it costs nothing at module load.
+ */
+let displayDateFormatter: Optional<Intl.DateTimeFormat>
+
+/**
+ * Output cache. The transaction list rebuilds every date header each time a page
+ * is appended, so without this the same handful of dates is re-formatted on
+ * every scroll step — measured at ~90% of the rebuild cost.
+ *
+ * Keyed by calendar day, so size tracks the span of history viewed rather than
+ * the number of transactions. Cleared wholesale past the bound instead of
+ * evicting entries: a repopulate is one formatter call per visible date, and an
+ * LRU would cost more to maintain than it saves.
+ *
+ * Safe as a process-wide cache only because the locale below is a constant — key
+ * on the locale too if that ever becomes dynamic.
+ */
+const displayDateCache = new Map<string, string>()
+const MAX_DISPLAY_DATE_CACHE = 4096
+
+/**
  * Formats an ISO date string (YYYY-MM-DD) into a human-readable format (e.g., "Nov 6, 2025").
  */
 export const formatDisplayDate = (isoDate: string): string => {
-    const [year, month, day] = isoDate.split('-').map(Number)
-    const date = new Date(year, month - 1, day)
+    const cached = displayDateCache.get(isoDate)
+    if (cached !== undefined) {
+        return cached
+    }
 
-    return date.toLocaleDateString('en-US', {
+    const [year, month, day] = isoDate.split('-').map(Number)
+    displayDateFormatter ??= new Intl.DateTimeFormat('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
     })
+    const formatted = displayDateFormatter.format(
+        new Date(year, month - 1, day),
+    )
+
+    if (displayDateCache.size >= MAX_DISPLAY_DATE_CACHE) {
+        displayDateCache.clear()
+    }
+    displayDateCache.set(isoDate, formatted)
+
+    return formatted
 }
 
 /**

@@ -57,3 +57,31 @@ export function invalidateTransactionQueries(queryClient: QueryClient): void {
         predicate: query => query.queryKey[0] === MODULE_PREFIX,
     })
 }
+
+/**
+ * Scoped variant of {@link invalidateTransactionQueries}: invalidates only the
+ * transaction queries whose key payload targets one of the given addresses.
+ * Every key in this module carries the account in an `accountAddress` payload
+ * field (history, filtered history, pagination pages), so a post-submission
+ * refresh can re-read just the affected accounts' histories instead of
+ * refetching every mounted account's infinite query, all pages included.
+ */
+export function invalidateTransactionQueriesForAddresses(
+    queryClient: QueryClient,
+    addresses: string[],
+): void {
+    if (addresses.length === 0) return
+    const targets = new Set(addresses)
+    void queryClient.invalidateQueries({
+        predicate: query =>
+            query.queryKey[0] === MODULE_PREFIX &&
+            query.queryKey.some(part => {
+                if (typeof part !== 'object' || part === null) return false
+                const { accountAddress } = part as Record<string, unknown>
+                return (
+                    typeof accountAddress === 'string' &&
+                    targets.has(accountAddress)
+                )
+            }),
+    })
+}

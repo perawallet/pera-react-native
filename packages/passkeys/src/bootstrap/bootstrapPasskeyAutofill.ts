@@ -65,6 +65,18 @@ const isStoreDisabledError = (err: unknown): boolean =>
     err instanceof Error &&
     err.message.includes('ASCredentialIdentityStoreErrorDomain error 1')
 
+/**
+ * `instanceof` alone is not reliable across the package boundary: the error is
+ * constructed inside the keystore package, and a duplicated copy of that package
+ * under Metro puts the class in a different module instance, so the check
+ * silently fails and a benign missing key gets reported to Crashlytics as an
+ * error. `MasterKeyNotFoundError` sets `name` in its constructor, so matching on
+ * it is a sound fallback — the same belt-and-braces ky uses for its own guards.
+ */
+const isMasterKeyNotFoundError = (err: unknown): boolean =>
+    err instanceof MasterKeyNotFoundError ||
+    (err instanceof Error && err.name === 'MasterKeyNotFoundError')
+
 let activeBootstrap: Promise<void> | null = null
 
 /**
@@ -101,7 +113,7 @@ const runBootstrap = async (
             // re-runs on the next launch. That's a precondition, not a fault,
             // so it stays off the crash reporter. Scoped to this call: the same
             // error from anywhere downstream is unexpected and still reported.
-            if (err instanceof MasterKeyNotFoundError) {
+            if (isMasterKeyNotFoundError(err)) {
                 logger.warn(
                     'No master key yet; skipping passkey autofill bootstrap',
                     { step: 'bootstrapPasskeyAutofill' },

@@ -122,7 +122,7 @@ const fetchPeraTransactionHistory = async (
     })
 
     const validated = transactionHistoryResponseSchema.parse(response.data)
-    return transformTransactionHistoryResponse(validated)
+    return transformTransactionHistoryResponse(validated, accountAddress)
 }
 
 /** A specific page by URL. Routed to by `fetchMoreTransactions`. */
@@ -144,7 +144,14 @@ const fetchMorePeraTransactions = async (
     })
 
     const validated = transactionHistoryResponseSchema.parse(response.data)
-    return transformTransactionHistoryResponse(validated)
+    // The page URL is `/v1/accounts/{address}/transactions/…` — recover the
+    // address for close-amount derivation when the caller didn't pass one.
+    const addressFromUrl = decodeURIComponent(
+        urlObj.pathname.match(/\/accounts\/([^/]+)\//)?.[1] ?? '',
+    )
+    const accountAddress =
+        params.accountAddress ?? (addressFromUrl || undefined)
+    return transformTransactionHistoryResponse(validated, accountAddress)
 }
 
 /**

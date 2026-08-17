@@ -12,7 +12,7 @@
 
 // @vitest-environment node
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
     createDefaultShims,
     createDP256Binding,
@@ -37,6 +37,13 @@ import {
  * Both paths produce identical bytes, so a bytes-only assertion cannot tell
  * them apart; the host-call assertion below is the one that discriminates.
  */
+
+// The fallback case really does run 210,000 pure-JS PBKDF2 iterations — that
+// slowness is the defect being pinned, not an accident — so it costs ~1.4s idle
+// and over 13s when the full monorepo suite saturates the CPU. Raised here
+// rather than made faster: a faster derivation would stop demonstrating the
+// cost that makes the override wrong on Hermes.
+vi.setConfig({ testTimeout: 30_000 })
 
 /** 32 bytes of 0x09 — arbitrary, fixed so the vector below stays reproducible. */
 const ENTROPY = new Uint8Array(32).fill(9)

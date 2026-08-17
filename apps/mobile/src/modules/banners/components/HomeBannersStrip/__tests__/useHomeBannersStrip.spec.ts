@@ -109,68 +109,28 @@ describe('useHomeBannersStrip', () => {
         expect(mockNavigate).toHaveBeenCalledWith('BannersCarouselModal')
     })
 
-    it('auto-opens the carousel for a select banner and marks it', () => {
-        mockUseVisibleBanners.mockReturnValue({
-            banners: [buildBanner(1), buildBanner(42, 'select')],
-            totalCount: 2,
-            forcedBanner: null,
-            isLoading: false,
-            isError: false,
-        })
+    // Auto-opening moved to the prompt container, which orders it against the
+    // terms gate and the PIN nudge instead of racing them (PERA-4874). What
+    // matters here is that the strip never opens anything by itself again —
+    // the queueing rules are covered by useBannerPrompt's own tests.
+    it.each([
+        ['force', 'force' as const, 99],
+        ['select', 'select' as const, 42],
+    ])(
+        'never navigates on its own for a %s banner',
+        (_label, autoOpenMode, id) => {
+            mockUseVisibleBanners.mockReturnValue({
+                banners: [buildBanner(1), buildBanner(id, autoOpenMode)],
+                totalCount: 2,
+                forcedBanner: null,
+                isLoading: false,
+                isError: false,
+            })
 
-        renderHook(() => useHomeBannersStrip())
+            renderHook(() => useHomeBannersStrip())
 
-        expect(mockMarkAutoOpened).toHaveBeenCalledWith('42')
-        expect(mockNavigate).toHaveBeenCalledWith('BannersCarouselModal', {
-            bannerId: '42',
-        })
-    })
-
-    it('prefers force over select for auto-open', () => {
-        mockUseVisibleBanners.mockReturnValue({
-            banners: [buildBanner(1, 'select'), buildBanner(99, 'force')],
-            totalCount: 2,
-            forcedBanner: null,
-            isLoading: false,
-            isError: false,
-        })
-
-        renderHook(() => useHomeBannersStrip())
-
-        expect(mockMarkAutoOpened).toHaveBeenCalledWith('99')
-        expect(mockNavigate).toHaveBeenCalledWith('BannersCarouselModal', {
-            bannerId: '99',
-        })
-    })
-
-    it('does not auto-open if the candidate banner has already been auto-opened this session', () => {
-        mockHasAutoOpened.mockReturnValue(true)
-        mockUseVisibleBanners.mockReturnValue({
-            banners: [buildBanner(42, 'select')],
-            totalCount: 1,
-            forcedBanner: null,
-            isLoading: false,
-            isError: false,
-        })
-
-        renderHook(() => useHomeBannersStrip())
-
-        expect(mockMarkAutoOpened).not.toHaveBeenCalled()
-        expect(mockNavigate).not.toHaveBeenCalled()
-    })
-
-    it('does not auto-open when no banner has an auto-open mode', () => {
-        mockUseVisibleBanners.mockReturnValue({
-            banners: [buildBanner(1), buildBanner(2)],
-            totalCount: 2,
-            forcedBanner: null,
-            isLoading: false,
-            isError: false,
-        })
-
-        renderHook(() => useHomeBannersStrip())
-
-        expect(mockMarkAutoOpened).not.toHaveBeenCalled()
-        expect(mockNavigate).not.toHaveBeenCalled()
-    })
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockMarkAutoOpened).not.toHaveBeenCalled()
+        },
+    )
 })
