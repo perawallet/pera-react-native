@@ -71,6 +71,7 @@ export const useLedgerAccountPreview = (
             verificationTier: PeraAssetVerificationTier.verified,
             logo: undefined,
             isAlgo: true,
+            isFrozen: false,
         })
 
         for (const holding of onChain.data.assets) {
@@ -100,6 +101,7 @@ export const useLedgerAccountPreview = (
                     PeraAssetVerificationTier.unverified,
                 logo: meta?.peraMetadata?.logo ?? undefined,
                 isAlgo: false,
+                isFrozen: holding.isFrozen,
             })
         }
 

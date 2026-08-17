@@ -86,7 +86,6 @@ const CollectibleListItemBase = ({
                         <PWBadge
                             variant='secondary'
                             value={t('transactions.asset_freeze.frozen')}
-                            testID='frozen-badge'
                         />
                     ) : null}
                 </PWView>

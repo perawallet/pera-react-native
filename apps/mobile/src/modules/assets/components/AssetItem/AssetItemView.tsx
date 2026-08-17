@@ -138,7 +138,6 @@ export const AssetItemView = ({
                         <PWBadge
                             variant='secondary'
                             value={t('transactions.asset_freeze.frozen')}
-                            testID='frozen-badge'
                         />
                     ) : null}
                 </PWView>

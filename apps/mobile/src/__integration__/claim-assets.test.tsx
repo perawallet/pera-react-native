@@ -593,8 +593,13 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
                 buildAssetRequest({
                     asset: {
                         ...CLAIMED_ASSET,
+                        // `peraMetadata` is optional on PeraAsset, so the
+                        // spread alone leaves the required fields possibly
+                        // undefined — restate them for the type.
                         peraMetadata: {
                             ...CLAIMED_ASSET.peraMetadata,
+                            verificationTier: 'verified',
+                            isDeleted: false,
                             type: 'collectible',
                             collectible: {
                                 title: 'GEMS NFT 1',
