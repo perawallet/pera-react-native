@@ -26,6 +26,7 @@ export {
     getAccountBalance,
     getAllAccountBalances,
     getAllHeldAssetIdsForNetwork,
+    getAssetHolderAddresses,
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,
     deleteAccountBalance,

@@ -1104,6 +1104,53 @@ export async function getAllHeldAssetIdsForNetwork({
     return rows.map(r => r.assetId.toString())
 }
 
+type GetAssetHolderAddressesParams = {
+    db?: Database
+    assetId: string
+    network: string
+}
+
+/**
+ * Addresses of the user's accounts that hold, or are opted into, `assetId` on
+ * `network` — owners (non-zero amount) first, then opted-in-with-zero rows, and
+ * by address within each group so repeated lookups agree on the same account.
+ *
+ * ALGO is absent from the holdings table (it lives on the account balance row),
+ * so this returns an empty list for it.
+ */
+export async function getAssetHolderAddresses({
+    db = getDatabase(),
+    assetId,
+    network,
+}: GetAssetHolderAddressesParams): Promise<string[]> {
+    const rows = await db
+        .select({
+            accountAddress: AccountAssetHoldingsSchema.accountAddress,
+            amount: AccountAssetHoldingsSchema.amount,
+        })
+        .from(AccountAssetHoldingsSchema)
+        .where(
+            and(
+                eq(AccountAssetHoldingsSchema.assetId, new Decimal(assetId)),
+                eq(AccountAssetHoldingsSchema.network, network),
+            ),
+        )
+        .orderBy(AccountAssetHoldingsSchema.accountAddress)
+        .all()
+
+    const owned: string[] = []
+    const optedIn: string[] = []
+    for (const row of rows) {
+        if (row.amount.greaterThan(0)) {
+            owned.push(row.accountAddress)
+        } else {
+            optedIn.push(row.accountAddress)
+        }
+    }
+
+    return [...owned, ...optedIn]
+}
+
 export type HeldAssetRef = {
     assetId: string
     network: string

@@ -111,7 +111,7 @@ export const SearchScreen = () => {
                 case 'asset': {
                     return (
                         <PWTouchableOpacity
-                            onPress={() => onAssetPress(item.asset)}
+                            onPress={() => void onAssetPress(item.asset)}
                             style={styles.assetRow}
                             testID={`search_result_asset_${item.asset.assetId}`}
                         >
