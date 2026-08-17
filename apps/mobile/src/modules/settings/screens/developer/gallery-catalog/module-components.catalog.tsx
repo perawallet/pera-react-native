@@ -361,6 +361,7 @@ registerPreview({
                 asset: mockAsset,
                 amount: new Decimal('1234.56'),
                 algoValue: new Decimal('120.0'),
+                isFrozen: false,
             }}
             usdPrice={new Decimal('1.00')}
             showBalance={true}

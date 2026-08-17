@@ -256,6 +256,7 @@ describe('useSwapToAssetSelectionList', () => {
                 assetId: '31566704',
                 amount: new Decimal('500'),
                 algoValue: new Decimal(0),
+                isFrozen: false,
             })
         })
 

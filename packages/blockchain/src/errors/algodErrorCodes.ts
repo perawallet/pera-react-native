@@ -26,6 +26,8 @@ export const AlgodErrorCode = {
     BELOW_MIN_BALANCE: 'below_min_balance',
     /** An account involved in an asset transfer is not opted into the asset. */
     MISSING_OPT_IN: 'missing_opt_in',
+    /** The asset holding is frozen for an account in the transfer. */
+    ASSET_FROZEN: 'asset_frozen',
     /** Transaction was already committed to the ledger. */
     DUPLICATE_TXN: 'duplicate_txn',
     /** Transaction's validity window has passed or is in the future. */
@@ -76,6 +78,10 @@ export interface AlgodErrorParamsByCode {
         assetCount?: number
     }
     missing_opt_in: {
+        address: string
+        assetId: bigint
+    }
+    asset_frozen: {
         address: string
         assetId: bigint
     }

@@ -34,6 +34,8 @@ export type LedgerAccountPreviewAsset = {
     verificationTier: PeraAssetVerificationTier
     logo?: string
     isAlgo: boolean
+    /** Holding-level freeze from algod — frozen assets can't be transferred. */
+    isFrozen: boolean
 }
 
 export type LedgerAccountRekeyRelationship =

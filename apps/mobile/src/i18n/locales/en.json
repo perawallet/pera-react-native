@@ -666,6 +666,10 @@
                 "title": "Asset not accepted",
                 "body": "The receiving account hasn't opted in to asset {{assetId}}. Ask the recipient to opt in, or send via the ASA Inbox."
             },
+            "asset_frozen": {
+                "title": "Asset frozen",
+                "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. Contact the asset's creator to unfreeze it."
+            },
             "duplicate_txn": {
                 "title": "Already submitted",
                 "body": "This transaction has already been processed by the network."

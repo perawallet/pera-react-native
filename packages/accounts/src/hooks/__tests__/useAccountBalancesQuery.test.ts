@@ -70,6 +70,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 type Row = {
     assetId: string
     amount: Decimal
+    isFrozen?: boolean
     asset: { assetId: string; decimals: number; name?: string } | null
     usdPrice: Decimal | null
     isFavorited: boolean
@@ -167,6 +168,28 @@ describe('useAccountBalances', () => {
         const accountData = result.current.accountBalances.get('ADDR1')
         expect(accountData?.algoValue).toEqual(new Decimal(1))
         expect(result.current.portfolioAlgoValue).toEqual(new Decimal(1))
+    })
+
+    it('exposes the holding-level frozen flag on asset balances', async () => {
+        mockGetAccountHoldingsPage.mockResolvedValue([
+            algoRow(1_000_000, 1),
+            { ...asaRow('456', 1000, 2, 10, 'Frozen NFT'), isFrozen: true },
+            // A row with unsynced metadata must still carry the flag.
+            { ...asaRow('789', 1, null, null), isFrozen: true },
+        ])
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        const balances =
+            result.current.accountBalances.get('ADDR1')?.assetBalances
+        expect(balances?.find(b => b.assetId === '456')?.isFrozen).toBe(true)
+        expect(balances?.find(b => b.assetId === '789')?.isFrozen).toBe(true)
+        expect(balances?.find(b => b.assetId === '0')?.isFrozen).toBe(false)
     })
 
     it('calculates asset balances with prices correctly', async () => {

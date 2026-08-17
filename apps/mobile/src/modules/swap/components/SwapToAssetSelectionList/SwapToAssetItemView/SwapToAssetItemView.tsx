@@ -66,6 +66,7 @@ export const SwapToAssetItemView = ({
             asset,
             amount: balance ?? new Decimal(0),
             algoValue: new Decimal(0),
+            isFrozen: false,
         }
     }, [dexAsset, balance])
 

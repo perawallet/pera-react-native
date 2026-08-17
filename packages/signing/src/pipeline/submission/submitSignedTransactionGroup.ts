@@ -15,7 +15,7 @@ import {
     type AlgodError,
     type PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { concatBytes } from '@perawallet/wallet-core-shared'
+import { concatBytes, logger } from '@perawallet/wallet-core-shared'
 import { SubmissionError } from '../errors'
 import type {
     AlgokitClientInterface,
@@ -74,6 +74,12 @@ export const submitSignedTransactionGroup = async (
             .do()) as { txid?: string | string[] }
     } catch (error) {
         const algodError = toAlgodError(error)
+        // The SubmissionError surfaces only the classification; log the node's
+        // actual response so no-verdict failures stay diagnosable in the field.
+        logger.warn('submitSignedTransactionGroup: submit failed', {
+            code: algodError.code,
+            message: algodError.message,
+        })
         // "Already in ledger" is proof of success — the bytes are committed
         // (typically a retry after a lost response). Report the txIds.
         if (algodError.code === 'duplicate_txn') {

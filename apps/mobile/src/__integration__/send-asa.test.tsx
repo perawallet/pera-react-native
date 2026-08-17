@@ -43,7 +43,9 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
+import { View } from 'react-native'
 import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSendFunds'
+import { AssetSelectionScreen } from '@modules/transactions/screens/send-funds/AssetSelectionScreen/AssetSelectionScreen'
 import { TransactionConfirmationScreen } from '@modules/transactions/screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
 import { TransactionProcessingScreen } from '@modules/transactions/screens/send-funds/TransactionProcessingScreen/TransactionProcessingScreen'
 import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
@@ -396,6 +398,74 @@ describe('Flow: Send a non-ALGO asset (ASA) end-to-end', () => {
                 { timeout: 10_000 },
             )
             expect(screen.queryByTestId('PWResultView')).toBeNull()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a frozen asset holding, when the user opens the send asset picker, then the frozen row is badged and not selectable',
+        async () => {
+            const sender = await seedAlgo25Sender()
+            await insertAssetHolding({
+                accountAddress: sender.address,
+                assetId: '0',
+                network: 'mainnet',
+                amount: '5000000',
+            })
+            await insertAssetHolding({
+                accountAddress: sender.address,
+                assetId: USDC_TEST_ASSET_ID,
+                network: 'mainnet',
+                amount: '10000000',
+                isFrozen: true,
+            })
+            await upsertAccountBalance({
+                accountAddress: sender.address,
+                network: 'mainnet',
+                algoBalance: new Decimal(5_000_000),
+                totalAssetsOptedIn: 1,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+                minBalance: new Decimal(200_000),
+                status: 'Offline',
+                authAddress: null,
+            })
+
+            const InputAmountStub = () => <View testID='input-amount-stub' />
+            renderWithNavigation(AssetSelectionScreen, 'SelectAsset', {
+                additionalScreens: [
+                    { name: 'InputAmount', component: InputAmountStub },
+                    { name: 'SelectDestination', component: InputAmountStub },
+                ],
+            })
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId(
+                            `asset-list-item-${USDC_TEST_ASSET_ID}`,
+                        ),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+
+            // The frozen holding is labeled (i18n renders raw keys in tests).
+            expect(
+                screen.getByText('transactions.asset_freeze.frozen'),
+            ).toBeTruthy()
+
+            // Tapping the frozen row must not advance to the amount screen.
+            fireEvent.click(
+                screen.getByTestId(`asset-list-item-${USDC_TEST_ASSET_ID}`),
+            )
+            expect(screen.queryByTestId('input-amount-stub')).toBeNull()
+
+            // The unfrozen ALGO row still navigates.
+            fireEvent.click(screen.getByTestId('asset-list-item-0'))
+            await waitFor(() => {
+                expect(screen.getByTestId('input-amount-stub')).toBeTruthy()
+            })
         },
         SLOW_TEST_TIMEOUT_MS,
     )

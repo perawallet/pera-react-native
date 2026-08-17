@@ -108,6 +108,38 @@ describe('account repository', () => {
             expect(result[0].amount).toEqual(new Decimal(999))
         })
 
+        it('persists the frozen flag and reports an isFrozen-only change', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 5000n, isFrozen: true }],
+                network: 'mainnet',
+            })
+
+            const page = await getAccountHoldingsPage({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            expect(page[0].isFrozen).toBe(true)
+
+            // Unfreeze with the same amount — must still be detected as a change.
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 5000n, isFrozen: false }],
+                network: 'mainnet',
+            })
+            expect(changed).toBe(true)
+
+            const after = await getAccountHoldingsPage({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            expect(after[0].isFrozen).toBe(false)
+        })
+
         it('handles empty holdings', async () => {
             await refreshAccountHoldings({
                 db,

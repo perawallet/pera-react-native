@@ -297,4 +297,32 @@ describe('mapArc59AssetRequest', () => {
 
         expect(result.inboxAddress).toBeNull()
     })
+
+    test('maps the wire asset type into peraMetadata.type', () => {
+        const result = mapArc59AssetRequest(validRawAssetRequest)
+
+        expect(result.asset.peraMetadata?.type).toBe('standard_asset')
+    })
+
+    test('maps a collectible request so isCollectible-style checks work', () => {
+        const rawCollectibleRequest: Arc59AssetRequestResponse = {
+            ...validRawAssetRequest,
+            asset: {
+                ...validRawAssetRequest.asset,
+                type: 'collectible',
+                collectible: {
+                    title: 'GEMS NFT 1',
+                    primary_image: 'https://example.com/nft.png',
+                },
+            },
+        }
+
+        const result = mapArc59AssetRequest(rawCollectibleRequest)
+
+        expect(result.asset.peraMetadata?.type).toBe('collectible')
+        expect(result.asset.peraMetadata?.collectible).toEqual({
+            title: 'GEMS NFT 1',
+            primaryImage: 'https://example.com/nft.png',
+        })
+    })
 })

@@ -21,7 +21,13 @@ import {
     it,
     vi,
 } from 'vitest'
-import { fireEvent, renderHook, screen, waitFor } from '@testing-library/react'
+import {
+    fireEvent,
+    renderHook,
+    screen,
+    waitFor,
+    within,
+} from '@testing-library/react'
 import { View } from 'react-native'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { Notifier } from 'react-native-notifier'
@@ -572,6 +578,53 @@ describe('Flow: Inbound ARC-59 asset claim (Requests → Detail → Processing �
             >
             const body = await calls[0][0].request.arrayBuffer()
             expect(body.byteLength).toBeGreaterThan(50)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a collectible request, when the claim detail screen renders, then the NFT preview image is shown',
+        async () => {
+            await seedClaimingAccount()
+            useClaimAssetsStore
+                .getState()
+                .setAccountAddress(ALGO25_TEST_ADDRESS)
+            useClaimAssetsStore.getState().setAssetRequests([
+                buildAssetRequest({
+                    asset: {
+                        ...CLAIMED_ASSET,
+                        // `peraMetadata` is optional on PeraAsset, so the
+                        // spread alone leaves the required fields possibly
+                        // undefined — restate them for the type.
+                        peraMetadata: {
+                            ...CLAIMED_ASSET.peraMetadata,
+                            verificationTier: 'verified',
+                            isDeleted: false,
+                            type: 'collectible',
+                            collectible: {
+                                title: 'GEMS NFT 1',
+                                primaryImage: 'https://example.com/nft.png',
+                            },
+                        },
+                    },
+                }),
+            ])
+
+            renderClaimFlow('AssetClaimDetail')
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('arc59_claim_asset_preview'),
+                    ).toBeTruthy()
+                },
+                { timeout: 5000 },
+            )
+
+            // The collectible's primaryImage renders as an actual image
+            // (PWImage mock), not the initials fallback.
+            const preview = screen.getByTestId('arc59_claim_asset_preview')
+            expect(within(preview).getByTestId('PWImage')).toBeTruthy()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

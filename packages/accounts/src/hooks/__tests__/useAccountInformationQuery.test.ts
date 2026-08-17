@@ -70,7 +70,7 @@ describe('useAccountInformationQuery', () => {
             authAddress: null,
         })
         mockGetAccountHoldings.mockResolvedValue([
-            { assetId: '123', amount: new Decimal(500) },
+            { assetId: '123', amount: new Decimal(500), isFrozen: true },
         ])
 
         const { result } = renderHook(
@@ -86,7 +86,7 @@ describe('useAccountInformationQuery', () => {
             address: mockAddress,
             status: 'Online',
             rewards: 0n,
-            assets: [{ assetId: 123n, amount: 500n, isFrozen: false }],
+            assets: [{ assetId: 123n, amount: 500n, isFrozen: true }],
         })
 
         expect(mockGetAccountBalance).toHaveBeenCalledWith({

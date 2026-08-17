@@ -129,11 +129,13 @@ const balancesWith = (algo: string, usdc: string): AccountBalances =>
                         assetId: '0',
                         amount: new Decimal(algo),
                         algoValue: new Decimal(algo),
+                        isFrozen: false,
                     },
                     {
                         assetId: '31566704',
                         amount: new Decimal(usdc),
                         algoValue: new Decimal(usdc),
+                        isFrozen: false,
                     },
                 ],
                 algoValue: new Decimal(algo),

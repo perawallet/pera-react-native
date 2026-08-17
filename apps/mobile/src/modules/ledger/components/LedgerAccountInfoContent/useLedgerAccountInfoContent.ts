@@ -132,6 +132,7 @@ export const useLedgerAccountInfoContent = (
                 accountBalance: {
                     assetId: asset.assetId,
                     amount: asset.amount,
+                    isFrozen: asset.isFrozen,
                     // Holding value in ALGOs (display units):
                     // amount * usdPrice / algoUsdPrice. Falls back to 0
                     // when the ALGO USD price is unknown (avoids /0).

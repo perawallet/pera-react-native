@@ -234,7 +234,12 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
 
                 setBootstrapped(true)
             } catch (err) {
-                logger.error('App bootstrap failed', { error: err })
+                // The console transport drops the metadata object entirely, so
+                // the underlying cause must live in the message string itself.
+                logger.error(
+                    `App bootstrap failed: ${err instanceof Error ? err.message : String(err)}`,
+                    { error: err },
+                )
                 setInitError(true)
             } finally {
                 // Deferred so the initial layout lands before the native splash

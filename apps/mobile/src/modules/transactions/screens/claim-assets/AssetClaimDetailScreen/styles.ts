@@ -20,6 +20,9 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.xl,
         gap: theme.spacing.xs,
     },
+    assetPreview: {
+        marginBottom: theme.spacing.sm,
+    },
     assetIdRow: {
         flexDirection: 'row',
         alignItems: 'center',

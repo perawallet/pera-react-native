@@ -55,13 +55,27 @@ export const runMigrations = async (
             .map(s => s.trim())
             .filter(s => s.length > 0)
 
-        for (const statement of statements) {
-            await db.run(sql.raw(statement))
+        // One transaction per migration, covering the tag insert too: an
+        // interrupted or failed run must leave no half-applied schema, or the
+        // retry on next boot hits errors like "duplicate column" forever.
+        await db.run(sql.raw('BEGIN'))
+        try {
+            for (const statement of statements) {
+                await db.run(sql.raw(statement))
+            }
+            await db
+                .insert(drizzleMigrations)
+                .values({ tag, createdAt: Date.now() })
+                .run()
+            await db.run(sql.raw('COMMIT'))
+        } catch (error) {
+            try {
+                await db.run(sql.raw('ROLLBACK'))
+            } catch {
+                // The connection may already be unusable; the original
+                // error below is the one that matters.
+            }
+            throw error
         }
-
-        await db
-            .insert(drizzleMigrations)
-            .values({ tag, createdAt: Date.now() })
-            .run()
     }
 }

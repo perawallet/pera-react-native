@@ -193,6 +193,7 @@ export const useAccountBalancesQuery = (
                             amount: new Decimal(0),
                             algoValue: new Decimal(0),
                             usdPrice: holding.usdPrice ?? undefined,
+                            isFrozen: holding.isFrozen ?? false,
                         }
                     }
                     const usdAssetPrice = holding.usdPrice ?? new Decimal(0)
@@ -214,6 +215,7 @@ export const useAccountBalancesQuery = (
                         amount: assetAmount,
                         algoValue: algoAssetValue,
                         usdPrice: usdAssetPrice,
+                        isFrozen: holding.isFrozen ?? false,
                     }
                 },
             )

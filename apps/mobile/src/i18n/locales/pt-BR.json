@@ -666,6 +666,10 @@
                 "title": "Ativo não aceito",
                 "body": "A conta destinatária não adicionou o ativo {{assetId}}. Peça ao destinatário para adicionar o ativo ou envie pela ASA Inbox."
             },
+            "asset_frozen": {
+                "title": "Ativo congelado",
+                "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. Contate o criador do ativo para descongelá-lo."
+            },
             "duplicate_txn": {
                 "title": "Já enviada",
                 "body": "Esta transação já foi processada pela rede."

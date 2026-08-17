@@ -460,6 +460,7 @@ describe('Flow: Opt out of an asset', () => {
                 asset: USDC_TEST_ASSET,
                 amount: new Decimal(0),
                 algoValue: new Decimal(0),
+                isFrozen: false,
             }
 
             // Pre-flight: confirm the seeded holding exists in the DB
@@ -547,6 +548,7 @@ describe('Flow: Opt out of an asset', () => {
                 asset: USDC_TEST_ASSET,
                 amount: new Decimal('1.5'),
                 algoValue: new Decimal(0),
+                isFrozen: false,
             }
 
             const sendSpy = vi.fn(() =>
