@@ -197,7 +197,11 @@ export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     if (
         normalizedUrl.startsWith(`${WC_SCHEME}:`) ||
         normalizedUrl.startsWith(`${PERAWALLET_WC_SCHEME}:`) ||
-        normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`)
+        normalizedUrl.startsWith(`${ALGORAND_WC_SCHEME}:`) ||
+        // Legacy @perawallet/connect (< Feb 2025) Android pairing wrapper.
+        // Must win over the ARC-90 branch below; only the `wc?uri=` shape
+        // is WalletConnect.
+        normalizedUrl.startsWith(`${ALGORAND_SCHEME}://wc?`)
     ) {
         return parseWalletConnectUri(url)
     }

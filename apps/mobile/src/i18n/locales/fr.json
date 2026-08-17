@@ -776,6 +776,7 @@
             "permission_body": "Vous avez reçu une demande non autorisée provenant d’une application. Veuillez vérifier l’application, puis réessayer.",
             "invalid_session_body": "Vous avez reçu une demande de session invalide provenant d’une application. Veuillez vérifier l’application, puis réessayer.",
             "connection_timeout_body": "Impossible de joindre WalletConnect pour transmettre votre transaction signée. Vérifiez votre connexion, puis réessayez.",
+            "bridge_connection_body": "Impossible de se connecter à WalletConnect. Vérifiez votre connexion internet, puis réessayez.",
             "session_request_expired_body": "Cette demande de connexion a expiré. Lancez une nouvelle connexion depuis la dApp, puis réessayez."
         },
         "signing": {

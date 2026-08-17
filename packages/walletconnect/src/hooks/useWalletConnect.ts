@@ -16,6 +16,7 @@ import {
     WC_DELIVERY_TIMEOUT_MS,
 } from '../constants'
 import {
+    WalletConnectBridgeConnectionError,
     WalletConnectError,
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
@@ -294,6 +295,7 @@ export const useWalletConnect = (network: Network) => {
         connector.off('disconnect')
         connector.off('session_request')
         connector.off('error')
+        connector.off('transport_error')
 
         connector.on('algo_signData', (error, payload) => {
             logger.debug('WC algo_signData received', {
@@ -415,11 +417,51 @@ export const useWalletConnect = (network: Network) => {
             })
         })
 
-        connector.on('error', error => {
-            logger.error('WC error received', { error })
-            if (error) {
-                surfaceError(error, connector.clientId)
+        connector.on('error', (error, payload) => {
+            logger.error('WC error received', { error, payload })
+            // The SDK's EventManager delivers internal events as
+            // callback(null, event) — only JSON-RPC error responses populate
+            // the first argument. Reading `error` alone made this binding
+            // decorative: every real 'error' event arrived in `payload`.
+            const detail = (
+                payload as { params?: { message?: string }[] } | undefined
+            )?.params?.[0]
+            const surfaced =
+                error ??
+                (detail
+                    ? new WalletConnectError(
+                          detail.message ?? 'WalletConnect reported an error.',
+                      )
+                    : null)
+            if (surfaced) {
+                surfaceError(surfaced, connector.clientId)
             }
+        })
+
+        // The transport retries a failed socket on its own (~1s), so one
+        // flap is routine — but a repeat failure on a connector with no
+        // established session means the pairing handshake cannot complete,
+        // and the outcome waiter should fail fast rather than sit out its
+        // full budget in silence.
+        let transportErrorCount = 0
+        connector.on('transport_error', () => {
+            logger.warn('[WC] transport error', {
+                clientId: connector.clientId,
+                connected: connector.connected,
+            })
+            if (connector.connected) {
+                // Background flap on a live session; the reconnect sweep
+                // owns recovery there — never error UI.
+                return
+            }
+            transportErrorCount += 1
+            if (transportErrorCount < 2) {
+                return
+            }
+            surfaceError(
+                new WalletConnectBridgeConnectionError(),
+                connector.clientId,
+            )
         })
     }
     bindRequestHandlersRef.current = bindRequestHandlers

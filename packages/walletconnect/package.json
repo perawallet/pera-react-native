@@ -24,7 +24,7 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
-    "@perawallet/walletconnect": "1.0.0",
+    "@perawallet/walletconnect": "catalog:",
     "@tanstack/react-query": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",

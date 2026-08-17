@@ -239,15 +239,23 @@ const { mockWcConnect, mockWaitForSessionOutcome, mockAbandonPairing } =
         mockAbandonPairing: vi.fn(),
     }))
 
-vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: () => ({ connect: mockWcConnect }),
-    waitForSessionOutcome: mockWaitForSessionOutcome,
-    abandonPairing: mockAbandonPairing,
-    // Real values from packages/walletconnect/src/constants.ts.
-    WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
-    WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS: 15_000,
-    WC_LATE_SESSION_GRACE_MS: 60_000,
-}))
+vi.mock('@perawallet/wallet-core-walletconnect', () => {
+    class MockBridgeConnectionError extends Error {}
+    return {
+        useWalletConnect: () => ({ connect: mockWcConnect }),
+        waitForSessionOutcome: mockWaitForSessionOutcome,
+        // The socket-open fail-safe never beats a real outcome, so the
+        // pairing always resolves on waitForSessionOutcome here.
+        waitForPairingSocketOpen: () => Promise.resolve(true),
+        abandonPairing: mockAbandonPairing,
+        WalletConnectBridgeConnectionError: MockBridgeConnectionError,
+        // Real values from packages/walletconnect/src/constants.ts.
+        WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
+        WC_DELIVERY_TIMEOUT_MS: 8000,
+        WC_DEEPLINK_SESSION_OUTCOME_TIMEOUT_MS: 15_000,
+        WC_LATE_SESSION_GRACE_MS: 60_000,
+    }
+})
 
 const {
     mockRequestByType,

@@ -36,7 +36,7 @@
     "devDependencies": {
         "@noble/hashes": "catalog:",
         "@perawallet/wallet-core-devtools": "workspace:*",
-        "@perawallet/walletconnect": "1.0.0",
+        "@perawallet/walletconnect": "catalog:",
         "@playwright/test": "catalog:",
         "@testing-library/react": "catalog:",
         "@types/chrome": "catalog:",

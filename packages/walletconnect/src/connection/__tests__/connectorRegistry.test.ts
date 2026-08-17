@@ -22,6 +22,7 @@ import {
     reconnectAllConnectors,
     registerConnector,
     setConnectorHandlerBinder,
+    waitForPairingSocketOpen,
 } from '../connectorRegistry'
 import { useWalletConnectStore } from '../../store'
 import {
@@ -142,6 +143,50 @@ describe('connectorRegistry', () => {
 
         it('is a no-op for an unknown clientId', () => {
             expect(() => abandonPairing('unknown')).not.toThrow()
+        })
+    })
+
+    describe('waitForPairingSocketOpen', () => {
+        it('resolves true immediately when the socket is already open', async () => {
+            const pairing = makeConnector('c1')
+            pairing.connected = false
+            pairing._transport.connected = true
+            registerConnector('c1', pairing)
+
+            await expect(waitForPairingSocketOpen('c1', 8000)).resolves.toBe(
+                true,
+            )
+        })
+
+        it('resolves true as soon as the socket opens mid-wait', async () => {
+            const pairing = makeConnector('c1')
+            pairing.connected = false
+            registerConnector('c1', pairing)
+
+            const wait = waitForPairingSocketOpen('c1', 8000)
+            await vi.advanceTimersByTimeAsync(200)
+            pairing._transport.connected = true
+            await vi.advanceTimersByTimeAsync(100)
+
+            await expect(wait).resolves.toBe(true)
+        })
+
+        it('resolves false when the socket never opens within the budget', async () => {
+            const pairing = makeConnector('c1')
+            pairing.connected = false
+            registerConnector('c1', pairing)
+
+            const wait = waitForPairingSocketOpen('c1', 8000)
+            await vi.advanceTimersByTimeAsync(8100)
+
+            await expect(wait).resolves.toBe(false)
+        })
+
+        it('resolves false for an unknown clientId instead of rejecting', async () => {
+            const wait = waitForPairingSocketOpen('missing', 500)
+            await vi.advanceTimersByTimeAsync(600)
+
+            await expect(wait).resolves.toBe(false)
         })
     })
 
