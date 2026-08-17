@@ -78,15 +78,15 @@ export const migration: Migration<PeraMigrationContext> = {
         try {
             masterKey = await context.masterKeyForRead()
         } catch (error) {
+            // Nothing was ever sealed under a master key, so there is nothing
+            // to adopt; upstream takes the same branch (`legacy.js:86-89`).
             if (error instanceof MasterKeyNotFoundError) return
-            // See `0002`: a plain `Error` here is a cancelled or locked
-            // Keychain, and rejecting `up` would re-fail on every launch
-            // because the ledger is written only after `up` resolves.
-            safeWarn(
-                `[provider] adopt-material-less-records: master key unavailable, left ${candidates.length} record(s) flat: ${safeErrorMessage(error)}`,
-            )
-            context.declined.record(utils.revision.module, candidates)
-            return
+            // DO NOT turn this into a decline — see `0002`. Throwing keeps the
+            // revision unledgered (`apply.js:123`) so it retries next launch;
+            // declining ledgers it, and upstream skips these targets for
+            // carrying no material (`legacy.js:104-109`), so nothing ever
+            // adopts them and the accounts stay invisible to `listMeta()`.
+            throw error
         }
 
         utils.secrets.put('keystore-master-key', masterKey)

@@ -315,9 +315,9 @@ describe('0002-lift-nested-material', () => {
         expect(storage.getString('m/root-1')).toBe('the-authoritative-payload')
     })
 
-    // A fresh install has no Keychain master key. Upstream's own adoption pass
-    // treats that as "nothing to migrate"; throwing here would fail the module,
-    // which rejects `keystore.ready` and stops the app booting.
+    // Not a fresh install — that returns at `candidates.length === 0`, below.
+    // Flat records with no master key were never sealed under one, so there is
+    // nothing to lift and upstream declines them identically (`legacy.js:86-89`).
     it('is a no-op when the master key is missing, not a throw', async () => {
         const storage = await seeded(nestedAndTopLevel())
         const before = storage.entries()
@@ -331,25 +331,22 @@ describe('0002-lift-nested-material', () => {
         expect(storage.entries()).toEqual(before)
     })
 
-    // A cancelled or unavailable Keychain (`errSecUserCanceled`,
-    // `errSecInteractionNotAllowed`, Android `KeyPermanentlyInvalidatedException`)
-    // arrives as a plain `Error`, not `MasterKeyNotFoundError`. Rethrowing it
-    // would reject `up` and, with the ledger written only afterwards, re-fail
-    // on every launch. Declining leaves the records flat for upstream instead.
-    it('resolves and declines when the master-key read fails for any other reason', async () => {
+    // Declining here would be worse than blocking boot: `apply.js:123` ledgers
+    // this revision the moment `up` resolves, so the next launch skips it while
+    // upstream adopts the same record and writes its nested private key into
+    // plaintext `k/`. Throwing keeps the revision pending for a retry.
+    it('rethrows a master-key read failure that is not MasterKeyNotFoundError', async () => {
         const storage = await seeded(nestedAndTopLevel())
-        const before = storage.entries()
         masterKeyForRead = vi.fn(async () => {
             throw new Error('unlock cancelled')
         })
 
-        await expect(
-            migration.up(context(storage), utils()),
-        ).resolves.toBeUndefined()
-        expect(storage.entries()).toEqual(before)
+        await expect(migration.up(context(storage), utils())).rejects.toThrow(
+            'unlock cancelled',
+        )
         expect(
             createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
-        ).toEqual(['derived-1'])
+        ).toEqual([])
     })
 
     // Reading the master key is the only step that can raise a biometric

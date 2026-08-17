@@ -173,17 +173,17 @@ export const migration: Migration<PeraMigrationContext> = {
         try {
             masterKey = await context.masterKeyForRead()
         } catch (error) {
+            // Nothing was ever sealed under a master key, so there is nothing
+            // to lift; upstream takes the same branch (`legacy.js:86-89`).
             if (error instanceof MasterKeyNotFoundError) return
-            // A cancelled or locked Keychain arrives as a plain `Error`
-            // (`readMasterKey` throws `MasterKeyNotFoundError` only on a falsey
-            // credential). Rethrowing would reject `up`, and the ledger is
-            // written only after `up` resolves, so it would re-fail every
-            // launch. Left flat, these records are upstream's to adopt.
-            safeWarn(
-                `[provider] lift-nested-material: master key unavailable, left ${candidates.length} record(s) flat: ${safeErrorMessage(error)}`,
-            )
-            context.declined.record(utils.revision.module, candidates)
-            return
+            // DO NOT turn this into a decline — third attempt, always wrong.
+            // Blocking boot is the safe failure: the ledger is written only
+            // after `up` resolves (`apply.js:123`), so a throw retries next
+            // launch, while a decline ledgers this revision, the next launch
+            // skips it, and upstream then adopts the record — writing
+            // `metadata.rootKey.privateKey` into plaintext `k/`
+            // (`legacy.js:118-121`), permanently.
+            throw error
         }
 
         // The run-scoped scratch owns the plaintext master key from here, so it

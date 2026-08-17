@@ -358,8 +358,9 @@ describe('0004-adopt-material-less-records', () => {
         expect(storage.getString('cred-1')).toBeDefined()
     })
 
-    // A fresh install has no Keychain master key; upstream's own reading is
-    // that this means "nothing to migrate", not a failure.
+    // Not a fresh install — that returns at `candidates.length === 0`, below.
+    // Flat records with no master key were never sealed under one, so there is
+    // nothing to adopt and upstream declines them identically (`legacy.js:86-89`).
     it('is a no-op when the master key is missing, not a throw', async () => {
         const storage = await seeded({
             id: 'watch-1',
@@ -379,9 +380,11 @@ describe('0004-adopt-material-less-records', () => {
         expect(storage.entries()).toEqual(before)
     })
 
-    // Same reasoning as `0002`: a plain `Error` from a cancelled or locked
-    // Keychain must not reject `up`, or the module re-fails on every launch.
-    it('resolves and declines when the master-key read fails for any other reason', async () => {
+    // Same reasoning as `0002`: declining ledgers this revision (`apply.js:123`)
+    // and the next launch skips it, so its targets — which upstream refuses
+    // (`storage/legacy.js:104-109`) — are never adopted by anything, ever.
+    // Throwing keeps it pending.
+    it('rethrows a master-key read failure that is not MasterKeyNotFoundError', async () => {
         const storage = await seeded({
             id: 'watch-1',
             type: 'ed25519',
@@ -389,18 +392,16 @@ describe('0004-adopt-material-less-records', () => {
             extractable: false,
             publicKey: new Uint8Array(32).fill(3),
         })
-        const before = storage.entries()
         masterKeyForRead = vi.fn(async () => {
             throw new Error('unlock cancelled')
         })
 
-        await expect(
-            migration.up(context(storage), utils()),
-        ).resolves.toBeUndefined()
-        expect(storage.entries()).toEqual(before)
+        await expect(migration.up(context(storage), utils())).rejects.toThrow(
+            'unlock cancelled',
+        )
         expect(
             createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
-        ).toEqual(['watch-1'])
+        ).toEqual([])
     })
 
     // Reading the master key is the only step that can raise a biometric

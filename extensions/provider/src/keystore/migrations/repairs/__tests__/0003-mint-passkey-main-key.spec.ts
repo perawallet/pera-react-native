@@ -628,9 +628,9 @@ describe('0003-mint-passkey-main-key', () => {
     // `errSecInteractionNotAllowed`, Android `KeyPermanentlyInvalidatedException`)
     // arrives as a plain `Error`, not `MasterKeyNotFoundError`. Rethrowing it
     // would reject `up` and, with the ledger unwritten, re-fail on every launch.
-    // Once 0001 and 0002 are ledgered this is the only revision in THIS module
-    // that reads the master key; `preflight/0002` and `preflight/0004` also
-    // read it, and both decline the same way.
+    // Safe here only because this module runs after upstream's adoption and
+    // nothing destructive follows a decline. The preflight revisions rethrow
+    // instead: a ledgered decline there hands the record to upstream.
     it('resolves and declines when the Keychain read fails for any other reason', async () => {
         const storage = fakeStorage({})
         await bip39Wallet(storage)
