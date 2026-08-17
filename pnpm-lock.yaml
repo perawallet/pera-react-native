@@ -7517,6 +7517,7 @@ packages:
   '@xmldom/xmldom@0.8.13':
     resolution: {integrity: sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw==}
     engines: {node: '>=10.0.0'}
+    deprecated: this version has critical issues, please update to the latest version
 
   '@xstate/react@6.1.0':
     resolution: {integrity: sha512-ep9F0jGTI63B/jE8GHdMpUqtuz7yRebNaKv8EMUaiSi29NOglywc2X2YSOV/ygbIK+LtmgZ0q9anoEA2iBSEOw==}
@@ -14790,7 +14791,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.0(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+      vitest: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
 
   '@vitest/expect@4.1.10':
     dependencies:
