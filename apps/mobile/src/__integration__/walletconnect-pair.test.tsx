@@ -51,6 +51,7 @@ import { Linking } from 'react-native'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { useReturnToDappStore } from '@modules/walletconnect/stores/useReturnToDappStore'
 import { BottomSheetManager } from '@modules/bottom-sheet'
+import { UserPreferences } from '@constants/user-preferences'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
@@ -157,7 +158,9 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
         useWalletConnectStore.getState().setConnectionError(null)
         // The acknowledgement is a persisted preference on a singleton store —
         // without this, a prior test's Continue hides the warning here.
-        useSettingsStore.getState().resetState()
+        useSettingsStore
+            .getState()
+            .deletePreference(UserPreferences.quantumDappWarningAcknowledged)
         vi.clearAllMocks()
     })
 
