@@ -436,6 +436,54 @@ with real persisted data, and most need two builds installed in sequence. Steps
     must stay deletable — they are derivable from the recovery passphrase, which
     is the entire point of the flag.
 
+#### Result of the 2026-08-17 run
+
+Steps 10, 12, 13 and 14 pass on both platforms; step 15 passes only in its
+non-flagged half (see below). Devices: Samsung SM-S901E (Android 16, SDK 36),
+`com.algorand.perarn.staging`; iPhone 17 Pro simulator (iOS 26),
+`com.algorandllc.perarn.staging`.
+
+Both in-place upgrades ended in the same state: the bare-id HD-root shadow
+carries a zero-length MMKV **delete tombstone**, the ledger holds preflight `4`
+→ upstream `2` → repairs `3` in that order and lives in `pera-provider-migrations`,
+and `<root>-passkey-main` is minted with `scheme: "pbkdf2-p256"` and
+`parentKeyId` pointing at the **entropy child**, not the wallet root. Every
+account survived, and a relaunch re-applied nothing.
+
+Step 13 ran end to end against `webauthn.io` on both platforms — create, assert,
+delete, then create again after the migration — and every provider-facing string
+said "Pera 7 Staging". Step 14 was checked against a second relying party
+(`passkey.org`) while a `webauthn.io` credential was held: Android's logcat shows
+Pera's provider returning `EMPTY_RESPONSE` there and `CREDENTIALS_RECEIVED` at
+`webauthn.io`, and iOS answered "You don't have any passwords or passkeys saved
+for this website". On Android the credential that survived the upgrade was the
+one asserted afterwards, so rematerialization is covered by the same run.
+
+Three things worth knowing before repeating this:
+
+- **Step 11 (canary.13 → this build) was not re-run**; it was verified earlier
+  in the epic and nothing since has touched that path.
+- **On the simulator, do not stage the upgrade by installing two separately
+  built `.app` bundles.** Replacing an ad-hoc-signed app wipes the simulator
+  keychain, so the master key does not survive and every sealed record becomes
+  unreadable — which looks exactly like a migration bug and is not one. Stage it
+  at the JS layer instead: install this branch's binary once, create the wallet
+  against a Metro serving the base branch, then point the same binary at a Metro
+  serving this one. `@algorandfoundation/react-native-keystore` ships no native
+  module of its own, so nothing about that substitution is a fiction. The
+  diagnostic value of the failed attempt was real, though: with the master key
+  genuinely unreachable, `mint-passkey-main-key` **declined and recorded the
+  root** rather than rejecting, and the app booted with its account intact —
+  the decline path, exercised for real.
+- **Step 15's flagged half is not device-reachable here.** The
+  `metadata.migration: "needs-migration"` marker is written by the Pera 6 legacy
+  import, so producing one needs a Pera 6 dataset. What _was_ checked is the
+  direction that over-gating would break: with Pera removed as the credential
+  provider and a non-flagged credential present, the row kept its trash icon and
+  the delete went through (confirmed by tombstone, and by the screen then
+  falling to the `disabled` state — which only renders when the provider is off).
+  The flagged half stays covered by `settings-passkeys-delete.test.tsx`.
+
 ### Known broken / deferred after the keystore-custody migration
 
 - **Web runs on an engine the vendored port does not supply.** Metro aliases
