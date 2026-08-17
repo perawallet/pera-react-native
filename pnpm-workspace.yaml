@@ -206,6 +206,17 @@ overrides:
   '@algorandfoundation/react-native-keystore': 1.0.0-canary.19
   '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
   '@expo/dom-webview': ~57.0.1
+  # Force the SDK-bundled versions across the tree. Both reach us only
+  # transitively with floating ranges that drift past the installed SDK
+  # (expo@57.0.11 bundles ~57.0.9): expo-asset pulls `expo-constants: ~57.0.9`
+  # and react-native-quick-crypto declares an optional `expo-build-properties: *`
+  # peer — each resolves to the newest published patch (57.0.11), spawning a
+  # second copy that diverges from the prebuilt native pods. The duplicate
+  # expo-constants specifically breaks the iOS "Generate app.config for
+  # prebuilt Constants.manifest" archive phase. A direct spec can't hold these
+  # down (the float is inside the dependents' ranges), so pin them here.
+  expo-constants: 57.0.9
+  expo-build-properties: 57.0.9
   '@grpc/grpc-js@<1.9.16': 1.9.16
   '@xmldom/xmldom': 0.8.13
   bn.js@4: 4.12.3
