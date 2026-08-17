@@ -15,6 +15,7 @@ import { renderHook } from '@testing-library/react'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useBottomSheet } from '@modules/bottom-sheet'
+import { QuantumDappWarningSheet } from '@components/QuantumDappWarningSheet'
 import { useIsQuantumDappWarningEnabled } from '../useIsQuantumDappWarningEnabled'
 import { useQuantumDappWarning } from '../useQuantumDappWarning'
 
@@ -71,6 +72,17 @@ describe('useQuantumDappWarning', () => {
         ])
 
         expect(mockRequest).toHaveBeenCalledTimes(1)
+        expect(mockRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                contents: expect.objectContaining({
+                    type: QuantumDappWarningSheet,
+                }),
+                options: expect.objectContaining({
+                    enablePanDownToClose: false,
+                    enableCloseOnBackdropPress: false,
+                }),
+            }),
+        )
         expect(decision).toBe('continue')
     })
 
@@ -95,6 +107,7 @@ describe('useQuantumDappWarning', () => {
 
         expect(mockRequest).not.toHaveBeenCalled()
         expect(decision).toBe('continue')
+        expect(mockSetPreference).not.toHaveBeenCalled()
     })
 
     it('continues without a sheet when the warning is disabled', async () => {
@@ -104,6 +117,16 @@ describe('useQuantumDappWarning', () => {
         const decision = await result.current.confirmQuantumDappUsage([
             QUANTUM_ADDRESS,
         ])
+
+        expect(mockRequest).not.toHaveBeenCalled()
+        expect(decision).toBe('continue')
+        expect(mockSetPreference).not.toHaveBeenCalled()
+    })
+
+    it('continues without a sheet when there are no addresses', async () => {
+        const { result } = renderHook(() => useQuantumDappWarning())
+
+        const decision = await result.current.confirmQuantumDappUsage([])
 
         expect(mockRequest).not.toHaveBeenCalled()
         expect(decision).toBe('continue')
@@ -141,5 +164,16 @@ describe('useQuantumDappWarning', () => {
 
         expect(mockRequest).not.toHaveBeenCalled()
         expect(decision).toBe('continue')
+    })
+
+    it('propagates a rejection when no BottomSheetManager is mounted', async () => {
+        mockRequest.mockRejectedValue(new Error('no host'))
+        const { result } = renderHook(() => useQuantumDappWarning())
+
+        await expect(
+            result.current.confirmQuantumDappUsage([QUANTUM_ADDRESS]),
+        ).rejects.toThrow('no host')
+
+        expect(mockSetPreference).not.toHaveBeenCalled()
     })
 })

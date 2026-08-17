@@ -26,7 +26,8 @@ import { useIsQuantumDappWarningEnabled } from './useIsQuantumDappWarningEnabled
 
 export type UseQuantumDappWarningResult = {
     // Resolves 'continue' unless a quantum account is involved, the warning
-    // is enabled, and it has not been acknowledged before.
+    // is enabled and unacknowledged. Rejects if no BottomSheetManager is
+    // mounted — callers must treat a throw as 'cancel', never proceed past it.
     confirmQuantumDappUsage: (
         addresses: string[],
     ) => Promise<QuantumDappWarningDecision>
@@ -54,13 +55,13 @@ export const useQuantumDappWarning = (): UseQuantumDappWarningResult => {
                 contents: <QuantumDappWarningSheet />,
                 options: {
                     size: 'auto',
+                    // Cancel rejects the dApp outright, so the sheet must not
+                    // offer a third, ambiguous exit that means neither.
                     enablePanDownToClose: false,
                     enableCloseOnBackdropPress: false,
                 },
             })
 
-            // Dismiss (cancel, backdrop, unmount) settles as undefined; fail
-            // closed rather than treat that as an implicit continue.
             if (result !== 'continue') return 'cancel'
 
             setPreference(UserPreferences.quantumDappWarningAcknowledged, true)
