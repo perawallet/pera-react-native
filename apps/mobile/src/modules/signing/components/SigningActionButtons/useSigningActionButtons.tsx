@@ -13,11 +13,14 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { toAlgodError } from '@perawallet/wallet-core-blockchain'
 import {
     getRekeyedUnsignableReason,
+    isExternalCallbackSource,
     isSignRequestMultisigUnsignable,
+    resolveAllSignerAddresses,
     type SignRequest,
     type SigningPipelineEvent,
     useSigningPipeline,
@@ -74,6 +77,7 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
         useNavigation<StackNavigationProp<SigningStackParamList>>()
     const { getPreference } = usePreferences()
     const { request: requestBottomSheet } = useBottomSheet()
+    const { confirmQuantumDappUsage } = useQuantumDappWarning()
 
     // Bumped to remount the slide-to-confirm slider so it resets as needed
     const [slideResetKey, setSlideResetKey] = useState(0)
@@ -180,8 +184,25 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
 
     const handleSignAndSend = useCallback(() => {
         if (cannotSignNotice) return
-        if (guardedWarningType !== null) {
-            void (async () => {
+
+        void (async () => {
+            // Backstop for sessions approved before this warning shipped, so
+            // the connect-time gate never ran for them. Scoped to
+            // dApp-originated requests — a local send is not a dApp.
+            if (
+                currentRequest &&
+                isExternalCallbackSource(currentRequest.sourceType)
+            ) {
+                const decision = await confirmQuantumDappUsage(
+                    resolveAllSignerAddresses(currentRequest),
+                )
+                if (decision === 'cancel') {
+                    pipeline.fail()
+                    return
+                }
+            }
+
+            if (guardedWarningType !== null) {
                 const result =
                     await requestBottomSheet<SecurityGuardContentResult>({
                         contents: (
@@ -194,34 +215,29 @@ export const useSigningActionButtons = (): UseSigningActionButtonsResult => {
                             enablePanDownToClose: true,
                         },
                     })
-                if (result === 'confirm') {
-                    if (walletConnectTxPayload) {
-                        trackEvent(
-                            WalletConnectEvent.TransactionConfirmed,
-                            walletConnectTxPayload,
-                        )
-                    }
-                    pipeline.next()
-                } else {
+                if (result !== 'confirm') {
                     // Not proceeding to signing — reset the slider so it is
                     // unslid when the user returns to the sign screen.
                     setSlideResetKey(key => key + 1)
                     if (result === 'go-to-settings') {
                         navigation.navigate('SecuritySettings')
                     }
+                    return
                 }
-            })()
-            return
-        }
-        if (walletConnectTxPayload) {
-            trackEvent(
-                WalletConnectEvent.TransactionConfirmed,
-                walletConnectTxPayload,
-            )
-        }
-        pipeline.next()
+            }
+
+            if (walletConnectTxPayload) {
+                trackEvent(
+                    WalletConnectEvent.TransactionConfirmed,
+                    walletConnectTxPayload,
+                )
+            }
+            pipeline.next()
+        })()
     }, [
         cannotSignNotice,
+        currentRequest,
+        confirmQuantumDappUsage,
         guardedWarningType,
         pipeline,
         requestBottomSheet,

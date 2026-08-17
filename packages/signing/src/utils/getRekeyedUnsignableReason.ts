@@ -31,7 +31,7 @@ export type RekeyedUnsignableReason = {
 // just the first (a mixed group can hide its unsignable sender in a later
 // slot). Unlike `resolveSignerAddress`, which serves the hardware overlay and
 // deliberately returns one representative signer.
-const resolveAllSignerAddresses = (request: SignRequest): string[] => {
+export const resolveAllSignerAddresses = (request: SignRequest): string[] => {
     if (isTransactionRequest(request)) {
         return request.txs
             .map(

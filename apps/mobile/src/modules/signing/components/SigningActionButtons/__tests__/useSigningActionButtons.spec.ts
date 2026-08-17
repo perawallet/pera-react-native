@@ -45,6 +45,21 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(),
     isSignRequestMultisigUnsignable: vi.fn(() => false),
     getRekeyedUnsignableReason: vi.fn(() => null),
+    isExternalCallbackSource: vi.fn(
+        (sourceType?: string) =>
+            sourceType === 'walletconnect' ||
+            sourceType === 'webview' ||
+            sourceType === 'deeplink' ||
+            sourceType === 'injected',
+    ),
+    resolveAllSignerAddresses: vi.fn(() => ['QUANTUMADDRESS']),
+}))
+
+const mockConfirmQuantumDappUsage = vi.fn()
+vi.mock('@hooks/useQuantumDappWarning', () => ({
+    useQuantumDappWarning: () => ({
+        confirmQuantumDappUsage: mockConfirmQuantumDappUsage,
+    }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -111,6 +126,7 @@ describe('useSigningActionButtons', () => {
         ;(isSignRequestMultisigUnsignable as Mock).mockReturnValue(false)
         ;(getRekeyedUnsignableReason as Mock).mockReturnValue(null)
         mockGetPreference.mockReturnValue(undefined)
+        mockConfirmQuantumDappUsage.mockResolvedValue('continue')
         setupPipeline()
         ;(useSigningRequest as Mock).mockReturnValue({
             currentRequest: undefined,
@@ -416,12 +432,12 @@ describe('useSigningActionButtons', () => {
             setupPipeline([], [{}, {}])
         }
 
-        it('tracks TransactionConfirmed with the dapp payload when signing a WC request', () => {
+        it('tracks TransactionConfirmed with the dapp payload when signing a WC request', async () => {
             useWalletConnectRequest()
 
             const { result } = renderHook(() => useSigningActionButtons())
 
-            act(() => {
+            await act(async () => {
                 result.current.handleSignAndSend()
             })
 
@@ -604,6 +620,55 @@ describe('useSigningActionButtons', () => {
             const { result } = renderHook(() => useSigningActionButtons())
 
             expect(result.current.cannotSignNotice).toBeUndefined()
+        })
+    })
+
+    describe('quantum dApp warning backstop', () => {
+        const quantumRequest: { id: string; sourceType: string } = {
+            id: 'q1',
+            sourceType: 'walletconnect',
+        }
+
+        beforeEach(() => {
+            quantumRequest.sourceType = 'walletconnect'
+            ;(useSigningRequest as Mock).mockReturnValue({
+                currentRequest: quantumRequest,
+            })
+        })
+
+        it('rejects the request when the quantum dApp warning is cancelled', async () => {
+            mockConfirmQuantumDappUsage.mockResolvedValue('cancel')
+
+            const { result } = renderHook(() => useSigningActionButtons())
+            await act(async () => {
+                result.current.handleSignAndSend()
+            })
+
+            expect(mockFail).toHaveBeenCalledTimes(1)
+            expect(mockNext).not.toHaveBeenCalled()
+        })
+
+        it('proceeds to signing when the quantum dApp warning is confirmed', async () => {
+            mockConfirmQuantumDappUsage.mockResolvedValue('continue')
+
+            const { result } = renderHook(() => useSigningActionButtons())
+            await act(async () => {
+                result.current.handleSignAndSend()
+            })
+
+            expect(mockNext).toHaveBeenCalledTimes(1)
+        })
+
+        it('never consults the warning for a local sign request', async () => {
+            quantumRequest.sourceType = 'local'
+
+            const { result } = renderHook(() => useSigningActionButtons())
+            await act(async () => {
+                result.current.handleSignAndSend()
+            })
+
+            expect(mockConfirmQuantumDappUsage).not.toHaveBeenCalled()
+            expect(mockNext).toHaveBeenCalledTimes(1)
         })
     })
 })
