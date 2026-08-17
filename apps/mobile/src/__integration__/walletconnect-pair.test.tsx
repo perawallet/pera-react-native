@@ -501,6 +501,77 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
         SLOW_TEST_TIMEOUT_MS,
     )
 
+    it(
+        'Given a quantum account is selected, when the user taps Connect twice before the warning sheet settles, then only one warning sheet is requested',
+        async () => {
+            await useRemoteConfigStore.persist.rehydrate()
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride('enable_quantum_accounts', true)
+            useAccountsStore
+                .getState()
+                .setAccounts([SIGNING_ACCOUNT_A, QUANTUM_SIGNING_ACCOUNT])
+
+            render(
+                <>
+                    <WalletConnectProvider>
+                        <div data-testid='child' />
+                    </WalletConnectProvider>
+                    <BottomSheetManager />
+                </>,
+            )
+
+            await driveSessionRequest({
+                peerMeta: {
+                    name: 'Double-tap dApp',
+                    description: '',
+                    url: 'https://double-tap-dapp.example',
+                    icons: [],
+                },
+                permissions: ['algo_signTxn'],
+            })
+
+            const findButton = (label: string): Optional<HTMLButtonElement> =>
+                screen
+                    .getAllByRole('button')
+                    .find(b =>
+                        (b.textContent ?? '').includes(label),
+                    ) as Optional<HTMLButtonElement>
+            await waitFor(() => {
+                expect(findButton('common.connect.label')).toBeTruthy()
+            })
+
+            const matches = screen.getAllByText((_, node) =>
+                (node?.textContent ?? '').includes(
+                    QUANTUM_SIGNING_ACCOUNT.name as string,
+                ),
+            )
+            const leaf =
+                matches.find(el => el.children.length === 0) ?? matches[0]
+            fireEvent.click(leaf.closest('button') as HTMLButtonElement)
+            await waitFor(() => {
+                expect(findButton('common.connect.label')!.disabled).toBe(false)
+            })
+
+            fireEvent.click(findButton('common.connect.label')!)
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
+                ).toBeTruthy()
+            })
+
+            // The sheet's own request is still pending here, so this lands
+            // while `confirmQuantumDappUsage`'s await is genuinely
+            // unresolved — the latch, not timing, is what's under test.
+            fireEvent.click(findButton('common.connect.label')!)
+
+            expect(
+                screen.getAllByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
+            ).toHaveLength(1)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
     describe('Return to the dApp (PERA-4856)', () => {
         const approveViaUi = async (accountName: string) => {
             const findConnectButton = (): Optional<HTMLButtonElement> =>
