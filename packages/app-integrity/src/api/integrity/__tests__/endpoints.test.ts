@@ -13,8 +13,15 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 const queryClientMock = vi.fn()
+// Hoisted: unlike queryClientMock (referenced lazily inside the factory's
+// arrow function) this value is read while the hoisted factory runs.
+const idempotentPostRetryMock = vi.hoisted(() => ({
+    methods: ['post'],
+    shouldRetry: () => true,
+}))
 vi.mock('@perawallet/wallet-core-shared', () => ({
     queryClient: (...args: unknown[]) => queryClientMock(...args),
+    IDEMPOTENT_POST_RETRY: idempotentPostRetryMock,
 }))
 
 import {
@@ -41,6 +48,42 @@ describe('integrity endpoints', () => {
                 url: '/api/v3/public/integrity/challenge',
                 data: { device_id: 'd1', platform: 'ios' },
             }),
+        )
+    })
+
+    // The boot handshake has no caller-level retry, so a single transport blip
+    // would otherwise cost the whole session its attestation.
+    it.each([
+        [
+            'challenge',
+            () =>
+                requestChallenge({
+                    deviceInstallationId: 'd1',
+                    platform: 'ios',
+                    network: 'mainnet' as const,
+                }),
+            { data: { challenge: 'abc' } },
+        ],
+        [
+            'attest',
+            () =>
+                attestDevice({
+                    payload: {
+                        deviceInstallationId: 'd1',
+                        platform: 'android' as const,
+                        attestation: 'att',
+                    },
+                    network: 'mainnet' as const,
+                }),
+            { data: { integrity_token: 'jwt', expires_at: '2026-07-01' } },
+        ],
+    ])('opts the %s POST into retrying', async (_name, call, response) => {
+        queryClientMock.mockResolvedValue(response)
+
+        await call()
+
+        expect(queryClientMock).toHaveBeenCalledWith(
+            expect.objectContaining({ retry: idempotentPostRetryMock }),
         )
     })
 

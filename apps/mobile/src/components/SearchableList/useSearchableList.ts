@@ -168,6 +168,9 @@ export const useSearchableList = <T>({
     // Snap logic only kicks in once latched — while the header is still
     // expanded or partially expanded, the user scrolls freely.
     const isCollapsedRef = useRef(false)
+    // Last reported contentOffset.y. A ref, not state: it updates every scroll
+    // frame and only ever needs reading imperatively.
+    const scrollOffsetRef = useRef(0)
     // Mirrors `isSearching` for handleScroll's web-only unpin check below,
     // which needs the freshest value without retriggering the callback's
     // identity (handleScroll is passed straight through to the native scroll
@@ -240,7 +243,23 @@ export const useSearchableList = <T>({
             // Backstop: if a transient contentSize drop pushed scroll below
             // the pin offset while collapsed, snap back synchronously so the
             // user never sees the header peek.
-            if (isCollapsedRef.current && headerHeightRef.current > 0) {
+            //
+            // Gated on actually being above the pin. Content size changes for
+            // reasons that have nothing to do with a drop — a page appended, a
+            // refetch swapping the array, recycled cells re-measuring after a
+            // fast fling — and correcting unconditionally yanked a user reading
+            // half way down the list back to the header, since the pin offset is
+            // near the top of the content.
+            //
+            // If the platform clamps the offset before `onScroll` reports it,
+            // this reads stale and skips a correction it could have made. That
+            // direction is the safe one: a header that briefly peeks, rather
+            // than a list that jumps under the reader.
+            if (
+                isCollapsedRef.current &&
+                headerHeightRef.current > 0 &&
+                scrollOffsetRef.current < headerHeightRef.current
+            ) {
                 listRef.current?.scrollToOffset({
                     offset: headerHeightRef.current,
                     animated: false,
@@ -294,6 +313,10 @@ export const useSearchableList = <T>({
             onScroll?.(event)
             const headerH = headerHeightRef.current
             const offsetY = event.nativeEvent.contentOffset.y
+            // Latest known position, so handleContentSizeChange can tell a
+            // scroll that drifted above the pin from one that is simply far down
+            // the list.
+            scrollOffsetRef.current = offsetY
             if (headerH > 0 && offsetY >= headerH) {
                 isCollapsedRef.current = true
             }

@@ -17,6 +17,12 @@ type LogSeverity = 'debug' | 'info' | 'warn' | 'error' | 'critical'
 export type ErrorReportPayload = {
     severity: LogSeverity
     error: unknown
+    /**
+     * Names the logical error site when `error`'s own stack can't distinguish
+     * it — see the logger's `reportError`, which synthesizes an `Error` whose
+     * stack points at the logger rather than the caller.
+     */
+    groupingKey?: string
 }
 
 type CrashReportingAdapter = Partial<CrashReportingService> & {
@@ -31,14 +37,14 @@ const isReportableSeverity = (
 export const createCrashReportingErrorReporter = (
     crashReporting?: CrashReportingAdapter | null,
 ) => {
-    return ({ severity, error }: ErrorReportPayload) => {
+    return ({ severity, error, groupingKey }: ErrorReportPayload) => {
         if (!isReportableSeverity(severity)) {
             return
         }
 
         try {
             if (typeof crashReporting?.recordNonFatalError === 'function') {
-                crashReporting.recordNonFatalError(error)
+                crashReporting.recordNonFatalError(error, groupingKey)
 
                 return
             }

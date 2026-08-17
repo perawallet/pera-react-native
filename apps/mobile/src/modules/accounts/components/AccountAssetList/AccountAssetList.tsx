@@ -163,6 +163,7 @@ export const AccountAssetList = ({
     return (
         <PWView style={styles.container}>
             <SearchableList
+                pauseSyncOnInteraction
                 ref={listRef}
                 data={holdings}
                 renderItem={renderItem}

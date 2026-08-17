@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    queryClient,
+    IDEMPOTENT_POST_RETRY,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import {
     challengeResponseSchema,
     attestResponseSchema,
@@ -47,6 +51,11 @@ export const requestChallenge = async ({
         url: '/api/v3/public/integrity/challenge',
         data: { device_id: deviceInstallationId, platform },
         signal,
+        // The handshake fires once at boot and is not retried at the caller
+        // (see useAppIntegrityBootstrap's boot-once latch), so a single
+        // transport blip costs the session its attestation — and with it
+        // fee delegation. Minting a challenge has no side effect to repeat.
+        retry: IDEMPOTENT_POST_RETRY,
     })
     return challengeResponseSchema.parse(response.data).challenge
 }
@@ -82,6 +91,11 @@ export const attestDevice = async ({
         url: '/api/v3/public/integrity/attest',
         data,
         signal,
+        // Retried only when the attempt produced no response at all, so the
+        // backend either never saw it or its reply was lost. Re-attesting the
+        // same device re-issues a token, which is the outcome we want either
+        // way — the challenge is still the one this attestation was built for.
+        retry: IDEMPOTENT_POST_RETRY,
     })
     return transformAttestResponse(attestResponseSchema.parse(response.data))
 }

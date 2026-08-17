@@ -159,6 +159,7 @@ export const OnrampHistoryContent = ({
                 pushing the list down. */}
             <PWView style={styles.filterBar}>{renderFilters()}</PWView>
             <PWFlatList<RampHistoryItem>
+                pauseSyncOnInteraction
                 key={statusFilter ?? 'all'}
                 style={styles.list}
                 data={isError ? [] : items}

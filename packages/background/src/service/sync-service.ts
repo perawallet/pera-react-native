@@ -35,6 +35,7 @@ import {
 import {
     logger,
     calculateBackoff,
+    mapWithConcurrency,
     type Network,
     type Nullable,
     type Optional,
@@ -47,6 +48,35 @@ import type { SyncServiceDeps } from '../models'
 const POLL_INTERVAL = 3000
 const MAX_BACKOFF_INTERVAL = 30_000
 const BACKOFF_MULTIPLIER = 2
+
+/**
+ * Max concurrent per-account requests within one sync phase.
+ *
+ * Each phase issues one request per account, so an unbounded fan-out scales the
+ * burst with the size of the user's wallet and trips the backend's rate limiter
+ * on large ones. That is self-sustaining rather than self-correcting: a 429
+ * freezes the round checkpoint (see advanceLastRefreshedRound), so the next
+ * tick re-syncs the whole network and bursts again.
+ *
+ * Capping costs wall-clock on large wallets, which is the right trade — the
+ * tick is background work, and a slower complete pass beats a fast rejected
+ * one.
+ */
+const ACCOUNT_FETCH_CONCURRENCY = 6
+
+/** How often a paused tick re-checks. Only a counter read, so keep it snappy. */
+const PAUSE_RECHECK_MS = 400
+
+/**
+ * Hard ceiling on a pause, after which sync resumes regardless of whether the
+ * matching `resume()` ever arrived.
+ *
+ * The safety net for an unbalanced pause — a list unmounted mid-scroll, a
+ * gesture whose end event never fires. Without it, one dropped `resume()` stops
+ * background sync for the rest of the process. Expiry force-clears the count
+ * rather than decrementing it, so a leak cannot accumulate across pauses.
+ */
+const MAX_PAUSE_MS = 5000
 
 // Asset metadata has a long TTL and only new assets need fetching — and new
 // assets only appear when holdings change (handled immediately). This interval
@@ -86,6 +116,10 @@ export class SyncService {
     // could otherwise start a second syncAll while a long fresh-import sync is
     // still running — stacking concurrent work on the DB.
     private syncInProgress = false
+    // Ref-counted pause depth, and the ceiling timer that recovers from a
+    // pause whose resume() never arrived. See pause().
+    private pauseCount = 0
+    private pauseDeadlineTimer: Nullable<ReturnType<typeof setTimeout>> = null
     // Unsubscribe handle for the onlineManager connectivity subscription, set
     // while running so an offline→online transition can trigger an immediate
     // tick. Cleared on stop() so the subscription lifecycle tracks running.
@@ -138,6 +172,11 @@ export class SyncService {
         }
         this.invalidateTimers.forEach(t => clearTimeout(t))
         this.invalidateTimers.clear()
+        // A pause does not survive the service it was holding off. Leaving the
+        // count set would carry into the next start() and suppress its first
+        // ticks, with no caller left to resume.
+        this.clearPauseDeadline()
+        this.pauseCount = 0
     }
 
     /**
@@ -166,6 +205,59 @@ export class SyncService {
         return this.running
     }
 
+    isPaused(): boolean {
+        return this.pauseCount > 0
+    }
+
+    /**
+     * Asks the poll loop to hold off — for a caller that owns the JS thread for
+     * a while, chiefly a list being scrolled (see `pauseSyncOnInteraction` on
+     * PWFlatList). Cheap and safe to call whether or not sync is running.
+     *
+     * Ref-counted, because several such lists can be mounted at once (the
+     * account tabs all stay mounted) and a plain flag would let one caller's
+     * `resume()` cancel another's pause. Every `pause()` must be matched by a
+     * `resume()`; {@link MAX_PAUSE_MS} covers the case where one isn't.
+     */
+    pause(): void {
+        this.pauseCount++
+        this.armPauseDeadline()
+    }
+
+    /** Balances one `pause()`. Extra calls are ignored rather than going negative. */
+    resume(): void {
+        if (this.pauseCount === 0) return
+        this.pauseCount--
+        if (this.pauseCount === 0) {
+            this.clearPauseDeadline()
+        }
+    }
+
+    /**
+     * (Re-)arms from the most recent `pause()`, so the ceiling measures time
+     * since the last pause rather than the first — nested or overlapping pauses
+     * each get the full window instead of inheriting a spent one.
+     */
+    private armPauseDeadline(): void {
+        this.clearPauseDeadline()
+        this.pauseDeadlineTimer = setTimeout(() => {
+            this.pauseDeadlineTimer = null
+            // Force to zero, not a decrement: the point is to recover from a
+            // caller that never resumed, and decrementing would leave the leak
+            // in place.
+            const abandoned = this.pauseCount
+            this.pauseCount = 0
+            logger.debug('Sync pause expired without resume', { abandoned })
+        }, MAX_PAUSE_MS)
+    }
+
+    private clearPauseDeadline(): void {
+        if (this.pauseDeadlineTimer !== null) {
+            clearTimeout(this.pauseDeadlineTimer)
+            this.pauseDeadlineTimer = null
+        }
+    }
+
     private async tick(): Promise<void> {
         // A sync is already running (e.g. a long fresh-import sync that outlived
         // its tick, or an overlapping restart). Skip — the in-progress tick's
@@ -178,6 +270,20 @@ export class SyncService {
         // in start) triggers an immediate tick on reconnect (Part A / Part D).
         if (!onlineManager.isOnline()) {
             this.scheduleNextTick()
+            return
+        }
+
+        // Paused by a caller — see pause(). A tick persists to SQLite once per
+        // account per phase, and that work lands on the same JS thread a scroll
+        // is being rendered on; a hitch mid-gesture is far more noticeable than
+        // a list that is a moment staler.
+        //
+        // Rescheduled at the recheck interval rather than the poll interval, so
+        // sync resumes promptly on unpause, and without touching
+        // `currentInterval` — a pause is not a failure and must not feed the
+        // backoff.
+        if (this.isPaused()) {
+            this.scheduleNextTick(PAUSE_RECHECK_MS)
             return
         }
 
@@ -232,9 +338,13 @@ export class SyncService {
         }
     }
 
-    private scheduleNextTick(): void {
+    /** `delayMs` overrides the current interval without disturbing backoff. */
+    private scheduleNextTick(delayMs?: number): void {
         if (!this.running) return
-        this.timer = setTimeout(() => void this.tick(), this.currentInterval)
+        this.timer = setTimeout(
+            () => void this.tick(),
+            delayMs ?? this.currentInterval,
+        )
     }
 
     /**
@@ -393,9 +503,11 @@ export class SyncService {
         }
 
         for (const network of networks) {
-            // 1. Sync all accounts in parallel (each failure isolated)
-            const accountResults = await Promise.allSettled(
-                accounts.map(a => fetchAndPersistAccount(a.address, network)),
+            // 1. Sync all accounts, capped in flight (each failure isolated)
+            const accountResults = await mapWithConcurrency(
+                accounts,
+                ACCOUNT_FETCH_CONCURRENCY,
+                a => fetchAndPersistAccount(a.address, network),
             )
             recordOutcomes(accountResults)
             if (accountResults.some(r => r.status === 'rejected')) {
@@ -512,10 +624,10 @@ export class SyncService {
             }
 
             // 4. Sync recent transactions for each account
-            const txResults = await Promise.allSettled(
-                accounts.map(a =>
-                    fetchAndPersistTransactions(a.address, network),
-                ),
+            const txResults = await mapWithConcurrency(
+                accounts,
+                ACCOUNT_FETCH_CONCURRENCY,
+                a => fetchAndPersistTransactions(a.address, network),
             )
             recordOutcomes(txResults)
             this.logFailures(
@@ -611,11 +723,15 @@ export class SyncService {
     ): Promise<void> {
         if (addresses.length === 0) return
 
-        const accountResults = await Promise.allSettled(
-            addresses.map(a => fetchAndPersistAccount(a, network)),
+        const accountResults = await mapWithConcurrency(
+            addresses,
+            ACCOUNT_FETCH_CONCURRENCY,
+            a => fetchAndPersistAccount(a, network),
         )
-        const txResults = await Promise.allSettled(
-            addresses.map(a => fetchAndPersistTransactions(a, network)),
+        const txResults = await mapWithConcurrency(
+            addresses,
+            ACCOUNT_FETCH_CONCURRENCY,
+            a => fetchAndPersistTransactions(a, network),
         )
 
         this.logFailures(

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach, vi } from 'vitest'
 import { Platform } from 'react-native'
 import { act, renderHook } from '@test-utils/render'
 import { isSeparatorSuppressed, useSearchableList } from '../useSearchableList'
@@ -153,5 +153,117 @@ describe('useSearchableList web unpin-on-scroll (user-feedback #3)', () => {
 
         act(() => result.current.handleScrollBeginDrag())
         expect(result.current.showOverlay).toBe(false)
+    })
+})
+
+// Reported on the account overview asset list: scrolling well down, then any
+// content-size change (recycled cells re-measuring after a fling, a refetch
+// swapping the array) jumped the list back near the top. The pin correction in
+// handleContentSizeChange fired on every content-size change, and its target —
+// the header height — sits near the top of the content.
+describe('useSearchableList content-size pin correction', () => {
+    const HEADER_HEIGHT = 320
+
+    const setup = () => {
+        const scrollToOffset = vi.fn()
+        const forwardedRef = {
+            current: null,
+        } as React.ForwardedRef<PWFlatListRef>
+        const rendered = renderHook(() =>
+            useSearchableList({
+                forwardedRef,
+                data: [{ id: '1' }, { id: '2' }],
+                keyExtractor: item => item.id,
+                snapThreshold: 0.25,
+            }),
+        )
+        // The correction drives the hook's OWN list ref (the one the component
+        // attaches to FlashList), not the ref forwarded upward — asserting on
+        // the latter would make every one of these tests pass vacuously.
+        rendered.result.current.listRef.current = {
+            scrollToOffset,
+            scrollToIndex: vi.fn(),
+            scrollToEnd: vi.fn(),
+        }
+        return { ...rendered, scrollToOffset }
+    }
+
+    // Narrowed with Pick, like the describe block above: the full result type
+    // is generic in the item, so a `<{id: string}>` result is not assignable to
+    // the `<unknown>` that `ReturnType` resolves to. These members don't
+    // involve the item type.
+    const layoutHeader = (
+        result: {
+            current: Pick<
+                ReturnType<typeof useSearchableList>,
+                'handleHeaderLayout'
+            >
+        },
+        height: number,
+    ) =>
+        act(() =>
+            result.current.handleHeaderLayout({
+                nativeEvent: { layout: { height } },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any),
+        )
+
+    const scrollTo = (
+        result: {
+            current: Pick<ReturnType<typeof useSearchableList>, 'handleScroll'>
+        },
+        y: number,
+    ) =>
+        act(() =>
+            result.current.handleScroll({
+                nativeEvent: { contentOffset: { y } },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any),
+        )
+
+    beforeEach(() => {
+        Platform.OS = 'ios'
+    })
+
+    it('leaves a scroll position deep in the list alone when content size changes', () => {
+        const { result, scrollToOffset } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        // Past the header, so the pin is collapsed — the state the correction
+        // used to fire in unconditionally.
+        scrollTo(result, 5000)
+        scrollToOffset.mockClear()
+
+        act(() => result.current.handleContentSizeChange(0, 12_000))
+
+        expect(scrollToOffset).not.toHaveBeenCalled()
+    })
+
+    // The behaviour the correction exists for, still intact.
+    it('snaps back to the pin when the offset has drifted above it', () => {
+        const { result, scrollToOffset } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+
+        // Collapse first, then a transient drop leaves the offset above the pin.
+        scrollTo(result, 5000)
+        scrollTo(result, HEADER_HEIGHT - 40)
+        scrollToOffset.mockClear()
+
+        act(() => result.current.handleContentSizeChange(0, 900))
+
+        expect(scrollToOffset).toHaveBeenCalledWith({
+            offset: HEADER_HEIGHT,
+            animated: false,
+        })
+    })
+
+    it('does nothing while the header is still expanded', () => {
+        const { result, scrollToOffset } = setup()
+        layoutHeader(result, HEADER_HEIGHT)
+        scrollToOffset.mockClear()
+
+        act(() => result.current.handleContentSizeChange(0, 900))
+
+        expect(scrollToOffset).not.toHaveBeenCalled()
     })
 })

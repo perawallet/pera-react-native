@@ -23,6 +23,7 @@ import ky, {
 import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
 import {
     type RequestConfiguration,
+    type RequestRetryOverrides,
     type ResponseConfiguration,
 } from '../models/queries'
 import { type Network, Networks } from '../models/base-types'
@@ -139,6 +140,21 @@ const logError = ({ request, options, error }: BeforeErrorState): Error => {
         return error
     }
 
+    // Rate limiting is a throttling signal, not a defect: the sync service
+    // detects 429s and backs off (see hasRateLimitFailure), and deliberately
+    // omits them from its own failure logging. Reporting them at error level
+    // here undoes that — one rate-limited pass fans out into an error event per
+    // request, which is loud enough to bury the failures worth reading.
+    if (isHTTPError(error) && error.response?.status === 429) {
+        logger.warn('Request rate limited', {
+            url: request?.url,
+            status: 429,
+            durationMs,
+            retryAfter: error.response.headers.get('Retry-After') ?? undefined,
+        })
+        return error
+    }
+
     logger.error('Request error encountered', {
         message: error.message,
         name: error.name,
@@ -215,6 +231,9 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
                 headers: requestConfig.headers,
                 ...(requestConfig.timeout !== undefined
                     ? { timeout: requestConfig.timeout }
+                    : {}),
+                ...(requestConfig.retry !== undefined
+                    ? { retry: requestConfig.retry }
                     : {}),
             })
 
@@ -305,6 +324,31 @@ const peraRetryConfig = {
     statusCodes: [408, 413, 500, 502, 503, 504],
     afterStatusCodes: [413, 503],
     maxRetryAfter: 5000,
+}
+
+/**
+ * Per-request `retry` for a POST that is safe to repeat. Deep-merges into the
+ * client's config, so `statusCodes` and `maxRetryAfter` still apply.
+ *
+ * Both keys are load-bearing, and neither works alone:
+ *
+ * - `methods` — ky's default retry list is
+ *   `['get','put','head','delete','options','trace']`. POST is absent, so ky
+ *   rejects the retry on the method check before any error inspection.
+ * - `shouldRetry` — past the method check, ky's last-resort gate for a
+ *   non-HTTP, non-timeout failure is its own `isNetworkError`, which never
+ *   matches React Native's plain-`Error` network failures (see
+ *   {@link isNetworkTransportError}). Without this, a DNS/connect failure on a
+ *   POST falls through to "unknown error, don't retry" — the one case the
+ *   retry is for.
+ *
+ * Returns `undefined` for anything else so ky's `statusCodes` handling still
+ * decides 5xx and timeouts; `false` would suppress it.
+ */
+export const IDEMPOTENT_POST_RETRY: RequestRetryOverrides = {
+    methods: ['post'],
+    shouldRetry: ({ error }) =>
+        isNetworkTransportError(error) ? true : undefined,
 }
 
 const createPeraClient = (network: Network): KyInstance =>

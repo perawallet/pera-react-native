@@ -23,7 +23,8 @@ describe('createCrashReportingErrorReporter', () => {
 
         reporter({ severity: 'error', error })
 
-        expect(recordNonFatalError).toHaveBeenCalledWith(error)
+        // Second argument is the optional groupingKey, absent here.
+        expect(recordNonFatalError).toHaveBeenCalledWith(error, undefined)
     })
 
     test('reports when severity is critical', () => {
@@ -35,7 +36,26 @@ describe('createCrashReportingErrorReporter', () => {
 
         reporter({ severity: 'critical', error })
 
-        expect(recordNonFatalError).toHaveBeenCalledWith(error)
+        expect(recordNonFatalError).toHaveBeenCalledWith(error, undefined)
+    })
+
+    test('forwards groupingKey to the adapter', () => {
+        const recordNonFatalError = vi.fn()
+        const reporter = createCrashReportingErrorReporter({
+            recordNonFatalError,
+        })
+        const error = new Error('boom')
+
+        reporter({
+            severity: 'error',
+            error,
+            groupingKey: 'Request error encountered',
+        })
+
+        expect(recordNonFatalError).toHaveBeenCalledWith(
+            error,
+            'Request error encountered',
+        )
     })
 
     test('does not report when severity is non-error', () => {

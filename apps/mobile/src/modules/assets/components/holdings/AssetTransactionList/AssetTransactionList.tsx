@@ -77,6 +77,7 @@ export const AssetTransactionList = ({
     return (
         <>
             <PWFlatList
+                pauseSyncOnInteraction
                 data={rows}
                 renderItem={renderItem}
                 keyExtractor={getTransactionRowKey}
