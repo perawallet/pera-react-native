@@ -1792,7 +1792,7 @@
     "quantum": {
         "dapp_warning": {
             "title": "Compatibilité limitée avec les dApps",
-            "body": "Les comptes Quantum sont récents, donc certaines dApps n’ont pas encore été mises à jour pour les prendre en charge. Certaines transactions peuvent alors échouer ou entraîner des frais inhabituels. Si vous rencontrez un problème, contacter directement cette dApp et lui demander d’ajouter la prise en charge PQ peut accélérer les choses. Vous pouvez continuer si vous le souhaitez, ou passer à un compte non-Quantum pour une compatibilité complète en attendant.",
+            "body": "Les comptes Quantum sont récents, donc certaines dApps n’ont pas encore été mises à jour pour les prendre en charge. Certaines transactions peuvent alors échouer ou entraîner des frais inhabituels. Si vous rencontrez un problème, contacter directement cette dApp et lui demander d’ajouter la prise en charge PQ peut accélérer les choses. Vous pouvez continuer si vous le souhaitez, ou passer à un compte non-Quantum pour une compatibilité complète en attendant. <0>En savoir plus</0>",
             "confirm": "Continuer",
             "cancel": "Annuler"
         }
