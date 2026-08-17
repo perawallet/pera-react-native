@@ -73,6 +73,7 @@ export const ConnectionView = ({
     )
     const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([])
     const [isConnecting, setIsConnecting] = React.useState(false)
+    const isHandlingConnect = React.useRef(false)
 
     const handleCancel = () => {
         trackEvent(WalletConnectEvent.SessionRejected, {
@@ -122,7 +123,15 @@ export const ConnectionView = ({
         }
     }
 
-    const handleConnectPress = () => void handleConnect()
+    // The warning sheet awaits before isConnecting disables the button, so a
+    // second tap would request a second sheet and approve the session twice.
+    const handleConnectPress = () => {
+        if (isHandlingConnect.current) return
+        isHandlingConnect.current = true
+        void handleConnect().finally(() => {
+            isHandlingConnect.current = false
+        })
+    }
 
     const handleAccountPress = (account: WalletAccount) => {
         setSelectedAccounts(prev => {
