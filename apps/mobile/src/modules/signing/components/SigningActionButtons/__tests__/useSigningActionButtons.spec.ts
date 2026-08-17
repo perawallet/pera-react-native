@@ -237,7 +237,11 @@ describe('useSigningActionButtons', () => {
 
     it('does not trigger guard for close warnings only', () => {
         setupPipeline([
-            { type: 'close', senderAddress: 'addr1', targetAddress: 'addr2' },
+            {
+                type: 'close-account',
+                senderAddress: 'addr1',
+                targetAddress: 'addr2',
+            },
         ])
 
         const { result } = renderHook(() => useSigningActionButtons())

@@ -26,11 +26,9 @@ import {
 // emitted by the aggregator used here, so it's excluded from this view's type.
 type AddressWarning = Extract<TransactionWarning, { senderAddress: string }>
 
-type WarningsByType = {
-    close: AddressWarning[]
-    rekey: AddressWarning[]
-    'asset-freeze': AddressWarning[]
-}
+export type AddressWarningType = AddressWarning['type']
+
+type WarningsByType = Record<AddressWarningType, AddressWarning[]>
 
 type UseTransactionWarningsResult = {
     warningCount: number
@@ -68,7 +66,12 @@ export const useTransactionWarnings = (
             (w): w is AddressWarning => w.type !== 'high-fee',
         )
         return {
-            close: addressWarnings.filter(w => w.type === 'close'),
+            'close-account': addressWarnings.filter(
+                w => w.type === 'close-account',
+            ),
+            'close-asset': addressWarnings.filter(
+                w => w.type === 'close-asset',
+            ),
             rekey: addressWarnings.filter(w => w.type === 'rekey'),
             'asset-freeze': addressWarnings.filter(
                 w => w.type === 'asset-freeze',

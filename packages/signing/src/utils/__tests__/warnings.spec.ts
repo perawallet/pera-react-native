@@ -60,7 +60,7 @@ describe('aggregateTransactionWarnings', () => {
         ).toEqual([])
     })
 
-    test('detects close-to warning from payment transaction', () => {
+    test('detects close-account warning from payment transaction', () => {
         const txs = [
             makeTx({
                 paymentTransaction: {
@@ -76,14 +76,14 @@ describe('aggregateTransactionWarnings', () => {
         )
         expect(warnings).toEqual([
             {
-                type: 'close',
+                type: 'close-account',
                 senderAddress: 'ADDR1',
                 targetAddress: 'CLOSE_ADDR',
             },
         ])
     })
 
-    test('detects close-to warning from asset transfer transaction', () => {
+    test('detects close-asset warning from asset transfer transaction', () => {
         const txs = [
             makeTx({
                 assetTransferTransaction: {
@@ -99,10 +99,37 @@ describe('aggregateTransactionWarnings', () => {
         )
         expect(warnings).toEqual([
             {
-                type: 'close',
+                type: 'close-asset',
                 senderAddress: 'ADDR1',
                 targetAddress: 'ASSET_CLOSE_ADDR',
             },
+        ])
+    })
+
+    // PERA-4902: the two close kinds are separate types so the review sheet can
+    // describe them differently — an asset opt-out must not read as "this closes
+    // your account". `distinctWarnings` dedupes by type, so collapsing them
+    // would also hide one of the two in a group that does both.
+    test('keeps account close and asset opt-out as distinct warnings in one group', () => {
+        const txs = [
+            makeTx({
+                paymentTransaction: { closeRemainderTo: 'CLOSE_ADDR' } as any,
+            }),
+            makeTx({
+                assetTransferTransaction: {
+                    closeTo: 'ASSET_CLOSE_ADDR',
+                } as any,
+            }),
+        ]
+
+        const warnings = aggregateTransactionWarnings(
+            txs,
+            userAccountAddresses,
+            signableAddresses,
+        )
+        expect(warnings.map(w => w.type)).toEqual([
+            'close-account',
+            'close-asset',
         ])
     })
 
@@ -191,7 +218,7 @@ describe('aggregateTransactionWarnings', () => {
         )
         expect(warnings).toEqual([
             {
-                type: 'close',
+                type: 'close-account',
                 senderAddress: 'WATCH_ADDR',
                 targetAddress: 'CLOSE_ADDR',
             },
@@ -237,11 +264,11 @@ describe('aggregateTransactionWarnings', () => {
             signableAddresses,
         )
         expect(warnings).toHaveLength(2)
-        expect(warnings[0].type).toBe('close')
+        expect(warnings[0].type).toBe('close-account')
         expect(warnings[1].type).toBe('rekey')
     })
 
-    test('detects both close and rekey on same transaction', () => {
+    test('detects both close-account and rekey on same transaction', () => {
         const txs = [
             makeTx({
                 paymentTransaction: {
@@ -259,7 +286,7 @@ describe('aggregateTransactionWarnings', () => {
             signableAddresses,
         )
         expect(warnings).toHaveLength(2)
-        expect(warnings[0].type).toBe('close')
+        expect(warnings[0].type).toBe('close-account')
         expect(warnings[1].type).toBe('rekey')
     })
 
@@ -347,7 +374,7 @@ describe('aggregateTransactionWarnings', () => {
             ])
         })
 
-        test('flags a close when the authorizer is owned even though the sender is not in the wallet', () => {
+        test('flags a close-account when the authorizer is owned even though the sender is not in the wallet', () => {
             const txs = [
                 makeTx({
                     sender: 'FOREIGN_E',
@@ -366,7 +393,7 @@ describe('aggregateTransactionWarnings', () => {
 
             expect(warnings).toEqual([
                 {
-                    type: 'close',
+                    type: 'close-account',
                     senderAddress: 'FOREIGN_E',
                     targetAddress: 'ATTACKER',
                 },
