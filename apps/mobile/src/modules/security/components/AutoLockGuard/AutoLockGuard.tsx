@@ -44,6 +44,13 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     return (
         <>
             <PWView
+                // Both props toggled below (opacity, pointerEvents) are in
+                // Fabric's formsStackingContext set, so without this the guard
+                // flip flattens/unflattens this node — Fabric creates the view
+                // and reparents the whole app subtree mid-commit. Colliding with
+                // the migration splash → home swap, that drops an insert and
+                // crashes with `addViewAt ... index=3 count=2`.
+                collapsable={false}
                 style={[
                     styles.childrenContainer,
                     isGuardActive && styles.childrenHidden,
