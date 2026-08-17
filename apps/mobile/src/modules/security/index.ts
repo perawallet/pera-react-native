@@ -24,4 +24,7 @@ export {
     useRequirePinVerification,
     type UseRequirePinVerificationResult,
 } from './hooks/useRequirePinVerification'
-export { useIsLockOverlayVisible } from './components/AutoLockGuard/lockOverlayContext'
+// Re-exported rather than re-homed: AutoLockGuard publishes it, so this stays
+// the natural place to ask. The file itself lives under @hooks so
+// @components/core can read it without pulling this module's persisted stores.
+export { useIsLockOverlayVisible } from '@hooks/useIsLockOverlayVisible'

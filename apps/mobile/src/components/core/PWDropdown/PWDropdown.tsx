@@ -14,9 +14,10 @@ import { type IconName, PWIcon } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { PWView } from '@components/core/PWView'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Modal, Pressable, View, useWindowDimensions } from 'react-native'
 import { useTheme } from '@rneui/themed'
+import { useIsLockOverlayVisible } from '@hooks/useIsLockOverlayVisible'
 import { DROPDOWN_MIN_WIDTH, useStyles } from './styles'
 
 export type PWDropdownItem = {
@@ -48,6 +49,17 @@ export const PWDropdown = ({
         right?: number
     }>({ top: 0 })
     const triggerContainerRef = useRef<View>(null)
+    const isLockOverlayVisible = useIsLockOverlayVisible()
+
+    // A native Modal is its own OS window, so it keeps painting above the lock
+    // screen: AutoLockGuard only hides its children with `display: none`, which
+    // never reaches here. Drop the menu rather than restoring it after the PIN —
+    // `position` was measured before the app went away and can be stale.
+    useEffect(() => {
+        if (isLockOverlayVisible) {
+            setVisible(false)
+        }
+    }, [isLockOverlayVisible])
 
     const handleOpen = () => {
         const view = triggerContainerRef.current
@@ -106,7 +118,10 @@ export const PWDropdown = ({
 
             <Modal
                 transparent
-                visible={visible}
+                // Not just the effect above: `measure` resolves a frame after
+                // the tap, so a guard that goes up in between would land a
+                // `setVisible(true)` the effect has already run past.
+                visible={visible && !isLockOverlayVisible}
                 onRequestClose={handleClose}
                 animationType='fade'
             >

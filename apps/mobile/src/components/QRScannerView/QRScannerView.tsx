@@ -17,6 +17,7 @@ import { useTheme } from '@rneui/themed'
 import { Suspense, createRef, lazy, useCallback, useState } from 'react'
 import { type NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsLockOverlayVisible } from '@hooks/useIsLockOverlayVisible'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton, PWText, PWTouchableIcon, PWView } from '@components/core'
@@ -103,6 +104,15 @@ export const QRScannerView = (props: QRScannerViewProps) => {
     const { t } = useLanguage()
     const { theme } = useTheme()
 
+    // Suspended, not closed, while the lock screen is up. This Modal is its own
+    // OS window, so AutoLockGuard's `display: none` on its children never
+    // reaches it and the live camera would sit on top of the PIN entry. Calling
+    // `onClose` instead would be worse: it belongs to the parent screens and
+    // several of them navigate, which must not happen under a locked app.
+    // Leaving `props.isVisible` untouched brings the scanner back after the PIN.
+    const isLockOverlayVisible = useIsLockOverlayVisible()
+    const isScannerVisible = props.isVisible && !isLockOverlayVisible
+
     const [QRCameraScanner, setQRCameraScanner] = useState(() =>
         createQRCameraScanner(),
     )
@@ -122,7 +132,9 @@ export const QRScannerView = (props: QRScannerViewProps) => {
         onBarcodeScanned,
         onError,
     } = useQRScannerView({
-        isVisible: props.isVisible,
+        // Gated, not raw: this also disarms scanning and holds back the camera
+        // permission request, which would otherwise prompt over the lock screen.
+        isVisible: isScannerVisible,
         onSuccess: props.onSuccess,
         onClose: props.onClose,
         skipDeepLinkHandler: props.skipDeepLinkHandler,
@@ -131,10 +143,10 @@ export const QRScannerView = (props: QRScannerViewProps) => {
     return (
         <Modal
             style={styles.container}
-            visible={props.isVisible}
+            visible={isScannerVisible}
             animationType={props.animationType}
         >
-            {props.isVisible ? (
+            {isScannerVisible ? (
                 // No ContainerComponent override: the notifier's default is
                 // RN's built-in SafeAreaView (inset-aware on iOS, inert on
                 // Android). Passing safe-area-context's SafeAreaView here

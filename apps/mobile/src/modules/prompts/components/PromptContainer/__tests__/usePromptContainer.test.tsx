@@ -37,10 +37,9 @@ const { mockIsLockOverlayVisible } = vi.hoisted(() => ({
     mockIsLockOverlayVisible: vi.fn(() => false),
 }))
 
-vi.mock(
-    '@modules/security/components/AutoLockGuard/lockOverlayContext',
-    () => ({ useIsLockOverlayVisible: () => mockIsLockOverlayVisible() }),
-)
+vi.mock('@hooks/useIsLockOverlayVisible', () => ({
+    useIsLockOverlayVisible: () => mockIsLockOverlayVisible(),
+}))
 
 vi.mock('../PinSecurityPrompt/PinSecurityPrompt', () => ({
     PinSecurityPrompt: () => null,
