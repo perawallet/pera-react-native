@@ -64,11 +64,17 @@ const getNativeBluetoothModule = (): NativePeraBluetooth | null =>
 let bluetoothStateListeners: Nullable<Set<BluetoothStateListener>> = null
 let latestBluetoothState: HardwareWalletAdapterState = 'unknown'
 
-const ensureBluetoothObserver = (): Set<BluetoothStateListener> => {
+const ensureBluetoothObserver = (): Nullable<Set<BluetoothStateListener>> => {
     if (bluetoothStateListeners) return bluetoothStateListeners
 
     const listeners = new Set<BluetoothStateListener>()
     bluetoothStateListeners = listeners
+
+    // Absent in a build where the BLE module isn't linked. Returning null (with
+    // the set still memoized, so this is a one-time check) keeps the provider
+    // constructible and leaves callers on `unknown` — the pre-`observeState`
+    // behavior — rather than failing every Ledger operation.
+    if (typeof TransportBLE.observeState !== 'function') return null
 
     TransportBLE.observeState({
         next: ({ type }: { type: string; available: boolean }) => {
@@ -80,6 +86,44 @@ const ensureBluetoothObserver = (): Set<BluetoothStateListener> => {
     })
 
     return listeners
+}
+
+/**
+ * How long `connect` waits for the adapter's first state emission when it has
+ * none yet. `observeState` answers in a few ms once the native manager is up;
+ * this only bounds the pathological case so a cold-start sign can't stall.
+ */
+const BLUETOOTH_STATE_SETTLE_MS = 1000
+
+/**
+ * Resolves a definitive adapter state, subscribing if nothing has yet.
+ *
+ * Without this, a sign attempt in a process that never opened the pairing
+ * screen (the common case — the only `observeBluetoothState` subscriber is that
+ * screen) sees `unknown` and skips the Bluetooth-off check entirely, so a
+ * disabled radio surfaced as a generic connection failure instead of "turn
+ * Bluetooth on". Resolves `unknown` on timeout, which callers treat as "proceed
+ * and let `open` fail" — the previous behavior, now only after we've waited.
+ */
+const resolveBluetoothState = async (): Promise<HardwareWalletAdapterState> => {
+    if (latestBluetoothState !== 'unknown') return latestBluetoothState
+
+    const listeners = ensureBluetoothObserver()
+    if (!listeners) return latestBluetoothState
+
+    return new Promise<HardwareWalletAdapterState>(resolve => {
+        const settle = (state: HardwareWalletAdapterState) => {
+            if (state === 'unknown') return
+            clearTimeout(timer)
+            listeners.delete(settle)
+            resolve(state)
+        }
+        const timer = setTimeout(() => {
+            listeners.delete(settle)
+            resolve(latestBluetoothState)
+        }, BLUETOOTH_STATE_SETTLE_MS)
+        listeners.add(settle)
+    })
 }
 
 /**
@@ -120,6 +164,10 @@ export class RNLedgerService implements HardwareWalletService {
 
     createTransportProvider(): LedgerTransportProvider {
         const { manufacturer } = this
+        // Deliberately NOT starting the observer here: this runs at app start,
+        // and creating the BLE manager that early asks iOS for Bluetooth
+        // permission before the user has gone anywhere near Ledger. `connect`
+        // subscribes on demand instead (see `resolveBluetoothState`).
         return {
             manufacturer,
             transportType: 'ble' as const,
@@ -171,11 +219,10 @@ export class RNLedgerService implements HardwareWalletService {
                 // native module is linked and resolves true regardless of radio
                 // state, so it can't detect a disabled radio.
                 //
-                // Blocks only on a definitive `poweredOff`. `unknown` (no
-                // observer yet, e.g. cold-start signing) falls through to
-                // `open`, whose failure classifies as a generic connection
-                // error — the ble-plx 102 mapping only covers the scan path.
-                if (latestBluetoothState === 'poweredOff') {
+                // Blocks only on a definitive `poweredOff`. A state we still
+                // don't know after `resolveBluetoothState` has waited falls
+                // through to `open`, whose failure classifies on its own.
+                if ((await resolveBluetoothState()) === 'poweredOff') {
                     throw new LedgerBluetoothDisabledError()
                 }
 
@@ -227,6 +274,7 @@ export class RNLedgerService implements HardwareWalletService {
                 // Emit the latest known state synchronously so the subscriber
                 // doesn't have to wait for the next change to render.
                 onChange(latestBluetoothState)
+                if (!listeners) return () => {}
                 listeners.add(onChange)
                 return () => {
                     listeners.delete(onChange)

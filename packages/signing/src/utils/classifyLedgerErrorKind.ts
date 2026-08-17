@@ -16,7 +16,9 @@ import {
     LedgerAppOutdatedError,
     LedgerBluetoothDisabledError,
     LedgerConnectionError,
+    LedgerDeviceBusyError,
     LedgerDeviceLockedError,
+    LedgerDeviceNotFoundError,
     LedgerDisconnectedError,
     LedgerLocationServicesDisabledError,
     LedgerNetworkError,
@@ -58,6 +60,8 @@ const LEDGER_ERROR_CLASSES = [
     LedgerDisconnectedError,
     LedgerTimeoutError,
     LedgerDeviceLockedError,
+    LedgerDeviceNotFoundError,
+    LedgerDeviceBusyError,
     LedgerUsbNoDeviceError,
     LedgerUsbMultipleDevicesError,
     LedgerNoAccountsFoundError,
@@ -108,6 +112,8 @@ export const classifyLedgerErrorKind = (
     if (error instanceof LedgerDisconnectedError) return 'connection_lost'
     if (error instanceof LedgerTimeoutError) return 'timeout'
     if (error instanceof LedgerDeviceLockedError) return 'device_locked'
+    if (error instanceof LedgerDeviceNotFoundError) return 'device_not_found'
+    if (error instanceof LedgerDeviceBusyError) return 'device_busy'
     if (error instanceof LedgerUsbNoDeviceError) return 'usb_no_device'
     if (error instanceof LedgerUsbMultipleDevicesError)
         return 'usb_multiple_devices'

@@ -55,9 +55,11 @@ import type {
 } from '@perawallet/wallet-core-hardware-wallet'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import {
-    LedgerConnectionError,
     LedgerAddressMismatchError,
     LedgerAppOutdatedError,
+    LedgerDeviceNotFoundError,
+    LedgerDisconnectedError,
+    LedgerTimeoutError,
     LEDGER_CONNECTION_TIMEOUT_MS,
     LEDGER_CONFIRMATION_TIMEOUT_MS,
 } from '@perawallet/wallet-core-ledger'
@@ -634,7 +636,11 @@ describe('createHardwareStrategy', () => {
 
                 const signPromise = strategy.sign(group, makeLedgerAccount())
                 vi.advanceTimersByTime(LEDGER_CONNECTION_TIMEOUT_MS + 100)
-                await expect(signPromise).rejects.toThrow(LedgerConnectionError)
+                // A connect that never answers means the device is off or out
+                // of range, not that the connection is generically broken.
+                await expect(signPromise).rejects.toThrow(
+                    LedgerDeviceNotFoundError,
+                )
 
                 resolveConnect?.(lateTransport)
                 // Allow the late .then() to flush.
@@ -647,7 +653,7 @@ describe('createHardwareStrategy', () => {
             }
         })
 
-        it('rejects with LedgerConnectionError when getAddress hangs past the timeout', async () => {
+        it('rejects with LedgerTimeoutError when getAddress hangs past the timeout', async () => {
             const transport: HardwareWalletTransport = {
                 getAddress: vi
                     .fn()
@@ -665,11 +671,11 @@ describe('createHardwareStrategy', () => {
 
             await expect(
                 strategy.sign(group, makeLedgerAccount()),
-            ).rejects.toThrow(LedgerConnectionError)
+            ).rejects.toThrow(LedgerTimeoutError)
             expect(transport.disconnect).toHaveBeenCalled()
         })
 
-        it('rejects with LedgerConnectionError when signTransaction hangs past the confirmation timeout', async () => {
+        it('rejects with LedgerTimeoutError when signTransaction hangs past the confirmation timeout', async () => {
             const transport: HardwareWalletTransport = {
                 ...makeMockTransport(),
                 signTransaction: vi
@@ -686,8 +692,60 @@ describe('createHardwareStrategy', () => {
 
             await expect(
                 strategy.sign(group, makeLedgerAccount()),
-            ).rejects.toThrow(LedgerConnectionError)
+            ).rejects.toThrow(LedgerTimeoutError)
             expect(transport.disconnect).toHaveBeenCalled()
+        })
+
+        it('fails as connection_lost the moment the link drops, without waiting out the confirmation ceiling', async () => {
+            // The pending signTransaction promise never settles, mirroring a
+            // real dropped BLE link: only the disconnect event tells us.
+            let notifyDisconnect: Optional<() => void>
+            const transport: HardwareWalletTransport = {
+                ...makeMockTransport(),
+                signTransaction: vi
+                    .fn()
+                    .mockImplementation(() => new Promise(() => {})),
+                onDisconnect: (listener: () => void) => {
+                    notifyDisconnect = listener
+                    return () => {
+                        notifyDisconnect = undefined
+                    }
+                },
+            }
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: makeRegistry(
+                    makeMockProvider(transport),
+                ),
+                encodeTransaction,
+            })
+            const group = makeGroup([mockTransaction()], [0])
+
+            const signPromise = strategy.sign(group, makeLedgerAccount())
+            await vi.waitFor(() => expect(notifyDisconnect).toBeDefined())
+            notifyDisconnect?.()
+
+            await expect(signPromise).rejects.toThrow(LedgerDisconnectedError)
+        })
+
+        it('does not subscribe to disconnects on a transport that cannot report them', async () => {
+            // Transports without the event keep their timeout-only behavior
+            // rather than silently never failing.
+            const transport = makeMockTransport()
+            expect(transport.onDisconnect).toBeUndefined()
+
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: makeRegistry(
+                    makeMockProvider(transport),
+                ),
+                encodeTransaction,
+            })
+
+            await expect(
+                strategy.sign(
+                    makeGroup([mockTransaction()], [0]),
+                    makeLedgerAccount(),
+                ),
+            ).resolves.toBeDefined()
         })
 
         it('passes the classified error (not the raw error) to onError', async () => {

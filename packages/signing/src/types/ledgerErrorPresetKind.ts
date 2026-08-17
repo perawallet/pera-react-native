@@ -33,6 +33,8 @@ export type LedgerErrorPresetKind =
     | 'unsupported_device'
     | 'app_outdated'
     | 'device_locked'
+    | 'device_not_found'
+    | 'device_busy'
     | 'usb_no_device'
     | 'usb_multiple_devices'
     | 'no_accounts_found'
@@ -41,16 +43,14 @@ export type LedgerErrorPresetKind =
     | 'interrupted'
 
 /**
- * Subset of error kinds where the user-facing remediation lives in the
- * troubleshooting bottom sheet rather than the inline error UI. Consumed
- * by both the actor lifecycle (via `isBleClassErrorKind`) and the UI
- * presets (which alias this set as `TROUBLESHOOTABLE_KINDS`), so the two
- * cannot drift.
+ * Connection-class failures, where the troubleshooting checklist (device on,
+ * unlocked, nearby, Algorand app open, re-pair) is a useful supplement to the
+ * error's own copy. The UI presets alias this set as `TROUBLESHOOTABLE_KINDS`
+ * and render a link to the troubleshooting sheet for these kinds only.
  *
- * For these kinds we leave the hardware-signing store in `error` state on
- * a terminal failure so the troubleshooting sheet stays open until the
- * user closes it. Other failure kinds reset the store synchronously to
- * free up the next signing request.
+ * Kinds whose remediation is a single specific action (`user_rejected`,
+ * `device_busy`, `address_mismatch`) stay out: a generic checklist would
+ * dilute copy that already says exactly what to do.
  */
 export const BLE_CLASS_ERROR_KINDS: ReadonlySet<LedgerErrorPresetKind> =
     new Set([
@@ -59,6 +59,7 @@ export const BLE_CLASS_ERROR_KINDS: ReadonlySet<LedgerErrorPresetKind> =
         'scan_timeout',
         'connection_failed',
         'connection_lost',
+        'device_not_found',
     ])
 
 export const isBleClassErrorKind = (

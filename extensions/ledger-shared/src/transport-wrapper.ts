@@ -27,6 +27,14 @@ import { classifyLedgerError, LedgerSigningError } from './errors'
  */
 export type LedgerAppTransport = {
     close: () => Promise<void>
+    /**
+     * `@ledgerhq/hw-transport`'s emitter. Optional because a transport may not
+     * emit anything (the web ones, and test doubles) — the wrapper then omits
+     * `onDisconnect` entirely so callers can tell detection is unavailable
+     * rather than silently subscribing to a listener that never fires.
+     */
+    on?: (event: 'disconnect', listener: () => void) => void
+    off?: (event: 'disconnect', listener: () => void) => void
 }
 
 /**
@@ -119,6 +127,15 @@ export const createLedgerTransportWrapper = (
             throw classifyLedgerError(error)
         }
     },
+
+    ...(transport.on
+        ? {
+              onDisconnect: (listener: () => void) => {
+                  transport.on?.('disconnect', listener)
+                  return () => transport.off?.('disconnect', listener)
+              },
+          }
+        : {}),
 
     async disconnect() {
         await transport.close()

@@ -52,7 +52,9 @@ import {
 } from '../errors'
 import {
     LedgerAppOutdatedError,
-    LedgerConnectionError,
+    LedgerDeviceNotFoundError,
+    LedgerDisconnectedError,
+    LedgerTimeoutError,
     LedgerAddressMismatchError,
     LEDGER_CONNECTION_TIMEOUT_MS,
     LEDGER_CONFIRMATION_TIMEOUT_MS,
@@ -62,11 +64,59 @@ import {
 import { validateArc60AuthRequest } from '../../utils/arc60'
 import { isLedgerError } from '../../utils/classifyLedgerErrorKind'
 
-/** So Ledger timeouts reject typed rather than as a generic `Error`. */
+/**
+ * So Ledger timeouts reject typed rather than as a generic `Error`, matching
+ * the discovery path's `ledgerTimeoutReason`. `operation` is a developer-facing
+ * label for logs; user copy comes from the classified kind.
+ */
 const ledgerTimeoutReason =
     (operation: string) =>
     (_op: string, ms: number): Error =>
-        new LedgerConnectionError(`${operation} timed out after ${ms}ms`)
+        new LedgerTimeoutError(`${operation} (${ms}ms ceiling)`)
+
+/**
+ * A connect that never completes means nothing answered at that device id, so
+ * it reports as "not found" rather than a timeout: the device being off or out
+ * of range is overwhelmingly the cause, and "power it on and come closer" is
+ * the actionable message. A genuine timeout mid-session (address verify, sign)
+ * still uses `ledgerTimeoutReason` above.
+ */
+const connectTimeoutReason =
+    (operation: string) =>
+    (_op: string, ms: number): Error =>
+        new LedgerDeviceNotFoundError(
+            new Error(`${operation} (${ms}ms ceiling)`),
+        )
+
+/**
+ * Fails a pending confirmation as soon as the link drops instead of waiting out
+ * the 5-minute ceiling: the BLE transport emits `disconnect` immediately, while
+ * the in-flight APDU promise simply never settles.
+ *
+ * `race` is a pass-through when the transport has no disconnect event, so
+ * transports without one keep their previous timeout-only behavior.
+ */
+const createDisconnectGuard = (transport: HardwareWalletTransport) => {
+    let rejectOnDisconnect: Optional<(error: Error) => void>
+    const disconnected = new Promise<never>((_, reject) => {
+        rejectOnDisconnect = reject
+    })
+    // Nothing is racing this promise between transactions in a group, and an
+    // unobserved rejection there would surface as an unhandled rejection.
+    disconnected.catch(() => undefined)
+
+    const unsubscribe = transport.onDisconnect?.(() => {
+        rejectOnDisconnect?.(new LedgerDisconnectedError())
+    })
+
+    return {
+        race: <T>(promise: Promise<T>): Promise<T> =>
+            unsubscribe ? Promise.race([promise, disconnected]) : promise,
+        dispose: () => unsubscribe?.(),
+    }
+}
+
+type DisconnectGuard = ReturnType<typeof createDisconnectGuard>
 
 /**
  * Function to encode a transaction to raw bytes for the Ledger to sign.
@@ -140,7 +190,7 @@ const connectAndVerify = async (
             connectPromise,
             LEDGER_CONNECTION_TIMEOUT_MS,
             'Connect to Ledger',
-            ledgerTimeoutReason('Connect to Ledger'),
+            connectTimeoutReason('Connect to Ledger'),
         )
     } catch (error) {
         connectPromise
@@ -185,6 +235,7 @@ const signTransactions = async (
     data: TransactionSignableData,
     hwAccount: HardwareWalletAccount,
     encodeTransaction: EncodeTransactionFunction,
+    guard: DisconnectGuard,
     callbacks?: SigningCallbacks,
 ): Promise<PeraSignedTransaction[]> => {
     const { transactions, indicesToSign } = data
@@ -221,7 +272,7 @@ const signTransactions = async (
         // exists so a dropped BLE link mid-confirmation doesn't hang the
         // promise forever, not to bound the user's reading time.
         const signature = await withTimeout(
-            transport.signTransaction(accountIndex, txnBytes),
+            guard.race(transport.signTransaction(accountIndex, txnBytes)),
             LEDGER_CONFIRMATION_TIMEOUT_MS,
             'Sign Ledger transaction',
             ledgerTimeoutReason('Sign Ledger transaction'),
@@ -295,6 +346,7 @@ const signTransactionsOnHardwareWallet = async (
 
     const { deviceId, accountIndex } = hwAccount.hardwareDetails
     let transport: Optional<HardwareWalletTransport>
+    let guard: Optional<DisconnectGuard>
     const signal = callbacks?.signal
     // Disconnecting settles the in-flight APDU exchange (the BLE library
     // races it against disconnect), which dismisses the on-device prompt and
@@ -316,11 +368,13 @@ const signTransactionsOnHardwareWallet = async (
         )
         throwIfAborted(signal)
 
+        guard = createDisconnectGuard(transport)
         return await signTransactions(
             transport,
             { type: 'transactions', transactions, indicesToSign },
             hwAccount,
             encodeTransaction,
+            guard,
             callbacks,
         )
     } catch (error) {
@@ -329,6 +383,9 @@ const signTransactionsOnHardwareWallet = async (
         throw classified
     } finally {
         signal?.removeEventListener('abort', abortDisconnect)
+        // Before `disconnect()`, so our own teardown doesn't fire the
+        // listener and mask the real outcome with a disconnect error.
+        guard?.dispose()
         try {
             await transport?.disconnect()
         } catch {
@@ -356,6 +413,7 @@ const signArc60OnHardwareWallet = async (
 
     const { deviceId, accountIndex } = hwAccount.hardwareDetails
     let transport: Optional<HardwareWalletTransport>
+    let guard: Optional<DisconnectGuard>
     const signal = callbacks?.signal
     // Same abort → disconnect wiring as the transaction path: settle the
     // in-flight exchange so the device prompt is dismissed and the cached
@@ -375,6 +433,8 @@ const signArc60OnHardwareWallet = async (
             callbacks,
         )
         throwIfAborted(signal)
+
+        guard = createDisconnectGuard(transport)
 
         // Early version gate — the device-side error is the fallback.
         const version = await withTimeout(
@@ -396,17 +456,19 @@ const signArc60OnHardwareWallet = async (
         callbacks?.onProgress?.(1, 1)
 
         const signature = await withTimeout(
-            transport.signData({
-                accountIndex,
-                data: stdSigData.data,
-                signerPublicKey: Address.fromString(hwAccount.address)
-                    .publicKey,
-                domain: stdSigData.domain,
-                authenticatorData: stdSigData.authenticatorData,
-                requestId: stdSigData.requestId,
-                scope: metadata.scope,
-                encoding: metadata.encoding,
-            }),
+            guard.race(
+                transport.signData({
+                    accountIndex,
+                    data: stdSigData.data,
+                    signerPublicKey: Address.fromString(hwAccount.address)
+                        .publicKey,
+                    domain: stdSigData.domain,
+                    authenticatorData: stdSigData.authenticatorData,
+                    requestId: stdSigData.requestId,
+                    scope: metadata.scope,
+                    encoding: metadata.encoding,
+                }),
+            ),
             LEDGER_CONFIRMATION_TIMEOUT_MS,
             'Sign Ledger data',
             ledgerTimeoutReason('Sign Ledger data'),
@@ -420,6 +482,7 @@ const signArc60OnHardwareWallet = async (
         throw classified
     } finally {
         signal?.removeEventListener('abort', abortDisconnect)
+        guard?.dispose()
         try {
             await transport?.disconnect()
         } catch {

@@ -67,6 +67,13 @@ export const LEDGER_STATUS_CODES = {
     USER_REJECTED_LEGACY: StatusCodes.CONDITIONS_OF_USE_NOT_SATISFIED,
     APP_NOT_OPEN: StatusCodes.CLA_NOT_SUPPORTED,
     LOCKED_DEVICE: StatusCodes.LOCKED_DEVICE,
+    /**
+     * The app understood the CLA but not the instruction — the installed
+     * Algorand app predates the feature being invoked. This is the only
+     * version signal the device volunteers, so it stands in for a firmware /
+     * app-version check we cannot otherwise perform.
+     */
+    INSTRUCTION_NOT_SUPPORTED: StatusCodes.INS_NOT_SUPPORTED,
 } as const
 
 /**

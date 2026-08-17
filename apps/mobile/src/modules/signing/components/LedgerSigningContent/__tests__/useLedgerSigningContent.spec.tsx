@@ -253,18 +253,23 @@ describe('useLedgerSigningContent', () => {
         expect(result.current.isTroubleshootingVisible).toBe(false)
     })
 
-    describe('BLE-class error auto-troubleshooting', () => {
-        const BLE_CLASS_KINDS: readonly LedgerErrorPresetKind[] = [
+    describe('connection-class errors keep their own copy', () => {
+        const CONNECTION_CLASS_KINDS: readonly LedgerErrorPresetKind[] = [
             'connection_failed',
             'connection_lost',
             'scan_timeout',
             'bluetooth_disabled',
             'bluetooth_permission',
+            'device_not_found',
         ]
 
-        it.each(BLE_CLASS_KINDS)(
-            'auto-opens troubleshooting for kind=%s and hides the inline sheet',
+        it.each(CONNECTION_CLASS_KINDS)(
+            'shows the error sheet for kind=%s instead of replacing it with troubleshooting',
             kind => {
+                // The regression this guards: auto-opening the generic
+                // checklist swallowed the specific reason (Bluetooth off,
+                // device not found, link lost) that the taxonomy exists to
+                // surface. Troubleshooting is now opt-in via the link.
                 mockPipeline({
                     snapshot: buildChildSnapshot({
                         value: 'error',
@@ -272,12 +277,14 @@ describe('useLedgerSigningContent', () => {
                     }),
                 })
                 const { result } = renderHook(() => useLedgerSigningContent())
-                expect(result.current.isTroubleshootingVisible).toBe(true)
-                expect(result.current.isVisible).toBe(false)
+                expect(result.current.isVisible).toBe(true)
+                expect(result.current.isTroubleshootingVisible).toBe(false)
+                expect(result.current.error?.kind).toBe(kind)
+                expect(result.current.error?.isTroubleshootable).toBe(true)
             },
         )
 
-        it('does NOT auto-open troubleshooting for non-BLE errors', () => {
+        it('offers no troubleshooting link for an error whose copy is already the remedy', () => {
             mockPipeline({
                 snapshot: buildChildSnapshot({
                     value: 'error',
@@ -285,11 +292,11 @@ describe('useLedgerSigningContent', () => {
                 }),
             })
             const { result } = renderHook(() => useLedgerSigningContent())
-            expect(result.current.isTroubleshootingVisible).toBe(false)
             expect(result.current.isVisible).toBe(true)
+            expect(result.current.error?.isTroubleshootable).toBe(false)
         })
 
-        it('closing troubleshooting after a BLE-class auto-open acknowledges the hardware error', () => {
+        it('closing troubleshooting returns to the error sheet rather than cancelling', () => {
             const acknowledgeHardwareError = vi.fn()
             const rejectRequest = vi.fn()
             vi.mocked(useSigningRequest).mockReturnValue({
@@ -307,9 +314,14 @@ describe('useLedgerSigningContent', () => {
             })
             const { result } = renderHook(() => useLedgerSigningContent())
             act(() => {
+                result.current.onOpenTroubleshooting()
+            })
+            act(() => {
                 result.current.onCloseTroubleshooting()
             })
-            expect(acknowledgeHardwareError).toHaveBeenCalledOnce()
+            expect(result.current.isTroubleshootingVisible).toBe(false)
+            expect(result.current.isVisible).toBe(true)
+            expect(acknowledgeHardwareError).not.toHaveBeenCalled()
             expect(rejectRequest).not.toHaveBeenCalled()
         })
 

@@ -14,7 +14,10 @@ import { describe, it, expect } from 'vitest'
 import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import {
     classifyLedgerError,
+    LedgerAppOutdatedError,
+    LedgerDeviceBusyError,
     LedgerDeviceLockedError,
+    LedgerDeviceNotFoundError,
     LedgerUserRejectedError,
     LedgerAppNotOpenError,
     LedgerDisconnectedError,
@@ -199,6 +202,75 @@ describe('classifyLedgerError with HwTransportError (BLE scan/connect)', () => {
         const result = classifyLedgerError(original)
         expect(result.originalError).toBe(original)
     })
+
+    // A powered-off or out-of-range device fails the connect with one of these
+    // rather than hanging, so they are what drives the "Ledger not found" copy.
+    it.each([200, 204, 205])(
+        'classifies BleErrorCode %i as LedgerDeviceNotFoundError',
+        code => {
+            expect(
+                classifyLedgerError(createHwTransportError(undefined, code)),
+            ).toBeInstanceOf(LedgerDeviceNotFoundError)
+        },
+    )
+
+    it('classifies BleErrorCode 201 (DeviceDisconnected) as LedgerDisconnectedError', () => {
+        expect(
+            classifyLedgerError(
+                createHwTransportError(undefined, 201, 'BleError'),
+            ),
+        ).toBeInstanceOf(LedgerDisconnectedError)
+    })
+
+    it('classifies BleErrorCode 3 (OperationTimedOut) as LedgerTimeoutError', () => {
+        expect(
+            classifyLedgerError(createHwTransportError(undefined, 3)),
+        ).toBeInstanceOf(LedgerTimeoutError)
+    })
+})
+
+describe('classifyLedgerError with @ledgerhq/errors typed errors', () => {
+    const createNamedError = (name: string, message = 'lib error'): Error => {
+        const error = new Error(message)
+        error.name = name
+        return error
+    }
+
+    it.each([
+        ['CantOpenDevice', LedgerDeviceNotFoundError],
+        ['DisconnectedDevice', LedgerDisconnectedError],
+        ['DisconnectedDeviceDuringOperation', LedgerDisconnectedError],
+        ['TransportRaceCondition', LedgerDeviceBusyError],
+        ['UnresponsiveDeviceError', LedgerTimeoutError],
+        ['LockedDeviceError', LedgerDeviceLockedError],
+    ] as const)('maps %s to the matching typed error', (name, expected) => {
+        expect(classifyLedgerError(createNamedError(name))).toBeInstanceOf(
+            expected,
+        )
+    })
+
+    it('matches by name before the message heuristics, so wording cannot win', () => {
+        // Message says "timeout", but the class identity says busy.
+        const error = createNamedError(
+            'TransportRaceCondition',
+            'exchange timeout while another exchange is pending',
+        )
+        expect(classifyLedgerError(error)).toBeInstanceOf(LedgerDeviceBusyError)
+    })
+
+    it('classifies a busy message as LedgerDeviceBusyError when untyped', () => {
+        expect(
+            classifyLedgerError(new Error('Ledger device is busy')),
+        ).toBeInstanceOf(LedgerDeviceBusyError)
+    })
+
+    it('classifies 0x6d00 (INS_NOT_SUPPORTED) as LedgerAppOutdatedError', () => {
+        // The installed Algorand app predates the instruction we sent — the
+        // only version signal the device volunteers.
+        expect(
+            classifyLedgerError(createErrorWithStatus(0x6d00)),
+        ).toBeInstanceOf(LedgerAppOutdatedError)
+    })
 })
 
 describe('new typed Ledger errors', () => {
@@ -253,5 +325,17 @@ describe('new typed Ledger errors', () => {
         const error = new LedgerUnsupportedDeviceError()
         expect(error.message.toLowerCase()).toContain('not supported')
         expect(error.metadata.retryable).toBe(false)
+    })
+
+    it('LedgerDeviceNotFoundError is retryable — powering the device on fixes it', () => {
+        const error = new LedgerDeviceNotFoundError()
+        expect(error.message.toLowerCase()).toContain('reached')
+        expect(error.metadata.retryable).toBe(true)
+    })
+
+    it('LedgerDeviceBusyError is retryable once the current action finishes', () => {
+        const error = new LedgerDeviceBusyError()
+        expect(error.message.toLowerCase()).toContain('busy')
+        expect(error.metadata.retryable).toBe(true)
     })
 })
