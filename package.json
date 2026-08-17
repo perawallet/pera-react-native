@@ -47,7 +47,7 @@
     "eslint": "catalog:",
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-unused-imports": "catalog:",
-    "fallow": "3.11.0",
+    "fallow": "3.14.0",
     "msw": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "^1.76.0",
@@ -55,7 +55,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "tsx": "catalog:",
-    "turbo": "^2.9.14",
+    "turbo": "^2.10.9",
     "util": "catalog:",
     "vitest": "catalog:"
   },
