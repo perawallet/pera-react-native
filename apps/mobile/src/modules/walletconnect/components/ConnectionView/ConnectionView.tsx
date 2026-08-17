@@ -26,6 +26,7 @@ import {
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import React from 'react'
 import {
     useAccountBalancesQuery,
@@ -62,6 +63,7 @@ export const ConnectionView = ({
     const { network } = useNetwork()
     const { approveSession, rejectSession } = useWalletConnect(network)
     const { errorToast } = useToast()
+    const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const signingAccounts = useSigningAccounts()
     // Honor the user's account-overview sort order instead of raw store order.
     const { accountBalances } = useAccountBalancesQuery(signingAccounts, true)
@@ -85,6 +87,14 @@ export const ConnectionView = ({
     }
 
     const handleConnect = async () => {
+        // Before approveSession runs, so a 'cancel' can't leave a
+        // half-approved session behind.
+        const decision = await confirmQuantumDappUsage(selectedAccounts)
+        if (decision === 'cancel') {
+            handleCancel()
+            return
+        }
+
         setIsConnecting(true)
         try {
             await approveSession(request.clientId, request, selectedAccounts)
