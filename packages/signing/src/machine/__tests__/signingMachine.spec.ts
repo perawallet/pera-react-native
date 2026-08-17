@@ -98,12 +98,12 @@ const makeInput = (
 
 const mockedMachine = signingMachine.provide({
     actors: {
-        analyzerActor: fromPromise(
-            async (): Promise<SignableAnalysis[]> => [mockAnalysis],
-        ),
-        localKeySignerActor: fromPromise(
-            async (): Promise<SigningResult[]> => [mockSigningResult],
-        ),
+        analyzerActor: fromPromise(async (): Promise<SignableAnalysis[]> => [
+            mockAnalysis,
+        ]),
+        localKeySignerActor: fromPromise(async (): Promise<SigningResult[]> => [
+            mockSigningResult,
+        ]),
         multisigSignerActor: fromPromise(async (): Promise<SigningResult[]> => {
             throw new Error('multisig not implemented')
         }),
