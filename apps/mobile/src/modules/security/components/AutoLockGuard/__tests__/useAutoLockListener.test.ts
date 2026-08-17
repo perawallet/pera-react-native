@@ -558,8 +558,8 @@ describe('useAutoLockListener', () => {
 
             // A notification banner or Face ID prompt drives inactive->active
             // without the app ever leaving the screen. Raising the checking
-            // overlay there applies display:none to the whole app tree and
-            // tears down whatever is mounted underneath (PERA-4870).
+            // overlay there hides the whole app tree and tears down whatever
+            // is mounted underneath (PERA-4870).
             act(() => {
                 appStateChangeHandler?.('inactive')
                 appStateChangeHandler?.('active')
