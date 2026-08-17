@@ -1784,7 +1784,7 @@
     "quantum": {
         "dapp_warning": {
             "title": "Einige dApps unterstützen Quantum-Konten möglicherweise noch nicht",
-            "body": "Quantum-Konten sind neu, und die Unterstützung dafür muss von jeder dApp einzeln hinzugefügt werden. Eine dApp, die das noch nicht getan hat, erkennt Ihre Adresse möglicherweise nicht, zeigt sie falsch an oder lehnt die für diese Konten erforderlichen Transaktionsgebühren ab. Ihr Guthaben ist nicht gefährdet. <0>Mehr erfahren</0>",
+            "body": "Quantum-Konten sind neu, und die Unterstützung dafür muss von jeder dApp einzeln hinzugefügt werden. Eine dApp, die das noch nicht getan hat, erkennt deine Adresse möglicherweise nicht, zeigt sie falsch an oder lehnt die für diese Konten erforderlichen Transaktionsgebühren ab. Dein Guthaben ist nicht gefährdet. <0>Mehr erfahren</0>",
             "confirm": "Fortfahren",
             "cancel": "Abbrechen"
         }
