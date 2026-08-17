@@ -50,7 +50,7 @@ catalogs:
       version: 6.39.5
     '@lottiefiles/dotlottie-react':
       specifier: 0.19.13
-      version: 0.19.12
+      version: 0.19.13
     '@noble/ciphers':
       specifier: ^2.2.0
       version: 2.2.0
@@ -98,7 +98,7 @@ catalogs:
       version: 5.101.2
     '@tanstack/store':
       specifier: 0.11.1
-      version: 0.11.0
+      version: 0.11.1
     '@testing-library/react':
       specifier: 16.3.2
       version: 16.3.2
@@ -335,7 +335,7 @@ importers:
         version: 19.2.3(react@19.2.3)
       tsx:
         specifier: 'catalog:'
-        version: 4.23.5
+        version: 4.23.12
       turbo:
         specifier: ^2.10.9
         version: 2.10.9
@@ -344,7 +344,7 @@ importers:
         version: 0.12.5
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   apps/browser:
     dependencies:
@@ -432,7 +432,7 @@ importers:
         version: 20.19.43
       '@vitejs/plugin-react':
         specifier: 'catalog:'
-        version: 6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       algosdk:
         specifier: file:../../libs/algosdk-3.7.0-beta.1.tgz
         version: file:libs/algosdk-3.7.0-beta.1.tgz
@@ -456,7 +456,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       ws:
         specifier: ^8.21.3
         version: 8.21.3
@@ -468,7 +468,7 @@ importers:
         version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
-        version: 1.0.0-canary.24(patch_hash=7741b668c323b07b88dce93bd875de3913f5ba5116b1c435a72c1b7f3dcc369c)(17d941ac8d8835db4d411604e3d7e0ec)
+        version: 1.0.0-canary.24(patch_hash=7741b668c323b07b88dce93bd875de3913f5ba5116b1c435a72c1b7f3dcc369c)(94b20e431c90f168546d2b42129aaf47)
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -495,7 +495,7 @@ importers:
         version: 6.39.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       '@lottiefiles/dotlottie-react':
         specifier: 'catalog:'
-        version: 0.19.12(react@19.2.3)
+        version: 0.19.13(react@19.2.3)
       '@noble/hashes':
         specifier: 'catalog:'
         version: 1.8.0
@@ -720,19 +720,19 @@ importers:
         version: 57.0.2(expo@57.0.11)
       expo-asset:
         specifier: ~57.0.11
-        version: 57.0.11(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+        version: 57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       expo-audio:
         specifier: ~57.0.2
-        version: 57.0.3(expo-asset@57.0.11(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+        version: 57.0.3(expo-asset@57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       expo-build-properties:
         specifier: ~57.0.11
-        version: 57.0.11(expo@57.0.11)
+        version: 57.0.12(expo@57.0.11)
       expo-clipboard:
         specifier: ~57.0.1
         version: 57.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       expo-dev-client:
         specifier: ~57.0.12
-        version: 57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
+        version: 57.0.13(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       expo-device:
         specifier: 'catalog:'
         version: 57.0.1(expo@57.0.11)
@@ -750,7 +750,7 @@ importers:
         version: 57.0.2(expo@57.0.11)(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       expo-image-picker:
         specifier: ~57.0.10
-        version: 57.0.10(expo@57.0.11)
+        version: 57.0.11(expo@57.0.11)
       expo-intent-launcher:
         specifier: ~57.0.1
         version: 57.0.1(expo@57.0.11)
@@ -774,7 +774,7 @@ importers:
         version: 57.0.2(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       expo-splash-screen:
         specifier: ~57.0.6
-        version: 57.0.6(expo@57.0.11)(typescript@5.9.3)
+        version: 57.0.7(expo@57.0.11)(typescript@5.9.3)
       expo-sqlite:
         specifier: 'catalog:'
         version: 57.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -795,7 +795,7 @@ importers:
         version: 2.0.1
       lottie-react-native:
         specifier: ^7.4.0
-        version: 7.4.0(@lottiefiles/dotlottie-react@0.19.12(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+        version: 7.4.0(@lottiefiles/dotlottie-react@0.19.13(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -855,7 +855,7 @@ importers:
         version: 3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       react-native-quick-crypto:
         specifier: ^1.0.17
-        version: 1.1.6(expo-build-properties@57.0.11(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+        version: 1.1.6(expo-build-properties@57.0.12(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       react-native-rate-app:
         specifier: ^2.0.1
         version: 2.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -949,7 +949,7 @@ importers:
         version: 19.2.17
       '@vitejs/plugin-react':
         specifier: 'catalog:'
-        version: 6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       '@welldone-software/why-did-you-render':
         specifier: ^10.0.1
         version: 10.0.1(react@19.2.3)
@@ -985,16 +985,16 @@ importers:
         version: 5.9.3
       vite-plugin-babel:
         specifier: ^1.7.3
-        version: 1.7.3(@babel/core@7.29.7)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 1.7.3(@babel/core@7.29.7)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vite-plugin-svgr:
         specifier: ^5.2.0
-        version: 5.2.0(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.2.0(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vite-tsconfig-paths:
         specifier: ^6.0.4
-        version: 6.1.1(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 6.1.1(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/keystore-chrome:
     dependencies:
@@ -1003,7 +1003,7 @@ importers:
         version: 1.1.0
       '@algorandfoundation/keystore':
         specifier: 1.0.0-canary.17
-        version: 1.0.0-canary.17(@tanstack/store@0.11.0)(before-after-hook@4.0.0)
+        version: 1.0.0-canary.17(@tanstack/store@0.11.1)(before-after-hook@4.0.0)
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
         version: 1.0.0-canary.5
@@ -1021,10 +1021,10 @@ importers:
         version: link:../../packages/passkeys
       '@scure/base':
         specifier: 'catalog:'
-        version: 2.2.0
+        version: 2.3.0
       '@tanstack/store':
         specifier: 'catalog:'
-        version: 0.11.0
+        version: 0.11.1
       before-after-hook:
         specifier: 'catalog:'
         version: 4.0.0
@@ -1043,13 +1043,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/ledger-react-native:
     dependencies:
@@ -1095,13 +1095,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/ledger-react-native-usb:
     dependencies:
@@ -1141,13 +1141,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/ledger-shared:
     dependencies:
@@ -1184,13 +1184,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/ledger-web-ble:
     dependencies:
@@ -1230,13 +1230,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/ledger-web-usb:
     dependencies:
@@ -1276,22 +1276,22 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/passkey-autofill:
     dependencies:
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
-        version: 1.0.0-canary.24(patch_hash=7741b668c323b07b88dce93bd875de3913f5ba5116b1c435a72c1b7f3dcc369c)(17d941ac8d8835db4d411604e3d7e0ec)
+        version: 1.0.0-canary.24(patch_hash=7741b668c323b07b88dce93bd875de3913f5ba5116b1c435a72c1b7f3dcc369c)(94b20e431c90f168546d2b42129aaf47)
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
         version: 1.0.0-canary.5
@@ -1313,13 +1313,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/platform:
     dependencies:
@@ -1365,13 +1365,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/platform-chrome:
     dependencies:
@@ -1392,7 +1392,7 @@ importers:
         version: link:../platform
       '@sentry/browser':
         specifier: ^10.65.0
-        version: 10.69.0
+        version: 10.70.0
       drizzle-orm:
         specifier: 'catalog:'
         version: 0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@57.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))
@@ -1414,13 +1414,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/platform-driver:
     dependencies:
@@ -1436,10 +1436,10 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/platform-react-native:
     dependencies:
@@ -1539,28 +1539,28 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   extensions/provider:
     dependencies:
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/keystore-web':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@tanstack/store@0.11.0)(before-after-hook@4.0.0)
+        version: 1.0.0-canary.3(@tanstack/store@0.11.1)(before-after-hook@4.0.0)
       '@algorandfoundation/provider-migrations':
         specifier: 'catalog:'
         version: 1.0.0-canary.1(before-after-hook@4.0.0)
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(17d941ac8d8835db4d411604e3d7e0ec)
+        version: 1.0.0-canary.19(94b20e431c90f168546d2b42129aaf47)
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
         version: 1.0.0-canary.5
@@ -1596,7 +1596,7 @@ importers:
         version: 2.3.0
       '@tanstack/store':
         specifier: 'catalog:'
-        version: 0.11.0
+        version: 0.11.1
       before-after-hook:
         specifier: 'catalog:'
         version: 4.0.0
@@ -1608,7 +1608,7 @@ importers:
         version: 4.3.2(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       react-native-quick-crypto:
         specifier: ^1.0.17
-        version: 1.1.6(expo-build-properties@57.0.11(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+        version: 1.1.6(expo-build-properties@57.0.12(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -1630,13 +1630,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/accounts:
     dependencies:
@@ -1727,13 +1727,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/age-gate:
     dependencies:
@@ -1773,13 +1773,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/analytics:
     dependencies:
@@ -1819,13 +1819,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/app-integrity:
     dependencies:
@@ -1880,13 +1880,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/arc0027:
     devDependencies:
@@ -1898,13 +1898,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/asa-inbox:
     dependencies:
@@ -1968,13 +1968,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/assets:
     dependencies:
@@ -2044,13 +2044,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/background:
     dependencies:
@@ -2114,13 +2114,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/backup:
     dependencies:
@@ -2187,13 +2187,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/banners:
     dependencies:
@@ -2251,13 +2251,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/blockchain:
     dependencies:
@@ -2339,13 +2339,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/card:
     dependencies:
@@ -2424,13 +2424,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/config:
     dependencies:
@@ -2452,7 +2452,7 @@ importers:
         version: 20.19.43
       '@vitejs/plugin-react':
         specifier: 'catalog:'
-        version: 6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.1.10(vitest@4.1.10)
@@ -2473,13 +2473,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/contacts:
     dependencies:
@@ -2525,13 +2525,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/currencies:
     dependencies:
@@ -2589,13 +2589,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/database:
     dependencies:
@@ -2626,13 +2626,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/dev-fixtures:
     dependencies:
@@ -2666,13 +2666,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/device:
     dependencies:
@@ -2727,13 +2727,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/devtools:
     dependencies:
@@ -2752,7 +2752,7 @@ importers:
         version: 4.23.5
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
 
   packages/fee-delegation:
     dependencies:
@@ -2801,13 +2801,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/hardware-wallet:
     dependencies:
@@ -2826,13 +2826,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/kms:
     dependencies:
@@ -2841,10 +2841,10 @@ importers:
         version: 9.2.0(algosdk@file:libs/algosdk-3.7.0-beta.1.tgz)
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(17d941ac8d8835db4d411604e3d7e0ec)
+        version: 1.0.0-canary.19(94b20e431c90f168546d2b42129aaf47)
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -2905,13 +2905,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/ledger:
     dependencies:
@@ -2957,13 +2957,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/messages:
     dependencies:
@@ -3027,13 +3027,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/migrate:
     dependencies:
@@ -3045,7 +3045,7 @@ importers:
         version: 1.1.0
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(17d941ac8d8835db4d411604e3d7e0ec)
+        version: 1.0.0-canary.19(94b20e431c90f168546d2b42129aaf47)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -3120,7 +3120,7 @@ importers:
         version: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
       react-native-quick-crypto:
         specifier: ^1.0.17
-        version: 1.1.6(expo-build-properties@57.0.11(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+        version: 1.1.6(expo-build-properties@57.0.12(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       zustand:
         specifier: 'catalog:'
         version: 5.0.14(@types/react@19.2.17)(react@19.2.3)(use-sync-external-store@1.6.0(react@19.2.3))
@@ -3145,13 +3145,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/multisig:
     dependencies:
@@ -3194,13 +3194,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/nfd:
     dependencies:
@@ -3255,13 +3255,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/onramp:
     dependencies:
@@ -3325,13 +3325,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/passkeys:
     dependencies:
@@ -3340,10 +3340,10 @@ importers:
         version: 1.1.0
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(17d941ac8d8835db4d411604e3d7e0ec)
+        version: 1.0.0-canary.19(94b20e431c90f168546d2b42129aaf47)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -3364,7 +3364,7 @@ importers:
         version: 5.101.2(react@19.2.3)
       '@tanstack/store':
         specifier: 'catalog:'
-        version: 0.11.0
+        version: 0.11.1
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -3389,13 +3389,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/polling:
     dependencies:
@@ -3447,13 +3447,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/projects:
     dependencies:
@@ -3505,13 +3505,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/remote-config:
     dependencies:
@@ -3551,13 +3551,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/search:
     dependencies:
@@ -3609,13 +3609,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/security:
     dependencies:
@@ -3661,13 +3661,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/settings:
     dependencies:
@@ -3710,13 +3710,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/shared:
     dependencies:
@@ -3783,7 +3783,7 @@ importers:
         version: 19.2.17
       '@vitejs/plugin-react':
         specifier: 'catalog:'
-        version: 6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 4.1.10(vitest@4.1.10)
@@ -3804,13 +3804,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/signing:
     dependencies:
@@ -3904,13 +3904,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/staking:
     dependencies:
@@ -3962,13 +3962,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/swaps:
     dependencies:
@@ -4032,13 +4032,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/transactions:
     dependencies:
@@ -4114,13 +4114,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   packages/walletconnect:
     dependencies:
@@ -4181,13 +4181,13 @@ importers:
         version: 5.9.3
       vite:
         specifier: 'catalog:'
-        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+        version: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: 'catalog:'
-        version: 5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+        version: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
 packages:
 
@@ -5016,6 +5016,12 @@ packages:
     cpu: [ppc64]
     os: [aix]
 
+  '@esbuild/aix-ppc64@0.28.2':
+    resolution: {integrity: sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ==}
+    engines: {node: '>=18'}
+    cpu: [ppc64]
+    os: [aix]
+
   '@esbuild/android-arm64@0.25.12':
     resolution: {integrity: sha512-6AAmLG7zwD1Z159jCKPvAxZd4y/VTO0VkprYy+3N2FtJ8+BQWFXU+OxARIwA46c5tdD9SsKGZ/1ocqBS/gAKHg==}
     engines: {node: '>=18'}
@@ -5024,6 +5030,12 @@ packages:
 
   '@esbuild/android-arm64@0.28.1':
     resolution: {integrity: sha512-34EGEbCIAgosYz6goLcopX6Mo7NyGv9tfwEM2/7Ce2VcVRk568iSvniGWcUXIy7wEDR1wzolcxcriFVrWYcwBg==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [android]
+
+  '@esbuild/android-arm64@0.28.2':
+    resolution: {integrity: sha512-5YfKeeI8qWfBZIX+u2xZC3Zlb3Os/gLS2sbEKM+I4ZOcsWmHS2WLysCcQZDAFRslDUU5Oiq44gf6PYN1vGwG5A==}
     engines: {node: '>=18'}
     cpu: [arm64]
     os: [android]
@@ -5040,6 +5052,12 @@ packages:
     cpu: [arm]
     os: [android]
 
+  '@esbuild/android-arm@0.28.2':
+    resolution: {integrity: sha512-kXXoiPVVGQcnIYGOeaovwOURpniDBpSq4A03qkQ+BMQqtGG6HYap3xne9C1O1yo4TR3qxlCX5IqqmX6fFo2Lqg==}
+    engines: {node: '>=18'}
+    cpu: [arm]
+    os: [android]
+
   '@esbuild/android-x64@0.25.12':
     resolution: {integrity: sha512-5jbb+2hhDHx5phYR2By8GTWEzn6I9UqR11Kwf22iKbNpYrsmRB18aX/9ivc5cabcUiAT/wM+YIZ6SG9QO6a8kg==}
     engines: {node: '>=18'}
@@ -5048,6 +5066,12 @@ packages:
 
   '@esbuild/android-x64@0.28.1':
     resolution: {integrity: sha512-dbwY7ltSMDWsRatcRpCnES4F+im88OCUgGZjy52shC7GqHRE/cYlxNbB4Z4UpJswpcc4Qxd2oE/ufM0p61IKng==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [android]
+
+  '@esbuild/android-x64@0.28.2':
+    resolution: {integrity: sha512-O387ite7SzUyCcy3JQX4P4bLtEA7bLLkx+esve5JHnyYfNTxcVpXZo9jhdB0lTKN44gztELTdU7nS8Nr16Fs1Q==}
     engines: {node: '>=18'}
     cpu: [x64]
     os: [android]
@@ -5064,6 +5088,12 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
+  '@esbuild/darwin-arm64@0.28.2':
+    resolution: {integrity: sha512-n4KqkOQrraxHJcgjM1RvwbigfQKIKJVpM7xp+KsxiyUSrRdIXnt73VhrPAx0fV44hgfmIVKjxMN9J1t5jySVkw==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [darwin]
+
   '@esbuild/darwin-x64@0.25.12':
     resolution: {integrity: sha512-HQ9ka4Kx21qHXwtlTUVbKJOAnmG1ipXhdWTmNXiPzPfWKpXqASVcWdnf2bnL73wgjNrFXAa3yYvBSd9pzfEIpA==}
     engines: {node: '>=18'}
@@ -5072,6 +5102,12 @@ packages:
 
   '@esbuild/darwin-x64@0.28.1':
     resolution: {integrity: sha512-zfdzgK9ACBNZLI/CyHTOx81SyNbM6YXn7rxSgX97VjyiPl9W1i4Ka4fgKECEoFCKGpvBj5qArWIGgQjOwkgskQ==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@esbuild/darwin-x64@0.28.2':
+    resolution: {integrity: sha512-uq6suIWYP37qzGddBKPw5QEQPi6HiLGsO7UmkpfyaYNQ3D+rN6w6WfwH+nuqcGXWvawGwxOEroO4YGnFh95azw==}
     engines: {node: '>=18'}
     cpu: [x64]
     os: [darwin]
@@ -5088,6 +5124,12 @@ packages:
     cpu: [arm64]
     os: [freebsd]
 
+  '@esbuild/freebsd-arm64@0.28.2':
+    resolution: {integrity: sha512-n+I0BTSRIoy+d6RPKnEVwql5UwBJolytvY4mAOIEJorKlqgPII8ix6slVVrfZ5Tnj7glIZvloylbB/EJPMWEXw==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [freebsd]
+
   '@esbuild/freebsd-x64@0.25.12':
     resolution: {integrity: sha512-TGbO26Yw2xsHzxtbVFGEXBFH0FRAP7gtcPE7P5yP7wGy7cXK2oO7RyOhL5NLiqTlBh47XhmIUXuGciXEqYFfBQ==}
     engines: {node: '>=18'}
@@ -5096,6 +5138,12 @@ packages:
 
   '@esbuild/freebsd-x64@0.28.1':
     resolution: {integrity: sha512-i7dZ9vQgnvSCzi/rYCXNgtF/U+eKZNJBzu3eTQbRgHnM7tNSizLOkRFAl3qzVc/Op/u5YkHHa4pf/3DOYHthLQ==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@esbuild/freebsd-x64@0.28.2':
+    resolution: {integrity: sha512-78XJTJkvPs0kz2w61301PJjXl4g7q3JqiYMZ/M/yVI73EHBrCRTgkhu9oqG7vPqq+a/yadEW8aD+agKlk5xrmg==}
     engines: {node: '>=18'}
     cpu: [x64]
     os: [freebsd]
@@ -5112,6 +5160,12 @@ packages:
     cpu: [arm64]
     os: [linux]
 
+  '@esbuild/linux-arm64@0.28.2':
+    resolution: {integrity: sha512-pW4AC0P3it8c7do9MVM4p51FzHzdM/TZrerurgRcHJ2WTa1VQ1CIq18xncfpBJw4ojkiZZrKW2yIBWBP92j6Ug==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [linux]
+
   '@esbuild/linux-arm@0.25.12':
     resolution: {integrity: sha512-lPDGyC1JPDou8kGcywY0YILzWlhhnRjdof3UlcoqYmS9El818LLfJJc3PXXgZHrHCAKs/Z2SeZtDJr5MrkxtOw==}
     engines: {node: '>=18'}
@@ -5120,6 +5174,12 @@ packages:
 
   '@esbuild/linux-arm@0.28.1':
     resolution: {integrity: sha512-qVXBOHQS+d5Y722GwJzJUtOLlX7km3CraOaGormF1pDtPd2C/l1SHRPgjLunLGe51Sh5YYWKMFDyV4SxgMQYTQ==}
+    engines: {node: '>=18'}
+    cpu: [arm]
+    os: [linux]
+
+  '@esbuild/linux-arm@0.28.2':
+    resolution: {integrity: sha512-XlDnu2q5yoqems+xay6wSAcg9DDD7K9RLKZEBOMZm3ckNpJBvOX20tSfby8KfrrhINDyv9V2YVZKY/SpoGJI8w==}
     engines: {node: '>=18'}
     cpu: [arm]
     os: [linux]
@@ -5136,6 +5196,12 @@ packages:
     cpu: [ia32]
     os: [linux]
 
+  '@esbuild/linux-ia32@0.28.2':
+    resolution: {integrity: sha512-CYbnj78HsIeA+DhgUKgFCfvNsTHFhMMrinUrMZpDXJXKN8T3XViTZ/+wtHeVxEWY8ewSzTFN+nRmSwO2tZaLUQ==}
+    engines: {node: '>=18'}
+    cpu: [ia32]
+    os: [linux]
+
   '@esbuild/linux-loong64@0.25.12':
     resolution: {integrity: sha512-h///Lr5a9rib/v1GGqXVGzjL4TMvVTv+s1DPoxQdz7l/AYv6LDSxdIwzxkrPW438oUXiDtwM10o9PmwS/6Z0Ng==}
     engines: {node: '>=18'}
@@ -5144,6 +5210,12 @@ packages:
 
   '@esbuild/linux-loong64@0.28.1':
     resolution: {integrity: sha512-M5sRjUVZrkm1OAPR3dlOYzNmN+loZKGVi1VUQGrwuqLcbR6qeAz+famMhjASeH3YVKvZz+zT1jlh/keC3Rj/lg==}
+    engines: {node: '>=18'}
+    cpu: [loong64]
+    os: [linux]
+
+  '@esbuild/linux-loong64@0.28.2':
+    resolution: {integrity: sha512-buwkd8nsph4R+ajRvw0qM5Hja/TXQow3ptzWO2EbG/cqcIkHloRrdlBtQlshyYGTNFvfkfJ5tpPLVkY4DtsPfQ==}
     engines: {node: '>=18'}
     cpu: [loong64]
     os: [linux]
@@ -5160,6 +5232,12 @@ packages:
     cpu: [mips64el]
     os: [linux]
 
+  '@esbuild/linux-mips64el@0.28.2':
+    resolution: {integrity: sha512-ZVykbDyk7519VwiNb9Lcj9m8XM6v5V9uKPvrEMkkEedVewf+0itkhahp4HDpgERXhwLRpWFypsGbG/J8s0QjJA==}
+    engines: {node: '>=18'}
+    cpu: [mips64el]
+    os: [linux]
+
   '@esbuild/linux-ppc64@0.25.12':
     resolution: {integrity: sha512-9meM/lRXxMi5PSUqEXRCtVjEZBGwB7P/D4yT8UG/mwIdze2aV4Vo6U5gD3+RsoHXKkHCfSxZKzmDssVlRj1QQA==}
     engines: {node: '>=18'}
@@ -5168,6 +5246,12 @@ packages:
 
   '@esbuild/linux-ppc64@0.28.1':
     resolution: {integrity: sha512-slScBsMAb3GFDcdrCgLwZtPYRoH2H/youv10QiZyRjmsP48fznoveWytSgCI/R0ZcUgpc0ZhIUEx6LHts8yrfQ==}
+    engines: {node: '>=18'}
+    cpu: [ppc64]
+    os: [linux]
+
+  '@esbuild/linux-ppc64@0.28.2':
+    resolution: {integrity: sha512-CAXl+Dtd9UUuJd8pKKdwh6MLm3MUMiqMPmhZ3tTSXPqfyQ3vDl6R5hZdZ/kYojK4ofXtdfSv1tFq8XzWx3heNQ==}
     engines: {node: '>=18'}
     cpu: [ppc64]
     os: [linux]
@@ -5184,6 +5268,12 @@ packages:
     cpu: [riscv64]
     os: [linux]
 
+  '@esbuild/linux-riscv64@0.28.2':
+    resolution: {integrity: sha512-GeXCej4IQtU1B+QlDV8W/RRvbzI3O/Stss+/bCXv4lZls5WGRtu2a+3JkA3i4qIUlMXpcHebWpF8AkJhATowuA==}
+    engines: {node: '>=18'}
+    cpu: [riscv64]
+    os: [linux]
+
   '@esbuild/linux-s390x@0.25.12':
     resolution: {integrity: sha512-MsKncOcgTNvdtiISc/jZs/Zf8d0cl/t3gYWX8J9ubBnVOwlk65UIEEvgBORTiljloIWnBzLs4qhzPkJcitIzIg==}
     engines: {node: '>=18'}
@@ -5192,6 +5282,12 @@ packages:
 
   '@esbuild/linux-s390x@0.28.1':
     resolution: {integrity: sha512-/lAIjX8aYFRByhh6L5rYtPEDRqa9de/4V/juOXcta5frjvzXO4/sqEtyytse0g3zZFuWu5cDN0MkLz2qRDD2Ag==}
+    engines: {node: '>=18'}
+    cpu: [s390x]
+    os: [linux]
+
+  '@esbuild/linux-s390x@0.28.2':
+    resolution: {integrity: sha512-3H1weTYZPxt/WOhByszQZybS9w5lKzUn1FDMsgEChbHWQwHYQQRfBxgCcZvPhjHfKyJjIievvMmEUawJrdY9Dg==}
     engines: {node: '>=18'}
     cpu: [s390x]
     os: [linux]
@@ -5208,6 +5304,12 @@ packages:
     cpu: [x64]
     os: [linux]
 
+  '@esbuild/linux-x64@0.28.2':
+    resolution: {integrity: sha512-4xTZr1FUmSoQW4XIWmit3tzQrUTZM+N3P0XV8xROKYF50XfI7xeO90+1bZvNwxIufQ9hDQVRJH5YhgPVF8A/HQ==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [linux]
+
   '@esbuild/netbsd-arm64@0.25.12':
     resolution: {integrity: sha512-xXwcTq4GhRM7J9A8Gv5boanHhRa/Q9KLVmcyXHCTaM4wKfIpWkdXiMog/KsnxzJ0A1+nD+zoecuzqPmCRyBGjg==}
     engines: {node: '>=18'}
@@ -5216,6 +5318,12 @@ packages:
 
   '@esbuild/netbsd-arm64@0.28.1':
     resolution: {integrity: sha512-oks0DYbLwWMmaakTsCb+zL4E+aHRVLom9IJZOAthMQEPiQmydXHkziYEsGYRx0uNV/IjEKGAV941JzH02pflqw==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [netbsd]
+
+  '@esbuild/netbsd-arm64@0.28.2':
+    resolution: {integrity: sha512-sSATRjPeDBg3pdgHoQfoYBob11Kk1FGa9lui5RIHZCoCkJa9QKlvl3/vKz2usCmYYjs7ymJR/2Nnsqe+Hjt5nw==}
     engines: {node: '>=18'}
     cpu: [arm64]
     os: [netbsd]
@@ -5232,6 +5340,12 @@ packages:
     cpu: [x64]
     os: [netbsd]
 
+  '@esbuild/netbsd-x64@0.28.2':
+    resolution: {integrity: sha512-lqnzCV+mM0gIADaKihiCg6ifgfU2L3h5E33rNQBN1Y4MaVGnzryzmvvf7UHxprpQdE8hpqLolJ9Rl+SkIRDpyw==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [netbsd]
+
   '@esbuild/openbsd-arm64@0.25.12':
     resolution: {integrity: sha512-fF96T6KsBo/pkQI950FARU9apGNTSlZGsv1jZBAlcLL1MLjLNIWPBkj5NlSz8aAzYKg+eNqknrUJ24QBybeR5A==}
     engines: {node: '>=18'}
@@ -5240,6 +5354,12 @@ packages:
 
   '@esbuild/openbsd-arm64@0.28.1':
     resolution: {integrity: sha512-MEFJe5C3R8pwXdZ5Y21oo6m7ePiS0d9pWucn99O/wvyJZChoIQKrQDxKrGeW8F5+T0okTHesAmDeiHDTIq0V/Q==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [openbsd]
+
+  '@esbuild/openbsd-arm64@0.28.2':
+    resolution: {integrity: sha512-AL2qJILH7lNjrDmCQDvdxMfAUIv8KMNZOvrwAQ8i8//ntL9FflhOyMJ8OZSMBb8/AWXe3/5v5S20y3zCoZWKoQ==}
     engines: {node: '>=18'}
     cpu: [arm64]
     os: [openbsd]
@@ -5256,6 +5376,12 @@ packages:
     cpu: [x64]
     os: [openbsd]
 
+  '@esbuild/openbsd-x64@0.28.2':
+    resolution: {integrity: sha512-QtiuPytchRyC4rwUKhexJdQKvDuZ6hWloi3igqPQNUJCS1/v9EiO3UTOXR6A3FoMo4fnAKbWJdqaIwhOzh8qEw==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [openbsd]
+
   '@esbuild/openharmony-arm64@0.25.12':
     resolution: {integrity: sha512-rm0YWsqUSRrjncSXGA7Zv78Nbnw4XL6/dzr20cyrQf7ZmRcsovpcRBdhD43Nuk3y7XIoW2OxMVvwuRvk9XdASg==}
     engines: {node: '>=18'}
@@ -5264,6 +5390,12 @@ packages:
 
   '@esbuild/openharmony-arm64@0.28.1':
     resolution: {integrity: sha512-ge+Z7EXFNt2BO1oAMsVpiQ8EwndV9i1xXerAeTIK7AtPs3bKFXQM7nlRxDSIUIMeueR1CNXxqztLzdNeReKBJg==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [openharmony]
+
+  '@esbuild/openharmony-arm64@0.28.2':
+    resolution: {integrity: sha512-WkhYDmpTjLvGlScA1rwjRUmhl4k8oXR3cIbtqWmELgU/dFeHHlEllxDvdWcNJV9rbzCexB5vz8gtNewWLgCT7Q==}
     engines: {node: '>=18'}
     cpu: [arm64]
     os: [openharmony]
@@ -5280,6 +5412,12 @@ packages:
     cpu: [x64]
     os: [sunos]
 
+  '@esbuild/sunos-x64@0.28.2':
+    resolution: {integrity: sha512-GPMSkTOtMnv2U2F8gxe4Io6qmVs+YKyp832Etqqxr0hFngmXQ3rzwytelm3GIn7T4VviRUlf3sOgBOiTdvaf7g==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [sunos]
+
   '@esbuild/win32-arm64@0.25.12':
     resolution: {integrity: sha512-rMmLrur64A7+DKlnSuwqUdRKyd3UE7oPJZmnljqEptesKM8wx9J8gx5u0+9Pq0fQQW8vqeKebwNXdfOyP+8Bsg==}
     engines: {node: '>=18'}
@@ -5288,6 +5426,12 @@ packages:
 
   '@esbuild/win32-arm64@0.28.1':
     resolution: {integrity: sha512-lCv9eK/H6ZJWbE7bh2nw54CZ9M2nupBxJcTsdk/QQnWkdSjKGuxmmH8/GWrlT1eMmZfn4dGcCjRte397WqfQXA==}
+    engines: {node: '>=18'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@esbuild/win32-arm64@0.28.2':
+    resolution: {integrity: sha512-PIhhEkE9uPBleRBrQEJpUn7MBnibZzbGzYWPmY3x+YoVg/95zbjB4CxPPOQ8l5tYYM4mMaCthF8/1DIfBQQyWQ==}
     engines: {node: '>=18'}
     cpu: [arm64]
     os: [win32]
@@ -5304,6 +5448,12 @@ packages:
     cpu: [ia32]
     os: [win32]
 
+  '@esbuild/win32-ia32@0.28.2':
+    resolution: {integrity: sha512-YmJbfTlvU7Sdn9BB+4PRES4oB6pxgS37MAONj+hBr/cpXS1aBPKXxNnDbu+QCWPj0o9dgyxeq79g6c5P8KeuYA==}
+    engines: {node: '>=18'}
+    cpu: [ia32]
+    os: [win32]
+
   '@esbuild/win32-x64@0.25.12':
     resolution: {integrity: sha512-alJC0uCZpTFrSL0CCDjcgleBXPnCrEAhTBILpeAp7M/OFgoqtAetfBzX0xM00MUsVVPpVjlPuMbREqnZCXaTnA==}
     engines: {node: '>=18'}
@@ -5312,6 +5462,12 @@ packages:
 
   '@esbuild/win32-x64@0.28.1':
     resolution: {integrity: sha512-bm4Mowrv+GXMlpWX++EcXw/iLyd1o3+bJkC2DkWXYVvgZCqD/bSj9ctZeAMC3cIxgjRVR2Dufaiu4YPxr5gW1A==}
+    engines: {node: '>=18'}
+    cpu: [x64]
+    os: [win32]
+
+  '@esbuild/win32-x64@0.28.2':
+    resolution: {integrity: sha512-5ebpxr3nWMzrL/rnUI755Jkuee0bHL/Gq0WTF9lvcpv73wAp5eu8MfBUgWK9bhWvZjj7yX8etf/8tI8Ney695g==}
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
@@ -5393,6 +5549,9 @@ packages:
 
   '@expo/config-plugins@57.0.7':
     resolution: {integrity: sha512-jvXMiNuH8W7fmU9yCk4/jVwDX2G/5rWUg5PZ22mriccEeQVS9HJjQiUHivMaK6MxEG5L9f0RPScxe/nQfnpQvg==}
+
+  '@expo/config-plugins@57.0.8':
+    resolution: {integrity: sha512-x6lx4s/19i39/+1dMPwb9tFCc4WR843dG5Yi+C64lhKL3YHX+6oKrT2Kv72PCEalnUY+usQDkB3NrLSrYOWtDg==}
 
   '@expo/config-types@57.0.2':
     resolution: {integrity: sha512-ewW08OonrcRIsRKIlFvvcmmafE5zemb1ocu3HkNwtVPyRtj2w42pZCAkMIROYpcVBaPnc3mDT9UZDzwXWC3i6g==}
@@ -6350,14 +6509,14 @@ packages:
   '@ledgerhq/react-native-hw-transport-ble@6.41.0':
     resolution: {integrity: sha512-MM3WsIXgCWXC85qfLIqUUPz6hvhl/VxSS1TZxZ7xALrtXhgnDpS2h/MuN/mYbbTwPg7/CHnLIeQhb+UI/Bc30w==}
 
-  '@lottiefiles/dotlottie-react@0.19.12':
-    resolution: {integrity: sha512-Onm0XUcfU8Io4E6zbNF23hW0AwHpwAWUhazII6z/mGAcGh8RFAqqrkFJW1sZ3Z6C9JXOiiud+MmrejNKikBShw==}
+  '@lottiefiles/dotlottie-react@0.19.13':
+    resolution: {integrity: sha512-HqazA/AtVF5gWfsDhaHJKhJIyqXQLGvkfDQ00Pib1uepwCXCUwa+I6PJ3M/eNBcFMZGLmqF4oyo9On9JBsmjpg==}
     engines: {node: '>=18.17.0', npm: '>=9.5.0'}
     peerDependencies:
       react: 19.2.3
 
-  '@lottiefiles/dotlottie-web@0.78.2':
-    resolution: {integrity: sha512-ERBw7qATlekpFnR1xwNoTeXsXqw0FzCiEgei0IwPiquT277m36/o0aSWZDK7CgkhVd1NYre3M9fH+6n4waUfHA==}
+  '@lottiefiles/dotlottie-web@0.79.0':
+    resolution: {integrity: sha512-i2OCChZvfsoKCnilkI1t72sR/jDLoLpX2q0nm2KpOXYQZvONMooCXcGy+H9J8ioh66d61/tfHUzP78YxZ73ypg==}
     engines: {node: '>=18.17.0', npm: '>=9.5.0'}
 
   '@mswjs/interceptors@0.41.9':
@@ -7099,32 +7258,32 @@ packages:
   '@scure/bip39@2.2.0':
     resolution: {integrity: sha512-T/Bj/YvYMNkIPq6EENO6/rcs2e7qTNuyoUXf0KBFDmp0ZDu0H2X4Lq6yC3i0c8PcWkov5EbW+yQZZbdMmk154A==}
 
-  '@sentry/browser-utils@10.69.0':
-    resolution: {integrity: sha512-e/u1Abj0zRPwR/deGZAP3GOULrsx67/XXnM5Skniqs4uxTsdNtPek1Nef0tpxwaQJYxwh6pWdhswLPPbbPOgBQ==}
+  '@sentry/browser-utils@10.70.0':
+    resolution: {integrity: sha512-IvjhafF5NFXrPCg5EHbAPGDwIhHxgUcLlHTklZ3DAdA6ky88BJYMfevbcnOEmgavf4nylhCaquRUFNB5+szj+A==}
     engines: {node: '>=18'}
 
-  '@sentry/browser@10.69.0':
-    resolution: {integrity: sha512-8391tnm96YbR7b8SYfEA/NEIZuyb2r3SZrtAT0bhZtjlujcYWjo7gugQvk8sWLU9cAa/euD00eJoIoJvNfpd7Q==}
+  '@sentry/browser@10.70.0':
+    resolution: {integrity: sha512-IK6+J+8H06tZe+A8L37TT5ZxxwNtyQatW8zl5RYYJ/e9CsjrM8fPi8I1OT7uquTw8UtjqFHt7bEef/Vy63ksPg==}
     engines: {node: '>=18'}
 
   '@sentry/conventions@0.16.0':
     resolution: {integrity: sha512-fO9PLmHdVURcSPUpWCItWAtgKiMwGdJHbovoSEyLplX5sxs2ugvI4CBPTrkkgqhObnZOD0CnWBKDzSVQYBKEyQ==}
     engines: {node: '>=14'}
 
-  '@sentry/core@10.69.0':
-    resolution: {integrity: sha512-+uuqVEeiDzYuAKjZLqsROKXvRTbl/QeH0gfGRtpYib1cud4rAFWRIkFmcR7Jb7JGFYwmReyQotiTj/hcDszTZg==}
+  '@sentry/core@10.70.0':
+    resolution: {integrity: sha512-ozhCTDqg89oB4XmWfAwuHshABpvT7AkRpaPnogopPfMAaI61G1t8EKCJ4W7aum8JSBonlfyjPCyW5oYZFm0KvA==}
     engines: {node: '>=18'}
 
-  '@sentry/feedback@10.69.0':
-    resolution: {integrity: sha512-qrGz5Qaw93/IhMjlFN6uIaXeHwgHDaKGa6FkTAP6PonpkvSbGGqan6xfsENxzj9HUVoli1lZ6tMRDnt2qtSPhg==}
+  '@sentry/feedback@10.70.0':
+    resolution: {integrity: sha512-6VQn2ETJjHkk4QQDdx/587/JDfXsk3yBTLZ3UZOMtBVrkmwgk+1FJZ8ULJ3ud1xZcuh2icunIkc7tGVv2axdnw==}
     engines: {node: '>=18'}
 
-  '@sentry/replay-canvas@10.69.0':
-    resolution: {integrity: sha512-VF6nXvSninHcc7dC1Zme0RjkC7VgRMCixs6jKaQX5zTNeqTW3dZGSefSOVv+ZteRi3hJvVORq985VjUC9Z/0+A==}
+  '@sentry/replay-canvas@10.70.0':
+    resolution: {integrity: sha512-irzpw22bK5CF3jbecDa0gBUcfjv7tgeUoLAvtIfeHOP5ajmf3o4Cp99a9RQqkfgvkcMeRZBUwE91SQhp6Ank+w==}
     engines: {node: '>=18'}
 
-  '@sentry/replay@10.69.0':
-    resolution: {integrity: sha512-uRhmNhtFGPOlM0iniVmWKAX3KVXI0le41yYK/iKdPjinT9jA3ZrmykO/Fv1v/KI5znOtwa9D6eHRnDTTMRxFrg==}
+  '@sentry/replay@10.70.0':
+    resolution: {integrity: sha512-xMnSGzJn9Xd29rYd32lkx/gFW+5mtgqADJ2FiZvis0MBGZuDlNRwPn0/Cs1xA3JNXKV3NGfhdmmvs90w4dHSmw==}
     engines: {node: '>=18'}
 
   '@shopify/flash-list@2.3.2':
@@ -7260,8 +7419,8 @@ packages:
     peerDependencies:
       react: 19.2.3
 
-  '@tanstack/store@0.11.0':
-    resolution: {integrity: sha512-WlzzCt3xi0G6pCAJu1U+2jiECwabETDpQDi3hfkFZvJii9AuZqEKbOiVarX1/bWhTNjU486yQtJCCasi/0q+Cw==}
+  '@tanstack/store@0.11.1':
+    resolution: {integrity: sha512-mzTOBhypOuDJAy/D8n2MfUZ1HFkXnmSETviRyhqEC8LUE7/IZQExOTxMANj3KjTofYTkFNpBY67qaVrT41YccA==}
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -7592,6 +7751,7 @@ packages:
   '@xmldom/xmldom@0.8.13':
     resolution: {integrity: sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw==}
     engines: {node: '>=10.0.0'}
+    deprecated: this version has critical issues, please update to the latest version
 
   '@xstate/react@6.1.0':
     resolution: {integrity: sha512-ep9F0jGTI63B/jE8GHdMpUqtuz7yRebNaKv8EMUaiSi29NOglywc2X2YSOV/ygbIK+LtmgZ0q9anoEA2iBSEOw==}
@@ -8400,6 +8560,11 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
+  esbuild@0.28.2:
+    resolution: {integrity: sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   escalade@3.2.0:
     resolution: {integrity: sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA==}
     engines: {node: '>=6'}
@@ -8501,8 +8666,8 @@ packages:
     peerDependencies:
       expo: '*'
 
-  expo-asset@57.0.11:
-    resolution: {integrity: sha512-tDaExt9fOKeSc51mmZNqfejyBt9argzo14XP9OmKEdAk2E/mWKJnUNj6rfUzHC5MhG120xuZC/d1ncqq0aC7Pg==}
+  expo-asset@57.0.12:
+    resolution: {integrity: sha512-DbNxGsmqCaE2LWyabXEkDqV/8/mrZ2ikmVzi1V1Dp4MaQO9Kde6VcvQk7h6NVsklmo4xPT1J2Lnrs8Vd18sXOg==}
     peerDependencies:
       expo: '*'
       react: 19.2.3
@@ -8516,8 +8681,8 @@ packages:
       react: 19.2.3
       react-native: 0.86.2
 
-  expo-build-properties@57.0.11:
-    resolution: {integrity: sha512-+YlioKtW5rNVoGMGlw2t0pY198vjGYN/JcCQyc2sKhJYh3w2C4Lu72tkQAzNd/lLRIkUXTU7J0ICRQ8EaXTtbQ==}
+  expo-build-properties@57.0.12:
+    resolution: {integrity: sha512-0muBJPDLiIGTkNb6oqH37rhFfzQrrK/XcnU2LrvZVo8rB/ElIxsWt+Rhm6n0KWH8DmFnS+17gEb0oFqpJIwrlQ==}
     peerDependencies:
       expo: '*'
 
@@ -8528,8 +8693,8 @@ packages:
       react: 19.2.3
       react-native: 0.86.2
 
-  expo-constants@57.0.11:
-    resolution: {integrity: sha512-gpSZ13Nfx0BOc9ALjG1SMhks5csb8Z6ncEVdhDgv0NRrmJcHPRvyUlWaKjRjzwW730XrQ6PIXFRcnNmAxOLj5A==}
+  expo-constants@57.0.12:
+    resolution: {integrity: sha512-js9qxZw4G9ulSc72GGpYGwtmk/IzFcf6/tTcEG6wB8HTlkunMS4W86R+4e6oHIrIkHA7W6s/79Se+E+DC3RAqA==}
     peerDependencies:
       expo: '*'
       react-native: 0.86.2
@@ -8540,13 +8705,13 @@ packages:
       expo: '*'
       react-native: 0.86.2
 
-  expo-dev-client@57.0.12:
-    resolution: {integrity: sha512-KAVV7YyIEQNLB5452nm1BHa7ePthD+HytkEfZha6DILjWowhr0eQ9roUnUKMBMsXnfb4J5cErSzsV8zMTKAUcQ==}
+  expo-dev-client@57.0.13:
+    resolution: {integrity: sha512-6wtJ22BAGKNeqYxaA8NyVwNbFj0fet+pRphMvneTqtE9aoawrJKLVHDJ+Gln5lZpcCQd92utpYFwiBmdS/2LRg==}
     peerDependencies:
       expo: '*'
 
-  expo-dev-launcher@57.0.12:
-    resolution: {integrity: sha512-Au00VBTezkzdlwbwxb6pcWGDmF/QlA0kTAYZZY1JFi8A351FLBEv9kcVdgNU+xasr8qloaD3wWwS429eqA6lWA==}
+  expo-dev-launcher@57.0.13:
+    resolution: {integrity: sha512-o3vz98Sdivei1rDclIiRpiOtqWsex/+w6NqpeJkyvjDj4nrte2s5dN/4BNfjJZKxy5+SMRZqD+wZI2JUIAVHdQ==}
     peerDependencies:
       expo: '*'
       react-native: 0.86.2
@@ -8556,8 +8721,8 @@ packages:
     peerDependencies:
       expo: '*'
 
-  expo-dev-menu@57.0.12:
-    resolution: {integrity: sha512-ub513/edOV/QIPTxLU86+TynUNCIlOAMAUrhHy7hJAHRLCJWn2qVpOxnfcGZimSGk7lthpRAf67oyAK0VE2egA==}
+  expo-dev-menu@57.0.13:
+    resolution: {integrity: sha512-Xs2wOVpbAaOvNWl4gMEjZPi0uaFnCoNB6Qsd4+jqnsUdYb/Q7HSBrGd7QttKZ2KHnaG1Q2cTtR9saHOXVWFaEg==}
     peerDependencies:
       expo: '*'
       react-native: 0.86.2
@@ -8590,8 +8755,8 @@ packages:
     peerDependencies:
       expo: '*'
 
-  expo-image-picker@57.0.10:
-    resolution: {integrity: sha512-Zr00cd4RuUJlke8yN8/lKdl55UauoacF45j86zJa6oxJoe+wjlt9kkf0aGxQeoPW1JILT5Ikr3Os4+a9ROJYEw==}
+  expo-image-picker@57.0.11:
+    resolution: {integrity: sha512-CyeQuGeA2Jei8zQb8S2fxmK6OIvdvUOYpxXegy8Dyc2WsI0GfWcgH8f+6uZmBaMlxakMPP4cfNvT1LeSMbB0PA==}
     peerDependencies:
       expo: '*'
 
@@ -8684,8 +8849,8 @@ packages:
     resolution: {integrity: sha512-sBfVDH6dmKVHZxqUxbfkzS00PZELMZt1IpnHKxcOTMZtR/t7CtRAFrbXcisG+EyzeqHSVDacZT+1tbYfZt5D8w==}
     engines: {node: '>=20.16.0'}
 
-  expo-splash-screen@57.0.6:
-    resolution: {integrity: sha512-FY0E7hMyXVAsNh18yGzIjdooPXdjafalEb6mk2EcqNPjXspHuu+pVEhUscEunw4wF8F/w6MOpT7UfOwHVWez9g==}
+  expo-splash-screen@57.0.7:
+    resolution: {integrity: sha512-QxqfjOCTnTGnqK2BxfEtxUJOcnsJbUXO873Q342r3VkgHAG877eozsNzgYWQXcCFj/asMwx2uy9OXxBShxc5rQ==}
     peerDependencies:
       expo: '*'
 
@@ -9580,6 +9745,10 @@ packages:
     resolution: {integrity: sha512-MULkVLfKGYDFYejP07QOurDLLQpcjk7Fw+7jXS2R2czRQzR56yHRveU5NDJEOviH+hETZKSkIk5c+T23GjFUMg==}
     engines: {node: 18 || 20 || >=22}
 
+  minimatch@10.2.6:
+    resolution: {integrity: sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==}
+    engines: {node: 18 || 20 || >=22}
+
   minimatch@3.1.5:
     resolution: {integrity: sha512-VgjWUsnnT6n+NUk6eZq77zeFdpW2LWDzP6zFGrCbHXiYNul5Dzqk2HHQ5uFH2DNW5Xbp8+jVzaeNt94ssEEl4w==}
 
@@ -10417,10 +10586,6 @@ packages:
     resolution: {integrity: sha512-x/+Cz4YrimQxQccJf5mKEbIa1NzeCRNI5Ecl/ekmlYaampdNLPalVyIcCZNNH3MvmqBugV5TMYZXv0ljslUlaw==}
     engines: {node: '>= 0.4'}
 
-  sax@1.6.0:
-    resolution: {integrity: sha512-6R3J5M4AcbtLUdZmRv2SygeVaM7IhrLXu9BmnOGmmACak8fiUtOsYNWUS4uK7upbmHIBbLBeFeI//477BKLBzA==}
-    engines: {node: '>=11.0.0'}
-
   sax@1.6.1:
     resolution: {integrity: sha512-42tBVwLWnaQvW5zc4HbZrTuWccECCZfBi92FDuwtqxasH+JbPB3/FOKb1m222K42R4WxuxzzMsTswfzgtSu64Q==}
     engines: {node: '>=11.0.0'}
@@ -10746,8 +10911,8 @@ packages:
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
-  tsx@4.23.1:
-    resolution: {integrity: sha512-GQHnkIfxyx1wYCOS/wonik5MVRZU9hi1TEZmzGZSCJB1y9YgoZ8H6itNE/u4suE+yLmOzuE4E5S4TZ/ZX2wcWQ==}
+  tsx@4.23.12:
+    resolution: {integrity: sha512-FDf4L4sYzKtzWYhU/Xm0AQFdTjdIxNo9ElTf2mxXM6k8YMHXzYUe4yODVaXP4V9uMFbVg8c0qyBccK2OOxb45Q==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -11275,30 +11440,30 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip39': 1.6.0
 
-  '@algorandfoundation/keystore-core@1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)':
+  '@algorandfoundation/keystore-core@1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)':
     dependencies:
       '@algorandfoundation/wallet-provider': 1.0.0-canary.5
       '@noble/hashes': 2.0.1
       '@scure/bip39': 1.6.0
-      '@tanstack/store': 0.11.0
+      '@tanstack/store': 0.11.1
       before-after-hook: 4.0.0
     optionalDependencies:
       '@algorandfoundation/dp256': 1.1.0
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       falcon-1024: 0.2.0
 
-  '@algorandfoundation/keystore-web@1.0.0-canary.3(@tanstack/store@0.11.0)(before-after-hook@4.0.0)':
+  '@algorandfoundation/keystore-web@1.0.0-canary.3(@tanstack/store@0.11.1)(before-after-hook@4.0.0)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/wallet-provider': 1.0.0-canary.5
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       '@scure/bip39': 1.6.0
-      '@tanstack/store': 0.11.0
+      '@tanstack/store': 0.11.1
       before-after-hook: 4.0.0
       falcon-1024: 0.2.0
 
-  '@algorandfoundation/keystore@1.0.0-canary.17(@tanstack/store@0.11.0)(before-after-hook@4.0.0)':
+  '@algorandfoundation/keystore@1.0.0-canary.17(@tanstack/store@0.11.1)(before-after-hook@4.0.0)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
       '@algorandfoundation/wallet-provider': 1.0.0-canary.5
@@ -11306,7 +11471,7 @@ snapshots:
       '@noble/hashes': 2.0.1
       '@scure/base': 2.0.0
       '@scure/bip39': 1.6.0
-      '@tanstack/store': 0.11.0
+      '@tanstack/store': 0.11.1
       before-after-hook: 4.0.0
 
   '@algorandfoundation/ledger-algorand-js@1.4.3':
@@ -11319,19 +11484,19 @@ snapshots:
       '@algorandfoundation/wallet-provider': 1.0.0-canary.5
       before-after-hook: 4.0.0
 
-  '@algorandfoundation/react-native-keystore@1.0.0-canary.19(17d941ac8d8835db4d411604e3d7e0ec)':
+  '@algorandfoundation/react-native-keystore@1.0.0-canary.19(94b20e431c90f168546d2b42129aaf47)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/wallet-provider': 1.0.0-canary.5
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       '@scure/base': 2.0.0
       '@scure/bip39': 1.6.0
-      '@tanstack/store': 0.11.0
+      '@tanstack/store': 0.11.1
       before-after-hook: 4.0.0
       react-native-keychain: 10.0.0
       react-native-mmkv: 4.1.2(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-      react-native-quick-crypto: 1.1.6(expo-build-properties@57.0.11(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+      react-native-quick-crypto: 1.1.6(expo-build-properties@57.0.12(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
     optionalDependencies:
       '@algorandfoundation/provider-migrations': 1.0.0-canary.1(before-after-hook@4.0.0)
       '@joe-p/react-native-falcon': 0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -11344,9 +11509,9 @@ snapshots:
       - react-native-nitro-modules
       - react-native-quick-base64
 
-  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.24(patch_hash=7741b668c323b07b88dce93bd875de3913f5ba5116b1c435a72c1b7f3dcc369c)(17d941ac8d8835db4d411604e3d7e0ec)':
+  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.24(patch_hash=7741b668c323b07b88dce93bd875de3913f5ba5116b1c435a72c1b7f3dcc369c)(94b20e431c90f168546d2b42129aaf47)':
     dependencies:
-      '@algorandfoundation/react-native-keystore': 1.0.0-canary.19(17d941ac8d8835db4d411604e3d7e0ec)
+      '@algorandfoundation/react-native-keystore': 1.0.0-canary.19(94b20e431c90f168546d2b42129aaf47)
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
@@ -12279,7 +12444,7 @@ snapshots:
 
   '@esbuild-kit/core-utils@3.3.2':
     dependencies:
-      esbuild: 0.28.1
+      esbuild: 0.25.12
       source-map-support: 0.5.21
 
   '@esbuild-kit/esm-loader@2.6.5':
@@ -12293,10 +12458,16 @@ snapshots:
   '@esbuild/aix-ppc64@0.28.1':
     optional: true
 
+  '@esbuild/aix-ppc64@0.28.2':
+    optional: true
+
   '@esbuild/android-arm64@0.25.12':
     optional: true
 
   '@esbuild/android-arm64@0.28.1':
+    optional: true
+
+  '@esbuild/android-arm64@0.28.2':
     optional: true
 
   '@esbuild/android-arm@0.25.12':
@@ -12305,10 +12476,16 @@ snapshots:
   '@esbuild/android-arm@0.28.1':
     optional: true
 
+  '@esbuild/android-arm@0.28.2':
+    optional: true
+
   '@esbuild/android-x64@0.25.12':
     optional: true
 
   '@esbuild/android-x64@0.28.1':
+    optional: true
+
+  '@esbuild/android-x64@0.28.2':
     optional: true
 
   '@esbuild/darwin-arm64@0.25.12':
@@ -12317,10 +12494,16 @@ snapshots:
   '@esbuild/darwin-arm64@0.28.1':
     optional: true
 
+  '@esbuild/darwin-arm64@0.28.2':
+    optional: true
+
   '@esbuild/darwin-x64@0.25.12':
     optional: true
 
   '@esbuild/darwin-x64@0.28.1':
+    optional: true
+
+  '@esbuild/darwin-x64@0.28.2':
     optional: true
 
   '@esbuild/freebsd-arm64@0.25.12':
@@ -12329,10 +12512,16 @@ snapshots:
   '@esbuild/freebsd-arm64@0.28.1':
     optional: true
 
+  '@esbuild/freebsd-arm64@0.28.2':
+    optional: true
+
   '@esbuild/freebsd-x64@0.25.12':
     optional: true
 
   '@esbuild/freebsd-x64@0.28.1':
+    optional: true
+
+  '@esbuild/freebsd-x64@0.28.2':
     optional: true
 
   '@esbuild/linux-arm64@0.25.12':
@@ -12341,10 +12530,16 @@ snapshots:
   '@esbuild/linux-arm64@0.28.1':
     optional: true
 
+  '@esbuild/linux-arm64@0.28.2':
+    optional: true
+
   '@esbuild/linux-arm@0.25.12':
     optional: true
 
   '@esbuild/linux-arm@0.28.1':
+    optional: true
+
+  '@esbuild/linux-arm@0.28.2':
     optional: true
 
   '@esbuild/linux-ia32@0.25.12':
@@ -12353,10 +12548,16 @@ snapshots:
   '@esbuild/linux-ia32@0.28.1':
     optional: true
 
+  '@esbuild/linux-ia32@0.28.2':
+    optional: true
+
   '@esbuild/linux-loong64@0.25.12':
     optional: true
 
   '@esbuild/linux-loong64@0.28.1':
+    optional: true
+
+  '@esbuild/linux-loong64@0.28.2':
     optional: true
 
   '@esbuild/linux-mips64el@0.25.12':
@@ -12365,10 +12566,16 @@ snapshots:
   '@esbuild/linux-mips64el@0.28.1':
     optional: true
 
+  '@esbuild/linux-mips64el@0.28.2':
+    optional: true
+
   '@esbuild/linux-ppc64@0.25.12':
     optional: true
 
   '@esbuild/linux-ppc64@0.28.1':
+    optional: true
+
+  '@esbuild/linux-ppc64@0.28.2':
     optional: true
 
   '@esbuild/linux-riscv64@0.25.12':
@@ -12377,10 +12584,16 @@ snapshots:
   '@esbuild/linux-riscv64@0.28.1':
     optional: true
 
+  '@esbuild/linux-riscv64@0.28.2':
+    optional: true
+
   '@esbuild/linux-s390x@0.25.12':
     optional: true
 
   '@esbuild/linux-s390x@0.28.1':
+    optional: true
+
+  '@esbuild/linux-s390x@0.28.2':
     optional: true
 
   '@esbuild/linux-x64@0.25.12':
@@ -12389,10 +12602,16 @@ snapshots:
   '@esbuild/linux-x64@0.28.1':
     optional: true
 
+  '@esbuild/linux-x64@0.28.2':
+    optional: true
+
   '@esbuild/netbsd-arm64@0.25.12':
     optional: true
 
   '@esbuild/netbsd-arm64@0.28.1':
+    optional: true
+
+  '@esbuild/netbsd-arm64@0.28.2':
     optional: true
 
   '@esbuild/netbsd-x64@0.25.12':
@@ -12401,10 +12620,16 @@ snapshots:
   '@esbuild/netbsd-x64@0.28.1':
     optional: true
 
+  '@esbuild/netbsd-x64@0.28.2':
+    optional: true
+
   '@esbuild/openbsd-arm64@0.25.12':
     optional: true
 
   '@esbuild/openbsd-arm64@0.28.1':
+    optional: true
+
+  '@esbuild/openbsd-arm64@0.28.2':
     optional: true
 
   '@esbuild/openbsd-x64@0.25.12':
@@ -12413,10 +12638,16 @@ snapshots:
   '@esbuild/openbsd-x64@0.28.1':
     optional: true
 
+  '@esbuild/openbsd-x64@0.28.2':
+    optional: true
+
   '@esbuild/openharmony-arm64@0.25.12':
     optional: true
 
   '@esbuild/openharmony-arm64@0.28.1':
+    optional: true
+
+  '@esbuild/openharmony-arm64@0.28.2':
     optional: true
 
   '@esbuild/sunos-x64@0.25.12':
@@ -12425,10 +12656,16 @@ snapshots:
   '@esbuild/sunos-x64@0.28.1':
     optional: true
 
+  '@esbuild/sunos-x64@0.28.2':
+    optional: true
+
   '@esbuild/win32-arm64@0.25.12':
     optional: true
 
   '@esbuild/win32-arm64@0.28.1':
+    optional: true
+
+  '@esbuild/win32-arm64@0.28.2':
     optional: true
 
   '@esbuild/win32-ia32@0.25.12':
@@ -12437,10 +12674,16 @@ snapshots:
   '@esbuild/win32-ia32@0.28.1':
     optional: true
 
+  '@esbuild/win32-ia32@0.28.2':
+    optional: true
+
   '@esbuild/win32-x64@0.25.12':
     optional: true
 
   '@esbuild/win32-x64@0.28.1':
+    optional: true
+
+  '@esbuild/win32-x64@0.28.2':
     optional: true
 
   '@eslint-community/eslint-utils@4.9.1(eslint@9.39.5)':
@@ -12588,6 +12831,25 @@ snapshots:
       node-forge: 1.4.0
 
   '@expo/config-plugins@57.0.7(typescript@5.9.3)':
+    dependencies:
+      '@expo/config-types': 57.0.2
+      '@expo/json-file': 11.0.1
+      '@expo/plist': 0.8.1
+      '@expo/require-utils': 57.0.4(typescript@5.9.3)
+      '@expo/sdk-runtime-versions': 1.0.0
+      chalk: 4.1.2
+      debug: 4.4.3
+      getenv: 2.0.0
+      glob: 13.0.6
+      semver: 7.8.5
+      slugify: 1.6.9
+      xcode: 3.0.1
+      xml2js: 0.6.0
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
+
+  '@expo/config-plugins@57.0.8(typescript@5.9.3)':
     dependencies:
       '@expo/config-types': 57.0.2
       '@expo/json-file': 11.0.1
@@ -13825,12 +14087,12 @@ snapshots:
       - react
       - react-native
 
-  '@lottiefiles/dotlottie-react@0.19.12(react@19.2.3)':
+  '@lottiefiles/dotlottie-react@0.19.13(react@19.2.3)':
     dependencies:
-      '@lottiefiles/dotlottie-web': 0.78.2
+      '@lottiefiles/dotlottie-web': 0.79.0
       react: 19.2.3
 
-  '@lottiefiles/dotlottie-web@0.78.2': {}
+  '@lottiefiles/dotlottie-web@0.79.0': {}
 
   '@mswjs/interceptors@0.41.9':
     dependencies:
@@ -14287,7 +14549,9 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 
@@ -14497,39 +14761,39 @@ snapshots:
       '@noble/hashes': 2.2.0
       '@scure/base': 2.2.0
 
-  '@sentry/browser-utils@10.69.0':
+  '@sentry/browser-utils@10.70.0':
     dependencies:
       '@sentry/conventions': 0.16.0
-      '@sentry/core': 10.69.0
+      '@sentry/core': 10.70.0
 
-  '@sentry/browser@10.69.0':
+  '@sentry/browser@10.70.0':
     dependencies:
-      '@sentry/browser-utils': 10.69.0
+      '@sentry/browser-utils': 10.70.0
       '@sentry/conventions': 0.16.0
-      '@sentry/core': 10.69.0
-      '@sentry/feedback': 10.69.0
-      '@sentry/replay': 10.69.0
-      '@sentry/replay-canvas': 10.69.0
+      '@sentry/core': 10.70.0
+      '@sentry/feedback': 10.70.0
+      '@sentry/replay': 10.70.0
+      '@sentry/replay-canvas': 10.70.0
 
   '@sentry/conventions@0.16.0': {}
 
-  '@sentry/core@10.69.0':
+  '@sentry/core@10.70.0':
     dependencies:
       '@sentry/conventions': 0.16.0
 
-  '@sentry/feedback@10.69.0':
+  '@sentry/feedback@10.70.0':
     dependencies:
-      '@sentry/core': 10.69.0
+      '@sentry/core': 10.70.0
 
-  '@sentry/replay-canvas@10.69.0':
+  '@sentry/replay-canvas@10.70.0':
     dependencies:
-      '@sentry/core': 10.69.0
-      '@sentry/replay': 10.69.0
+      '@sentry/core': 10.70.0
+      '@sentry/replay': 10.70.0
 
-  '@sentry/replay@10.69.0':
+  '@sentry/replay@10.70.0':
     dependencies:
-      '@sentry/browser-utils': 10.69.0
-      '@sentry/core': 10.69.0
+      '@sentry/browser-utils': 10.70.0
+      '@sentry/core': 10.70.0
 
   '@shopify/flash-list@2.3.2(@babel/runtime@7.29.7)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)':
     dependencies:
@@ -14662,7 +14926,7 @@ snapshots:
       '@tanstack/query-core': 5.101.2
       react: 19.2.3
 
-  '@tanstack/store@0.11.0': {}
+  '@tanstack/store@0.11.1': {}
 
   '@testing-library/dom@10.4.1':
     dependencies:
@@ -14858,17 +15122,24 @@ snapshots:
 
   '@ungap/structured-clone@1.3.1': {}
 
-  '@vitejs/plugin-react@6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))':
+  '@vitejs/plugin-react@6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
-      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
 
-  '@vitejs/plugin-react@6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))':
+  '@vitejs/plugin-react@6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
-      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
+    optionalDependencies:
+      babel-plugin-react-compiler: 1.0.0
+
+  '@vitejs/plugin-react@6.0.5(babel-plugin-react-compiler@1.0.0)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))':
+    dependencies:
+      '@rolldown/pluginutils': 1.0.1
+      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
 
@@ -14884,7 +15155,7 @@ snapshots:
       obug: 2.1.2
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+      vitest: 4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
 
   '@vitest/expect@4.1.10':
     dependencies:
@@ -14895,32 +15166,50 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.10(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))':
+  '@vitest/mocker@4.1.10(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))':
     dependencies:
       '@vitest/spy': 4.1.10
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
       msw: 2.15.0(@types/node@20.19.43)(typescript@5.9.3)
-      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
 
-  '@vitest/mocker@4.1.10(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))':
+  '@vitest/mocker@4.1.10(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))':
+    dependencies:
+      '@vitest/spy': 4.1.10
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      msw: 2.15.0(@types/node@20.19.43)(typescript@5.9.3)
+      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
+
+  '@vitest/mocker@4.1.10(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))':
+    dependencies:
+      '@vitest/spy': 4.1.10
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      msw: 2.15.0(@types/node@20.19.43)(typescript@5.9.3)
+      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+
+  '@vitest/mocker@4.1.10(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))':
     dependencies:
       '@vitest/spy': 4.1.10
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
       msw: 2.15.0(@types/node@26.1.2)(typescript@5.9.3)
-      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
 
-  '@vitest/mocker@4.1.10(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))':
+  '@vitest/mocker@4.1.10(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))':
     dependencies:
       '@vitest/spy': 4.1.10
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
       msw: 2.15.0(@types/node@26.1.2)(typescript@7.0.2)
-      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
 
   '@vitest/pretty-format@4.1.10':
     dependencies:
@@ -15672,7 +15961,7 @@ snapshots:
       '@drizzle-team/brocli': 0.10.2
       '@esbuild-kit/esm-loader': 2.6.5
       esbuild: 0.25.12
-      tsx: 4.23.1
+      tsx: 4.23.12
 
   drizzle-orm@0.45.2(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.3)(expo-sqlite@57.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)):
     optionalDependencies:
@@ -15778,6 +16067,35 @@ snapshots:
       '@esbuild/win32-ia32': 0.28.1
       '@esbuild/win32-x64': 0.28.1
 
+  esbuild@0.28.2:
+    optionalDependencies:
+      '@esbuild/aix-ppc64': 0.28.2
+      '@esbuild/android-arm': 0.28.2
+      '@esbuild/android-arm64': 0.28.2
+      '@esbuild/android-x64': 0.28.2
+      '@esbuild/darwin-arm64': 0.28.2
+      '@esbuild/darwin-x64': 0.28.2
+      '@esbuild/freebsd-arm64': 0.28.2
+      '@esbuild/freebsd-x64': 0.28.2
+      '@esbuild/linux-arm': 0.28.2
+      '@esbuild/linux-arm64': 0.28.2
+      '@esbuild/linux-ia32': 0.28.2
+      '@esbuild/linux-loong64': 0.28.2
+      '@esbuild/linux-mips64el': 0.28.2
+      '@esbuild/linux-ppc64': 0.28.2
+      '@esbuild/linux-riscv64': 0.28.2
+      '@esbuild/linux-s390x': 0.28.2
+      '@esbuild/linux-x64': 0.28.2
+      '@esbuild/netbsd-arm64': 0.28.2
+      '@esbuild/netbsd-x64': 0.28.2
+      '@esbuild/openbsd-arm64': 0.28.2
+      '@esbuild/openbsd-x64': 0.28.2
+      '@esbuild/openharmony-arm64': 0.28.2
+      '@esbuild/sunos-x64': 0.28.2
+      '@esbuild/win32-arm64': 0.28.2
+      '@esbuild/win32-ia32': 0.28.2
+      '@esbuild/win32-x64': 0.28.2
+
   escalade@3.2.0: {}
 
   escape-html@1.0.3: {}
@@ -15881,25 +16199,25 @@ snapshots:
     dependencies:
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
 
-  expo-asset@57.0.11(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3):
+  expo-asset@57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3):
     dependencies:
       '@expo/image-utils': 0.11.4(typescript@5.9.3)
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
-      expo-constants: 57.0.11(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
+      expo-constants: 57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  expo-audio@57.0.3(expo-asset@57.0.11(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
+  expo-audio@57.0.3(expo-asset@57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3))(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
     dependencies:
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
-      expo-asset: 57.0.11(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+      expo-asset: 57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
 
-  expo-build-properties@57.0.11(expo@57.0.11):
+  expo-build-properties@57.0.12(expo@57.0.11):
     dependencies:
       '@expo/schema-utils': 57.0.2
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
@@ -15912,7 +16230,7 @@ snapshots:
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
 
-  expo-constants@57.0.11(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)):
+  expo-constants@57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)):
     dependencies:
       '@expo/env': 2.4.2
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
@@ -15928,22 +16246,22 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  expo-dev-client@57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)):
+  expo-dev-client@57.0.13(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)):
     dependencies:
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
-      expo-dev-launcher: 57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
-      expo-dev-menu: 57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
+      expo-dev-launcher: 57.0.13(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
+      expo-dev-menu: 57.0.13(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       expo-dev-menu-interface: 57.0.0(expo@57.0.11)
       expo-manifests: 57.0.1(expo@57.0.11)
       expo-updates-interface: 57.0.1(expo@57.0.11)
     transitivePeerDependencies:
       - react-native
 
-  expo-dev-launcher@57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)):
+  expo-dev-launcher@57.0.13(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)):
     dependencies:
       '@expo/schema-utils': 57.0.2
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
-      expo-dev-menu: 57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
+      expo-dev-menu: 57.0.13(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       expo-manifests: 57.0.1(expo@57.0.11)
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
 
@@ -15951,7 +16269,7 @@ snapshots:
     dependencies:
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
 
-  expo-dev-menu@57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)):
+  expo-dev-menu@57.0.13(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)):
     dependencies:
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       expo-dev-menu-interface: 57.0.0(expo@57.0.11)
@@ -15982,7 +16300,7 @@ snapshots:
     dependencies:
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
 
-  expo-image-picker@57.0.10(expo@57.0.11):
+  expo-image-picker@57.0.11(expo@57.0.11):
     dependencies:
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       expo-image-loader: 57.0.1(expo@57.0.11)
@@ -16071,9 +16389,9 @@ snapshots:
 
   expo-server@57.0.1: {}
 
-  expo-splash-screen@57.0.6(expo@57.0.11)(typescript@5.9.3):
+  expo-splash-screen@57.0.7(expo@57.0.11)(typescript@5.9.3):
     dependencies:
-      '@expo/config-plugins': 57.0.7(typescript@5.9.3)
+      '@expo/config-plugins': 57.0.8(typescript@5.9.3)
       '@expo/image-utils': 0.11.4(typescript@5.9.3)
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       xml2js: 0.6.0
@@ -16118,7 +16436,7 @@ snapshots:
       '@expo/metro-config': 57.0.7(expo@57.0.11)(typescript@5.9.3)
       '@ungap/structured-clone': 1.3.1
       babel-preset-expo: 57.0.6(@babel/core@7.29.7)(@babel/runtime@7.29.7)(expo@57.0.11)(react-refresh@0.14.2)
-      expo-asset: 57.0.11(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+      expo-asset: 57.0.12(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       expo-constants: 57.0.9(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       expo-file-system: 57.0.4(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       expo-font: 57.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -16412,7 +16730,7 @@ snapshots:
 
   glob@13.0.6:
     dependencies:
-      minimatch: 10.2.5
+      minimatch: 10.2.6
       minipass: 7.1.3
       path-scurry: 2.0.2
 
@@ -16886,12 +17204,12 @@ snapshots:
     dependencies:
       js-tokens: 4.0.0
 
-  lottie-react-native@7.4.0(@lottiefiles/dotlottie-react@0.19.12(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
+  lottie-react-native@7.4.0(@lottiefiles/dotlottie-react@0.19.13(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
     dependencies:
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
     optionalDependencies:
-      '@lottiefiles/dotlottie-react': 0.19.12(react@19.2.3)
+      '@lottiefiles/dotlottie-react': 0.19.13(react@19.2.3)
 
   lower-case@2.0.2:
     dependencies:
@@ -17141,6 +17459,10 @@ snapshots:
   mimic-fn@1.2.0: {}
 
   minimatch@10.2.5:
+    dependencies:
+      brace-expansion: 5.0.9
+
+  minimatch@10.2.6:
     dependencies:
       brace-expansion: 5.0.9
 
@@ -17767,7 +18089,7 @@ snapshots:
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7)(@types/react@19.2.17)(react@19.2.3)
 
-  react-native-quick-crypto@1.1.6(expo-build-properties@57.0.11(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
+  react-native-quick-crypto@1.1.6(expo-build-properties@57.0.12(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
     dependencies:
       '@craftzdog/react-native-buffer': 6.1.2(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       events: 3.3.0
@@ -17781,7 +18103,7 @@ snapshots:
       util: 0.12.5
     optionalDependencies:
       expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
-      expo-build-properties: 57.0.11(expo@57.0.11)
+      expo-build-properties: 57.0.12(expo@57.0.11)
 
   react-native-rate-app@2.0.1(expo@57.0.11)(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
     dependencies:
@@ -18125,8 +18447,6 @@ snapshots:
       es-errors: 1.3.0
       is-regex: 1.2.1
 
-  sax@1.6.0: {}
-
   sax@1.6.1: {}
 
   saxes@6.0.0:
@@ -18366,7 +18686,7 @@ snapshots:
       css-what: 6.2.2
       csso: 5.0.5
       picocolors: 1.1.1
-      sax: 1.6.0
+      sax: 1.6.1
 
   symbol-tree@3.2.4: {}
 
@@ -18435,9 +18755,9 @@ snapshots:
 
   tslib@2.8.1: {}
 
-  tsx@4.23.1:
+  tsx@4.23.12:
     dependencies:
-      esbuild: 0.28.1
+      esbuild: 0.28.2
     optionalDependencies:
       fsevents: 2.3.3
 
@@ -18519,7 +18839,7 @@ snapshots:
 
   unpipe@1.0.0: {}
 
-  unplugin-dts@1.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  unplugin-dts@1.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
     dependencies:
       '@rollup/pluginutils': 5.4.0
       '@volar/typescript': 2.4.28
@@ -18531,13 +18851,13 @@ snapshots:
       typescript: 5.9.3
       unplugin: 2.3.11
     optionalDependencies:
-      esbuild: 0.28.1
+      esbuild: 0.28.2
       rolldown: 1.2.1
-      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
     transitivePeerDependencies:
       - supports-color
 
-  unplugin-dts@1.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  unplugin-dts@1.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
     dependencies:
       '@rollup/pluginutils': 5.4.0
       '@volar/typescript': 2.4.28
@@ -18549,9 +18869,9 @@ snapshots:
       typescript: 5.9.3
       unplugin: 2.3.11
     optionalDependencies:
-      esbuild: 0.28.1
+      esbuild: 0.28.2
       rolldown: 1.2.1
-      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
     transitivePeerDependencies:
       - supports-color
 
@@ -18627,16 +18947,16 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
 
-  vite-plugin-babel@1.7.3(@babel/core@7.29.7)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  vite-plugin-babel@1.7.3(@babel/core@7.29.7)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
     dependencies:
       '@babel/core': 7.29.7
-      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
 
-  vite-plugin-dts@5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  vite-plugin-dts@5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
     dependencies:
-      unplugin-dts: 1.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+      unplugin-dts: 1.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
     optionalDependencies:
-      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
     transitivePeerDependencies:
       - '@rspack/core'
       - '@vue/language-core'
@@ -18646,11 +18966,11 @@ snapshots:
       - typescript
       - webpack
 
-  vite-plugin-dts@5.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  vite-plugin-dts@5.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
     dependencies:
-      unplugin-dts: 1.0.3(esbuild@0.28.1)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+      unplugin-dts: 1.0.3(esbuild@0.28.2)(rolldown@1.2.1)(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
     optionalDependencies:
-      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
     transitivePeerDependencies:
       - '@rspack/core'
       - '@vue/language-core'
@@ -18660,28 +18980,28 @@ snapshots:
       - typescript
       - webpack
 
-  vite-plugin-svgr@5.2.0(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  vite-plugin-svgr@5.2.0(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
     dependencies:
       '@rollup/pluginutils': 5.4.0
       '@svgr/core': 8.1.0(typescript@5.9.3)
       '@svgr/plugin-jsx': 8.1.0(@svgr/core@8.1.0(typescript@5.9.3))
-      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
     transitivePeerDependencies:
       - rollup
       - supports-color
       - typescript
 
-  vite-tsconfig-paths@6.1.1(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  vite-tsconfig-paths@6.1.1(typescript@5.9.3)(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
     dependencies:
       debug: 4.4.3
       globrex: 0.1.2
       tsconfck: 3.1.6(typescript@5.9.3)
-      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3):
+  vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.4
@@ -18693,10 +19013,40 @@ snapshots:
       esbuild: 0.28.1
       fsevents: 2.3.3
       terser: 5.48.0
+      tsx: 4.23.12
+      yaml: 2.8.3
+
+  vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3):
+    dependencies:
+      lightningcss: 1.33.0
+      picomatch: 4.0.4
+      postcss: 8.5.26
+      rolldown: 1.2.1
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 20.19.43
+      esbuild: 0.28.2
+      fsevents: 2.3.3
+      terser: 5.48.0
+      tsx: 4.23.12
+      yaml: 2.8.3
+
+  vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3):
+    dependencies:
+      lightningcss: 1.33.0
+      picomatch: 4.0.4
+      postcss: 8.5.26
+      rolldown: 1.2.1
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 20.19.43
+      esbuild: 0.28.2
+      fsevents: 2.3.3
+      terser: 5.48.0
       tsx: 4.23.5
       yaml: 2.8.3
 
-  vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3):
+  vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.4
@@ -18705,16 +19055,16 @@ snapshots:
       tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 26.1.2
-      esbuild: 0.28.1
+      esbuild: 0.28.2
       fsevents: 2.3.3
       terser: 5.48.0
-      tsx: 4.23.5
+      tsx: 4.23.12
       yaml: 2.8.3
 
-  vitest@4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  vitest@4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
     dependencies:
       '@vitest/expect': 4.1.10
-      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       '@vitest/pretty-format': 4.1.10
       '@vitest/runner': 4.1.10
       '@vitest/snapshot': 4.1.10
@@ -18731,7 +19081,7 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.43
@@ -18740,10 +19090,10 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  vitest@4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
     dependencies:
       '@vitest/expect': 4.1.10
-      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       '@vitest/pretty-format': 4.1.10
       '@vitest/runner': 4.1.10
       '@vitest/snapshot': 4.1.10
@@ -18760,7 +19110,36 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
+      why-is-node-running: 2.3.0
+    optionalDependencies:
+      '@types/node': 20.19.43
+      '@vitest/coverage-v8': 4.1.10(vitest@4.1.10)
+      jsdom: 27.4.0(@noble/hashes@1.8.0)
+    transitivePeerDependencies:
+      - msw
+
+  vitest@4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
+    dependencies:
+      '@vitest/expect': 4.1.10
+      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
+      '@vitest/pretty-format': 4.1.10
+      '@vitest/runner': 4.1.10
+      '@vitest/snapshot': 4.1.10
+      '@vitest/spy': 4.1.10
+      '@vitest/utils': 4.1.10
+      es-module-lexer: 2.1.0
+      expect-type: 1.3.0
+      magic-string: 0.30.21
+      obug: 2.1.2
+      pathe: 2.0.3
+      picomatch: 4.0.4
+      std-env: 4.1.0
+      tinybench: 2.9.0
+      tinyexec: 1.2.4
+      tinyglobby: 0.2.17
+      tinyrainbow: 3.1.0
+      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.19.43
@@ -18769,10 +19148,10 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  vitest@4.1.10(@types/node@20.19.43)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
     dependencies:
       '@vitest/expect': 4.1.10
-      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@20.19.43)(typescript@5.9.3))(vite@8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
       '@vitest/pretty-format': 4.1.10
       '@vitest/runner': 4.1.10
       '@vitest/snapshot': 4.1.10
@@ -18789,7 +19168,36 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@20.19.43)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      why-is-node-running: 2.3.0
+    optionalDependencies:
+      '@types/node': 20.19.43
+      '@vitest/coverage-v8': 4.1.10(vitest@4.1.10)
+      jsdom: 27.4.0(@noble/hashes@2.2.0)
+    transitivePeerDependencies:
+      - msw
+
+  vitest@4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@1.8.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
+    dependencies:
+      '@vitest/expect': 4.1.10
+      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
+      '@vitest/pretty-format': 4.1.10
+      '@vitest/runner': 4.1.10
+      '@vitest/snapshot': 4.1.10
+      '@vitest/spy': 4.1.10
+      '@vitest/utils': 4.1.10
+      es-module-lexer: 2.1.0
+      expect-type: 1.3.0
+      magic-string: 0.30.21
+      obug: 2.1.2
+      pathe: 2.0.3
+      picomatch: 4.0.4
+      std-env: 4.1.0
+      tinybench: 2.9.0
+      tinyexec: 1.2.4
+      tinyglobby: 0.2.17
+      tinyrainbow: 3.1.0
+      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 26.1.2
@@ -18798,10 +19206,10 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  vitest@4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
     dependencies:
       '@vitest/expect': 4.1.10
-      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@26.1.2)(typescript@5.9.3))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       '@vitest/pretty-format': 4.1.10
       '@vitest/runner': 4.1.10
       '@vitest/snapshot': 4.1.10
@@ -18818,7 +19226,7 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 26.1.2
@@ -18827,10 +19235,10 @@ snapshots:
     transitivePeerDependencies:
       - msw
 
-  vitest@4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)):
+  vitest@4.1.10(@types/node@26.1.2)(@vitest/coverage-v8@4.1.10)(jsdom@27.4.0(@noble/hashes@2.2.0))(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)):
     dependencies:
       '@vitest/expect': 4.1.10
-      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3))
+      '@vitest/mocker': 4.1.10(msw@2.15.0(@types/node@26.1.2)(typescript@7.0.2))(vite@8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3))
       '@vitest/pretty-format': 4.1.10
       '@vitest/runner': 4.1.10
       '@vitest/snapshot': 4.1.10
@@ -18847,7 +19255,7 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.1)(terser@5.48.0)(tsx@4.23.5)(yaml@2.8.3)
+      vite: 8.2.1(@types/node@26.1.2)(esbuild@0.28.2)(terser@5.48.0)(tsx@4.23.12)(yaml@2.8.3)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 26.1.2
