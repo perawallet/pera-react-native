@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -373,10 +373,20 @@ test('the Send sheet (nested navigator) renders real content, not blank', async 
         timeout: 20_000,
     })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
-    // Clear the PIN prompt first — it may have raced in and now covers the
-    // backdrop the click below targets.
-    await dismissPinPromptIfPresent(page)
-    await dismissSheet(page)
+
+    // The send sheet is deliberately locked shut — openSendFunds sets both
+    // enablePanDownToClose and enableCloseOnBackdropPress to false so an
+    // in-progress amount survives a stray tap. So dismissSheet (a backdrop
+    // press) is a no-op here, and closing for real means walking the nested
+    // navigator back to its cross. This spec only needs the sheet to have
+    // rendered, and the specs share one page in serial mode, so reload to drop
+    // the sheet instead — an unclosed one would silently cover the tab bar and
+    // time out the next spec that touches this page ("settings opens from the
+    // menu tab", three tests downstream).
+    await page.reload()
+    await expect(page.getByTestId('account_screen')).toBeVisible({
+        timeout: 30_000,
+    })
 })
 
 // Add-account must navigate in-place on every surface, not hand off to a new
