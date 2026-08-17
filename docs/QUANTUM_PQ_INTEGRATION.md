@@ -210,6 +210,40 @@ cannot see: it asserts that importing the PQ barrel **and**
 `getPQProvider.native.ts` does not _evaluate_ either Falcon library, which is
 what actually crashes the app at startup.
 
+**What the firewall does not do is bound reach to key material.** It bounds
+_specifiers_. The keystore packages publicly export Falcon binding factories —
+`loadDefaultFalconBinding` from `@algorandfoundation/react-native-keystore`,
+`createFalconBinding` from `@algorandfoundation/keystore-core` — and a binding
+will generate a keypair and hand back a raw `privateKey`. So any file can
+obtain **freshly generated** Falcon material without naming a forbidden
+specifier. What it cannot do is read the keystore's existing sealed records;
+that still needs the Keychain master key. Custody is enforced by the
+keystore's sealed API, not by this guard — treat the firewall as protection
+against accidental library coupling, not as a security boundary.
+
+**Trap: `packages/kms`'s build output contains only the WASM provider.**
+`packages/kms/dist/index.js` resolves only the WASM provider, because the
+bundler resolves the base `getPQProvider.ts` and never the `.native.ts`
+sibling. `@joe-p/react-native-falcon` is externalised
+(`packages/kms/vite.config.ts:64`) and appears nowhere in the output;
+`falcon-1024` is not in that external list, so it is inlined whole, Emscripten
+glue included — `__filename` at `:7468`, `wasmBinary` at `:7531`,
+`_falcon_det1024_keygen` at `:7534`.
+
+Verify with `falcon_det1024` or `wasmBinary`, never with `falcon-1024`: that
+string is also `keystore-core`'s `KeyType` value (`FALCON_CHILD_KEY_TYPE`,
+`packages/kms/src/models/keys.ts:52`), and both of its hits in the bundle are
+that literal, not the package — `:52` defines it and `:7766` compares against
+it. `packages/blockchain/src/pq/__tests__/pqLibraryFirewall.spec.ts:50`
+documents the same false positive. The factory names are no help either: the
+bundler renames non-exported locals, so the WASM factory ships as `zp` at
+`:7695`.
+
+Nothing is broken today only because `apps/mobile/metro.config.js` rewrites
+`@perawallet/wallet-core-*` to source, so the app never loads that build output.
+Any consumer that resolves the built package instead — a node script, a future
+non-Metro bundler — silently gets WASM Falcon on device.
+
 ## Scope note
 
 PQ-018 (the seam integration) established the seams. Submission is no longer
@@ -335,42 +369,145 @@ re-opens them and adds one item that nothing in CI can cover.
    patch that upstream ships unapplied and this work deliberately did not add.
 9. Upgrade an existing canary.13 install in place — do not reinstall, or the
    one interesting path goes untested. canary.14 changed the MMKV layout from a
-   bare `<keyId>` blob to `m/<id>` (sealed material) + `k/<id>` (metadata), and
-   `extensions/provider/src/keystore/migrateKeystoreLayout.ts` re-indexes,
-   re-seals and re-labels the old records on first launch. Confirm the boot log
-   reports every account (`Keystore layout migrated`, `failed: 0`) and that a
-   quantum account minted before keystore custody is re-minted from its parent
-   (`Quantum key material repaired`) — that account holds a public key only,
+   bare `<keyId>` blob to `m/<id>` (sealed material) + `k/<id>` (metadata).
+   That re-indexing is no longer Pera's to do: the keystore now runs its own
+   adoption revision, and Pera contributes revisions around it under
+   `extensions/provider/src/keystore/migrations/` — `preflight/` before
+   upstream's, `repairs/` after. Confirm every account survives the upgrade, and
+   that a quantum account minted before keystore custody is re-minted from its
+   parent (`Quantum key material repaired`,
+   `apps/mobile/src/useAppBootstrap.ts`) — that account holds a public key only,
    because signing used to re-derive from the seed each time, so a migration
    alone cannot fix it.
 
-### Known broken / deferred after the canary.14 migration
+    A revision's `up` must never reject. A rejection fails the whole run, and
+    because the ledger entry is written only after `up` resolves, it re-runs
+    next launch. A transient failure (I/O, a cancelled biometric prompt)
+    clears; a deterministic one re-fails forever, with no way out but
+    reinstall.
 
-- **Web is knowingly broken.** Metro aliases
+### Provider-migrations additions to the checklist (not runnable in CI)
+
+Nothing below is catchable by a JS test — every failure mode needs a real device
+with real persisted data, and most need two builds installed in sequence. Steps
+11 and 12 are the ones a fresh install can never exercise.
+
+10. **Fresh install — the brick regression.** Wipe the app, launch, create a
+    wallet, confirm an account appears and can sign. A `MasterKeyNotFoundError`
+    here means the migrations ledger landed in the keystore's own MMKV instance:
+    `masterKeyForWrite` mints the Keychain master key only while `getAllKeys()`
+    is empty (`react-native-keystore/dist/engine.js:183-184`), so any blob in
+    that instance bricks first-run key creation. The ledger lives in
+    `pera-provider-migrations` for exactly this reason
+    (`extensions/provider/src/keystore/migrations/migrationsLedger.ts`).
+11. **canary.13 install → this build, upgraded in place.** Install a `main`
+    build, create one account of **each** type (hdwallet, algo25, quantum),
+    create a passkey, then install this build over it without wiping. Verify all
+    three accounts are present, each can sign, the existing passkey still
+    authenticates, and a **new** passkey can still be created. Reinstalling
+    between the two builds is what makes this test vacuous.
+12. **`feat/quantum` install → this build, upgraded in place.** Install a
+    pre-migration `feat/quantum` build (already `k/`+`m/`, HD-root shadow
+    present), then this build over it. Verify no account vanishes and the
+    bare-id shadow is gone from MMKV. This is the case
+    `preflight/0001-retire-hd-root-shadow` exists for: upstream's
+    `adopt-flat-records` would otherwise treat the shadow as a legacy flat
+    record and write its stripped metadata over the real `k/<rootId>`, losing
+    `publicKey`, `metadata.scheme` and `bip44Path`.
+13. **Passkeys on both platforms.** iOS simulator and a physical Android device.
+    Create, assert and delete a credential on each. Confirm the
+    `needs-migration` banner appears for a pre-existing credential and clears
+    once it is removed and recreated, and that the credential-provider prompt
+    says "Pera", not "Rocca". Android note: `getStoredCredentials` is iOS-only
+    by design (`extensions/passkey-autofill/src/service.ts:25-31`), so Android's
+    passkey list is legitimately empty for un-adopted credentials — pre-existing,
+    not a regression from this work.
+14. **Relying-party scoping still holds.** Confirm a get-credential request for
+    one origin does not surface credentials belonging to another. This is the
+    whole purpose of the rebased PERA-4714 patch and the easiest thing to lose
+    on a version bump: upstream still ships `processGetCredentialRequest`
+    filtering on `allowCredentials` only, so the patch — not upstream — is what
+    enforces scoping.
+15. **Migration-banner delete gating.** With Pera **not** the active credential
+    provider and at least one flagged passkey present, confirm the banner warns
+    but offers no remove action, and that the row's own trash icon is withheld
+    too. Re-registration is impossible in that state, so offering
+    delete-and-recreate would walk the user into a lockout. Non-flagged passkeys
+    must stay deletable — they are derivable from the recovery passphrase, which
+    is the entire point of the flag.
+
+#### Result of the 2026-08-17 run
+
+Steps 10, 12, 13 and 14 pass on both platforms; step 15 passes only in its
+non-flagged half (see below). Devices: Samsung SM-S901E (Android 16, SDK 36),
+`com.algorand.perarn.staging`; iPhone 17 Pro simulator (iOS 26),
+`com.algorandllc.perarn.staging`.
+
+Both in-place upgrades ended in the same state: the bare-id HD-root shadow
+carries a zero-length MMKV **delete tombstone**, the ledger holds preflight `4`
+→ upstream `2` → repairs `3` in that order and lives in `pera-provider-migrations`,
+and `<root>-passkey-main` is minted with `scheme: "pbkdf2-p256"` and
+`parentKeyId` pointing at the **entropy child**, not the wallet root. Every
+account survived, and a relaunch re-applied nothing.
+
+Step 13 ran end to end against `webauthn.io` on both platforms — create, assert,
+delete, then create again after the migration — and every provider-facing string
+said "Pera 7 Staging". Step 14 was checked against a second relying party
+(`passkey.org`) while a `webauthn.io` credential was held: Android's logcat shows
+Pera's provider returning `EMPTY_RESPONSE` there and `CREDENTIALS_RECEIVED` at
+`webauthn.io`, and iOS answered "You don't have any passwords or passkeys saved
+for this website". On Android the credential that survived the upgrade was the
+one asserted afterwards, so rematerialization is covered by the same run.
+
+Three things worth knowing before repeating this:
+
+- **Step 11 (canary.13 → this build) was not re-run**; it was verified earlier
+  in the epic and nothing since has touched that path.
+- **On the simulator, do not stage the upgrade by installing two separately
+  built `.app` bundles.** Replacing an ad-hoc-signed app wipes the simulator
+  keychain, so the master key does not survive and every sealed record becomes
+  unreadable — which looks exactly like a migration bug and is not one. Stage it
+  at the JS layer instead: install this branch's binary once, create the wallet
+  against a Metro serving the base branch, then point the same binary at a Metro
+  serving this one. `@algorandfoundation/react-native-keystore` ships no native
+  module of its own, so nothing about that substitution is a fiction. The
+  diagnostic value of the failed attempt was real, though: with the master key
+  genuinely unreachable, `mint-passkey-main-key` **declined and recorded the
+  root** rather than rejecting, and the app booted with its account intact —
+  the decline path, exercised for real.
+- **Step 15's flagged half is not device-reachable here.** The
+  `metadata.migration: "needs-migration"` marker is written by the Pera 6 legacy
+  import, so producing one needs a Pera 6 dataset. What _was_ checked is the
+  direction that over-gating would break: with Pera removed as the credential
+  provider and a non-flagged credential present, the row kept its trash icon and
+  the delete went through (confirmed by tombstone, and by the screen then
+  falling to the `disabled` state — which only renders when the provider is off).
+  The flagged half stays covered by `settings-passkeys-delete.test.tsx`.
+
+### Known broken / deferred after the keystore-custody migration
+
+- **Web runs on an engine the vendored port does not supply.** Metro aliases
   `@algorandfoundation/react-native-keystore` to the vendored
   `extensions/keystore-chrome` for `platform === 'web'`, and that package is a
-  hand-port of canary.12 with no engine factory and no WebCrypto seal helpers.
-  `extensions/keystore-chrome/src/canary14-unsupported.ts` throws with a
-  message naming the cause rather than failing opaquely several frames deeper.
-  The fix is the deferred `@algorandfoundation/keystore-web` port, which needs
-  its own plan.
-- **Android passkeys are split-brain.**
-  `react-native-passkey-autofill@canary.22`'s native credential provider writes
-  a bare `credentialId` record shaped `{iv, tag, content}`, while canary.14
-  reads and writes `m/`/`k/`-prefixed ids shaped `{iv, content}`. The two ends
-  no longer meet. This is externally blocked on an upstream release and must be
-  raised with the library authors; it is not fixable from this repo.
-  It is, however, actively **destroyable** from this repo, which is why
-  `migrateKeystoreLayout` skips those records instead of migrating them: the
-  provider uses the same MMKV instance (`PASSKEYS_MMKV_ID = "keystore"`) and the
-  same `app-secret` master key, so its credentials decrypt as ordinary
-  canary.13 entries. Migrating one deletes the bare id the provider reads back
-  by and drops its biometric-wrapped `privateKeyEnc`, which is an object rather
-  than key bytes. They are identified by `type: 'hd-derived-p256'` plus
-  `metadata.origin` and `metadata.userHandle`.
-- **`bootstrapPasskeyAutofill`'s `configureHdRootKey` is effectively a no-op.**
-  It resolves the HD root through `fetchSecret`, which reads bare ids that the
-  canary.14 driver never writes. It does not throw — it simply finds nothing.
+  partial port with no engine factory. Key storage on web works anyway:
+  `extensions/provider/src/keystore/createKeystore.web.ts` composes the engine
+  itself, running `keystore-core`'s orchestrator over `keystore-web`'s
+  IndexedDB driver, and Metro's `.web.ts` resolution picks it. What is still
+  deferred is folding that into `keystore-chrome` so the alias covers key
+  storage on its own — that port is also still written against the pre-split
+  `@algorandfoundation/keystore@1.0.0-canary.17` flat function API.
+- **Passkey credentials are still bare-id on both platforms.** The "phase 3"
+  move to the `k/`+`m/` layout landed upstream in autofill canary.23/.24 for
+  the **derivation parent only**. Both providers now find the root by scanning
+  `k/`, which is why the HD-root shadow record and its dual-write are gone.
+  **Credential records did not move**, so the two ends still do not meet there:
+  iOS's only keystore-to-credential path guards on a JSON-number-array
+  `privateKey` that a split record does not carry, and Android's metadata path
+  re-derives instead, which cannot reproduce a credential migrated from Pera 6.
+  `packages/passkeys/src/native/README.md` is the maintained account of that
+  split, of the flat-record contract in `nativeProviderRecord.ts`, and of the
+  repair revision that undoes upstream's adoption of those flat records. Read
+  it before touching any of them.
 
 ## PQ-023 — unified signing path, generic `PQSignature` (landed)
 

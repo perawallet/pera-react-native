@@ -51,9 +51,41 @@ export interface Passkey {
      * `native`   — credential exists in the native autofill store but no
      *              matching keystore key was found this bootstrap; will
      *              reconcile on next hydration.
+     * `provider` — read from the flat bare-id record the native credential
+     *              providers own. It has no `k/` key to cascade-delete, so
+     *              removal goes through the native module only.
      */
-    source: 'keystore' | 'native'
+    source: 'keystore' | 'native' | 'provider'
+    /**
+     * The credential was derived from the XHD root before the
+     * deterministic-P256 split, so it still signs in but cannot be reproduced
+     * from the recovery phrase. Set from the `metadata.migration` marker
+     * upstream's `migrateLegacyPasskeys` stamps; always `false` for a native
+     * identity-store row, whose shape carries no metadata bag.
+     */
+    needsMigration: boolean
 }
+
+/**
+ * `PASSKEY_MIGRATION_NEEDED` from `@algorandfoundation/react-native-keystore`,
+ * restated rather than imported — the same trade-off `bootstrapPasskeyAutofill.ts`
+ * makes for `PASSKEY_MAIN_KEY_SCHEME`. This module is re-exported by the
+ * `./webauthn` entry, which exists precisely so a browser-extension consumer
+ * is not forced to resolve the keystore's `react-native-mmkv` graph; importing
+ * the constant here would put that graph back. Drift is pinned in
+ * `__tests__/passkey.spec.ts` against the real export.
+ */
+export const PASSKEY_MIGRATION_NEEDED = 'needs-migration'
+
+/**
+ * Reads the marker `migrateLegacyPasskeys` writes (see the keystore package's
+ * `src/storage/driver.ts`). The marker rides on the credential's `metadata`
+ * bag, so this reads identically off a `k/` record and off the flat provider
+ * record `repairs/0002-rematerialize-passkey-credentials` rewrites.
+ */
+export const isMigrationFlagged = (
+    metadata: Record<string, unknown> | undefined,
+): boolean => metadata?.migration === PASSKEY_MIGRATION_NEEDED
 
 /**
  * Keystore key types that correspond to a P256 passkey credential.
@@ -132,7 +164,23 @@ export const keyToPasskey = (key: Key): Passkey | null => {
         createdAt: readNumber(meta, 'createdAt') ?? Date.now(),
         lastUsedAt: readNumber(meta, 'lastUsedAt'),
         source: 'keystore',
+        needsMigration: isMigrationFlagged(meta),
     }
+}
+
+/**
+ * Projects a decoded flat bare-id provider record. The record is a keystore
+ * `Key` plus `privateKey`, with the byte fields as JSON number arrays — none
+ * of which {@link keyToPasskey} reads — so the projection is shared and only
+ * the attribution differs.
+ */
+export const flatRecordToPasskey = (record: unknown): Passkey | null => {
+    if (typeof record !== 'object' || record === null) return null
+
+    const projected = keyToPasskey(record as Key)
+    if (!projected) return null
+
+    return { ...projected, source: 'provider' }
 }
 
 /**
@@ -166,6 +214,9 @@ export const credentialToPasskey = (
         algorithm: 'P256',
         createdAt: createdAt ?? Date.now(),
         source: 'native',
+        // `PasskeyAutofillCredentialIdentity` has no metadata bag, so the
+        // marker cannot be read here; the flat-record source supplies it.
+        needsMigration: false,
     }
 }
 

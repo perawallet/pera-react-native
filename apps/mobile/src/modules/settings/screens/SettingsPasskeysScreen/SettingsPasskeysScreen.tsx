@@ -17,6 +17,7 @@ import { InfoCallout } from '@components/InfoCallout'
 import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { PasskeyMigrationBanner } from '../../components/PasskeyMigrationBanner'
 import { PasskeysDisabledState } from '../../components/PasskeysDisabledState'
 import { PasskeysEmptyState } from '../../components/PasskeysEmptyState'
 import { PasskeysErrorState } from '../../components/PasskeysErrorState'
@@ -29,6 +30,7 @@ export const SettingsPasskeyScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const screen = useSettingsPasskeysScreen()
+    const migration = screen.migration
 
     // Same QR entry point as the WalletConnect / home scanners — scanned
     // `fido://` (and reserved `liquid://`) codes route through the shared
@@ -70,6 +72,7 @@ export const SettingsPasskeyScreen = () => {
             content = (
                 <PasskeysList
                     passkeys={screen.passkeys}
+                    canRemove={screen.canRemove}
                     onRequestDelete={screen.onRequestDelete}
                 />
             )
@@ -92,6 +95,15 @@ export const SettingsPasskeyScreen = () => {
                 testID='settings_passkeys_screen'
                 style={styles.screenContainer}
             >
+                {migration.isVisible && (
+                    <PasskeyMigrationBanner
+                        affected={migration.affected}
+                        canRecreate={migration.canRecreate}
+                        onRecreate={migration.onRecreate}
+                        onDismiss={migration.onDismiss}
+                        style={styles.notice}
+                    />
+                )}
                 {screen.notice === 'hd-wallet' && (
                     <InfoCallout
                         title={t('settings.passkeys.hd_wallet_warning_title')}

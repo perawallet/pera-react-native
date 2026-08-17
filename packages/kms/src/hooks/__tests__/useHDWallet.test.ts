@@ -64,6 +64,28 @@ vi.mock('../../storage/secrets', () => ({
     commitSecret: (...args: any[]) => mockCommitSecret(...args),
 }))
 
+const mockEnsurePasskeyMainKey = vi.fn()
+vi.mock('../usePasskeyMainKey', () => ({
+    usePasskeyMainKey: () => ({
+        ensurePasskeyMainKey: (...args: any[]) =>
+            mockEnsurePasskeyMainKey(...args),
+    }),
+}))
+
+// Hoisted: `@perawallet/wallet-core-shared` is imported before this module's
+// body runs, so a plain top-level `vi.fn()` is still uninitialized when the
+// factory is invoked.
+const { mockLoggerError } = vi.hoisted(() => ({ mockLoggerError: vi.fn() }))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual<{ logger: object }>(
+        '@perawallet/wallet-core-shared',
+    )
+    return {
+        ...actual,
+        logger: { ...actual.logger, error: mockLoggerError },
+    }
+})
+
 import { useHDWallet, type HDWalletKeyResult } from '../useHDWallet'
 import { SeedScheme } from '../../constants'
 
@@ -176,6 +198,58 @@ describe('useHDWallet', () => {
 
             expect(mockKeyStoreImport).toHaveBeenCalledTimes(1)
             expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
+        })
+
+        test('mints the passkey main key once the entropy child is committed', async () => {
+            const { result } = renderHook(() => useHDWallet())
+            await act(async () => {
+                await result.current.createHDWalletKey({
+                    id: 'hd-1',
+                    mnemonic: 'mnemonic words here',
+                })
+            })
+
+            expect(mockEnsurePasskeyMainKey).toHaveBeenCalledWith('hd-1')
+            // After, not before: `ensurePasskeyMainKey` reads the entropy child
+            // out of the reactive store, so it has nothing to parent on until
+            // `commitSecret` has landed.
+            expect(
+                mockEnsurePasskeyMainKey.mock.invocationCallOrder[0],
+            ).toBeGreaterThan(mockCommitSecret.mock.invocationCallOrder[0])
+        })
+
+        test('does not skip the passkey main key when the entropy commit fails', async () => {
+            mockCommitSecret.mockRejectedValueOnce(new Error('commit boom'))
+            const { result } = renderHook(() => useHDWallet())
+
+            await expect(
+                act(async () => {
+                    await result.current.createHDWalletKey({ id: 'hd-1' })
+                }),
+            ).rejects.toThrow('commit boom')
+
+            expect(mockEnsurePasskeyMainKey).not.toHaveBeenCalled()
+        })
+
+        test('keeps the wallet when the passkey main key cannot be minted', async () => {
+            // The repairs revision back-fills it on a later launch, so a
+            // wallet with no main key is degraded, not broken — rolling the
+            // seed back here would destroy a wallet the user can still use.
+            mockEnsurePasskeyMainKey.mockRejectedValueOnce(
+                new Error('mint boom'),
+            )
+            const { result } = renderHook(() => useHDWallet())
+
+            let keyResult: Optional<HDWalletKeyResult>
+            await act(async () => {
+                keyResult = await result.current.createHDWalletKey({
+                    id: 'hd-1',
+                })
+            })
+
+            expect(keyResult!.seedKey.id).toBe('hd-1')
+            expect(mockKeyStoreRemove).not.toHaveBeenCalled()
+            expect(mockLoggerError).toHaveBeenCalled()
         })
     })
 

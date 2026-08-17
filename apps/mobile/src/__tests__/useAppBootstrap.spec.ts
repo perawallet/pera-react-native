@@ -201,7 +201,6 @@ describe('useAppBootstrap', () => {
         })
         mocks.keystoreReady.mockResolvedValue(undefined)
         mocks.runKeystoreMaintenance.mockResolvedValue({
-            migration: { migrated: 0, skipped: 0, failed: 0 },
             repair: { repaired: 0, failed: 0 },
         })
         mocks.initializeDatabase.mockResolvedValue(undefined)
@@ -300,9 +299,9 @@ describe('useAppBootstrap', () => {
         expect(mocks.runKeystoreMaintenance).toHaveBeenCalledTimes(1)
     })
 
-    // An unreadable master key with canary.13 records still on disk must not
-    // boot into an empty wallet — that is what prompts a destructive re-onboard.
-    it('fails bootstrap when the keystore layout migration throws', async () => {
+    // An unreadable master key with records still on disk must not boot into
+    // an empty wallet — that is what prompts a destructive re-onboard.
+    it('fails bootstrap when keystore maintenance throws', async () => {
         mocks.runKeystoreMaintenance.mockRejectedValue(
             new Error('master key unreadable'),
         )

@@ -26,9 +26,12 @@ import type { PQSignatureProvider } from './types'
  * dependency on `react-native-nitro-modules`' `HybridObject` types.
  *
  * All buffers are raw `ArrayBuffer`s: keys are exact-length Falcon-1024 byte
- * blobs. The module's signing entry point is deliberately absent — the
- * keystore installs its own binding onto this same native module and signs
- * from sealed material, so nothing here ever holds a secret key to sign with.
+ * blobs. `signCompressed`/`verify` are deliberately absent even though the
+ * native module exposes them: the keystore adapts the SAME native module onto
+ * its own signing shim (`createFalconBinding`, in
+ * `@algorandfoundation/react-native-keystore@1.0.0-canary.19`
+ * `dist/falcon.js`) and signs from sealed material, so nothing here ever holds
+ * a secret key to sign with.
  */
 type NativeFalconModule = {
     /** Falcon-1024 public-key length in bytes (1793). */

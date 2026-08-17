@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-/**
- * Mirrors the canary.14 Keychain driver's private bucket prefixes. The driver
- * does not export them, so these must be kept in step with
- * `react-native-keystore/dist/storage/driver.js` on every upgrade.
- */
-export const METADATA_PREFIX = 'k/'
-export const MATERIAL_PREFIX = 'm/'
+export { PasskeyMigrationBanner } from './PasskeyMigrationBanner'
+export type { PasskeyMigrationBannerProps } from './PasskeyMigrationBanner'
+export { usePasskeyMigrationBanner } from './usePasskeyMigrationBanner'
+export type {
+    UsePasskeyMigrationBannerParams,
+    UsePasskeyMigrationBannerResult,
+} from './usePasskeyMigrationBanner'

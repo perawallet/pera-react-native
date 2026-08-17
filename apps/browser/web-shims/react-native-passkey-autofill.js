@@ -23,15 +23,10 @@ const noopArray = () => Promise.resolve([])
 // Mirror the PasskeyAutofillNativeAPI interface as a no-op object (default export).
 const PasskeyAutofillModule = {
     setMasterKey: noop,
+    setMainKeyId: noop,
+    getMainKeyId: noopNull,
     setHdRootKeyId: noop,
     getHdRootKeyId: noopNull,
-    // setDerivedMainKey intentionally absent: PasskeyAutofillService derives
-    // `supportsDerivedMainKey` from `typeof native.setDerivedMainKey ===
-    // 'function'`, and bootstrapPasskeyAutofill only stringifies the derived
-    // main key to hex when that reports true. Defining it here — even as a
-    // no-op — would flip the flag on web and make the bootstrap materialize a
-    // non-zeroable hex copy of the key for a bridge that does nothing with it.
-    // The absent-method path is the one that keeps the secret out of memory.
     configureIntentActions: noop,
     clearCredentials: noop,
     deleteCredential: noop,

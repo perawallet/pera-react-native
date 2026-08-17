@@ -11,21 +11,47 @@
  */
 
 /**
- * The on-disk contract of the Android credential provider
- * (`react-native-passkey-autofill`'s `CredentialRepository`).
+ * The on-disk contract of the credential provider's **credential records**
+ * (`react-native-passkey-autofill`'s `CredentialRepository` on Android,
+ * `PasskeyCredentialStore` on iOS).
  *
  * The provider is a **separate process** that shares this app's keystore MMKV
- * instance (`PASSKEYS_MMKV_ID = "keystore"`) and master key, but is still on the
- * pre-canary.14 bare-id layout. Everything it reads and writes lives at an
- * unprefixed key — no `k/`, no `m/`.
+ * instance (`PASSKEYS_MMKV_ID = "keystore"`) and master key. As of autofill
+ * canary.23/.24 the derivation **parent/root** is read from the keystore's own
+ * `k/`+`m/` split on both platforms — but **credential records are still
+ * bare-id only, on both platforms**. iOS's only credential-from-keystore path,
+ * `allKeystoreCredentials()`, guards on `dataArray(keyData["publicKey"])` and
+ * `dataArray(keyData["privateKey"])`, both of which require a JSON number
+ * array; a split `k/` record's `publicKey` is `{"$u8": …}` and it carries no
+ * `privateKey` at all, so the guard fails silently. Android's
+ * `credentialFromMetadataRecord` re-derives on demand instead of reading a
+ * persisted key, which cannot reproduce a migrated Pera 6 credential. See
+ * `packages/passkeys/src/native/README.md` for the full split.
  *
- * This module is the single place that contract is expressed, because two
- * separate things need it and a third will:
+ * This module is the single place the **credential** contract is expressed,
+ * because two separate things need it and a third still will:
  *
- * 1. Writing credentials migrated from Pera 6 so the provider can read them.
- * 2. Writing the HD root record the provider derives new credentials from.
- * 3. **Phase 3** — reading both back, once the provider moves to `k/`+`m/`, so
- *    the records can be migrated into the keystore's own layout without loss.
+ * 1. Writing credentials migrated from Pera 6 so the provider can read them
+ *    (`packages/migrate/.../writeNativePasskeyEntry.ts`).
+ * 2. Un-adopting a credential upstream's own `adopt-flat-records` revision
+ *    wrongly split into `k/`+`m/`
+ *    (`extensions/provider/.../repairs/0002-rematerialize-passkey-credentials.ts`,
+ *    which restates this module's seal function rather than importing it —
+ *    `packages/passkeys` already depends on `@perawallet/wallet-extension-provider`,
+ *    so the reverse import would be circular). That module's own
+ *    `nativeCredentialRecord.spec.ts` guards the restated writer three ways:
+ *    a live round trip through this module's real `openNativeProviderRecord`
+ *    (imported by deep relative path, which creates no `package.json` edge —
+ *    a devDependency does, and trips turbo's whole-graph cycle check), a
+ *    golden envelope pinned from an earlier such round trip, and a direct
+ *    comparison of the restated writer's output against this module's real
+ *    `sealNativeProviderRecord` for the same input. The last catches the two
+ *    writers diverging from each other; only the golden pin — a frozen
+ *    literal, with no writer to agree with — catches them drifting together.
+ * 3. **A still-pending phase 3** — reading credential records back, if and
+ *    when the provider ever moves credentials to `k/`+`m/` too, so they can be
+ *    migrated into the keystore's own layout without loss. Not started: see
+ *    "What a credential migration would have to handle" below.
  *
  * ## Why `sealData`/`encode` from the keystore cannot be used
  *
@@ -43,6 +69,21 @@
  * Neither throws. A record written with the keystore's own helpers is simply
  * invisible to the provider, which is exactly the failure this module exists to
  * prevent.
+ *
+ * ## What a credential migration would have to handle
+ *
+ * Not started, but recorded here rather than left to be rediscovered — this is
+ * what the fixture corpus in `__tests__/nativeProviderRecord.spec.ts` pins:
+ *
+ * - Both envelope shapes: sealed `{iv, tag, content}` **and** the unsealed
+ *   base64url payload the provider falls back to when it has no master key.
+ * - Both credential type strings: `hd-derived-p256` and the legacy
+ *   `xhd-derived-p256`, which the provider's read path still accepts.
+ * - Byte fields as JSON **number arrays**, not `{$u8}`.
+ * - `privateKeyEnc` — an object, not a `Uint8Array`. It must be carried across
+ *   verbatim. A generic secret-lifter that only understands byte arrays drops
+ *   it, which destroys a biometric-gated credential while appearing to
+ *   succeed.
  */
 
 /** AES-GCM parameters the provider's Kotlin seal/open path assumes. */
@@ -73,11 +114,24 @@ const toStandardBase64 = (bytes: Uint8Array): string =>
 export const fromStandardBase64 = (value: string): Uint8Array =>
     Uint8Array.from(atob(value), char => char.charCodeAt(0))
 
+/**
+ * UTF-8-encodes before base64-ing, so a non-Latin1 `userName`/`displayName`
+ * doesn't throw `btoa`'s `InvalidCharacterError` mid-write — Android's own
+ * writer does the equivalent (`jsonString.toByteArray(Charsets.UTF_8)` before
+ * `Base64.encodeToString`), and keeps the padding
+ * `Base64.encodeToString(..., URL_SAFE or NO_WRAP)` produces by default,
+ * because the keystore package's own `decode` requires it (`base64url.decode`
+ * from `@scure/base` throws on an unpadded string).
+ */
 const toBase64Url = (value: string): string =>
-    btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    toStandardBase64(new TextEncoder().encode(value))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
 
 const fromBase64Url = (value: string): string =>
-    atob(value.replace(/-/g, '+').replace(/_/g, '/'))
+    new TextDecoder().decode(
+        fromStandardBase64(value.replace(/-/g, '+').replace(/_/g, '/')),
+    )
 
 /**
  * Byte arrays cross this boundary as JSON arrays of numbers, never `{$u8}` and
@@ -136,6 +190,27 @@ export const sealNativeProviderRecord = async (
  * `{iv, tag, content}` and unsealed base64url JSON. Phase 3's migration needs
  * both; dropping the unsealed case would silently lose those records.
  */
+/**
+ * Whether `payload` is one of the two shapes {@link openNativeProviderRecord}
+ * accepts — i.e. whether a failure to open it means "written by someone else"
+ * or "a record we could not read". A scan that gates a one-way action needs
+ * that apart: the keystore's own legacy bare-id writer emits `{iv, content}`
+ * with no `tag`, which shares the namespace but was never a credential record.
+ * Kept beside the reader so the two cannot drift.
+ */
+export const isNativeProviderRecordPayload = (payload: string): boolean => {
+    if (!payload.startsWith('{')) return true
+    try {
+        const envelope = JSON.parse(payload) as Partial<NativeProviderEnvelope>
+        return Boolean(envelope.iv && envelope.tag && envelope.content)
+    } catch {
+        // A `{`-prefixed payload that is not JSON is one of ours, corrupted —
+        // no writer emits that shape. Claiming it for another writer would let
+        // the reader's failure pass as a complete scan.
+        return true
+    }
+}
+
 export const openNativeProviderRecord = async (
     subtle: SubtleCrypto,
     masterKey: Uint8Array,

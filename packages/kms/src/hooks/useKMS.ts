@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import type { Key } from '@algorandfoundation/keystore-core'
 import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     InvalidKeyError,
     KeyManagementError,
@@ -33,6 +34,7 @@ import { useQuantum } from './useQuantum'
 export type { QuantumKeyResult } from './useQuantum'
 import { useHDWallet } from './useHDWallet'
 export type { HDWalletKeyResult } from './useHDWallet'
+import { isPasskeyMainKey, usePasskeyMainKey } from './usePasskeyMainKey'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from './useKMSServices'
 import { useKeystoreKeys } from './useKeystoreState'
@@ -57,6 +59,7 @@ export const useKMS = () => {
     } = useHDWallet()
     const { deleteKey, keyStore, withExportedKey, checkAccess } =
         useKMSService()
+    const { ensurePasskeyMainKey } = usePasskeyMainKey()
 
     // All seed keys mapped by id for quick lookup. No private data is exposed here
     const seeds = useMemo(() => {
@@ -99,22 +102,80 @@ export const useKMS = () => {
 
     /**
      * Removes a top-level key (typically a seed) and every keystore entry
-     * whose `metadata.parentKeyId` points back to it.
+     * reachable from it through `metadata.parentKeyId`. Transitive, because the
+     * passkey main key parents on the BIP39 entropy child and a surviving main
+     * key gets adopted by the next wallet, whose passkeys would then derive
+     * from a discarded mnemonic.
+     *
+     * The device has exactly one main key, so this can strip it from every
+     * other wallet. Nothing else would re-mint it (`ensurePasskeyMainKey`'s only
+     * other caller is wallet creation, and `repairs/0003` is ledgered one-shot),
+     * so this does, below.
+     *
+     * Credentials are NOT spared as a class: the extension's `hd-derived-p256`
+     * records are `k/` entries parented on the main key and hold no private key
+     * of their own, so this destroys them. The native provider's credentials
+     * survive only because they sit at bare ids
+     * (`PasskeyCredentialStore.swift:310`), outside the `k/` namespace the
+     * keystore driver enumerates (`react-native-keystore/dist/storage/driver.js:123`),
+     * so they never appear in `liveKeys` at all.
      */
     const removeKeyAndChildren = useCallback(
         async (rootKeyId: string): Promise<void> => {
             const liveKeys = getKeystoreStore().state.keys
-            for (const k of liveKeys) {
-                if (k.id === rootKeyId) continue
-                const parentKeyId = (k.metadata as Record<string, unknown>)
-                    ?.parentKeyId
-                if (parentKeyId === rootKeyId) {
-                    await keyStore.remove(k.id)
+            const doomed = new Set<string>([rootKeyId])
+            // Re-sweep until nothing new is found: the store is in no
+            // particular order, so a grandchild may precede its parent.
+            let grew = true
+            while (grew) {
+                grew = false
+                for (const k of liveKeys) {
+                    if (doomed.has(k.id)) continue
+                    const parentKeyId = (k.metadata as Record<string, unknown>)
+                        ?.parentKeyId
+                    if (
+                        typeof parentKeyId === 'string' &&
+                        doomed.has(parentKeyId)
+                    ) {
+                        doomed.add(k.id)
+                        grew = true
+                    }
                 }
             }
+
+            for (const id of doomed) {
+                if (id === rootKeyId) continue
+                await keyStore.remove(id)
+            }
             await keyStore.remove(rootKeyId)
+
+            const survivors = liveKeys.filter(k => !doomed.has(k.id))
+            const lostMainKey =
+                liveKeys.some(k => doomed.has(k.id) && isPasskeyMainKey(k)) &&
+                !survivors.some(isPasskeyMainKey)
+            if (!lostMainKey) return
+
+            // Lowest-sorted root with an entropy child wins, matching
+            // `repairs/0003` and the extension's `resolveMainKeyId`, so the
+            // choice never depends on store order. `isSeedKey` states the
+            // intent; `entropyChildIdOf` alone would already exclude non-roots.
+            const heir = survivors
+                .filter(isSeedKey)
+                .map(k => k.id)
+                .sort()
+                .find(id => entropyChildIdOf(id, survivors))
+            if (!heir) return
+
+            try {
+                await ensurePasskeyMainKey(heir)
+            } catch (error) {
+                // The deletion itself succeeded; surfacing a re-mint failure as
+                // a failed wallet removal would be the bigger lie. Passkeys
+                // then fall back to the deprecated XHD-root derivation.
+                logger.error('passkey main key re-mint failed', { error })
+            }
         },
-        [keyStore],
+        [keyStore, ensurePasskeyMainKey],
     )
 
     const getKey = useCallback(

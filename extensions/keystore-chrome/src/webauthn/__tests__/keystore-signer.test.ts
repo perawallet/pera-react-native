@@ -19,6 +19,7 @@ import {
     b64urlToBytes,
     bytesToB64url,
     deriveCredentialId,
+    splitP256PublicKey,
 } from '@perawallet/wallet-core-passkeys/webauthn'
 import { createKeystoreSigner, type PasskeyKeyStore } from '../keystore-signer'
 
@@ -37,6 +38,9 @@ const importVerifyKey = (publicKeyXY: Uint8Array): Promise<CryptoKey> => {
 }
 
 const WALLET_ROOT_ID = 'wallet-root'
+const ENTROPY_CHILD_ID = 'wallet-root-entropy'
+const ROOT_BYTES = new Uint8Array(96).fill(7)
+const ENTROPY_BYTES = new Uint8Array(32).fill(9)
 const PBKDF2_SALT = new TextEncoder().encode('pera-test-salt')
 
 const metadataOf = (key: Key | undefined): Record<string, unknown> =>
@@ -57,6 +61,8 @@ const metadataOf = (key: Key | undefined): Record<string, unknown> =>
  */
 type FakeEngine = PasskeyKeyStore & {
     generateCalls: { params?: Record<string, unknown> }[]
+    /** Registers bytes for a key a test plants directly in the store. */
+    addMaterial: (id: string, bytes: Uint8Array) => void
 }
 
 const createFakeEngine = (store: Store<KeyStoreState>): FakeEngine => {
@@ -72,6 +78,10 @@ const createFakeEngine = (store: Store<KeyStoreState>): FakeEngine => {
 
     const engine: FakeEngine = {
         generateCalls: [],
+
+        addMaterial(id, bytes) {
+            material.set(id, bytes)
+        },
 
         async generate(options) {
             engine.generateCalls.push(options)
@@ -152,8 +162,9 @@ const createFakeEngine = (store: Store<KeyStoreState>): FakeEngine => {
         },
     }
 
-    // The wallet's own root, as `useHDWallet` writes it on this branch.
-    material.set(WALLET_ROOT_ID, new Uint8Array(96).fill(7))
+    // The wallet's own root, as `useHDWallet` writes it on this branch: the
+    // 96-byte XHD extended root, NOT the BIP39 entropy.
+    material.set(WALLET_ROOT_ID, ROOT_BYTES)
     put({
         id: WALLET_ROOT_ID,
         type: 'hd-root-key',
@@ -162,7 +173,90 @@ const createFakeEngine = (store: Store<KeyStoreState>): FakeEngine => {
         metadata: { storage: 'bytes', scheme: 'bip39' },
     } as Key)
 
+    // Decoys, deliberately ahead of the real entropy child so a predicate that
+    // drops any one clause picks one of these instead. Each defeats exactly one
+    // clause: wrong type, missing flag, wrong parent. PBKDF2ing any of them
+    // would mint a main key no mnemonic reproduces.
+    material.set('decoy-wrong-type', new Uint8Array(32).fill(1))
+    put({
+        id: 'decoy-wrong-type',
+        type: 'hd-derived-ed25519',
+        algorithm: 'raw',
+        extractable: false,
+        metadata: { parentKeyId: WALLET_ROOT_ID, entropyKey: true },
+    } as Key)
+    material.set('decoy-unflagged', new Uint8Array(32).fill(2))
+    put({
+        id: 'decoy-unflagged',
+        type: 'secret-key',
+        algorithm: 'raw',
+        extractable: false,
+        metadata: { parentKeyId: WALLET_ROOT_ID },
+    } as Key)
+    material.set('decoy-other-wallet', new Uint8Array(32).fill(3))
+    put({
+        id: 'decoy-other-wallet',
+        type: 'secret-key',
+        algorithm: 'raw',
+        extractable: false,
+        metadata: { parentKeyId: 'some-other-root', entropyKey: true },
+    } as Key)
+
+    // The 32-byte BIP39 entropy, stored apart from the root by `useHDWallet`.
+    material.set(ENTROPY_CHILD_ID, ENTROPY_BYTES)
+    put({
+        id: ENTROPY_CHILD_ID,
+        type: 'secret-key',
+        algorithm: 'raw',
+        extractable: false,
+        metadata: {
+            storage: 'bytes',
+            parentKeyId: WALLET_ROOT_ID,
+            entropyKey: true,
+        },
+    } as Key)
+
     return engine
+}
+
+/** Adds a second wallet root (with its entropy child, unless opted out). */
+const plantRoot = (
+    store: Store<KeyStoreState>,
+    engine: FakeEngine,
+    rootId: string,
+    {
+        withEntropyChild = true,
+        first = false,
+    }: { withEntropyChild?: boolean; first?: boolean } = {},
+): void => {
+    const planted: Key[] = [
+        {
+            id: rootId,
+            type: 'hd-root-key',
+            algorithm: 'raw',
+            extractable: false,
+            metadata: { storage: 'bytes', scheme: 'bip39' },
+        } as Key,
+    ]
+    if (withEntropyChild) {
+        const entropyId = `${rootId}-entropy`
+        engine.addMaterial(entropyId, new Uint8Array(32).fill(4))
+        planted.push({
+            id: entropyId,
+            type: 'secret-key',
+            algorithm: 'raw',
+            extractable: false,
+            metadata: {
+                storage: 'bytes',
+                parentKeyId: rootId,
+                entropyKey: true,
+            },
+        } as Key)
+    }
+    store.setState(state => ({
+        ...state,
+        keys: first ? [...planted, ...state.keys] : [...state.keys, ...planted],
+    }))
 }
 
 const credentialParams = (overrides: Record<string, unknown> = {}) => ({
@@ -184,7 +278,7 @@ describe('keystore-chrome webauthn signer', () => {
     })
 
     describe('createP256Credential', () => {
-        it('mints a pbkdf2-p256 main key from the wallet root, then derives the credential from it', async () => {
+        it("mints a pbkdf2-p256 main key from the wallet root's entropy child, then derives the credential from it", async () => {
             const signer = createKeystoreSigner(engine, store)
 
             const { keyId, publicKeyXY } =
@@ -192,12 +286,12 @@ describe('keystore-chrome webauthn signer', () => {
 
             // The engine only accepts a `pbkdf2-p256` main key as the parent
             // of a domain key, and that main key must descend from the
-            // wallet's own root so the credential is seed-recoverable.
+            // wallet's BIP39 entropy so the credential is seed-recoverable.
             const mainKey = store.state.keys.find(
                 k => metadataOf(k).scheme === 'pbkdf2-p256' && k.id !== keyId,
             )
             expect(mainKey?.type).toBe('hd-root-key')
-            expect(metadataOf(mainKey).parentKeyId).toBe(WALLET_ROOT_ID)
+            expect(metadataOf(mainKey).parentKeyId).toBe(ENTROPY_CHILD_ID)
 
             const credential = store.state.keys.find(k => k.id === keyId)
             expect(credential?.type).toBe('hd-derived-p256')
@@ -240,8 +334,117 @@ describe('keystore-chrome webauthn signer', () => {
 
             expect(keyId).toBeTruthy()
             expect(engine.generateCalls[0]?.params?.parentKeyId).toBe(
-                WALLET_ROOT_ID,
+                ENTROPY_CHILD_ID,
             )
+        })
+
+        // The whole point of the entropy-child parent: `generateDP256Main`
+        // PBKDF2s the parent's stored bytes verbatim, so parenting on the
+        // 96-byte extended root would give a main key no mnemonic reproduces
+        // on any other platform.
+        it('PBKDF2s the BIP39 entropy, not the 96-byte extended root', async () => {
+            const signer = createKeystoreSigner(engine, store)
+
+            const { publicKeyXY } =
+                await signer.createP256Credential(credentialParams())
+
+            const dp = new DeterministicP256()
+            const fromEntropy = await dp.genDerivedMainKey(
+                ENTROPY_BYTES,
+                PBKDF2_SALT,
+                10,
+                32,
+            )
+            const fromRoot = await dp.genDerivedMainKey(
+                ROOT_BYTES,
+                PBKDF2_SALT,
+                10,
+                32,
+            )
+            const flatXYFor = async (
+                mainKey: Uint8Array,
+            ): Promise<number[]> => {
+                const pk = dp.getPurePKBytes(
+                    await dp.genDomainSpecificKeyPair(
+                        mainKey,
+                        'webauthn.io',
+                        'alice',
+                        0,
+                    ),
+                )
+                const { x, y } = splitP256PublicKey(pk)
+                return [...x, ...y]
+            }
+            const expected = await flatXYFor(fromEntropy)
+            const wrong = await flatXYFor(fromRoot)
+
+            // Non-vacuity: the two parents really do yield different keys, so
+            // the assertion below can only pass for the entropy one.
+            expect(wrong).not.toEqual(expected)
+            expect([...publicKeyXY]).toEqual(expected)
+        })
+
+        // Same formula as `usePasskeyMainKey`/`repairs/0003` on mobile, so a
+        // keystore written by either side is recognised by the other.
+        it('names the main key with the shared `<seedKeyId>-passkey-main` id', async () => {
+            const signer = createKeystoreSigner(engine, store)
+
+            await signer.createP256Credential(credentialParams())
+
+            expect(engine.generateCalls[0]?.params?.id).toBe(
+                `${WALLET_ROOT_ID}-passkey-main`,
+            )
+        })
+
+        // `repairs/0003` and `useKMS` both sort their root pick, and the device
+        // gets exactly one main key. If this side picked by store order, a
+        // two-wallet device would mint a different main key here than mobile
+        // does from the same seeds, and the passkeys would not match.
+        it('picks the lowest-sorted wallet root, whatever the store order', async () => {
+            // Appended after `wallet-root`, so store order and sort order
+            // disagree: an unsorted scan takes `wallet-root`.
+            plantRoot(store, engine, 'zzz-root')
+            plantRoot(store, engine, 'aaa-root')
+            const signer = createKeystoreSigner(engine, store)
+
+            await signer.createP256Credential(credentialParams())
+
+            expect(engine.generateCalls[0]?.params).toMatchObject({
+                parentKeyId: 'aaa-root-entropy',
+                id: 'aaa-root-passkey-main',
+            })
+        })
+
+        // An Algo25 or watch-only root has no BIP39 entropy to PBKDF2, so it
+        // cannot own the main key even when it sorts first — `repairs/0003`
+        // skips to the next root rather than leaving the device without one.
+        it('skips a lower-sorted wallet root that has no entropy child', async () => {
+            // Planted ahead of `wallet-root`, so an unsorted scan reaches it
+            // first and this test cannot pass by accident.
+            plantRoot(store, engine, 'aaa-root', {
+                withEntropyChild: false,
+                first: true,
+            })
+            const signer = createKeystoreSigner(engine, store)
+
+            await signer.createP256Credential(credentialParams())
+
+            expect(engine.generateCalls[0]?.params).toMatchObject({
+                parentKeyId: ENTROPY_CHILD_ID,
+                id: `${WALLET_ROOT_ID}-passkey-main`,
+            })
+        })
+
+        it('throws when the wallet root has no entropy child to derive from', async () => {
+            store.setState(state => ({
+                ...state,
+                keys: state.keys.filter(k => k.id !== ENTROPY_CHILD_ID),
+            }))
+            const signer = createKeystoreSigner(engine, store)
+
+            await expect(
+                signer.createP256Credential(credentialParams()),
+            ).rejects.toThrow(/entropy/i)
         })
 
         it('lowercases userHandle for derivation without touching userHandleOriginalB64Url', async () => {

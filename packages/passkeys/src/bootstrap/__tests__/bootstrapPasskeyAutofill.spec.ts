@@ -11,7 +11,6 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { openNativeProviderRecord } from '../../native/nativeProviderRecord'
 
 // Standard base64, matching `@scure/base`'s `base64` — restated locally rather
 // than imported so this package needs no bundler-visible dependency for it.
@@ -78,6 +77,8 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     readMasterKey: mocks.readMasterKey,
     storage: mocks.storage,
     MasterKeyNotFoundError: mocks.MasterKeyNotFoundError,
+    METADATA_PREFIX: 'k/',
+    MATERIAL_PREFIX: 'm/',
     // canary.14's codecs, restated over the same primitives for the same
     // reason as the class above. `decode` reads the `{$u8}` metadata the
     // Keychain driver writes into `k/`; `openData` unseals `m/`.
@@ -109,8 +110,7 @@ const intentActions = {
 const makeService = () => ({
     setMasterKey: vi.fn().mockResolvedValue(undefined),
     setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
-    setDerivedMainKey: vi.fn().mockResolvedValue(undefined),
-    supportsDerivedMainKey: true,
+    setMainKeyId: vi.fn().mockResolvedValue(undefined),
     configureIntentActions: vi.fn().mockResolvedValue(undefined),
     isProviderActive: vi.fn().mockResolvedValue(true),
     refreshCredentialIdentities: vi.fn().mockResolvedValue(undefined),
@@ -159,13 +159,17 @@ const ROOT_SEED = new Uint8Array(96).fill(5)
 const seedHdRoot = (id = 'root-id') =>
     seedKeystore({ id, type: 'hd-root-key', algorithm: 'raw' }, ROOT_SEED)
 
-/** The record the credential provider would read back at the bare id. */
-const shadowRecord = async (id = 'root-id') =>
-    (await openNativeProviderRecord(
-        subtle,
-        Uint8Array.from(MASTER_KEY),
-        mocks.store.get(id)!,
-    )) as Record<string, unknown>
+/** The dp256 main key, distinguished from the XHD root only by its scheme. */
+const seedPasskeyMainKey = (id = 'main-id') =>
+    seedKeystore(
+        {
+            id,
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            metadata: { storage: 'bytes', scheme: 'pbkdf2-p256' },
+        },
+        new Uint8Array(64).fill(6),
+    )
 
 describe('bootstrapPasskeyAutofill', () => {
     beforeEach(() => {
@@ -175,7 +179,7 @@ describe('bootstrapPasskeyAutofill', () => {
         mocks.readMasterKey.mockResolvedValue(Buffer.from(MASTER_KEY))
     })
 
-    it('pushes the master key, HD root id, derived bytes, intent actions, then refreshes identities', async () => {
+    it('pushes the master key, HD root id, intent actions, then refreshes identities', async () => {
         const service = makeService()
         // Snapshot the bytes at call time: the bootstrap zeroes the Uint8Array
         // in its finally (after the native side has copied it), so the captured
@@ -197,102 +201,11 @@ describe('bootstrapPasskeyAutofill', () => {
 
         expect(receivedMasterKey).toEqual(Buffer.from(MASTER_KEY))
         expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
-        expect(service.setDerivedMainKey).toHaveBeenCalledWith('010203')
         expect(service.configureIntentActions).toHaveBeenCalledWith(
             'GET_ACTION',
             'CREATE_ACTION',
         )
         expect(service.refreshCredentialIdentities).toHaveBeenCalled()
-    })
-
-    // The whole point of phase 2: canary.14 puts the root in `k/`+`m/`, and the
-    // provider is a separate process that only ever reads the bare id.
-    describe('the bare-id shadow the credential provider reads', () => {
-        it('writes the root material where getHdRootSecret looks for it', async () => {
-            const service = makeService()
-            await seedHdRoot()
-
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-
-            expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
-            const record = await shadowRecord()
-            // `optJSONArray("seed")` — a number array, never `{$u8}`.
-            expect(record.seed).toEqual(Array.from(ROOT_SEED))
-        })
-
-        it('leaves an existing readable shadow untouched', async () => {
-            const service = makeService()
-            await seedHdRoot()
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-            const written = mocks.store.get('root-id')
-
-            __resetBootstrapForTests()
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-
-            expect(mocks.store.get('root-id')).toBe(written)
-        })
-
-        // A canary.13 install already has one, in the format the provider
-        // parses. Rewriting it would be churn; losing it would break the user.
-        it('preserves a shipped canary.13 record verbatim', async () => {
-            const service = makeService()
-            await seedHdRoot()
-            const shipped = await (
-                await import('../../native/nativeProviderRecord')
-            ).sealNativeProviderRecord(subtle, Uint8Array.from(MASTER_KEY), {
-                id: 'root-id',
-                type: 'hd-root-key',
-                privateKey: Array.from(ROOT_SEED),
-            })
-            mocks.store.set('root-id', shipped)
-
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-
-            expect(mocks.store.get('root-id')).toBe(shipped)
-        })
-
-        it('rewrites a shadow that no longer decrypts', async () => {
-            const service = makeService()
-            await seedHdRoot()
-            mocks.store.set('root-id', 'corrupt-not-an-envelope')
-
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-
-            expect((await shadowRecord()).seed).toEqual(Array.from(ROOT_SEED))
-        })
-
-        it('still wires the root id when the shadow write fails', async () => {
-            const service = makeService()
-            await seedHdRoot()
-            vi.spyOn(mocks.storage, 'set').mockImplementationOnce(() => {
-                throw new Error('mmkv full')
-            })
-
-            await bootstrapPasskeyAutofill({
-                service: service as never,
-                intentActions,
-            })
-
-            expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
-            expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
-                step: 'syncNativeProviderHdRoot',
-            })
-        })
     })
 
     it('zeroes the master-key bytes after handing them to the native side', async () => {
@@ -369,9 +282,27 @@ describe('bootstrapPasskeyAutofill', () => {
         })
     })
 
-    it('does not build or push a derived main key when the native side lacks setDerivedMainKey support', async () => {
+    it('prefers the dp256 main key over the XHD root', async () => {
         const service = makeService()
-        service.supportsDerivedMainKey = false
+        await seedHdRoot()
+        await seedPasskeyMainKey()
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        expect(service.setMainKeyId).toHaveBeenCalledWith('main-id')
+        // Both ids address the same native slot, so pushing the XHD root
+        // afterwards would overwrite the main key the providers prefer.
+        expect(service.setHdRootKeyId).not.toHaveBeenCalled()
+    })
+
+    it('finds the main key regardless of scan order', async () => {
+        const service = makeService()
+        // Seeded first, so a scan that returns the first `hd-root-key` it sees
+        // would hand over the XHD root instead.
+        await seedPasskeyMainKey()
         await seedHdRoot()
 
         await bootstrapPasskeyAutofill({
@@ -379,12 +310,10 @@ describe('bootstrapPasskeyAutofill', () => {
             intentActions,
         })
 
-        // HD root id is still wired; the secret hex string is never materialized.
-        expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
-        expect(service.setDerivedMainKey).not.toHaveBeenCalled()
+        expect(service.setMainKeyId).toHaveBeenCalledWith('main-id')
     })
 
-    it('does not push a derived main key when the HD root has no sealed material', async () => {
+    it('falls back to the XHD root when no main key exists yet', async () => {
         const service = makeService()
         await seedKeystore({ id: 'root-id', type: 'xhd-root-key' })
 
@@ -393,8 +322,43 @@ describe('bootstrapPasskeyAutofill', () => {
             intentActions,
         })
 
+        // Deprecated upstream, but it is what a wallet with no main key still
+        // derives from, and `selectParentKey` honours a credential's pinned
+        // scheme either way.
         expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
-        expect(service.setDerivedMainKey).not.toHaveBeenCalled()
+        expect(service.setMainKeyId).not.toHaveBeenCalled()
+    })
+
+    // A `k/` entry this keystore did not write throws out of the scan. The
+    // outer catch keeps the boot alive, but everything after `configureParentKey`
+    // is skipped and autofill is silently dead until the entry goes away.
+    it('wires the parent and finishes the bootstrap past an undecodable k/ entry', async () => {
+        const service = makeService()
+        mocks.store.set('k/foreign', 'not json at all')
+        await seedPasskeyMainKey()
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        expect(service.setMainKeyId).toHaveBeenCalledWith('main-id')
+        expect(service.configureIntentActions).toHaveBeenCalled()
+        expect(service.refreshCredentialIdentities).toHaveBeenCalled()
+    })
+
+    it('never reads root material now that no secret crosses the bridge', async () => {
+        const service = makeService()
+        await seedHdRoot()
+
+        await bootstrapPasskeyAutofill({
+            service: service as never,
+            intentActions,
+        })
+
+        // `openData` is the only path to a decrypted root; the master key is
+        // still read (and pushed), but the root's own bytes are not.
+        expect(mocks.openData).not.toHaveBeenCalled()
     })
 
     it('warns and skips HD wiring when the keystore MMKV namespace is empty', async () => {
@@ -416,7 +380,7 @@ describe('bootstrapPasskeyAutofill', () => {
     // The `k/` bucket is plaintext metadata, so the root is found by reading
     // it. Only the root's own material is unsealed — the previous
     // implementation decrypted every key in the store to find one.
-    it('decrypts only the root, not every key in the store', async () => {
+    it('picks the root out of a populated store without writing anything back', async () => {
         const service = makeService()
         await seedKeystore({ id: 'k1', type: 'algo25' }, new Uint8Array(32))
         await seedKeystore({ id: 'k2', type: 'ed25519' }, new Uint8Array(32))
@@ -428,8 +392,6 @@ describe('bootstrapPasskeyAutofill', () => {
         })
 
         expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
-        expect(mocks.openData).toHaveBeenCalledOnce()
-        // And only the root gets a bare-id shadow.
         expect(mocks.store.has('k1')).toBe(false)
         expect(mocks.store.has('k2')).toBe(false)
     })
@@ -454,10 +416,7 @@ describe('bootstrapPasskeyAutofill', () => {
             setHdRootKeyId: vi
                 .fn()
                 .mockRejectedValue(new Error('setHdRootKeyId')),
-            setDerivedMainKey: vi
-                .fn()
-                .mockRejectedValue(new Error('setDerivedMainKey')),
-            supportsDerivedMainKey: true,
+            setMainKeyId: vi.fn().mockRejectedValue(new Error('setMainKeyId')),
             configureIntentActions: vi
                 .fn()
                 .mockRejectedValue(new Error('configureIntentActions')),
@@ -483,11 +442,29 @@ describe('bootstrapPasskeyAutofill', () => {
             expect.arrayContaining([
                 'setMasterKey',
                 'setHdRootKeyId',
-                'setDerivedMainKey',
                 'configureIntentActions',
                 'refreshCredentialIdentities',
             ]),
         )
+    })
+
+    it('logs a rejecting setMainKeyId without failing the bootstrap', async () => {
+        const service = makeService()
+        service.setMainKeyId.mockRejectedValue(new Error('setMainKeyId'))
+        await seedPasskeyMainKey()
+
+        await expect(
+            bootstrapPasskeyAutofill({
+                service: service as never,
+                intentActions,
+            }),
+        ).resolves.toBeUndefined()
+
+        expect(mocks.error).toHaveBeenCalledWith(expect.any(Error), {
+            step: 'setMainKeyId',
+        })
+        // The rest of the bootstrap still ran.
+        expect(service.configureIntentActions).toHaveBeenCalled()
     })
 
     it('logs through the outer catch when fetching the master key throws', async () => {
@@ -525,7 +502,7 @@ describe('bootstrapPasskeyAutofill', () => {
         expect(service.setMasterKey).not.toHaveBeenCalled()
     })
 
-    it('treats undecryptable root material as absent and warns', async () => {
+    it('wires a root whose sealed material cannot be opened', async () => {
         const service = makeService()
         await seedKeystore({ id: 'root-id', type: 'hd-root-key' })
         mocks.store.set(
@@ -538,8 +515,9 @@ describe('bootstrapPasskeyAutofill', () => {
             intentActions,
         })
 
-        expect(mocks.warn).toHaveBeenCalled()
-        expect(service.setDerivedMainKey).not.toHaveBeenCalled()
+        // The id is all the providers need; they open the material themselves,
+        // so an unreadable `m/` is not this side's problem to detect.
+        expect(service.setHdRootKeyId).toHaveBeenCalledWith('root-id')
     })
 
     it('coalesces overlapping calls into a single in-flight run', async () => {

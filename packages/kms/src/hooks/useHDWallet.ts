@@ -16,10 +16,11 @@ import {
     KeyContext,
 } from '@algorandfoundation/xhd-wallet-api'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { buildSeedMetadata, entropyChildMetadata } from '../utils'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
+import { usePasskeyMainKey } from './usePasskeyMainKey'
 import { prepareHDMasterKey } from '../crypto/prepare-hd-master-key'
 import { commitSecret } from '../storage/secrets'
 import { zeroBytes } from '../crypto/secure-memory'
@@ -31,6 +32,7 @@ export type HDWalletKeyResult = {
 
 export const useHDWallet = () => {
     const { keyStore } = useKMSService()
+    const { ensurePasskeyMainKey } = usePasskeyMainKey()
 
     const createHDWalletKey = async (params?: {
         id?: string
@@ -89,6 +91,16 @@ export const useHDWallet = () => {
             } catch (error) {
                 await keyStore.remove(keyId).catch(() => {})
                 throw error
+            }
+
+            // Degraded, not broken: the wallet is complete without a passkey
+            // main key, and `repairs/0003-mint-passkey-main-key` back-fills it
+            // on a later launch. Rolling the seed back here would destroy a
+            // wallet the user can still use.
+            try {
+                await ensurePasskeyMainKey(keyId)
+            } catch (error) {
+                logger.error('ensurePasskeyMainKey failed', { error })
             }
         } finally {
             zeroBytes(rootKey, entropy)

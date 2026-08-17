@@ -74,6 +74,14 @@ export const entropyChildMetadata = (
 /**
  * Finds the keystore id of a seed's entropy `secret-key` child by its metadata
  * ({@link entropyChildMetadata}), or `undefined` if it has none.
+ *
+ * The `secret-key` clause keeps this identical to the two copies that cannot
+ * import it — `repairs/0003-mint-passkey-main-key.ts:139-143` (MMKV records,
+ * pre-engine) and `keystore-chrome`'s `keystore-signer.ts` — which all three
+ * must be, since they pick the same main key's parent. `commitSecret` writes
+ * entropy through the secrets API, which stamps `type: 'secret-key'`
+ * (`keystore-core@1.0.0-canary.3` `dist/create.js:1180`), so nothing legitimate
+ * is excluded.
  */
 export const entropyChildIdOf = (
     seedKeyId: string,
@@ -84,7 +92,11 @@ export const entropyChildIdOf = (
             parentKeyId?: unknown
             entropyKey?: unknown
         }
-        return meta.parentKeyId === seedKeyId && meta.entropyKey === true
+        return (
+            k.type === 'secret-key' &&
+            meta.parentKeyId === seedKeyId &&
+            meta.entropyKey === true
+        )
     })?.id
 
 const seedMetadata = (key: Key): SeedMetadata =>

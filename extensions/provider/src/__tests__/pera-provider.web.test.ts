@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, vi } from 'vitest'
+import { memoryLedger } from '@algorandfoundation/provider-migrations'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 
 // pera-provider.web.ts composes the real WithLedgerWebBleExtension /
@@ -50,9 +51,19 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     WithPlatformExtension: () => ({ hardwareWalletRegistry }),
 }))
 
+// `storage`/`readMasterKey` are what WithPeraKeystorePreflight reads: vitest
+// has no `.web.ts` resolution, so the web provider pulls the native sibling.
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     WithKeyStore: () => ({ key: { store: {} } }),
+    readMasterKey: vi.fn(),
+    storage: {},
 }))
+
+// Ships untranspiled sources vitest can't parse. Defensive: the preflight
+// sibling now imports it inside its context thunk, so composing a provider no
+// longer reaches it — but any extension that regresses to a module-scope
+// import would break this file rather than the one that made the change.
+vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
 
 vi.mock('@perawallet/wallet-extension-passkey-autofill', () => ({
     WithPasskeyAutofill: () => ({ passkeyAutofill: {} }),
@@ -74,10 +85,12 @@ describe('pera-provider.web', () => {
         expect(hardwareWalletRegistry.hasProvider('ledger', 'ble')).toBe(false)
         expect(hardwareWalletRegistry.hasProvider('ledger', 'usb')).toBe(false)
 
-        const provider = new PeraProvider({
-            id: 'test-web',
-            name: 'Test Web Provider',
-        })
+        // WithMigrations throws MissingLedgerError without one; a fresh
+        // in-memory ledger is enough since this test never awaits a run.
+        const provider = new PeraProvider(
+            { id: 'test-web', name: 'Test Web Provider' },
+            { migrations: { ledger: memoryLedger() } },
+        )
 
         expect(provider).toBeInstanceOf(PeraProvider)
         expect(hardwareWalletRegistry.hasProvider('ledger', 'ble')).toBe(true)

@@ -16,12 +16,10 @@ import { describe, it, expect } from 'vitest'
 import PasskeyAutofillModule from '../react-native-passkey-autofill'
 
 describe('react-native-passkey-autofill web shim', () => {
-    // The security-load-bearing assertion. PasskeyAutofillService computes
-    // `supportsDerivedMainKey` as `typeof native.setDerivedMainKey ===
-    // 'function'`, and bootstrapPasskeyAutofill only stringifies the derived
-    // main key to hex when that is true. Defining the method here — even as a
-    // no-op — would materialize a non-zeroable hex copy of the key on web for
-    // a bridge that discards it.
+    // `setDerivedMainKey` took a hex string of the root and is gone from both
+    // the service and canary.24's native surface. Re-adding it here would put a
+    // non-zeroable copy on the web heap for a bridge that discards it.
+    // (`setMasterKey` still takes bytes, but a zeroable `Uint8Array`.)
     it('does not define setDerivedMainKey', () => {
         expect(PasskeyAutofillModule.setDerivedMainKey).toBeUndefined()
     })
@@ -35,6 +33,7 @@ describe('react-native-passkey-autofill web shim', () => {
     })
 
     it('exposes the read methods with empty-but-valid shapes', async () => {
+        await expect(PasskeyAutofillModule.getMainKeyId()).resolves.toBeNull()
         await expect(PasskeyAutofillModule.getHdRootKeyId()).resolves.toBeNull()
         await expect(
             PasskeyAutofillModule.getStoredCredentials(),

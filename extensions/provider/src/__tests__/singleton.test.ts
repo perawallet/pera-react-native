@@ -28,6 +28,7 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
         clear: keystoreMocks.clear,
     }),
     decode: keystoreMocks.decode,
+    METADATA_PREFIX: 'k/',
     storage: {
         getAllKeys: keystoreMocks.storageGetAllKeys,
         getString: keystoreMocks.storageGetString,
@@ -70,6 +71,7 @@ vi.mock('before-after-hook', () => ({
     },
 }))
 
+import { memoryLedger } from '@algorandfoundation/provider-migrations'
 import {
     getProvider,
     getKeystore,
@@ -114,7 +116,12 @@ describe('provider singleton', () => {
 
     test('initializeProvider sets the instance once and rejects reinitialization', () => {
         resetProvider()
-        const dummy = new PeraProvider({ id: 'x', name: 'X' })
+        // WithMigrations throws MissingLedgerError without one; a fresh
+        // in-memory ledger is enough since this test never awaits a run.
+        const dummy = new PeraProvider(
+            { id: 'x', name: 'X' },
+            { migrations: { ledger: memoryLedger() } },
+        )
         initializeProvider(dummy)
 
         expect(getProvider()).toBe(dummy)

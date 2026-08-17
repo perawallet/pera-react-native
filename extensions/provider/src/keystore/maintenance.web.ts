@@ -11,38 +11,26 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
-import type { KeystoreLayoutMigrationResult } from './migrateKeystoreLayout'
 import type { QuantumMaterialRepairResult } from './repairQuantumMaterial'
 
 /**
- * Web build of the keystore maintenance surface. All three operations are
+ * Web build of the keystore maintenance surface. Both operations are
  * native-only and no-op here, each for its own reason — not merely because the
  * MMKV primitives are missing:
  *
  * - **Reconcile** exists because Android's passkey credential provider writes
  *   to the keystore from a second process. The extension has no such writer;
  *   keystore-web's engine owns its IndexedDB exclusively.
- * - **Layout migration** rewrites canary.13's bare-id MMKV records into
- *   `m/`+`k/`. The browser build never had that layout — it is arriving at
- *   keystore-web from a vendored canary.12 port with its own storage, so there
- *   is nothing shaped like a canary.13 entry to find.
  * - **Material repair** re-mints Falcon children whose sealed material predates
  *   keystore custody. That state only exists on device, where quantum signing
  *   used to re-derive from the seed each time.
  *
- * Returning zeroed results rather than throwing is deliberate: the bootstrap
- * calls these unconditionally and only logs when a count is non-zero, so web
+ * Returning a zeroed result rather than throwing is deliberate: the bootstrap
+ * calls this unconditionally and only logs when a count is non-zero, so web
  * stays silent instead of reporting work it did not do.
  */
 
 export const readPersistedKeys = (): Key[] => []
-
-export const runLayoutMigration =
-    async (): Promise<KeystoreLayoutMigrationResult> => ({
-        migrated: 0,
-        failed: 0,
-        skipped: 0,
-    })
 
 export const runMaterialRepair = async (_deps: {
     keys: () => Key[]

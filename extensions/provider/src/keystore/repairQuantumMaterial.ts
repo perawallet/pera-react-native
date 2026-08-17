@@ -11,14 +11,15 @@
  */
 
 import type { Key } from '@algorandfoundation/keystore-core'
-import { MATERIAL_PREFIX } from './prefixes'
+import { MATERIAL_PREFIX } from '@algorandfoundation/react-native-keystore'
 
 const FALCON_CHILD_TYPE = 'falcon-1024'
 
 /**
- * The slice of the keystore this repair stands on. Injected for the same reason
- * the layout migration injects its own: the keystore package pulls in
- * `react-native-quick-crypto` and cannot be loaded off device.
+ * The slice of the keystore this repair stands on. Injected rather than
+ * imported directly so the module carries no native dependency: the keystore
+ * package pulls in `react-native-quick-crypto`, which cannot be loaded off
+ * device.
  */
 export type QuantumMaterialRepairDeps = {
     /** Snapshot of the engine's reactive keys, post-hydration. */

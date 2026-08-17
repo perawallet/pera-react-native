@@ -23,6 +23,13 @@ export type PeraKeystoreDeps = {
     /** How `WithKeyStore` threads interception; kms routes `algo25` signing through it. */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     hooks: HookCollection<any>
+    /**
+     * Migrations must finish before core hydrates the reactive store from the
+     * `k/` bucket, or it mirrors pre-migration data. `WithKeyStore` wires this
+     * itself — but only when it builds the engine, and we inject a concrete one
+     * through `options.api.keystore`, so we pass it here instead.
+     */
+    before?: Promise<unknown>
 }
 
 /**
@@ -39,4 +46,5 @@ export const createPeraKeystore = (
         store: deps.store,
         hooks: deps.hooks,
         subtle: subtle as unknown as SubtleCrypto,
+        before: deps.before,
     })

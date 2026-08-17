@@ -19,6 +19,9 @@ export * from './bootstrap'
 // `packages/migrate` writes records the provider must be able to read, and
 // phase 3 (below) reads them back to migrate them into `k/`+`m/`.
 export * from './native/nativeProviderRecord'
+// Deliberately root-only, never on the `./native` entry: unlike its siblings
+// this one depends on the keystore package.
+export * from './native/readFlaggedPasskeyCredentials'
 export * from './errors'
 export * from './authenticator/authenticator'
 export * from './authenticator/wire'

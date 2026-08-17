@@ -56,13 +56,15 @@ export {
 } from './utils'
 export { hdDerivedKeyId } from './hooks/useHDWallet'
 export {
+    findPasskeyMainKey,
+    passkeyMainKeyId,
+    usePasskeyMainKey,
+    PASSKEY_MAIN_KEY_SCHEME,
+    type UsePasskeyMainKeyResult,
+} from './hooks/usePasskeyMainKey'
+export {
     commitSecret,
     hasSecret,
     removeSecret,
     withSecret,
 } from './storage/secrets'
-
-// `installKMSKeystoreHooks` is intentionally NOT re-exported here — it pulls
-// `@algorandfoundation/react-native-keystore` (MMKV native), which would
-// break sibling-package vitest runs. Import it from
-// `@perawallet/wallet-core-kms/bootstrap` in the app's entry module.

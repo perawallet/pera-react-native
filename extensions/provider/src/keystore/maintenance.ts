@@ -12,30 +12,21 @@
 
 import type { Key } from '@algorandfoundation/keystore-core'
 import {
+    METADATA_PREFIX,
     decode,
-    encode,
-    openData,
-    readMasterKey,
-    sealData,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
-import { subtle } from 'react-native-quick-crypto'
-import {
-    migrateKeystoreLayout,
-    type KeystoreLayoutMigrationResult,
-} from './migrateKeystoreLayout'
 import {
     repairQuantumMaterial,
     type QuantumMaterialRepairResult,
 } from './repairQuantumMaterial'
-import { METADATA_PREFIX } from './prefixes'
 
 /**
  * One-off repairs of the on-disk keystore, and the only place in the provider
  * that touches the native keystore's storage primitives directly. It has a
- * `.web.ts` sibling because all three are MMKV-shaped and none of them has a
- * meaning in the browser build, where material lives in IndexedDB under
- * keystore-web's own master key and there is no canary.13 layout to migrate.
+ * `.web.ts` sibling because it is MMKV-shaped and has no meaning in the
+ * browser build, where material lives in IndexedDB under keystore-web's own
+ * master key.
  */
 
 /**
@@ -64,22 +55,6 @@ export const readPersistedKeys = (): Key[] =>
         .filter(key => key.startsWith(METADATA_PREFIX))
         .map(decodeKeyEntry)
         .filter((key): key is Key => key !== null)
-
-/**
- * Binds {@link migrateKeystoreLayout} to the live keystore package. The
- * migration itself stays dependency-free so it can be tested off device.
- */
-export const runLayoutMigration = (): Promise<KeystoreLayoutMigrationResult> =>
-    migrateKeystoreLayout({
-        storage: keystoreStorage,
-        readMasterKey: () => readMasterKey(),
-        openData: (key, payload) =>
-            openData(subtle as unknown as SubtleCrypto, key, payload),
-        sealData: (key, data) =>
-            sealData(subtle as unknown as SubtleCrypto, key, data),
-        encode,
-        decode,
-    })
 
 /** Binds {@link repairQuantumMaterial} to the live keystore's storage. */
 export const runMaterialRepair = (deps: {

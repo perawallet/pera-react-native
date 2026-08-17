@@ -14,6 +14,18 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Key } from '@algorandfoundation/keystore-core'
+
+// The package root executes native Keychain/Nitro bindings at import time,
+// which node cannot run. `driver.js` depends only on `@scure/base` and
+// `keystore-core`, so `MATERIAL_PREFIX` from it is the genuine article — see
+// the other keystore specs mocking the same way.
+vi.mock('@algorandfoundation/react-native-keystore', async () => {
+    const driver =
+        await import('../../../node_modules/@algorandfoundation/react-native-keystore/dist/storage/driver.js')
+
+    return { MATERIAL_PREFIX: driver.MATERIAL_PREFIX }
+})
+
 import {
     repairQuantumMaterial,
     type QuantumMaterialRepairDeps,
