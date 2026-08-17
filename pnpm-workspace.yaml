@@ -24,6 +24,7 @@ catalog:
   "@noble/ciphers": ^2.2.0
   "@noble/hashes": ^1.8.0
   "@notifee/react-native": ^9.1.8
+  "@perawallet/walletconnect": 1.0.1
   "@playwright/test": ^1.53.0
   "@react-native-firebase/analytics": ^26.0.0
   "@react-native-firebase/app": ^26.0.0
@@ -104,6 +105,7 @@ minimumReleaseAgeExclude:
   - '@algorandfoundation/react-native-passkey-autofill'
   - '@joe-p/algosdk'
   - '@joe-p/react-native-falcon'
+  - '@perawallet/walletconnect'
   - falcon-1024
   - fast-uri
   # 3.3.18 is the GHSA-2v37-7h3g-55p8 fix and is younger than the 7-day gate.

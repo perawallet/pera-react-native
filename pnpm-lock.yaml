@@ -60,6 +60,9 @@ catalogs:
     '@notifee/react-native':
       specifier: ^9.1.8
       version: 9.1.8
+    '@perawallet/walletconnect':
+      specifier: 1.0.1
+      version: 1.0.1
     '@playwright/test':
       specifier: ^1.53.0
       version: 1.61.1
@@ -413,8 +416,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/devtools
       '@perawallet/walletconnect':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: 'catalog:'
+        version: 1.0.1
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.61.1
@@ -4104,8 +4107,8 @@ importers:
         specifier: workspace:*
         version: link:../../extensions/provider
       '@perawallet/walletconnect':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: 'catalog:'
+        version: 1.0.1
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.101.2(react@19.2.3)
@@ -6629,8 +6632,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@perawallet/walletconnect@1.0.0':
-    resolution: {integrity: sha512-y7nSd2OEyX9eLMtuZH3RXC083OQ6QY7Q90MN5WguuueShiiuuHu7Ow2ofRtD+y2Ts/FQDttqPTkD4LyKGwwk3Q==}
+  '@perawallet/walletconnect@1.0.1':
+    resolution: {integrity: sha512-85+HaSlQ0WqNPtzj7C6ZAAXDJ70MY2UgzuVy4GpFxYlwRcKrKSCwhJpQVCrMsSTfFrhyNv1UOkjE8HDSzAiReg==}
     engines: {node: '>=22'}
 
   '@playwright/test@1.61.1':
@@ -13931,7 +13934,7 @@ snapshots:
   '@oxlint/binding-win32-x64-msvc@1.76.0':
     optional: true
 
-  '@perawallet/walletconnect@1.0.0':
+  '@perawallet/walletconnect@1.0.1':
     dependencies:
       '@noble/ciphers': 2.2.0
       '@noble/hashes': 2.2.0
@@ -14193,9 +14196,7 @@ snapshots:
       metro-runtime: 0.84.4
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.74.89': {}
 
