@@ -12,6 +12,7 @@
 
 import { useCallback } from 'react'
 import {
+    getSignerFor,
     isQuantumAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
@@ -45,9 +46,11 @@ export const useQuantumDappWarning = (): UseQuantumDappWarningResult => {
             if (getPreference(UserPreferences.quantumDappWarningAcknowledged))
                 return 'continue'
 
+            // Match the fee resolver: the 3x fee and Falcon signature follow the
+            // effective signer, so a rekey to a quantum auth counts too.
             const hasQuantumAccount = addresses.some(address => {
-                const account = accounts.find(a => a.address === address)
-                return !!account && isQuantumAccount(account)
+                const signer = getSignerFor(address, accounts)
+                return signer !== null && isQuantumAccount(signer)
             })
             if (!hasQuantumAccount) return 'continue'
 

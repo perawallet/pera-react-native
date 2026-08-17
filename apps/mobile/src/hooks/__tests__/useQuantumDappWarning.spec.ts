@@ -19,9 +19,17 @@ import { QuantumDappWarningSheet } from '@components/QuantumDappWarningSheet'
 import { useIsQuantumDappWarningEnabled } from '../useIsQuantumDappWarningEnabled'
 import { useQuantumDappWarning } from '../useQuantumDappWarning'
 
+type TestAccount = { address: string; type: string; authAddress?: string }
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
     isQuantumAccount: (account: { type: string }) => account.type === 'quantum',
+    getSignerFor: (address: string, accounts: TestAccount[]) => {
+        const account = accounts.find(a => a.address === address)
+        if (!account) return null
+        if (!account.authAddress) return account
+        return accounts.find(a => a.address === account.authAddress) ?? null
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -42,6 +50,7 @@ vi.mock('@components/QuantumDappWarningSheet', () => ({
 
 const QUANTUM_ADDRESS = 'QUANTUMADDRESS'
 const STANDARD_ADDRESS = 'STANDARDADDRESS'
+const REKEYED_TO_QUANTUM_ADDRESS = 'REKEYEDTOQUANTUMADDRESS'
 
 describe('useQuantumDappWarning', () => {
     const mockRequest = vi.fn()
@@ -54,6 +63,11 @@ describe('useQuantumDappWarning', () => {
         ;(useAllAccounts as Mock).mockReturnValue([
             { address: QUANTUM_ADDRESS, type: 'quantum' },
             { address: STANDARD_ADDRESS, type: 'algo25' },
+            {
+                address: REKEYED_TO_QUANTUM_ADDRESS,
+                type: 'algo25',
+                authAddress: QUANTUM_ADDRESS,
+            },
         ])
         mockGetPreference.mockReturnValue(null)
         ;(usePreferences as Mock).mockReturnValue({
@@ -83,6 +97,17 @@ describe('useQuantumDappWarning', () => {
                 }),
             }),
         )
+        expect(decision).toBe('continue')
+    })
+
+    it('shows the sheet for an ed25519 account rekeyed to a quantum auth', async () => {
+        const { result } = renderHook(() => useQuantumDappWarning())
+
+        const decision = await result.current.confirmQuantumDappUsage([
+            REKEYED_TO_QUANTUM_ADDRESS,
+        ])
+
+        expect(mockRequest).toHaveBeenCalledTimes(1)
         expect(decision).toBe('continue')
     })
 
