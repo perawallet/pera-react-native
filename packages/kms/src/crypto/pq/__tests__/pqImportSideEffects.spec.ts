@@ -30,19 +30,26 @@ vi.mock('falcon-1024', () => {
     )
 })
 
-// Same guard for the native module. `@joe-p/react-native-falcon`'s module
-// scope instantiates the native HybridObject, so an eager import crashes the
-// app at startup exactly like the falcon-1024 glue does — and
-// `getPQProvider.native.ts` is the file Metro actually resolves on device, so
-// it is the one that matters most. Neither this spec (which previously only
-// imported the barrel, and the barrel resolves the NON-native factory under
-// node) nor the source-scanning tests covered it: those only assert WHICH
-// factory is named, not that the `require` inside it stays lazy.
+// Same guard for the native module, but a narrower claim than falcon-1024's.
+// `@joe-p/react-native-falcon`'s module scope instantiates the native
+// HybridObject. Off device that has nothing to bind to, so it must stay behind
+// `falconModule.ts`'s lazy `require` — which is what this mock pins, since
+// vitest resolves `./falconModule` to that off-device file.
+//
+// It is NOT a general "eager import crashes at startup" rule. On device the
+// accessor is `falconModule.native.ts` and imports EAGERLY by necessity (a
+// rolldown-shimmed `require` is invisible to Metro's dependency collector), and
+// instantiating the HybridObject at bundle-eval time is fine there because the
+// module is linked in — verified across 25 cold starts on a physical
+// SM-S901E/Android 16. `falconModuleNative.spec.ts` pins that side of it.
+// Unlike falcon-1024's `__filename` crash, this one is environmental.
 vi.mock('@joe-p/react-native-falcon', () => {
     throw new Error(
-        '@joe-p/react-native-falcon was evaluated at import time — its module ' +
-            'scope instantiates the native HybridObject, which crashes the app ' +
-            'at startup. Load it lazily inside createRNFalconProvider instead.',
+        '@joe-p/react-native-falcon was evaluated at import time on the ' +
+            'OFF-device path — its module scope instantiates the native ' +
+            'HybridObject, which has nothing to bind to under node/vitest or ' +
+            'in the web build. Keep falconModule.ts lazy; only the .native ' +
+            'variant may import it eagerly.',
     )
 })
 

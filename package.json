@@ -38,6 +38,7 @@
     "lint:bundle": "bash tools/check-prod-bundle.sh",
     "check:ssl-pins": "node tools/check-pinned-chains.mjs",
     "check:single-algosdk": "node tools/check-single-algosdk.mjs",
+    "check:kms-pq-dist": "node tools/check-kms-pq-dist.mjs",
     "fallow": "fallow --skip health"
   },
   "devDependencies": {

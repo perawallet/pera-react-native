@@ -45,3 +45,30 @@ export interface PQSignatureProvider {
         secretKey: Uint8Array
     }
 }
+
+/**
+ * The subset of the `@joe-p/react-native-falcon` nitro module surface the
+ * on-device provider consumes. Declared here rather than importing the
+ * package's own `Falcon` type so consumers of this type — the provider, the
+ * off-device accessor — need nothing from `react-native-nitro-modules`.
+ *
+ * That is narrower than it used to be: `falconModule.native.ts` imports the
+ * module's VALUE, and its `Falcon` type extends nitro's `HybridObject`, so
+ * typechecking that one file does pull those types in. Hence the explicit
+ * `react-native-nitro-modules` devDependency — it was previously resolving
+ * only through pnpm's nesting under `@joe-p/react-native-falcon`.
+ *
+ * All buffers are raw `ArrayBuffer`s: keys are exact-length Falcon-1024 byte
+ * blobs. `signCompressed`/`verify` are deliberately absent even though the
+ * native module exposes them: the keystore adapts the SAME native module onto
+ * its own signing shim and signs from sealed material, so nothing here ever
+ * holds a secret key to sign with.
+ */
+export type NativeFalconModule = {
+    /** Falcon-1024 public-key length in bytes (1793). */
+    readonly publicKeySize: number
+    generateKey(seed?: ArrayBuffer): {
+        publicKey: ArrayBuffer
+        privateKey: ArrayBuffer
+    }
+}
