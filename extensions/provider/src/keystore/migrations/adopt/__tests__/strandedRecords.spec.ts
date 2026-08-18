@@ -464,6 +464,35 @@ describe('adoptStrandedRecords — material-bearing records', () => {
         expect(liveMaterial).toEqual(first)
         expect(legacyMaterial).toEqual(second)
         expect(storage.getString('root-1')).toBeDefined()
-        expect(storage.getString('root-1-legacy-2')).toBeUndefined()
+    })
+
+    it('refuses to delete the bare record when the existing k/<id> describes a different record, even though m/<id> already matches', async () => {
+        await seed(root)
+        await adoptStrandedRecords(deps())
+        const foreignMeta = JSON.stringify({
+            id: 'root-1',
+            type: 'seed',
+            algorithm: 'raw',
+            format: 'raw',
+            extractable: true,
+            keyUsages: ['deriveKey', 'deriveBits'],
+            metadata: { scheme: 'foreign' },
+        })
+        storage.set(METADATA_PREFIX + 'root-1', foreignMeta)
+        await seed(root)
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).toEqual([])
+        expect(result.quarantined).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        // `hasMeta` alone said this was safe to drop — only the content
+        // check catches a `k/<id>` that exists but describes something else.
+        expect(storage.getString('root-1')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBe(
+            foreignMeta,
+        )
     })
 })

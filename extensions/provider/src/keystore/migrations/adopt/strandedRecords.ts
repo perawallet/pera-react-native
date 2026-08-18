@@ -102,20 +102,22 @@ const materialState = async (
 }
 
 /**
- * Throws unless `key` currently holds a plaintext record that parses.
+ * Throws unless `key` currently holds exactly `expected`.
  *
  * A silent MMKV `set` failure is otherwise invisible until the bare copy —
  * the only other place the same data lives — has already been removed.
+ * Comparing against the expected bytes (not just confirming the stored value
+ * parses) also catches a truncated-but-still-valid-JSON write, which a bare
+ * parse check would wave through.
  */
-const assertMetadataWritten = (storage: KeychainStorage, key: string): void => {
+const assertMetadataWritten = (
+    storage: KeychainStorage,
+    key: string,
+    expected: string,
+): void => {
     const written = storage.getString(key)
-    if (written === undefined) {
-        throw new Error(`metadata at ${key} did not read back`)
-    }
-    try {
-        JSON.parse(written)
-    } catch {
-        throw new Error(`metadata at ${key} did not deserialize`)
+    if (written !== expected) {
+        throw new Error(`metadata at ${key} did not read back as written`)
     }
 }
 
@@ -239,15 +241,17 @@ export const adoptStrandedRecords = async (
                     MATERIAL_PREFIX + legacyId,
                     own,
                 )
-                journal.set(
-                    METADATA_PREFIX + legacyId,
-                    metadataOf(record, legacyId),
-                )
+                const legacyMeta = metadataOf(record, legacyId)
+                journal.set(METADATA_PREFIX + legacyId, legacyMeta)
                 // Same hazard Minor 7 fixed for the adoption path: a silent
                 // write failure here must be caught before the bare copy —
                 // the only other place `type`/`format`/`metadata` live — is
                 // gone.
-                assertMetadataWritten(storage, METADATA_PREFIX + legacyId)
+                assertMetadataWritten(
+                    storage,
+                    METADATA_PREFIX + legacyId,
+                    legacyMeta,
+                )
                 // The legacy pair is verified and durable; the bare copy is
                 // now redundant. Removing it is what makes this converge —
                 // left in place, the next launch would re-quarantine into the
@@ -257,23 +261,26 @@ export const adoptStrandedRecords = async (
                 continue
             }
 
-            if (state === 'same' && hasMeta) {
-                storage.remove(id)
-                continue
-            }
-
-            if (state === 'absent' && hasMeta) {
-                // `m/<id>` is missing but `k/<id>` already exists: nothing to
-                // compare the material against, so the only proof this is the
-                // same record is the metadata itself. A mismatch means some
-                // other record owns this id — merging would attach this
-                // record's material to a description that isn't its own.
+            if ((state === 'same' || state === 'absent') && hasMeta) {
+                // Whether `m/<id>` is already present (a stale bare copy
+                // trailing a prior adoption) or still missing (nothing to
+                // compare the material against), the only proof `k/<id>`
+                // describes THIS record is the metadata itself. `hasMeta` is
+                // only an existence check — a garbage, truncated or foreign
+                // `k/<id>` still satisfies it, and deleting the bare record
+                // on that basis would drop the only other copy of
+                // `type`/`format`/`metadata.bip44Path`.
                 const existing = storage.getString(METADATA_PREFIX + id)
                 if (existing !== metadataOf(record, id)) {
                     result.failed.push({
                         id,
                         reason: `${METADATA_PREFIX}${id} exists but describes a different record`,
                     })
+                    continue
+                }
+
+                if (state === 'same') {
+                    storage.remove(id)
                     continue
                 }
             }
@@ -285,8 +292,9 @@ export const adoptStrandedRecords = async (
                 await sealAndVerify(deps, masterKey, MATERIAL_PREFIX + id, own)
             }
             if (!hasMeta) {
-                journal.set(METADATA_PREFIX + id, metadataOf(record, id))
-                assertMetadataWritten(storage, METADATA_PREFIX + id)
+                const meta = metadataOf(record, id)
+                journal.set(METADATA_PREFIX + id, meta)
+                assertMetadataWritten(storage, METADATA_PREFIX + id, meta)
             }
             storage.remove(id)
             result.adopted.push(id)
