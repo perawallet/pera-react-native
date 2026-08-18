@@ -50,7 +50,11 @@ import {
     openData,
     sealCanary13Record,
 } from '../../__fixtures__/keystoreFormats'
-import { adoptStrandedRecords, hasStrandedWork } from '../strandedRecords'
+import {
+    adoptStrandedRecords,
+    fingerprintFlatValue,
+    hasStrandedWork,
+} from '../strandedRecords'
 // Deep relative import, not a package specifier — see
 // `migrations/__tests__/nativeCredentialRecord.spec.ts` for why: it creates no
 // `package.json` edge, so it never enters turbo's build graph the way a
@@ -207,7 +211,13 @@ describe('adoptStrandedRecords — material-bearing records', () => {
         const result = await adoptStrandedRecords(deps())
 
         expect(hasStrandedWork(storage)).toBe(true)
-        expect(hasStrandedWork(storage, new Set(result.leftFlat))).toBe(false)
+        const expectedFlat = new Map(
+            result.leftFlat.map(id => [
+                id,
+                fingerprintFlatValue(storage.getString(id) as string),
+            ]),
+        )
+        expect(hasStrandedWork(storage, expectedFlat)).toBe(false)
     })
 
     it('completes a half-written pair rather than quarantining it', async () => {

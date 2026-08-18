@@ -53,6 +53,15 @@ export type AdoptionResult = {
     quarantined: { id: string; legacyId: string }[]
     restored: string[]
     leftFlat: string[]
+    /**
+     * `k/<id>` entries `looksLikeWrappedPasskey` flagged (top-level
+     * `privateKeyEnc`) that `restoreWrappedPasskeys` declined to touch —
+     * wrong type, or a shape it doesn't recognise. Separate from `leftFlat`
+     * because the two live at different storage keys (`leftFlat` ids are
+     * bare, these are still under `METADATA_PREFIX`), which matters when
+     * `hasStrandedWork`'s caller turns either list into a durable note.
+     */
+    declinedWrapped: string[]
     failed: { id: string; reason: string }[]
 }
 
@@ -62,6 +71,7 @@ export const emptyAdoptionResult = (): AdoptionResult => ({
     quarantined: [],
     restored: [],
     leftFlat: [],
+    declinedWrapped: [],
     failed: [],
 })
 
@@ -81,16 +91,59 @@ const looksLikeWrappedPasskey = (
     (storage.getString(key) ?? '').includes('privateKeyEnc')
 
 /**
- * Cheap enough to run on every launch: one `getAllKeys()`, no crypto, no
- * master-key read.
+ * Non-cryptographic fingerprint of a stored value: length plus a 32-bit
+ * rolling hash, both computable without a master-key read. Not collision-
+ * resistant and not meant to be — its only job is telling "still the exact
+ * bytes a previous pass looked at" from "something wrote here since",
+ * cheaply enough to run on every launch.
+ */
+export const fingerprintFlatValue = (value: string): string => {
+    let hash = 0
+    for (let i = 0; i < value.length; i++) {
+        hash = (Math.imul(31, hash) + value.charCodeAt(i)) | 0
+    }
+    return `${value.length}:${(hash >>> 0).toString(16)}`
+}
+
+/**
+ * The durable note of decisions a previous pass made that don't need
+ * revisiting — keyed by bare id (never a `METADATA_PREFIX`-prefixed key), the
+ * value being {@link fingerprintFlatValue} of whatever bytes justified the
+ * decision at the time.
  *
- * `expectedFlat` is the durable note of ids a previous pass decided belong at
- * their bare id forever — passkey credentials, and payloads this build cannot
- * decode. Without it every device holding a passkey would report work on every
- * launch and pay for a full decode pass that can never make progress. A record
- * left in `failed` (unreadable material, a foreign `k/`, or a shape `0002`
- * owns) is deliberately NOT in that set: it is worth retrying, so it keeps
- * reporting work until something resolves it.
+ * A fingerprint, not a bare presence flag: a decision made about THESE bytes
+ * does not mean the same id is still settled once something else writes over
+ * it (the Android credential provider writes concurrently, and a record
+ * caught mid-write must heal once the writer finishes, not be abandoned
+ * forever — see `hasStrandedWork`'s use of this below).
+ */
+export type ExpectedFlat = ReadonlyMap<string, string>
+
+/**
+ * `noted` is `expectedFlat.get(id)` for the launch guard's actual, not
+ * derived, cost characteristics.
+ */
+const isStillNoted = (
+    currentValue: string,
+    noted: string | undefined,
+): boolean =>
+    noted !== undefined && fingerprintFlatValue(currentValue) === noted
+
+/**
+ * Cheap enough to run on every launch: one `getAllKeys()`, no crypto, no
+ * master-key read. It DOES read every metadata (`k/`) value via `getString`
+ * to sniff for a moved passkey (see below) — still no crypto and no master
+ * key, but not free the way a pure key-prefix scan would be.
+ *
+ * `expectedFlat` is the durable note of ids a previous pass decided don't
+ * need revisiting — passkey credentials, payloads this build cannot decode,
+ * and `k/` entries that looked like a moved passkey but weren't. Without it
+ * every device holding one of these would report work on every launch and
+ * pay for a full decode pass (or, for the wrapped-passkey sniff, a
+ * master-key read) that can never make progress. A record left in `failed`
+ * (unreadable material, a foreign `k/`, or a shape `0002` owns) is
+ * deliberately NOT in that set: it is worth retrying, so it keeps reporting
+ * work until something resolves it.
  *
  * Also covers the wrapped-passkey damage `restoreWrappedPasskeys` fixes: a
  * `0004`-moved credential has no bare id at all, so the flat scan above sees
@@ -102,13 +155,26 @@ const looksLikeWrappedPasskey = (
  */
 export const hasStrandedWork = (
     storage: KeychainStorage,
-    expectedFlat: ReadonlySet<string> = new Set(),
+    expectedFlat: ExpectedFlat = new Map(),
 ): boolean => {
     const keys = storage.getAllKeys()
-    return (
-        keys.some(key => isFlatCandidate(key) && !expectedFlat.has(key)) ||
-        keys.some(key => looksLikeWrappedPasskey(storage, key))
-    )
+
+    return keys.some(key => {
+        if (isFlatCandidate(key)) {
+            const noted = expectedFlat.get(key)
+            if (noted === undefined) return true
+            const current = storage.getString(key)
+            return current === undefined || !isStillNoted(current, noted)
+        }
+
+        if (!key.startsWith(METADATA_PREFIX)) return false
+
+        const raw = storage.getString(key)
+        if (raw === undefined || !raw.includes('privateKeyEnc')) return false
+
+        const id = key.slice(METADATA_PREFIX.length)
+        return !isStillNoted(raw, expectedFlat.get(id))
+    })
 }
 
 /**
@@ -550,6 +616,14 @@ const restoreWrappedPasskeys = async (
             !PASSKEY_TYPES.has(type) ||
             classifyRecord(record) !== 'wrapped-passkey'
         ) {
+            // The loose `privateKeyEnc` substring sniff (`looksLikeWrappedPasskey`)
+            // fired but this isn't actually a 0004-moved credential. Record it
+            // so `expectedFlat` can suppress the sniff on this id — without
+            // this, `hasStrandedWork` would call for a Keychain-capable
+            // master-key read on every subsequent launch, forever, for a
+            // record that can never resolve.
+            result.declinedWrapped.push(id)
+            wipeSecrets(record)
             continue
         }
 

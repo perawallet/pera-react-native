@@ -78,6 +78,7 @@ const NO_STRANDED_WORK = {
     quarantined: [],
     restored: [],
     leftFlat: [],
+    declinedWrapped: [],
     failed: [],
 }
 
@@ -145,6 +146,34 @@ describe('runKeystoreMaintenance', () => {
         mocks.runStrandedRepair.mockImplementation(async () => {
             calls.push('stranded')
             return { ...NO_STRANDED_WORK, restored: ['cred-1'] }
+        })
+
+        await runKeystoreMaintenance()
+
+        expect(calls).toEqual(['reconcile', 'stranded', 'reconcile', 'repair'])
+    })
+
+    // Quarantine writes a `-legacy` metadata+material pair and removes the
+    // bare id; reconstruction rewrites root metadata and material. Both
+    // change what `readPersistedKeys` returns, same as adopted/restored.
+    test('reconciles again when the stranded repair quarantines something', async () => {
+        mocks.runStrandedRepair.mockImplementation(async () => {
+            calls.push('stranded')
+            return {
+                ...NO_STRANDED_WORK,
+                quarantined: [{ id: 'root-1', legacyId: 'root-1-legacy' }],
+            }
+        })
+
+        await runKeystoreMaintenance()
+
+        expect(calls).toEqual(['reconcile', 'stranded', 'reconcile', 'repair'])
+    })
+
+    test('reconciles again when the stranded repair reconstructs something', async () => {
+        mocks.runStrandedRepair.mockImplementation(async () => {
+            calls.push('stranded')
+            return { ...NO_STRANDED_WORK, reconstructed: ['root-1'] }
         })
 
         await runKeystoreMaintenance()

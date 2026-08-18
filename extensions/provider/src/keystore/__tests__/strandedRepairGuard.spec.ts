@@ -90,6 +90,28 @@ describe('stranded repair guard', () => {
         expect(getAllKeys).toHaveBeenCalledTimes(1)
     })
 
+    // The assertion that actually matters: `getAllKeys` call count alone
+    // would have passed unchanged against the Critical this round fixed
+    // (a non-passkey type carrying `privateKeyEnc` triggering a master-key
+    // read on every launch, forever). The biometric-capable read itself is
+    // the real cost — assert it never happens on a healthy store.
+    it('never reads the master key on a healthy store', async () => {
+        const storage = fakeStorage()
+        storage.set('k/abc', '{}')
+        storage.set('m/abc', '{}')
+        const masterKeyForRead = vi.fn(async () => MASTER_KEY)
+
+        const result = await runStrandedRepairWith({
+            storage,
+            subtle,
+            masterKeyForRead,
+            noteStore: noteStore(),
+        })
+
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+        expect(result).toEqual(emptyAdoptionResult())
+    })
+
     it('reports work when a bare id remains', () => {
         const storage = fakeStorage()
         storage.set('abc', 'sealed')
@@ -147,6 +169,110 @@ describe('stranded repair guard', () => {
         const result = await runStrandedRepairWithFake(storage)
 
         expect(result.restored).toEqual(['cred-2'])
+    })
+
+    // The Critical from round 1: `looksLikeWrappedPasskey` fires on any
+    // metadata entry containing `privateKeyEnc`, whatever its `type`.
+    // `restoreWrappedPasskeys` must now record the id it declines so
+    // `expectedFlat` can suppress the sniff — otherwise this costs a
+    // Keychain-capable master-key read on every cold start, forever.
+    it('stops reading the master key for a k/ entry that looks wrapped but is not a passkey type', async () => {
+        const storage = fakeStorage()
+        const { serializeKey } =
+            await import('@algorandfoundation/react-native-keystore')
+        storage.set(
+            'k/cred-3',
+            serializeKey({
+                id: 'cred-3',
+                type: 'algorand-ed25519',
+                algorithm: 'Ed25519',
+                privateKeyEnc: { iv: 'aa', data: 'bb' },
+            } as never),
+        )
+
+        expect(hasStrandedWork(storage)).toBe(true)
+
+        const notes = noteStore()
+        const firstMasterKeyForRead = vi.fn(async () => MASTER_KEY)
+        const first = await runStrandedRepairWith({
+            storage,
+            subtle,
+            masterKeyForRead: firstMasterKeyForRead,
+            noteStore: notes,
+        })
+        expect(firstMasterKeyForRead).toHaveBeenCalledTimes(1)
+        expect(first.declinedWrapped).toEqual(['cred-3'])
+        expect(first.adopted).toEqual([])
+        expect(first.restored).toEqual([])
+
+        // Second launch: the note now covers `cred-3`, so the guard must
+        // suppress it before ever asking for the master key again.
+        const secondMasterKeyForRead = vi.fn(async () => MASTER_KEY)
+        const second = await runStrandedRepairWith({
+            storage,
+            subtle,
+            masterKeyForRead: secondMasterKeyForRead,
+            noteStore: notes,
+        })
+        expect(secondMasterKeyForRead).not.toHaveBeenCalled()
+        expect(second).toEqual(emptyAdoptionResult())
+    })
+
+    // Important 2's ruling: a note keyed by fingerprint, not just id, so a
+    // record caught mid-write by the Android credential provider's own
+    // process heals once the writer finishes instead of being abandoned.
+    it('retries once the noted bytes change, even though the id was noted before', async () => {
+        const storage = fakeStorage()
+        const { serializeKey } =
+            await import('@algorandfoundation/react-native-keystore')
+        storage.set(
+            'k/cred-3',
+            serializeKey({
+                id: 'cred-3',
+                type: 'algorand-ed25519',
+                algorithm: 'Ed25519',
+                privateKeyEnc: { iv: 'aa', data: 'bb' },
+            } as never),
+        )
+
+        const notes = noteStore()
+        await runStrandedRepairWith({
+            storage,
+            subtle,
+            masterKeyForRead: async () => MASTER_KEY,
+            noteStore: notes,
+        })
+        const quietMasterKeyForRead = vi.fn(async () => MASTER_KEY)
+        await runStrandedRepairWith({
+            storage,
+            subtle,
+            masterKeyForRead: quietMasterKeyForRead,
+            noteStore: notes,
+        })
+        expect(quietMasterKeyForRead).not.toHaveBeenCalled()
+
+        // Simulate the record being rewritten mid-flight by another process.
+        storage.set(
+            'k/cred-3',
+            serializeKey({
+                id: 'cred-3',
+                type: 'algorand-ed25519',
+                algorithm: 'Ed25519',
+                privateKeyEnc: { iv: 'cc', data: 'dd' },
+            } as never),
+        )
+
+        // Same `notes` store, still holding the OLD fingerprint — the id
+        // being previously noted must not suppress the changed bytes.
+        const healedMasterKeyForRead = vi.fn(async () => MASTER_KEY)
+        const healed = await runStrandedRepairWith({
+            storage,
+            subtle,
+            masterKeyForRead: healedMasterKeyForRead,
+            noteStore: notes,
+        })
+        expect(healedMasterKeyForRead).toHaveBeenCalledTimes(1)
+        expect(healed.declinedWrapped).toEqual(['cred-3'])
     })
 
     it('never throws when the master key is transiently unreadable, and retries on the next call', async () => {

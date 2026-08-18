@@ -53,5 +53,6 @@ export const runStrandedRepair = async (): Promise<AdoptionResult> => ({
     quarantined: [],
     restored: [],
     leftFlat: [],
+    declinedWrapped: [],
     failed: [],
 })

@@ -18,7 +18,7 @@ import {
     storage as keystoreStorage,
     type KeychainStorage,
 } from '@algorandfoundation/react-native-keystore'
-import { subtle } from 'react-native-quick-crypto'
+import { subtle } from './subtle'
 import {
     repairQuantumMaterial,
     type QuantumMaterialRepairResult,
@@ -27,8 +27,10 @@ import { peraMigrationNoteStore } from './migrationsLedger'
 import {
     adoptStrandedRecords,
     emptyAdoptionResult,
+    fingerprintFlatValue,
     hasStrandedWork,
     type AdoptionResult,
+    type ExpectedFlat,
 } from './migrations/adopt/strandedRecords'
 import { safeErrorMessage, safeWarn } from './migrations/safeLog'
 
@@ -92,15 +94,15 @@ export type StrandedRepairDeps = {
     noteStore: NoteStore
 }
 
-const readExpectedFlat = (noteStore: NoteStore): Set<string> => {
+const readExpectedFlat = (noteStore: NoteStore): ExpectedFlat => {
     try {
-        return new Set(
-            JSON.parse(
-                noteStore.getString(EXPECTED_FLAT_NOTE) ?? '[]',
-            ) as string[],
+        const raw = noteStore.getString(EXPECTED_FLAT_NOTE)
+        if (!raw) return new Map()
+        return new Map(
+            Object.entries(JSON.parse(raw) as Record<string, string>),
         )
     } catch {
-        return new Set()
+        return new Map()
     }
 }
 
@@ -133,13 +135,36 @@ export const runStrandedRepairWith = async (
             masterKeyForRead: deps.masterKeyForRead,
         })
 
-        // Records that belong at their bare id forever — passkey credentials,
-        // and payloads this build cannot decode. Without this note every
-        // device holding a passkey pays for a full decode pass on every
-        // launch.
+        // Records that don't need revisiting — passkey credentials, payloads
+        // this build cannot decode, and `k/` entries that looked like a moved
+        // passkey but weren't. Without this note every device holding one of
+        // these pays for a full decode pass — or, for a declined wrapped
+        // entry, a master-key read — on every launch, forever.
+        //
+        // Noted with a fingerprint of the bytes that justified the decision,
+        // not just the bare id: a decode failure or a declined wrapped entry
+        // can be a record caught mid-write by the Android credential
+        // provider's own process, and the one mechanism built to heal a
+        // transient must not permanently write it off. `leftFlat` ids live at
+        // their own bare key; `declinedWrapped` ids live at
+        // `METADATA_PREFIX + id` — different storage locations, so each reads
+        // its own key rather than assuming the other's.
+        const nextExpectedFlat = new Map(expectedFlat)
+        for (const id of result.leftFlat) {
+            const current = deps.storage.getString(id)
+            if (current !== undefined) {
+                nextExpectedFlat.set(id, fingerprintFlatValue(current))
+            }
+        }
+        for (const id of result.declinedWrapped) {
+            const current = deps.storage.getString(METADATA_PREFIX + id)
+            if (current !== undefined) {
+                nextExpectedFlat.set(id, fingerprintFlatValue(current))
+            }
+        }
         deps.noteStore.set(
             EXPECTED_FLAT_NOTE,
-            JSON.stringify([...expectedFlat, ...result.leftFlat]),
+            JSON.stringify(Object.fromEntries(nextExpectedFlat)),
         )
 
         return result
@@ -155,7 +180,7 @@ export const runStrandedRepairWith = async (
 export const runStrandedRepair = (): Promise<AdoptionResult> =>
     runStrandedRepairWith({
         storage: keystoreStorage,
-        subtle: subtle as unknown as SubtleCrypto,
+        subtle,
         masterKeyForRead: () => readMasterKey(),
         noteStore: peraMigrationNoteStore(),
     })

@@ -200,8 +200,11 @@ export type KeystoreMaintenanceResult = {
  *   is not a tracked revision: a ledgered preflight pass that resolves is done
  *   forever, so one transient failure (a master-key read that fails mid-boot,
  *   say) would freeze the damage permanently instead of healing on the next
- *   launch. `reconcileKeystore` re-runs only when it actually adopted or
- *   restored something.
+ *   launch. `reconcileKeystore` re-runs when it adopted, restored,
+ *   quarantined, or reconstructed anything — quarantine writes a `-legacy`
+ *   metadata+material pair and removes the bare id, and reconstruction
+ *   rewrites root metadata and material, so both change what
+ *   `readPersistedKeys` returns just as adoption and restoration do.
  * - The quantum repair runs on **every** launch: a quantum account minted
  *   before custody moved into the keystore has a child with no sealed
  *   material, and that fails only at submit time, after the user has already
@@ -228,7 +231,12 @@ export const runKeystoreMaintenance =
         // a ledgered revision that resolves is done forever, so a transient
         // write failure would freeze the damage permanently.
         const stranded = await runStrandedRepair()
-        if (stranded.adopted.length > 0 || stranded.restored.length > 0) {
+        if (
+            stranded.adopted.length > 0 ||
+            stranded.restored.length > 0 ||
+            stranded.quarantined.length > 0 ||
+            stranded.reconstructed.length > 0
+        ) {
             await reconcileKeystore()
         }
 
