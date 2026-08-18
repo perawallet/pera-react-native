@@ -16,6 +16,9 @@ import type { KeychainStorage } from '@algorandfoundation/react-native-keystore'
 import type { PeraMigrationContext } from './types'
 import type { LiftedMaterial } from './canary13'
 
+/** Everything the sealing helpers need, so callers outside a migration can use them. */
+export type SealingDeps = Pick<PeraMigrationContext, 'storage' | 'subtle'>
+
 /**
  * Decides where every lifted secret is going to live before anything is
  * written, returning `undefined` when two *different* secrets claim one `m/`
@@ -75,7 +78,7 @@ export const wipeBytes = (bytes: Uint8Array | undefined): void => {
  * the only readable copy from the plaintext bucket.
  */
 export const sealAndVerify = async (
-    { storage, subtle }: PeraMigrationContext,
+    { storage, subtle }: SealingDeps,
     masterKey: Uint8Array,
     key: string,
     bytes: Uint8Array,
@@ -104,7 +107,7 @@ export const sealAndVerify = async (
 
 /** True when `key` already holds a sealed copy of exactly `bytes`. */
 export const holdsSameMaterial = async (
-    { storage, subtle }: PeraMigrationContext,
+    { storage, subtle }: SealingDeps,
     masterKey: Uint8Array,
     key: string,
     bytes: Uint8Array,
