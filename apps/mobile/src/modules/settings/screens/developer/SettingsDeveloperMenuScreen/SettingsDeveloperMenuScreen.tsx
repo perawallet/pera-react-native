@@ -48,6 +48,11 @@ export const SettingsDeveloperMenuScreen = () => {
                 title='Migration Viewer'
             />
             <PWListItem
+                onPress={() => handleTapEvent('KeystoreMigrations')}
+                icon='reload'
+                title='Keystore Migrations'
+            />
+            <PWListItem
                 onPress={() => openTestingDapp()}
                 icon='globe'
                 title={t('settings.developer.debug_dapp')}
