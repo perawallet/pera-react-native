@@ -88,6 +88,14 @@ export const hasStrandedWork = (
  * top-level `key: Uint8Array` is just as real a carrier (`canary13.ts`'s own
  * `SECRET_FIELDS` set says so) and every caller of this function writes
  * straight into the plaintext `k/` bucket.
+ *
+ * Stripping `key` specifically is defensive rather than reachable today: the
+ * material branch now refuses any record with more than one populated
+ * `SECRET_FIELDS` name before it ever reaches here, and a record with `key`
+ * as its ONLY secret field classifies as `material-less` and is left flat.
+ * Left in so this function stays correct on its own — and so nobody
+ * "simplifies" it back to `privateKey`/`seed` only — if either caller's
+ * gating ever changes.
  */
 const metadataOf = (record: Canary13Record, id: string): string => {
     const rest: Record<string, unknown> = {}
@@ -451,10 +459,17 @@ export const adoptStrandedRecords = async (
         // `SECRET_FIELDS` name from `k/<id>` and the bare copy — the only
         // other place it lived — is removed. Refuse instead: the bare record
         // survives with everything still in it.
+        //
+        // Gate on PRESENCE BY NAME, not `instanceof Uint8Array` — `metadataOf`
+        // strips by name too, so a field the gate doesn't recognise as a
+        // secret (e.g. `key` holding a wrapped/nested container instead of a
+        // bare array) would still get stripped from `k/<id>` and then lost
+        // when the bare copy is removed. Matching `metadataOf`'s own test is
+        // what keeps the two from drifting apart again.
         const presentSecretFields = [...SECRET_FIELDS].filter(
             field =>
-                (record as unknown as Record<string, unknown>)[field] instanceof
-                Uint8Array,
+                (record as unknown as Record<string, unknown>)[field] !==
+                undefined,
         )
         if (presentSecretFields.length > 1) {
             result.failed.push({

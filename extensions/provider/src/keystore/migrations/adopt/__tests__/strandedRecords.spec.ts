@@ -505,6 +505,43 @@ describe('adoptStrandedRecords — material-bearing records', () => {
         expect(storage.getString('root-1')).toBeDefined()
         expect(storage.getString(METADATA_PREFIX + 'root-1')).toBe(foreignMeta)
     })
+
+    it('refuses a record carrying a top-level key alongside privateKey rather than destroying the key bytes', async () => {
+        const EXTRA_KEY = new Uint8Array(32).fill(6)
+        await seed({ ...root, key: EXTRA_KEY })
+
+        const result = await adoptStrandedRecords(deps())
+
+        // Before this fix, `own` (privateKey) got sealed, `metadataOf`
+        // stripped `key` out of `k/`, and the bare record — the only other
+        // place `key`'s bytes lived — was removed: a silent, permanent loss.
+        // Refusing must leave the bare record as the ONLY copy, untouched.
+        expect(result.adopted).not.toContain('root-1')
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        expect(storage.getString('root-1')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBeUndefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
+    })
+
+    it('refuses a record carrying a non-Uint8Array key container alongside privateKey', async () => {
+        // The gate must key off PRESENCE (a field name `metadataOf` would
+        // strip), not `instanceof Uint8Array` — a wrapped/nested `key` still
+        // gets stripped from `k/` by name and then lost when the bare copy
+        // is removed, exactly like a bare `Uint8Array` would be.
+        await seed({ ...root, key: { d: new Uint8Array(32).fill(6) } })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).not.toContain('root-1')
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        expect(storage.getString('root-1')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBeUndefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
+    })
 })
 
 describe('adoptStrandedRecords — nested-only children', () => {
@@ -641,24 +678,5 @@ describe('adoptStrandedRecords — nested-only children', () => {
         expect(result.failed).toEqual([
             expect.objectContaining({ id: 'child-1' }),
         ])
-    })
-
-    it('refuses a record carrying a top-level key alongside privateKey rather than destroying the key bytes', async () => {
-        const EXTRA_KEY = new Uint8Array(32).fill(6)
-        await seed({ ...root, key: EXTRA_KEY })
-
-        const result = await adoptStrandedRecords(deps())
-
-        // Before this fix, `own` (privateKey) got sealed, `metadataOf`
-        // stripped `key` out of `k/`, and the bare record — the only other
-        // place `key`'s bytes lived — was removed: a silent, permanent loss.
-        // Refusing must leave the bare record as the ONLY copy, untouched.
-        expect(result.adopted).not.toContain('root-1')
-        expect(result.failed).toEqual([
-            expect.objectContaining({ id: 'root-1' }),
-        ])
-        expect(storage.getString('root-1')).toBeDefined()
-        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBeUndefined()
-        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
     })
 })
