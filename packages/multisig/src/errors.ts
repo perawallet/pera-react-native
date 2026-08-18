@@ -20,6 +20,7 @@ import {
 export type MultisigValidationCode =
     | 'participant_is_multisig'
     | 'participant_is_watch'
+    | 'participant_is_quantum'
     | 'threshold_exceeds_participants'
 
 export class MultisigValidationError extends AppError {
@@ -62,6 +63,19 @@ export class ParticipantIsWatchError extends MultisigValidationError {
             {
                 messageKey:
                     'multisig.add_participant.cannot_add_watch_error_body',
+            },
+        )
+    }
+}
+
+export class ParticipantIsQuantumError extends MultisigValidationError {
+    constructor() {
+        super(
+            'participant_is_quantum',
+            'Cannot add a quantum account as a participant.',
+            {
+                messageKey:
+                    'multisig.add_participant.cannot_add_quantum_error_body',
             },
         )
     }

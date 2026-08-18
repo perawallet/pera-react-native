@@ -16,6 +16,7 @@ import { useAddParticipantContent } from '../useAddParticipantContent'
 
 const LOCAL_ALGO_ADDR = 'A'.repeat(58)
 const LOCAL_WATCH_ADDR = 'W'.repeat(58)
+const LOCAL_QUANTUM_ADDR = 'Q'.repeat(58)
 const CONTACT_ADDR = 'C'.repeat(58)
 const EXTERNAL_ADDR = 'E'.repeat(58)
 const MULTISIG_ADDR = 'M'.repeat(58)
@@ -53,6 +54,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         useAllAccounts: () => [
             { address: LOCAL_ALGO_ADDR, type: actual.AccountTypes.algo25 },
             { address: LOCAL_WATCH_ADDR, type: actual.AccountTypes.watch },
+            { address: LOCAL_QUANTUM_ADDR, type: actual.AccountTypes.quantum },
         ],
     }
 })
@@ -114,6 +116,20 @@ describe('useAddParticipantContent', () => {
         expect(mockErrorToast).toHaveBeenCalledWith(
             'multisig.add_participant.cannot_add_watch_error',
             'multisig.add_participant.cannot_add_watch_error_body',
+        )
+    })
+
+    it('shows a quantum-account error toast and does not resolve when the user picks a local quantum account', () => {
+        const { result } = renderHook(() => useAddParticipantContent())
+
+        act(() => {
+            result.current.handleSelected(LOCAL_QUANTUM_ADDR)
+        })
+
+        expect(mockResolve).not.toHaveBeenCalled()
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'multisig.add_participant.cannot_add_quantum_error',
+            'multisig.add_participant.cannot_add_quantum_error_body',
         )
     })
 

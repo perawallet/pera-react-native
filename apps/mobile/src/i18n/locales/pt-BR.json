@@ -1339,7 +1339,9 @@
             "cannot_add_multisig_error": "Não é possível adicionar conta compartilhada",
             "cannot_add_multisig_error_body": "Contas compartilhadas não podem ser adicionadas como participantes de outra conta compartilhada.",
             "cannot_add_watch_error": "Não é possível adicionar conta de observação",
-            "cannot_add_watch_error_body": "Contas de observação não podem assinar transações, por isso não podem ser participantes de uma conta compartilhada."
+            "cannot_add_watch_error_body": "Contas de observação não podem assinar transações, por isso não podem ser participantes de uma conta compartilhada.",
+            "cannot_add_quantum_error": "Não é possível adicionar conta Quantum",
+            "cannot_add_quantum_error_body": "Chaves Quantum não podem participar da assinatura Multisig, por isso não podem ser participantes de uma conta compartilhada."
         },
         "threshold": {
             "title": "Definir um limiar",
