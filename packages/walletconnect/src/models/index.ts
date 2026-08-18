@@ -63,6 +63,7 @@ export type WalletConnectSessionRequest = {
     chainId: AlgorandChainId
     permissions: string[]
     clientId: string
+    handshakeId?: number
     /**
      * Epoch ms when the request was queued (stamped by
      * `addSessionRequest`). Requests older than `SESSION_REQUEST_TTL_MS`

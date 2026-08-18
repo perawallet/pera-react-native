@@ -414,6 +414,7 @@ export const useWalletConnect = (network: Network) => {
                 chainId,
                 permissions: permissions ?? ALL_PERMISSIONS,
                 clientId: connector.clientId,
+                handshakeId: (payload as { id?: number }).id,
             })
         })
 

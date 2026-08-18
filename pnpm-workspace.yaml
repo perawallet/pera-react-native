@@ -26,7 +26,9 @@ catalog:
   "@noble/ciphers": ^2.2.0
   "@noble/hashes": ^1.8.0
   "@notifee/react-native": ^9.1.8
-  "@perawallet/walletconnect": 1.0.1
+  # 1.0.2 fixes duplicate topic subscription (pera-walletconnect-ts#8); bump
+  # to the final release once it ships
+  "@perawallet/walletconnect": 1.0.2
   "@playwright/test": ^1.53.0
   "@react-native-firebase/analytics": ^26.0.0
   "@react-native-firebase/app": ^26.0.0
