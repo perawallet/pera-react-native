@@ -36,6 +36,7 @@ import { setOnConfirmedHandler } from '@perawallet/wallet-core-signing'
 import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import {
+    getKeystoreStore,
     getProvider,
     runKeystoreMaintenance,
     usePeraProvider,
@@ -48,6 +49,7 @@ import { waitForStoreHydration } from './bootstrap/waitForStoreHydration'
 import { getEffectiveSupportedLocales } from './i18n/effectiveLocales'
 import { resolveLocale } from './i18n/locales'
 import i18n from './i18n'
+import { reportUnresolvableAccountKeys } from './utils/reportUnresolvableAccountKeys'
 
 export type UseAppBootstrapResult = {
     bootstrapped: boolean
@@ -178,6 +180,20 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                         if (repair.repaired > 0 || repair.failed > 0) {
                             logger.info('Quantum key material repaired', repair)
                         }
+
+                        // Repair only reaches records still on disk under a bare
+                        // id; this is the other failure class — an account whose
+                        // keyPairId does not resolve to any record at all. Runs
+                        // after the store above has hydrated and reconciled, or
+                        // every account would read as unresolvable.
+                        reportUnresolvableAccountKeys({
+                            accounts: useAccountsStore.getState().accounts,
+                            keyIds: new Set(
+                                getKeystoreStore().state.keys.map(
+                                    key => key.id,
+                                ),
+                            ),
+                        })
                     })
                     .catch(err => {
                         logger.error('Keystore hydration failed', {
