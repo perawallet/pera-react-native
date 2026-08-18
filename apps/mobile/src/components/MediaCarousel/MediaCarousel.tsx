@@ -49,6 +49,15 @@ export const MediaCarousel = ({
     const styles = useStyles(dimensions)
     const { t } = useLanguage()
     const [activeIndex, setActiveIndex] = useState(0)
+    // Keyed by uri rather than a boolean so a CDN failure on one page doesn't
+    // blank out the other pages of the carousel.
+    const [failedUris, setFailedUris] = useState<ReadonlySet<string>>(
+        () => new Set(),
+    )
+
+    const handleImageError = useCallback((uri: string) => {
+        setFailedUris(prev => new Set(prev).add(uri))
+    }, [])
 
     // VideoPlayer defaults to the full window without explicit width/height.
     const mediaSize = dimensions.width - 2 * theme.spacing.xl
@@ -91,11 +100,12 @@ export const MediaCarousel = ({
                             height={mediaSize}
                             style={styles.videoPlayer}
                         />
-                    ) : imageUri ? (
+                    ) : imageUri && !failedUris.has(imageUri) ? (
                         <PWImage
                             source={{ uri: imageUri }}
                             style={styles.image}
                             resizeMode='contain'
+                            onError={() => handleImageError(imageUri)}
                         />
                     ) : (
                         <PWView style={styles.placeholder}>
@@ -145,6 +155,8 @@ export const MediaCarousel = ({
             activeIndex,
             mediaSize,
             t,
+            failedUris,
+            handleImageError,
         ],
     )
 
