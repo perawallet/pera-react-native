@@ -25,6 +25,7 @@ import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsGiftCardsEnabled } from '@hooks/useIsGiftCardsEnabled'
 import { useBottomSheet } from '@modules/bottom-sheet'
 import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
 import { BidaliContent } from '@modules/gift-card/components/BidaliContent'
@@ -42,6 +43,7 @@ export const MenuScreen = () => {
     const { isScannerVisible, openScanner, closeScanner } = useMenuScreen()
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
+    const isGiftCardsEnabled = useIsGiftCardsEnabled()
     const { pushWebView } = useWebView()
 
     const openReceiveFunds = useCallback(() => {
@@ -168,7 +170,7 @@ export const MenuScreen = () => {
                         testID='menu_staking_button'
                     />
                 )}
-                {routeCapabilities.giftCards && (
+                {isGiftCardsEnabled && (
                     <PanelButton
                         title={t('menu.buy_gift_card')}
                         titleWeight='h3'

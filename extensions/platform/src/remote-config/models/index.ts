@@ -34,6 +34,7 @@ export const RemoteConfigKeys = {
     enable_ssl_pinning_pera_api: 'enable_ssl_pinning_pera_api',
     enable_ssl_pinning_algod: 'enable_ssl_pinning_algod',
     enable_language_selection: 'enable_language_selection',
+    enable_gift_cards: 'enable_gift_cards',
     active_locales: 'active_locales',
     terms_version: 'terms_version',
     network_reachability_url: 'network_reachability_url',
@@ -102,6 +103,11 @@ export const RemoteConfigDefaults: Record<
     // this is where both have to agree before a locale becomes reachable.
     // Empty until the backend team populates it per locale.
     active_locales: '',
+    // Bidali gift-card availability switch. Hidden everywhere — no dev/staging
+    // carve-out — until Firebase explicitly enables it, because the provider
+    // itself is currently unavailable; testers force it on via the
+    // developer-settings flag overrides.
+    enable_gift_cards: false,
     // Bump to re-prompt every user for Terms & Conditions acceptance. The app
     // compares this against the last version the user accepted (stored on disk).
     terms_version: '1',
