@@ -48,10 +48,9 @@ vi.mock('@algorandfoundation/react-native-keystore', async () => {
 // by `adopt/__tests__/strandedRecords.spec.ts` — these tests are about what
 // the *revision* does with the result.
 vi.mock('../../adopt/strandedRecords', async () => {
-    const actual =
-        await vi.importActual<
-            typeof import('../../adopt/strandedRecords')
-        >('../../adopt/strandedRecords')
+    const actual = await vi.importActual<
+        typeof import('../../adopt/strandedRecords')
+    >('../../adopt/strandedRecords')
     return {
         ...actual,
         adoptStrandedRecords: vi.fn(actual.adoptStrandedRecords),
@@ -181,12 +180,18 @@ describe('0005-adopt-remaining-flat-records', () => {
                 declined: noteStoreDeclined({}),
             } as PeraMigrationContext,
             {
-                revision: { module: 'test-module', id: 5, name: migration.name },
+                revision: {
+                    module: 'test-module',
+                    id: 5,
+                    name: migration.name,
+                },
                 secrets: {
                     put,
                     wipe,
-                    use: async (_label: string, fn: (b: Uint8Array) => unknown) =>
-                        fn(new Uint8Array()),
+                    use: async (
+                        _label: string,
+                        fn: (b: Uint8Array) => unknown,
+                    ) => fn(new Uint8Array()),
                     has: () => true,
                     toJSON: () => '[SecretScratch]',
                 },
@@ -217,12 +222,18 @@ describe('0005-adopt-remaining-flat-records', () => {
                 declined: noteStoreDeclined({}),
             } as PeraMigrationContext,
             {
-                revision: { module: 'test-module', id: 5, name: migration.name },
+                revision: {
+                    module: 'test-module',
+                    id: 5,
+                    name: migration.name,
+                },
                 secrets: {
                     put,
                     wipe,
-                    use: async (_label: string, fn: (b: Uint8Array) => unknown) =>
-                        fn(new Uint8Array()),
+                    use: async (
+                        _label: string,
+                        fn: (b: Uint8Array) => unknown,
+                    ) => fn(new Uint8Array()),
                     has: () => true,
                     toJSON: () => '[SecretScratch]',
                 },
