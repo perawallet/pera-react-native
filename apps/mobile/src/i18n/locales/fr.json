@@ -1797,6 +1797,10 @@
             "body": "Les comptes Quantum sont récents, donc certaines dApps n’ont pas encore été mises à jour pour les prendre en charge. Certaines transactions peuvent alors échouer ou entraîner des frais inhabituels. Si vous rencontrez un problème, contacter directement cette dApp et lui demander d’ajouter la prise en charge PQ peut accélérer les choses. Vous pouvez continuer si vous le souhaitez, ou passer à un compte non-Quantum pour une compatibilité complète en attendant. <0>En savoir plus</0>",
             "confirm": "Continuer",
             "cancel": "Annuler"
+        },
+        "data_signing_unsupported": {
+            "title": "Les comptes Quantum ne peuvent pas encore signer ceci",
+            "body": "Ce type de demande ne peut pas encore être vérifié avec une signature Quantum et ne peut donc pas être signé. Passez à un compte non-Quantum ou réessayez une fois la prise en charge ajoutée."
         }
     },
     "rekey": {

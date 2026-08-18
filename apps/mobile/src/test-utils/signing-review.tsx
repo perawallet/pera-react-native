@@ -39,10 +39,15 @@ import {
     type SignRequest,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import { useKMS, type Algo25KeyResult } from '@perawallet/wallet-core-kms'
+import {
+    useKMS,
+    type Algo25KeyResult,
+    type QuantumKeyResult,
+} from '@perawallet/wallet-core-kms'
 import {
     AccountTypes,
     useAccountsStore,
+    type QuantumAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
@@ -58,6 +63,10 @@ import {
     ALGO25_TEST_MNEMONIC,
     HD_TEST_ADDRESS,
 } from '../__integration__/__fixtures__/onboarding'
+import {
+    QUANTUM_TEST_ADDRESS,
+    QUANTUM_TEST_MNEMONIC,
+} from '../__integration__/__fixtures__/quantum'
 
 export const REVIEW_SIGNER_ADDRESS = ALGO25_TEST_ADDRESS
 export const REVIEW_RECEIVER_ADDRESS = HD_TEST_ADDRESS
@@ -101,6 +110,33 @@ export const seedAlgo25Signer = async (): Promise<WalletAccount> => {
     }
     useAccountsStore.getState().setAccounts([account])
     useAccountsStore.getState().setSelectedAccountAddress(account.address)
+    return account
+}
+
+/**
+ * Mint a real quantum (Falcon) key from the pinned quantum mnemonic and
+ * register the derived quantum account, alongside any accounts already
+ * seeded. Returns the account.
+ */
+export const seedQuantumSigner = async (): Promise<WalletAccount> => {
+    const { result: kms } = renderHook(() => useKMS())
+    let keyResult: QuantumKeyResult | null = null
+    await waitFor(async () => {
+        keyResult = await kms.current.createQuantumKey({
+            mnemonic: QUANTUM_TEST_MNEMONIC,
+        })
+        expect(keyResult).not.toBeNull()
+    })
+    const account: QuantumAccount = {
+        id: 'review-quantum-signer',
+        type: AccountTypes.quantum,
+        address: QUANTUM_TEST_ADDRESS,
+        keyPairId: keyResult!.signKeyId,
+        name: 'Quantum Review Signer',
+    }
+    const store = useAccountsStore.getState()
+    store.setAccounts([...store.accounts, account])
+    store.setSelectedAccountAddress(account.address)
     return account
 }
 

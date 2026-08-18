@@ -11,6 +11,7 @@
  */
 
 import { PWButton, PWScreen, PWSlideToConfirm, PWView } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
 import { SingleArbitrarySignRequestView } from '@modules/signing/components/SingleArbitrarySignRequestView'
@@ -25,12 +26,37 @@ export const ArbitraryDataSigningScreen = () => {
         request,
         isSingleSignRequest,
         isPending,
+        isQuantumBlocked,
         handleApprove,
         handleReject,
         handleDetailsPress,
     } = useArbitraryDataSigningScreen()
 
     if (!request) return null
+
+    if (isQuantumBlocked) {
+        return (
+            <PWScreen
+                footer={
+                    <PWButton
+                        title={t('common.close.label')}
+                        variant='primary'
+                        onPress={handleReject}
+                    />
+                }
+            >
+                <PWView
+                    style={styles.bodyContainer}
+                    testID='arbitrary-data-quantum-blocked'
+                >
+                    <EmptyView
+                        title={t('quantum.data_signing_unsupported.title')}
+                        body={t('quantum.data_signing_unsupported.body')}
+                    />
+                </PWView>
+            </PWScreen>
+        )
+    }
 
     return (
         <PWScreen
