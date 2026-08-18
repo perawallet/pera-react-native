@@ -18,7 +18,12 @@ import {
     resetPreviousRouteNameForTesting,
     resetTrackedScreenForTesting,
 } from '../listeners'
-import { trackScreen, AnalyticsScreenName } from '@analytics'
+import {
+    trackScreen,
+    trackEvent,
+    AnalyticsScreenName,
+    NavigationEvent,
+} from '@analytics'
 
 const logEventMock = vi.fn()
 
@@ -32,12 +37,21 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 vi.mock('@analytics', () => ({
     trackScreen: vi.fn(),
+    trackEvent: vi.fn(),
     AnalyticsScreenName: {
         AccountList: 'screen_accounts',
         AssetDetail: 'screen_asset_detail',
         CollectibleList: 'screen_collectibles',
         ContactDetail: 'screen_contact_detail',
         ContactList: 'screen_contacts',
+    },
+    AnalyticsMetadataKey: {
+        PageTitle: 'page_title',
+        PreviousScreen: 'previous',
+        Path: 'path',
+    },
+    NavigationEvent: {
+        PageView: 'page_view',
     },
 }))
 
@@ -122,6 +136,49 @@ describe('screenListeners', () => {
         expect(logEventMock).toHaveBeenCalledWith('scr_unknown_view', {
             previous: null,
             path: '/test',
+        })
+    })
+
+    describe('page_view tracking', () => {
+        it('fires page_view with the view title alongside the scr_ event', () => {
+            screenListeners({
+                route: createRoute('AssetDetail') as any,
+            }).focus()
+
+            expect(trackEvent).toHaveBeenCalledWith(NavigationEvent.PageView, {
+                page_title: 'assetdetail',
+                previous: null,
+                path: undefined,
+            })
+        })
+
+        it('carries the previous view on subsequent navigations', () => {
+            screenListeners({
+                route: createRoute('AssetDetail') as any,
+            }).focus()
+            screenListeners({
+                route: createRoute('SendAlgo', '/send') as any,
+            }).focus()
+
+            expect(trackEvent).toHaveBeenLastCalledWith(
+                NavigationEvent.PageView,
+                {
+                    page_title: 'sendalgo',
+                    previous: 'assetdetail',
+                    path: '/send',
+                },
+            )
+        })
+
+        it('does not fire for ignored stacks or when staying on the same screen', () => {
+            screenListeners({ route: createRoute('Home') as any }).focus()
+            expect(trackEvent).not.toHaveBeenCalled()
+
+            const route = createRoute('SendAlgo')
+            screenListeners({ route: route as any }).focus()
+            vi.mocked(trackEvent).mockClear()
+            screenListeners({ route: route as any }).focus()
+            expect(trackEvent).not.toHaveBeenCalled()
         })
     })
 

@@ -25,6 +25,7 @@ import type { TransactionsRequiredPayloads } from './contexts/transactions'
 import type { NotificationsOptionalPayloads } from './contexts/notifications'
 import type { StakingRequiredPayloads } from './contexts/staking'
 import type { WebviewRequiredPayloads } from './contexts/webview'
+import type { NavigationRequiredPayloads } from './contexts/navigation'
 
 /**
  * Events that REQUIRE a payload — composed from each context's required-payload
@@ -42,7 +43,8 @@ export interface RequiredEventPayloads
         SettingsRequiredPayloads,
         TransactionsRequiredPayloads,
         StakingRequiredPayloads,
-        WebviewRequiredPayloads {}
+        WebviewRequiredPayloads,
+        NavigationRequiredPayloads {}
 
 /** Events that MAY carry a payload (all fields optional). */
 export interface OptionalEventPayloads
