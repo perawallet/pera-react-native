@@ -50,7 +50,11 @@ import {
     fakeStorage,
     type FakeKeychainStorage,
 } from '../../__fixtures__/fakeStorage'
-import { decode, sealCanary13Record } from '../../__fixtures__/keystoreFormats'
+import {
+    canary13DerivedChild,
+    decode,
+    sealCanary13Record,
+} from '../../__fixtures__/keystoreFormats'
 import { createDeclinedRegister } from '../../declined'
 import { LAYOUT_VERSION_KEY } from '../0003-remove-layout-version-stamp'
 import { migration } from '../0004-adopt-material-less-records'
@@ -504,6 +508,21 @@ describe('0004-adopt-material-less-records', () => {
             snapshot: ({ storage: store }) =>
                 (store as FakeKeychainStorage).entries(),
         })
+    })
+
+    it('leaves a real canary.13 derived child flat and declines it', async () => {
+        const storage = await seeded(
+            canary13DerivedChild({
+                id: 'derived-real',
+                parentKeyId: 'root-1',
+                rootPrivateKey: new Uint8Array(96).fill(3),
+            }),
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('derived-real')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'derived-real')).toBeUndefined()
     })
 
     it('has a valid manifest', () => {
