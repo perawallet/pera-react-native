@@ -643,14 +643,22 @@ describe('adoptStrandedRecords — nested-only children', () => {
         ])
     })
 
-    it('never writes a top-level key: Uint8Array into the plaintext bucket', async () => {
+    it('refuses a record carrying a top-level key alongside privateKey rather than destroying the key bytes', async () => {
         const EXTRA_KEY = new Uint8Array(32).fill(6)
         await seed({ ...root, key: EXTRA_KEY })
 
-        await adoptStrandedRecords(deps())
+        const result = await adoptStrandedRecords(deps())
 
-        const written = storage.getString(METADATA_PREFIX + 'root-1')
-        expect(written).toBeDefined()
-        expect(written).not.toContain(base64.encode(EXTRA_KEY))
+        // Before this fix, `own` (privateKey) got sealed, `metadataOf`
+        // stripped `key` out of `k/`, and the bare record — the only other
+        // place `key`'s bytes lived — was removed: a silent, permanent loss.
+        // Refusing must leave the bare record as the ONLY copy, untouched.
+        expect(result.adopted).not.toContain('root-1')
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        expect(storage.getString('root-1')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBeUndefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
     })
 })

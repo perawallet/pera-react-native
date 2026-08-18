@@ -443,6 +443,28 @@ export const adoptStrandedRecords = async (
             continue
         }
 
+        // Same doctrine as the nested-only branch's shape check: `own` below
+        // can only seal ONE of `privateKey`/`seed`/`key` into `m/<id>`. A
+        // record carrying a second populated `SECRET_FIELDS` entry (legacy
+        // `privateKey`+`seed`, or a `key` alongside either) would have that
+        // second secret silently dropped once `metadataOf` strips every
+        // `SECRET_FIELDS` name from `k/<id>` and the bare copy — the only
+        // other place it lived — is removed. Refuse instead: the bare record
+        // survives with everything still in it.
+        const presentSecretFields = [...SECRET_FIELDS].filter(
+            field =>
+                (record as unknown as Record<string, unknown>)[field] instanceof
+                Uint8Array,
+        )
+        if (presentSecretFields.length > 1) {
+            result.failed.push({
+                id,
+                reason: `carries more than one populated secret field (${presentSecretFields.join(', ')}); only one can be sealed`,
+            })
+            wipeSecrets(record)
+            continue
+        }
+
         const own = (record.privateKey ?? record.seed) as Uint8Array
         const journal = createJournal(storage)
 
