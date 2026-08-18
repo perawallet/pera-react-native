@@ -13,7 +13,11 @@
 // @vitest-environment node
 
 import { describe, expect, it, vi } from 'vitest'
-import { validateMigrations } from '@algorandfoundation/provider-migrations'
+import {
+    createSecretScratch,
+    validateMigrations,
+    type MigrationUtils,
+} from '@algorandfoundation/provider-migrations'
 
 // See 0002-lift-nested-material.spec.ts for why the package root is mocked and
 // why the prefixes, `serializeKey` and `MasterKeyNotFoundError` still come from
@@ -36,12 +40,51 @@ vi.mock('@algorandfoundation/react-native-keystore', async () => {
     }
 })
 
+// Defaults to the real implementation (via `importActual`) so the spec-shape
+// and never-throw tests below still exercise real adoption logic end to end.
+// Individual tests override it with `mockImplementationOnce`/
+// `mockResolvedValueOnce` to control exactly what `0005` sees, since that
+// logic (classification, quarantine, per-record failure) is already covered
+// by `adopt/__tests__/strandedRecords.spec.ts` — these tests are about what
+// the *revision* does with the result.
+vi.mock('../../adopt/strandedRecords', async () => {
+    const actual =
+        await vi.importActual<
+            typeof import('../../adopt/strandedRecords')
+        >('../../adopt/strandedRecords')
+    return {
+        ...actual,
+        adoptStrandedRecords: vi.fn(actual.adoptStrandedRecords),
+    }
+})
+
+import type { PeraMigrationContext } from '../../types'
 import { fakeStorage } from '../../__fixtures__/fakeStorage'
 import { createDeclinedRegister } from '../../declined'
+import {
+    adoptStrandedRecords,
+    emptyAdoptionResult,
+} from '../../adopt/strandedRecords'
 import { migration } from '../0005-adopt-remaining-flat-records'
 import { preflightMigrations } from '../index'
 
 const subtle = globalThis.crypto.subtle
+
+/** Stands in for the migrations ledger's MMKV instance. */
+const noteStoreDeclined = (store: Record<string, string>) =>
+    createDeclinedRegister({
+        getString: key => store[key],
+        set: (key, value) => {
+            store[key] = value
+        },
+    })
+
+const utils = (log = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }) =>
+    ({
+        revision: { module: 'test-module', id: 5, name: migration.name },
+        secrets: createSecretScratch().scratch,
+        log,
+    }) as MigrationUtils
 
 describe('0005-adopt-remaining-flat-records', () => {
     it('is registered last, ascending', () => {
@@ -70,5 +113,124 @@ describe('0005-adopt-remaining-flat-records', () => {
                 { revision: { module: 'test' } } as never,
             ),
         ).resolves.toBeUndefined()
+    })
+
+    it('records leftFlat, failed, and quarantined ids as declined and warns', async () => {
+        vi.mocked(adoptStrandedRecords).mockResolvedValueOnce({
+            ...emptyAdoptionResult(),
+            quarantined: [{ id: 'root-legacy', legacyId: 'root-legacy-orig' }],
+            leftFlat: ['cred-2'],
+            failed: [{ id: 'bad-1', reason: 'boom' }],
+        })
+
+        const noteStore: Record<string, string> = {}
+        const logWarn = vi.fn()
+
+        await migration.up(
+            {
+                storage: fakeStorage(),
+                subtle,
+                masterKeyForRead: async () => new Uint8Array(32),
+                declined: noteStoreDeclined(noteStore),
+            } as PeraMigrationContext,
+            utils({ info: vi.fn(), warn: logWarn, error: vi.fn() }),
+        )
+
+        expect(noteStoreDeclined(noteStore).read('test-module').sort()).toEqual(
+            ['bad-1', 'cred-2', 'root-legacy'].sort(),
+        )
+        expect(logWarn).toHaveBeenCalledTimes(1)
+    })
+
+    it('records nothing and does not warn when nothing was left behind', async () => {
+        vi.mocked(adoptStrandedRecords).mockResolvedValueOnce(
+            emptyAdoptionResult(),
+        )
+
+        const noteStore: Record<string, string> = {}
+        const logWarn = vi.fn()
+
+        await migration.up(
+            {
+                storage: fakeStorage(),
+                subtle,
+                masterKeyForRead: async () => new Uint8Array(32),
+                declined: noteStoreDeclined(noteStore),
+            } as PeraMigrationContext,
+            utils({ info: vi.fn(), warn: logWarn, error: vi.fn() }),
+        )
+
+        expect(noteStoreDeclined(noteStore).read('test-module')).toEqual([])
+        expect(logWarn).not.toHaveBeenCalled()
+    })
+
+    it('routes a read master key through utils.secrets so the engine wipes it', async () => {
+        vi.mocked(adoptStrandedRecords).mockImplementationOnce(async deps => {
+            await deps.masterKeyForRead()
+            return emptyAdoptionResult()
+        })
+
+        const put = vi.fn()
+        const wipe = vi.fn()
+
+        await migration.up(
+            {
+                storage: fakeStorage(),
+                subtle,
+                masterKeyForRead: async () => new Uint8Array(32).fill(9),
+                declined: noteStoreDeclined({}),
+            } as PeraMigrationContext,
+            {
+                revision: { module: 'test-module', id: 5, name: migration.name },
+                secrets: {
+                    put,
+                    wipe,
+                    use: async (_label: string, fn: (b: Uint8Array) => unknown) =>
+                        fn(new Uint8Array()),
+                    has: () => true,
+                    toJSON: () => '[SecretScratch]',
+                },
+                log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+            } as MigrationUtils,
+        )
+
+        expect(put).toHaveBeenCalledWith(
+            'keystore-master-key',
+            expect.any(Uint8Array),
+        )
+        expect(wipe).toHaveBeenCalledWith('keystore-master-key')
+    })
+
+    it('never puts or wipes the master key when nothing reads it', async () => {
+        vi.mocked(adoptStrandedRecords).mockResolvedValueOnce(
+            emptyAdoptionResult(),
+        )
+
+        const put = vi.fn()
+        const wipe = vi.fn()
+
+        await migration.up(
+            {
+                storage: fakeStorage(),
+                subtle,
+                masterKeyForRead: async () => new Uint8Array(32),
+                declined: noteStoreDeclined({}),
+            } as PeraMigrationContext,
+            {
+                revision: { module: 'test-module', id: 5, name: migration.name },
+                secrets: {
+                    put,
+                    wipe,
+                    use: async (_label: string, fn: (b: Uint8Array) => unknown) =>
+                        fn(new Uint8Array()),
+                    has: () => true,
+                    toJSON: () => '[SecretScratch]',
+                },
+                log: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+            } as MigrationUtils,
+        )
+
+        expect(put).not.toHaveBeenCalled()
+        expect(wipe).not.toHaveBeenCalled()
     })
 })

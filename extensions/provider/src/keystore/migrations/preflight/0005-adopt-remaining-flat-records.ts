@@ -15,7 +15,12 @@ import type {
     MigrationUtils,
 } from '@algorandfoundation/provider-migrations'
 import type { PeraMigrationContext } from '../types'
-import { adoptStrandedRecords } from '../adopt/strandedRecords'
+import {
+    adoptStrandedRecords,
+    type AdoptionDeps,
+} from '../adopt/strandedRecords'
+
+const MASTER_KEY_LABEL = 'keystore-master-key'
 
 /**
  * Adopts every record the rest of the chain leaves at its bare id.
@@ -25,9 +30,11 @@ import { adoptStrandedRecords } from '../adopt/strandedRecords'
  * collision, and its context is built with `subtle: undefined`, so it adopts
  * nothing at all. Draining the bare ids here leaves it no candidate either way.
  *
- * Resolves even when records are left behind. A throwing revision stays
- * unledgered *and* rejects `keystore.ready`, which blocks boot on every launch;
- * the un-ledgered boot-time guard is what retries instead.
+ * Resolves even when records are left behind — a throwing revision stays
+ * unledgered *and* rejects `keystore.ready`, which blocks boot on every launch.
+ * Nothing today automatically retries a resolved-but-incomplete run; what's
+ * left is written to `declined` and logged so it is at least visible rather
+ * than silently lost.
  */
 export const migration: Migration<PeraMigrationContext> = {
     id: 5,
@@ -36,13 +43,49 @@ export const migration: Migration<PeraMigrationContext> = {
         context: PeraMigrationContext,
         utils: MigrationUtils,
     ): Promise<void> => {
-        const result = await adoptStrandedRecords(context)
+        let readMasterKey = false
 
-        if (result.quarantined.length > 0) {
-            context.declined.record(
-                utils.revision.module,
-                result.quarantined.map(entry => entry.id),
-            )
+        // Routes the master key through the runner's own secret scratch so
+        // `apply.js`'s `finally` zeroes it — same as `0002`/`0004`. Wrapping
+        // `masterKeyForRead` rather than reading it here directly means
+        // `adoptStrandedRecords` still owns whether it reads it at all (e.g.
+        // it skips the read entirely when there's nothing to adopt).
+        const deps: AdoptionDeps = {
+            storage: context.storage,
+            subtle: context.subtle,
+            masterKeyForRead: async () => {
+                const masterKey = await context.masterKeyForRead()
+                utils.secrets.put(MASTER_KEY_LABEL, masterKey)
+                readMasterKey = true
+                return masterKey
+            },
+        }
+
+        try {
+            const result = await adoptStrandedRecords(deps)
+
+            const declined = [
+                ...result.leftFlat,
+                ...result.failed.map(entry => entry.id),
+                ...result.quarantined.map(entry => entry.id),
+            ]
+
+            if (declined.length > 0) {
+                context.declined.record(utils.revision.module, declined)
+                utils.log?.warn(
+                    `Left ${declined.length} stranded record(s) unresolved`,
+                    {
+                        leftFlat: result.leftFlat.length,
+                        failed: result.failed.length,
+                        quarantined: result.quarantined.length,
+                    },
+                    utils.revision.module,
+                )
+            }
+        } finally {
+            // Only a label put via `secrets.put` above ever gets read; a
+            // no-op `wipe` on an absent label is safe (`secrets.js`).
+            if (readMasterKey) utils.secrets.wipe(MASTER_KEY_LABEL)
         }
     },
 }
