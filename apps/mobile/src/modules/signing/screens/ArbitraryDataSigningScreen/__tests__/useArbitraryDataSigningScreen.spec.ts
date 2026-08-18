@@ -50,6 +50,12 @@ vi.mock('@hooks/useQuantumDappWarning', () => ({
     }),
 }))
 
+const mockIsQuantumDataSigningBlocked = vi.fn()
+vi.mock('@hooks/useIsQuantumDataSigningBlocked', () => ({
+    useIsQuantumDataSigningBlocked: (request: unknown) =>
+        mockIsQuantumDataSigningBlocked(request),
+}))
+
 const buildRequest = (sourceType: string) => ({
     id: 'req-1',
     type: 'arbitrary-data',
@@ -63,6 +69,29 @@ describe('useArbitraryDataSigningScreen', () => {
         mockPipeline.currentRequest = buildRequest('walletconnect')
         mockPipeline.isLoading = false
         mockConfirmQuantumDappUsage.mockResolvedValue('continue')
+        mockIsQuantumDataSigningBlocked.mockReturnValue(false)
+    })
+
+    it('exposes the quantum block state for the current request', () => {
+        mockIsQuantumDataSigningBlocked.mockReturnValue(true)
+        const { result } = renderHook(() => useArbitraryDataSigningScreen())
+
+        expect(mockIsQuantumDataSigningBlocked).toHaveBeenCalledWith(
+            mockPipeline.currentRequest,
+        )
+        expect(result.current.isQuantumBlocked).toBe(true)
+    })
+
+    it('never advances the pipeline from handleApprove when quantum-blocked', async () => {
+        mockIsQuantumDataSigningBlocked.mockReturnValue(true)
+        const { result } = renderHook(() => useArbitraryDataSigningScreen())
+
+        await act(async () => {
+            result.current.handleApprove()
+        })
+
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+        expect(mockConfirmQuantumDappUsage).not.toHaveBeenCalled()
     })
 
     it('advances the pipeline when the quantum dApp warning continues', async () => {

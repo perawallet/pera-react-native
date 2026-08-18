@@ -34,11 +34,13 @@ import {
 } from '@test-utils/database-setup'
 import {
     buildArc60SignRequest,
+    fireEvent,
     renderSignReview,
     screen,
     waitFor,
     REVIEW_SIGNER_ADDRESS,
     seedAlgo25Signer,
+    seedQuantumSigner,
 } from '@test-utils/signing-review'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 
@@ -107,12 +109,12 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
     it(
         'shows the origin-mismatch warning when the verified origin differs from the SIWA domain',
         async () => {
-            const { request } = buildArc60SignRequest({
+            const { request, reject } = buildArc60SignRequest({
                 domain: 'trusted-exchange.com',
                 verifiedOrigin: 'https://evil.example/phish',
             })
 
-            renderSignReview(request)
+            const view = renderSignReview(request)
 
             await waitFor(
                 () => {
@@ -122,6 +124,52 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
                 },
                 { timeout: 10_000 },
             )
+
+            // Settle the request so the pipeline is clean for the next test.
+            view.reject()
+            await waitFor(
+                () => {
+                    expect(reject).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'blocks a quantum signer with a terminal notice instead of the confirm control',
+        async () => {
+            const quantum = await seedQuantumSigner()
+            const { request, approve, reject } = buildArc60SignRequest({
+                signer: quantum.address,
+            })
+
+            renderSignReview(request)
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('arc60-quantum-blocked'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+            // The harness renders i18n keys verbatim, so assert on the key.
+            expect(
+                screen.getByText('quantum.data_signing_unsupported.title'),
+            ).toBeTruthy()
+            expect(screen.queryByTestId('arc60-confirm-slide')).toBeNull()
+
+            fireEvent.click(screen.getByText('common.close.label'))
+
+            await waitFor(
+                () => {
+                    expect(reject).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            expect(approve).not.toHaveBeenCalled()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

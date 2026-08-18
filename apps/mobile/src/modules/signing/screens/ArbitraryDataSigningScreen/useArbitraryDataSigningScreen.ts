@@ -22,6 +22,7 @@ import {
     useLastSigningEvent,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
+import { useIsQuantumDataSigningBlocked } from '@hooks/useIsQuantumDataSigningBlocked'
 import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -35,6 +36,12 @@ type UseArbitraryDataSigningScreenResult = {
     request: Nullable<ArbitraryDataSignRequest>
     isSingleSignRequest: boolean
     isPending: boolean
+    /**
+     * A named signer is a quantum account, whose Falcon signature the
+     * arbitrary-data scheme can't verify yet — the screen must show a
+     * terminal notice instead of the confirm control (PERA-4919).
+     */
+    isQuantumBlocked: boolean
     handleApprove: () => void
     handleReject: () => void
     handleDetailsPress: (message: PeraArbitraryDataMessage) => void
@@ -47,6 +54,7 @@ export const useArbitraryDataSigningScreen =
         const { confirmQuantumDappUsage } = useQuantumDappWarning()
         const request =
             (pipeline.currentRequest as ArbitraryDataSignRequest) ?? null
+        const isQuantumBlocked = useIsQuantumDataSigningBlocked(request)
 
         const isSingleSignRequest = request?.data.length === 1
 
@@ -65,6 +73,11 @@ export const useArbitraryDataSigningScreen =
         const isApproving = !!signingStarted
 
         const handleApprove = useCallback(() => {
+            // Backstop for the blocked terminal state — the confirm control
+            // is not rendered when quantum-blocked, so this should be
+            // unreachable.
+            if (isQuantumBlocked) return
+
             void (async () => {
                 // This screen drives the pipeline itself, so the sign-time
                 // backstop in SigningActionButtons never runs for this request.
@@ -80,7 +93,7 @@ export const useArbitraryDataSigningScreen =
 
                 pipeline.next()
             })()
-        }, [pipeline, request, confirmQuantumDappUsage])
+        }, [pipeline, request, confirmQuantumDappUsage, isQuantumBlocked])
 
         const handleReject = useCallback(() => {
             pipeline.fail()
@@ -97,6 +110,7 @@ export const useArbitraryDataSigningScreen =
             request,
             isSingleSignRequest,
             isPending: pipeline.isLoading || isApproving,
+            isQuantumBlocked,
             handleApprove,
             handleReject,
             handleDetailsPress,

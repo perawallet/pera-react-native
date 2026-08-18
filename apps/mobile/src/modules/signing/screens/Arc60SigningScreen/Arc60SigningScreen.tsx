@@ -35,12 +35,38 @@ export const Arc60SigningScreen = () => {
         canConfirm,
         errorMessage,
         hasOriginMismatch,
+        isQuantumBlocked,
         handleApprove,
         handleReject,
         handleDetailsPress,
     } = useArc60SigningScreen()
 
     if (!request || !parsed) return null
+
+    if (isQuantumBlocked) {
+        return (
+            <PWScreen
+                scroll='never'
+                footer={
+                    <PWButton
+                        title={t('common.close.label')}
+                        variant='primary'
+                        onPress={handleReject}
+                    />
+                }
+            >
+                <PWView
+                    style={styles.bodyContainer}
+                    testID='arc60-quantum-blocked'
+                >
+                    <EmptyView
+                        title={t('quantum.data_signing_unsupported.title')}
+                        body={t('quantum.data_signing_unsupported.body')}
+                    />
+                </PWView>
+            </PWScreen>
+        )
+    }
 
     if (parsed.type === 'error') {
         return (
