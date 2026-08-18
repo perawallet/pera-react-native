@@ -13,7 +13,13 @@
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { type ParamListBase, type RouteProp } from '@react-navigation/native'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import { trackScreen, AnalyticsScreenName } from '@analytics'
+import {
+    trackScreen,
+    trackEvent,
+    AnalyticsScreenName,
+    AnalyticsMetadataKey,
+    NavigationEvent,
+} from '@analytics'
 
 const NAVIGATION_STACK_NAMES = new Set([
     'tabbar',
@@ -101,6 +107,15 @@ export const screenListeners = ({
                 previous: previousRouteName,
                 path: route.path,
             })
+
+            // 3) GA4-standard page_view with the view title as a param. Kept
+            //    alongside scr_*_view so existing dashboards keep working.
+            trackEvent(NavigationEvent.PageView, {
+                [AnalyticsMetadataKey.PageTitle]: currentRouteName,
+                [AnalyticsMetadataKey.PreviousScreen]: previousRouteName,
+                [AnalyticsMetadataKey.Path]: route.path,
+            })
+
             previousRouteName = currentRouteName
         }
     },
