@@ -24,6 +24,7 @@ import { safeErrorMessage, safeWarn } from '../safeLog'
 import {
     hasNestedMaterial,
     liftSecrets,
+    normalizeCanary13Record,
     SECRET_FIELDS,
     wipeSecrets,
     type Canary13Record,
@@ -205,15 +206,37 @@ export const hasStrandedWork = (
  * "simplifies" it back to `privateKey`/`seed` only — if either caller's
  * gating ever changes.
  */
-const metadataOf = (record: Canary13Record, id: string): string => {
+const withoutOwnSecrets = (record: Canary13Record): Record<string, unknown> => {
     const rest: Record<string, unknown> = {}
     for (const [field, value] of Object.entries(
         record as unknown as Record<string, unknown>,
     )) {
         if (!SECRET_FIELDS.has(field)) rest[field] = value
     }
-    return serializeKey({ ...rest, id } as unknown as Canary13Record)
+    return rest
 }
+
+const metadataOf = (record: Canary13Record, id: string): string =>
+    serializeKey({
+        ...withoutOwnSecrets(record),
+        id,
+    } as unknown as Canary13Record)
+
+/**
+ * The record's own top-level `SECRET_FIELDS` names that actually hold
+ * something.
+ *
+ * `null` is excluded deliberately. `carriesSecretName` reports nothing under a
+ * `null` and `metadataOf` strips the name either way, so a `seed: null`
+ * alongside a real `privateKey` carries nothing that could be lost — counting
+ * it would refuse an adoptable record forever and leave the user unable to
+ * sign.
+ */
+const populatedSecretFields = (record: Canary13Record): string[] =>
+    [...SECRET_FIELDS].filter(field => {
+        const value = (record as unknown as Record<string, unknown>)[field]
+        return value !== undefined && value !== null
+    })
 
 type MaterialState = 'absent' | 'same' | 'different' | 'unreadable'
 
@@ -281,6 +304,40 @@ const carriesSecretName = (value: unknown): boolean => {
     )
 }
 
+/**
+ * `journal.rollback()` issues its own `storage.set`/`storage.remove` calls, so
+ * it can throw — from inside the `catch` that was already handling a failure.
+ * That throw escapes `adoptStrandedRecords` and rejects `0005.up`, which
+ * rejects `migrations.ready` → `keystore.ready`: the app fails to boot, every
+ * launch. Whatever the rollback did restore is worth keeping, and the caller
+ * records the record in `failed` either way.
+ */
+const safeRollback = (
+    journal: ReturnType<typeof createJournal>,
+    id: string,
+): void => {
+    try {
+        journal.rollback()
+    } catch (error) {
+        safeWarn(
+            `[provider] adopt-stranded: ${id} rollback failed: ${safeErrorMessage(error)}`,
+        )
+    }
+}
+
+/**
+ * Every refusal that uses this leaves the record exactly where it is.
+ *
+ * The shapes concerned are ones preflight `0002` was designed for, and earlier
+ * wording named it as their owner — but `0002` is ledgered on every device that
+ * ran 7.0.4 (the population this pass exists to repair) and a ledgered revision
+ * never runs again. Naming it as the owner reads as "already someone else's
+ * job"; clearing one of these actually needs a NEW revision, or this pass
+ * widened. The refusal itself is unchanged and still correct.
+ */
+const refusedPendingNewRevision = (reason: string): string =>
+    `${reason}; needs a new revision (preflight 0002, which owns this shape, is already ledgered on every 7.0.4 device)`
+
 type AdoptNestedOnlyArgs = {
     deps: AdoptionDeps
     masterKey: Uint8Array
@@ -342,13 +399,18 @@ const adoptNestedOnly = async ({
     result,
 }: AdoptNestedOnlyArgs): Promise<void> => {
     const { storage } = deps
+    // A root reconstructed below is re-encoded plaintext key material that
+    // lives outside `record`, so `wipeSecrets(record)` cannot reach it.
+    let rootReEncoded: Uint8Array | undefined
 
     try {
         const shape = recognizedNestedShape(record)
         if (shape === undefined) {
             result.failed.push({
                 id,
-                reason: 'nested material is not the recognised rootKey shape; owned by preflight 0002',
+                reason: refusedPendingNewRevision(
+                    'nested material is not the recognised rootKey shape',
+                ),
             })
             return
         }
@@ -372,18 +434,29 @@ const adoptNestedOnly = async ({
         // apart again.
         const { privateKey: _placed, ...restOfRootKey } =
             nested as unknown as Record<string, unknown>
-        const strayOwnFields = [...SECRET_FIELDS].filter(
-            field =>
-                (record as unknown as Record<string, unknown>)[field] !==
-                undefined,
-        )
+        const strayOwnFields = populatedSecretFields(record)
         if (strayOwnFields.length > 0 || carriesSecretName(restOfRootKey)) {
             result.failed.push({
                 id,
-                reason: `carries secret field(s) this pass cannot place (${[...strayOwnFields, ...(carriesSecretName(restOfRootKey) ? ['rootKey'] : [])].join(', ')}); owned by preflight 0002`,
+                reason: refusedPendingNewRevision(
+                    `carries secret field(s) this pass cannot place (${[...strayOwnFields, ...(carriesSecretName(restOfRootKey) ? ['rootKey'] : [])].join(', ')})`,
+                ),
             })
             return
         }
+
+        // Same normalisation the material branch applies, for the same reason:
+        // a root reconstructed below in canary.13's vocabulary is a root
+        // `deriveFromSeed` refuses to derive from. Computed before the
+        // comparisons so the parent's `m/` is measured against the bytes this
+        // pass would actually write there, not the pre-normalisation copy.
+        const normalizedRoot = normalizeCanary13Record({
+            record: nested,
+            material: rootMaterial,
+            hasMaterial: true,
+        })
+        rootReEncoded = normalizedRoot.material
+        const rootPlaced = rootReEncoded ?? rootMaterial
 
         let parentId: string = rootId
         const rootJournal = createJournal(storage)
@@ -394,7 +467,7 @@ const adoptNestedOnly = async ({
                 deps,
                 masterKey,
                 parentKey,
-                rootMaterial,
+                rootPlaced,
             )
 
             if (parentState === 'unreadable') {
@@ -414,7 +487,7 @@ const adoptNestedOnly = async ({
                     deps,
                     masterKey,
                     legacyKey,
-                    rootMaterial,
+                    rootPlaced,
                 )
 
                 if (legacyState === 'unreadable') {
@@ -439,7 +512,10 @@ const adoptNestedOnly = async ({
                     // root: the nested copy is the last surviving copy.
                     // Reconstructing it is the only way this wallet's root
                     // key is not permanently lost.
-                    const expectedRootMeta = metadataOf(nested, rootId)
+                    const expectedRootMeta = metadataOf(
+                        normalizedRoot.metadata,
+                        rootId,
+                    )
                     const existingRootMeta = storage.getString(
                         METADATA_PREFIX + rootId,
                     )
@@ -458,12 +534,7 @@ const adoptNestedOnly = async ({
                     }
 
                     rootJournal.track(parentKey)
-                    await sealAndVerify(
-                        deps,
-                        masterKey,
-                        parentKey,
-                        rootMaterial,
-                    )
+                    await sealAndVerify(deps, masterKey, parentKey, rootPlaced)
                     rootJournal.set(METADATA_PREFIX + rootId, expectedRootMeta)
                     assertMetadataWritten(
                         storage,
@@ -485,7 +556,7 @@ const adoptNestedOnly = async ({
                 }
             }
         } catch (error) {
-            rootJournal.rollback()
+            safeRollback(rootJournal, id)
             result.failed.push({ id, reason: safeErrorMessage(error) })
             safeWarn(
                 `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
@@ -511,18 +582,120 @@ const adoptNestedOnly = async ({
                 },
             } as Canary13Record
 
-            const childMeta = metadataOf(recordForMeta, id)
+            // `hd-derived-ed25519` is one of the types `normalizeCanary13Record`
+            // rewrites (`path` → parsed `bip44Path`, `derivation` →
+            // `derivationType`); without it `sign` derives from `undefined`
+            // segments.
+            const childMeta = metadataOf(
+                normalizeCanary13Record({
+                    record: recordForMeta,
+                    hasMaterial: false,
+                }).metadata,
+                id,
+            )
             childJournal.set(METADATA_PREFIX + id, childMeta)
             assertMetadataWritten(storage, METADATA_PREFIX + id, childMeta)
             storage.remove(id)
             result.adopted.push(id)
         } catch (error) {
-            childJournal.rollback()
+            safeRollback(childJournal, id)
             result.failed.push({ id, reason: safeErrorMessage(error) })
             safeWarn(
                 `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
             )
         }
+    } finally {
+        wipeSecrets(record)
+        wipeBytes(rootReEncoded)
+    }
+}
+
+type AdoptMaterialLessArgs = {
+    deps: AdoptionDeps
+    id: string
+    record: Canary13Record
+    result: AdoptionResult
+}
+
+/**
+ * The classification table's "no material at all → `k/` only" row.
+ *
+ * These used to be lumped in with the passkeys into `leftFlat`, which is worse
+ * than doing nothing: `leftFlat` ids become the durable expected-flat note, so
+ * `hasStrandedWork` is suppressed for them forever and the guard built to
+ * retry exactly this residue — a record preflight `0004` failed on, the only
+ * one a ledgered 7.0.4 device can still hold — never looks at it again.
+ *
+ * Synchronous and master-key-free: there is nothing to seal, so no `m/` entry
+ * is written and no Keychain prompt is raised.
+ */
+const adoptMaterialLess = ({
+    deps,
+    id,
+    record,
+    result,
+}: AdoptMaterialLessArgs): void => {
+    const { storage } = deps
+    const journal = createJournal(storage)
+
+    try {
+        // `classifyRecord` tests for a `Uint8Array`, so a `SECRET_FIELDS` name
+        // holding a container (`key: { d: bytes }`) classifies as material-less
+        // while `metadataOf` still strips it — the bytes would be written
+        // nowhere and then deleted with the bare copy. Same presence-by-name
+        // gate the other two branches use.
+        const strayFields = populatedSecretFields(record)
+        if (
+            strayFields.length > 0 ||
+            carriesSecretName(withoutOwnSecrets(record))
+        ) {
+            result.failed.push({
+                id,
+                reason: refusedPendingNewRevision(
+                    `carries secret field(s) this pass cannot place (${strayFields.join(', ') || 'nested'})`,
+                ),
+            })
+            return
+        }
+
+        if (storage.getString(MATERIAL_PREFIX + id) !== undefined) {
+            // A record carrying no material has no business owning an `m/`
+            // entry. Something this pass does not understand holds this id.
+            result.failed.push({
+                id,
+                reason: `${MATERIAL_PREFIX}${id} holds material for a record that carries none`,
+            })
+            return
+        }
+
+        const meta = metadataOf(
+            normalizeCanary13Record({ record, hasMaterial: false }).metadata,
+            id,
+        )
+        const existing = storage.getString(METADATA_PREFIX + id)
+        if (existing !== undefined && existing !== meta) {
+            // Same rule as the material branch: an existing `k/<id>` is only
+            // proof this record is already adopted if it describes THIS
+            // record. Anything else and the bare copy stays.
+            result.failed.push({
+                id,
+                reason: `${METADATA_PREFIX}${id} exists but describes a different record`,
+            })
+            return
+        }
+
+        if (existing === undefined) {
+            journal.set(METADATA_PREFIX + id, meta)
+            assertMetadataWritten(storage, METADATA_PREFIX + id, meta)
+        }
+        storage.remove(id)
+        result.adopted.push(id)
+    } catch (error) {
+        safeRollback(journal, id)
+        result.failed.push({ id, reason: safeErrorMessage(error) })
+        safeWarn(
+            `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
+        )
     } finally {
         wipeSecrets(record)
     }
@@ -639,11 +812,7 @@ const restoreWrappedPasskeys = async (
         }
 
         try {
-            const presentSecretFields = [...SECRET_FIELDS].filter(
-                field =>
-                    (record as unknown as Record<string, unknown>)[field] !==
-                    undefined,
-            )
+            const presentSecretFields = populatedSecretFields(record)
             if (presentSecretFields.length > 0) {
                 result.failed.push({
                     id,
@@ -718,7 +887,7 @@ const restoreWrappedPasskeys = async (
                 }
                 verified = true
             } catch (error) {
-                journal.rollback()
+                safeRollback(journal, id)
                 result.failed.push({ id, reason: safeErrorMessage(error) })
                 safeWarn(
                     `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
@@ -813,6 +982,11 @@ export const adoptStrandedRecords = async (
             continue
         }
 
+        if (kind === 'material-less') {
+            adoptMaterialLess({ deps, id, record, result })
+            continue
+        }
+
         if (kind !== 'material') {
             result.leftFlat.push(id)
             wipeSecrets(record)
@@ -827,7 +1001,7 @@ export const adoptStrandedRecords = async (
         if (hasNestedMaterial(record)) {
             result.failed.push({
                 id,
-                reason: 'carries nested material; owned by preflight 0002',
+                reason: refusedPendingNewRevision('carries nested material'),
             })
             wipeSecrets(record)
             continue
@@ -848,11 +1022,7 @@ export const adoptStrandedRecords = async (
         // bare array) would still get stripped from `k/<id>` and then lost
         // when the bare copy is removed. Matching `metadataOf`'s own test is
         // what keeps the two from drifting apart again.
-        const presentSecretFields = [...SECRET_FIELDS].filter(
-            field =>
-                (record as unknown as Record<string, unknown>)[field] !==
-                undefined,
-        )
+        const presentSecretFields = populatedSecretFields(record)
         if (presentSecretFields.length > 1) {
             result.failed.push({
                 id,
@@ -862,7 +1032,46 @@ export const adoptStrandedRecords = async (
             continue
         }
 
+        // The nested-only branch's own `carriesSecretName(restOfRootKey)`
+        // gate, applied symmetrically here. `hasNestedMaterial` above tests
+        // for a `Uint8Array`, so a secret NAME holding a container
+        // (`metadata.x.key = { d: bytes }`) walks past it and gets serialised
+        // straight into the plaintext `k/` bucket.
+        if (carriesSecretName(withoutOwnSecrets(record))) {
+            result.failed.push({
+                id,
+                reason: refusedPendingNewRevision(
+                    'carries a container-shaped secret below its top level',
+                ),
+            })
+            wipeSecrets(record)
+            continue
+        }
+
         const own = (record.privateKey ?? record.seed) as Uint8Array
+        // Normalised BEFORE anything is compared or written. `repairs/0001`,
+        // the only other caller, lives in a separately ledgered module that is
+        // already applied on every device that ran 7.0.4 — precisely the
+        // population this pass repairs — so nothing downstream will rewrite
+        // what is written here. Left in canary.13's vocabulary the records
+        // become visible and stay unusable: `deriveFromSeed` rejects a parent
+        // not typed `hd-root-key`, and an ed25519 child holding raw libsodium
+        // bytes with no `signAlgorithm` throws inside the host `importKey`.
+        // The boot guard adopts records long after every revision is ledgered,
+        // so this cannot be another revision either. Re-normalising is a
+        // no-op: every rewrite is gated on the canary.13 spelling still being
+        // there, so `repairs/0001` running afterwards on a fresh-ledger device
+        // changes nothing.
+        const { metadata: normalized, material: reEncoded } =
+            normalizeCanary13Record({
+                record,
+                material: own,
+                hasMaterial: true,
+            })
+        // The bytes this pass would actually seal. Comparing `own` instead
+        // would read an already-normalised `m/<id>` as a different key and
+        // quarantine the record out from under itself on the next launch.
+        const placed = reEncoded ?? own
         const journal = createJournal(storage)
 
         try {
@@ -872,7 +1081,7 @@ export const adoptStrandedRecords = async (
                 deps,
                 masterKey,
                 MATERIAL_PREFIX + id,
-                own,
+                placed,
             )
 
             if (state === 'unreadable') {
@@ -905,7 +1114,7 @@ export const adoptStrandedRecords = async (
                     deps,
                     masterKey,
                     MATERIAL_PREFIX + legacyId,
-                    own,
+                    placed,
                 )
                 if (legacyState !== 'absent' && legacyState !== 'same') {
                     result.failed.push({
@@ -920,9 +1129,9 @@ export const adoptStrandedRecords = async (
                     deps,
                     masterKey,
                     MATERIAL_PREFIX + legacyId,
-                    own,
+                    placed,
                 )
-                const legacyMeta = metadataOf(record, legacyId)
+                const legacyMeta = metadataOf(normalized, legacyId)
                 journal.set(METADATA_PREFIX + legacyId, legacyMeta)
                 // Same hazard Minor 7 fixed for the adoption path: a silent
                 // write failure here must be caught before the bare copy —
@@ -952,7 +1161,7 @@ export const adoptStrandedRecords = async (
                 // on that basis would drop the only other copy of
                 // `type`/`format`/`metadata.bip44Path`.
                 const existing = storage.getString(METADATA_PREFIX + id)
-                if (existing !== metadataOf(record, id)) {
+                if (existing !== metadataOf(normalized, id)) {
                     result.failed.push({
                         id,
                         reason: `${METADATA_PREFIX}${id} exists but describes a different record`,
@@ -970,23 +1179,31 @@ export const adoptStrandedRecords = async (
             // whose description matches. Complete it.
             journal.track(MATERIAL_PREFIX + id)
             if (state === 'absent') {
-                await sealAndVerify(deps, masterKey, MATERIAL_PREFIX + id, own)
+                await sealAndVerify(
+                    deps,
+                    masterKey,
+                    MATERIAL_PREFIX + id,
+                    placed,
+                )
             }
             if (!hasMeta) {
-                const meta = metadataOf(record, id)
+                const meta = metadataOf(normalized, id)
                 journal.set(METADATA_PREFIX + id, meta)
                 assertMetadataWritten(storage, METADATA_PREFIX + id, meta)
             }
             storage.remove(id)
             result.adopted.push(id)
         } catch (error) {
-            journal.rollback()
+            safeRollback(journal, id)
             result.failed.push({ id, reason: safeErrorMessage(error) })
             safeWarn(
                 `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
             )
         } finally {
             wipeBytes(own)
+            // Re-encoded material is a NEW array outside `record`, so
+            // `wipeSecrets` cannot reach it.
+            wipeBytes(reEncoded)
             wipeSecrets(record)
         }
     }

@@ -545,6 +545,73 @@ describe('adoptStrandedRecords — material-bearing records', () => {
         expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
     })
 
+    // `carriesSecretName` reports nothing under a `null` and `metadataOf`
+    // strips the name either way, so a `seed: null` carries nothing that
+    // could be lost. Counting it as a second secret refused the record
+    // forever, leaving the user unable to sign.
+    it('adopts a record whose other secret field is null rather than refusing it forever', async () => {
+        await seed({ ...root, id: 'root-null', seed: null })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.failed).toEqual([])
+        expect(result.adopted).toEqual(['root-null'])
+        expect(storage.getString(METADATA_PREFIX + 'root-null')).not.toContain(
+            'privateKey',
+        )
+    })
+
+    // The nested-only branch's own gate, applied symmetrically here:
+    // `hasNestedMaterial` tests for a `Uint8Array`, so a secret NAME holding a
+    // container walks past it and is serialised into the plaintext bucket.
+    it('refuses a material record hiding a container-shaped secret below its top level, leaking nothing into k/', async () => {
+        await seed({
+            ...root,
+            id: 'root-leak',
+            metadata: { scheme: 'bip39', backup: { key: { d: 'AAECAw' } } },
+        })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-leak' }),
+        ])
+        expect(storage.getString(METADATA_PREFIX + 'root-leak')).toBeUndefined()
+        expect(storage.getString('root-leak')).toBeDefined()
+    })
+
+    // A rollback issues its own storage writes, so it can throw from inside
+    // the `catch` already handling a failure. Unguarded, that throw escapes
+    // `0005.up` → rejects `migrations.ready` → `keystore.ready`: the app fails
+    // to boot, every launch.
+    it('resolves rather than throwing when a journal rollback itself fails', async () => {
+        await seed(root)
+        const originalSet = storage.set.bind(storage)
+        const originalRemove = storage.remove.bind(storage)
+        vi.spyOn(storage, 'set').mockImplementation((key, value) => {
+            if (key.startsWith(METADATA_PREFIX)) {
+                throw new Error('simulated MMKV metadata write failure')
+            }
+            originalSet(key, value)
+        })
+        vi.spyOn(storage, 'remove').mockImplementation(key => {
+            if (key.startsWith(MATERIAL_PREFIX)) {
+                throw new Error('simulated MMKV rollback failure')
+            }
+            originalRemove(key)
+        })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        // Never deleted: the bare record is still the only complete copy.
+        expect(storage.getString('root-1')).toBeDefined()
+    })
+
     it('refuses a record carrying a non-Uint8Array key container alongside privateKey', async () => {
         // The gate must key off PRESENCE (a field name `metadataOf` would
         // strip), not `instanceof Uint8Array` — a wrapped/nested `key` still
@@ -969,5 +1036,65 @@ describe('adoptStrandedRecords — passkey restore', () => {
         )
         expect(storage.getString('cred-8')).toBeUndefined()
         expect(storage.getString(METADATA_PREFIX + 'cred-8')).toBeDefined()
+    })
+})
+
+describe('adoptStrandedRecords — material-less records', () => {
+    const materialLess = {
+        id: 'meta-1',
+        type: 'secret-key',
+        name: 'Secret',
+        algorithm: 'raw',
+        format: 'raw',
+        extractable: true,
+        keyUsages: [],
+        metadata: { parentKeyId: 'root-1' },
+    }
+
+    // The classification table's "no material at all → k/ only" row. Lumping
+    // these into `leftFlat` was worse than doing nothing: `leftFlat` ids
+    // become the durable expected-flat note, so the guard built to retry
+    // exactly this residue would never look at them again.
+    it('writes k/ only, drops the bare id, and never records it as leftFlat', async () => {
+        await seed(materialLess)
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).toEqual(['meta-1'])
+        expect(result.leftFlat).toEqual([])
+        expect(storage.getString('meta-1')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'meta-1')).toBeDefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'meta-1')).toBeUndefined()
+        expect(hasStrandedWork(storage)).toBe(false)
+    })
+
+    // `classifyRecord` tests for a `Uint8Array`, so a secret NAME holding a
+    // container classifies as material-less while `metadataOf` still strips
+    // it — the bytes would be written nowhere and then deleted along with the
+    // bare copy.
+    it('refuses one carrying a container under a secret name, destroying nothing', async () => {
+        await seed({ ...materialLess, id: 'meta-2', key: { d: 'AAECAw' } })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'meta-2' }),
+        ])
+        expect(storage.getString('meta-2')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'meta-2')).toBeUndefined()
+    })
+
+    it('refuses one whose id unexpectedly already owns material', async () => {
+        await seed({ ...materialLess, id: 'meta-3' })
+        storage.set(MATERIAL_PREFIX + 'meta-3', 'a-sealed-blob')
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'meta-3' }),
+        ])
+        expect(storage.getString('meta-3')).toBeDefined()
     })
 })

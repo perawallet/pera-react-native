@@ -15,6 +15,7 @@ import type {
     MigrationUtils,
 } from '@algorandfoundation/provider-migrations'
 import type { PeraMigrationContext } from '../types'
+import { safeErrorMessage } from '../safeLog'
 import {
     adoptStrandedRecords,
     type AdoptionDeps,
@@ -82,6 +83,18 @@ export const migration: Migration<PeraMigrationContext> = {
                     utils.revision.module,
                 )
             }
+        } catch (error) {
+            // `adoptStrandedRecords` is not throw-proof — a journal rollback
+            // issues its own storage writes, and several storage calls sit
+            // outside any per-record `try`. A throw escaping here rejects
+            // `migrations.ready` → `keystore.ready`, which blocks boot on
+            // every launch: strictly worse than leaving records stranded for
+            // the guard to retry.
+            utils.log?.warn(
+                `Stranded-record adoption failed: ${safeErrorMessage(error)}`,
+                {},
+                utils.revision.module,
+            )
         } finally {
             // Only a label put via `secrets.put` above ever gets read; a
             // no-op `wipe` on an absent label is safe (`secrets.js`).

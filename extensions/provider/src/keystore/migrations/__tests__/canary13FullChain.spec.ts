@@ -47,6 +47,7 @@ vi.mock('@algorandfoundation/react-native-keystore', async () => {
 import {
     MATERIAL_PREFIX,
     METADATA_PREFIX,
+    decode,
     openData,
     sealData,
     serializeKey,
@@ -205,7 +206,7 @@ describe('canary.13 full chain (preflight + repairs)', () => {
         }
     })
 
-    const runChain = async (target: FakeKeychainStorage) => {
+    const runPreflight = async (target: FakeKeychainStorage) => {
         for (const migration of preflightMigrations) {
             await migration.up(
                 context(target),
@@ -216,6 +217,9 @@ describe('canary.13 full chain (preflight + repairs)', () => {
                 }),
             )
         }
+    }
+
+    const runRepairs = async (target: FakeKeychainStorage) => {
         for (const migration of repairsMigrations) {
             await migration.up(
                 context(target),
@@ -227,6 +231,18 @@ describe('canary.13 full chain (preflight + repairs)', () => {
             )
         }
     }
+
+    const runChain = async (target: FakeKeychainStorage) => {
+        await runPreflight(target)
+        await runRepairs(target)
+    }
+
+    const metadataAt = (target: FakeKeychainStorage, id: string) =>
+        decode(target.getString(METADATA_PREFIX + id) as string) as {
+            type?: string
+            format?: string
+            metadata?: Record<string, unknown>
+        }
 
     it('strands nothing after the whole chain runs', async () => {
         await runChain(storage)
@@ -293,6 +309,56 @@ describe('canary.13 full chain (preflight + repairs)', () => {
         expect(
             storage.getString(MATERIAL_PREFIX + 'cred-wrapped'),
         ).toBeUndefined()
+    })
+
+    // A device that ran 7.0.4 carries `preflight: 4` AND `repairs: 3` in its
+    // ledger — `69dc9af4e` shipped both modules in one merge — so only
+    // `preflight: 5` is pending on it and `repairs/0001`, until this fix the
+    // only caller of `normalizeCanary13Record`, can never run again. Every
+    // other test in this file runs both modules, i.e. a fresh ledger, which is
+    // exactly why adoption in canary.13's vocabulary passed every gate:
+    // records visible, migration ledgered, keystore reported healthy, and the
+    // accounts still unusable.
+    it('normalises adopted records into canary.19 vocabulary with the repairs module skipped (a partially-ledgered 7.0.4 device)', async () => {
+        await runPreflight(storage)
+
+        // `deriveFromSeed` rejects any parent not typed `hd-root-key`
+        // (`keystore-core/dist/create.js:723`): left as `seed`, Add Account
+        // stays inert (PERA-4915).
+        expect(metadataAt(storage, 'root-1').type).toBe('hd-root-key')
+
+        // An ed25519 child kept at `format: 'raw'` over 64 raw libsodium bytes
+        // with no `signAlgorithm` throws inside the host `importKey`
+        // (`create.js:879-891`): the account cannot sign (PERA-4917).
+        const child = metadataAt(storage, 'algo25-child')
+        expect(child.format).toBe('pkcs8')
+        expect(child.metadata?.signAlgorithm).toEqual({ name: 'Ed25519' })
+        expect(
+            base64
+                .decode(
+                    await openData(
+                        subtle,
+                        MASTER_KEY,
+                        storage.getString(MATERIAL_PREFIX + 'algo25-child')!,
+                    ),
+                )
+                .slice(-32),
+        ).toEqual(ALGO25_CHILD_MATERIAL.slice(0, 32))
+
+        const derived = metadataAt(storage, 'child-1')
+        expect(derived.metadata?.storage).toBe('none')
+        expect(derived.metadata?.parentKeyId).toBe('root-1')
+
+        for (const id of [
+            'root-1',
+            'entropy-1',
+            'child-1',
+            'algo25-seed',
+            'algo25-child',
+            'pera.pinCode',
+        ]) {
+            expect(storage.getString(id)).toBeUndefined()
+        }
     })
 
     it('is a no-op on a second run', async () => {

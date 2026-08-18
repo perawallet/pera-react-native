@@ -114,6 +114,31 @@ describe('0005-adopt-remaining-flat-records', () => {
         ).resolves.toBeUndefined()
     })
 
+    // `adoptStrandedRecords` is not throw-proof: a journal rollback issues its
+    // own storage writes, and several storage calls sit outside any per-record
+    // `try`. A throw escaping `up` rejects `migrations.ready` → `keystore.ready`
+    // and blocks boot on every launch.
+    it('resolves rather than throwing when adoption itself throws', async () => {
+        vi.mocked(adoptStrandedRecords).mockRejectedValueOnce(
+            new Error('simulated storage failure'),
+        )
+        const logWarn = vi.fn()
+
+        await expect(
+            migration.up(
+                {
+                    storage: fakeStorage(),
+                    subtle,
+                    masterKeyForRead: async () => new Uint8Array(32),
+                    declined: noteStoreDeclined({}),
+                } as PeraMigrationContext,
+                utils({ info: vi.fn(), warn: logWarn, error: vi.fn() }),
+            ),
+        ).resolves.toBeUndefined()
+
+        expect(logWarn).toHaveBeenCalledTimes(1)
+    })
+
     it('records leftFlat, failed, and quarantined ids as declined and warns', async () => {
         vi.mocked(adoptStrandedRecords).mockResolvedValueOnce({
             ...emptyAdoptionResult(),
@@ -171,12 +196,13 @@ describe('0005-adopt-remaining-flat-records', () => {
 
         const put = vi.fn()
         const wipe = vi.fn()
+        const masterKey = new Uint8Array(32).fill(9)
 
         await migration.up(
             {
                 storage: fakeStorage(),
                 subtle,
-                masterKeyForRead: async () => new Uint8Array(32).fill(9),
+                masterKeyForRead: async () => masterKey,
                 declined: noteStoreDeclined({}),
             } as PeraMigrationContext,
             {
@@ -199,10 +225,13 @@ describe('0005-adopt-remaining-flat-records', () => {
             } as MigrationUtils,
         )
 
-        expect(put).toHaveBeenCalledWith(
-            'keystore-master-key',
-            expect.any(Uint8Array),
-        )
+        // Reference identity, not `expect.any(Uint8Array)`: the scratch has to
+        // own the array the runner will zero. Handing it `masterKey.slice()`
+        // would leave the real key resident in the heap and still satisfy a
+        // shape or deep-equality assertion.
+        expect(put).toHaveBeenCalledTimes(1)
+        expect(put.mock.calls[0][0]).toBe('keystore-master-key')
+        expect(put.mock.calls[0][1]).toBe(masterKey)
         expect(wipe).toHaveBeenCalledWith('keystore-master-key')
     })
 

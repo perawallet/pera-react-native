@@ -129,10 +129,6 @@ const decodeRecord = (data: string): KeyData => {
 }
 
 /**
- * Writes a record the way canary.13 did: the whole `KeyData` sealed under its
- * bare id, byte fields as number arrays, GCM tag in its own field.
- */
-/**
  * The record canary.13's `deriveFromSeed` actually wrote: no material of its
  * own, the parent's private key nested under `metadata.rootKey`.
  * See `react-native-keystore@1.0.0-canary.13/dist/store.js:282-303`.
@@ -179,6 +175,10 @@ export const canary13DerivedChild = ({
         },
     }) as unknown as KeyData
 
+/**
+ * Writes a record the way canary.13 did: the whole `KeyData` sealed under its
+ * bare id, byte fields as number arrays, GCM tag in its own field.
+ */
 export const sealCanary13Record = async (
     subtle: SubtleCrypto,
     key: Uint8Array,
