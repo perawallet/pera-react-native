@@ -101,6 +101,24 @@ const materialState = async (
     return opened === base64.encode(bytes) ? 'same' : 'different'
 }
 
+/**
+ * Throws unless `key` currently holds a plaintext record that parses.
+ *
+ * A silent MMKV `set` failure is otherwise invisible until the bare copy —
+ * the only other place the same data lives — has already been removed.
+ */
+const assertMetadataWritten = (storage: KeychainStorage, key: string): void => {
+    const written = storage.getString(key)
+    if (written === undefined) {
+        throw new Error(`metadata at ${key} did not read back`)
+    }
+    try {
+        JSON.parse(written)
+    } catch {
+        throw new Error(`metadata at ${key} did not deserialize`)
+    }
+}
+
 export const adoptStrandedRecords = async (
     deps: AdoptionDeps,
 ): Promise<AdoptionResult> => {
@@ -191,6 +209,29 @@ export const adoptStrandedRecords = async (
                 // a replacement root was minted while this one was invisible.
                 // Both are real keys; keep both.
                 const legacyId = `${id}-legacy`
+
+                // `-legacy` might already be occupied by a THIRD real key — a
+                // prior quarantine, followed by yet another bare record
+                // landing on the live id. `sealAndVerify` would overwrite it
+                // unconditionally on the success path, where the journal
+                // never rolls back, destroying a key nothing else holds. A
+                // second collision on one id is rare enough that a human
+                // should look at it rather than have this migration invent a
+                // `-legacy-2` chain.
+                const legacyState = await materialState(
+                    deps,
+                    masterKey,
+                    MATERIAL_PREFIX + legacyId,
+                    own,
+                )
+                if (legacyState !== 'absent' && legacyState !== 'same') {
+                    result.failed.push({
+                        id,
+                        reason: `${MATERIAL_PREFIX}${legacyId} already holds unrelated material`,
+                    })
+                    continue
+                }
+
                 journal.track(MATERIAL_PREFIX + legacyId)
                 await sealAndVerify(
                     deps,
@@ -202,6 +243,11 @@ export const adoptStrandedRecords = async (
                     METADATA_PREFIX + legacyId,
                     metadataOf(record, legacyId),
                 )
+                // Same hazard Minor 7 fixed for the adoption path: a silent
+                // write failure here must be caught before the bare copy —
+                // the only other place `type`/`format`/`metadata` live — is
+                // gone.
+                assertMetadataWritten(storage, METADATA_PREFIX + legacyId)
                 // The legacy pair is verified and durable; the bare copy is
                 // now redundant. Removing it is what makes this converge —
                 // left in place, the next launch would re-quarantine into the
@@ -240,23 +286,7 @@ export const adoptStrandedRecords = async (
             }
             if (!hasMeta) {
                 journal.set(METADATA_PREFIX + id, metadataOf(record, id))
-
-                // A silent write failure here would be unrecoverable once the
-                // bare copy is gone: read the metadata back and confirm it is
-                // there and parses before removing the only other copy of it.
-                const writtenMeta = storage.getString(METADATA_PREFIX + id)
-                if (writtenMeta === undefined) {
-                    throw new Error(
-                        `metadata at ${METADATA_PREFIX}${id} did not read back`,
-                    )
-                }
-                try {
-                    JSON.parse(writtenMeta)
-                } catch {
-                    throw new Error(
-                        `metadata at ${METADATA_PREFIX}${id} did not deserialize`,
-                    )
-                }
+                assertMetadataWritten(storage, METADATA_PREFIX + id)
             }
             storage.remove(id)
             result.adopted.push(id)

@@ -319,4 +319,151 @@ describe('adoptStrandedRecords — material-bearing records', () => {
         )
         expect(storage.getString('root-1')).toBeDefined()
     })
+
+    it('adoption path: catches a metadata write that silently succeeds but reads back as garbage (Minor 7 — load-bearing)', async () => {
+        await seed(root)
+        const originalSet = storage.set.bind(storage)
+        vi.spyOn(storage, 'set').mockImplementation((key, value) => {
+            if (key === METADATA_PREFIX + 'root-1') {
+                originalSet(key, 'not-valid-json{')
+                return
+            }
+            originalSet(key, value)
+        })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).toEqual([])
+        expect(result.quarantined).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        // The write "succeeded" (no throw), so only the readback/parse check
+        // catches it. Deleting that check would leave this suite green while
+        // the bare copy — the only other place the data lived — is gone.
+        expect(storage.getString('root-1')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBeUndefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
+    })
+
+    it('quarantine path: rolls back an orphaned m/<id>-legacy when the legacy metadata write throws (Important 6 — load-bearing)', async () => {
+        const first = new Uint8Array(96).fill(1)
+        const second = new Uint8Array(96).fill(2)
+        await seed({ ...root, privateKey: first })
+        await adoptStrandedRecords(deps())
+        await seed({ ...root, privateKey: second })
+
+        const originalSet = storage.set.bind(storage)
+        vi.spyOn(storage, 'set').mockImplementation((key, value) => {
+            if (key === METADATA_PREFIX + 'root-1-legacy') {
+                throw new Error('simulated MMKV write failure')
+            }
+            originalSet(key, value)
+        })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.quarantined).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        // Without `journal.track(MATERIAL_PREFIX + legacyId)` the material
+        // sealed just before the throw is never rolled back, orphaning a
+        // verified `m/` entry with no `k/` record pointing at it.
+        expect(
+            storage.getString(MATERIAL_PREFIX + 'root-1-legacy'),
+        ).toBeUndefined()
+        expect(
+            storage.getString(METADATA_PREFIX + 'root-1-legacy'),
+        ).toBeUndefined()
+        expect(storage.getString('root-1')).toBeDefined()
+        // The live pair must be completely unaffected by the failed
+        // quarantine attempt.
+        const liveMaterial = base64.decode(
+            await openData(
+                subtle,
+                MASTER_KEY,
+                storage.getString(MATERIAL_PREFIX + 'root-1') as string,
+            ),
+        )
+        expect(liveMaterial).toEqual(first)
+    })
+
+    it('quarantine path: catches a legacy metadata write that silently succeeds but reads back as garbage (NEW-1)', async () => {
+        const first = new Uint8Array(96).fill(1)
+        const second = new Uint8Array(96).fill(2)
+        await seed({ ...root, privateKey: first })
+        await adoptStrandedRecords(deps())
+        await seed({ ...root, privateKey: second })
+
+        const originalSet = storage.set.bind(storage)
+        vi.spyOn(storage, 'set').mockImplementation((key, value) => {
+            if (key === METADATA_PREFIX + 'root-1-legacy') {
+                originalSet(key, 'not-valid-json{')
+                return
+            }
+            originalSet(key, value)
+        })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.quarantined).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        expect(
+            storage.getString(MATERIAL_PREFIX + 'root-1-legacy'),
+        ).toBeUndefined()
+        expect(
+            storage.getString(METADATA_PREFIX + 'root-1-legacy'),
+        ).toBeUndefined()
+        expect(storage.getString('root-1')).toBeDefined()
+    })
+
+    it('refuses to overwrite a third key already occupying -legacy, touching nothing (NEW-2)', async () => {
+        const first = new Uint8Array(96).fill(1)
+        const second = new Uint8Array(96).fill(2)
+        const third = new Uint8Array(96).fill(3)
+
+        await seed({ ...root, privateKey: first })
+        await adoptStrandedRecords(deps())
+        await seed({ ...root, privateKey: second })
+        const firstQuarantine = await adoptStrandedRecords(deps())
+        expect(firstQuarantine.quarantined).toEqual([
+            { id: 'root-1', legacyId: 'root-1-legacy' },
+        ])
+
+        // A third bare record lands on the live id, colliding with BOTH the
+        // live key (first) and the already-quarantined legacy key (second).
+        await seed({ ...root, privateKey: third })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.quarantined).toEqual([])
+        expect(result.adopted).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        // Nothing was invented (no `-legacy-2`) and nothing was destroyed:
+        // the live pair and the existing legacy pair are both untouched, and
+        // the third bare record survives for a human to look at.
+        const liveMaterial = base64.decode(
+            await openData(
+                subtle,
+                MASTER_KEY,
+                storage.getString(MATERIAL_PREFIX + 'root-1') as string,
+            ),
+        )
+        const legacyMaterial = base64.decode(
+            await openData(
+                subtle,
+                MASTER_KEY,
+                storage.getString(MATERIAL_PREFIX + 'root-1-legacy') as string,
+            ),
+        )
+        expect(liveMaterial).toEqual(first)
+        expect(legacyMaterial).toEqual(second)
+        expect(storage.getString('root-1')).toBeDefined()
+        expect(storage.getString('root-1-legacy-2')).toBeUndefined()
+    })
 })
