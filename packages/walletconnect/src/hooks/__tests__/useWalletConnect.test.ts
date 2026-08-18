@@ -654,6 +654,95 @@ describe('useWalletConnect', () => {
             )
         })
 
+        it('silently ignores a bridge replay of the already-approved handshake', async () => {
+            // Re-subscribing the handshake topic (socket flap → reconnect)
+            // makes the bridge replay its pending history, so the exact
+            // frame we already approved can arrive again — noise, not a
+            // repeat connection attempt, and never a user-facing error.
+            const connection = {
+                clientId: 'client-replayed',
+                session: { handshakeId: 111 },
+            } as any
+            mockConnections.push(connection)
+
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            mockConnectorInstance.connected = true
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            const payload = {
+                id: 111,
+                params: [
+                    {
+                        peerMeta: { name: 'Test dApp' },
+                        chainId: AlgorandChainId.mainnet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockAddSessionRequest).not.toHaveBeenCalled()
+            expect(mockSetConnectionError).not.toHaveBeenCalled()
+        })
+
+        it('still surfaces a repeat session_request whose handshake id differs from the approved one', async () => {
+            const connection = {
+                clientId: 'client-new-handshake',
+                session: { handshakeId: 111 },
+            } as any
+            mockConnections.push(connection)
+
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            mockConnectorInstance.connected = true
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            const payload = {
+                id: 222,
+                params: [
+                    {
+                        peerMeta: { name: 'Spoofed dApp' },
+                        chainId: AlgorandChainId.mainnet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockAddSessionRequest).not.toHaveBeenCalled()
+            expect(mockSetConnectionError).toHaveBeenCalledTimes(1)
+            expect(mockSetConnectionError.mock.calls[0][0]).toBeInstanceOf(
+                WalletConnectInvalidSessionError,
+            )
+        })
+
         it('should trigger handleSignData on algo_signData event', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),

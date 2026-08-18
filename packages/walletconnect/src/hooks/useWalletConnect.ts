@@ -360,12 +360,30 @@ export const useWalletConnect = (network: Network) => {
             // attempt: the library rewrites peerMeta/peerId before this fires,
             // so refuse the frame outright rather than re-opening an approval
             // sheet or reacting to a poisoned handshake (PERA-4713).
-            const hasStoredSession = useWalletConnectStore
+            const storedSession = useWalletConnectStore
                 .getState()
-                .walletConnectConnections.some(
+                .walletConnectConnections.find(
                     conn => conn.clientId === connector.clientId,
                 )
-            if (connector.connected && hasStoredSession) {
+            if (connector.connected && storedSession) {
+                // The bridge replays a topic's pending history on every
+                // re-subscription (socket flap → reconnect), so the exact
+                // handshake we already approved can arrive again. Compare
+                // against the id snapshotted at approval time — the live
+                // connector.handshakeId is useless here, the library
+                // overwrites it from this very frame before we run.
+                const payloadId = (payload as { id?: number }).id
+                const approvedHandshakeId = storedSession.session?.handshakeId
+                if (
+                    payloadId !== undefined &&
+                    payloadId === approvedHandshakeId
+                ) {
+                    logger.debug(
+                        'WC ignoring bridge replay of the approved handshake',
+                        { clientId: connector.clientId, payloadId },
+                    )
+                    return
+                }
                 logger.warn(
                     'WC ignoring session_request on an already-connected session',
                     { clientId: connector.clientId },
