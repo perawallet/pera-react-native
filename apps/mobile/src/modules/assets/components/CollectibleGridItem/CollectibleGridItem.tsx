@@ -17,6 +17,10 @@ import { useStyles } from './styles'
 import type { CollectibleItemProps } from '@modules/assets/types/collectible'
 import { useCollectibleItem } from '@modules/assets/hooks/useCollectibleItem'
 
+// Physical pixels for the Prism resize: a 2-column tile is ~200pt at most,
+// so 600px covers 3x displays without downloading the full-size original.
+const GRID_IMAGE_WIDTH = 600
+
 const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
     const styles = useStyles()
     const {
@@ -43,6 +47,7 @@ const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
                     placeholderStyle={styles.placeholderContainer}
                     iconSize='lg'
                     notOptedIn={!hasBalance}
+                    imageWidth={GRID_IMAGE_WIDTH}
                 />
                 {showAmount && (
                     <PWView style={styles.amountBadge}>
