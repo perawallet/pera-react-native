@@ -97,17 +97,6 @@ export const ExpandablePanel = ({
                 containerStyle,
             ]}
         >
-            {/*
-                Known Fabric hazard, deliberately not pinned. `pointerEvents:
-                'none'` is in formsStackingContext (ViewShadowNode.cpp), so this
-                flip creates/destroys the backing view on every expand and
-                reparents `children` mid-commit — the shape that crashed
-                AutoLockGuard with `addViewAt ... index=3 count=2` (#1279, fixed
-                there with `collapsable={false}`). Left alone because no
-                concurrent mount is known to race it here and pinning costs a
-                permanent extra native view at 13 call sites. If this panel ever
-                crashes that way, `collapsable={false}` is the fix.
-            */}
             <PWView
                 style={styles.wrapper}
                 onLayout={onLayout}
