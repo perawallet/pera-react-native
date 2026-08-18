@@ -17,7 +17,7 @@ import {
     type ImageContentFit,
 } from 'expo-image'
 
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
     ActivityIndicator,
     type ImageSourcePropType,
@@ -84,6 +84,18 @@ export const PWImage = ({
     const styles = useStyles()
     const [isLoading, setIsLoading] = useState(true)
 
+    const sourceUri =
+        typeof source === 'object' && source !== null && 'uri' in source
+            ? (source as ImageSource).uri
+            : undefined
+
+    // List cells recycle PWImage instances into new items: without this reset
+    // a recycled cell keeps its stale "loaded" state and shows no indicator
+    // while the next image downloads.
+    useEffect(() => {
+        setIsLoading(true)
+    }, [sourceUri])
+
     const contentFit = resizeMode
         ? RESIZE_MODE_TO_CONTENT_FIT[resizeMode]
         : undefined
@@ -130,13 +142,7 @@ export const PWImage = ({
                 onError={handleError}
                 transition={transitionDuration}
                 cachePolicy={cachePolicy}
-                recyclingKey={
-                    typeof source === 'object' &&
-                    source !== null &&
-                    'uri' in source
-                        ? (source as ImageSource).uri
-                        : undefined
-                }
+                recyclingKey={sourceUri}
             />
             {showLoadingIndicator && isLoading && (
                 <View style={styles.loadingOverlay}>

@@ -67,6 +67,19 @@ test.beforeAll(async () => {
     }
     extensionId = new URL(serviceWorker.url()).host
 
+    // Seed the remote-config OVERRIDE, which getBooleanValue checks before
+    // calling the service — the enable_gift_cards default is false everywhere
+    // (Bidali availability switch), so the menu row only renders with the
+    // override in place. Mirrors pera-card.spec.ts.
+    await serviceWorker.evaluate(async () => {
+        await chrome.storage.local.set({
+            'kv:remote-config-store': JSON.stringify({
+                state: { configOverrides: { enable_gift_cards: true } },
+                version: 1,
+            }),
+        })
+    })
+
     // Onboard exactly as onboarding.spec.ts / wallet-smoke.spec.ts.
     page = await context.newPage()
     pageErrors = trackPageErrors(page)

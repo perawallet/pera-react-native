@@ -1336,7 +1336,9 @@
             "cannot_add_multisig_error": "Cannot add shared account",
             "cannot_add_multisig_error_body": "Shared accounts cannot be added as participants in another shared account.",
             "cannot_add_watch_error": "Cannot add watch account",
-            "cannot_add_watch_error_body": "Watch accounts cannot sign transactions, so they cannot be participants in a shared account."
+            "cannot_add_watch_error_body": "Watch accounts cannot sign transactions, so they cannot be participants in a shared account.",
+            "cannot_add_quantum_error": "Cannot add quantum account",
+            "cannot_add_quantum_error_body": "Quantum keys can't take part in multisignature signing, so they cannot be participants in a shared account."
         },
         "threshold": {
             "title": "Set a Threshold",
@@ -1792,9 +1794,13 @@
     "quantum": {
         "dapp_warning": {
             "title": "Limited dApp Compatibility",
-            "body": "Quantum accounts are new, so not every dApp has upgraded to support them yet. As a result, some transactions may fail or come with different fees than usual. If you run into an issue, reaching out to that dApp directly and asking them to add PQ support can help speed things along. You're welcome to continue, or switch to a non-Quantum account for full compatibility in the meantime. <0>Learn more</0>",
+            "body": "Quantum Accounts are new, so not every dApp has upgraded to support them yet. As a result, some transactions may fail or come with different fees than usual. If you run into an issue, reaching out to that dApp directly and asking them to add PQ support can help speed things along. You're welcome to continue, or switch to a non-Quantum account for full compatibility in the meantime. <0>Learn more</0>",
             "confirm": "Continue",
             "cancel": "Cancel"
+        },
+        "data_signing_unsupported": {
+            "title": "Quantum Accounts can't sign this yet",
+            "body": "This type of request can't be verified with a quantum signature yet, so it can't be signed. Switch to a non-Quantum account, or check back once support is added."
         }
     },
     "rekey": {

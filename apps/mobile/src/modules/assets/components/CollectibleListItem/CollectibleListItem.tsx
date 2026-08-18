@@ -24,6 +24,9 @@ import { useStyles } from './styles'
 import { type CollectibleItemProps } from '@modules/assets/types/collectible'
 import { useCollectibleItem } from '@modules/assets/hooks/useCollectibleItem'
 
+// Physical pixels for the Prism resize: 48pt row thumbnail on a 3x display.
+const LIST_IMAGE_WIDTH = 144
+
 const CollectibleListItemBase = ({
     item,
     onPress,
@@ -63,6 +66,7 @@ const CollectibleListItemBase = ({
                         placeholderStyle={styles.placeholderContainer}
                         iconSize='md'
                         notOptedIn={!hasBalance}
+                        imageWidth={LIST_IMAGE_WIDTH}
                     />
                 </PWView>
             }

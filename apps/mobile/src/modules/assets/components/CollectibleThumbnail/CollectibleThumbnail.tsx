@@ -15,6 +15,7 @@ import { type StyleProp, type ViewStyle, type ImageStyle } from 'react-native'
 import { PWImage, PWView, PWIcon, type PWIconSize } from '@components/core'
 import { NFT_NOT_OPTED_IN_OPACITY } from '@constants/ui'
 import type { Maybe } from '@perawallet/wallet-core-shared'
+import { useCollectibleThumbnail } from './useCollectibleThumbnail'
 
 export type CollectibleThumbnailProps = {
     thumbnailUrl: Maybe<string>
@@ -22,6 +23,8 @@ export type CollectibleThumbnailProps = {
     placeholderStyle: StyleProp<ViewStyle>
     iconSize: PWIconSize
     notOptedIn?: boolean
+    /** Target width in physical pixels; when set, the CDN resizes via Prism query params. */
+    imageWidth?: number
 }
 
 const notOptedInStyle = { opacity: NFT_NOT_OPTED_IN_OPACITY }
@@ -32,13 +35,18 @@ export const CollectibleThumbnail = ({
     placeholderStyle,
     iconSize,
     notOptedIn = false,
+    imageWidth,
 }: CollectibleThumbnailProps) => {
-    if (thumbnailUrl) {
+    const { imageUrl, showPlaceholder, handleImageError } =
+        useCollectibleThumbnail({ thumbnailUrl, imageWidth })
+
+    if (!showPlaceholder) {
         return (
             <PWImage
-                source={{ uri: thumbnailUrl }}
+                source={{ uri: imageUrl }}
                 style={[imageStyle, notOptedIn && notOptedInStyle]}
                 resizeMode='cover'
+                onError={handleImageError}
             />
         )
     }

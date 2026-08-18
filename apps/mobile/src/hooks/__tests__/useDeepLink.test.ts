@@ -291,10 +291,12 @@ vi.mock('@modules/bottom-sheet', () => ({
     }),
 }))
 
-const { mockShowSignRequest, mockIsPeraCardEnabled } = vi.hoisted(() => ({
-    mockShowSignRequest: vi.fn(),
-    mockIsPeraCardEnabled: vi.fn(() => true),
-}))
+const { mockShowSignRequest, mockIsPeraCardEnabled, mockIsGiftCardsEnabled } =
+    vi.hoisted(() => ({
+        mockShowSignRequest: vi.fn(),
+        mockIsPeraCardEnabled: vi.fn(() => true),
+        mockIsGiftCardsEnabled: vi.fn(() => true),
+    }))
 
 // Mutable so per-test overrides can exercise the web capability map (vitest
 // has no platform resolution, so the real import always lands on the
@@ -323,6 +325,10 @@ vi.mock('@modules/multisig/hooks/usePendingSignaturesSheet', () => ({
 
 vi.mock('../useIsPeraCardEnabled', () => ({
     useIsPeraCardEnabled: mockIsPeraCardEnabled,
+}))
+
+vi.mock('../useIsGiftCardsEnabled', () => ({
+    useIsGiftCardsEnabled: mockIsGiftCardsEnabled,
 }))
 
 // Mock SendFundsContent / BidaliContent so the deeplink test doesn't pull in
@@ -397,6 +403,7 @@ describe('useDeepLink', () => {
         resetDeeplinkListenerStateForTesting()
         mockRouteCapabilities.peraCard = true
         mockRouteCapabilities.giftCards = true
+        mockIsGiftCardsEnabled.mockReturnValue(true)
         mockRouteCapabilities.inAppWebView = true
         mockWaitForSessionOutcome.mockResolvedValue({ type: 'session' })
         vi.mocked(useImportAccount).mockReturnValue(mockImportAccount)
@@ -1519,8 +1526,8 @@ describe('useDeepLink', () => {
         )
     })
 
-    it('ignores a SELL deeplink when the giftCards capability is off', async () => {
-        mockRouteCapabilities.giftCards = false
+    it('ignores a SELL deeplink when the gift-cards flag is off', async () => {
+        mockIsGiftCardsEnabled.mockReturnValue(false)
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.SELL,
         })

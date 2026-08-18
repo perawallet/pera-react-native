@@ -91,6 +91,10 @@ vi.mock('../../useIsPeraCardEnabled', () => ({
     useIsPeraCardEnabled: () => true,
 }))
 
+vi.mock('../../useIsGiftCardsEnabled', () => ({
+    useIsGiftCardsEnabled: () => true,
+}))
+
 vi.mock('@routes/navigationRef', () => ({
     navigationRef: {
         navigate: mockNavigate,

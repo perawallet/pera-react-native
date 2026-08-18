@@ -14,6 +14,8 @@ import { createMMKV, type MMKV } from 'react-native-mmkv'
 import {
     keyValueLedger,
     type MigrationLedger,
+    DEFAULT_LEDGER_KEY,
+    type Revision,
 } from '@algorandfoundation/provider-migrations'
 
 /**
@@ -45,3 +47,35 @@ export const createPeraMigrationLedger = (): MigrationLedger =>
         get: key => storage().getString(key) ?? null,
         set: (key, value) => storage().set(key, value),
     })
+
+/**
+ * Reads the keystore-migration ledger: module id → last applied revision.
+ * An absent or unparseable blob reads as empty (matching upstream's tolerance).
+ * Synchronous — MMKV reads are synchronous.
+ */
+export const readKeystoreMigrationLedger = (): Record<string, Revision> => {
+    const raw = storage().getString(DEFAULT_LEDGER_KEY)
+    if (!raw) return {}
+    try {
+        const parsed: unknown = JSON.parse(raw)
+        return parsed && typeof parsed === 'object'
+            ? (parsed as Record<string, Revision>)
+            : {}
+    } catch {
+        return {}
+    }
+}
+
+/**
+ * Clears one module's recorded revisions so its revisions re-run on the next app
+ * launch, leaving other modules untouched. Per-module BY DESIGN: a blanket wipe
+ * would also re-run upstream `adopt-flat-records`, which transiently re-splits the
+ * passkey credentials `repairs/0002` un-splits. Takes effect only after a full
+ * relaunch (the migration run is a one-shot at construction).
+ */
+export const resetKeystoreMigrationModule = (moduleId: string): void => {
+    const map = readKeystoreMigrationLedger()
+    if (!(moduleId in map)) return
+    delete map[moduleId]
+    storage().set(DEFAULT_LEDGER_KEY, JSON.stringify(map))
+}

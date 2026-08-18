@@ -744,7 +744,7 @@ export type GetAccountCollectiblesLiteParams = {
     network: string
     /** Omit to order by asset id descending, for callers that re-sort. */
     sortMode?: CollectibleSqlSortMode
-    /** Case-insensitive substring match against title / name / collection. */
+    /** Case-insensitive substring match against title / name / collection / asset id. */
     search?: string
     /** When false, collectibles the account holds none of are excluded. */
     includeOptedInOnly?: boolean
@@ -817,6 +817,7 @@ export async function getAccountCollectiblesLite({
                 sql`${collectibleTitleExpr} LIKE ${pattern}`,
                 sql`${collectionNameExpr} LIKE ${pattern}`,
                 like(AssetsNodeSchema.name, pattern),
+                like(AccountAssetHoldingsSchema.assetId, pattern),
             )!,
         )
     }

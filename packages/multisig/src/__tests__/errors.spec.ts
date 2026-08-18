@@ -19,6 +19,7 @@ import {
 import {
     MultisigValidationError,
     ParticipantIsMultisigError,
+    ParticipantIsQuantumError,
     ParticipantIsWatchError,
     ThresholdExceedsParticipantsError,
 } from '../errors'
@@ -51,6 +52,14 @@ describe('ParticipantIsWatchError', () => {
     })
 })
 
+describe('ParticipantIsQuantumError', () => {
+    test('has the participant_is_quantum code', () => {
+        const error = new ParticipantIsQuantumError()
+
+        expect(error.code).toBe('participant_is_quantum')
+    })
+})
+
 describe('ThresholdExceedsParticipantsError', () => {
     test('has the threshold_exceeds_participants code and includes counts in message', () => {
         const error = new ThresholdExceedsParticipantsError(4, 3)
@@ -78,6 +87,14 @@ describe('multisig error copy', () => {
         )
     })
 
+    test('ParticipantIsQuantumError declares the quantum body key', () => {
+        const error = new ParticipantIsQuantumError()
+
+        expect(error.metadata.messageKey).toBe(
+            'multisig.add_participant.cannot_add_quantum_error_body',
+        )
+    })
+
     test('ThresholdExceedsParticipantsError declares its key and both params', () => {
         const error = new ThresholdExceedsParticipantsError(4, 3)
 
@@ -96,6 +113,7 @@ describe('discriminated union via code', () => {
         const errors: MultisigValidationError[] = [
             new ParticipantIsMultisigError(),
             new ParticipantIsWatchError(),
+            new ParticipantIsQuantumError(),
             new ThresholdExceedsParticipantsError(2, 1),
         ]
         const codes = errors.map(e => e.code)
@@ -103,6 +121,7 @@ describe('discriminated union via code', () => {
         expect(codes).toEqual([
             'participant_is_multisig',
             'participant_is_watch',
+            'participant_is_quantum',
             'threshold_exceeds_participants',
         ])
     })

@@ -1328,7 +1328,9 @@
             "cannot_add_multisig_error": "Gemeinschaftskonto kann nicht hinzugefügt werden",
             "cannot_add_multisig_error_body": "Gemeinschaftskonten können nicht als Teilnehmer eines anderen Gemeinschaftskontos hinzugefügt werden.",
             "cannot_add_watch_error": "Beobachtungskonto kann nicht hinzugefügt werden",
-            "cannot_add_watch_error_body": "Beobachtungskonten können keine Transaktionen signieren und können daher nicht Teilnehmer eines Gemeinschaftskontos sein."
+            "cannot_add_watch_error_body": "Beobachtungskonten können keine Transaktionen signieren und können daher nicht Teilnehmer eines Gemeinschaftskontos sein.",
+            "cannot_add_quantum_error": "Quantum-Konto kann nicht hinzugefügt werden",
+            "cannot_add_quantum_error_body": "Quantum-Schlüssel können nicht an der Multisignatur-Signierung teilnehmen und können daher nicht Teilnehmer eines Gemeinschaftskontos sein."
         },
         "threshold": {
             "title": "Schwellenwert festlegen",
@@ -1787,6 +1789,10 @@
             "body": "Quantum-Konten sind neu, daher hat noch nicht jede dApp die Unterstützung dafür hinzugefügt. Dadurch können manche Transaktionen fehlschlagen oder andere Gebühren als gewohnt anfallen. Falls du auf ein Problem stößt, kann es helfen, dich direkt an die jeweilige dApp zu wenden und sie zu bitten, PQ-Unterstützung hinzuzufügen. Du kannst gerne fortfahren oder in der Zwischenzeit zu einem Nicht-Quantum-Konto wechseln, um volle Kompatibilität zu erhalten. <0>Mehr erfahren</0>",
             "confirm": "Fortfahren",
             "cancel": "Abbrechen"
+        },
+        "data_signing_unsupported": {
+            "title": "Quantum-Konten können dies noch nicht signieren",
+            "body": "Diese Art von Anfrage kann mit einer Quantum-Signatur noch nicht verifiziert und daher nicht signiert werden. Wechsle zu einem Nicht-Quantum-Konto oder versuche es erneut, sobald die Unterstützung hinzugefügt wurde."
         }
     },
     "rekey": {

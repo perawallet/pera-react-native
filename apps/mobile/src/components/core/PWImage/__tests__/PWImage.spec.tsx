@@ -11,13 +11,34 @@
  */
 
 import { View } from 'react-native'
-import { render, screen } from '@test-utils/render'
+import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import { PWImage } from '../PWImage'
 
-// The expo-image test double never fires onLoad, so PWImage stays in its
-// loading state — the placeholder overlay renders unless it is suppressed.
+// The expo-image test double never fires onLoad on its own, so PWImage stays
+// in its loading state — the placeholder overlay renders unless it is
+// suppressed. Load completion is driven manually via fireEvent.load.
 describe('PWImage', () => {
+    it('shows the loading overlay again when the source uri changes', () => {
+        const { rerender } = render(
+            <PWImage
+                source={{ uri: 'https://example.test/a.png' }}
+                PlaceholderContent={<View testID='placeholder' />}
+            />,
+        )
+        fireEvent.load(screen.getByTestId('expo-image'))
+        expect(screen.queryByTestId('placeholder')).toBeNull()
+
+        rerender(
+            <PWImage
+                source={{ uri: 'https://example.test/b.png' }}
+                PlaceholderContent={<View testID='placeholder' />}
+            />,
+        )
+
+        expect(screen.queryByTestId('placeholder')).toBeTruthy()
+    })
+
     it('shows the loading placeholder while loading by default', () => {
         render(
             <PWImage
