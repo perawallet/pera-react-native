@@ -24,6 +24,7 @@ import {
 } from '@algorandfoundation/react-native-keystore'
 import type { PeraMigrationContext } from '../types'
 import { safeErrorMessage, safeWarn } from '../safeLog'
+import { classifyRecord } from '../adopt/classify'
 import {
     hasNestedMaterial,
     wipeSecrets,
@@ -62,6 +63,19 @@ const isFlatCandidate = (key: string): boolean =>
  * silently dropped) — unlike `0002`'s narrowing, which reasons only about the
  * plaintext-leak hazard, this one is also an availability gap: nothing in this
  * branch adopts that combination today.
+ *
+ * A biometric-wrapped passkey credential (`classifyRecord` ===
+ * `'wrapped-passkey'`) also has no top-level `Uint8Array` — its key sits under
+ * `privateKeyEnc` as `{iv, data}` — so without this check it would look
+ * identical to a genuinely material-less record and get adopted into `k/`.
+ * That is damage, not availability: the native Android/iOS credential
+ * providers only ever read a passkey at its bare id (see
+ * `repairs/0002-rematerialize-passkey-credentials.ts`), so adopting one here
+ * makes it briefly invisible to both until `0005` restores it — and does so
+ * again on every subsequent run of this revision over an already-adopted
+ * store, re-sealing the credential with a fresh IV each time for no reason.
+ * Skipping it here instead means it is never moved in the first place: `0005`
+ * finds it already at its bare id and leaves it alone.
  */
 export const migration: Migration<PeraMigrationContext> = {
     id: 4,
@@ -121,6 +135,12 @@ export const migration: Migration<PeraMigrationContext> = {
                     // Adopted elsewhere: upstream (top-level material) or
                     // `0002` (top-level and nested together).
                     if (own instanceof Uint8Array) continue
+
+                    // Left flat on purpose, not a failure: the native
+                    // credential providers read this at its bare id, and
+                    // `0005`'s `restoreWrappedPasskeys` is the one place that
+                    // moves it, only when it finds it away from that id.
+                    if (classifyRecord(record) === 'wrapped-passkey') continue
 
                     if (hasNestedMaterial(record)) {
                         untouched.push(storageKey)

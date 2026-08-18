@@ -175,6 +175,70 @@ describe('0004-adopt-material-less-records', () => {
         })
     })
 
+    // Same shape as the ed25519 HD-derived case above, but with the Falcon
+    // child type — this revision's "no material of its own" test has to hold
+    // for every scheme, not just the one exercised above, and this is the
+    // quantum path (Task 10's full-chain finding narrowed the wrapped-passkey
+    // skip to `privateKeyEnc` specifically, not by type, but a per-scheme
+    // regression test is cheap insurance against that skip ever widening).
+    it('adopts a Falcon (quantum) HD-derived child with no material of its own', async () => {
+        const storage = await seeded({
+            id: 'falcon-1',
+            type: 'falcon1024',
+            algorithm: 'Falcon-1024',
+            extractable: false,
+            publicKey: new Uint8Array(1793).fill(7),
+            metadata: {
+                path: "m/44'/283'/0'/0/0",
+                derivation: 9,
+                parentKeyId: 'r-1',
+            },
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('falcon-1')).toBeUndefined()
+        const metadata = decode(
+            storage.getString(`${METADATA_PREFIX}falcon-1`)!,
+        )
+        expect(metadata.metadata).toMatchObject({
+            path: "m/44'/283'/0'/0/0",
+            derivation: 9,
+            parentKeyId: 'r-1',
+        })
+    })
+
+    // A biometric-wrapped passkey credential has no top-level `Uint8Array`
+    // either — its key sits under `privateKeyEnc` as `{iv, data}` — so
+    // without the `classifyRecord` guard it looks identical to the
+    // material-less cases above and this revision would adopt it into `k/`.
+    // That is damage, not availability: the native Android/iOS credential
+    // providers only ever read a passkey at its bare id
+    // (`repairs/0002-rematerialize-passkey-credentials.ts`), so moving it
+    // here makes it briefly invisible to both, and — since nothing here marks
+    // it "already handled" — does so again on every subsequent run over an
+    // already-restored store (found via Task 10's full-chain idempotency
+    // test). It must stay flat, untouched, for `0005` to leave alone.
+    it('leaves a biometric-wrapped passkey credential flat, not adopted into k/', async () => {
+        const storage = await seeded({
+            id: 'cred-wrapped',
+            type: 'hd-derived-p256',
+            algorithm: 'P256',
+            extractable: false,
+            keyUsages: ['sign'],
+            publicKey: new Uint8Array(32).fill(2),
+            privateKeyEnc: { iv: 'aa', data: 'bb' },
+            metadata: { origin: 'https://example.com' },
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('cred-wrapped')).toBeDefined()
+        expect(
+            storage.getString(`${METADATA_PREFIX}cred-wrapped`),
+        ).toBeUndefined()
+    })
+
     it('leaves a record with top-level material alone', async () => {
         const storage = await seeded({
             id: 'key-1',
@@ -522,7 +586,9 @@ describe('0004-adopt-material-less-records', () => {
         await migration.up(context(storage), utils())
 
         expect(storage.getString('derived-real')).toBeDefined()
-        expect(storage.getString(METADATA_PREFIX + 'derived-real')).toBeUndefined()
+        expect(
+            storage.getString(METADATA_PREFIX + 'derived-real'),
+        ).toBeUndefined()
     })
 
     it('has a valid manifest', () => {
