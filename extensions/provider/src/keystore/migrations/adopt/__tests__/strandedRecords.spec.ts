@@ -766,3 +766,121 @@ describe('adoptStrandedRecords — nested-only children', () => {
         expect(storage.getString(METADATA_PREFIX + 'child-1')).toBeUndefined()
     })
 })
+
+describe('adoptStrandedRecords — passkey restore', () => {
+    it('returns a 0004-moved wrapped credential to its bare id', async () => {
+        const { serializeKey } =
+            await import('@algorandfoundation/react-native-keystore')
+        storage.set(
+            METADATA_PREFIX + 'cred-1',
+            serializeKey({
+                id: 'cred-1',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                privateKeyEnc: { iv: 'aa', data: 'bb' },
+                metadata: { origin: 'https://example.com' },
+            } as never),
+        )
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.restored).toEqual(['cred-1'])
+        expect(storage.getString('cred-1')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'cred-1')).toBeUndefined()
+    })
+
+    it('leaves a wrapped credential at its bare id untouched', async () => {
+        await seed({
+            id: 'cred-2',
+            type: 'hd-derived-p256',
+            algorithm: 'P256',
+            privateKeyEnc: { iv: 'aa', data: 'bb' },
+        })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.leftFlat).toContain('cred-2')
+        expect(storage.getString('cred-2')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'cred-2')).toBeUndefined()
+    })
+
+    it("restores using the storage key as id, never the record's own (possibly stale) id", async () => {
+        const { serializeKey } =
+            await import('@algorandfoundation/react-native-keystore')
+        storage.set(
+            METADATA_PREFIX + 'cred-3',
+            serializeKey({
+                id: 'some-other-id',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                privateKeyEnc: { iv: 'aa', data: 'bb' },
+            } as never),
+        )
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.restored).toEqual(['cred-3'])
+        expect(storage.getString('cred-3')).toBeDefined()
+        expect(storage.getString('some-other-id')).toBeUndefined()
+    })
+
+    it('refuses to restore when m/<id> unexpectedly already holds material, touching nothing', async () => {
+        const { serializeKey } =
+            await import('@algorandfoundation/react-native-keystore')
+        storage.set(
+            METADATA_PREFIX + 'cred-4',
+            serializeKey({
+                id: 'cred-4',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                privateKeyEnc: { iv: 'aa', data: 'bb' },
+            } as never),
+        )
+        storage.set(MATERIAL_PREFIX + 'cred-4', 'unrelated-sealed-blob')
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.restored).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'cred-4' }),
+        ])
+        expect(storage.getString('cred-4')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'cred-4')).toBeDefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'cred-4')).toBe(
+            'unrelated-sealed-blob',
+        )
+    })
+
+    it('rolls back and leaves the credential in k/ when removing the bare copy fails, never in neither bucket', async () => {
+        const { serializeKey } =
+            await import('@algorandfoundation/react-native-keystore')
+        storage.set(
+            METADATA_PREFIX + 'cred-5',
+            serializeKey({
+                id: 'cred-5',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                privateKeyEnc: { iv: 'aa', data: 'bb' },
+            } as never),
+        )
+        const originalRemove = storage.remove.bind(storage)
+        vi.spyOn(storage, 'remove').mockImplementation(key => {
+            if (key === METADATA_PREFIX + 'cred-5') {
+                throw new Error('simulated MMKV remove failure')
+            }
+            originalRemove(key)
+        })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.restored).toEqual([])
+        expect(result.failed).toEqual(
+            expect.arrayContaining([expect.objectContaining({ id: 'cred-5' })]),
+        )
+        // Not in neither bucket: the bare write must have been rolled back
+        // since the k/ removal that would have completed the move never
+        // landed.
+        expect(storage.getString('cred-5')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'cred-5')).toBeDefined()
+    })
+})

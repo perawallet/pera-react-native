@@ -17,6 +17,7 @@ import {
     METADATA_PREFIX,
     decode,
     openData,
+    sealData,
     serializeKey,
     type KeychainStorage,
 } from '@algorandfoundation/react-native-keystore'
@@ -420,14 +421,141 @@ const adoptNestedOnly = async ({
     }
 }
 
+/**
+ * Cheap, no-crypto sniff mirroring `isFlatCandidate`'s cost: whether ANY `k/`
+ * record might be a `0004`-moved wrapped passkey, so the master-key
+ * short-circuit below can't skip restoration on a device whose only stranded
+ * work is a credential sitting in `k/` (there are no bare candidates for that
+ * device, so `isFlatCandidate` alone sees nothing to do).
+ *
+ * Deliberately loose — a raw substring match, not a decode. Precision is
+ * `restoreWrappedPasskeys`'s job via `classifyRecord`; this only decides
+ * whether it's worth resolving the master key at all.
+ */
+const mayHoldWrappedPasskey = (storage: KeychainStorage): boolean =>
+    storage
+        .getAllKeys()
+        .some(
+            key =>
+                key.startsWith(METADATA_PREFIX) &&
+                (storage.getString(key) ?? '').includes('privateKeyEnc'),
+        )
+
+/**
+ * `0004` classified a biometric-wrapped credential as material-less — its
+ * material lives under `privateKeyEnc` as `{iv, data}`, not a `Uint8Array` —
+ * so it wrote `k/<id>` and removed the bare id the native credential
+ * providers read from. Both providers, and the app, lose the credential.
+ *
+ * The wrapped material survives intact inside the plaintext `k/` record, so
+ * this reverses `0004`'s write: seal it back under the bare id, confirm it
+ * reads back byte-for-byte, only THEN remove `k/<id>`. Journaled across both
+ * writes so a throw between them can never leave the credential in neither
+ * bucket.
+ *
+ * Detection reuses `classifyRecord` — the same top-level `privateKeyEnc`
+ * presence check the rest of this pipeline already trusts to separate
+ * `wrapped-passkey` from `material`/`nested-only`. Nothing this pass (or
+ * `metadataOf`) ever writes into `k/` carries a top-level field by that name,
+ * so a genuinely-adopted record can't be misread as a stranded passkey and
+ * dragged back to a bare id.
+ */
+const restoreWrappedPasskeys = async (
+    deps: AdoptionDeps,
+    masterKey: Uint8Array,
+    result: AdoptionResult,
+): Promise<void> => {
+    const { storage } = deps
+
+    for (const key of storage.getAllKeys()) {
+        if (!key.startsWith(METADATA_PREFIX)) continue
+
+        const raw = storage.getString(key)
+        if (raw === undefined || !raw.includes('privateKeyEnc')) continue
+
+        const id = key.slice(METADATA_PREFIX.length)
+
+        let record: Canary13Record
+        try {
+            record = decode(raw) as Canary13Record
+        } catch (error) {
+            result.failed.push({ id, reason: safeErrorMessage(error) })
+            continue
+        }
+
+        if (classifyRecord(record) !== 'wrapped-passkey') continue
+
+        if (storage.getString(MATERIAL_PREFIX + id) !== undefined) {
+            // A passkey credential never has material of its own in `m/` —
+            // this shape says something else this pass doesn't understand is
+            // going on. Leave it for a human rather than guess.
+            result.failed.push({
+                id,
+                reason: `${MATERIAL_PREFIX}${id} unexpectedly holds material for a passkey credential`,
+            })
+            continue
+        }
+
+        if (storage.getString(id) !== undefined) {
+            // A bare copy already exists alongside the `k/` one this pass
+            // would remove — an ambiguous collision, not the shape this
+            // restore was built for. Touch nothing.
+            result.failed.push({
+                id,
+                reason: `${id} already holds a bare record alongside ${key}`,
+            })
+            continue
+        }
+
+        // `id` is always the storage key being written under, never
+        // `record.id` — for a `0004`-moved credential the two should agree,
+        // but this pass doesn't trust that a migration with this exact bug
+        // also got the id right everywhere else.
+        const restored = { ...record, id } as Canary13Record
+        const payload = JSON.stringify(restored)
+        const journal = createJournal(storage)
+
+        try {
+            journal.track(id)
+            storage.set(id, await sealData(deps.subtle, masterKey, payload))
+
+            let reopened: string | undefined
+            try {
+                const written = storage.getString(id)
+                reopened =
+                    written === undefined
+                        ? undefined
+                        : await openData(deps.subtle, masterKey, written)
+            } catch {
+                reopened = undefined
+            }
+            if (reopened !== payload) {
+                throw new Error(
+                    `restored record at ${id} did not read back as written`,
+                )
+            }
+
+            journal.track(key)
+            storage.remove(key)
+            result.restored.push(id)
+        } catch (error) {
+            journal.rollback()
+            result.failed.push({ id, reason: safeErrorMessage(error) })
+            safeWarn(
+                `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
+            )
+        }
+    }
+}
+
 export const adoptStrandedRecords = async (
     deps: AdoptionDeps,
 ): Promise<AdoptionResult> => {
     const { storage } = deps
     const result = emptyAdoptionResult()
 
-    const candidates = storage.getAllKeys().filter(isFlatCandidate)
-    if (candidates.length === 0) return result
+    const hasFlatWork = storage.getAllKeys().some(isFlatCandidate)
+    if (!hasFlatWork && !mayHoldWrappedPasskey(storage)) return result
 
     let masterKey: Uint8Array
     try {
@@ -444,6 +572,12 @@ export const adoptStrandedRecords = async (
         return result
     }
 
+    // Must run before candidates are enumerated below: a credential `0004`
+    // moved into `k/` is invisible to the loop until it's back at its bare
+    // id.
+    await restoreWrappedPasskeys(deps, masterKey, result)
+
+    const candidates = storage.getAllKeys().filter(isFlatCandidate)
     const opened: { id: string; record: Canary13Record }[] = []
 
     for (const id of candidates) {
