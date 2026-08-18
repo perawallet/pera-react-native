@@ -12,7 +12,7 @@
 
 import type { Database } from '@perawallet/wallet-core-database'
 import { Networks } from '@perawallet/wallet-core-config'
-import { ALGO_ASSET } from '../models'
+import { ALGO_ASSET, DEFAULT_ASSET_METADATA } from '../models'
 import { upsertAssets } from './repository'
 
 /**
@@ -29,9 +29,25 @@ import { upsertAssets } from './repository'
  *
  * ALGO's metadata is a local constant (`ALGO_ASSET`), so this needs no Pera
  * service and is correct even on a network with no Pera deployment.
+ *
+ * The device-local fields (isFavorited, isPriceAlertEnabled) are stripped:
+ * `ALGO_ASSET` carries concrete `false` defaults, and upsertPeraAssets only
+ * preserves the stored value when the incoming one is nullish — seeding the
+ * constant as-is reset ALGO's favorite on every launch (PERA-4904). ALGO is
+ * also excluded from the device-scoped bulk sync, so nothing would restore it.
  */
 export async function seedAlgoAsset(db: Database): Promise<void> {
-    const items = [ALGO_ASSET]
+    const items = [
+        {
+            ...ALGO_ASSET,
+            peraMetadata: {
+                ...DEFAULT_ASSET_METADATA,
+                ...ALGO_ASSET.peraMetadata,
+                isFavorited: undefined,
+                isPriceAlertEnabled: undefined,
+            },
+        },
+    ]
 
     for (const network of Object.values(Networks)) {
         await upsertAssets({ db, items, network })
