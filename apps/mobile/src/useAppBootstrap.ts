@@ -176,16 +176,22 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 // which is what prompts users to wipe and re-onboard on top of
                 // keys that were still on disk.
                 const keystoreBranch = runKeystoreMaintenance()
-                    .then(({ repair }) => {
+                    .then(async ({ repair }) => {
                         if (repair.repaired > 0 || repair.failed > 0) {
                             logger.info('Quantum key material repaired', repair)
                         }
 
                         // Repair only reaches records still on disk under a bare
                         // id; this is the other failure class — an account whose
-                        // keyPairId does not resolve to any record at all. Runs
-                        // after the store above has hydrated and reconciled, or
-                        // every account would read as unresolvable.
+                        // keyPairId does not resolve to any record at all. The
+                        // accounts store defaults to `accounts: []` until it
+                        // rehydrates (same gate applyLaunchAccountPreference
+                        // uses below), so an ungated read here would report zero
+                        // orphans on every cold start regardless of the truth.
+                        await waitForStoreHydration(
+                            useAccountsStore,
+                            STORE_HYDRATION_TIMEOUT_MS,
+                        )
                         reportUnresolvableAccountKeys({
                             accounts: useAccountsStore.getState().accounts,
                             keyIds: new Set(

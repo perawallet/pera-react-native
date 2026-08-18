@@ -67,6 +67,10 @@ const mocks = vi.hoisted(() => {
             (_fn: (state: unknown) => void) => () => {},
         ),
         applyLaunchAccountPreference: vi.fn(),
+        accountsState: { accounts: [] as { id: string; keyPairId?: string }[] },
+        keystoreKeys: [] as { id: string }[],
+        getKeystoreStore: vi.fn(),
+        loggerWarn: vi.fn(),
     }
 })
 
@@ -74,6 +78,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     usePeraProvider: () => mocks.provider,
     runKeystoreMaintenance: mocks.runKeystoreMaintenance,
     getProvider: mocks.getProvider,
+    getKeystoreStore: mocks.getKeystoreStore,
 }))
 
 vi.mock('@perawallet/wallet-core-database', () => ({
@@ -136,6 +141,7 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: {
         getState: () => ({
+            accounts: mocks.accountsState.accounts,
             applyLaunchAccountPreference: mocks.applyLaunchAccountPreference,
         }),
         persist: {
@@ -185,7 +191,7 @@ vi.mock('@perawallet/wallet-core-remote-config', async () => {
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: {
         error: mocks.loggerError,
-        warn: vi.fn(),
+        warn: mocks.loggerWarn,
         debug: vi.fn(),
         info: vi.fn(),
     },
@@ -221,6 +227,11 @@ describe('useAppBootstrap', () => {
         mocks.provider.deviceInfo.getDeviceLocales = () => ['en-US']
         mocks.accountsHasHydrated.mockReturnValue(true)
         mocks.accountsOnFinishHydration.mockImplementation(() => () => {})
+        mocks.accountsState.accounts = []
+        mocks.keystoreKeys = []
+        mocks.getKeystoreStore.mockImplementation(() => ({
+            state: { keys: mocks.keystoreKeys },
+        }))
     })
 
     it('bootstraps successfully: bootstrapped true, initError false, persister set, splash hidden', async () => {
@@ -542,5 +553,51 @@ describe('useAppBootstrap', () => {
 
         expect(result.current.bootstrapped).toBe(true)
         expect(result.current.initError).toBe(false)
+    })
+
+    // The unresolvable-key cross-check runs inside the keystore branch, which
+    // resolves independently of (and typically before) accounts rehydration.
+    // Reading the store early would always see the pre-hydration default
+    // (`accounts: []`) and report zero orphans regardless of the real state —
+    // silently healthy when it is not. Simulates that timing: the accounts
+    // store starts empty and only gets its real contents once hydration
+    // finishes, well after the keystore promise has already resolved.
+    it('waits for accounts rehydration before checking for unresolvable keys', async () => {
+        mocks.keystoreKeys = [{ id: 'key-1' }]
+        mocks.accountsState.accounts = []
+        mocks.accountsHasHydrated.mockReturnValue(false)
+        // Both `applyLaunchAccountPreference` and the fix under test await
+        // this store's hydration independently, so two subscribers register —
+        // capture all of them, not just the last.
+        const finishHydrationCallbacks: ((state: unknown) => void)[] = []
+        mocks.accountsOnFinishHydration.mockImplementation(
+            (callback: (state: unknown) => void) => {
+                finishHydrationCallbacks.push(callback)
+                return () => {}
+            },
+        )
+        vi.useFakeTimers()
+
+        renderHook(() => useAppBootstrap())
+
+        // Let the keystore promise (and anything ungated) settle before the
+        // accounts store has real data.
+        await act(async () => {
+            await Promise.resolve()
+            await Promise.resolve()
+        })
+        expect(mocks.loggerWarn).not.toHaveBeenCalled()
+
+        // Hydration lands with an orphaned account already present.
+        mocks.accountsState.accounts = [{ id: 'orphan', keyPairId: 'key-2' }]
+        await act(async () => {
+            finishHydrationCallbacks.forEach(callback => callback(undefined))
+            await vi.runAllTimersAsync()
+        })
+
+        expect(mocks.loggerWarn).toHaveBeenCalledWith(
+            'Accounts with no resolvable keystore record',
+            { count: 1, accountIds: ['orphan'] },
+        )
     })
 })
