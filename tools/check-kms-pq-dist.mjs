@@ -52,7 +52,7 @@
  * on exactly that broken bundle.
  */
 
-import { readFileSync, existsSync, statSync } from 'fs'
+import { readFileSync, openSync, fstatSync, closeSync } from 'fs'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -75,6 +75,34 @@ const WASM_MARKER = 'falcon_det1024'
 const failures = []
 
 const fail = message => failures.push(message)
+
+/**
+ * Reads a bundle and its mtime through a single file descriptor, or returns
+ * null if it has not been built.
+ *
+ * Deliberately not `existsSync` + `statSync` + `readFileSync`: three separate
+ * path lookups are a check-then-use race (CodeQL `js/file-system-race`). A
+ * concurrent build can replace `dist` between them, so the mtime and the
+ * contents this check reasons about would not be guaranteed to describe the
+ * same file — which for a staleness check is exactly the thing being asserted.
+ */
+const readBundle = path => {
+    let fd
+    try {
+        fd = openSync(path, 'r')
+    } catch (error) {
+        if (error.code === 'ENOENT') return null
+        throw error
+    }
+    try {
+        return {
+            mtimeMs: fstatSync(fd).mtimeMs,
+            code: readFileSync(fd, 'utf8'),
+        }
+    } finally {
+        closeSync(fd)
+    }
+}
 
 const checkPackaging = () => {
     const pkg = JSON.parse(readFileSync(resolve(kmsRoot, 'package.json'), 'utf8'))
@@ -115,18 +143,17 @@ const checkPackaging = () => {
 }
 
 const checkBundles = () => {
-    const defaultPath = resolve(kmsRoot, DEFAULT_ENTRY)
-    const nativePath = resolve(kmsRoot, NATIVE_ENTRY)
-
     // Unbuilt is not a failure: `test` only depends on `^build`, so this runs
     // against a cold dist often enough that failing there would be noise. The
     // build itself asserts the same invariants (packages/kms/vite.config.ts).
-    if (!existsSync(defaultPath)) {
+    const defaultBundle = readBundle(resolve(kmsRoot, DEFAULT_ENTRY))
+    if (!defaultBundle) {
         console.log('SKIP: packages/kms/dist not built — bundle contents not checked.')
         return
     }
 
-    if (!existsSync(nativePath)) {
+    const nativeBundle = readBundle(resolve(kmsRoot, NATIVE_ENTRY))
+    if (!nativeBundle) {
         fail(
             `packages/kms/${NATIVE_ENTRY} is missing while ${DEFAULT_ENTRY} exists — the native build pass did not run.`,
         )
@@ -138,36 +165,33 @@ const checkBundles = () => {
     // from an older source tree would otherwise satisfy every marker below. The
     // build writes default-then-native, so an older native bundle means the two
     // came from different runs.
-    if (statSync(nativePath).mtimeMs < statSync(defaultPath).mtimeMs) {
+    if (nativeBundle.mtimeMs < defaultBundle.mtimeMs) {
         fail(
             `packages/kms/${NATIVE_ENTRY} is older than ${DEFAULT_ENTRY} — the two bundles are from different builds and the on-device one is stale. Run \`pnpm --filter @perawallet/wallet-core-kms build\`.`,
         )
     }
 
-    const defaultBundle = readFileSync(defaultPath, 'utf8')
-    const nativeBundle = readFileSync(nativePath, 'utf8')
-
-    if (!NATIVE_STATIC_IMPORT.test(nativeBundle)) {
+    if (!NATIVE_STATIC_IMPORT.test(nativeBundle.code)) {
         fail(
             `packages/kms/${NATIVE_ENTRY} has no static import of ${NATIVE_MODULE}. Metro only records dependencies whose callee is literally \`require\`, so the native module would never enter the bundle graph and signing would throw on first use.`,
         )
     }
-    if (SHIMMED_NATIVE_REQUIRE.test(nativeBundle)) {
+    if (SHIMMED_NATIVE_REQUIRE.test(nativeBundle.code)) {
         fail(
             `packages/kms/${NATIVE_ENTRY} reaches ${NATIVE_MODULE} through rolldown's \`require\` shim instead of a static import, which Metro cannot see.`,
         )
     }
-    if (nativeBundle.includes(WASM_MARKER)) {
+    if (nativeBundle.code.includes(WASM_MARKER)) {
         fail(
             `packages/kms/${NATIVE_ENTRY} bundles the falcon-1024 WASM glue — the on-device bundle should reach the native module only.`,
         )
     }
-    if (!defaultBundle.includes(WASM_MARKER)) {
+    if (!defaultBundle.code.includes(WASM_MARKER)) {
         fail(
             `packages/kms/${DEFAULT_ENTRY} does not bundle the falcon-1024 WASM glue — the off-device bundle has no working PQ provider under node, vitest or the web build.`,
         )
     }
-    if (defaultBundle.includes(NATIVE_MODULE)) {
+    if (defaultBundle.code.includes(NATIVE_MODULE)) {
         fail(
             `packages/kms/${DEFAULT_ENTRY} references ${NATIVE_MODULE} — the off-device bundle must not reach the native module.`,
         )
