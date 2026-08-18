@@ -50,7 +50,11 @@ import {
     fakeStorage,
     type FakeKeychainStorage,
 } from '../../__fixtures__/fakeStorage'
-import { decode, sealCanary13Record } from '../../__fixtures__/keystoreFormats'
+import {
+    canary13DerivedChild,
+    decode,
+    sealCanary13Record,
+} from '../../__fixtures__/keystoreFormats'
 import { createDeclinedRegister } from '../../declined'
 import { LAYOUT_VERSION_KEY } from '../0003-remove-layout-version-stamp'
 import { migration } from '../0004-adopt-material-less-records'
@@ -138,14 +142,15 @@ describe('0004-adopt-material-less-records', () => {
         })
     })
 
-    // Ported from the deleted spec: "fills in bip44Path and derivationType for
-    // an hd-derived child" — every HD-derived child `keystore-core` mints
-    // (`deriveFromSeed`/`deriveDomainKey`) is exactly this shape: no material
-    // of its own, ever. This revision only has to land it in `k/`; the
-    // vocabulary rewrite (`path`→`bip44Path`, `storage: 'none'`) is
-    // `repairs/0001-normalize-canary13-records`'s job once the record is
-    // there, already covered by that revision's own spec — so this test pins
-    // the untouched canary.13 field names, not the normalised ones.
+    // The material-less path: a record with NO key material of its own,
+    // neither top-level nor nested — a canary.19-minted derived child
+    // (`storage: 'none'`) or a watch-only key. (The canary.13 `deriveFromSeed`
+    // child, which nests its parent's key under `rootKey`, is the separate
+    // nested-only case adopted above.) This revision only lands it in `k/`; the
+    // `path`→`bip44Path` / `storage: 'none'` rewrite is
+    // `repairs/0001-normalize-canary13-records`'s job, covered by that
+    // revision's own spec — so this test pins the untouched canary.13 field
+    // names, not the normalised ones.
     it('adopts an HD-derived child with no material of its own', async () => {
         const storage = await seeded({
             id: 'd-1',
@@ -186,32 +191,151 @@ describe('0004-adopt-material-less-records', () => {
         expect(storage.getString(`${METADATA_PREFIX}key-1`)).toBeUndefined()
     })
 
-    // Writing this record's metadata verbatim into plaintext k/ without
-    // lifting the nested secret first would leak it — the exact hazard 0002
-    // exists to prevent. Out of scope here on purpose (see the revision's own
-    // doc comment): left flat and reported, not silently dropped.
-    it('leaves a record with only nested material flat, and records it as declined', async () => {
-        const storage = await seeded({
-            id: 'derived-2',
-            type: 'hd-derived-ed25519',
-            algorithm: 'EdDSA',
-            extractable: false,
-            metadata: {
-                rootKey: {
-                    id: 'root-1',
-                    type: 'hd-root-key',
-                    privateKey: new Uint8Array(64).fill(11),
-                },
+    // A nested-only HD-derived child (the parent's key nested under
+    // `metadata.rootKey`, none of its own) is adopted into metadata-only `k/`.
+    // canary.19 re-derives the child from its parent on demand, so the nested
+    // copy is redundant — and writing it into plaintext `k/` would leak the
+    // root, the exact hazard `0002` guards. Dropping it is safe only because
+    // the parent survives to carry the material (see the next test).
+    it('adopts a nested-only HD child into metadata-only k/ when its parent root is present', async () => {
+        const storage = await seeded(
+            {
+                id: 'root-1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                seed: new Uint8Array(64).fill(11),
+                metadata: { scheme: 'bip39' },
             },
+            canary13DerivedChild({
+                id: 'd-2',
+                parentKeyId: 'root-1',
+                rootPrivateKey: new Uint8Array(64).fill(11),
+            }) as unknown as Record<string, unknown>,
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('d-2')).toBeUndefined()
+        expect(storage.getString(`m/d-2`)).toBeUndefined()
+        const child = decode(storage.getString(`${METADATA_PREFIX}d-2`)!)
+        expect(child.metadata).toMatchObject({
+            parentKeyId: 'root-1',
+            storage: 'none',
+            // "m/44'/283'/0'/0/0" parsed, hardened segments offset by 2^31.
+            bip44Path: [0x80_00_00_2c, 0x80_00_01_1b, 0x80_00_00_00, 0, 0],
+        })
+        // The nested root secret must never reach plaintext `k/`.
+        expect(child.metadata).not.toHaveProperty('rootKey')
+        expect(child).not.toHaveProperty('privateKey')
+        // The parent is left at its bare id for upstream to adopt; nothing declined.
+        expect(storage.getString('root-1')).toBeDefined()
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual([])
+    })
+
+    // The nested copy is the wallet's LAST root material when the parent never
+    // survived; dropping it then would be unrecoverable. Left flat and
+    // reported instead, so a later run — once the parent is restored — can
+    // still take it.
+    it('leaves a nested-only child flat when its parent root is absent', async () => {
+        const storage = await seeded(
+            canary13DerivedChild({
+                id: 'd-2',
+                parentKeyId: 'root-1',
+                rootPrivateKey: new Uint8Array(64).fill(11),
+            }) as unknown as Record<string, unknown>,
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('d-2')).toBeDefined()
+        expect(storage.getString(`${METADATA_PREFIX}d-2`)).toBeUndefined()
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual(['d-2'])
+    })
+
+    // `liftSecrets` counts only bare-`Uint8Array` secrets, so a secret-NAMED
+    // container outside `rootKey` (here a top-level `key: {…}`) slips past the
+    // single-secret gate. Serialising the record would then write that
+    // container's bytes into plaintext `k/`. Refuse: left flat, nested root
+    // preserved.
+    it('leaves a nested-only child flat when it carries a secret-named container outside rootKey', async () => {
+        const child = canary13DerivedChild({
+            id: 'd-2',
+            parentKeyId: 'root-1',
+            rootPrivateKey: new Uint8Array(64).fill(11),
+        }) as unknown as Record<string, unknown>
+        child.key = { d: new Uint8Array(32).fill(9) }
+
+        const storage = await seeded(
+            {
+                id: 'root-1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                seed: new Uint8Array(64).fill(11),
+                metadata: { scheme: 'bip39' },
+            },
+            child,
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('d-2')).toBeDefined()
+        expect(storage.getString(`${METADATA_PREFIX}d-2`)).toBeUndefined()
+    })
+
+    // The parent-presence guard must prove the root still holds MATERIAL before
+    // dropping the child's nested copy — a `k/<rootId>` metadata entry with no
+    // `m/` is not proof (a root always carries material, so this only ever
+    // means a half-written or unrelated record). Left flat rather than risk
+    // dropping the wallet's last root copy.
+    it('leaves a nested-only child flat when the parent root has only a k/ entry, no material', async () => {
+        const storage = await seeded(
+            canary13DerivedChild({
+                id: 'd-2',
+                parentKeyId: 'root-1',
+                rootPrivateKey: new Uint8Array(64).fill(11),
+            }) as unknown as Record<string, unknown>,
+        )
+        // A `k/root-1` with no `m/root-1` and no bare `root-1`.
+        storage.set(`${METADATA_PREFIX}root-1`, 'metadata-only, no material')
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('d-2')).toBeDefined()
+        expect(storage.getString(`${METADATA_PREFIX}d-2`)).toBeUndefined()
+    })
+
+    // A biometric-wrapped passkey credential carries its key under
+    // `privateKeyEnc`, not a top-level `Uint8Array`, so it would otherwise look
+    // material-less and be moved into `k/`. The native credential providers
+    // read a passkey only at its bare id — leave it there, and do not report it
+    // as declined (it is intentional, not a failure).
+    it('leaves a biometric-wrapped passkey credential flat', async () => {
+        const storage = await seeded({
+            id: 'cred-wrapped',
+            type: 'hd-derived-p256',
+            algorithm: 'P256',
+            extractable: false,
+            keyUsages: ['sign'],
+            publicKey: new Uint8Array(32).fill(2),
+            privateKeyEnc: { iv: 'aa', data: 'bb' },
+            metadata: { origin: 'https://example.com' },
         })
 
         await migration.up(context(storage), utils())
 
-        expect(storage.getString('derived-2')).toBeDefined()
-        expect(storage.getString(`${METADATA_PREFIX}derived-2`)).toBeUndefined()
+        expect(storage.getString('cred-wrapped')).toBeDefined()
+        expect(
+            storage.getString(`${METADATA_PREFIX}cred-wrapped`),
+        ).toBeUndefined()
         expect(
             createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
-        ).toEqual(['derived-2'])
+        ).toEqual([])
     })
 
     // Mirrors 0002's identical guard: the driver reads a record back at

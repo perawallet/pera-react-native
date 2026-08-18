@@ -129,6 +129,53 @@ const decodeRecord = (data: string): KeyData => {
 }
 
 /**
+ * The record canary.13's `deriveFromSeed` actually wrote: no material of its
+ * own, the parent's private key nested under `metadata.rootKey`.
+ * See `react-native-keystore@1.0.0-canary.13/dist/store.js:282-303`.
+ */
+export const canary13DerivedChild = ({
+    id,
+    parentKeyId,
+    rootPrivateKey,
+    publicKey = new Uint8Array(32).fill(1),
+}: {
+    id: string
+    parentKeyId: string
+    rootPrivateKey: Uint8Array
+    publicKey?: Uint8Array
+}): KeyData =>
+    ({
+        id,
+        type: 'hd-derived-ed25519',
+        algorithm: 'EdDSA',
+        extractable: false,
+        publicKey,
+        metadata: {
+            derivationPath: "m/44'/283'/0'/0/0",
+            parentKeyId,
+            context: 0,
+            account: 0,
+            keyIndex: 0,
+            // `deriveFromSeed`'s non-P256 branch spreads the fetched root
+            // record verbatim (`store.js:294`); a real one carries the full
+            // `importKey` "hd-root-key" shape (`store.js:467-483`), not a
+            // trimmed-down subset.
+            rootKey: {
+                id: parentKeyId,
+                type: 'hd-root-key',
+                algorithm: 'raw',
+                format: 'raw',
+                extractable: true,
+                keyUsages: ['deriveKey', 'deriveBits'],
+                privateKey: rootPrivateKey,
+                metadata: {
+                    name: 'Imported Root Key',
+                },
+            },
+        },
+    }) as unknown as KeyData
+
+/**
  * Writes a record the way canary.13 did: the whole `KeyData` sealed under its
  * bare id, byte fields as number arrays, GCM tag in its own field.
  */

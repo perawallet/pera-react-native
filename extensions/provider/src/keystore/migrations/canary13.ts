@@ -124,6 +124,24 @@ const carriesMaterial = (value: unknown): boolean => {
 }
 
 /**
+ * True when any key anywhere in `value` is a secret-field NAME, whether it
+ * holds bare material or a container. This is the check `liftSecrets`'s count
+ * cannot make: it walks PAST a secret name holding a container (neither lifts
+ * it nor keeps it), so a `{ key: { … } }` is invisible to a single-secret gate
+ * yet would still be serialised into plaintext `k/`.
+ */
+const carriesSecretName = (value: unknown): boolean => {
+    if (value instanceof Uint8Array || value === null) return false
+    if (Array.isArray(value)) return value.some(carriesSecretName)
+    if (typeof value !== 'object') return false
+
+    return Object.entries(value as Record<string, unknown>).some(
+        ([field, nested]) =>
+            SECRET_FIELDS.has(field) || carriesSecretName(nested),
+    )
+}
+
+/**
  * True when material sits somewhere *below* the record's top level.
  *
  * This is the exact blind spot in upstream's `adoptLegacyRecords`, which
@@ -135,6 +153,45 @@ export const hasNestedMaterial = (record: Canary13Record): boolean =>
     Object.entries(record as unknown as Record<string, unknown>).some(
         ([field, value]) => !SECRET_FIELDS.has(field) && carriesMaterial(value),
     )
+
+/** The parent root a nested-only child carries, addressed by its own id. */
+export type NestedRootShape = { rootId: string; rootMaterial: Uint8Array }
+
+/**
+ * Recognises the one nested shape safe to adopt as a metadata-only child: an
+ * HD-derived record whose only material is its parent's private key under
+ * `metadata.rootKey`. Returns `undefined` for anything else — a second nested
+ * carrier, a `rootKey` with no `id` of its own, a secret under a name this pass
+ * cannot place — so the caller refuses rather than guess. Refusing costs
+ * nothing (the bare record survives); guessing wrong can discard a wallet's
+ * only remaining root key.
+ */
+export const recognizedNestedShape = (
+    record: Canary13Record,
+): NestedRootShape | undefined => {
+    const lifted: LiftedMaterial[] = []
+    liftSecrets(record, record.id, lifted)
+    if (lifted.length !== 1) return undefined
+
+    const [only] = lifted
+    const nested = (record.metadata as { rootKey?: Canary13Record } | undefined)
+        ?.rootKey
+    if (nested === undefined) return undefined
+    if (typeof only.id !== 'string' || nested.id !== only.id) return undefined
+    if (nested.privateKey !== only.bytes) return undefined
+
+    // The caller drops `metadata.rootKey` and serialises the rest into
+    // plaintext `k/`. The single-secret count above misses a secret-NAMED
+    // container living outside `rootKey`, so refuse if any secret name remains
+    // once `rootKey` is set aside — its bytes must never reach `k/`.
+    const { rootKey: _rootKey, ...metadataSansRoot } = (record.metadata ??
+        {}) as Record<string, unknown>
+    if (carriesSecretName({ ...record, metadata: metadataSansRoot })) {
+        return undefined
+    }
+
+    return { rootId: only.id, rootMaterial: only.bytes }
+}
 
 /** canary.13's spelling of the Falcon child type; canary.19 uses `falcon-1024`. */
 const LEGACY_FALCON_TYPE = 'falcon1024'
@@ -241,11 +298,20 @@ export const normalizeCanary13Record = ({
     }
 
     if (record.type === 'hd-derived-ed25519') {
-        // canary.13 recorded `path`/`derivation`; `sign` reads the parsed
-        // `bip44Path` and `derivationType`, and silently derives from
-        // `undefined` segments without them.
-        if (typeof meta.path === 'string' && meta.bip44Path === undefined) {
-            meta.bip44Path = parseBip44Path(meta.path)
+        // `deriveFromSeed` wrote the raw path under `derivationPath`
+        // (`dist/store.js:290`); `path` is the generate-created spelling.
+        // `sign` reads the parsed `bip44Path` and `derivationType`, and
+        // silently derives from `undefined` segments without them.
+        if (meta.bip44Path === undefined) {
+            const rawPath =
+                typeof meta.derivationPath === 'string'
+                    ? meta.derivationPath
+                    : typeof meta.path === 'string'
+                      ? meta.path
+                      : undefined
+            if (rawPath !== undefined) {
+                meta.bip44Path = parseBip44Path(rawPath)
+            }
         }
         if (
             meta.derivationType === undefined &&
