@@ -241,11 +241,20 @@ export const normalizeCanary13Record = ({
     }
 
     if (record.type === 'hd-derived-ed25519') {
-        // canary.13 recorded `path`/`derivation`; `sign` reads the parsed
-        // `bip44Path` and `derivationType`, and silently derives from
-        // `undefined` segments without them.
-        if (typeof meta.path === 'string' && meta.bip44Path === undefined) {
-            meta.bip44Path = parseBip44Path(meta.path)
+        // `deriveFromSeed` wrote the raw path under `derivationPath`
+        // (`dist/store.js:290`); `path` is the generate-created spelling.
+        // `sign` reads the parsed `bip44Path` and `derivationType`, and
+        // silently derives from `undefined` segments without them.
+        if (meta.bip44Path === undefined) {
+            const rawPath =
+                typeof meta.derivationPath === 'string'
+                    ? meta.derivationPath
+                    : typeof meta.path === 'string'
+                      ? meta.path
+                      : undefined
+            if (rawPath !== undefined) {
+                meta.bip44Path = parseBip44Path(rawPath)
+            }
         }
         if (
             meta.derivationType === undefined &&

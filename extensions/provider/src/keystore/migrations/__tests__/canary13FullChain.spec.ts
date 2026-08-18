@@ -348,6 +348,17 @@ describe('canary.13 full chain (preflight + repairs)', () => {
         const derived = metadataAt(storage, 'child-1')
         expect(derived.metadata?.storage).toBe('none')
         expect(derived.metadata?.parentKeyId).toBe('root-1')
+        // XHD signing reads `metadata.bip44Path` and throws
+        // `InvalidKeyFormatError` when it's missing (`shims/xhd.js:19-24`).
+        // canary.13 stored the raw `derivationPath` string, so a record
+        // adopted without rewriting it renders but cannot sign (PERA-4917).
+        expect(derived.metadata?.bip44Path).toEqual([
+            0x8000_0000 + 44,
+            0x8000_0000 + 283,
+            0x8000_0000 + 0,
+            0,
+            0,
+        ])
 
         for (const id of [
             'root-1',
