@@ -13,6 +13,7 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { base64 } from '@scure/base'
 
 // See 0002-lift-nested-material.spec.ts for why the package root is mocked and
 // why the prefixes and `serializeKey` still come from its real dist while
@@ -36,6 +37,7 @@ vi.mock('@algorandfoundation/react-native-keystore', async () => {
 })
 
 import {
+    MasterKeyNotFoundError,
     MATERIAL_PREFIX,
     METADATA_PREFIX,
 } from '@algorandfoundation/react-native-keystore'
@@ -118,20 +120,52 @@ describe('adoptStrandedRecords — material-bearing records', () => {
         expect(storage.getString('root-1')).toBeUndefined()
     })
 
-    it('quarantines under -legacy when a different key already holds the id', async () => {
-        await seed({ ...root, privateKey: new Uint8Array(96).fill(1) })
+    it('quarantines under -legacy when a different key already holds the id, keeping both keys distinct and converging', async () => {
+        const first = new Uint8Array(96).fill(1)
+        const second = new Uint8Array(96).fill(2)
+        await seed({ ...root, privateKey: first })
         await adoptStrandedRecords(deps())
-        await seed({ ...root, privateKey: new Uint8Array(96).fill(2) })
+        await seed({ ...root, privateKey: second })
 
         const result = await adoptStrandedRecords(deps())
 
         expect(result.quarantined).toEqual([
             { id: 'root-1', legacyId: 'root-1-legacy' },
         ])
-        expect(
-            storage.getString(METADATA_PREFIX + 'root-1-legacy'),
-        ).toBeDefined()
-        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeDefined()
+
+        // Byte-level: the live id must still hold the FIRST key, and the
+        // legacy id must hold the SECOND — a swap here would mean signing
+        // with the wrong key (Critical 1/2).
+        const liveMaterial = base64.decode(
+            await openData(
+                subtle,
+                MASTER_KEY,
+                storage.getString(MATERIAL_PREFIX + 'root-1') as string,
+            ),
+        )
+        const legacyMaterial = base64.decode(
+            await openData(
+                subtle,
+                MASTER_KEY,
+                storage.getString(MATERIAL_PREFIX + 'root-1-legacy') as string,
+            ),
+        )
+        expect(liveMaterial).toEqual(first)
+        expect(legacyMaterial).toEqual(second)
+
+        // The legacy metadata record must self-identify as the legacy id, not
+        // the live one — writing "id": "root-1" there would make
+        // `getMaterial`/`migrateLegacyPasskeys` resolve it back onto the live
+        // key (Critical 1).
+        const legacyMeta = JSON.parse(
+            storage.getString(METADATA_PREFIX + 'root-1-legacy') as string,
+        ) as { id: string }
+        expect(legacyMeta.id).toBe('root-1-legacy')
+
+        // Converges: the bare copy is gone, so a later launch does not
+        // re-quarantine into the same occupied `-legacy` id (Important 3).
+        expect(storage.getString('root-1')).toBeUndefined()
+        expect(hasStrandedWork(storage)).toBe(false)
     })
 
     it('reports work only while bare candidates remain', async () => {
@@ -167,5 +201,122 @@ describe('adoptStrandedRecords — material-bearing records', () => {
         expect(result.quarantined).toEqual([])
         expect(storage.getString(METADATA_PREFIX + 'root-1')).toBeDefined()
         expect(storage.getString('root-1')).toBeUndefined()
+    })
+
+    it('leaves an unreadable m/<id> and the bare record untouched, reporting failed (Critical 2)', async () => {
+        await seed(root)
+        await adoptStrandedRecords(deps())
+        storage.set(MATERIAL_PREFIX + 'root-1', 'not-a-sealed-blob')
+        await seed(root)
+        const metaBefore = storage.getString(METADATA_PREFIX + 'root-1')
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.quarantined).toEqual([])
+        expect(result.adopted).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        // Nothing touched: the corrupt blob, the existing metadata and the
+        // bare copy all survive exactly as they were.
+        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBe(
+            'not-a-sealed-blob',
+        )
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBe(metaBefore)
+        expect(storage.getString('root-1')).toBeDefined()
+    })
+
+    it('refuses to merge under a foreign k/<id> when m/<id> is absent (Important 4)', async () => {
+        const foreignMeta = JSON.stringify({
+            id: 'root-1',
+            type: 'seed',
+            algorithm: 'raw',
+            format: 'raw',
+            extractable: true,
+            keyUsages: ['deriveKey', 'deriveBits'],
+            metadata: { scheme: 'foreign' },
+        })
+        storage.set(METADATA_PREFIX + 'root-1', foreignMeta)
+        await seed(root)
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).toEqual([])
+        expect(result.quarantined).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBe(
+            foreignMeta,
+        )
+        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
+        expect(storage.getString('root-1')).toBeDefined()
+    })
+
+    it('refuses a record carrying both top-level and nested material, leaking nothing into k/ (Important 5)', async () => {
+        const rootPrivateKey = new Uint8Array(96).fill(3)
+        const combined = {
+            ...root,
+            privateKey: new Uint8Array(96).fill(4),
+            metadata: {
+                scheme: 'bip39',
+                rootKey: {
+                    id: 'parent-1',
+                    type: 'hd-root-key',
+                    privateKey: rootPrivateKey,
+                },
+            },
+        }
+        await seed(combined)
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).toEqual([])
+        expect(result.quarantined).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        expect(storage.getString('root-1')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBeUndefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
+    })
+
+    it('rolls back and leaves the bare record intact when a write throws mid-adoption', async () => {
+        await seed(root)
+        const originalSet = storage.set.bind(storage)
+        vi.spyOn(storage, 'set').mockImplementation((key, value) => {
+            if (key === METADATA_PREFIX + 'root-1') {
+                throw new Error('simulated MMKV write failure')
+            }
+            originalSet(key, value)
+        })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).toEqual([])
+        expect(result.quarantined).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'root-1' }),
+        ])
+        expect(storage.getString('root-1')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBeUndefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
+    })
+
+    it('never throws when the master key is unavailable, and leaves candidates untouched', async () => {
+        await seed(root)
+
+        await expect(
+            adoptStrandedRecords({
+                storage,
+                subtle,
+                masterKeyForRead: async () => {
+                    throw new MasterKeyNotFoundError()
+                },
+            }),
+        ).resolves.toEqual(
+            expect.objectContaining({ adopted: [], quarantined: [], failed: [] }),
+        )
+        expect(storage.getString('root-1')).toBeDefined()
     })
 })
