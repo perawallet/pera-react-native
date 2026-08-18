@@ -53,7 +53,7 @@ export const ButtonPanel = () => {
             />
             <RoundButton
                 title={t('account_details.button_panel.more')}
-                icon='ellipsis'
+                icon='chevron-right'
                 variant='secondary'
                 onPress={handleMore}
                 testID='more_button'
