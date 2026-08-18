@@ -16,6 +16,7 @@ import { migration as r0001 } from './0001-retire-hd-root-shadow'
 import { migration as r0002 } from './0002-lift-nested-material'
 import { migration as r0003 } from './0003-remove-layout-version-stamp'
 import { migration as r0004 } from './0004-adopt-material-less-records'
+import { migration as r0005 } from './0005-adopt-remaining-flat-records'
 
 /**
  * Permanent ledger key. Renaming it makes the engine believe this module has
@@ -29,4 +30,5 @@ export const preflightMigrations: readonly Migration<PeraMigrationContext>[] = [
     r0002,
     r0003,
     r0004,
+    r0005,
 ]
