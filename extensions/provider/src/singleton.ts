@@ -16,7 +16,7 @@ import type { HookCollection } from 'before-after-hook'
 import type { KeyStoreState } from '@algorandfoundation/keystore-core'
 import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
 import type { MigrationReport } from '@algorandfoundation/provider-migrations'
-import { subtle } from 'react-native-quick-crypto'
+import { subtle } from './keystore/subtle'
 import { createPeraKeystore } from './keystore/createKeystore'
 import { readPersistedKeys, runMaterialRepair } from './keystore/maintenance'
 import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
@@ -64,7 +64,7 @@ let instance: PeraProvider | null = new PeraProvider(
             // `subtle: options.keystore.subtle`. Without this its adoption pass
             // throws on every record, swallows each one, and ledgers itself as
             // applied — permanently.
-            subtle: subtle as unknown as SubtleCrypto,
+            subtle,
         },
         migrations: { ledger: createPeraMigrationLedger() },
     },

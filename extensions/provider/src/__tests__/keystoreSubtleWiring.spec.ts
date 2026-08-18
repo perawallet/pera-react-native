@@ -35,4 +35,40 @@ describe('keystore provider options', () => {
 
         expect(keystoreOptions).toContain('subtle')
     })
+
+    // `singleton.ts` has no `.web.ts` twin and `index.ts` exports it
+    // unconditionally for both platforms, so it must never pull in a
+    // react-native-only runtime import — `react-native-quick-crypto` is
+    // externalised in vite.config.ts and survives unresolved into web dist.
+    it('does not import react-native-quick-crypto directly', () => {
+        const source = readFileSync(
+            resolve(__dirname, '../singleton.ts'),
+            'utf8',
+        )
+
+        expect(source).not.toContain('react-native-quick-crypto')
+    })
+
+    // The native/`.web.ts` split for `subtle` must actually exist, or the
+    // check above is vacuous.
+    it('sources subtle from a platform-split module', () => {
+        const source = readFileSync(
+            resolve(__dirname, '../singleton.ts'),
+            'utf8',
+        )
+
+        expect(source).toContain("from './keystore/subtle'")
+
+        const native = readFileSync(
+            resolve(__dirname, '../keystore/subtle.ts'),
+            'utf8',
+        )
+        const web = readFileSync(
+            resolve(__dirname, '../keystore/subtle.web.ts'),
+            'utf8',
+        )
+
+        expect(native).toContain('react-native-quick-crypto')
+        expect(web).not.toContain('react-native-quick-crypto')
+    })
 })
