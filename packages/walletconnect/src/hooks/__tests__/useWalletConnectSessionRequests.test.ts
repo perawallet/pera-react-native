@@ -116,6 +116,85 @@ describe('useWalletConnectSessionRequests', () => {
         ])
     })
 
+    it('drops a duplicate of an already-queued handshake without touching the store', () => {
+        // The bridge replays a topic's pending history on every sub frame,
+        // so the same session_request (same handshake id) can arrive more
+        // than once. A duplicate must not queue a second approval sheet or
+        // reset the original's TTL stamp.
+        const queued = {
+            clientId: 'dapp-a',
+            handshakeId: 111,
+            peerMeta: { name: 'Test App' },
+            createdAt: Date.now() - 1000,
+        } as any
+        mockSessionRequests = [queued]
+        const { result } = renderHook(() => useWalletConnectSessionRequests())
+
+        act(() => {
+            result.current.addSessionRequest({
+                clientId: 'dapp-a',
+                handshakeId: 111,
+                peerMeta: { name: 'Test App' },
+            } as any)
+        })
+
+        expect(mockSetSessionRequests).not.toHaveBeenCalled()
+    })
+
+    it('replaces a queued request when the same client sends a new handshake', () => {
+        // A dApp that retries pairing abandons its previous handshake, so
+        // the stale queued request is unapprovable — only the newest
+        // handshake per connector can succeed.
+        const stale = {
+            clientId: 'dapp-a',
+            handshakeId: 111,
+            peerMeta: { name: 'Test App' },
+            createdAt: Date.now() - 1000,
+        } as any
+        mockSessionRequests = [stale]
+        const { result } = renderHook(() => useWalletConnectSessionRequests())
+
+        act(() => {
+            result.current.addSessionRequest({
+                clientId: 'dapp-a',
+                handshakeId: 222,
+                peerMeta: { name: 'Test App' },
+            } as any)
+        })
+
+        expect(mockSetSessionRequests).toHaveBeenCalledWith([
+            expect.objectContaining({
+                clientId: 'dapp-a',
+                handshakeId: 222,
+                createdAt: expect.any(Number),
+            }),
+        ])
+    })
+
+    it('keeps queued requests from other clients when deduping', () => {
+        const other = {
+            clientId: 'dapp-b',
+            handshakeId: 333,
+            peerMeta: { name: 'Other App' },
+            createdAt: Date.now(),
+        } as any
+        mockSessionRequests = [other]
+        const { result } = renderHook(() => useWalletConnectSessionRequests())
+
+        act(() => {
+            result.current.addSessionRequest({
+                clientId: 'dapp-a',
+                handshakeId: 111,
+                peerMeta: { name: 'Test App' },
+            } as any)
+        })
+
+        expect(mockSetSessionRequests).toHaveBeenCalledWith([
+            other,
+            expect.objectContaining({ clientId: 'dapp-a', handshakeId: 111 }),
+        ])
+    })
+
     it('should remove session request', () => {
         const request1 = { id: 1 } as any
         const request2 = { id: 2 } as any
