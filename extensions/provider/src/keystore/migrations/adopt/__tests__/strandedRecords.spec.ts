@@ -51,6 +51,16 @@ import {
     sealCanary13Record,
 } from '../../__fixtures__/keystoreFormats'
 import { adoptStrandedRecords, hasStrandedWork } from '../strandedRecords'
+// Deep relative import, not a package specifier — see
+// `migrations/__tests__/nativeCredentialRecord.spec.ts` for why: it creates no
+// `package.json` edge, so it never enters turbo's build graph the way a
+// `@perawallet/wallet-core-passkeys` devDependency did. Round-1 review found
+// every passkey-restore fixture here omitted `publicKey`, which is exactly
+// why the format defects (tagless envelope, `JSON.stringify`-mangled bytes)
+// went uncaught — this import lets the tests below prove the restored record
+// round-trips through the REAL provider reader, not just this package's own
+// mocked primitives.
+import { openNativeProviderRecord } from '../../../../../../../packages/passkeys/src/native/nativeProviderRecord'
 
 const MASTER_KEY = new Uint8Array(32).fill(7)
 const subtle = globalThis.crypto.subtle
@@ -768,34 +778,55 @@ describe('adoptStrandedRecords — nested-only children', () => {
 })
 
 describe('adoptStrandedRecords — passkey restore', () => {
-    it('returns a 0004-moved wrapped credential to its bare id', async () => {
+    // 91 bytes, matching the real shape `nativeProviderRecord.spec.ts` pins —
+    // round-1's fixtures all omitted `publicKey`, which is exactly why the
+    // tagless-envelope and JSON.stringify-mangled-bytes defects survived.
+    const PUBLIC_KEY = new Uint8Array(91).fill(4)
+
+    const wrappedCredential = (id: string) => ({
+        id,
+        type: 'hd-derived-p256',
+        algorithm: 'P256',
+        privateKeyEnc: { iv: 'aa', data: 'bb' },
+        publicKey: PUBLIC_KEY,
+        metadata: { origin: 'https://example.com' },
+    })
+
+    const seedInK = async (id: string, record: object) => {
         const { serializeKey } =
             await import('@algorandfoundation/react-native-keystore')
-        storage.set(
-            METADATA_PREFIX + 'cred-1',
-            serializeKey({
-                id: 'cred-1',
-                type: 'hd-derived-p256',
-                algorithm: 'P256',
-                privateKeyEnc: { iv: 'aa', data: 'bb' },
-                metadata: { origin: 'https://example.com' },
-            } as never),
-        )
+        storage.set(METADATA_PREFIX + id, serializeKey(record as never))
+    }
+
+    it('returns a 0004-moved wrapped credential to its bare id, readable by the real native provider reader', async () => {
+        await seedInK('cred-1', wrappedCredential('cred-1'))
 
         const result = await adoptStrandedRecords(deps())
 
         expect(result.restored).toEqual(['cred-1'])
-        expect(storage.getString('cred-1')).toBeDefined()
         expect(storage.getString(METADATA_PREFIX + 'cred-1')).toBeUndefined()
+
+        // The whole point: the native iOS/Android reader, not this package's
+        // own mocked primitives, must be able to open it — with byte fields
+        // as JSON number arrays (never `{$u8}`, never `JSON.stringify`'s
+        // `{"0":4,…}`) and `privateKeyEnc` carried verbatim.
+        const opened = (await openNativeProviderRecord(
+            subtle,
+            MASTER_KEY,
+            storage.getString('cred-1') as string,
+        )) as {
+            id: string
+            publicKey: number[]
+            privateKeyEnc: { iv: string; data: string }
+        }
+        expect(opened.id).toBe('cred-1')
+        expect(Array.isArray(opened.publicKey)).toBe(true)
+        expect(opened.publicKey).toEqual(Array.from(PUBLIC_KEY))
+        expect(opened.privateKeyEnc).toEqual({ iv: 'aa', data: 'bb' })
     })
 
     it('leaves a wrapped credential at its bare id untouched', async () => {
-        await seed({
-            id: 'cred-2',
-            type: 'hd-derived-p256',
-            algorithm: 'P256',
-            privateKeyEnc: { iv: 'aa', data: 'bb' },
-        })
+        await seed(wrappedCredential('cred-2'))
 
         const result = await adoptStrandedRecords(deps())
 
@@ -805,37 +836,22 @@ describe('adoptStrandedRecords — passkey restore', () => {
     })
 
     it("restores using the storage key as id, never the record's own (possibly stale) id", async () => {
-        const { serializeKey } =
-            await import('@algorandfoundation/react-native-keystore')
-        storage.set(
-            METADATA_PREFIX + 'cred-3',
-            serializeKey({
-                id: 'some-other-id',
-                type: 'hd-derived-p256',
-                algorithm: 'P256',
-                privateKeyEnc: { iv: 'aa', data: 'bb' },
-            } as never),
-        )
+        await seedInK('cred-3', wrappedCredential('some-other-id'))
 
         const result = await adoptStrandedRecords(deps())
 
         expect(result.restored).toEqual(['cred-3'])
-        expect(storage.getString('cred-3')).toBeDefined()
         expect(storage.getString('some-other-id')).toBeUndefined()
+        const opened = (await openNativeProviderRecord(
+            subtle,
+            MASTER_KEY,
+            storage.getString('cred-3') as string,
+        )) as { id: string }
+        expect(opened.id).toBe('cred-3')
     })
 
     it('refuses to restore when m/<id> unexpectedly already holds material, touching nothing', async () => {
-        const { serializeKey } =
-            await import('@algorandfoundation/react-native-keystore')
-        storage.set(
-            METADATA_PREFIX + 'cred-4',
-            serializeKey({
-                id: 'cred-4',
-                type: 'hd-derived-p256',
-                algorithm: 'P256',
-                privateKeyEnc: { iv: 'aa', data: 'bb' },
-            } as never),
-        )
+        await seedInK('cred-4', wrappedCredential('cred-4'))
         storage.set(MATERIAL_PREFIX + 'cred-4', 'unrelated-sealed-blob')
 
         const result = await adoptStrandedRecords(deps())
@@ -851,18 +867,53 @@ describe('adoptStrandedRecords — passkey restore', () => {
         )
     })
 
-    it('rolls back and leaves the credential in k/ when removing the bare copy fails, never in neither bucket', async () => {
-        const { serializeKey } =
-            await import('@algorandfoundation/react-native-keystore')
-        storage.set(
-            METADATA_PREFIX + 'cred-5',
-            serializeKey({
-                id: 'cred-5',
-                type: 'hd-derived-p256',
-                algorithm: 'P256',
-                privateKeyEnc: { iv: 'aa', data: 'bb' },
-            } as never),
-        )
+    it('refuses a record carrying privateKeyEnc alongside a top-level privateKey rather than corrupting it', async () => {
+        // classifyRecord gives privateKeyEnc precedence over material, so
+        // without this refusal a record carrying BOTH would be dragged to
+        // the bare id with its real privateKey mangled by
+        // toNativeByteArray/JSON round-tripping inside `...rest`.
+        await seedInK('cred-6', {
+            ...wrappedCredential('cred-6'),
+            privateKey: new Uint8Array(32).fill(9),
+        })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.restored).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'cred-6' }),
+        ])
+        // Untouched: still exactly where it was, at k/<id>, never dragged to
+        // a bare id half-converted.
+        expect(storage.getString('cred-6')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'cred-6')).toBeDefined()
+    })
+
+    it('completes the resume state — a bare copy already exists alongside k/<id> — by removing k/<id> rather than refusing', async () => {
+        // 0002's documented resume shape: an earlier run wrote and verified
+        // the flat copy, then was killed before removing k/<id>. Refusing
+        // here would mean a permanent `failed` entry and a master-key read
+        // on every subsequent boot forever.
+        await seedInK('cred-7', wrappedCredential('cred-7'))
+        // A stale flat copy — content doesn't matter, only that reprocessing
+        // overwrites it with a freshly proven-good write rather than leaving
+        // it or refusing outright.
+        storage.set('cred-7', 'stale-flat-copy-from-a-killed-run')
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.restored).toEqual(['cred-7'])
+        expect(storage.getString(METADATA_PREFIX + 'cred-7')).toBeUndefined()
+        const opened = (await openNativeProviderRecord(
+            subtle,
+            MASTER_KEY,
+            storage.getString('cred-7') as string,
+        )) as { id: string }
+        expect(opened.id).toBe('cred-7')
+    })
+
+    it('does not roll back the proven-good flat write when only the k/<id> removal fails — leaves it, records the incomplete removal', async () => {
+        await seedInK('cred-5', wrappedCredential('cred-5'))
         const originalRemove = storage.remove.bind(storage)
         vi.spyOn(storage, 'remove').mockImplementation(key => {
             if (key === METADATA_PREFIX + 'cred-5') {
@@ -873,14 +924,40 @@ describe('adoptStrandedRecords — passkey restore', () => {
 
         const result = await adoptStrandedRecords(deps())
 
+        // 0002's rule: a failure removing k/<id> must never undo a write
+        // already proven correct by its own readback — doing so would leave
+        // nothing readable at all.
         expect(result.restored).toEqual([])
         expect(result.failed).toEqual(
             expect.arrayContaining([expect.objectContaining({ id: 'cred-5' })]),
         )
-        // Not in neither bucket: the bare write must have been rolled back
-        // since the k/ removal that would have completed the move never
-        // landed.
-        expect(storage.getString('cred-5')).toBeUndefined()
+        expect(storage.getString('cred-5')).toBeDefined()
         expect(storage.getString(METADATA_PREFIX + 'cred-5')).toBeDefined()
+        const opened = (await openNativeProviderRecord(
+            subtle,
+            MASTER_KEY,
+            storage.getString('cred-5') as string,
+        )) as { id: string }
+        expect(opened.id).toBe('cred-5')
+    })
+
+    it('rolls back the flat write when the write-and-verify phase itself fails, never leaving neither bucket nor a half-written flat copy', async () => {
+        await seedInK('cred-8', wrappedCredential('cred-8'))
+        const originalSet = storage.set.bind(storage)
+        vi.spyOn(storage, 'set').mockImplementation((key, value) => {
+            if (key === 'cred-8') {
+                throw new Error('simulated MMKV write failure')
+            }
+            originalSet(key, value)
+        })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.restored).toEqual([])
+        expect(result.failed).toEqual(
+            expect.arrayContaining([expect.objectContaining({ id: 'cred-8' })]),
+        )
+        expect(storage.getString('cred-8')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'cred-8')).toBeDefined()
     })
 })

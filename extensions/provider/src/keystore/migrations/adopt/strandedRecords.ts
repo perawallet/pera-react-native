@@ -17,7 +17,6 @@ import {
     METADATA_PREFIX,
     decode,
     openData,
-    sealData,
     serializeKey,
     type KeychainStorage,
 } from '@algorandfoundation/react-native-keystore'
@@ -36,7 +35,11 @@ import {
     wipeBytes,
     type SealingDeps,
 } from '../sealing'
-import { classifyRecord, isFlatCandidate } from './classify'
+import {
+    sealNativeCredentialRecord,
+    toNativeByteArray,
+} from '../nativeCredentialRecord'
+import { classifyRecord, isFlatCandidate, PASSKEY_TYPES } from './classify'
 
 export type AdoptionDeps = {
     storage: KeychainStorage
@@ -441,6 +444,10 @@ const mayHoldWrappedPasskey = (storage: KeychainStorage): boolean =>
                 (storage.getString(key) ?? '').includes('privateKeyEnc'),
         )
 
+/** Local, like `0002-rematerialize-passkey-credentials.ts`'s own copy — a length+`.every` compare is cheap enough not to share a util for. */
+const bytesEqual = (a: Uint8Array, b: Uint8Array): boolean =>
+    a.length === b.length && a.every((byte, index) => byte === b[index])
+
 /**
  * `0004` classified a biometric-wrapped credential as material-less — its
  * material lives under `privateKeyEnc` as `{iv, data}`, not a `Uint8Array` —
@@ -448,17 +455,51 @@ const mayHoldWrappedPasskey = (storage: KeychainStorage): boolean =>
  * providers read from. Both providers, and the app, lose the credential.
  *
  * The wrapped material survives intact inside the plaintext `k/` record, so
- * this reverses `0004`'s write: seal it back under the bare id, confirm it
- * reads back byte-for-byte, only THEN remove `k/<id>`. Journaled across both
- * writes so a throw between them can never leave the credential in neither
- * bucket.
+ * this reverses `0004`'s write. It is NOT `sealData`+`JSON.stringify`: the
+ * native providers' decrypt branch requires an `{iv, tag, content}` envelope
+ * (`sealData` emits `{iv, content}`, tag folded into content, which
+ * `nativeProviderRecord.ts`'s own `isNativeProviderRecordPayload` says
+ * outright "was never a credential record"), and byte fields must cross as
+ * JSON number arrays, never `JSON.stringify`'s `{"0":4,"1":4,…}` and never
+ * `decode`'s own `{$u8}` form. `sealNativeCredentialRecord`/
+ * `toNativeByteArray` (`../nativeCredentialRecord`) are the writers the
+ * sibling un-adopt path (`repairs/0002-rematerialize-passkey-credentials.ts`)
+ * already uses for exactly this contract — reused here rather than
+ * reinvented.
  *
- * Detection reuses `classifyRecord` — the same top-level `privateKeyEnc`
- * presence check the rest of this pipeline already trusts to separate
- * `wrapped-passkey` from `material`/`nested-only`. Nothing this pass (or
- * `metadataOf`) ever writes into `k/` carries a top-level field by that name,
- * so a genuinely-adopted record can't be misread as a stranded passkey and
- * dragged back to a bare id.
+ * Two separate phases, mirroring `0002`: write-and-verify the bare copy
+ * first: seal it, read it back through the keystore's own `decode`+`openData`
+ * (the same envelope shape `sealNativeCredentialRecord` produces), and
+ * confirm `publicKey` round-trips byte-for-byte before trusting the write.
+ * Only once that is proven does phase two remove `k/<id>` — a SEPARATE step
+ * whose own failure must never roll back the now-proven-good flat write
+ * (`0002`'s rule: destroying it would leave nothing readable at all). The
+ * write-and-verify's own failure DOES roll back, via `journal`, to whatever
+ * `id` held before this attempt — `undefined` on a first attempt, or a
+ * still-good flat copy an earlier run already wrote and verified before being
+ * killed before it could remove `k/` (the resume case, see below).
+ *
+ * Detection layers three checks, matching `0002`'s own gate:
+ * `classifyRecord(record) === 'wrapped-passkey'` (the pipeline's existing
+ * top-level `privateKeyEnc` presence check), `PASSKEY_TYPES.has(record.type)`
+ * (same set `0002` uses), and — because `classifyRecord` gives
+ * `privateKeyEnc` precedence over material, so a record carrying BOTH would
+ * otherwise still classify as `wrapped-passkey` — a refusal if any top-level
+ * `SECRET_FIELDS` name is also present. This pass can only place wrapped
+ * material; dragging real material along inside `...rest` unconverted would
+ * corrupt it silently. `wipeSecrets(record)` runs in a `finally` around every
+ * branch reached past that point (matching `adoptNestedOnly`'s own pattern),
+ * so a refused dual-secret record still gets its real key bytes zeroed rather
+ * than left resident in the heap.
+ *
+ * "Bare `id` already holds a record alongside `k/<id>`" is not refused: it is
+ * `0002`'s documented RESUME state — a run killed between the flat write and
+ * the `k/` removal. Refusing would mean a permanent `failed` entry AND a
+ * Keychain/biometric read on every subsequent boot, since `k/<id>` staying
+ * put keeps `mayHoldWrappedPasskey` true forever. Instead this reprocesses
+ * unconditionally, exactly as `0002` does: `journal.track(id)` captures
+ * whatever was there (including a still-good resumed copy) before the write,
+ * so a failure below restores it rather than destroying it.
  */
 const restoreWrappedPasskeys = async (
     deps: AdoptionDeps,
@@ -483,67 +524,121 @@ const restoreWrappedPasskeys = async (
             continue
         }
 
-        if (classifyRecord(record) !== 'wrapped-passkey') continue
-
-        if (storage.getString(MATERIAL_PREFIX + id) !== undefined) {
-            // A passkey credential never has material of its own in `m/` —
-            // this shape says something else this pass doesn't understand is
-            // going on. Leave it for a human rather than guess.
-            result.failed.push({
-                id,
-                reason: `${MATERIAL_PREFIX}${id} unexpectedly holds material for a passkey credential`,
-            })
+        const type = typeof record.type === 'string' ? record.type : ''
+        if (
+            !PASSKEY_TYPES.has(type) ||
+            classifyRecord(record) !== 'wrapped-passkey'
+        ) {
             continue
         }
-
-        if (storage.getString(id) !== undefined) {
-            // A bare copy already exists alongside the `k/` one this pass
-            // would remove — an ambiguous collision, not the shape this
-            // restore was built for. Touch nothing.
-            result.failed.push({
-                id,
-                reason: `${id} already holds a bare record alongside ${key}`,
-            })
-            continue
-        }
-
-        // `id` is always the storage key being written under, never
-        // `record.id` — for a `0004`-moved credential the two should agree,
-        // but this pass doesn't trust that a migration with this exact bug
-        // also got the id right everywhere else.
-        const restored = { ...record, id } as Canary13Record
-        const payload = JSON.stringify(restored)
-        const journal = createJournal(storage)
 
         try {
-            journal.track(id)
-            storage.set(id, await sealData(deps.subtle, masterKey, payload))
-
-            let reopened: string | undefined
-            try {
-                const written = storage.getString(id)
-                reopened =
-                    written === undefined
-                        ? undefined
-                        : await openData(deps.subtle, masterKey, written)
-            } catch {
-                reopened = undefined
+            const presentSecretFields = [...SECRET_FIELDS].filter(
+                field =>
+                    (record as unknown as Record<string, unknown>)[field] !==
+                    undefined,
+            )
+            if (presentSecretFields.length > 0) {
+                result.failed.push({
+                    id,
+                    reason: `carries privateKeyEnc alongside top-level secret field(s) (${presentSecretFields.join(', ')}); this pass cannot place both`,
+                })
+                continue
             }
-            if (reopened !== payload) {
-                throw new Error(
-                    `restored record at ${id} did not read back as written`,
+
+            if (storage.getString(MATERIAL_PREFIX + id) !== undefined) {
+                // A passkey credential never has material of its own in
+                // `m/` — this shape says something else this pass doesn't
+                // understand is going on. Leave it for a human rather than
+                // guess.
+                result.failed.push({
+                    id,
+                    reason: `${MATERIAL_PREFIX}${id} unexpectedly holds material for a passkey credential`,
+                })
+                continue
+            }
+
+            const journal = createJournal(storage)
+            let verified = false
+            try {
+                // `id` is always the storage key being written under, never
+                // `record.id` — for a `0004`-moved credential the two should
+                // agree, but this pass doesn't trust that a migration with
+                // this exact bug also got the id right everywhere else.
+                const {
+                    id: _staleId,
+                    publicKey,
+                    ...rest
+                } = record as unknown as Canary13Record & {
+                    publicKey?: Uint8Array
+                }
+                // Throws (caught below) when `publicKey` is missing or not a
+                // `Uint8Array` — declined exactly as an explicit guard would,
+                // same as `0002`'s equivalent field.
+                const nativePublicKey = toNativeByteArray(
+                    publicKey as Uint8Array,
+                )
+                const nativeRecord = { ...rest, id, publicKey: nativePublicKey }
+
+                journal.track(id)
+                storage.set(
+                    id,
+                    await sealNativeCredentialRecord(
+                        deps.subtle,
+                        masterKey,
+                        nativeRecord,
+                    ),
+                )
+
+                const writtenRaw = storage.getString(id)
+                const reopened =
+                    writtenRaw === undefined
+                        ? undefined
+                        : (decode(
+                              await openData(
+                                  deps.subtle,
+                                  masterKey,
+                                  writtenRaw,
+                              ),
+                          ) as { publicKey?: Uint8Array })
+                if (
+                    reopened === undefined ||
+                    !(reopened.publicKey instanceof Uint8Array) ||
+                    !bytesEqual(reopened.publicKey, publicKey as Uint8Array)
+                ) {
+                    throw new Error(
+                        `restored record at ${id} did not read back as written`,
+                    )
+                }
+                verified = true
+            } catch (error) {
+                journal.rollback()
+                result.failed.push({ id, reason: safeErrorMessage(error) })
+                safeWarn(
+                    `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
                 )
             }
+            if (!verified) continue
 
-            journal.track(key)
-            storage.remove(key)
-            result.restored.push(id)
-        } catch (error) {
-            journal.rollback()
-            result.failed.push({ id, reason: safeErrorMessage(error) })
-            safeWarn(
-                `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
-            )
+            // Reached only once the flat copy is provably readable. A
+            // failure removing `k/<id>` from here on must never roll back
+            // the write above — that copy is already proven correct, and
+            // destroying it would leave nothing readable at all (0002's
+            // rule).
+            try {
+                storage.remove(key)
+                result.restored.push(id)
+            } catch (error) {
+                result.failed.push({
+                    id,
+                    reason: `restored but left with an orphaned ${key}: ${safeErrorMessage(error)}`,
+                })
+                safeWarn(
+                    `[provider] adopt-stranded: ${id} restored but ${key} removal failed: ${safeErrorMessage(error)}`,
+                )
+            }
+        } finally {
+            wipeSecrets(record)
         }
     }
 }

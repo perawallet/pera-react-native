@@ -33,7 +33,8 @@ export type RecordClass =
     | 'wrapped-passkey'
     | 'plain-passkey'
 
-const PASSKEY_TYPES: ReadonlySet<string> = new Set([
+/** Shared with `strandedRecords.ts`'s passkey restore — same type gate `0002`'s rematerialize pass uses, so the two can't drift apart. */
+export const PASSKEY_TYPES: ReadonlySet<string> = new Set([
     'hd-derived-p256',
     'xhd-derived-p256',
 ])
