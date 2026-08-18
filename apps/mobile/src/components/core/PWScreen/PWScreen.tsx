@@ -55,6 +55,11 @@ export type PWScreenProps = {
      * not scroll. Forms with text inputs should use `'auto'`, which scrolls the
      * focused field clear of the keyboard. */
     scroll?: 'auto' | 'never'
+    /** Whether the fixed body (`scroll='never'`) shrinks above the keyboard.
+     * `'never'` lets the keyboard overlay the body instead, for screens whose
+     * body handles the keyboard itself, e.g. a WebView whose page is laid out
+     * against a viewport height it snapshots at load (PERA-4905). */
+    keyboardAvoidance?: 'auto' | 'never'
     horizontalPadding?: HorizontalPaddingMode
     style?: StyleProp<ViewStyle>
     testID?: string
@@ -72,6 +77,7 @@ export const PWScreen = ({
     children,
     footer,
     scroll = 'auto',
+    keyboardAvoidance = 'auto',
     horizontalPadding = 'xl',
     style,
     testID,
@@ -199,17 +205,25 @@ export const PWScreen = ({
                 style={[styles.root, style]}
                 testID={testID}
             >
-                <KeyboardAvoidingView
-                    style={styles.keyboardView}
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    keyboardVerticalOffset={
-                        Platform.OS === 'ios' ? bottomInset : 0
-                    }
-                >
-                    {renderedHeader}
-                    {renderedBody}
-                    {renderedFixedFooter}
-                </KeyboardAvoidingView>
+                {keyboardAvoidance === 'never' ? (
+                    <>
+                        {renderedHeader}
+                        {renderedBody}
+                        {renderedFixedFooter}
+                    </>
+                ) : (
+                    <KeyboardAvoidingView
+                        style={styles.keyboardView}
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        keyboardVerticalOffset={
+                            Platform.OS === 'ios' ? bottomInset : 0
+                        }
+                    >
+                        {renderedHeader}
+                        {renderedBody}
+                        {renderedFixedFooter}
+                    </KeyboardAvoidingView>
+                )}
             </PWView>
         </PWScreenNestedContext.Provider>
     )
