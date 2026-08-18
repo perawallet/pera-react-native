@@ -154,6 +154,25 @@ const assertMetadataWritten = (
     }
 }
 
+/**
+ * True when a `SECRET_FIELDS` NAME appears anywhere below `value`, whatever it
+ * holds.
+ *
+ * `hasNestedMaterial` cannot stand in: it tests for a `Uint8Array`, and the
+ * whole hazard here is the container shape (`key: { d: bytes }`) that both it
+ * and `liftSecrets` walk straight past.
+ */
+const carriesSecretName = (value: unknown): boolean => {
+    if (value instanceof Uint8Array || value === null) return false
+    if (Array.isArray(value)) return value.some(carriesSecretName)
+    if (typeof value !== 'object') return false
+
+    return Object.entries(value as Record<string, unknown>).some(
+        ([field, child]) =>
+            SECRET_FIELDS.has(field) || carriesSecretName(child),
+    )
+}
+
 type AdoptNestedOnlyArgs = {
     deps: AdoptionDeps
     masterKey: Uint8Array
@@ -229,6 +248,34 @@ const adoptNestedOnly = async ({
         const { rootId, rootMaterial } = shape
         const nested = (record.metadata as { rootKey?: Canary13Record })
             .rootKey as Canary13Record
+
+        // `rootKey.privateKey` is the ONLY secret this branch ever places in
+        // a bucket. The record's own top-level `SECRET_FIELDS` names are
+        // stripped by `metadataOf`, and `metadata.rootKey` is dropped
+        // wholesale from the child's write — so anything else living under a
+        // secret name, at the top level or anywhere below `rootKey`, is
+        // written nowhere and then deleted along with the bare copy.
+        //
+        // Gate on PRESENCE BY NAME, exactly as the material branch does.
+        // `liftSecrets` walks past a `SECRET_FIELDS` name holding a container
+        // rather than a bare `Uint8Array`, so the shape check above cannot
+        // see one, while `metadataOf` strips it regardless; matching
+        // `metadataOf`'s own test is what stops the two branches drifting
+        // apart again.
+        const { privateKey: _placed, ...restOfRootKey } =
+            nested as unknown as Record<string, unknown>
+        const strayOwnFields = [...SECRET_FIELDS].filter(
+            field =>
+                (record as unknown as Record<string, unknown>)[field] !==
+                undefined,
+        )
+        if (strayOwnFields.length > 0 || carriesSecretName(restOfRootKey)) {
+            result.failed.push({
+                id,
+                reason: `carries secret field(s) this pass cannot place (${[...strayOwnFields, ...(carriesSecretName(restOfRootKey) ? ['rootKey'] : [])].join(', ')}); owned by preflight 0002`,
+            })
+            return
+        }
 
         let parentId: string = rootId
         const rootJournal = createJournal(storage)

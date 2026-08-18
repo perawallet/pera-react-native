@@ -679,4 +679,90 @@ describe('adoptStrandedRecords — nested-only children', () => {
             expect.objectContaining({ id: 'child-1' }),
         ])
     })
+
+    it('refuses a nested child carrying a top-level key container rather than discarding its bytes', async () => {
+        // The shape check only counts what `liftSecrets` LIFTS, and
+        // `liftSecrets` walks past a `SECRET_FIELDS` name holding anything but
+        // a bare `Uint8Array`. `metadataOf` strips that name from `k/` anyway,
+        // and the bare record — the only other place those bytes live — is
+        // then removed. Presence by name, exactly as the material branch
+        // gates, is what keeps the two branches from drifting apart again.
+        await seed({
+            ...canary13DerivedChild({
+                id: 'child-1',
+                parentKeyId: 'root-1',
+                rootPrivateKey: ROOT_MATERIAL,
+            }),
+            key: { d: new Uint8Array(32).fill(6) },
+        })
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).not.toContain('child-1')
+        expect(result.reconstructed).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'child-1' }),
+        ])
+        expect(storage.getString('child-1')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'child-1')).toBeUndefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'child-1')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBeUndefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
+    })
+
+    it('refuses a nested child whose rootKey carries a container-shaped extra secret', async () => {
+        // Same defect one level down: `rootKey` is dropped wholesale from the
+        // child's `k/`, and the reconstructed root's own metadata goes through
+        // `metadataOf`, which strips `key` by name. Only `rootKey.privateKey`
+        // is ever placed in a bucket, so any other `SECRET_FIELDS` name on
+        // `rootKey` would vanish with the bare record.
+        const child = canary13DerivedChild({
+            id: 'child-1',
+            parentKeyId: 'root-1',
+            rootPrivateKey: ROOT_MATERIAL,
+        }) as unknown as { metadata: { rootKey: Record<string, unknown> } }
+        child.metadata.rootKey.key = { d: new Uint8Array(32).fill(6) }
+
+        await seed(child)
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).not.toContain('child-1')
+        expect(result.reconstructed).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'child-1' }),
+        ])
+        expect(storage.getString('child-1')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'child-1')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBeUndefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
+    })
+
+    it('refuses a nested child whose rootKey buries a container-shaped secret deeper than its own top level', async () => {
+        // `metadata.rootKey` is dropped WHOLESALE from the child's `k/` write,
+        // so depth buys nothing: a secret-named container anywhere under it is
+        // gone once the bare record is removed. A bare `Uint8Array` at the same
+        // spot is caught by the shape check (`liftSecrets` finds it, making the
+        // count 2); only the container shape reaches here.
+        await seed(root)
+        const child = canary13DerivedChild({
+            id: 'child-1',
+            parentKeyId: 'root-1',
+            rootPrivateKey: ROOT_MATERIAL,
+        }) as unknown as {
+            metadata: { rootKey: { metadata: Record<string, unknown> } }
+        }
+        child.metadata.rootKey.metadata.key = { d: new Uint8Array(32).fill(6) }
+
+        await seed(child)
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).not.toContain('child-1')
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'child-1' }),
+        ])
+        expect(storage.getString('child-1')).toBeDefined()
+        expect(storage.getString(METADATA_PREFIX + 'child-1')).toBeUndefined()
+    })
 })
