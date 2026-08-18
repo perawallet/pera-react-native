@@ -36,6 +36,7 @@ import {
     getAccountBalance,
     getAllAccountBalances,
     getAllHeldAssetIdsForNetwork,
+    getAssetHolderAddresses,
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,
     deleteAccountBalance,
@@ -1022,6 +1023,70 @@ describe('account repository', () => {
             })
 
             expect(result).toEqual(['100', '200', '300'])
+        })
+    })
+
+    describe('getAssetHolderAddresses', () => {
+        it('returns owners before opted-in-only accounts, scoped to the network', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR_OPTED_IN',
+                holdings: [{ assetId: '500', amount: 0n }],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR_OWNER',
+                holdings: [{ assetId: '500', amount: 1n }],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR_OTHER_NETWORK',
+                holdings: [{ assetId: '500', amount: 1n }],
+                network: 'testnet',
+            })
+
+            const result = await getAssetHolderAddresses({
+                db,
+                assetId: '500',
+                network: 'mainnet',
+            })
+
+            expect(result).toEqual(['ADDR_OWNER', 'ADDR_OPTED_IN'])
+        })
+
+        it('orders same-status holders by address so repeated lookups agree', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR_B',
+                holdings: [{ assetId: '500', amount: 1n }],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR_A',
+                holdings: [{ assetId: '500', amount: 1n }],
+                network: 'mainnet',
+            })
+
+            const result = await getAssetHolderAddresses({
+                db,
+                assetId: '500',
+                network: 'mainnet',
+            })
+
+            expect(result).toEqual(['ADDR_A', 'ADDR_B'])
+        })
+
+        it('returns an empty list for an asset no account holds', async () => {
+            const result = await getAssetHolderAddresses({
+                db,
+                assetId: '500',
+                network: 'mainnet',
+            })
+
+            expect(result).toEqual([])
         })
     })
 

@@ -13,6 +13,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     type WalletAccount,
+    useResolveAssetHolderAddress,
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
 import { isCollectible, type PeraAsset } from '@perawallet/wallet-core-assets'
@@ -51,7 +52,7 @@ export type UseSearchScreenResult = {
     openFilterSheet: () => void
     onAccountPress: (account: WalletAccount) => void
     onContactPress: (contact: Contact) => void
-    onAssetPress: (asset: PeraAsset) => void
+    onAssetPress: (asset: PeraAsset) => Promise<void>
     onExpandSection: (kind: SearchScope) => void
 }
 
@@ -77,6 +78,7 @@ export const useSearchScreen = (): UseSearchScreenResult => {
     )
     const navigation = useAppNavigation()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const resolveAssetHolderAddress = useResolveAssetHolderAddress()
     const { setSelectedContact } = useContacts()
     const { request: requestBottomSheet } = useBottomSheet()
 
@@ -188,7 +190,16 @@ export const useSearchScreen = (): UseSearchScreenResult => {
     )
 
     const onAssetPress = useCallback(
-        (asset: PeraAsset) => {
+        async (asset: PeraAsset) => {
+            // Asset results span every account, but both detail screens read
+            // the *selected* account for the owner row, balance, send sender
+            // and opt-out — so hand the selection to the real holder first or
+            // the asset gets attributed to the account searched from.
+            const holderAddress = await resolveAssetHolderAddress(asset.assetId)
+            if (holderAddress) {
+                setSelectedAccountAddress(holderAddress)
+            }
+
             navigation.navigate('TabBar', {
                 screen: 'Home',
                 params: {
@@ -199,7 +210,7 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 },
             })
         },
-        [navigation],
+        [navigation, resolveAssetHolderAddress, setSelectedAccountAddress],
     )
 
     return {
