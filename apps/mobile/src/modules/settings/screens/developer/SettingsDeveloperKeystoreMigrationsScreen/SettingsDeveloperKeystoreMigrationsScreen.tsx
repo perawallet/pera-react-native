@@ -25,9 +25,11 @@ export const SettingsDeveloperKeystoreMigrationsScreen = () => {
         Alert.alert(
             `Reset ${label} migrations?`,
             "Clears this module's recorded revisions so they re-run on the next " +
-                'app launch. Repairs is the normal recovery lever; resetting ' +
-                'Preflight or Keystore core can transiently re-split passkey ' +
-                'credentials. Takes effect only after you fully close and reopen Pera.',
+                'app launch. Repairs is the normal recovery lever. Resetting ' +
+                'Preflight or Keystore core re-splits passkey credentials, and ' +
+                'that split persists until Repairs also re-runs — reset Repairs ' +
+                'too before relaunching. Takes effect only after you fully close ' +
+                'and reopen Pera.',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
