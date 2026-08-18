@@ -1336,7 +1336,9 @@
             "cannot_add_multisig_error": "No se puede añadir la cuenta compartida",
             "cannot_add_multisig_error_body": "Las cuentas compartidas no se pueden añadir como participantes de otra cuenta compartida.",
             "cannot_add_watch_error": "No se puede añadir la cuenta de observación",
-            "cannot_add_watch_error_body": "Las cuentas de observación no pueden firmar transacciones, por lo que no pueden ser participantes de una cuenta compartida."
+            "cannot_add_watch_error_body": "Las cuentas de observación no pueden firmar transacciones, por lo que no pueden ser participantes de una cuenta compartida.",
+            "cannot_add_quantum_error": "No se puede añadir la cuenta Quantum",
+            "cannot_add_quantum_error_body": "Las claves Quantum no pueden participar en la firma multisig, por lo que no pueden ser participantes de una cuenta compartida."
         },
         "threshold": {
             "title": "Define un umbral",

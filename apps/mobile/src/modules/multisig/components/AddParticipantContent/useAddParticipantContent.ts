@@ -16,6 +16,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import {
     ParticipantIsMultisigError,
+    ParticipantIsQuantumError,
     ParticipantIsWatchError,
     useIsMultisigAddressQuery,
     type MultisigValidationError,
@@ -79,6 +80,13 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
                     t('multisig.add_participant.cannot_add_watch_error'),
                     t('multisig.add_participant.cannot_add_watch_error_body'),
                 )
+                return
+            }
+            if (error.code === 'participant_is_quantum') {
+                errorToast(
+                    t('multisig.add_participant.cannot_add_quantum_error'),
+                    t('multisig.add_participant.cannot_add_quantum_error_body'),
+                )
             }
         },
         [errorToast, t],
@@ -112,6 +120,10 @@ export const useAddParticipantContent = (): UseAddParticipantContentResult => {
             if (localAccount) {
                 if (localAccount.type === AccountTypes.watch) {
                     showValidationError(new ParticipantIsWatchError())
+                    return
+                }
+                if (localAccount.type === AccountTypes.quantum) {
+                    showValidationError(new ParticipantIsQuantumError())
                     return
                 }
                 resolve({ address, nfdName })

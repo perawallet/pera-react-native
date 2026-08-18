@@ -20,7 +20,13 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useAddParticipantContent } from './useAddParticipantContent'
 import { useStyles } from './styles'
 
-const EXCLUDE_TYPES: AccountType[] = [AccountTypes.multisig, AccountTypes.watch]
+// Quantum (Falcon) accounts are excluded because Algorand multisig is
+// Ed25519-only — a quantum key can never be a valid participant.
+const EXCLUDE_TYPES: AccountType[] = [
+    AccountTypes.multisig,
+    AccountTypes.watch,
+    AccountTypes.quantum,
+]
 
 export type AddParticipantContentProps = Record<string, never>
 

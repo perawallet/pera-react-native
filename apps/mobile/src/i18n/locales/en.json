@@ -1336,7 +1336,9 @@
             "cannot_add_multisig_error": "Cannot add shared account",
             "cannot_add_multisig_error_body": "Shared accounts cannot be added as participants in another shared account.",
             "cannot_add_watch_error": "Cannot add watch account",
-            "cannot_add_watch_error_body": "Watch accounts cannot sign transactions, so they cannot be participants in a shared account."
+            "cannot_add_watch_error_body": "Watch accounts cannot sign transactions, so they cannot be participants in a shared account.",
+            "cannot_add_quantum_error": "Cannot add quantum account",
+            "cannot_add_quantum_error_body": "Quantum keys can't take part in multisignature signing, so they cannot be participants in a shared account."
         },
         "threshold": {
             "title": "Set a Threshold",

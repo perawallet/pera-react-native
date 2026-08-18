@@ -1336,7 +1336,9 @@
             "cannot_add_multisig_error": "Impossible d’ajouter un compte partagé",
             "cannot_add_multisig_error_body": "Les comptes partagés ne peuvent pas être ajoutés comme participants à un autre compte partagé.",
             "cannot_add_watch_error": "Impossible d’ajouter un compte de suivi",
-            "cannot_add_watch_error_body": "Les comptes de suivi ne peuvent pas signer de transactions ; ils ne peuvent donc pas être participants à un compte partagé."
+            "cannot_add_watch_error_body": "Les comptes de suivi ne peuvent pas signer de transactions ; ils ne peuvent donc pas être participants à un compte partagé.",
+            "cannot_add_quantum_error": "Impossible d’ajouter un compte Quantum",
+            "cannot_add_quantum_error_body": "Les clés Quantum ne peuvent pas participer à la signature Multisig ; elles ne peuvent donc pas être participantes à un compte partagé."
         },
         "threshold": {
             "title": "Définir un seuil",

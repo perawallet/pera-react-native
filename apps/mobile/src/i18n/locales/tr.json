@@ -1336,7 +1336,9 @@
             "cannot_add_multisig_error": "Paylaşılan hesap eklenemiyor",
             "cannot_add_multisig_error_body": "Paylaşılan hesaplar, başka bir paylaşılan hesaba katılımcı olarak eklenemez.",
             "cannot_add_watch_error": "İzleme hesabı eklenemiyor",
-            "cannot_add_watch_error_body": "İzleme hesapları işlem imzalayamaz, bu yüzden paylaşılan bir hesapta katılımcı olamaz."
+            "cannot_add_watch_error_body": "İzleme hesapları işlem imzalayamaz, bu yüzden paylaşılan bir hesapta katılımcı olamaz.",
+            "cannot_add_quantum_error": "Quantum hesabı eklenemiyor",
+            "cannot_add_quantum_error_body": "Quantum anahtarlar Multisig imzalamaya katılamaz, bu yüzden paylaşılan bir hesapta katılımcı olamaz."
         },
         "threshold": {
             "title": "Eşik belirle",
