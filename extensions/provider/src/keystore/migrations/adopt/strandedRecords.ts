@@ -107,21 +107,29 @@ export const fingerprintFlatValue = (value: string): string => {
 
 /**
  * The durable note of decisions a previous pass made that don't need
- * revisiting — keyed by bare id (never a `METADATA_PREFIX`-prefixed key), the
- * value being {@link fingerprintFlatValue} of whatever bytes justified the
- * decision at the time.
+ * revisiting — keyed by STORAGE KEY (a bare id for a `leftFlat` decision, a
+ * `METADATA_PREFIX`-prefixed key for a `declinedWrapped` one), the value
+ * being {@link fingerprintFlatValue} of whatever bytes justified the decision
+ * at the time.
+ *
+ * Keyed by storage key rather than bare id specifically because the same id
+ * CAN appear in both lists at once — a bare passkey plus an unrelated
+ * `k/<id>` that happens to carry `privateKeyEnc` — and keying by bare id
+ * would let one decision's fingerprint silently overwrite the other's,
+ * permanently breaking the overwritten lookup.
  *
  * A fingerprint, not a bare presence flag: a decision made about THESE bytes
- * does not mean the same id is still settled once something else writes over
- * it (the Android credential provider writes concurrently, and a record
+ * does not mean the same key is still settled once something else writes
+ * over it (the Android credential provider writes concurrently, and a record
  * caught mid-write must heal once the writer finishes, not be abandoned
  * forever — see `hasStrandedWork`'s use of this below).
  */
 export type ExpectedFlat = ReadonlyMap<string, string>
 
 /**
- * `noted` is `expectedFlat.get(id)` for the launch guard's actual, not
- * derived, cost characteristics.
+ * `noted` is `expectedFlat.get(<the storage key just read>)` — never a bare
+ * id for the metadata branch — for the launch guard's actual, not derived,
+ * cost characteristics.
  */
 const isStillNoted = (
     currentValue: string,
@@ -172,8 +180,11 @@ export const hasStrandedWork = (
         const raw = storage.getString(key)
         if (raw === undefined || !raw.includes('privateKeyEnc')) return false
 
-        const id = key.slice(METADATA_PREFIX.length)
-        return !isStillNoted(raw, expectedFlat.get(id))
+        // Looked up by the full `k/<id>` key, never the bare id — the note's
+        // key namespace matches storage location, not identity, so a bare
+        // passkey and this `k/` entry can be noted independently even when
+        // they share an id.
+        return !isStillNoted(raw, expectedFlat.get(key))
     })
 }
 

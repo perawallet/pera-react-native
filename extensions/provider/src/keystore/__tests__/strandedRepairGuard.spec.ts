@@ -275,6 +275,69 @@ describe('stranded repair guard', () => {
         expect(healed.declinedWrapped).toEqual(['cred-3'])
     })
 
+    // The regression from round 2: a bare-id `leftFlat` decision and a
+    // `k/<id>`-keyed `declinedWrapped` decision for the SAME id must not
+    // collapse into one note entry. Keying the note by bare id would let the
+    // second write silently clobber the first's fingerprint, making the
+    // first lookup un-satisfiable forever — reinstating the exact Critical
+    // round 1 fixed, just for a rarer trigger.
+    it('suppresses both a bare passkey and an unrelated k/ entry sharing the same id', async () => {
+        const storage = fakeStorage()
+        const { serializeKey } =
+            await import('@algorandfoundation/react-native-keystore')
+        // Bare `cred-9`: a passkey, left flat by the main loop.
+        storage.set(
+            'cred-9',
+            await sealCanary13Record(subtle, MASTER_KEY, {
+                id: 'cred-9',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                privateKeyEnc: { iv: 'aa', data: 'bb' },
+            }),
+        )
+        // `k/cred-9`: an unrelated non-passkey entry that also happens to
+        // carry `privateKeyEnc`, declined by the wrapped-passkey pass.
+        storage.set(
+            'k/cred-9',
+            serializeKey({
+                id: 'cred-9',
+                type: 'algorand-ed25519',
+                algorithm: 'Ed25519',
+                privateKeyEnc: { iv: 'ee', data: 'ff' },
+            } as never),
+        )
+
+        const notes = noteStore()
+        const first = await runStrandedRepairWith({
+            storage,
+            subtle,
+            masterKeyForRead: async () => MASTER_KEY,
+            noteStore: notes,
+        })
+        expect(first.leftFlat).toEqual(['cred-9'])
+        expect(first.declinedWrapped).toEqual(['cred-9'])
+
+        const secondMasterKeyForRead = vi.fn(async () => MASTER_KEY)
+        const second = await runStrandedRepairWith({
+            storage,
+            subtle,
+            masterKeyForRead: secondMasterKeyForRead,
+            noteStore: notes,
+        })
+        expect(secondMasterKeyForRead).not.toHaveBeenCalled()
+        expect(second).toEqual(emptyAdoptionResult())
+
+        const thirdMasterKeyForRead = vi.fn(async () => MASTER_KEY)
+        const third = await runStrandedRepairWith({
+            storage,
+            subtle,
+            masterKeyForRead: thirdMasterKeyForRead,
+            noteStore: notes,
+        })
+        expect(thirdMasterKeyForRead).not.toHaveBeenCalled()
+        expect(third).toEqual(emptyAdoptionResult())
+    })
+
     it('never throws when the master key is transiently unreadable, and retries on the next call', async () => {
         const storage = fakeStorage()
         storage.set('abc', 'sealed')

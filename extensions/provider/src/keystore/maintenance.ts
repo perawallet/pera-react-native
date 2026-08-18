@@ -145,11 +145,28 @@ export const runStrandedRepairWith = async (
         // not just the bare id: a decode failure or a declined wrapped entry
         // can be a record caught mid-write by the Android credential
         // provider's own process, and the one mechanism built to heal a
-        // transient must not permanently write it off. `leftFlat` ids live at
-        // their own bare key; `declinedWrapped` ids live at
-        // `METADATA_PREFIX + id` — different storage locations, so each reads
-        // its own key rather than assuming the other's.
-        const nextExpectedFlat = new Map(expectedFlat)
+        // transient must not permanently write it off.
+        //
+        // Keyed by STORAGE KEY, never bare id: `leftFlat` ids live at their
+        // own bare key, `declinedWrapped` ids live at `METADATA_PREFIX + id`
+        // — different storage locations. The same id CAN appear in both
+        // lists (a bare passkey plus an unrelated `k/<id>` carrying
+        // `privateKeyEnc`), and keying by bare id would let the second write
+        // silently overwrite the first's fingerprint, permanently breaking
+        // the first lookup. `hasStrandedWork` looks entries up the same way.
+        //
+        // Rebuilt from scratch each write rather than layered onto the old
+        // map, dropping any entry whose storage key no longer resolves —
+        // otherwise the note only ever grows, keeping fingerprints for
+        // records that were since resolved or removed (including, on an
+        // upgrading device, the stale numeric-index keys the old
+        // array-shaped note format left behind).
+        const nextExpectedFlat = new Map<string, string>()
+        for (const [key, fingerprint] of expectedFlat) {
+            if (deps.storage.getString(key) !== undefined) {
+                nextExpectedFlat.set(key, fingerprint)
+            }
+        }
         for (const id of result.leftFlat) {
             const current = deps.storage.getString(id)
             if (current !== undefined) {
@@ -157,9 +174,10 @@ export const runStrandedRepairWith = async (
             }
         }
         for (const id of result.declinedWrapped) {
-            const current = deps.storage.getString(METADATA_PREFIX + id)
+            const key = METADATA_PREFIX + id
+            const current = deps.storage.getString(key)
             if (current !== undefined) {
-                nextExpectedFlat.set(id, fingerprintFlatValue(current))
+                nextExpectedFlat.set(key, fingerprintFlatValue(current))
             }
         }
         deps.noteStore.set(
