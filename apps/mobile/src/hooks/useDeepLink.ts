@@ -34,6 +34,7 @@ import {
 } from '@perawallet/wallet-core-security'
 import { useLanguage } from './useLanguage'
 import { useIsPeraCardEnabled } from './useIsPeraCardEnabled'
+import { useIsGiftCardsEnabled } from './useIsGiftCardsEnabled'
 import { routeCapabilities } from '@routes/capabilities'
 import { navigateToScreen } from './deeplink/navigateToScreen'
 import { isPeraOwnedDeeplink } from './deeplink/utils'
@@ -87,6 +88,7 @@ export const useDeepLink = (): UseDeepLinkResult => {
     const { requestByType } = useBottomSheetStore()
     const { showSignRequest } = usePendingSignaturesSheet()
     const isPeraCardEnabled = useIsPeraCardEnabled()
+    const isGiftCardsEnabled = useIsGiftCardsEnabled()
 
     const recoverAddress = useRecoverAddressDeeplink()
     const openSendFunds = useSendFundsDeeplink()
@@ -397,8 +399,8 @@ export const useDeepLink = (): UseDeepLinkResult => {
                     // navToBidaliNavigation). Open the same Bidali sheet
                     // the Menu's "Buy Gift Card" panel button opens so we
                     // inherit the bidaliProvider JS bridge wiring.
-                    // Same capability gate as that Menu button.
-                    if (!routeCapabilities.giftCards) {
+                    // Same gate as that Menu button.
+                    if (!isGiftCardsEnabled) {
                         onError?.()
                         return
                     }
