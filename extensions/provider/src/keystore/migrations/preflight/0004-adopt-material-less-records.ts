@@ -26,6 +26,8 @@ import type { PeraMigrationContext } from '../types'
 import { safeErrorMessage, safeWarn } from '../safeLog'
 import {
     hasNestedMaterial,
+    normalizeCanary13Record,
+    recognizedNestedShape,
     wipeSecrets,
     type Canary13Record,
 } from '../canary13'
@@ -55,14 +57,75 @@ const isFlatCandidate = (key: string): boolean =>
  * accounts stay at their bare id, invisible to `listMeta()`, while the wallet
  * renders them gone with the bytes still on disk.
  *
- * A candidate that carries nested material without any of its own is
- * deliberately left flat rather than adopted here: writing its metadata into
- * plaintext `k/` without lifting that nested secret first would leak it. That
- * combination is out of scope for this revision (tracked via `declined`, not
- * silently dropped) — unlike `0002`'s narrowing, which reasons only about the
- * plaintext-leak hazard, this one is also an availability gap: nothing in this
- * branch adopts that combination today.
+ * A candidate that carries only nested material — an HD-derived child holding
+ * its parent's key under `metadata.rootKey`, none of its own — is adopted as a
+ * metadata-only `k/` entry by {@link adoptNestedOnlyChild}: the nested copy is
+ * dropped (canary.19 re-derives the child from the parent on demand), never
+ * copied into plaintext `k/`. Anything whose nested shape is unrecognised, or
+ * whose parent root has not survived to carry the material, is left flat and
+ * reported instead.
  */
+
+/**
+ * Adopts a nested-only HD-derived child into a metadata-only `k/<id>` entry.
+ *
+ * Returns `false` (leave the bare record flat) unless the record is exactly the
+ * recognised rootKey nesting AND the parent root still exists — at its bare id
+ * (this pass runs before upstream's adoption) or already split into `k/`+`m/`.
+ * When the parent is gone the nested copy may be the wallet's last root, so
+ * dropping it would be unrecoverable.
+ */
+const adoptNestedOnlyChild = (
+    storage: PeraMigrationContext['storage'],
+    storageKey: string,
+    record: Canary13Record,
+): boolean => {
+    const shape = recognizedNestedShape(record)
+    if (shape === undefined) return false
+
+    // The driver reads a record back at `k/<storageKey>`; an id that disagrees
+    // cannot be split coherently under either — the same guard the flat path
+    // below applies.
+    if (record.id !== undefined && record.id !== storageKey) return false
+
+    // Only drop the nested copy when the parent still holds MATERIAL: its bare
+    // canary.13 record (sealed, material-bearing — this pass runs before
+    // upstream adopts it), or an already-adopted `m/<rootId>`. A `k/<rootId>`
+    // alone is metadata without material and is NOT proof: a root always
+    // carries material, so a lone `k/` means a half-written or unrelated
+    // record, and dropping the child's copy then could lose the last root.
+    const { rootId } = shape
+    const parentHasMaterial =
+        storage.getString(rootId) !== undefined ||
+        storage.getString(MATERIAL_PREFIX + rootId) !== undefined
+    if (!parentHasMaterial) return false
+
+    // Drop `metadata.rootKey` wholesale — the parent carries that material — and
+    // normalise to canary.19 vocabulary (`derivationPath` → `bip44Path`,
+    // `storage: 'none'`). No `m/` is written: the child has no material of its
+    // own.
+    const { rootKey: _rootKey, ...rest } = (record.metadata ?? {}) as Record<
+        string,
+        unknown
+    >
+    const { metadata } = normalizeCanary13Record({
+        record: {
+            ...record,
+            id: storageKey,
+            metadata: {
+                ...rest,
+                parentKeyId: (rest.parentKeyId as string) ?? rootId,
+                storage: 'none',
+            },
+        } as Canary13Record,
+        hasMaterial: false,
+    })
+
+    storage.set(METADATA_PREFIX + storageKey, serializeKey(metadata))
+    storage.remove(storageKey)
+    return true
+}
+
 export const migration: Migration<PeraMigrationContext> = {
     id: 4,
     name: 'adopt-material-less-records',
@@ -122,8 +185,25 @@ export const migration: Migration<PeraMigrationContext> = {
                     // `0002` (top-level and nested together).
                     if (own instanceof Uint8Array) continue
 
+                    // A biometric-wrapped passkey credential carries its key
+                    // under `privateKeyEnc` (`{iv, data}`), not a top-level
+                    // `Uint8Array`, so without this it looks material-less and
+                    // gets moved into `k/` — killing it, since the native
+                    // Android/iOS credential providers only ever read a passkey
+                    // at its bare id. Leave it there.
+                    if (
+                        (record as { privateKeyEnc?: unknown })
+                            .privateKeyEnc !== undefined
+                    ) {
+                        continue
+                    }
+
                     if (hasNestedMaterial(record)) {
-                        untouched.push(storageKey)
+                        if (
+                            !adoptNestedOnlyChild(storage, storageKey, record)
+                        ) {
+                            untouched.push(storageKey)
+                        }
                         continue
                     }
 
