@@ -21,8 +21,17 @@ import {
     type KeychainStorage,
 } from '@algorandfoundation/react-native-keystore'
 import { safeErrorMessage, safeWarn } from '../safeLog'
-import { hasNestedMaterial, wipeSecrets, type Canary13Record } from '../canary13'
-import { createJournal, sealAndVerify, wipeBytes, type SealingDeps } from '../sealing'
+import {
+    hasNestedMaterial,
+    wipeSecrets,
+    type Canary13Record,
+} from '../canary13'
+import {
+    createJournal,
+    sealAndVerify,
+    wipeBytes,
+    type SealingDeps,
+} from '../sealing'
 import { classifyRecord, isFlatCandidate } from './classify'
 
 export type AdoptionDeps = {
@@ -121,6 +130,185 @@ const assertMetadataWritten = (
     }
 }
 
+type AdoptNestedOnlyArgs = {
+    deps: AdoptionDeps
+    masterKey: Uint8Array
+    id: string
+    record: Canary13Record
+    result: AdoptionResult
+}
+
+/**
+ * An HD-derived child (canary.13's `deriveFromSeed` shape) carries no material
+ * of its own — only a copy of its parent's private key, nested under
+ * `metadata.rootKey`. That copy is redundant once the parent is adopted (the
+ * live driver derives children from the parent on demand), but if the parent
+ * never survived, it is the LAST copy of the wallet's root: reconstructing
+ * `m/<rootId>` from it here is the difference between a recovered wallet and
+ * an unrecoverable one.
+ */
+const adoptNestedOnly = async ({
+    deps,
+    masterKey,
+    id,
+    record,
+    result,
+}: AdoptNestedOnlyArgs): Promise<void> => {
+    const { storage } = deps
+    const journal = createJournal(storage)
+    const nested = (record.metadata as { rootKey?: Canary13Record } | undefined)
+        ?.rootKey
+
+    try {
+        const rootId = nested?.id
+        const rootMaterial = nested?.privateKey
+        let parentId = rootId
+
+        // A nested carrier with no `id` of its own can't be attributed to any
+        // `m/` bucket — leave the parent side untouched and fall through to
+        // adopting the child's own metadata under whatever `parentKeyId` it
+        // already carries.
+        if (typeof rootId === 'string' && rootMaterial instanceof Uint8Array) {
+            const parentKey = MATERIAL_PREFIX + rootId
+            const parentState = await materialState(
+                deps,
+                masterKey,
+                parentKey,
+                rootMaterial,
+            )
+
+            if (parentState === 'unreadable') {
+                // Same rule as the material branch: an unopenable m/<id> is
+                // never evidence either way. Touch nothing.
+                result.failed.push({
+                    id,
+                    reason: `${parentKey} exists but could not be opened`,
+                })
+                return
+            }
+
+            if (parentState !== 'same') {
+                const legacyId = `${rootId}-legacy`
+                const legacyKey = MATERIAL_PREFIX + legacyId
+                const legacyState = await materialState(
+                    deps,
+                    masterKey,
+                    legacyKey,
+                    rootMaterial,
+                )
+
+                if (legacyState === 'unreadable') {
+                    result.failed.push({
+                        id,
+                        reason: `${legacyKey} exists but could not be opened`,
+                    })
+                    return
+                }
+
+                if (legacyState === 'same') {
+                    // The parent was quarantined by an earlier pass (D4); the
+                    // nested copy matches the quarantined copy, so repoint
+                    // this child at it rather than the impostor now holding
+                    // the live id.
+                    parentId = legacyId
+                } else if (
+                    parentState === 'absent' &&
+                    legacyState === 'absent'
+                ) {
+                    // Neither the live id nor a quarantined copy holds this
+                    // root: the nested copy is the last surviving copy.
+                    // Reconstructing it is the only way this wallet's root
+                    // key is not permanently lost.
+                    const expectedRootMeta = metadataOf(
+                        nested as Canary13Record,
+                        rootId,
+                    )
+                    const existingRootMeta = storage.getString(
+                        METADATA_PREFIX + rootId,
+                    )
+                    if (
+                        existingRootMeta !== undefined &&
+                        existingRootMeta !== expectedRootMeta
+                    ) {
+                        // A `k/<rootId>` already describes something else —
+                        // reconstructing over it could point a live signer at
+                        // the wrong key. Leave it for a human.
+                        result.failed.push({
+                            id,
+                            reason: `${METADATA_PREFIX}${rootId} exists but describes a different record`,
+                        })
+                        return
+                    }
+
+                    journal.track(parentKey)
+                    await sealAndVerify(
+                        deps,
+                        masterKey,
+                        parentKey,
+                        rootMaterial,
+                    )
+                    journal.set(METADATA_PREFIX + rootId, expectedRootMeta)
+                    assertMetadataWritten(
+                        storage,
+                        METADATA_PREFIX + rootId,
+                        expectedRootMeta,
+                    )
+                    result.reconstructed.push(rootId)
+                } else {
+                    // A different key already occupies both the live and
+                    // legacy slots (or the legacy slot holds yet another
+                    // stranger). A wrong guess here signs with the wrong
+                    // root, so this is left for a human rather than resolved
+                    // automatically.
+                    result.failed.push({
+                        id,
+                        reason: `${parentKey} holds unrelated material and no matching legacy copy exists`,
+                    })
+                    return
+                }
+            }
+        }
+
+        const { rootKey: _rootKey, ...metadata } = (record.metadata ??
+            {}) as Record<string, unknown>
+        const candidate = {
+            ...record,
+            id,
+            metadata: {
+                ...metadata,
+                parentKeyId: parentId ?? metadata.parentKeyId,
+                storage: 'none',
+            },
+        } as Canary13Record
+
+        if (hasNestedMaterial(candidate)) {
+            // Defends the same invariant the material branch defends: only
+            // `metadata.rootKey` is a known nested carrier. Anything else
+            // found here is a shape this pass does not understand, and
+            // guessing would risk writing plaintext key material to `k/`.
+            result.failed.push({
+                id,
+                reason: 'carries nested material beyond metadata.rootKey; owned by preflight 0002',
+            })
+            return
+        }
+
+        const childMeta = serializeKey(candidate)
+        journal.set(METADATA_PREFIX + id, childMeta)
+        assertMetadataWritten(storage, METADATA_PREFIX + id, childMeta)
+        storage.remove(id)
+        result.adopted.push(id)
+    } catch (error) {
+        journal.rollback()
+        result.failed.push({ id, reason: safeErrorMessage(error) })
+        safeWarn(
+            `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
+        )
+    } finally {
+        wipeSecrets(record)
+    }
+}
+
 export const adoptStrandedRecords = async (
     deps: AdoptionDeps,
 ): Promise<AdoptionResult> => {
@@ -145,22 +333,40 @@ export const adoptStrandedRecords = async (
         return result
     }
 
+    const opened: { id: string; record: Canary13Record }[] = []
+
     for (const id of candidates) {
         const sealed = storage.getString(id)
         if (sealed === undefined) continue
 
-        let record: Canary13Record
         try {
-            record = decode(
-                await openData(deps.subtle, masterKey, sealed),
-            ) as Canary13Record
+            opened.push({
+                id,
+                record: decode(
+                    await openData(deps.subtle, masterKey, sealed),
+                ) as Canary13Record,
+            })
         } catch {
             // Another process's record, or the iOS provider's unpadded payload.
             result.leftFlat.push(id)
+        }
+    }
+
+    // Material-bearing records are adopted first so a nested-only child can be
+    // compared against a parent that has already landed in `m/`.
+    const ordered = [
+        ...opened.filter(entry => classifyRecord(entry.record) === 'material'),
+        ...opened.filter(entry => classifyRecord(entry.record) !== 'material'),
+    ]
+
+    for (const { id, record } of ordered) {
+        const kind = classifyRecord(record)
+
+        if (kind === 'nested-only') {
+            await adoptNestedOnly({ deps, masterKey, id, record, result })
             continue
         }
 
-        const kind = classifyRecord(record)
         if (kind !== 'material') {
             result.leftFlat.push(id)
             wipeSecrets(record)

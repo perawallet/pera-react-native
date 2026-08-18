@@ -45,7 +45,11 @@ import {
     fakeStorage,
     type FakeKeychainStorage,
 } from '../../__fixtures__/fakeStorage'
-import { openData, sealCanary13Record } from '../../__fixtures__/keystoreFormats'
+import {
+    canary13DerivedChild,
+    openData,
+    sealCanary13Record,
+} from '../../__fixtures__/keystoreFormats'
 import { adoptStrandedRecords, hasStrandedWork } from '../strandedRecords'
 
 const MASTER_KEY = new Uint8Array(32).fill(7)
@@ -64,6 +68,12 @@ const seed = async (record: object) => {
         (record as { id: string }).id,
         await sealCanary13Record(subtle, MASTER_KEY, record),
     )
+}
+
+const holdsSameMaterialForTest = async (id: string, bytes: Uint8Array) => {
+    const sealed = storage.getString(MATERIAL_PREFIX + id)
+    if (sealed === undefined) return false
+    return (await openData(subtle, MASTER_KEY, sealed)) === base64.encode(bytes)
 }
 
 beforeEach(() => {
@@ -246,9 +256,7 @@ describe('adoptStrandedRecords — material-bearing records', () => {
         expect(result.failed).toEqual([
             expect.objectContaining({ id: 'root-1' }),
         ])
-        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBe(
-            foreignMeta,
-        )
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBe(foreignMeta)
         expect(storage.getString(MATERIAL_PREFIX + 'root-1')).toBeUndefined()
         expect(storage.getString('root-1')).toBeDefined()
     })
@@ -315,7 +323,11 @@ describe('adoptStrandedRecords — material-bearing records', () => {
                 },
             }),
         ).resolves.toEqual(
-            expect.objectContaining({ adopted: [], quarantined: [], failed: [] }),
+            expect.objectContaining({
+                adopted: [],
+                quarantined: [],
+                failed: [],
+            }),
         )
         expect(storage.getString('root-1')).toBeDefined()
     })
@@ -491,8 +503,95 @@ describe('adoptStrandedRecords — material-bearing records', () => {
         // `hasMeta` alone said this was safe to drop — only the content
         // check catches a `k/<id>` that exists but describes something else.
         expect(storage.getString('root-1')).toBeDefined()
-        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBe(
-            foreignMeta,
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBe(foreignMeta)
+    })
+})
+
+describe('adoptStrandedRecords — nested-only children', () => {
+    const ROOT_MATERIAL = new Uint8Array(96).fill(9)
+
+    const root = {
+        id: 'root-1',
+        type: 'seed',
+        algorithm: 'raw',
+        format: 'raw',
+        extractable: true,
+        keyUsages: ['deriveKey', 'deriveBits'],
+        privateKey: ROOT_MATERIAL,
+        metadata: { scheme: 'bip39' },
+    }
+
+    it('writes metadata-only k/ and no m/ when the parent survives', async () => {
+        await seed(root)
+        await seed(
+            canary13DerivedChild({
+                id: 'child-1',
+                parentKeyId: 'root-1',
+                rootPrivateKey: ROOT_MATERIAL,
+            }),
+        )
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.adopted).toContain('child-1')
+        expect(storage.getString('child-1')).toBeUndefined()
+        expect(storage.getString(METADATA_PREFIX + 'child-1')).toBeDefined()
+        expect(storage.getString(MATERIAL_PREFIX + 'child-1')).toBeUndefined()
+    })
+
+    it('strips the duplicated root secret out of the plaintext bucket', async () => {
+        await seed(root)
+        await seed(
+            canary13DerivedChild({
+                id: 'child-1',
+                parentKeyId: 'root-1',
+                rootPrivateKey: ROOT_MATERIAL,
+            }),
+        )
+
+        await adoptStrandedRecords(deps())
+
+        expect(storage.getString(METADATA_PREFIX + 'child-1')).not.toContain(
+            'rootKey',
+        )
+    })
+
+    it('repoints a child at the quarantined root its nested copy matches', async () => {
+        // A replacement root already owns `root-1`; the original was quarantined.
+        await seed({ ...root, privateKey: new Uint8Array(96).fill(4) })
+        await adoptStrandedRecords(deps())
+        await seed(root)
+        await adoptStrandedRecords(deps())
+        await seed(
+            canary13DerivedChild({
+                id: 'child-1',
+                parentKeyId: 'root-1',
+                rootPrivateKey: ROOT_MATERIAL,
+            }),
+        )
+
+        await adoptStrandedRecords(deps())
+
+        expect(storage.getString(METADATA_PREFIX + 'child-1')).toContain(
+            'root-1-legacy',
+        )
+    })
+
+    it('reconstructs the root from the child when no parent exists', async () => {
+        await seed(
+            canary13DerivedChild({
+                id: 'child-1',
+                parentKeyId: 'root-1',
+                rootPrivateKey: ROOT_MATERIAL,
+            }),
+        )
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(result.reconstructed).toEqual(['root-1'])
+        expect(storage.getString(METADATA_PREFIX + 'root-1')).toBeDefined()
+        expect(await holdsSameMaterialForTest('root-1', ROOT_MATERIAL)).toBe(
+            true,
         )
     })
 })
