@@ -153,7 +153,6 @@ export const canary13DerivedChild = ({
         type: 'hd-derived-ed25519',
         algorithm: 'EdDSA',
         extractable: false,
-        keyUsages: ['sign', 'verify'],
         publicKey,
         metadata: {
             derivationPath: "m/44'/283'/0'/0/0",
@@ -161,11 +160,21 @@ export const canary13DerivedChild = ({
             context: 0,
             account: 0,
             keyIndex: 0,
+            // `deriveFromSeed`'s non-P256 branch spreads the fetched root
+            // record verbatim (`store.js:294`); a real one carries the full
+            // `importKey` "hd-root-key" shape (`store.js:467-483`), not a
+            // trimmed-down subset.
             rootKey: {
                 id: parentKeyId,
                 type: 'hd-root-key',
                 algorithm: 'raw',
+                format: 'raw',
+                extractable: true,
+                keyUsages: ['deriveKey', 'deriveBits'],
                 privateKey: rootPrivateKey,
+                metadata: {
+                    name: 'Imported Root Key',
+                },
             },
         },
     }) as unknown as KeyData
