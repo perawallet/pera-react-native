@@ -551,8 +551,11 @@ describe('adoptStrandedRecords — nested-only children', () => {
 
         await adoptStrandedRecords(deps())
 
+        // A field-name check (`not.toContain('rootKey')`) would still pass if
+        // the bytes leaked under a different key name — assert the actual
+        // secret bytes never appear in the plaintext bucket.
         expect(storage.getString(METADATA_PREFIX + 'child-1')).not.toContain(
-            'rootKey',
+            base64.encode(ROOT_MATERIAL),
         )
     })
 
@@ -593,5 +596,61 @@ describe('adoptStrandedRecords — nested-only children', () => {
         expect(await holdsSameMaterialForTest('root-1', ROOT_MATERIAL)).toBe(
             true,
         )
+    })
+
+    it('refuses a nested child whose rootKey has no id, leaving it flat rather than discarding the last copy of the root', async () => {
+        const child = canary13DerivedChild({
+            id: 'child-1',
+            parentKeyId: 'root-1',
+            rootPrivateKey: ROOT_MATERIAL,
+        }) as unknown as { metadata: { rootKey: { id?: string } } }
+        delete child.metadata.rootKey.id
+
+        await seed(child)
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(storage.getString('child-1')).toBeDefined()
+        expect(result.adopted).not.toContain('child-1')
+        expect(result.reconstructed).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'child-1' }),
+        ])
+    })
+
+    it('refuses a nested child whose material sits at rootKey.seed rather than rootKey.privateKey', async () => {
+        const child = canary13DerivedChild({
+            id: 'child-1',
+            parentKeyId: 'root-1',
+            rootPrivateKey: ROOT_MATERIAL,
+        }) as unknown as {
+            metadata: {
+                rootKey: { privateKey?: Uint8Array; seed?: Uint8Array }
+            }
+        }
+        child.metadata.rootKey.seed = child.metadata.rootKey.privateKey
+        delete child.metadata.rootKey.privateKey
+
+        await seed(child)
+
+        const result = await adoptStrandedRecords(deps())
+
+        expect(storage.getString('child-1')).toBeDefined()
+        expect(result.adopted).not.toContain('child-1')
+        expect(result.reconstructed).toEqual([])
+        expect(result.failed).toEqual([
+            expect.objectContaining({ id: 'child-1' }),
+        ])
+    })
+
+    it('never writes a top-level key: Uint8Array into the plaintext bucket', async () => {
+        const EXTRA_KEY = new Uint8Array(32).fill(6)
+        await seed({ ...root, key: EXTRA_KEY })
+
+        await adoptStrandedRecords(deps())
+
+        const written = storage.getString(METADATA_PREFIX + 'root-1')
+        expect(written).toBeDefined()
+        expect(written).not.toContain(base64.encode(EXTRA_KEY))
     })
 })

@@ -23,8 +23,11 @@ import {
 import { safeErrorMessage, safeWarn } from '../safeLog'
 import {
     hasNestedMaterial,
+    liftSecrets,
+    SECRET_FIELDS,
     wipeSecrets,
     type Canary13Record,
+    type LiftedMaterial,
 } from '../canary13'
 import {
     createJournal,
@@ -77,10 +80,23 @@ export const hasStrandedWork = (
         .getAllKeys()
         .some(key => isFlatCandidate(key) && !expectedFlat.has(key))
 
-/** `id` is always the storage key the record is being written under — never `record.id`, which for a quarantined record is the id it is fleeing. */
+/**
+ * `id` is always the storage key the record is being written under — never
+ * `record.id`, which for a quarantined record is the id it is fleeing.
+ *
+ * Strips every field in `SECRET_FIELDS`, not just `privateKey`/`seed` — a
+ * top-level `key: Uint8Array` is just as real a carrier (`canary13.ts`'s own
+ * `SECRET_FIELDS` set says so) and every caller of this function writes
+ * straight into the plaintext `k/` bucket.
+ */
 const metadataOf = (record: Canary13Record, id: string): string => {
-    const { privateKey: _privateKey, seed: _seed, ...rest } = record
-    return serializeKey({ ...rest, id })
+    const rest: Record<string, unknown> = {}
+    for (const [field, value] of Object.entries(
+        record as unknown as Record<string, unknown>,
+    )) {
+        if (!SECRET_FIELDS.has(field)) rest[field] = value
+    }
+    return serializeKey({ ...rest, id } as unknown as Canary13Record)
 }
 
 type MaterialState = 'absent' | 'same' | 'different' | 'unreadable'
@@ -138,6 +154,42 @@ type AdoptNestedOnlyArgs = {
     result: AdoptionResult
 }
 
+type NestedShape = { rootId: string; rootMaterial: Uint8Array }
+
+/**
+ * The only nested shape this pass understands: `metadata.rootKey` present,
+ * carrying exactly one secret — its own `privateKey` — and nothing else in the
+ * whole record carries a secret anywhere outside that one field.
+ *
+ * Deliberately narrow. `liftSecrets` (shared with preflight `0002`, the
+ * designed owner of arbitrary nested material) finds EVERY secret in the
+ * record regardless of field name or depth, so this can't be fooled by
+ * material sitting at `rootKey.seed`/`rootKey.key` instead of
+ * `rootKey.privateKey`, a second nested carrier elsewhere, or a `rootKey`
+ * missing its own `id`. Anything but the exact recognised shape returns
+ * `undefined`, and the caller refuses the record rather than guess — refusing
+ * costs nothing (the bare record survives untouched), guessing wrong here can
+ * discard the wallet's only remaining root key.
+ */
+const recognizedNestedShape = (
+    record: Canary13Record,
+): NestedShape | undefined => {
+    const lifted: LiftedMaterial[] = []
+    liftSecrets(record, record.id, lifted)
+    if (lifted.length !== 1) return undefined
+
+    const [only] = lifted
+    if (typeof only.id !== 'string') return undefined
+
+    const nested = (record.metadata as { rootKey?: Canary13Record } | undefined)
+        ?.rootKey
+    if (nested === undefined) return undefined
+    if (nested.id !== only.id) return undefined
+    if (nested.privateKey !== only.bytes) return undefined
+
+    return { rootId: only.id, rootMaterial: only.bytes }
+}
+
 /**
  * An HD-derived child (canary.13's `deriveFromSeed` shape) carries no material
  * of its own — only a copy of its parent's private key, nested under
@@ -155,20 +207,25 @@ const adoptNestedOnly = async ({
     result,
 }: AdoptNestedOnlyArgs): Promise<void> => {
     const { storage } = deps
-    const journal = createJournal(storage)
-    const nested = (record.metadata as { rootKey?: Canary13Record } | undefined)
-        ?.rootKey
 
     try {
-        const rootId = nested?.id
-        const rootMaterial = nested?.privateKey
-        let parentId = rootId
+        const shape = recognizedNestedShape(record)
+        if (shape === undefined) {
+            result.failed.push({
+                id,
+                reason: 'nested material is not the recognised rootKey shape; owned by preflight 0002',
+            })
+            return
+        }
 
-        // A nested carrier with no `id` of its own can't be attributed to any
-        // `m/` bucket — leave the parent side untouched and fall through to
-        // adopting the child's own metadata under whatever `parentKeyId` it
-        // already carries.
-        if (typeof rootId === 'string' && rootMaterial instanceof Uint8Array) {
+        const { rootId, rootMaterial } = shape
+        const nested = (record.metadata as { rootKey?: Canary13Record })
+            .rootKey as Canary13Record
+
+        let parentId: string = rootId
+        const rootJournal = createJournal(storage)
+
+        try {
             const parentKey = MATERIAL_PREFIX + rootId
             const parentState = await materialState(
                 deps,
@@ -219,10 +276,7 @@ const adoptNestedOnly = async ({
                     // root: the nested copy is the last surviving copy.
                     // Reconstructing it is the only way this wallet's root
                     // key is not permanently lost.
-                    const expectedRootMeta = metadataOf(
-                        nested as Canary13Record,
-                        rootId,
-                    )
+                    const expectedRootMeta = metadataOf(nested, rootId)
                     const existingRootMeta = storage.getString(
                         METADATA_PREFIX + rootId,
                     )
@@ -240,14 +294,14 @@ const adoptNestedOnly = async ({
                         return
                     }
 
-                    journal.track(parentKey)
+                    rootJournal.track(parentKey)
                     await sealAndVerify(
                         deps,
                         masterKey,
                         parentKey,
                         rootMaterial,
                     )
-                    journal.set(METADATA_PREFIX + rootId, expectedRootMeta)
+                    rootJournal.set(METADATA_PREFIX + rootId, expectedRootMeta)
                     assertMetadataWritten(
                         storage,
                         METADATA_PREFIX + rootId,
@@ -267,43 +321,45 @@ const adoptNestedOnly = async ({
                     return
                 }
             }
-        }
-
-        const { rootKey: _rootKey, ...metadata } = (record.metadata ??
-            {}) as Record<string, unknown>
-        const candidate = {
-            ...record,
-            id,
-            metadata: {
-                ...metadata,
-                parentKeyId: parentId ?? metadata.parentKeyId,
-                storage: 'none',
-            },
-        } as Canary13Record
-
-        if (hasNestedMaterial(candidate)) {
-            // Defends the same invariant the material branch defends: only
-            // `metadata.rootKey` is a known nested carrier. Anything else
-            // found here is a shape this pass does not understand, and
-            // guessing would risk writing plaintext key material to `k/`.
-            result.failed.push({
-                id,
-                reason: 'carries nested material beyond metadata.rootKey; owned by preflight 0002',
-            })
+        } catch (error) {
+            rootJournal.rollback()
+            result.failed.push({ id, reason: safeErrorMessage(error) })
+            safeWarn(
+                `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
+            )
             return
         }
 
-        const childMeta = serializeKey(candidate)
-        journal.set(METADATA_PREFIX + id, childMeta)
-        assertMetadataWritten(storage, METADATA_PREFIX + id, childMeta)
-        storage.remove(id)
-        result.adopted.push(id)
-    } catch (error) {
-        journal.rollback()
-        result.failed.push({ id, reason: safeErrorMessage(error) })
-        safeWarn(
-            `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
-        )
+        // The parent side is already settled — matched, repointed, or
+        // durably reconstructed and proven with its own readback — before the
+        // child's own metadata is touched. A failure below rolls back only
+        // this child write: a root recovered above is worth keeping even if
+        // this particular child can't be adopted alongside it.
+        const childJournal = createJournal(storage)
+        try {
+            const { rootKey: _rootKey, ...metadata } = (record.metadata ??
+                {}) as Record<string, unknown>
+            const recordForMeta = {
+                ...record,
+                metadata: {
+                    ...metadata,
+                    parentKeyId: parentId,
+                    storage: 'none',
+                },
+            } as Canary13Record
+
+            const childMeta = metadataOf(recordForMeta, id)
+            childJournal.set(METADATA_PREFIX + id, childMeta)
+            assertMetadataWritten(storage, METADATA_PREFIX + id, childMeta)
+            storage.remove(id)
+            result.adopted.push(id)
+        } catch (error) {
+            childJournal.rollback()
+            result.failed.push({ id, reason: safeErrorMessage(error) })
+            safeWarn(
+                `[provider] adopt-stranded: ${id} left flat: ${safeErrorMessage(error)}`,
+            )
+        }
     } finally {
         wipeSecrets(record)
     }
