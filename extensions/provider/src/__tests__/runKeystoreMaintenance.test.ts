@@ -22,6 +22,7 @@ const calls: string[] = []
 const mocks = vi.hoisted(() => ({
     runMaterialRepair: vi.fn(),
     readPersistedKeys: vi.fn(),
+    runStrandedRepair: vi.fn(),
 }))
 
 vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
@@ -36,6 +37,7 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
 vi.mock('../keystore/maintenance', () => ({
     runMaterialRepair: mocks.runMaterialRepair,
     readPersistedKeys: mocks.readPersistedKeys,
+    runStrandedRepair: mocks.runStrandedRepair,
 }))
 
 vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
@@ -70,16 +72,29 @@ vi.mock('before-after-hook', () => ({
 import { runKeystoreMaintenance } from '../singleton'
 
 const NO_REPAIR = { repaired: 0, failed: 0 }
+const NO_STRANDED_WORK = {
+    adopted: [],
+    reconstructed: [],
+    quarantined: [],
+    restored: [],
+    leftFlat: [],
+    failed: [],
+}
 
 describe('runKeystoreMaintenance', () => {
     beforeEach(() => {
         calls.length = 0
         mocks.runMaterialRepair.mockReset()
         mocks.readPersistedKeys.mockReset()
+        mocks.runStrandedRepair.mockReset()
 
         mocks.runMaterialRepair.mockImplementation(async () => {
             calls.push('repair')
             return NO_REPAIR
+        })
+        mocks.runStrandedRepair.mockImplementation(async () => {
+            calls.push('stranded')
+            return NO_STRANDED_WORK
         })
         // `reconcileKeystore` is internal; this is how it announces itself.
         mocks.readPersistedKeys.mockImplementation(() => {
@@ -88,10 +103,10 @@ describe('runKeystoreMaintenance', () => {
         })
     })
 
-    test('reconciles once after ready, then runs the quantum repair', async () => {
+    test('reconciles once after ready, then runs stranded repair and the quantum repair', async () => {
         const result = await runKeystoreMaintenance()
 
-        expect(calls).toEqual(['reconcile', 'repair'])
+        expect(calls).toEqual(['reconcile', 'stranded', 'repair'])
         expect(result).toEqual({ repair: NO_REPAIR })
     })
 
@@ -105,7 +120,7 @@ describe('runKeystoreMaintenance', () => {
 
         const result = await runKeystoreMaintenance()
 
-        expect(calls).toEqual(['reconcile', 'repair', 'reconcile'])
+        expect(calls).toEqual(['reconcile', 'stranded', 'repair', 'reconcile'])
         expect(result.repair.repaired).toBe(1)
     })
 
@@ -119,8 +134,22 @@ describe('runKeystoreMaintenance', () => {
 
         const result = await runKeystoreMaintenance()
 
-        expect(calls).toEqual(['reconcile', 'repair', 'reconcile'])
+        expect(calls).toEqual(['reconcile', 'stranded', 'repair', 'reconcile'])
         expect(result.repair.failed).toBe(1)
+    })
+
+    // A device whose only stranded work was a moved passkey or an adopted
+    // seed still has to reach the reactive store before the quantum repair
+    // runs off it.
+    test('reconciles again when the stranded repair adopts or restores something', async () => {
+        mocks.runStrandedRepair.mockImplementation(async () => {
+            calls.push('stranded')
+            return { ...NO_STRANDED_WORK, restored: ['cred-1'] }
+        })
+
+        await runKeystoreMaintenance()
+
+        expect(calls).toEqual(['reconcile', 'stranded', 'reconcile', 'repair'])
     })
 
     // An unreadable master key still on disk must not boot into an empty
@@ -135,6 +164,6 @@ describe('runKeystoreMaintenance', () => {
         await expect(runKeystoreMaintenance()).rejects.toThrow(
             'master key unreadable',
         )
-        expect(calls).toEqual(['reconcile', 'repair'])
+        expect(calls).toEqual(['reconcile', 'stranded', 'repair'])
     })
 })

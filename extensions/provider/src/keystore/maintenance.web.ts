@@ -12,6 +12,7 @@
 
 import type { Key } from '@algorandfoundation/keystore-core'
 import type { QuantumMaterialRepairResult } from './repairQuantumMaterial'
+import type { AdoptionResult } from './migrations/adopt/strandedRecords'
 
 /**
  * Web build of the keystore maintenance surface. Both operations are
@@ -36,3 +37,21 @@ export const runMaterialRepair = async (_deps: {
     keys: () => Key[]
     regenerate: (childId: string, parentKeyId: string) => Promise<void>
 }): Promise<QuantumMaterialRepairResult> => ({ repaired: 0, failed: 0 })
+
+/**
+ * Stranded-record repair, like material repair above, is native-only: `k/`
+ * and `m/` are MMKV buckets that don't exist in the browser build. A local
+ * zeroed literal, not a value import of `strandedRecords.ts`'s own
+ * `emptyAdoptionResult` — that module's `@algorandfoundation/react-native-keystore`
+ * import pulls in `react-native-mmkv` and `react-native-quick-crypto`
+ * transitively, exactly the react-native-only-import-into-a-web-reachable-module
+ * defect this file exists to avoid.
+ */
+export const runStrandedRepair = async (): Promise<AdoptionResult> => ({
+    adopted: [],
+    reconstructed: [],
+    quarantined: [],
+    restored: [],
+    leftFlat: [],
+    failed: [],
+})

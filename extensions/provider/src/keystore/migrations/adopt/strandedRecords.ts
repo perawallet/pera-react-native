@@ -66,7 +66,23 @@ export const emptyAdoptionResult = (): AdoptionResult => ({
 })
 
 /**
- * Cheap enough to run on every launch: no crypto, no master-key read.
+ * Deliberately loose — a raw substring match, not a decode. Precision is
+ * `restoreWrappedPasskeys`'s job via `classifyRecord`; this only decides
+ * whether a `k/<id>` entry is worth treating as a `0004`-moved credential.
+ *
+ * Shared by `hasStrandedWork` and `mayHoldWrappedPasskey` so the two can't
+ * drift apart — this plan has already shipped one bug from exactly that.
+ */
+const looksLikeWrappedPasskey = (
+    storage: KeychainStorage,
+    key: string,
+): boolean =>
+    key.startsWith(METADATA_PREFIX) &&
+    (storage.getString(key) ?? '').includes('privateKeyEnc')
+
+/**
+ * Cheap enough to run on every launch: one `getAllKeys()`, no crypto, no
+ * master-key read.
  *
  * `expectedFlat` is the durable note of ids a previous pass decided belong at
  * their bare id forever — passkey credentials, and payloads this build cannot
@@ -75,14 +91,25 @@ export const emptyAdoptionResult = (): AdoptionResult => ({
  * left in `failed` (unreadable material, a foreign `k/`, or a shape `0002`
  * owns) is deliberately NOT in that set: it is worth retrying, so it keeps
  * reporting work until something resolves it.
+ *
+ * Also covers the wrapped-passkey damage `restoreWrappedPasskeys` fixes: a
+ * `0004`-moved credential has no bare id at all, so the flat scan above sees
+ * nothing on a device whose ONLY stranded work is a moved passkey. This is
+ * the same loose substring sniff `mayHoldWrappedPasskey` uses below, inlined
+ * rather than called separately so the whole check stays one `getAllKeys()`
+ * call — a second call here would double the per-launch cost this function
+ * exists to keep near zero.
  */
 export const hasStrandedWork = (
     storage: KeychainStorage,
     expectedFlat: ReadonlySet<string> = new Set(),
-): boolean =>
-    storage
-        .getAllKeys()
-        .some(key => isFlatCandidate(key) && !expectedFlat.has(key))
+): boolean => {
+    const keys = storage.getAllKeys()
+    return (
+        keys.some(key => isFlatCandidate(key) && !expectedFlat.has(key)) ||
+        keys.some(key => looksLikeWrappedPasskey(storage, key))
+    )
+}
 
 /**
  * `id` is always the storage key the record is being written under — never
@@ -436,13 +463,7 @@ const adoptNestedOnly = async ({
  * whether it's worth resolving the master key at all.
  */
 const mayHoldWrappedPasskey = (storage: KeychainStorage): boolean =>
-    storage
-        .getAllKeys()
-        .some(
-            key =>
-                key.startsWith(METADATA_PREFIX) &&
-                (storage.getString(key) ?? '').includes('privateKeyEnc'),
-        )
+    storage.getAllKeys().some(key => looksLikeWrappedPasskey(storage, key))
 
 /** Local, like `0002-rematerialize-passkey-credentials.ts`'s own copy — a length+`.every` compare is cheap enough not to share a util for. */
 const bytesEqual = (a: Uint8Array, b: Uint8Array): boolean =>

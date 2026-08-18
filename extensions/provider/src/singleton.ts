@@ -18,7 +18,11 @@ import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keyst
 import type { MigrationReport } from '@algorandfoundation/provider-migrations'
 import { subtle } from './keystore/subtle'
 import { createPeraKeystore } from './keystore/createKeystore'
-import { readPersistedKeys, runMaterialRepair } from './keystore/maintenance'
+import {
+    readPersistedKeys,
+    runMaterialRepair,
+    runStrandedRepair,
+} from './keystore/maintenance'
 import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
 import { createPeraMigrationLedger } from './keystore/migrationsLedger'
 import { PeraProvider } from './pera-provider'
@@ -192,6 +196,12 @@ export type KeystoreMaintenanceResult = {
  *   credential provider wrote from its own process while this process was not
  *   yet reading — `ready`'s hydration runs once per launch and nothing else
  *   re-reads.
+ * - The stranded-record repair runs next, and like the quantum repair below it
+ *   is not a tracked revision: a ledgered preflight pass that resolves is done
+ *   forever, so one transient failure (a master-key read that fails mid-boot,
+ *   say) would freeze the damage permanently instead of healing on the next
+ *   launch. `reconcileKeystore` re-runs only when it actually adopted or
+ *   restored something.
  * - The quantum repair runs on **every** launch: a quantum account minted
  *   before custody moved into the keystore has a child with no sealed
  *   material, and that fails only at submit time, after the user has already
@@ -213,6 +223,14 @@ export const runKeystoreMaintenance =
         await keystore.ready
 
         await reconcileKeystore()
+
+        // Not a tracked revision, for the same reason the quantum repair is not:
+        // a ledgered revision that resolves is done forever, so a transient
+        // write failure would freeze the damage permanently.
+        const stranded = await runStrandedRepair()
+        if (stranded.adopted.length > 0 || stranded.restored.length > 0) {
+            await reconcileKeystore()
+        }
 
         const repair = await runQuantumMaterialRepair()
         if (repair.repaired > 0 || repair.failed > 0) {
