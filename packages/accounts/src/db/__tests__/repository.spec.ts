@@ -1301,6 +1301,26 @@ describe('account repository', () => {
             expect(byName.map(r => r.assetId)).toEqual(['2'])
         })
 
+        // Substring, not exact: mirrors the global search's
+        // `assetId.includes(term)` semantics (PERA-4900).
+        it('searches by asset id', async () => {
+            const byFullId = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                search: '30',
+            })
+            const byPartialId = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                search: '1',
+            })
+
+            expect(byFullId.map(r => r.assetId)).toEqual(['30'])
+            expect(byPartialId.map(r => r.assetId)).toEqual(['10'])
+        })
+
         it('omits collectibles whose node metadata has not synced', async () => {
             await insertAssetHolding({
                 db,
