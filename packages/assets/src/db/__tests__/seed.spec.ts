@@ -21,7 +21,12 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 
-import { getAssetsByIds, upsertAssets } from '../repository'
+import {
+    getAssetsByIds,
+    upsertAssets,
+    updateAssetPeraMetadata,
+    getAssetPeraMetadata,
+} from '../repository'
 import { seedAlgoAsset } from '../seed'
 import { ALGO_ASSET } from '../../models'
 
@@ -78,6 +83,30 @@ describe('seedAlgoAsset', () => {
         })
 
         expect(result).toHaveLength(1)
+    })
+
+    it('preserves device-local metadata across a re-seed (app restart)', async () => {
+        // The seed runs on every bootstrap, but favorites and price alerts are
+        // device-local state it must not assert — PERA-4904: favoriting ALGO
+        // then force-closing removed the favorite.
+        await seedAlgoAsset(db)
+
+        await updateAssetPeraMetadata({
+            db,
+            assetId: ALGO_ASSET_ID,
+            network: 'mainnet',
+            updates: { isFavorited: true, isPriceAlertEnabled: true },
+        })
+
+        await seedAlgoAsset(db)
+
+        const meta = await getAssetPeraMetadata({
+            db,
+            assetId: ALGO_ASSET_ID,
+            network: 'mainnet',
+        })
+        expect(meta?.isFavorited).toBe(true)
+        expect(meta?.isPriceAlertEnabled).toBe(true)
     })
 
     it('overwrites a stale totalSupply already in the DB', async () => {
