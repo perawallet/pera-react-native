@@ -13,6 +13,7 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { base64 } from '@scure/base'
 import {
     createSecretScratch,
     type MigrationUtils,
@@ -46,6 +47,9 @@ vi.mock('@algorandfoundation/react-native-keystore', async () => {
 import {
     MATERIAL_PREFIX,
     METADATA_PREFIX,
+    openData,
+    sealData,
+    serializeKey,
 } from '@algorandfoundation/react-native-keystore'
 import type { PeraMigrationContext } from '../types'
 import {
@@ -61,7 +65,12 @@ import { preflightMigrations } from '../preflight'
 import { repairsMigrations } from '../repairs'
 
 const MASTER_KEY = new Uint8Array(32).fill(7)
-const ROOT_MATERIAL = new Uint8Array(96).fill(9)
+// Non-uniform (not `.fill(...)`): a byte-reordering corruption of the
+// migrated material — e.g. an accidental `.reverse()` — must be visible to
+// the content assertions below. A uniform array is invariant under reversal
+// and would let that corruption pass silently.
+const ROOT_MATERIAL = Uint8Array.from({ length: 96 }, (_, i) => i)
+const ALGO25_CHILD_MATERIAL = Uint8Array.from({ length: 64 }, (_, i) => i + 100)
 const subtle = globalThis.crypto.subtle
 
 /** Stands in for the migrations ledger's MMKV instance. */
@@ -143,7 +152,7 @@ const RECORDS: object[] = [
         extractable: true,
         keyUsages: ['sign', 'verify'],
         publicKey: new Uint8Array(32).fill(6),
-        privateKey: new Uint8Array(64).fill(7),
+        privateKey: ALGO25_CHILD_MATERIAL,
         metadata: { parentKeyId: 'algo25-seed' },
     },
     {
@@ -196,10 +205,10 @@ describe('canary.13 full chain (preflight + repairs)', () => {
         }
     })
 
-    const runChain = async () => {
+    const runChain = async (target: FakeKeychainStorage) => {
         for (const migration of preflightMigrations) {
             await migration.up(
-                context(storage),
+                context(target),
                 utils({
                     module: 'com.perawallet.wallet/keystore-preflight',
                     id: migration.id,
@@ -209,7 +218,7 @@ describe('canary.13 full chain (preflight + repairs)', () => {
         }
         for (const migration of repairsMigrations) {
             await migration.up(
-                context(storage),
+                context(target),
                 utils({
                     module: 'com.perawallet.wallet/keystore-repairs',
                     id: migration.id,
@@ -220,7 +229,7 @@ describe('canary.13 full chain (preflight + repairs)', () => {
     }
 
     it('strands nothing after the whole chain runs', async () => {
-        await runChain()
+        await runChain(storage)
 
         for (const id of [
             'root-1',
@@ -233,6 +242,37 @@ describe('canary.13 full chain (preflight + repairs)', () => {
             expect(storage.getString(MATERIAL_PREFIX + id)).toBeDefined()
             expect(storage.getString(id)).toBeUndefined()
         }
+
+        // Presence isn't enough — a migration that moved every account to the
+        // WRONG bytes would still pass every assertion above. Open the
+        // sealed material and compare against what was actually seeded.
+        expect(
+            base64.decode(
+                await openData(
+                    subtle,
+                    MASTER_KEY,
+                    storage.getString(MATERIAL_PREFIX + 'root-1')!,
+                ),
+            ),
+        ).toEqual(ROOT_MATERIAL)
+        // `algo25-child` is an ed25519 signing key, not a raw blob like
+        // `root-1` — somewhere in the chain its material is normalised into
+        // a PKCS8 DER wrapper for WebCrypto import, so the opened bytes carry
+        // a fixed-size ASN.1 header before the raw 32-byte key. Legacy 64-byte
+        // ed25519 material is `seed(32) || publicKey(32)`, and only the seed
+        // half survives normalisation — verified here rather than assumed by
+        // using a non-uniform fixture where the two halves actually differ.
+        expect(
+            base64
+                .decode(
+                    await openData(
+                        subtle,
+                        MASTER_KEY,
+                        storage.getString(MATERIAL_PREFIX + 'algo25-child')!,
+                    ),
+                )
+                .slice(-32),
+        ).toEqual(ALGO25_CHILD_MATERIAL.slice(0, 32))
 
         // Derived children carry no material of their own in the new layout.
         expect(storage.getString(METADATA_PREFIX + 'child-1')).toBeDefined()
@@ -256,11 +296,98 @@ describe('canary.13 full chain (preflight + repairs)', () => {
     })
 
     it('is a no-op on a second run', async () => {
-        await runChain()
+        await runChain(storage)
         const after = storage.entries()
 
-        await runChain()
+        await runChain(storage)
 
         expect(storage.entries()).toEqual(after)
+    })
+
+    // Neither test above starts from an ALREADY-damaged store: both seed
+    // every record bare and let the chain do 100% of the transformation.
+    // Real devices are not all bare — a device that already ledgered the
+    // shipped `0004` (before this branch's fix) has a biometric-wrapped
+    // passkey stuck under the metadata prefix alone (0004's material-less
+    // path never wrote a material entry), and a device whose passkey the
+    // real, unmocked upstream package already split has one fully at
+    // `k/`+`m/`. Both are "the exact state this chain exists to repair," and
+    // mutation-testing found both restore paths were dead in this file:
+    // neutering `restoreWrappedPasskeys` (`adopt/strandedRecords.ts`, reached
+    // via preflight `0005`) or `repairs/0002-rematerialize-passkey-
+    // credentials` left every test above green, because nothing here ever
+    // started a run already in either damaged shape.
+
+    // Mirrors `repairs/0002`'s own `seededCredential` fixture shape — a
+    // plain passkey the real upstream package already split into `k/`+`m/`
+    // with its raw material lifted. This is `repairs/0002`'s restore path,
+    // not `restoreWrappedPasskeys`'s: `restoreWrappedPasskeys` explicitly
+    // refuses (declines, does not restore) any `privateKeyEnc` record that
+    // also has a `MATERIAL_PREFIX` entry — a passkey's material and its
+    // biometric wrapper never coexist in this system — so this shape can
+    // only be a plain credential's split, never a wrapped one's.
+    it('restores an already-split plain passkey credential from a pre-existing k/+m/ pair', async () => {
+        const damaged = fakeStorage({})
+        const publicKey = new Uint8Array(32).fill(2)
+        const privateKey = new Uint8Array(32).fill(3)
+
+        damaged.set(
+            METADATA_PREFIX + 'cred-plain-legacy',
+            serializeKey({
+                id: 'cred-plain-legacy',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                extractable: false,
+                keyUsages: ['sign'],
+                publicKey,
+                metadata: { origin: 'https://example.com' },
+            } as unknown as Parameters<typeof serializeKey>[0]),
+        )
+        damaged.set(
+            MATERIAL_PREFIX + 'cred-plain-legacy',
+            await sealData(subtle, MASTER_KEY, base64.encode(privateKey)),
+        )
+
+        await runChain(damaged)
+
+        expect(damaged.getString('cred-plain-legacy')).toBeDefined()
+        expect(
+            damaged.getString(METADATA_PREFIX + 'cred-plain-legacy'),
+        ).toBeUndefined()
+        expect(
+            damaged.getString(MATERIAL_PREFIX + 'cred-plain-legacy'),
+        ).toBeUndefined()
+    })
+
+    // The shape the SHIPPED (pre-fix) `0004` actually produced on a real
+    // device: a biometric-wrapped credential moved whole into `k/`, with no
+    // `m/` entry (0004's material-less path never writes one). This is the
+    // one shape `restoreWrappedPasskeys` itself restores.
+    it('restores an already-adopted biometric-wrapped passkey from a k/-only record left by the shipped 0004', async () => {
+        const damaged = fakeStorage({})
+
+        damaged.set(
+            METADATA_PREFIX + 'cred-wrapped-legacy',
+            serializeKey({
+                id: 'cred-wrapped-legacy',
+                type: 'hd-derived-p256',
+                algorithm: 'P256',
+                extractable: false,
+                keyUsages: ['sign'],
+                publicKey: new Uint8Array(32).fill(2),
+                privateKeyEnc: { iv: 'aa', data: 'bb' },
+                metadata: { origin: 'https://example.com' },
+            } as unknown as Parameters<typeof serializeKey>[0]),
+        )
+
+        await runChain(damaged)
+
+        expect(damaged.getString('cred-wrapped-legacy')).toBeDefined()
+        expect(
+            damaged.getString(METADATA_PREFIX + 'cred-wrapped-legacy'),
+        ).toBeUndefined()
+        expect(
+            damaged.getString(MATERIAL_PREFIX + 'cred-wrapped-legacy'),
+        ).toBeUndefined()
     })
 })
