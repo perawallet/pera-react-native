@@ -55,5 +55,10 @@ export const parsePeraWebQrPayload = (raw: string): PeraWebQrPayload => {
     }
 
     const { backupId, encryptionKey, version, action } = parsed
-    return parsePeraWebImportFields({ backupId, encryptionKey, version, action })
+    return parsePeraWebImportFields({
+        backupId,
+        encryptionKey,
+        version,
+        action,
+    })
 }

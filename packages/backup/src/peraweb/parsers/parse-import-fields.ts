@@ -108,6 +108,8 @@ export const parsePeraWebImportFields = (
         throw new PeraWebImportError(PeraWebImportErrorReason.MalformedQr)
     }
 
+    // Pera Web has only ever shipped version "1"; future bumps require a
+    // coordinated mobile release.
     if (version !== undefined && version !== PERA_WEB_QR_SUPPORTED_VERSION) {
         throw new PeraWebImportError(
             PeraWebImportErrorReason.UnsupportedVersion,

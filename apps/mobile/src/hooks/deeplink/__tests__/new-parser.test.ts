@@ -403,9 +403,8 @@ describe('Deeplink Parser - New Format', () => {
         const WEB_IMPORT_KEY_BYTES = Uint8Array.from(
             Array.from({ length: 32 }, (_, i) => i),
         )
-        const WEB_IMPORT_KEY_B64 = Buffer.from(WEB_IMPORT_KEY_BYTES).toString(
-            'base64',
-        )
+        const WEB_IMPORT_KEY_B64 =
+            Buffer.from(WEB_IMPORT_KEY_BYTES).toString('base64')
 
         it('parses the app-action form with a percent-encoded base64 key', () => {
             const result = parseDeeplink(
@@ -446,6 +445,8 @@ describe('Deeplink Parser - New Format', () => {
             }
         })
 
+        // Negative cases target parsePerawalletAppUri directly: through
+        // parseDeeplink they'd hit old parser's catch-all, return HOME not null.
         it('returns null when backupId is missing', () => {
             expect(
                 parsePerawalletAppUri(
@@ -458,7 +459,9 @@ describe('Deeplink Parser - New Format', () => {
 
         it('returns null when encryptionKey is missing', () => {
             expect(
-                parsePerawalletAppUri('perawallet://app/web-import/?backupId=abc'),
+                parsePerawalletAppUri(
+                    'perawallet://app/web-import/?backupId=abc',
+                ),
             ).toBeNull()
         })
 
