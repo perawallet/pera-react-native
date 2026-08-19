@@ -32,6 +32,23 @@ describe('EmptyView', () => {
         expect(screen.getByText('Empty Body')).toBeTruthy()
     })
 
+    it('caps the body at 3 lines by default', () => {
+        render(<EmptyView body='Empty Body' />)
+        const element = screen.getByText('Empty Body')
+        expect(element.getAttribute('numberoflines')).toBe('3')
+    })
+
+    it('renders the full body when shouldTruncateBody is false', () => {
+        render(
+            <EmptyView
+                body='Empty Body'
+                shouldTruncateBody={false}
+            />,
+        )
+        const element = screen.getByText('Empty Body')
+        expect(element.getAttribute('numberoflines')).toBeNull()
+    })
+
     it('renders button if provided', () => {
         render(
             <EmptyView

@@ -62,6 +62,7 @@ export const Arc60SigningScreen = () => {
                     <EmptyView
                         title={t('quantum.data_signing_unsupported.title')}
                         body={t('quantum.data_signing_unsupported.body')}
+                        shouldTruncateBody={false}
                     />
                 </PWView>
             </PWScreen>

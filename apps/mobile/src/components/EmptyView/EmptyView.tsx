@@ -26,6 +26,8 @@ export type EmptyViewProps = {
     isLoading?: boolean
     loadingView?: ReactNode
     loadingStyle?: ViewStyle
+    /** Set false when the body is full-sentence copy the user must read in full; the default 3-line cap ellipsizes anything longer. */
+    shouldTruncateBody?: boolean
 } & PWViewProps
 
 export const EmptyView = (props: EmptyViewProps) => {
@@ -39,6 +41,7 @@ export const EmptyView = (props: EmptyViewProps) => {
         isLoading,
         loadingView,
         loadingStyle,
+        shouldTruncateBody = true,
         ...rest
     } = props
 
@@ -84,8 +87,8 @@ export const EmptyView = (props: EmptyViewProps) => {
                 <PWText
                     variant='body'
                     style={styles.text}
-                    numberOfLines={3}
-                    truncate
+                    numberOfLines={shouldTruncateBody ? 3 : undefined}
+                    truncate={shouldTruncateBody}
                 >
                     {body}
                 </PWText>
