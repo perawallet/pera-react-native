@@ -107,6 +107,16 @@ const WALLETCONNECT_REQUEST = {
     sourceType: 'walletconnect',
 } as unknown as SignRequest
 
+// WalletConnect failures render nothing here (SignRequestView.tsx routes them
+// to the WC error sheet instead), so tests proving this panel's copy must use
+// a source that genuinely reaches it — a deeplink request submitted via algod.
+const DEEPLINK_REQUEST = {
+    id: 'req-3',
+    type: 'transactions',
+    transport: 'algod',
+    sourceType: 'deeplink',
+} as unknown as SignRequest
+
 const setStatus = (status: SignRequestStatus | null) => {
     mocks.useSignRequestDetailQuery.mockReturnValue({
         data: status ? { status } : undefined,
@@ -238,7 +248,7 @@ describe('useSignRequestFailure', () => {
         )
 
         const { result } = renderHook(() =>
-            useSignRequestFailure(WALLETCONNECT_REQUEST, error as Error),
+            useSignRequestFailure(DEEPLINK_REQUEST, error as Error),
         )
 
         expect(result.current.title).toBe(
@@ -259,9 +269,34 @@ describe('useSignRequestFailure', () => {
         ) => Error)(['TXID'], 'rejected-by-node', new Error('overspend'))
 
         const { result } = renderHook(() =>
-            useSignRequestFailure(WALLETCONNECT_REQUEST, error as Error),
+            useSignRequestFailure(DEEPLINK_REQUEST, error as Error),
         )
 
-        expect(result.current.title).not.toBe('signing.signing_failed.title')
+        expect(result.current.title).toBe('errors.algod.overspend.title')
+    })
+
+    it('surfaces the raw submission message in debug builds', async () => {
+        mockConfig.debugEnabled = true
+        const { SubmissionError } =
+            await import('@perawallet/wallet-core-signing')
+        const error = new (SubmissionError as unknown as new (
+            txIds: string[],
+            classification: string,
+            algodError: unknown,
+        ) => Error)(
+            ['TXID'],
+            'unknown-outcome',
+            new Error('network_unavailable'),
+        )
+
+        const { result } = renderHook(() =>
+            useSignRequestFailure(DEEPLINK_REQUEST, error as Error),
+        )
+
+        expect(result.current.body).toBe(error.message)
+        // Release-only classification copy must not leak into debug builds.
+        expect(result.current.body).not.toBe(
+            'errors.submission.unknown_outcome.body',
+        )
     })
 })

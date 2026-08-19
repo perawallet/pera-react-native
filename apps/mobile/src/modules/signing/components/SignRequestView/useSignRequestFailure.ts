@@ -156,7 +156,13 @@ export const useSignRequestFailure = (
             undefined,
             getMessage,
         )
-        return { isResolving, title, body }
+        // Debug builds still want the raw node message over the localized
+        // copy, same as the generic path below.
+        return {
+            isResolving,
+            title,
+            body: config.debugEnabled && error.message ? error.message : body,
+        }
     }
 
     return {
