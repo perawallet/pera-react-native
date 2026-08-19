@@ -24,7 +24,7 @@ import {
 } from '../../test-utils/transactions'
 import { useMinimumFeeCalculator } from '../useMinimumFeeCalculator'
 
-const mockUseAllAccounts = vi.fn<() => WalletAccount[]>(() => [])
+let liveStoreAccounts: WalletAccount[] = []
 const mockGetSuggestedParams = vi.fn(async () => ({ minFee: 1000n }))
 const mockUseMinimumFeeConfig = vi.fn(() => ({
     minTxnFee: 1000n,
@@ -39,7 +39,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     )
     return {
         ...actual,
-        useAllAccounts: () => mockUseAllAccounts(),
+        useAccountsStore: {
+            getState: () => ({ accounts: liveStoreAccounts }),
+        },
     }
 })
 
@@ -106,7 +108,7 @@ const makePayment = (
 describe('useMinimumFeeCalculator', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseAllAccounts.mockReturnValue([])
+        liveStoreAccounts = []
         mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
         mockUseMinimumFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
@@ -115,7 +117,7 @@ describe('useMinimumFeeCalculator', () => {
     })
 
     it('returns the same array reference and fetches nothing for a non-quantum group', async () => {
-        mockUseAllAccounts.mockReturnValue([algo25()])
+        liveStoreAccounts = [algo25()]
         const transactions = [makePayment(algoAddress, 1000n)]
         const { result } = renderHook(() => useMinimumFeeCalculator())
 
@@ -127,7 +129,7 @@ describe('useMinimumFeeCalculator', () => {
     })
 
     it('raises a quantum signer fee to the PQ minimum with a reasoned adjustment record', async () => {
-        mockUseAllAccounts.mockReturnValue([quantum()])
+        liveStoreAccounts = [quantum()]
         const transactions = [makePayment(quantumAddress, 1000n)]
         const { result } = renderHook(() => useMinimumFeeCalculator())
 
@@ -146,7 +148,7 @@ describe('useMinimumFeeCalculator', () => {
     })
 
     it('defaults signableIndices to every slot', async () => {
-        mockUseAllAccounts.mockReturnValue([quantum()])
+        liveStoreAccounts = [quantum()]
         const transactions = [
             makePayment(algoAddress, 1000n),
             makePayment(quantumAddress, 1000n),
@@ -168,7 +170,7 @@ describe('useMinimumFeeCalculator', () => {
     })
 
     it('respects explicit signableIndices — a quantum slot outside them is untouched', async () => {
-        mockUseAllAccounts.mockReturnValue([quantum()])
+        liveStoreAccounts = [quantum()]
         const transactions = [
             makePayment(algoAddress, 1000n),
             makePayment(quantumAddress, 1000n),
@@ -186,7 +188,7 @@ describe('useMinimumFeeCalculator', () => {
     })
 
     it('falls back to the config base when the suggested-params fetch fails', async () => {
-        mockUseAllAccounts.mockReturnValue([quantum()])
+        liveStoreAccounts = [quantum()]
         mockGetSuggestedParams.mockRejectedValueOnce(new Error('offline'))
         const transactions = [makePayment(quantumAddress, 1000n)]
         const { result } = renderHook(() => useMinimumFeeCalculator())
@@ -205,7 +207,7 @@ describe('useMinimumFeeCalculator', () => {
     })
 
     it('applies the congestion guard from live suggested params', async () => {
-        mockUseAllAccounts.mockReturnValue([quantum()])
+        liveStoreAccounts = [quantum()]
         mockGetSuggestedParams.mockResolvedValueOnce({ minFee: 2000n })
         const transactions = [makePayment(quantumAddress, 1000n)]
         const { result } = renderHook(() => useMinimumFeeCalculator())
@@ -214,5 +216,21 @@ describe('useMinimumFeeCalculator', () => {
 
         // max(suggested 2000, config 1000) × 3 = 6000
         expect(outcome.transactions[0].fee).toBe(6000n)
+    })
+
+    it('resolves accounts from live store state, not the value captured at render', async () => {
+        // Render while the sender is a plain algo25 account — nothing quantum yet.
+        liveStoreAccounts = [algo25()]
+        const { result } = renderHook(() => useMinimumFeeCalculator())
+        const capturedAssignFeeToGroup = result.current.assignFeeToGroup
+
+        // The rekey lands in the live store without triggering a re-render —
+        // simulating a WalletConnect listener whose instance already unmounted.
+        liveStoreAccounts = [quantum()]
+
+        const transactions = [makePayment(quantumAddress, 1000n)]
+        const outcome = await capturedAssignFeeToGroup({ transactions })
+
+        expect(outcome.transactions[0].fee).toBe(3000n)
     })
 })

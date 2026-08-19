@@ -54,6 +54,7 @@ import {
 import {
     buildPaymentTransaction,
     seedAlgo25Signer,
+    seedQuantumSigner,
     REVIEW_SIGNER_ADDRESS,
 } from '@test-utils/signing-review'
 import {
@@ -201,9 +202,14 @@ const ReviewSurfaceFirstTimeQuantumWarning = () => {
  * Pair + approve a WalletConnect session over the connector stub for the given
  * accounts, leaving a live connected connector ready for `algo_signTxn`.
  * Follows `wc-sign.test.tsx`'s `pairAndApprove`, parameterised on accounts.
+ *
+ * Returns the pairing host's `unmount` too: a real pairing surface is
+ * transient (every screen layout reaches `useWalletConnectPairing`), so a
+ * test that needs the session to outlive the surface that created it has to
+ * be able to tear that surface down.
  */
-const pairAndApprove = async (accounts: string[]) => {
-    const { result: wc } = renderHook(
+const pairAndApproveWithHost = async (accounts: string[]) => {
+    const { result: wc, unmount } = renderHook(
         () => useWalletConnect(Networks.mainnet),
         {
             wrapper: HookWrapper,
@@ -259,8 +265,11 @@ const pairAndApprove = async (accounts: string[]) => {
         ).toBeTruthy()
     })
 
-    return connector
+    return { connector, unmount }
 }
+
+const pairAndApprove = async (accounts: string[]) =>
+    (await pairAndApproveWithHost(accounts)).connector
 
 /**
  * Build a 2-transaction atomic group as ARC-0001 wire entries: slot 0 is a
@@ -555,6 +564,254 @@ describe('Flow: WalletConnect quantum fee override end-to-end (PQ-017)', () => {
             // Backstop intercepted before signing — no request has gone out.
             expect(connector.approveRequestCalls).toHaveLength(0)
             expect(connector.rejectRequestCalls).toHaveLength(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+})
+
+// A WalletConnect v1 connector's event listeners live outside React and read
+// their handlers through refs that `useWalletConnect` reassigns during render.
+// When the instance that bound the connector unmounts, those refs freeze — and
+// with them every value the handler chain captured at render, including the
+// accounts array signer/fee resolution runs against. A rekey that lands after
+// a transient pairing surface went away then never reaches the live session.
+//
+// The pairing surface really is transient on native: `connect` comes from
+// `useWalletConnectPairing`, reached from `useDeeplinkListener()` in every
+// screen layout — so pairing from one screen and navigating away is the
+// ordinary case, not an edge case.
+describe('Flow: WalletConnect rekey after the pairing surface unmounts (PERA-4950)', () => {
+    beforeAll(async () => {
+        server.listen({ onUnhandledRequest: 'warn' })
+        await setupTestDatabase()
+    })
+    afterEach(() => {
+        server.resetHandlers()
+        useRemoteConfigStore.getState().resetState()
+        useWalletConnectStore.getState().setSessionRequests([])
+        useWalletConnectStore.getState().setWalletConnectConnections([])
+        useWalletConnectStore.getState().setConnectionError(null)
+        useAccountsStore.getState().setAccounts([])
+    })
+    afterAll(async () => {
+        server.close()
+        await teardownTestDatabase()
+    })
+
+    beforeEach(async () => {
+        await resetTestDatabase()
+        await seedAlgoAsset('mainnet')
+        resetTestKeystore()
+        walletConnectClientStub.reset()
+        useSettingsStore.getState().resetState()
+        useAccountsStore.getState().setAccounts([])
+        useWalletConnectStore.getState().setSessionRequests([])
+        useWalletConnectStore.getState().setWalletConnectConnections([])
+        useWalletConnectStore.getState().setConnectionError(null)
+        useNetworkStore.getState().setNetwork('mainnet')
+        vi.clearAllMocks()
+        server.use(
+            mockAlgodTransactionParams({
+                response: { fee: 1000, 'min-fee': 1000 },
+            }),
+            mockAlgodAccountInformation({
+                address: QUANTUM_TEST_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+            mockAlgodAccountInformation({
+                address: REVIEW_SIGNER_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+            mockAlgodAccountInformation({
+                address: HD_TEST_ADDRESS,
+                response: { amount: 5_000_000, 'min-balance': 100_000 },
+            }),
+            mockAlgodStatus({ response: { 'last-round': 100 } }),
+            mockIndexerSearchForAccounts(),
+        )
+    })
+
+    /**
+     * The app's single long-lived owner of WC request handlers, standing in
+     * for `useWalletConnectProvider` (mounted once from `RootComponent`)
+     * without dragging its bottom sheets and navigation into the harness.
+     * Stays mounted for the whole test, exactly as the provider does.
+     */
+    const mountHandlerOwner = () =>
+        renderHook(
+            () =>
+                useWalletConnect(Networks.mainnet, {
+                    ownsRequestHandlers: true,
+                }),
+            { wrapper: HookWrapper },
+        )
+
+    /** A landed rekey: `undefined` clears the auth address (the undo direction). */
+    const applyRekey = (address: string, rekeyAddress?: string) => {
+        act(() => {
+            const { accounts, setAccounts } = useAccountsStore.getState()
+            setAccounts(
+                accounts.map(account =>
+                    account.address === address
+                        ? { ...account, rekeyAddress }
+                        : account,
+                ),
+            )
+        })
+    }
+
+    it(
+        'Given a session paired from a surface that has since unmounted, when a rekey pointing the sender at a held quantum auth address lands and the dApp then requests a signature, then the request is signable and its fee is raised to the post-quantum minimum',
+        async () => {
+            await enableQuantumFlag()
+            const sender = await seedAlgo25Signer()
+            const quantumAuth = await seedQuantumSigner()
+            // Starts rekeyed to an auth address the wallet doesn't hold, so
+            // the sender has no reachable signer until the rekey below lands.
+            applyRekey(sender.address, HD_TEST_ADDRESS)
+
+            mountHandlerOwner()
+            const { result: signReq } = renderHook(() => useSigningRequest(), {
+                wrapper: HookWrapper,
+            })
+
+            const { connector, unmount } = await pairAndApproveWithHost([
+                sender.address,
+                quantumAuth.address,
+            ])
+            unmount()
+
+            applyRekey(sender.address, quantumAuth.address)
+
+            const { entries } = buildGroupEntries(sender.address)
+            // The signing store is a module singleton with no per-test
+            // reset, so count from the pre-request baseline, not zero.
+            const enqueuedBefore = signReq.current.pendingSignRequests.length
+            fireSignRequest(connector, 7101, entries)
+
+            await waitFor(
+                () => {
+                    expect(signReq.current.pendingSignRequests).toHaveLength(
+                        enqueuedBefore + 1,
+                    )
+                },
+                { timeout: 10_000 },
+            )
+
+            const enqueued = signReq.current.pendingSignRequests.at(
+                -1,
+            ) as TransactionSignRequest
+            expect(enqueued.feeAdjustments).toHaveLength(1)
+            expect(enqueued.feeAdjustments![0].adjustedFee).toBe(
+                EXPECTED_PQ_FEE,
+            )
+            expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(
+                EXPECTED_PQ_FEE,
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        "Given a session paired from a surface that has since unmounted, when the rekey is undone back to the account's own standard key and the dApp then requests a signature, then the request is signable and keeps the ordinary minimum fee",
+        async () => {
+            await enableQuantumFlag()
+            const sender = await seedAlgo25Signer()
+            const quantumAuth = await seedQuantumSigner()
+            applyRekey(sender.address, HD_TEST_ADDRESS)
+
+            mountHandlerOwner()
+            const { result: signReq } = renderHook(() => useSigningRequest(), {
+                wrapper: HookWrapper,
+            })
+
+            const { connector, unmount } = await pairAndApproveWithHost([
+                sender.address,
+                quantumAuth.address,
+            ])
+            unmount()
+
+            applyRekey(sender.address, undefined)
+
+            const { entries } = buildGroupEntries(sender.address)
+            const enqueuedBefore = signReq.current.pendingSignRequests.length
+            fireSignRequest(connector, 7102, entries)
+
+            await waitFor(
+                () => {
+                    expect(signReq.current.pendingSignRequests).toHaveLength(
+                        enqueuedBefore + 1,
+                    )
+                },
+                { timeout: 10_000 },
+            )
+
+            const enqueued = signReq.current.pendingSignRequests.at(
+                -1,
+            ) as TransactionSignRequest
+            expect(enqueued.feeAdjustments).toBeUndefined()
+            expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(
+                1000n,
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    // Both tests above start the sender rekeyed to an address the wallet
+    // does NOT hold, so the discriminating condition they exercise is
+    // signability, not the fee transition PERA-4950's own repro shows: an
+    // already-signable sender whose fee moves 3000n -> 1000n when a rekey to
+    // a held quantum auth account is undone. This test covers that
+    // transition directly.
+    //
+    // Two independent mechanisms now protect this fee (the live accounts-
+    // store read in useMinimumFeeCalculator, and the handler-ownership fix
+    // that keeps stale refs from serving a frozen rekey state) — so this
+    // test stays green if only one of them regresses. It guards the
+    // ticket's acceptance criterion, not either mechanism individually.
+    it(
+        "Given a session paired from a surface that has since unmounted, when a rekey to a held quantum auth address is undone back to the sender's own standard key, then the still-signable request's fee drops from the post-quantum minimum back to the ordinary minimum",
+        async () => {
+            await enableQuantumFlag()
+            const sender = await seedAlgo25Signer()
+            const quantumAuth = await seedQuantumSigner()
+            // Rekeyed to a HELD quantum auth address: signable throughout,
+            // unlike the two tests above.
+            applyRekey(sender.address, quantumAuth.address)
+
+            mountHandlerOwner()
+            const { result: signReq } = renderHook(() => useSigningRequest(), {
+                wrapper: HookWrapper,
+            })
+
+            const { connector, unmount } = await pairAndApproveWithHost([
+                sender.address,
+                quantumAuth.address,
+            ])
+            unmount()
+
+            applyRekey(sender.address, undefined)
+
+            const { entries } = buildGroupEntries(sender.address)
+            const enqueuedBefore = signReq.current.pendingSignRequests.length
+            fireSignRequest(connector, 7103, entries)
+
+            await waitFor(
+                () => {
+                    expect(signReq.current.pendingSignRequests).toHaveLength(
+                        enqueuedBefore + 1,
+                    )
+                },
+                { timeout: 10_000 },
+            )
+
+            const enqueued = signReq.current.pendingSignRequests.at(
+                -1,
+            ) as TransactionSignRequest
+            expect(enqueued.feeAdjustments).toBeUndefined()
+            expect((enqueued.groupContext as PeraTransaction[])[0].fee).toBe(
+                1000n,
+            )
         },
         SLOW_TEST_TIMEOUT_MS,
     )

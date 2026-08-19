@@ -13,7 +13,11 @@
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useWalletConnect } from '../useWalletConnect'
-import { __resetRegistryForTests, getConnector } from '../../connection'
+import {
+    __resetRegistryForTests,
+    bindConnectorHandlers,
+    getConnector,
+} from '../../connection'
 import { useWalletConnectStore } from '../../store'
 import { useWalletConnectSessionRequests } from '../useWalletConnectSessionRequests'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
@@ -1483,6 +1487,95 @@ describe('useWalletConnect', () => {
 
             sessionRequestCallback(new Error('fail'), null)
             // Should verify logger.error was called if possible but logger is mocked globally.
+        })
+    })
+
+    describe('request-handler ownership', () => {
+        // These exercise the real `connectorRegistry` (not mocked in this
+        // file) through `bindConnectorHandlers`, the same entry point
+        // `connect()` uses. A plain object stands in for a connector — only
+        // `on`/`off` matter to the binder.
+        const makeFakeConnector = () => ({
+            clientId: 'ownership-probe',
+            on: vi.fn(),
+            off: vi.fn(),
+        })
+
+        it('does not register as owner without ownsRequestHandlers', () => {
+            renderHook(() => useWalletConnect(Networks.mainnet))
+
+            const fallback = vi.fn()
+            const connector = makeFakeConnector()
+            bindConnectorHandlers(connector as any, fallback)
+
+            // No owner registered — bindConnectorHandlers falls through to
+            // the caller-supplied fallback instead.
+            expect(fallback).toHaveBeenCalledWith(connector)
+            expect(connector.on).not.toHaveBeenCalled()
+        })
+
+        it('registers as owner with ownsRequestHandlers: true', () => {
+            renderHook(() =>
+                useWalletConnect(Networks.mainnet, {
+                    ownsRequestHandlers: true,
+                }),
+            )
+
+            const fallback = vi.fn()
+            const connector = makeFakeConnector()
+            bindConnectorHandlers(connector as any, fallback)
+
+            // A registered owner binds directly; the fallback never runs.
+            expect(fallback).not.toHaveBeenCalled()
+            expect(connector.on).toHaveBeenCalledWith(
+                'algo_signTxn',
+                expect.any(Function),
+            )
+        })
+
+        it('clears ownership when the owner unmounts', () => {
+            const { unmount } = renderHook(() =>
+                useWalletConnect(Networks.mainnet, {
+                    ownsRequestHandlers: true,
+                }),
+            )
+            unmount()
+
+            const fallback = vi.fn()
+            const connector = makeFakeConnector()
+            bindConnectorHandlers(connector as any, fallback)
+
+            // No owner left — back to the fallback.
+            expect(fallback).toHaveBeenCalledWith(connector)
+            expect(connector.on).not.toHaveBeenCalled()
+        })
+
+        it('does not clear a newer owner when an earlier owner unmounts', () => {
+            const first = renderHook(() =>
+                useWalletConnect(Networks.mainnet, {
+                    ownsRequestHandlers: true,
+                }),
+            )
+            renderHook(() =>
+                useWalletConnect(Networks.mainnet, {
+                    ownsRequestHandlers: true,
+                }),
+            )
+            // The earlier owner departs; the guard in
+            // `clearConnectorHandlerBinder` must no-op because it is no
+            // longer the registered binder.
+            first.unmount()
+
+            const fallback = vi.fn()
+            const connector = makeFakeConnector()
+            bindConnectorHandlers(connector as any, fallback)
+
+            // The later owner is still registered — never falls through.
+            expect(fallback).not.toHaveBeenCalled()
+            expect(connector.on).toHaveBeenCalledWith(
+                'algo_signTxn',
+                expect.any(Function),
+            )
         })
     })
 })

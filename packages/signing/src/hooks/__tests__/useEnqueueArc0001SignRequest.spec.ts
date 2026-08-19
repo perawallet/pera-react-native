@@ -71,6 +71,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => mockUseAllAccounts(),
+        useAccountsStore: {
+            getState: () => ({ accounts: mockUseAllAccounts() }),
+        },
     }
 })
 
