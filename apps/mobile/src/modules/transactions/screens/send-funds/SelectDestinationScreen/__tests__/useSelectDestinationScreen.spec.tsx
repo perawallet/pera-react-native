@@ -115,7 +115,7 @@ describe('useSelectDestinationScreen', () => {
         })
 
         mockGetArc59Config.mockReturnValue({
-            appId: 643020148n,
+            appId: 643_020_148n,
             appAddress: 'APP_ADDRESS',
         })
     })
