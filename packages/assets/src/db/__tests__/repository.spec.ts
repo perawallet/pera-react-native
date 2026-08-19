@@ -29,6 +29,8 @@ import {
     getStaleOrMissingPriceAssetIds,
     deleteAssets,
     deleteAssetPrices,
+    recordPriceMisses,
+    clearPriceMisses,
 } from '../repository'
 
 describe('asset repository', () => {
@@ -717,6 +719,145 @@ describe('asset repository', () => {
                 network: 'mainnet',
             })
             expect(remaining.map(p => p.assetId)).toEqual(['200'])
+        })
+    })
+
+    describe('price misses', () => {
+        it('defers ids with a fresh miss row when missRetryMs is given', async () => {
+            await recordPriceMisses({
+                db,
+                assetIds: ['777'],
+                network: 'testnet',
+            })
+
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: ['777', '888'],
+                network: 'testnet',
+                ttlMs: 60_000,
+                missRetryMs: 10 * 60 * 1000,
+            })
+
+            expect(result).toEqual(['888'])
+        })
+
+        it('does not defer misses when missRetryMs is omitted', async () => {
+            await recordPriceMisses({
+                db,
+                assetIds: ['777'],
+                network: 'testnet',
+            })
+
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: ['777'],
+                network: 'testnet',
+                ttlMs: 60_000,
+            })
+
+            expect(result).toEqual(['777'])
+        })
+
+        it('returns ids again once the miss row is older than missRetryMs', async () => {
+            await recordPriceMisses({
+                db,
+                assetIds: ['777'],
+                network: 'testnet',
+            })
+
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: ['777'],
+                network: 'testnet',
+                ttlMs: 60_000,
+                missRetryMs: -1,
+            })
+
+            expect(result).toEqual(['777'])
+        })
+
+        it('clearPriceMisses makes an id fetchable again immediately', async () => {
+            await recordPriceMisses({
+                db,
+                assetIds: ['777'],
+                network: 'testnet',
+            })
+
+            await clearPriceMisses({
+                db,
+                assetIds: ['777'],
+                network: 'testnet',
+            })
+
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: ['777'],
+                network: 'testnet',
+                ttlMs: 60_000,
+                missRetryMs: 10 * 60 * 1000,
+            })
+
+            expect(result).toEqual(['777'])
+        })
+
+        it('scopes miss rows to their network', async () => {
+            await recordPriceMisses({
+                db,
+                assetIds: ['888'],
+                network: 'testnet',
+            })
+
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: ['888'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+                missRetryMs: 10 * 60 * 1000,
+            })
+
+            expect(result).toEqual(['888'])
+        })
+
+        it('defers every miss on a large portfolio (no fixed cap)', async () => {
+            const manyIds = Array.from({ length: 600 }, (_, i) => `${1000 + i}`)
+            await recordPriceMisses({
+                db,
+                assetIds: manyIds,
+                network: 'mainnet',
+            })
+
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: manyIds,
+                network: 'mainnet',
+                ttlMs: 60_000,
+                missRetryMs: 10 * 60 * 1000,
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('a fresh price row wins even when a stale-price id also has a fresh miss row', async () => {
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '555', usdPrice: new Decimal('1.0') }],
+                network: 'mainnet',
+            })
+            await recordPriceMisses({
+                db,
+                assetIds: ['555'],
+                network: 'mainnet',
+            })
+
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: ['555'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+                missRetryMs: 10 * 60 * 1000,
+            })
+
+            expect(result).toEqual([])
         })
     })
 })

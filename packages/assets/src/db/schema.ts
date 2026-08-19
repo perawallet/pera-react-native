@@ -67,3 +67,16 @@ export const AssetPricesSchema = sqliteTable(
     },
     table => [primaryKey({ columns: [table.assetId, table.network] })],
 )
+
+// Ids the bulk price endpoint returned nothing for. Kept out of asset_prices
+// (usd_price is NOT NULL and 0 is a legitimate price), so "known priceless"
+// can be TTL-gated on its own slower retry cadence.
+export const AssetPriceMissesSchema = sqliteTable(
+    'asset_price_misses',
+    {
+        assetId: decimalColumn('asset_id').notNull(),
+        network: text('network').notNull(),
+        attemptedAt: integer('attempted_at').notNull(),
+    },
+    table => [primaryKey({ columns: [table.assetId, table.network] })],
+)

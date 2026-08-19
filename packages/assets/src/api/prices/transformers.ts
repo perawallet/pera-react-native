@@ -11,21 +11,8 @@
  */
 
 import { Decimal } from 'decimal.js'
-import type { AssetPrice } from '../../models'
 import type { AssetPriceHistoryItem } from '../../models'
-import type {
-    AssetPriceResponse,
-    AssetPriceHistoryResponseItem,
-} from './schema'
-
-export const transformAssetPriceResponse = (
-    data: AssetPriceResponse,
-): AssetPrice => {
-    return {
-        assetId: data.asset_id.toString(),
-        usdPrice: new Decimal(data.usd_value ?? '0'),
-    }
-}
+import type { AssetPriceHistoryResponseItem } from './schema'
 
 export const transformAssetPriceHistoryResponse = (
     data: AssetPriceHistoryResponseItem,

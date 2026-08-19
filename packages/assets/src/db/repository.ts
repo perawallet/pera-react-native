@@ -18,7 +18,12 @@ import {
     type PeraAsset,
     type PeraAssetMetadata,
 } from '../models'
-import { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
+import {
+    AssetsNodeSchema,
+    AssetsPeraSchema,
+    AssetPricesSchema,
+    AssetPriceMissesSchema,
+} from './schema'
 import {
     partition,
     type Nullable,
@@ -538,6 +543,15 @@ export async function getStaleOrMissingAssetIds({
     })
 }
 
+type GetStaleOrMissingPriceAssetIdsParams = GetStaleOrMissingAssetIdsParams & {
+    /**
+     * When set, ids whose last recorded price miss is younger than this are
+     * excluded too — "known priceless" retries on this slower cadence instead
+     * of every pass.
+     */
+    missRetryMs?: number
+}
+
 /**
  * Price-row counterpart of `getStaleOrMissingAssetIds`: returns the asset IDs
  * whose price row on `network` is absent or older than `ttlMs`. Lets the
@@ -546,13 +560,94 @@ export async function getStaleOrMissingAssetIds({
  */
 export async function getStaleOrMissingPriceAssetIds({
     db = getDatabase(),
+    missRetryMs,
     ...params
-}: GetStaleOrMissingAssetIdsParams): Promise<string[]> {
-    return getStaleOrMissingIdsFromTable({
+}: GetStaleOrMissingPriceAssetIdsParams): Promise<string[]> {
+    const staleOrMissing = await getStaleOrMissingIdsFromTable({
         db,
         table: AssetPricesSchema,
         ...params,
     })
+    if (missRetryMs === undefined || staleOrMissing.length === 0) {
+        return staleOrMissing
+    }
+
+    const decimalIds = staleOrMissing.map(id => new Decimal(id))
+    const retryThreshold = Date.now() - missRetryMs
+
+    const deferredRows = await db
+        .select({ assetId: AssetPriceMissesSchema.assetId })
+        .from(AssetPriceMissesSchema)
+        .where(
+            and(
+                inArray(AssetPriceMissesSchema.assetId, decimalIds),
+                eq(AssetPriceMissesSchema.network, params.network),
+                gte(AssetPriceMissesSchema.attemptedAt, retryThreshold),
+            ),
+        )
+        .all()
+
+    const deferredSet = new Set(deferredRows.map(r => r.assetId.toString()))
+    return staleOrMissing.filter(id => !deferredSet.has(id))
+}
+
+type PriceMissesParams = {
+    db?: Database
+    assetIds: string[]
+    network: string
+}
+
+/** Stamps "the bulk endpoint returned no price" for the given ids, now. */
+export async function recordPriceMisses({
+    db = getDatabase(),
+    assetIds,
+    network,
+}: PriceMissesParams): Promise<void> {
+    if (assetIds.length === 0) return
+
+    const now = Date.now()
+    const rows = assetIds.map(assetId => ({
+        assetId: new Decimal(assetId),
+        network,
+        attemptedAt: now,
+    }))
+
+    for (const chunk of partition(rows, ASSET_WRITE_CHUNK_SIZE)) {
+        await db
+            .insert(AssetPriceMissesSchema)
+            .values(chunk)
+            .onConflictDoUpdate({
+                target: [
+                    AssetPriceMissesSchema.assetId,
+                    AssetPriceMissesSchema.network,
+                ],
+                set: { attemptedAt: sql`excluded.attempted_at` },
+            })
+            .run()
+    }
+}
+
+/** Drops miss markers, e.g. once the endpoint starts returning a price. */
+export async function clearPriceMisses({
+    db = getDatabase(),
+    assetIds,
+    network,
+}: PriceMissesParams): Promise<void> {
+    if (assetIds.length === 0) return
+
+    const decimalIds = assetIds.map(id => new Decimal(id))
+
+    for (const chunk of partition(decimalIds, ASSET_WRITE_CHUNK_SIZE)) {
+        await db
+            .delete(AssetPriceMissesSchema)
+            .where(
+                and(
+                    inArray(AssetPriceMissesSchema.assetId, chunk),
+                    eq(AssetPriceMissesSchema.network, network),
+                ),
+            )
+            .run()
+    }
 }
 
 type DeleteAssetsParams = {
