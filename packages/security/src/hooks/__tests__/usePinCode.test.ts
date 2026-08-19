@@ -297,6 +297,35 @@ describe('usePinCode', () => {
         expect(disableBiometrics).toHaveBeenCalled()
     }, 30_000)
 
+    // `checkBiometricsEnabled` false no longer implies the blob is gone: it also
+    // reports false while keeping the blob for an unconfirmable enrollment (iOS
+    // Face ID lockout). Gating the teardown on it would strand the blob holding
+    // a copy of the PinRecord just deleted here — the only remaining copy.
+    test('savePin(null) tears down biometrics even when the enrollment cannot be confirmed', async () => {
+        const disableBiometrics = vi.fn()
+        const { useBiometrics } = await import('../useBiometrics')
+        vi.mocked(useBiometrics).mockReturnValue({
+            checkBiometricsEnabled: vi.fn().mockResolvedValue(false),
+            refreshBiometricsBinding: vi.fn(),
+            disableBiometrics,
+            checkBiometricsAvailable: vi.fn(),
+            enableBiometrics: vi.fn(),
+            authenticateWithBiometrics: vi.fn(),
+            isEnabled: false,
+            isAvailable: true,
+        })
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+        kmsMocks.pinBytes = serializePinRecord(await createPinRecord('123456'))
+
+        const { result } = renderHook(() => usePinCode())
+
+        await act(async () => {
+            await result.current.savePin(null)
+        })
+
+        expect(disableBiometrics).toHaveBeenCalled()
+    }, 30_000)
+
     test('verifyPin returns `ok` for correct PIN against a hashed record', async () => {
         setupMock({ failedAttempts: 0, lockoutEndTime: null })
 

@@ -89,11 +89,7 @@ export const usePinCode = (): UsePinCodeResult => {
         state => state.setAutoLockStartedAt,
     )
 
-    const {
-        checkBiometricsEnabled,
-        disableBiometrics,
-        refreshBiometricsBinding,
-    } = useBiometrics()
+    const { disableBiometrics, refreshBiometricsBinding } = useBiometrics()
 
     const isLockedOut = useMemo(
         () => lockoutEndTime !== null && Date.now() < lockoutEndTime,
@@ -202,9 +198,12 @@ export const usePinCode = (): UsePinCodeResult => {
                 await removeSecret(DURESS_PIN_RECORD_KEY_ID)
                 setFailedAttemptsInStore(0)
                 setLockoutEndTimeInStore(null)
-                if (await checkBiometricsEnabled()) {
-                    await disableBiometrics()
-                }
+                // Unconditional: `checkBiometricsEnabled` reporting false no
+                // longer implies the blob is gone — it keeps one whose
+                // enrollment it could not confirm — and `disableBiometrics` is
+                // an idempotent delete. Guarding here would strand the blob
+                // holding a copy of the PinRecord just removed above.
+                await disableBiometrics()
             }
             forceRefresh.current += 1
         },
@@ -213,7 +212,6 @@ export const usePinCode = (): UsePinCodeResult => {
             writeRecord,
             setFailedAttemptsInStore,
             setLockoutEndTimeInStore,
-            checkBiometricsEnabled,
             refreshBiometricsBinding,
             disableBiometrics,
         ],
