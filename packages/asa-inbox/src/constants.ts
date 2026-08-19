@@ -10,6 +10,11 @@
  limitations under the License
  */
 
-export const BASE_CLAIM_TX_COUNT = 3
-export const BASE_REJECT_TX_COUNT = 3
-export const CLAIM_ALGO_TX_COUNT = 2
+// Outer/inner split matters for fees: outer txns are signed by the claimer
+// (PQ-aware rate), inner txns are dispatched by the router app (base rate).
+/** Inner txns dispatched by arc59_claim (asset xfer + MBR refund). */
+export const CLAIM_INNER_TX_COUNT = 2
+/** Inner txns dispatched by arc59_reject (close-out to creator + MBR refund). */
+export const REJECT_INNER_TX_COUNT = 2
+/** Inner txns dispatched by arc59_claimAlgo. */
+export const CLAIM_ALGO_INNER_TX_COUNT = 1

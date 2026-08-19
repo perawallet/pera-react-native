@@ -509,7 +509,10 @@ describe('useTransactionSendFlow', () => {
         })
         expect(mockBuildClaimAsset).toHaveBeenCalledTimes(1)
         expect(mockBuildClaimAsset).toHaveBeenCalledWith(
-            expect.objectContaining({ inboxAddress: 'INBOX' }),
+            expect.objectContaining({
+                inboxAddress: 'INBOX',
+                senderMinFee: 1000n,
+            }),
         )
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -607,6 +610,7 @@ describe('useTransactionSendFlow', () => {
             expect.objectContaining({
                 inboxAddress: 'INBOX',
                 assetCreator: 'CREATOR',
+                senderMinFee: 1000n,
             }),
         )
         expect(mockSubmit).toHaveBeenCalledWith(

@@ -22,9 +22,9 @@ import { ARC59Client } from '../clients'
 import { requireArc59Config } from './requireArc59Config'
 import { buildGroup, buildPopulatedGroup } from '../utils'
 import {
-    BASE_CLAIM_TX_COUNT,
-    BASE_REJECT_TX_COUNT,
-    CLAIM_ALGO_TX_COUNT,
+    CLAIM_ALGO_INNER_TX_COUNT,
+    CLAIM_INNER_TX_COUNT,
+    REJECT_INNER_TX_COUNT,
 } from '../constants'
 
 type ClaimParams = {
@@ -38,6 +38,12 @@ type ClaimParams = {
      * population.
      */
     inboxAddress: Nullable<string>
+    /**
+     * µAlgo minimum fee for the claimer's own (outer) transactions —
+     * PQ-aware, resolved by the caller. Inner txns are app-authorized and
+     * always pool at the network base fee.
+     */
+    senderMinFee: bigint
 }
 
 type RejectParams = {
@@ -51,6 +57,8 @@ type RejectParams = {
      * creator, so the creator MUST be referenced on the reject call.
      */
     assetCreator: string
+    /** See {@link ClaimParams.senderMinFee}. */
+    senderMinFee: bigint
 }
 
 type UseArc59ClaimTransactionResult = {
@@ -80,7 +88,13 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
 
     const buildClaimAssetTxs = useCallback(
         async (params: ClaimParams): Promise<PeraTransaction[]> => {
-            const { sender, assetId, shouldClaimAlgo, inboxAddress } = params
+            const {
+                sender,
+                assetId,
+                shouldClaimAlgo,
+                inboxAddress,
+                senderMinFee,
+            } = params
             const arc59Config = requireArc59Config(network)
 
             const suggestedParams = await algokit.getSuggestedParams()
@@ -94,13 +108,15 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
             const composer = algokit.newGroup()
             const optedIn = await isOptedInToAsset(sender, assetId)
 
-            // Calculate main call fee dynamically
-            // Base: 3 * minFee (claim itself + 2 inner txns)
+            // Pooled onto the claim call: each claimer-signed outer leg at the
+            // PQ-aware rate, each app-dispatched inner at the base rate.
             const minFee = BigInt(suggestedParams.minFee)
-            let claimFee = BigInt(BASE_CLAIM_TX_COUNT) * minFee
+            const senderFee = senderMinFee > minFee ? senderMinFee : minFee
+            let claimFee = senderFee + BigInt(CLAIM_INNER_TX_COUNT) * minFee
             if (shouldClaimAlgo)
-                claimFee += BigInt(CLAIM_ALGO_TX_COUNT) * minFee
-            if (!optedIn) claimFee += minFee
+                claimFee +=
+                    senderFee + BigInt(CLAIM_ALGO_INNER_TX_COUNT) * minFee
+            if (!optedIn) claimFee += senderFee
 
             // When the inbox address is known, attach the ARC-59 resource
             // references explicitly so the group builds without a live
@@ -164,6 +180,7 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
                 shouldClaimAlgo,
                 inboxAddress,
                 assetCreator,
+                senderMinFee,
             } = params
             const arc59Config = requireArc59Config(network)
 
@@ -177,12 +194,13 @@ export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
 
             const composer = algokit.newGroup()
 
-            // Calculate main call fee dynamically
-            // Base: 3 * minFee (reject itself + 2 inner txns)
+            // See buildClaimAssetTxs — same outer/inner fee pooling split.
             const minFee = BigInt(suggestedParams.minFee)
-            let rejectFee = BigInt(BASE_REJECT_TX_COUNT) * minFee
+            const senderFee = senderMinFee > minFee ? senderMinFee : minFee
+            let rejectFee = senderFee + BigInt(REJECT_INNER_TX_COUNT) * minFee
             if (shouldClaimAlgo)
-                rejectFee += BigInt(CLAIM_ALGO_TX_COUNT) * minFee
+                rejectFee +=
+                    senderFee + BigInt(CLAIM_ALGO_INNER_TX_COUNT) * minFee
 
             // See buildClaimAssetTxs. Reject additionally references the ASA
             // creator, since the router closes the asset out to it.

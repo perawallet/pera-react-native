@@ -92,6 +92,7 @@ const baseClaimParams = {
     shouldClaimAlgo: false,
     inboxAddress: null,
     assetCreator: CREATOR_ADDRESS,
+    senderMinFee: 1000n,
 }
 
 describe('useArc59ClaimTransaction', () => {
@@ -389,6 +390,98 @@ describe('useArc59ClaimTransaction', () => {
             })
 
             expect(populateAppCallResources).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    // A quantum (Falcon) claimer's outer txns pay the PQ-aware rate; the
+    // router's inner txns are app-authorized and always pool at the base fee.
+    // The pooled shape (staticFee 0 legs) is unchanged — only totals rise.
+    describe('PQ claimer fees', () => {
+        const PQ_FEE = 3000n
+
+        test('claim: pooled total = senderFee per outer + base per inner', async () => {
+            // Not opted in + claimAlgo → outers: claim call, opt-in, claimAlgo;
+            // inners: 2 (claim) + 1 (claimAlgo).
+            mockAccountDo.mockResolvedValue({ assets: [] })
+
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildClaimAssetTxs({
+                    ...baseClaimParams,
+                    shouldClaimAlgo: true,
+                    senderMinFee: PQ_FEE,
+                })
+            })
+
+            // 3 outers * 3000 + 3 inners * 1000 = 12000
+            expect(mockParamsClaim).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    staticFee: BigInt(12000).microAlgo(),
+                }),
+            )
+            // pooled legs stay at 0
+            expect(mockParamsClaimAlgo).toHaveBeenCalledWith(
+                expect.objectContaining({ staticFee: 0n.microAlgo() }),
+            )
+            expect(mockComposer.addAssetOptIn).toHaveBeenCalledWith(
+                expect.objectContaining({ staticFee: 0n.microAlgo() }),
+            )
+        })
+
+        test('claim: opted-in base case = senderFee + 2 inners at base', async () => {
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildClaimAssetTxs({
+                    ...baseClaimParams,
+                    senderMinFee: PQ_FEE,
+                })
+            })
+
+            // 1 outer * 3000 + 2 inners * 1000 = 5000
+            expect(mockParamsClaim).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    staticFee: BigInt(5000).microAlgo(),
+                }),
+            )
+        })
+
+        test('reject: pooled total = senderFee per outer + base per inner', async () => {
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildRejectAssetTxs({
+                    ...baseClaimParams,
+                    senderMinFee: PQ_FEE,
+                })
+            })
+
+            // 1 outer * 3000 + 2 inners * 1000 = 5000
+            expect(mockParamsReject).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    staticFee: BigInt(5000).microAlgo(),
+                }),
+            )
+        })
+
+        test('reject with claimAlgo: adds a PQ outer + base inner', async () => {
+            const { result } = renderHook(() => useArc59ClaimTransaction())
+
+            await act(async () => {
+                await result.current.buildRejectAssetTxs({
+                    ...baseClaimParams,
+                    shouldClaimAlgo: true,
+                    senderMinFee: PQ_FEE,
+                })
+            })
+
+            // (3000 + 2*1000) + (3000 + 1*1000) = 9000
+            expect(mockParamsReject).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    staticFee: BigInt(9000).microAlgo(),
+                }),
+            )
         })
     })
 
