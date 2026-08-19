@@ -2913,7 +2913,7 @@
             "proceed": "Fortfahren",
             "you_pay": "Du zahlst",
             "you_receive": "Du erhältst",
-            "sender_address_optional": "Absenderadresse (Optional)",
+            "sender_address": "Absenderadresse",
             "enter_sender_address": "Gib deine {{name}}-Adresse ein",
             "provider": "Anbieter",
             "payment_method": "Zahlungsmethode",
@@ -2952,7 +2952,7 @@
         },
         "sender_address": {
             "title": "Absenderadresse",
-            "body": "Dies ist die Adresse, die zum Senden der Gelder an den Empfänger verwendet wird. Sie ist optional, kann aber den Ablauf beschleunigen und bei Support-Anfragen zu diesem Kauf helfen.",
+            "body": "Dies ist die Adresse, die zum Senden der Gelder an den Empfänger verwendet wird. Sie kann bei Support-Anfragen zu diesem Kauf helfen.",
             "placeholder": "Gib deine Absenderadresse ein",
             "confirm": "Bestätigen"
         },

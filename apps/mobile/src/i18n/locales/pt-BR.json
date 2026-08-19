@@ -2944,7 +2944,7 @@
             "proceed": "Prosseguir",
             "you_pay": "Você paga",
             "you_receive": "Você recebe",
-            "sender_address_optional": "Endereço do remetente (opcional)",
+            "sender_address": "Endereço do remetente",
             "enter_sender_address": "Digite seu endereço {{name}}",
             "provider": "Provedor",
             "payment_method": "Método de pagamento",
@@ -2983,7 +2983,7 @@
         },
         "sender_address": {
             "title": "Endereço do remetente",
-            "body": "Este é o endereço que será usado para enviar os fundos ao destinatário. É opcional, mas pode agilizar o processo e ajudar em caso de dúvidas de suporte relacionadas a esta compra.",
+            "body": "Este é o endereço que será usado para enviar os fundos ao destinatário. Ele pode ajudar em caso de dúvidas de suporte relacionadas a esta compra.",
             "placeholder": "Digite seu endereço de remetente",
             "confirm": "Confirmar"
         },

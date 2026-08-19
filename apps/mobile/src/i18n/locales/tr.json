@@ -2921,7 +2921,7 @@
             "proceed": "Devam et",
             "you_pay": "Ödeyeceğin",
             "you_receive": "Alacağın",
-            "sender_address_optional": "Gönderen adresi (isteğe bağlı)",
+            "sender_address": "Gönderen adresi",
             "enter_sender_address": "{{name}} adresini gir",
             "provider": "Sağlayıcı",
             "payment_method": "Ödeme yöntemi",
@@ -2960,7 +2960,7 @@
         },
         "sender_address": {
             "title": "Gönderen adresi",
-            "body": "Bu, fonların alıcıya gönderilmesi için kullanılacak adrestir. İsteğe bağlıdır ancak süreci hızlandırabilir ve bu satın alma ile ilgili destek taleplerinde yardımcı olabilir.",
+            "body": "Bu, fonların alıcıya gönderilmesi için kullanılacak adrestir. Bu satın alma ile ilgili destek taleplerinde yardımcı olabilir.",
             "placeholder": "Gönderen adresini gir",
             "confirm": "Onayla"
         },

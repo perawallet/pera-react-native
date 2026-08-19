@@ -2921,7 +2921,7 @@
             "proceed": "Continuer",
             "you_pay": "Vous payez",
             "you_receive": "Vous recevez",
-            "sender_address_optional": "Adresse de l’expéditeur (facultatif)",
+            "sender_address": "Adresse de l’expéditeur",
             "enter_sender_address": "Saisissez votre adresse {{name}}",
             "provider": "Fournisseur",
             "payment_method": "Moyen de paiement",
@@ -2960,7 +2960,7 @@
         },
         "sender_address": {
             "title": "Adresse de l’expéditeur",
-            "body": "Il s’agit de l’adresse qui sera utilisée pour envoyer les fonds au destinataire. Elle est facultative, mais peut accélérer le processus et faciliter le traitement des demandes d’assistance relatives à cet achat.",
+            "body": "Il s’agit de l’adresse qui sera utilisée pour envoyer les fonds au destinataire. Elle peut faciliter le traitement des demandes d’assistance relatives à cet achat.",
             "placeholder": "Saisissez votre adresse d’expéditeur",
             "confirm": "Confirmer"
         },

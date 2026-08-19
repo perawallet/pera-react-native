@@ -61,6 +61,8 @@ export const OnrampForm = ({
         hasValidQuote &&
         destinationAmount !== null &&
         errorMessage === null &&
+        // XO rejects orders without a sender address, so it is mandatory there.
+        (isMeld || senderAddress !== null) &&
         !isConfirming
 
     const handleOpenSource = () => {

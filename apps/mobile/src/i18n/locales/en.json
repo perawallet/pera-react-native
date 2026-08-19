@@ -2921,7 +2921,7 @@
             "proceed": "Proceed",
             "you_pay": "You pay",
             "you_receive": "You receive",
-            "sender_address_optional": "Sender Address (Optional)",
+            "sender_address": "Sender Address",
             "enter_sender_address": "Enter your {{name}} address",
             "provider": "Provider",
             "payment_method": "Payment Method",
@@ -2960,7 +2960,7 @@
         },
         "sender_address": {
             "title": "Sender address",
-            "body": "This is the address that will be used to send the funds to the recipient. It is optional but may accelerate the flow and can help in the case of support queries relating to this purchase.",
+            "body": "This is the address that will be used to send the funds to the recipient. It can help in the case of support queries relating to this purchase.",
             "placeholder": "Enter your sender address",
             "confirm": "Confirm"
         },

@@ -125,6 +125,8 @@ const USDC_MAINNET_ASSET_ID = 31_566_704
 
 const PAY_IN_ADDRESS =
     'XOPAYINADDRESS33333333333333333333333333333333333333333333Q'
+// XO orders require a sender (source) address; opaque to the client.
+const SENDER_ADDRESS = 'bc1qsendersourceaddress000000000000000000'
 const TO_ADDRESS = ALGO25_TEST_ADDRESS
 
 const ALGORAND_NETWORK = {
@@ -587,9 +589,22 @@ describe('Flow: Onramp buy (native XO)', () => {
                 { timeout: 5000 },
             )
 
+            // XO requires a sender address — Buy stays disabled until the
+            // sender-address sheet provides one.
             const buyButton = screen.getByTestId(
                 'onramp-buy-button',
             ) as HTMLButtonElement
+            expect(buyButton.disabled).toBe(true)
+
+            fireEvent.click(screen.getByTestId('onramp-sender-address-row'))
+            const senderInput = await screen.findByTestId(
+                'onramp-sender-address-input',
+                {},
+                { timeout: 5000 },
+            )
+            fireEvent.change(senderInput, { target: { value: SENDER_ADDRESS } })
+            fireEvent.click(screen.getByTestId('onramp-sender-address-confirm'))
+
             await waitFor(() => expect(buyButton.disabled).toBe(false))
 
             fireEvent.click(buyButton)
@@ -613,6 +628,7 @@ describe('Flow: Onramp buy (native XO)', () => {
             useOnrampStore.setState({
                 selectedSourceTokenId: 'BTC',
                 selectedDestinationTokenId: 'USDC_ALGORAND',
+                senderAddress: SENDER_ADDRESS,
             })
 
             // Account already holds USDC on-chain → ensureOptIn takes the
@@ -971,6 +987,7 @@ describe('Flow: Onramp buy (native XO)', () => {
             useOnrampStore.setState({
                 selectedSourceTokenId: 'BTC',
                 selectedDestinationTokenId: 'USDC_ALGORAND',
+                senderAddress: SENDER_ADDRESS,
             })
 
             let feeDelegationBody: CapturedFeeDelegationBody | null = null
@@ -1040,6 +1057,7 @@ describe('Flow: Onramp buy (native XO)', () => {
             useOnrampStore.setState({
                 selectedSourceTokenId: 'BTC',
                 selectedDestinationTokenId: 'USDC_ALGORAND',
+                senderAddress: SENDER_ADDRESS,
             })
 
             let feeDelegationBody: CapturedFeeDelegationBody | null = null
@@ -1101,6 +1119,7 @@ describe('Flow: Onramp buy (native XO)', () => {
             useOnrampStore.setState({
                 selectedSourceTokenId: 'BTC',
                 selectedDestinationTokenId: 'USDC_ALGORAND',
+                senderAddress: SENDER_ADDRESS,
             })
 
             const feeDelegationSpy = vi.fn()

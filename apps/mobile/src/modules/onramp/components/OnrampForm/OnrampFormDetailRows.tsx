@@ -99,7 +99,7 @@ export const OnrampFormDetailRows = ({
     return (
         <PWView style={styles.senderRow}>
             <OnrampSelectionRow
-                label={t('onramp.form.sender_address_optional')}
+                label={t('onramp.form.sender_address')}
                 labelVariant='body'
                 valueVariant='h4'
                 value={
