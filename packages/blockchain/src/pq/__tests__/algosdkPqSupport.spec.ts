@@ -24,12 +24,13 @@ import {
 } from 'algosdk'
 
 /**
- * The resolved `algosdk` must be a post-quantum-capable build. Today that is
- * satisfied by a vendored build of upstream `v3.7.0-beta.1` (see
- * tools/vendor-algosdk.sh); once official algosdk 3.7.0 is published, the
- * override is dropped and this test keeps passing unchanged. If someone points
- * the specifier back at a pre-3.7 official release, this fails loudly instead
- * of silently losing PQ support.
+ * The resolved `algosdk` must be a post-quantum-capable build. Official 3.7.0
+ * satisfies that, and these assertions passed unchanged across the swap off the
+ * vendored `v3.7.0-beta.1` build — which is what they exist to prove. If
+ * someone points the specifier back at a pre-3.7 release, this fails loudly
+ * instead of silently losing PQ support. Paired with
+ * tools/check-single-algosdk.mjs, which catches the same drift at pre-push,
+ * before a test run.
  */
 describe('resolved algosdk PQ capability', () => {
     it('exposes the scheme-agnostic PQ signer surface', () => {

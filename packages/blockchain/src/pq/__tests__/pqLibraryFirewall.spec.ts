@@ -27,8 +27,8 @@ import { describe, it, expect } from 'vitest'
 // official Algorand code via a one-module change. See
 // docs/QUANTUM_PQ_INTEGRATION.md. `@joe-p/algosdk` is no longer one of the
 // forbidden specifiers, and is no longer installed at all: the PQ transaction
-// surface now comes from official `algosdk` itself (a vendored build of
-// upstream v3.7.0-beta.1 — see pnpm-workspace.yaml), so application code
+// surface now comes from official `algosdk` itself (3.7.0, resolved by the
+// `algosdk` catalog range in pnpm-workspace.yaml), so application code
 // imports `algosdk` everywhere, including in the former Seam B. Only the Falcon
 // libraries (`@joe-p/react-native-falcon`, WASM `falcon-1024`), which still
 // have no official counterpart, remain confined to Seam A. The quote class

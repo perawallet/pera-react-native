@@ -143,6 +143,15 @@ jobs:
       - name: i18n Check
         run: pnpm run lint:i18n
 
+      # Lockfile-only, so it belongs on the cheap job. Two resolved algosdk
+      # copies break `instanceof Transaction`/`instanceof Address` and msgpack
+      # identity across the algokit-utils boundary (PERA-4653), and a
+      # resolution below the catalog's PQ floor silently costs quantum accounts
+      # the ability to sign. Until now this ran only in tools/pre-push, which
+      # the documented `--no-fail-on-error` invocation makes non-blocking.
+      - name: Single algosdk resolution
+        run: pnpm run check:single-algosdk
+
   # Blocking static analysis: unused code, circular dependencies, and code
   # duplication via fallow. Findings are surfaced in the job summary and fail
   # the PR (the step exits with fallow's status).
