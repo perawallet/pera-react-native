@@ -111,6 +111,22 @@ export const buildPeraWebQrString = ({
     return JSON.stringify(payload)
 }
 
+/**
+ * Build the `perawallet://app/web-import/` app-action URL form of the
+ * transfer payload. Same fields as the JSON QR, carried as query params,
+ * the key is percent-encoded because base64 can contain `+/=`.
+ */
+export const buildPeraWebImportUrl = ({
+    backupId = PERA_WEB_BACKUP_ID,
+    encryptionKey = PERA_WEB_KEY_BYTES,
+}: {
+    backupId?: string
+    encryptionKey?: Uint8Array
+} = {}): string =>
+    `perawallet://app/web-import/?backupId=${backupId}&encryptionKey=${encodeURIComponent(
+        encodeToBase64(encryptionKey),
+    )}&action=import`
+
 /** Canonical single-account fixture: the standard Algo25 test mnemonic. */
 export const buildSingleAccountPeraWebBackup = (overrides?: {
     name?: string
