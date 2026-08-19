@@ -111,6 +111,19 @@ describe('RNLedgerService', () => {
             value: 17,
             configurable: true,
         })
+        // The module-scope observer is created once per process, by whichever
+        // path gets there first — a `connect` pre-flight or an explicit
+        // subscribe. Capturing it here (rather than inside the test that
+        // happens to trigger creation) keeps the holder populated no matter
+        // which test ran first.
+        transportObserveStateMock.mockImplementation(
+            (o: {
+                next: (e: { type: string; available: boolean }) => void
+            }) => {
+                btObserverHolder.current = o
+                return { unsubscribe: () => {} }
+            },
+        )
     })
 
     describe('createTransportProvider().scan', () => {
@@ -541,15 +554,6 @@ describe('RNLedgerService', () => {
     // TransportBLE.observeState listener is attached once at module scope and
     // shared across subscribers (the lib's unsubscribe is a no-op).
     test('observeBluetoothState maps ble-plx states and fans out to subscribers', () => {
-        let observer: {
-            next: (e: { type: string; available: boolean }) => void
-        } = { next: () => {} }
-        transportObserveStateMock.mockImplementation((o: typeof observer) => {
-            observer = o
-            btObserverHolder.current = o
-            return { unsubscribe: () => {} }
-        })
-
         const provider = new RNLedgerService().createTransportProvider()
         const received: string[] = []
         const unsubscribe = provider.observeBluetoothState!(s =>
@@ -558,7 +562,8 @@ describe('RNLedgerService', () => {
 
         // The shared observer is registered, and the latest known state is
         // delivered synchronously on subscribe.
-        expect(transportObserveStateMock).toHaveBeenCalled()
+        const observer = btObserverHolder.current!
+        expect(observer).not.toBeNull()
         expect(received[0]).toBe('unknown')
 
         observer.next({ type: 'PoweredOff', available: false })
@@ -627,6 +632,65 @@ describe('RNLedgerService', () => {
             await provider.connect('device-id')
 
             expect(transportOpenMock).toHaveBeenCalledWith('device-id')
+        })
+    })
+
+    // A fresh module graph is the whole point here: `latestBluetoothState` is
+    // module state, and every other test in this file has already populated it.
+    // Identity is asserted by message, not `instanceof` (the reset graph builds
+    // its own copy of the error classes) and not `name` (which the built dist
+    // mangles for every class that doesn't pin it explicitly).
+    describe('connect adapter-state pre-flight before any state is known', () => {
+        const loadFreshService = async () => {
+            vi.resetModules()
+            let observer: null | {
+                next: (e: { type: string; available: boolean }) => void
+            } = null
+            transportObserveStateMock.mockImplementation(
+                (o: {
+                    next: (e: { type: string; available: boolean }) => void
+                }) => {
+                    observer = o
+                    return { unsubscribe: () => {} }
+                },
+            )
+            const module = await import('../RNLedgerService')
+            const provider =
+                new module.RNLedgerService().createTransportProvider()
+            return { provider, getObserver: () => observer }
+        }
+
+        it('waits for the first emission rather than skipping the Bluetooth check', async () => {
+            // The regression this guards: a sign in a process that never opened
+            // the pairing screen saw `unknown`, skipped the check, and reported
+            // a generic connection failure with Bluetooth simply switched off.
+            const { provider, getObserver } = await loadFreshService()
+
+            const connectPromise = provider.connect('device-id')
+            getObserver()?.next({ type: 'PoweredOff', available: false })
+
+            await expect(connectPromise).rejects.toThrow(
+                /Bluetooth must be enabled/,
+            )
+            expect(transportOpenMock).not.toHaveBeenCalled()
+        })
+
+        it('falls through to open when no adapter state ever arrives', async () => {
+            vi.useFakeTimers()
+            try {
+                const { provider } = await loadFreshService()
+                transportOpenMock.mockResolvedValue({
+                    close: transportCloseMock,
+                })
+
+                const connectPromise = provider.connect('device-id')
+                await vi.advanceTimersByTimeAsync(1100)
+                await connectPromise
+
+                expect(transportOpenMock).toHaveBeenCalledWith('device-id')
+            } finally {
+                vi.useRealTimers()
+            }
         })
     })
 

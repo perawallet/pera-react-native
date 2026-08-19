@@ -12,6 +12,7 @@
 
 import { fromCallback } from 'xstate'
 import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import { logger } from '@perawallet/wallet-core-shared'
 import { HardwareWalletError } from '../../pipeline/errors'
 import { createHardwareStrategy } from '../../pipeline/signing/createHardwareStrategy'
 import { resolveSigningAccount } from '../utils/resolveSigningAccount'
@@ -19,11 +20,43 @@ import {
     classifyLedgerErrorKind,
     isLedgerError,
 } from '../../utils/classifyLedgerErrorKind'
+import type { LedgerErrorPresetKind } from '../../types/ledgerErrorPresetKind'
 import type { SigningPhase } from '../../pipeline/types'
 import type {
     HardwareSigningEvent,
     HardwareSigningInput,
 } from './hardwareSigningMachine.context'
+
+/**
+ * Outcomes that are the user's own doing, not a fault to report.
+ */
+const EXPECTED_OUTCOME_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
+    'user_rejected',
+    'interrupted',
+])
+
+/**
+ * The user sees the classified kind's copy; this keeps the technical detail
+ * (error class, message, APDU/BLE specifics) available for diagnostics. The
+ * cause's own message is included but no signable payload — the logger's
+ * redaction covers keyed context, not a free-form message.
+ *
+ * Cancelling on the device is logged at info: `logger.error` also feeds the
+ * error reporter, and a user declining a prompt is not a defect.
+ */
+const logHardwareError = (kind: LedgerErrorPresetKind, error: Error): void => {
+    const context = {
+        scope: 'hardware-signing',
+        kind,
+        errorName: error.name,
+    }
+
+    if (EXPECTED_OUTCOME_KINDS.has(kind)) {
+        logger.info(error.message, context)
+        return
+    }
+    logger.error(error, context)
+}
 
 /**
  * Wraps `strategy.sign` for each group in a `fromCallback` actor so the
@@ -90,10 +123,9 @@ export const hardwareSignActor = fromCallback<
             const event = isLedgerError(error)
                 ? ('STRATEGY_ERROR' as const)
                 : ('NON_LEDGER_ERROR' as const)
-            sendBack({
-                type: event,
-                error: { kind: classifyLedgerErrorKind(error), cause: error },
-            })
+            const kind = classifyLedgerErrorKind(error)
+            logHardwareError(kind, error)
+            sendBack({ type: event, error: { kind, cause: error } })
         },
     }
 
@@ -139,10 +171,9 @@ export const hardwareSignActor = fromCallback<
             const event = isLedgerError(error)
                 ? ('STRATEGY_ERROR' as const)
                 : ('NON_LEDGER_ERROR' as const)
-            sendBack({
-                type: event,
-                error: { kind: classifyLedgerErrorKind(error), cause: error },
-            })
+            const kind = classifyLedgerErrorKind(error)
+            logHardwareError(kind, error)
+            sendBack({ type: event, error: { kind, cause: error } })
         }
     })()
 

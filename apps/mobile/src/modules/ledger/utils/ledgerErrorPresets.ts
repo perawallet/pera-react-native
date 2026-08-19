@@ -15,8 +15,15 @@ import {
     classifyLedgerErrorKind,
     type LedgerErrorPresetKind,
 } from '@perawallet/wallet-core-signing'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type { LedgerErrorPresetKind }
+
+/**
+ * A system-settings shortcut the user needs in order to resolve the error,
+ * beyond retrying. Resolved to a platform handler by `useLedgerErrorAction`.
+ */
+export type LedgerErrorActionKind = 'bluetooth' | 'app_settings' | 'location'
 
 export type LedgerErrorPreset = {
     kind: LedgerErrorPresetKind
@@ -24,6 +31,8 @@ export type LedgerErrorPreset = {
     body: string
     isTroubleshootable: boolean
     isRetryable: boolean
+    /** null when retrying (or acting on the device) is the whole remedy. */
+    action: Nullable<{ kind: LedgerErrorActionKind; label: string }>
 }
 
 type Translate = (key: string, options?: Record<string, unknown>) => string
@@ -41,6 +50,29 @@ const NON_RETRYABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
 ])
 
 /**
+ * Only for failures the user cannot clear from inside Pera or from the device
+ * — each one needs an OS-level toggle. Everything else (unlock, open the app,
+ * move closer) is resolved on the Ledger itself, where a settings deep link
+ * would be a dead end.
+ */
+const ACTION_BY_KIND: Partial<
+    Record<LedgerErrorPresetKind, { kind: LedgerErrorActionKind; key: string }>
+> = {
+    bluetooth_disabled: {
+        kind: 'bluetooth',
+        key: 'ledger.errors.action_enable_bluetooth',
+    },
+    bluetooth_permission: {
+        kind: 'app_settings',
+        key: 'ledger.errors.action_open_settings',
+    },
+    location_services_disabled: {
+        kind: 'location',
+        key: 'ledger.errors.action_open_location_settings',
+    },
+}
+
+/**
  * Builds a preset directly from a `LedgerErrorPresetKind` without needing the
  * original Error instance. Used by overlay adapters whose state already holds
  * the classified kind (e.g. the hardware-signing store), so we don't have to
@@ -49,13 +81,18 @@ const NON_RETRYABLE_KINDS: ReadonlySet<LedgerErrorPresetKind> = new Set([
 export const getLedgerErrorPresetByKind = (
     kind: LedgerErrorPresetKind,
     t: Translate,
-): LedgerErrorPreset => ({
-    kind,
-    title: t(`ledger.errors.${kind}_title`),
-    body: t(`ledger.errors.${kind}`),
-    isTroubleshootable: TROUBLESHOOTABLE_KINDS.has(kind),
-    isRetryable: !NON_RETRYABLE_KINDS.has(kind),
-})
+): LedgerErrorPreset => {
+    const action = ACTION_BY_KIND[kind]
+
+    return {
+        kind,
+        title: t(`ledger.errors.${kind}_title`),
+        body: t(`ledger.errors.${kind}`),
+        isTroubleshootable: TROUBLESHOOTABLE_KINDS.has(kind),
+        isRetryable: !NON_RETRYABLE_KINDS.has(kind),
+        action: action ? { kind: action.kind, label: t(action.key) } : null,
+    }
+}
 
 /**
  * Maps a Ledger-domain error (or plain Error) to a user-facing preset for the

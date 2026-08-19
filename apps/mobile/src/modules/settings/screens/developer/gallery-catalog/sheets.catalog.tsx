@@ -630,10 +630,41 @@ export const getSheetSections = (): GallerySection[] => [
                                 <LedgerErrorContent
                                     error={{
                                         kind: 'connection_failed',
-                                        title: 'Connection failed',
-                                        body: 'Unable to connect to Ledger device. Make sure it is unlocked and the Algorand app is open.',
+                                        title: "Couldn't connect",
+                                        body: "Couldn't connect to your Ledger. Check that Bluetooth is enabled, your Ledger is unlocked, the Algorand app is open, and then try again.",
                                         isTroubleshootable: true,
                                         isRetryable: true,
+                                        action: null,
+                                    }}
+                                    onRetry={() => undefined}
+                                    onClose={() => undefined}
+                                    onOpenTroubleshooting={() => undefined}
+                                />
+                            </GallerySheetBoundary>
+                        ),
+                        options: { enablePanDownToClose: true },
+                    }),
+                },
+            },
+            {
+                id: 'sheet-ledger-error-with-action',
+                label: 'Ledger error (with settings shortcut)',
+                launch: {
+                    kind: 'sheet',
+                    request: () => ({
+                        contents: (
+                            <GallerySheetBoundary>
+                                <LedgerErrorContent
+                                    error={{
+                                        kind: 'bluetooth_disabled',
+                                        title: 'Bluetooth is off',
+                                        body: 'Bluetooth is turned off. Please enable Bluetooth to connect your Ledger device.',
+                                        isTroubleshootable: true,
+                                        isRetryable: true,
+                                        action: {
+                                            kind: 'bluetooth',
+                                            label: 'Enable Bluetooth',
+                                        },
                                     }}
                                     onRetry={() => undefined}
                                     onClose={() => undefined}

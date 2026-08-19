@@ -127,6 +127,10 @@ describe('hardwareSigningMachine', () => {
         expect(snap.matches('active')).toBe(true)
         expect(snap.context.error).toBeNull()
         expect(snap.context.currentTx).toBe(0)
+        // The overlay keys "keep the sheet mounted" off this: the reconnect
+        // phase is otherwise silent, and letting the sheet close mid-request
+        // means it never re-presents.
+        expect(snap.context.retryCount).toBe(1)
     })
 
     it('ACKNOWLEDGE_ERROR after a device reject resolves as rejected, not failed', async () => {

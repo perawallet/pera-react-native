@@ -13,6 +13,7 @@
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { ConfirmActionContent } from '@components/ConfirmActionContent'
 import { useLanguage } from '@hooks/useLanguage'
+import { useLedgerErrorAction } from '@modules/ledger/hooks'
 import type { LedgerErrorPreset } from '@modules/ledger/utils/ledgerErrorPresets'
 import { useStyles } from './styles'
 
@@ -31,6 +32,8 @@ export const LedgerErrorContent = ({
 }: LedgerErrorContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { runAction } = useLedgerErrorAction()
+    const { action } = error
 
     return (
         <ConfirmActionContent
@@ -69,6 +72,9 @@ export const LedgerErrorContent = ({
                 error.isRetryable ? t('ledger.signing.cancel') : undefined
             }
             onCancel={onClose}
+            tertiaryLabel={action?.label}
+            tertiaryVariant='secondary'
+            onTertiary={action ? () => runAction(action.kind) : undefined}
         />
     )
 }

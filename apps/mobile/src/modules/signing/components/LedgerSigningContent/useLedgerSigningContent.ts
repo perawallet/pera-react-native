@@ -70,12 +70,23 @@ export type UseLedgerSigningContentResult = {
  * derives the display status, and wires cancel/retry through the parent
  * machine via the pipeline's hardware control methods.
  *
- * `isVisible` is derived from status: the silent-scan phase ('searching')
- * keeps the sheet closed so the user only sees UI once the device responds,
- * matching Android's native behavior. For BLE-class errors the
- * troubleshooting sheet is the primary surface; the LedgerSigningContent
- * sheet stays closed (isVisible is false) because there is no useful state
- * behind the troubleshooting copy.
+ * `isVisible` is derived from status: on the FIRST attempt the silent-scan
+ * phase ('searching') keeps the sheet closed so the user only sees UI once the
+ * device responds, matching Android's native behavior. After a retry the sheet
+ * stays up through 'searching' instead — two reasons, both learned the hard
+ * way. The sheet is keyed by request id, so letting it close and reopen within
+ * one request dismisses and re-presents the same sheet id, which does not come
+ * back and strands the user on the calling screen forever. And a retry the user
+ * asked for must remain cancellable while it reconnects, which a hidden sheet
+ * cannot be.
+ *
+ * Every terminal error renders in this sheet, including connection-class
+ * ones. Auto-opening the troubleshooting sheet instead (the previous
+ * behavior) replaced the specific reason — Bluetooth off, device not found,
+ * link lost — with a generic checklist, which is the exact complaint the
+ * error taxonomy exists to answer. Troubleshooting is now reachable from the
+ * link inside the error sheet, so the user gets the reason first and the
+ * checklist on demand.
  *
  * Troubleshooting-sheet visibility lives in `useHardwareSigningStore` — the
  * slim store only owns the `isTroubleshootingVisible` flag plus its
@@ -115,8 +126,6 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         return getLedgerErrorPresetByKind(errorPayload.kind, t)
     }, [errorPayload, t])
 
-    const isBleClassError = error?.isTroubleshootable ?? false
-
     const onCancel = useCallback(() => {
         // Two distinct paths depending on where the child machine is:
         //   - in `error`: send ACKNOWLEDGE_HARDWARE_ERROR so the child can
@@ -144,18 +153,17 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         openTroubleshooting()
     }, [openTroubleshooting])
 
+    // Closing troubleshooting returns to the error sheet rather than
+    // cancelling: the error sheet owns Retry/Cancel now.
     const onCloseTroubleshooting = useCallback(() => {
-        if (isBleClassError) {
-            onCancel()
-            return
-        }
         closeTroubleshooting()
-    }, [isBleClassError, onCancel, closeTroubleshooting])
+    }, [closeTroubleshooting])
 
     const isActive = status !== 'idle'
+    const hasRetried = (hardware?.context.retryCount ?? 0) > 0
 
     return {
-        isVisible: isActive && status !== 'searching' && !isBleClassError,
+        isVisible: isActive && (status !== 'searching' || hasRetried),
         status,
         deviceName,
         currentTx,
@@ -164,7 +172,7 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
         error,
         onCancel,
         onRetry,
-        isTroubleshootingVisible: manualTroubleshootingOpen || isBleClassError,
+        isTroubleshootingVisible: manualTroubleshootingOpen,
         onOpenTroubleshooting,
         onCloseTroubleshooting,
     }

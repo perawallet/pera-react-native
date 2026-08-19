@@ -116,6 +116,17 @@ export type HardwareWalletTransport = {
 
     getAppVersion: () => Promise<HardwareWalletAppVersion>
 
+    /**
+     * Fires when the link drops from the device's side. A pending APDU promise
+     * does NOT reject on disconnect — it hangs until its timeout — so callers
+     * waiting on a confirmation need this to fail fast instead of sitting on
+     * the multi-minute ceiling.
+     *
+     * Absent when the underlying transport exposes no disconnect event, so
+     * callers must degrade to their timeout. Returns an unsubscribe function.
+     */
+    onDisconnect?: (listener: () => void) => () => void
+
     disconnect: () => Promise<void>
 }
 

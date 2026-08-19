@@ -13,6 +13,7 @@
 import React from 'react'
 import { LedgerAwaitingApprovalContent } from '../LedgerAwaitingApprovalContent'
 import { LedgerErrorContent } from '../LedgerErrorContent'
+import { LedgerReconnectingContent } from '../LedgerReconnectingContent'
 import { useLedgerSigningContent } from './useLedgerSigningContent'
 
 /**
@@ -38,6 +39,12 @@ export const LedgerSigningContent = () => {
         onRetry,
         onOpenTroubleshooting,
     } = useLedgerSigningContent()
+
+    // Only reachable after a retry — the driver keeps the sheet closed during
+    // the first attempt's silent scan, so this never renders on a cold start.
+    if (status === 'searching') {
+        return <LedgerReconnectingContent onCancel={onCancel} />
+    }
 
     if (status === 'awaitingApproval' || status === 'signing') {
         return (

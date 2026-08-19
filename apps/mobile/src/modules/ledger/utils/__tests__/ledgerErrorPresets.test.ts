@@ -214,6 +214,52 @@ describe('LedgerErrorPreset 14-kind taxonomy', () => {
     })
 })
 
+describe('LedgerErrorPreset settings shortcut', () => {
+    const t = (key: string) => key
+
+    it.each([
+        ['bluetooth_disabled', 'bluetooth'],
+        ['bluetooth_permission', 'app_settings'],
+        ['location_services_disabled', 'location'],
+    ] as const)('offers the %s kind a %s shortcut', (kind, actionKind) => {
+        const preset = getLedgerErrorPresetByKind(kind, t)
+        expect(preset.action?.kind).toBe(actionKind)
+        expect(preset.action?.label).toBeTruthy()
+    })
+
+    it.each([
+        'device_not_found',
+        'device_locked',
+        'app_not_open',
+        'device_busy',
+        'user_rejected',
+        'timeout',
+    ] as const)(
+        'offers no shortcut for %s, which is resolved on the device',
+        kind => {
+            expect(getLedgerErrorPresetByKind(kind, t).action).toBeNull()
+        },
+    )
+})
+
+describe('LedgerErrorPreset kinds added for the connection taxonomy', () => {
+    const t = (key: string) => key
+
+    it('device_not_found is retryable and links to troubleshooting', () => {
+        const preset = getLedgerErrorPresetByKind('device_not_found', t)
+        expect(preset.title).toBe('ledger.errors.device_not_found_title')
+        expect(preset.body).toBe('ledger.errors.device_not_found')
+        expect(preset.isRetryable).toBe(true)
+        expect(preset.isTroubleshootable).toBe(true)
+    })
+
+    it('device_busy is retryable but not troubleshootable — its copy is the remedy', () => {
+        const preset = getLedgerErrorPresetByKind('device_busy', t)
+        expect(preset.isRetryable).toBe(true)
+        expect(preset.isTroubleshootable).toBe(false)
+    })
+})
+
 describe('getLedgerErrorPresetByKind', () => {
     type Translate = (key: string, options?: Record<string, unknown>) => string
 

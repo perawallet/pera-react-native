@@ -62,6 +62,47 @@ export class LedgerDeviceLockedError extends AppError {
     }
 }
 
+/**
+ * Nothing answered at the stored device id — powered off, out of range, or the
+ * BLE stack could not open a link. BLE cannot tell those apart (there is no
+ * "off" signal, only absence), so the user-facing copy covers both causes.
+ *
+ * Distinct from `LedgerScanTimeoutError`, which means no device appeared during
+ * *discovery*; this is a failure to reach a device we already know about.
+ */
+export class LedgerDeviceNotFoundError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'No Ledger device could be reached',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * An APDU exchange is still in flight on the transport (`TransportRaceCondition`)
+ * or the device is mid-prompt from another host. Retrying after the current
+ * on-device action completes is the only remediation.
+ */
+export class LedgerDeviceBusyError extends AppError {
+    constructor(originalError?: Error) {
+        super(
+            'The Ledger device is busy with another operation',
+            {
+                severity: ErrorSeverity.MEDIUM,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: true,
+            },
+            originalError,
+        )
+    }
+}
+
 export class LedgerUsbNoDeviceError extends AppError {
     constructor(originalError?: Error) {
         super(
@@ -390,7 +431,12 @@ const isHwTransportError = (
 
 /** `react-native-ble-plx` `BleErrorCode` values seen in the remapped message. */
 const BLE_ERROR_CODE = {
+    OPERATION_TIMED_OUT: 3,
     BLUETOOTH_POWERED_OFF: 102,
+    DEVICE_CONNECTION_FAILED: 200,
+    DEVICE_DISCONNECTED: 201,
+    DEVICE_NOT_FOUND: 204,
+    DEVICE_NOT_CONNECTED: 205,
     LOCATION_SERVICES_DISABLED: 601,
 } as const
 
@@ -423,7 +469,44 @@ const classifyHwTransportError = (
     if (originCode === BLE_ERROR_CODE.BLUETOOTH_POWERED_OFF) {
         return new LedgerBluetoothDisabledError(error)
     }
+    // A connect attempt against a device that is off or out of range fails
+    // with one of these rather than timing out, so they are what the "Ledger
+    // not found" copy is actually driven by in practice.
+    if (
+        originCode === BLE_ERROR_CODE.DEVICE_CONNECTION_FAILED ||
+        originCode === BLE_ERROR_CODE.DEVICE_NOT_FOUND ||
+        originCode === BLE_ERROR_CODE.DEVICE_NOT_CONNECTED
+    ) {
+        return new LedgerDeviceNotFoundError(error)
+    }
+    // Losing an established link mid-exchange, as opposed to never reaching
+    // the device at all.
+    if (originCode === BLE_ERROR_CODE.DEVICE_DISCONNECTED) {
+        return new LedgerDisconnectedError(error)
+    }
+    if (originCode === BLE_ERROR_CODE.OPERATION_TIMED_OUT) {
+        return new LedgerTimeoutError('device communication', error)
+    }
     return null
+}
+
+/**
+ * `@ledgerhq/errors` classes, matched by `name` rather than `instanceof`: the
+ * lib creates them via a factory whose identity is not stable across the
+ * multiple copies pnpm can hoist, and a minifier may mangle the constructor.
+ * The names themselves are part of the lib's wire contract (they survive the
+ * transport's own serialization) and are stable across versions.
+ */
+const LIB_ERROR_FACTORY_BY_NAME: Record<string, (error: Error) => AppError> = {
+    LockedDeviceError: error => new LedgerDeviceLockedError(error),
+    // The BLE transport could not open a link to the device.
+    CantOpenDevice: error => new LedgerDeviceNotFoundError(error),
+    DisconnectedDevice: error => new LedgerDisconnectedError(error),
+    DisconnectedDeviceDuringOperation: error =>
+        new LedgerDisconnectedError(error),
+    TransportRaceCondition: error => new LedgerDeviceBusyError(error),
+    UnresponsiveDeviceError: error =>
+        new LedgerTimeoutError('device communication', error),
 }
 
 /**
@@ -464,17 +547,25 @@ export const classifyLedgerError = (error: unknown): AppError => {
                 error instanceof Error ? error : undefined,
             )
         }
+
+        if (statusCode === LEDGER_STATUS_CODES.INSTRUCTION_NOT_SUPPORTED) {
+            return new LedgerAppOutdatedError(
+                error instanceof Error ? error : undefined,
+            )
+        }
     }
 
-    // @ledgerhq/errors maps 0x5515 to a typed LockedDeviceError (name field)
-    // in some transport paths instead of surfacing the raw status word.
-    if (error instanceof Error && error.name === 'LockedDeviceError') {
-        return new LedgerDeviceLockedError(error)
-    }
-
-    // Check for disconnect-like errors by message
     if (error instanceof Error) {
+        // Typed transport errors (including 0x5515 delivered as
+        // LockedDeviceError instead of a raw status word) before the message
+        // heuristics, which are a last resort.
+        const fromLib = LIB_ERROR_FACTORY_BY_NAME[error.name]
+        if (fromLib) return fromLib(error)
+
         const msg = error.message.toLowerCase()
+        if (msg.includes('busy') || msg.includes('race condition')) {
+            return new LedgerDeviceBusyError(error)
+        }
         if (msg.includes('disconnect') || msg.includes('not connected')) {
             return new LedgerDisconnectedError(error)
         }
