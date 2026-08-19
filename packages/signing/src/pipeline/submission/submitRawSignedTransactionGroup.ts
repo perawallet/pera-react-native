@@ -26,9 +26,8 @@ import type { AlgokitClientInterface } from './types'
  * shared-account swap resolver interleaves pre-signed slot bytes with
  * assembled multisig bytes and submits the result here verbatim.
  *
- * Algod returns the txid of the first transaction in the group; callers that
- * need every id should decode the bytes separately. Returns an empty array
- * when algod's response carries no txid.
+ * Returns the txids from algod's response, or the locally-derived ids
+ * (`deriveTxIds`) when the response carries none.
  */
 export const submitRawSignedTransactionGroup = async (
     algokit: AlgokitClientInterface,
@@ -66,9 +65,10 @@ export const submitRawSignedTransactionGroup = async (
 }
 
 /**
- * Read-only decode purely to name the transactions for post-failure chain
- * verification. The submitted bytes stay the caller's originals — re-encoding
- * assembled multisig bytes could change them canonically and invalidate the
+ * Read-only decode so the thrown `SubmissionError` can carry txids for a
+ * future reconciler (PERA-4588) — nothing on this path reads them today.
+ * The submitted bytes stay the caller's originals — re-encoding assembled
+ * multisig bytes could change them canonically and invalidate the
  * per-participant signatures, which is why this function never round-trips.
  */
 const deriveTxIds = (rawSignedTransactions: Uint8Array[]): string[] => {

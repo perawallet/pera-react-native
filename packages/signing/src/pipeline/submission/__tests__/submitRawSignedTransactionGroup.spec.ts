@@ -104,4 +104,12 @@ describe('submitRawSignedTransactionGroup', () => {
             submitRawSignedTransactionGroup(algokit, RAW),
         ).resolves.toEqual(['NODE_TXID'])
     })
+
+    it('falls back to the locally derived ids when a resolved response carries no txid', async () => {
+        mockSendRawTransaction.mockResolvedValue({})
+
+        await expect(
+            submitRawSignedTransactionGroup(algokit, RAW),
+        ).resolves.toEqual(['DERIVED_TXID'])
+    })
 })
