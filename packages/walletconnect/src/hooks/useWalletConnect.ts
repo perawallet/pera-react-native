@@ -187,11 +187,20 @@ export const useWalletConnect = (
             // tombstones the session, so any in-flight socket recovery
             // for it aborts instead of resurrecting a disconnected peer.
             forgetConnector(clientId)
+            // Read the list live rather than closing over it: a connector's
+            // `disconnect` listener is bound once and calls this for the rest
+            // of the session, so a captured list would be the one that existed
+            // at bind time — resurrecting sessions removed since and dropping
+            // ones added since.
             setConnections(
-                connections.filter(session => session.clientId !== clientId),
+                useWalletConnectStore
+                    .getState()
+                    .walletConnectConnections.filter(
+                        session => session.clientId !== clientId,
+                    ),
             )
         },
-        [connections],
+        [setConnections],
     )
 
     const approveSession = useCallback(
@@ -200,10 +209,6 @@ export const useWalletConnect = (
             request: WalletConnectSessionRequest,
             addresses: string[],
         ): Promise<void> => {
-            const existingSession = connections.find(
-                conn => conn.clientId === clientId,
-            )
-
             // The dApp's side of the handshake expires long before ours —
             // approving a stale queued request can only fake-succeed.
             if (!isSessionRequestFresh(request)) {
@@ -224,6 +229,15 @@ export const useWalletConnect = (
                 chainId: request.chainId,
                 accounts: addresses,
             })
+
+            // Read live, not the render-captured list: socket revival above
+            // is awaited, and a session paired during that window would be
+            // dropped by writing back a list that predates it.
+            const current =
+                useWalletConnectStore.getState().walletConnectConnections
+            const existingSession = current.find(
+                conn => conn.clientId === clientId,
+            )
 
             // Persist only clean metadata. Spreading `connector` would
             // copy its private `_socket` / `_transport` / `_eventManager`
@@ -246,11 +260,11 @@ export const useWalletConnect = (
             }
 
             setConnections([
-                ...connections.filter(conn => conn.clientId !== clientId),
+                ...current.filter(conn => conn.clientId !== clientId),
                 replacementSession,
             ])
         },
-        [connections],
+        [setConnections],
     )
 
     const rejectSession = useCallback(
@@ -289,24 +303,42 @@ export const useWalletConnect = (
             }
 
             if (delivered || !wasConnected) {
+                // Read live: delivery above is awaited up to
+                // WC_DELIVERY_TIMEOUT_MS, long enough for another session to
+                // be paired and then lost to a stale write-back.
                 setConnections(
-                    connections.filter(conn => conn.clientId !== clientId),
+                    useWalletConnectStore
+                        .getState()
+                        .walletConnectConnections.filter(
+                            conn => conn.clientId !== clientId,
+                        ),
                 )
             }
         },
-        [connections],
+        [setConnections],
     )
 
     const deleteAllSessions = useCallback(async () => {
-        const promises = connections.map(conn => {
+        const targets =
+            useWalletConnectStore.getState().walletConnectConnections
+        const promises = targets.map(conn => {
             if (conn.clientId) {
                 return disconnect(conn.clientId, true)
             }
             return Promise.resolve()
         })
         await Promise.all(promises)
-        setConnections([])
-    }, [connections, disconnect])
+        // Drop exactly what was targeted — including entries with no clientId,
+        // which no `disconnect` above could remove. Anything paired while the
+        // disconnects were in flight was never the user's to lose, so an
+        // unconditional wipe here would take it with them.
+        const targeted = new Set(targets)
+        setConnections(
+            useWalletConnectStore
+                .getState()
+                .walletConnectConnections.filter(conn => !targeted.has(conn)),
+        )
+    }, [disconnect, setConnections])
 
     /**
      * Registers the dApp request handlers on a connector. Always
