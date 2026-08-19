@@ -481,7 +481,9 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
             const seeded = usePeraWebImportFlowStore.getState().qr
             expect(seeded).not.toBeNull()
             expect(seeded!.backupId).toBe(PERA_WEB_BACKUP_ID)
-            expect(Array.from(seeded!.encryptionKey)).toEqual(Array.from(PERA_WEB_KEY_BYTES))
+            expect(Array.from(seeded!.encryptionKey)).toEqual(
+                Array.from(PERA_WEB_KEY_BYTES),
+            )
         },
         SLOW_TEST_TIMEOUT_MS,
     )
