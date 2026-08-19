@@ -566,6 +566,10 @@
         "slide_to_confirm": {
             "label": "Kaydırıp onayla"
         },
+        "tap_to_confirm": {
+            "label": "Onayla",
+            "tap_again_label": "Onaylamak için tekrar dokun"
+        },
         "copied_to_clipboard": {
             "title": "Panoya kopyalandı",
             "body": ""
@@ -2006,7 +2010,9 @@
         "edit_contact": "Kişiyi düzenle",
         "add_contact": "Yeni kişi ekle",
         "settings": "Ayarlar",
-        "launch_settings": "Başlangıç ayarları",
+        "launch_settings": "Başlangıç ayarı",
+        "advanced_preferences": "Gelişmiş tercihler",
+        "confirmation_action": "Onay yöntemi",
         "security": "Güvenlik",
         "notifications": "Bildirimler",
         "wallet_connect": "Wallet Connect",
@@ -2207,7 +2213,7 @@
             "app_preferences_section": "Uygulama tercihleri",
             "currency_title": "Para birimi",
             "theme_title": "Tema",
-            "launch_title": "Başlangıç ayarları",
+            "advanced_title": "Gelişmiş tercihler",
             "language_title": "Dil",
             "support_section": "Destek",
             "rate_title": "Pera Wallet’i değerlendir",
@@ -2227,12 +2233,23 @@
             "light_label": "Açık",
             "dark_label": "Koyu"
         },
+        "advanced": {
+            "launch_label": "Başlangıç ayarı",
+            "confirmation_label": "Onay yöntemi"
+        },
         "launch": {
-            "account_section": "Hesap seçimi",
+            "synopsis": "Uygulamayı açtığında Pera'nın hangi hesapla açılacağını seç.",
             "last_used_label": "Son kullanılan hesap",
             "last_used_description": "Pera, en son kullandığın hesapla açılır.",
             "specific_label": "Belirli bir hesap",
             "specific_description": "Pera her seferinde seçtiğin hesapla açılır."
+        },
+        "confirmation": {
+            "synopsis": "İşlemleri ve diğer imza isteklerini nasıl onaylayacağını seç.",
+            "slide_label": "Kaydırarak onaylama",
+            "slide_description": "Onaylamak için kaydırıcıyı sonuna kadar sürükle. Yanlışlıkla dokunmalara karşı en iyi koruma.",
+            "tap_label": "Dokunarak onaylama",
+            "tap_description": "Onaylamak için düğmeye iki kez dokun – çok sayıda işlem imzalarken daha hızlı."
         },
         "language": {
             "system_label": "Sistem varsayılanı"

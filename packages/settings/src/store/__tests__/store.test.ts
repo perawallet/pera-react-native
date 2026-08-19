@@ -150,6 +150,48 @@ describe('services/settings/store', () => {
         expect(result.current.language).toBe('system')
     })
 
+    test('store initializes with confirmationMode "slide"', async () => {
+        const { useSettingsStore } = await import('../store')
+
+        const { result } = renderHook(() => useSettingsStore())
+
+        expect(result.current.confirmationMode).toBe('slide')
+    })
+
+    test('setConfirmationMode updates confirmation mode state', async () => {
+        const { useSettingsStore } = await import('../store')
+
+        const { result } = renderHook(() => useSettingsStore())
+
+        act(() => {
+            result.current.setConfirmationMode('tap')
+        })
+
+        expect(result.current.confirmationMode).toBe('tap')
+
+        act(() => {
+            result.current.setConfirmationMode('slide')
+        })
+
+        expect(result.current.confirmationMode).toBe('slide')
+    })
+
+    test('resetState reverts confirmationMode to "slide"', async () => {
+        const { useSettingsStore } = await import('../store')
+
+        const { result } = renderHook(() => useSettingsStore())
+
+        act(() => {
+            result.current.setConfirmationMode('tap')
+        })
+
+        act(() => {
+            result.current.resetState()
+        })
+
+        expect(result.current.confirmationMode).toBe('slide')
+    })
+
     test('setLanguage updates language state', async () => {
         const { useSettingsStore } = await import('../store')
 

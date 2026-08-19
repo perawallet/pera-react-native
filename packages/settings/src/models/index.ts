@@ -14,6 +14,8 @@ import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
+export type ConfirmationMode = 'slide' | 'tap'
+
 /**
  * `'system'` mirrors ThemeMode's sentinel. Anything else is a locale tag —
  * typed as `string`, not a closed union, because the supported set is owned
@@ -28,9 +30,11 @@ export type SettingsState = BaseStoreState & {
     theme: ThemeMode
     privacyMode: boolean
     language: LanguagePreference
+    confirmationMode: ConfirmationMode
     setTheme: (theme: ThemeMode) => void
     setPrivacyMode: (enabled: boolean) => void
     setLanguage: (language: LanguagePreference) => void
+    setConfirmationMode: (confirmationMode: ConfirmationMode) => void
     getPreference: (key: string) => Nullable<string | boolean | number>
     setPreference: (key: string, value: string | boolean | number) => void
     deletePreference: (key: string) => void

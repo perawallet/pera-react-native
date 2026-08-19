@@ -11,13 +11,8 @@
  */
 
 import React from 'react'
-import {
-    PWButton,
-    PWScreen,
-    PWSlideToConfirm,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { ConfirmAction } from '@components/ConfirmAction'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCardAutoFundingSigningScreen } from './useCardAutoFundingSigningScreen'
 import { useStyles } from './styles'
@@ -34,7 +29,7 @@ export const CardAutoFundingSigningScreen = () => {
             testID='card-auto-funding-signing'
             footer={
                 <PWView style={styles.buttonContainer}>
-                    <PWSlideToConfirm
+                    <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleApprove}
                         isLoading={isPending}

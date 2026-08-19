@@ -14,10 +14,10 @@ import {
     PWButton,
     PWRoundIcon,
     PWScreen,
-    PWSlideToConfirm,
     PWText,
     PWView,
 } from '@components/core'
+import { ConfirmAction } from '@components/ConfirmAction'
 import { Arc60DataSigningSummaryView } from '@modules/signing/components/Arc60DataSigningView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -95,7 +95,7 @@ export const Arc60SigningScreen = () => {
             scroll='never'
             footer={
                 <PWView style={styles.buttonContainer}>
-                    <PWSlideToConfirm
+                    <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleApprove}
                         isLoading={isPending}

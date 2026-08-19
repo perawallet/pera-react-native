@@ -124,11 +124,6 @@ export const useSettingsOptions = () => {
                             icon: 'moon',
                             title: t('settings.main.theme_title'),
                         },
-                        {
-                            route: 'LaunchSettings' as keyof SettingsStackParamsList,
-                            icon: 'house',
-                            title: t('settings.main.launch_title'),
-                        },
                         ...(isLanguageSelectionEnabled
                             ? [
                                   {
@@ -138,6 +133,11 @@ export const useSettingsOptions = () => {
                                   },
                               ]
                             : []),
+                        {
+                            route: 'AdvancedSettings' as keyof SettingsStackParamsList,
+                            icon: 'gear',
+                            title: t('settings.main.advanced_title'),
+                        },
                     ],
                 },
                 {

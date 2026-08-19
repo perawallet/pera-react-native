@@ -15,11 +15,11 @@ import {
     PWDivider,
     PWIcon,
     PWScreen,
-    PWSlideToConfirm,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { ConfirmAction } from '@components/ConfirmAction'
 import { CopyableText } from '@components/CopyableText'
 import { AssetIcon, AssetNameBadge } from '@modules/assets/components'
 import { useLanguage } from '@hooks/useLanguage'
@@ -82,7 +82,7 @@ export const AssetClaimDetailScreen = () => {
                         </>
                     )}
                     <PWView style={styles.footer}>
-                        <PWSlideToConfirm
+                        <ConfirmAction
                             title={t('common.slide_to_confirm.label')}
                             onConfirm={handleClaim}
                             testID='arc59_claim_confirm_slide'

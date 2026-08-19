@@ -917,6 +917,27 @@ vi.mock('@components/core', () => {
                       )
                     : null,
             ),
+        // Single-click confirm, like the PWSlideToConfirm mock — the real
+        // two-tap arming has its own spec and can't be usefully mocked here.
+        PWTapToConfirm: ({
+            title,
+            armedTitle: _armedTitle,
+            onConfirm,
+            isLoading: _isLoading,
+            isDisabled,
+            testID,
+            ...props
+        }: any) =>
+            React.createElement(
+                'button',
+                {
+                    ...props,
+                    onClick: onConfirm,
+                    disabled: isDisabled,
+                    'data-testid': testID || 'PWTapToConfirm',
+                },
+                title,
+            ),
     }
 })
 
@@ -3012,8 +3033,10 @@ vi.mock('@perawallet/wallet-core-settings', () => {
         useSettings: vi.fn(() => ({
             theme: 'light',
             privacyMode: false,
+            confirmationMode: 'slide',
             setPrivacyMode: vi.fn(),
             setTheme: vi.fn(),
+            setConfirmationMode: vi.fn(),
         })),
         usePreferences: vi.fn(() => ({
             getPreference: vi.fn(),

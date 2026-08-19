@@ -10,79 +10,58 @@
  limitations under the License
  */
 
+import { useSettings } from '@perawallet/wallet-core-settings'
+
 import { PWScreen, PWRadioButton, PWText, PWView } from '@components/core'
-import { AccountPicker } from '@modules/accounts/components/AccountPicker'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSettingsLaunchScreen } from './useSettingsLaunchScreen'
 import { useStyles } from './styles'
 
-export const SettingsLaunchScreen = () => {
+export const SettingsConfirmationScreen = () => {
     const styles = useStyles()
+    const { confirmationMode, setConfirmationMode } = useSettings()
     const { t } = useLanguage()
-    const {
-        launchAccountMode,
-        launchAccountAddress,
-        accounts,
-        isAccountPickerVisible,
-        handleSelectLastUsed,
-        handleSelectSpecific,
-        handleSelectAccount,
-    } = useSettingsLaunchScreen()
 
     return (
-        <PWScreen testID='settings_launch_screen'>
+        <PWScreen testID='settings_confirmation_screen'>
             <PWView style={styles.container}>
                 <PWText
                     variant='body'
                     style={styles.synopsis}
                 >
-                    {t('settings.launch.synopsis')}
+                    {t('settings.confirmation.synopsis')}
                 </PWText>
 
                 <PWView style={styles.options}>
                     <PWRadioButton
-                        onPress={handleSelectLastUsed}
-                        isSelected={launchAccountMode === 'lastUsed'}
-                        testID='settings_launch_last_used_radio'
+                        onPress={() => setConfirmationMode('slide')}
+                        isSelected={confirmationMode === 'slide'}
+                        testID='settings_confirmation_slide_radio'
                     >
                         <PWView style={styles.optionLabel}>
                             <PWText>
-                                {t('settings.launch.last_used_label')}
+                                {t('settings.confirmation.slide_label')}
                             </PWText>
                             <PWText style={styles.optionDescription}>
-                                {t('settings.launch.last_used_description')}
+                                {t('settings.confirmation.slide_description')}
                             </PWText>
                         </PWView>
                     </PWRadioButton>
 
                     <PWRadioButton
-                        onPress={handleSelectSpecific}
-                        isSelected={launchAccountMode === 'specific'}
-                        testID='settings_launch_specific_radio'
+                        onPress={() => setConfirmationMode('tap')}
+                        isSelected={confirmationMode === 'tap'}
+                        testID='settings_confirmation_tap_radio'
                     >
                         <PWView style={styles.optionLabel}>
                             <PWText>
-                                {t('settings.launch.specific_label')}
+                                {t('settings.confirmation.tap_label')}
                             </PWText>
                             <PWText style={styles.optionDescription}>
-                                {t('settings.launch.specific_description')}
+                                {t('settings.confirmation.tap_description')}
                             </PWText>
                         </PWView>
                     </PWRadioButton>
                 </PWView>
-
-                {isAccountPickerVisible && (
-                    <PWView style={styles.picker}>
-                        <AccountPicker
-                            accounts={accounts}
-                            onSelect={handleSelectAccount}
-                            highlightedAddress={
-                                launchAccountAddress ?? undefined
-                            }
-                            rowTestIDPrefix='settings_launch_account'
-                        />
-                    </PWView>
-                )}
             </PWView>
         </PWScreen>
     )

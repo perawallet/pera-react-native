@@ -566,6 +566,10 @@
         "slide_to_confirm": {
             "label": "Glissez pour confirmer"
         },
+        "tap_to_confirm": {
+            "label": "Confirmer",
+            "tap_again_label": "Appuyez à nouveau pour confirmer"
+        },
         "copied_to_clipboard": {
             "title": "Copié dans le presse-papiers",
             "body": ""
@@ -2006,7 +2010,9 @@
         "edit_contact": "Modifier le contact",
         "add_contact": "Nouveau contact",
         "settings": "Paramètres",
-        "launch_settings": "Paramètres de démarrage",
+        "launch_settings": "Paramètre de démarrage",
+        "advanced_preferences": "Préférences avancées",
+        "confirmation_action": "Action de confirmation",
         "security": "Sécurité",
         "notifications": "Notifications",
         "wallet_connect": "Wallet Connect",
@@ -2207,7 +2213,7 @@
             "app_preferences_section": "Préférences de l’app",
             "currency_title": "Devise",
             "theme_title": "Thème",
-            "launch_title": "Paramètres de démarrage",
+            "advanced_title": "Préférences avancées",
             "language_title": "Langue",
             "support_section": "Assistance",
             "rate_title": "Noter Pera Wallet",
@@ -2227,12 +2233,23 @@
             "light_label": "Clair",
             "dark_label": "Sombre"
         },
+        "advanced": {
+            "launch_label": "Paramètre de démarrage",
+            "confirmation_label": "Action de confirmation"
+        },
         "launch": {
-            "account_section": "Sélection du compte",
+            "synopsis": "Choisissez le compte sur lequel Pera s’ouvre au démarrage de l’application.",
             "last_used_label": "Dernier compte utilisé",
             "last_used_description": "Pera s’ouvre sur le dernier compte que vous avez utilisé.",
             "specific_label": "Un compte spécifique",
             "specific_description": "Pera s’ouvre à chaque fois sur le compte que vous choisissez."
+        },
+        "confirmation": {
+            "synopsis": "Choisissez comment vous confirmez les transactions et autres demandes de signature.",
+            "slide_label": "Glissez pour confirmer",
+            "slide_description": "Faites glisser le curseur pour approuver. La meilleure protection contre les appuis accidentels.",
+            "tap_label": "Appuyez pour confirmer",
+            "tap_description": "Appuyez deux fois sur le bouton pour approuver : plus rapide pour signer de nombreuses transactions."
         },
         "language": {
             "system_label": "Paramètre système"

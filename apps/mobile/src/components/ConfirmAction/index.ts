@@ -10,28 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        gap: theme.spacing.xl,
-    },
-    synopsis: {
-        color: theme.colors.textGray,
-    },
-    options: {
-        gap: theme.spacing.xl,
-    },
-    optionLabel: {
-        flex: 1,
-        minWidth: 0,
-        gap: theme.spacing.xs,
-    },
-    optionDescription: {
-        color: theme.colors.textGray,
-    },
-    picker: {
-        flex: 1,
-    },
-}))
+export { ConfirmAction } from './ConfirmAction'
+export type { ConfirmActionProps } from './ConfirmAction'
