@@ -912,7 +912,9 @@ describe('useSwapExecution', () => {
         // F1: the honest unknown-outcome title must reach the outcome, not
         // just the body, or callers keep rendering "Swap Failed" over it.
         if (outcome?.kind === 'error') {
-            expect(outcome.title).toBe('errors.submission.unknown_outcome.title')
+            expect(outcome.title).toBe(
+                'errors.submission.unknown_outcome.title',
+            )
         }
     })
 
