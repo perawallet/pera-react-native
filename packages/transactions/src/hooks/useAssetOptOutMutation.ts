@@ -16,7 +16,10 @@ import {
     useAlgorandClient,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
+import {
+    useMinimumFeeCalculator,
+    useSignAndSubmitGroup,
+} from '@perawallet/wallet-core-signing'
 import { fetchIndexerAssetDetails } from '@perawallet/wallet-core-assets'
 import {
     deleteAssetHoldings,
@@ -57,6 +60,7 @@ const SOURCE = {
 export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
     const algokit = useAlgorandClient()
     const { submit } = useSignAndSubmitGroup()
+    const { assignFeeToGroup } = useMinimumFeeCalculator()
     const { network } = useNetwork()
     const queryClient = useQueryClient()
     const [isLoading, setIsLoading] = useState(false)
@@ -144,7 +148,17 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
                         })
                     }
                     const { transactions } = await composer.build()
-                    const unsignedTxs = transactions.map(t => t.txn)
+                    // A Falcon signature makes the group cost more than the
+                    // base minimum, and algod rejects the whole group when it
+                    // is short: `txgroup with 1mA fees is less than 3mA
+                    // (usage=3.000000 * base=1mA)`. AlgoKit sizes fees from an
+                    // Ed25519 envelope, so the PQ minimum has to be applied
+                    // here. Non-quantum senders pass through untouched
+                    // (PERA-4922).
+                    const { transactions: unsignedTxs } =
+                        await assignFeeToGroup({
+                            transactions: transactions.map(t => t.txn),
+                        })
 
                     const result = await submit({
                         unsignedTxs,
@@ -172,7 +186,14 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
                 setIsLoading(false)
             }
         },
-        [algokit, resolveCreator, submit, network, queryClient],
+        [
+            algokit,
+            resolveCreator,
+            submit,
+            assignFeeToGroup,
+            network,
+            queryClient,
+        ],
     )
 
     return {

@@ -34,9 +34,13 @@ const mockNewGroup = vi.fn(() => ({
 const mockFetchIndexerAssetDetails = vi.fn()
 const mockDeleteAssetHoldings = vi.fn().mockResolvedValue(undefined)
 const mockInvalidate = vi.fn()
+const mockAssignFeeToGroup = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
+    useMinimumFeeCalculator: () => ({
+        assignFeeToGroup: mockAssignFeeToGroup,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -77,6 +81,14 @@ describe('useAssetOptOutMutation', () => {
             transactions: [{ txn: { sender: 'SENDER' } }],
         })
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
+        // Default: the calculator passes the group through untouched, which is
+        // exactly what it does for a non-quantum sender.
+        mockAssignFeeToGroup.mockImplementation(
+            async ({ transactions }: { transactions: unknown[] }) => ({
+                transactions,
+                adjustments: [],
+            }),
+        )
         mockFetchIndexerAssetDetails.mockResolvedValue({
             asset: { params: { creator: 'CREATOR' } },
         })
@@ -167,6 +179,45 @@ describe('useAssetOptOutMutation', () => {
             network: 'testnet',
         })
         expect(mockInvalidate).toHaveBeenCalledTimes(1)
+    })
+
+    // PERA-4922: algod rejects an underfunded Falcon group outright
+    // (`txgroup with 1mA fees is less than 3mA`), so the built group must go
+    // through the fee calculator before it is signed.
+    it('submits the fee-raised group returned by the minimum-fee calculator', async () => {
+        const built = { sender: 'SENDER', fee: 1000n }
+        const raised = { sender: 'SENDER', fee: 3000n }
+        mockBuild.mockResolvedValueOnce({ transactions: [{ txn: built }] })
+        mockAssignFeeToGroup.mockResolvedValueOnce({
+            transactions: [raised],
+            adjustments: [
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
+            ],
+        })
+
+        const { result } = renderHook(() => useAssetOptOutMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await result.current.optOut({
+                sender: 'SENDER',
+                assetId: 12345n,
+                creator: 'CREATOR',
+            })
+        })
+
+        expect(mockAssignFeeToGroup).toHaveBeenCalledWith({
+            transactions: [built],
+        })
+        expect(mockSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({ unsignedTxs: [raised] }),
+        )
     })
 
     it('throws NonZeroBalanceError without calling the pipeline', async () => {

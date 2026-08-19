@@ -47,7 +47,7 @@ export const OptInConfirmationContent = ({
     const { t } = useLanguage()
     const { copyToClipboard } = useClipboard()
     const { resolve } = useBottomSheetResult<'confirm'>()
-    const { resolvedFee } = useOptInConfirmationContent(fee)
+    const { resolvedFee } = useOptInConfirmationContent(accountAddress, fee)
 
     const { data: assets } = useAssetsQuery([assetId])
     const asset = assets?.get(assetId)

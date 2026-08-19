@@ -12,6 +12,7 @@
 
 import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useMinimumFeeConfig } from '@perawallet/wallet-core-blockchain'
+import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 
 import type { Decimal } from 'decimal.js'
 
@@ -24,10 +25,15 @@ type UseOptInConfirmationContentResult = {
 }
 
 export const useOptInConfirmationContent = (
+    accountAddress: string,
     feeOverride?: Decimal,
 ): UseOptInConfirmationContentResult => {
     const { minTxnFee } = useMinimumFeeConfig()
+    // Sender-aware so a quantum account is quoted the PQ multiple it will
+    // actually pay, matching what useAssetOptInMutation builds (PERA-4922).
+    const { minFee } = useMinFeeForSender(accountAddress)
     return {
-        resolvedFee: feeOverride ?? toWholeUnits(minTxnFee, ALGO_ASSET),
+        resolvedFee:
+            feeOverride ?? toWholeUnits(minFee ?? minTxnFee, ALGO_ASSET),
     }
 }

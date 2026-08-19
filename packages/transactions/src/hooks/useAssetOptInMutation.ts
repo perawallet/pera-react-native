@@ -17,7 +17,10 @@ import {
     useMinimumFeeConfig,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
+import {
+    useMinimumFeeCalculator,
+    useSignAndSubmitGroup,
+} from '@perawallet/wallet-core-signing'
 import {
     insertAssetHolding,
     invalidateAccountQueriesForAddresses,
@@ -51,6 +54,7 @@ const SOURCE = {
 export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
     const algokit = useAlgorandClient()
     const { submit } = useSignAndSubmitGroup()
+    const { assignFeeToGroup } = useMinimumFeeCalculator()
     const { network } = useNetwork()
     const queryClient = useQueryClient()
     const { assetMbr } = useMinimumFeeConfig()
@@ -76,19 +80,28 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                     throw new AlreadyOptedInError()
                 }
 
-                const suggestedParams = await algokit.getSuggestedParams()
-                const balanceNeeded =
-                    accountInfo.minBalance +
-                    assetMbr +
-                    BigInt(suggestedParams.minFee)
-                if (accountInfo.amount < balanceNeeded) {
-                    throw new InsufficientBalanceForOptInError()
-                }
-
                 const composer = algokit.newGroup()
                 composer.addAssetOptIn({ sender, assetId })
                 const { transactions } = await composer.build()
-                const unsignedTxs = transactions.map(t => t.txn)
+                // Same PQ minimum as the opt-out path: AlgoKit sizes the fee
+                // for an Ed25519 envelope, which algod rejects for a Falcon
+                // signer (PERA-4922). See useAssetOptOutMutation.
+                const { transactions: unsignedTxs } = await assignFeeToGroup({
+                    transactions: transactions.map(t => t.txn),
+                })
+
+                // Check against the fee actually being submitted: reading it
+                // back off the built group is what keeps a quantum sender's
+                // higher fee from passing a check that algod then fails.
+                const feeTotal = unsignedTxs.reduce(
+                    (total, txn) => total + txn.fee,
+                    0n,
+                )
+                const balanceNeeded =
+                    accountInfo.minBalance + assetMbr + feeTotal
+                if (accountInfo.amount < balanceNeeded) {
+                    throw new InsufficientBalanceForOptInError()
+                }
 
                 const { txIds } = await submit({
                     unsignedTxs,
@@ -121,7 +134,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 setIsLoading(false)
             }
         },
-        [algokit, submit, network, queryClient, assetMbr],
+        [algokit, submit, assignFeeToGroup, network, queryClient, assetMbr],
     )
 
     return {
