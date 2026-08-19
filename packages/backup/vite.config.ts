@@ -47,6 +47,7 @@ export default defineConfig({
                 '@scure/bip39',
                 '@scure/bip39/wordlists/english.js',
                 'tweetnacl',
+                'zod',
             ],
         },
     },

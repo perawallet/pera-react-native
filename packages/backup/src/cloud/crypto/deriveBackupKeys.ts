@@ -39,21 +39,34 @@ export const deriveBackupKeys = async ({
     mnemonic,
     salt,
 }: DeriveBackupKeysParams): Promise<BackupKeys> => {
-    const password = backupMnemonicToPassword(mnemonic)
-    const saltBytes = decodeFromBase64(salt)
-    const masterKey = await deriveBackupMasterKey(password, saltBytes)
-    zeroBytes(password)
+    let password: Uint8Array | null = null
+    let masterKey: Uint8Array | null = null
+    let authSeed: Uint8Array | null = null
+    let encryptionKey: Uint8Array | null = null
+    let secretKey: Uint8Array | null = null
 
-    const { encryptionKey, authSeed } = deriveBackupChildKeys(masterKey)
-    zeroBytes(masterKey)
+    try {
+        password = backupMnemonicToPassword(mnemonic)
+        masterKey = await deriveBackupMasterKey(
+            password,
+            decodeFromBase64(salt),
+        )
+        ;({ encryptionKey, authSeed } = deriveBackupChildKeys(masterKey))
 
-    const { publicKey, secretKey } = deriveBackupAuthKeypair(authSeed)
-    zeroBytes(authSeed)
+        const { publicKey, secretKey: authSecretKey } =
+            deriveBackupAuthKeypair(authSeed)
+        secretKey = authSecretKey
 
-    return {
-        backupId: deriveBackupId(publicKey),
-        encryptionKey,
-        authPublicKey: publicKey,
-        authSecretKey: secretKey,
+        return {
+            backupId: deriveBackupId(publicKey),
+            encryptionKey,
+            authPublicKey: publicKey,
+            authSecretKey: secretKey,
+        }
+    } catch (error) {
+        zeroBytes(encryptionKey, secretKey)
+        throw error
+    } finally {
+        zeroBytes(password, masterKey, authSeed)
     }
 }

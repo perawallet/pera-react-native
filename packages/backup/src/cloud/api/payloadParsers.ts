@@ -10,10 +10,10 @@
  limitations under the License
  */
 
+import { z } from 'zod'
 import {
     BackupAccountType,
     type AddressBackupPayload,
-    type BackupHardwareTransportType,
     type SecretsBackupPayload,
 } from '../models'
 
@@ -24,173 +24,106 @@ export class BackupPayloadParseError extends Error {
     }
 }
 
-const parseJson = (raw: string): Record<string, unknown> => {
+const nonNegativeInt = z.number().int().nonnegative()
+
+const customName = z
+    .unknown()
+    .optional()
+    .transform(value => (typeof value === 'string' ? value : null))
+
+const addressPayloadSchema = z.discriminatedUnion('type', [
+    z.object({
+        type: z.literal(BackupAccountType.algo25),
+        address: z.string(),
+        customName,
+    }),
+    z.object({
+        type: z.literal(BackupAccountType.hdSeed),
+        address: z.string(),
+    }),
+    z.object({
+        type: z.literal(BackupAccountType.hdWallet),
+        address: z.string(),
+        seedFirstDerivedAddress: z.string(),
+        publicKey: z.string(),
+        account: nonNegativeInt,
+        change: nonNegativeInt,
+        keyIndex: nonNegativeInt,
+        derivationType: nonNegativeInt,
+        customName,
+    }),
+    z.object({
+        type: z.literal(BackupAccountType.hardware),
+        address: z.string(),
+        deviceId: z.string(),
+        deviceName: z.string(),
+        accountIndex: nonNegativeInt,
+        manufacturer: z.string(),
+        transportType: z.enum(['ble', 'usb']),
+        customName,
+    }),
+    z.object({
+        type: z.literal(BackupAccountType.watch),
+        address: z.string(),
+        customName,
+    }),
+    z.object({
+        type: z.literal(BackupAccountType.multisig),
+        address: z.string(),
+        participantAddresses: z.array(z.string()),
+        threshold: nonNegativeInt,
+        version: nonNegativeInt,
+        customName,
+    }),
+    z.object({
+        type: z.literal(BackupAccountType.quantum),
+        address: z.string(),
+        customName,
+    }),
+]) satisfies z.ZodType<AddressBackupPayload, unknown>
+
+const secretsPayloadSchema = z.discriminatedUnion('type', [
+    z.object({
+        type: z.literal(BackupAccountType.algo25),
+        mnemonic: z.string(),
+    }),
+    z.object({
+        type: z.literal(BackupAccountType.hdSeed),
+        seed: z.string(),
+        entropy: z.string(),
+    }),
+    z.object({
+        type: z.literal(BackupAccountType.quantum),
+        mnemonic: z.string(),
+    }),
+]) satisfies z.ZodType<SecretsBackupPayload, unknown>
+
+const parsePayload = <T>(
+    schema: z.ZodType<T, unknown>,
+    raw: string,
+    kind: string,
+): T => {
+    let json: unknown
     try {
-        const value = JSON.parse(raw)
-        if (typeof value !== 'object' || value === null) {
-            throw new BackupPayloadParseError('Payload is not an object')
-        }
-        return value as Record<string, unknown>
+        json = JSON.parse(raw)
     } catch (error) {
-        if (error instanceof BackupPayloadParseError) throw error
         const detail = error instanceof Error ? `: ${error.message}` : ''
         throw new BackupPayloadParseError(`Payload is not valid JSON${detail}`)
     }
-}
 
-const requireString = (o: Record<string, unknown>, field: string): string => {
-    const value = o[field]
-    if (typeof value !== 'string') {
+    const result = schema.safeParse(json)
+    if (!result.success) {
+        const [issue] = result.error.issues
+        const path = issue?.path.join('.')
         throw new BackupPayloadParseError(
-            `Invalid or missing string field: ${field}`,
+            `Invalid ${kind} payload${path ? ` at ${path}` : ''}: ${issue?.message ?? 'unknown error'}`,
         )
     }
-    return value
+    return result.data
 }
 
-const requireNonNegativeInteger = (
-    o: Record<string, unknown>,
-    field: string,
-): number => {
-    const value = o[field]
-    if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
-        throw new BackupPayloadParseError(
-            `Invalid or missing non-negative integer field: ${field}`,
-        )
-    }
-    return value
-}
+export const parseAddressPayload = (raw: string): AddressBackupPayload =>
+    parsePayload(addressPayloadSchema, raw, 'account')
 
-const requireStringArray = (
-    o: Record<string, unknown>,
-    field: string,
-): string[] => {
-    const value = o[field]
-    if (
-        !Array.isArray(value) ||
-        !value.every(item => typeof item === 'string')
-    ) {
-        throw new BackupPayloadParseError(
-            `Invalid or missing string[] field: ${field}`,
-        )
-    }
-    return value as string[]
-}
-
-const requireHardwareTransportType = (
-    o: Record<string, unknown>,
-    field: string,
-): BackupHardwareTransportType => {
-    const value = o[field]
-    if (value !== 'ble' && value !== 'usb') {
-        throw new BackupPayloadParseError(
-            `Invalid or missing hardware transport type field: ${field}`,
-        )
-    }
-    return value
-}
-
-const optionalName = (o: Record<string, unknown>): string | null =>
-    typeof o.customName === 'string' ? o.customName : null
-
-export const parseAddressPayload = (raw: string): AddressBackupPayload => {
-    const o = parseJson(raw)
-    const type = o.type
-    switch (type) {
-        case BackupAccountType.algo25: {
-            return {
-                type,
-                address: requireString(o, 'address'),
-                customName: optionalName(o),
-            }
-        }
-        case BackupAccountType.hdSeed: {
-            return { type, address: requireString(o, 'address') }
-        }
-        case BackupAccountType.hdWallet: {
-            return {
-                type,
-                address: requireString(o, 'address'),
-                seedFirstDerivedAddress: requireString(
-                    o,
-                    'seedFirstDerivedAddress',
-                ),
-                publicKey: requireString(o, 'publicKey'),
-                account: requireNonNegativeInteger(o, 'account'),
-                change: requireNonNegativeInteger(o, 'change'),
-                keyIndex: requireNonNegativeInteger(o, 'keyIndex'),
-                derivationType: requireNonNegativeInteger(o, 'derivationType'),
-                customName: optionalName(o),
-            }
-        }
-        case BackupAccountType.hardware: {
-            return {
-                type,
-                address: requireString(o, 'address'),
-                deviceId: requireString(o, 'deviceId'),
-                deviceName: requireString(o, 'deviceName'),
-                accountIndex: requireNonNegativeInteger(o, 'accountIndex'),
-                manufacturer: requireString(o, 'manufacturer'),
-                transportType: requireHardwareTransportType(o, 'transportType'),
-                customName: optionalName(o),
-            }
-        }
-        case BackupAccountType.watch: {
-            return {
-                type,
-                address: requireString(o, 'address'),
-                customName: optionalName(o),
-            }
-        }
-        case BackupAccountType.multisig: {
-            return {
-                type,
-                address: requireString(o, 'address'),
-                participantAddresses: requireStringArray(
-                    o,
-                    'participantAddresses',
-                ),
-                threshold: requireNonNegativeInteger(o, 'threshold'),
-                version: requireNonNegativeInteger(o, 'version'),
-                customName: optionalName(o),
-            }
-        }
-        case BackupAccountType.quantum: {
-            return {
-                type,
-                address: requireString(o, 'address'),
-                customName: optionalName(o),
-            }
-        }
-        default: {
-            throw new BackupPayloadParseError(
-                `Unknown account payload type: ${String(type)}`,
-            )
-        }
-    }
-}
-
-export const parseSecretsPayload = (raw: string): SecretsBackupPayload => {
-    const o = parseJson(raw)
-    const type = o.type
-    switch (type) {
-        case BackupAccountType.algo25: {
-            return { type, mnemonic: requireString(o, 'mnemonic') }
-        }
-        case BackupAccountType.hdSeed: {
-            return {
-                type,
-                seed: requireString(o, 'seed'),
-                entropy: requireString(o, 'entropy'),
-            }
-        }
-        case BackupAccountType.quantum: {
-            return { type, mnemonic: requireString(o, 'mnemonic') }
-        }
-        default: {
-            throw new BackupPayloadParseError(
-                `Unknown secrets payload type: ${String(type)}`,
-            )
-        }
-    }
-}
+export const parseSecretsPayload = (raw: string): SecretsBackupPayload =>
+    parsePayload(secretsPayloadSchema, raw, 'secrets')
