@@ -57,6 +57,16 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({
         addSignRequest: mockAddSignRequest,
     }),
+    SubmissionError: class SubmissionError extends Error {
+        readonly metadata = { retryable: true }
+        constructor(
+            readonly txIds: string[],
+            readonly classification: string,
+            readonly algodError: unknown,
+        ) {
+            super(`Submission ${classification}`)
+        }
+    },
     submitAndAutoRefresh: async (
         _algokit: unknown,
         encodeSignedTransactions: (
@@ -196,6 +206,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     generateOrderedUniqueId: () => 'mock-id',
     logger: {
         warn: vi.fn(),
+        error: vi.fn(),
     },
     // Thrown by the prepare mutation's `assertOnline()` guard when offline
     // (OFF-004). Kept minimal — this file only needs an identifiable error type.
@@ -205,6 +216,22 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
             this.name = 'NoConnectionError'
         }
     },
+    // Widened for `resolveErrorCopy`, pulled in transitively via the
+    // submission-phase catch (see useSwapExecution.ts).
+    AppError: class AppError extends Error {
+        constructor(
+            message: string,
+            readonly metadata: Record<string, unknown> = {},
+        ) {
+            super(message)
+        }
+    },
+    ErrorCategory: { UNKNOWN: 'UNKNOWN', TRANSACTIONS: 'TRANSACTIONS' },
+    getNetworkErrorMessageKeys: () => ({
+        titleKey: 'errors.network.no_connection.title',
+        bodyKey: 'errors.network.no_connection.body',
+    }),
+    isPeraNetworkError: () => false,
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -847,6 +874,37 @@ describe('useSwapExecution', () => {
             swapId: '12345',
             data: expect.objectContaining({ status: 'failed' }),
         })
+    })
+
+    it('reports an unverified submission as status-unknown rather than a node rejection', async () => {
+        // toAlgodError cannot read a SubmissionError, so the old getMessage path
+        // fell through to unknown_node_error and claimed the network rejected a
+        // transaction that may in fact be confirming.
+        const { SubmissionError } =
+            await import('@perawallet/wallet-core-signing')
+        mockSendRawTransaction.mockRejectedValue(
+            new (SubmissionError as unknown as new (
+                txIds: string[],
+                classification: string,
+                algodError: unknown,
+            ) => Error)(
+                ['TXID'],
+                'unknown-outcome',
+                new Error('network_unavailable'),
+            ),
+        )
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-unknown'))
+        })
+
+        expect(outcome?.kind).toBe('error')
+        expect(result.current.error?.message).toBe(
+            'errors.submission.unknown_outcome.body',
+        )
     })
 
     it('still succeeds if status update fails (non-fatal)', async () => {

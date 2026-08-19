@@ -46,6 +46,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
+import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 import {
     buildGroupPlans,
     scatterSigned,
@@ -377,7 +378,12 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     collectedTxIds.push(...ids)
                 }
             } catch (e) {
-                const message = getMessage(e).body
+                const message = resolveErrorCopy(
+                    e,
+                    t,
+                    undefined,
+                    getMessage,
+                ).body
                 setError({ phase: 'submission', message })
                 setStatus('error')
                 void reportSwapFailure(
