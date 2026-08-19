@@ -17,6 +17,7 @@ export const BackupAccountType = {
     hardware: 'hardware',
     watch: 'watch',
     multisig: 'multisig',
+    quantum: 'quantum',
 } as const
 export type BackupAccountType =
     (typeof BackupAccountType)[keyof typeof BackupAccountType]
@@ -67,6 +68,11 @@ export type MultisigAddressPayload = WithName & {
     version: number
 }
 
+export type QuantumAddressPayload = WithName & {
+    type: typeof BackupAccountType.quantum
+    address: string
+}
+
 export type AddressBackupPayload =
     | Algo25AddressPayload
     | HdSeedAddressPayload
@@ -74,6 +80,7 @@ export type AddressBackupPayload =
     | HardwareAddressPayload
     | WatchAddressPayload
     | MultisigAddressPayload
+    | QuantumAddressPayload
 
 export type Algo25SecretsPayload = {
     type: typeof BackupAccountType.algo25
@@ -88,4 +95,13 @@ export type HdSeedSecretsPayload = {
     entropy: string
 }
 
-export type SecretsBackupPayload = Algo25SecretsPayload | HdSeedSecretsPayload
+export type QuantumSecretsPayload = {
+    type: typeof BackupAccountType.quantum
+    /** 25-word recovery phrase */
+    mnemonic: string
+}
+
+export type SecretsBackupPayload =
+    | Algo25SecretsPayload
+    | HdSeedSecretsPayload
+    | QuantumSecretsPayload

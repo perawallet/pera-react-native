@@ -13,6 +13,7 @@
 import {
     BackupAccountType,
     type AddressBackupPayload,
+    type BackupHardwareTransportType,
     type SecretsBackupPayload,
 } from '../models'
 
@@ -76,6 +77,19 @@ const requireStringArray = (
     return value as string[]
 }
 
+const requireHardwareTransportType = (
+    o: Record<string, unknown>,
+    field: string,
+): BackupHardwareTransportType => {
+    const value = o[field]
+    if (value !== 'ble' && value !== 'usb') {
+        throw new BackupPayloadParseError(
+            `Invalid or missing hardware transport type field: ${field}`,
+        )
+    }
+    return value
+}
+
 const optionalName = (o: Record<string, unknown>): string | null =>
     typeof o.customName === 'string' ? o.customName : null
 
@@ -83,17 +97,17 @@ export const parseAddressPayload = (raw: string): AddressBackupPayload => {
     const o = parseJson(raw)
     const type = o.type
     switch (type) {
-        case BackupAccountType.Algo25: {
+        case BackupAccountType.algo25: {
             return {
                 type,
                 address: requireString(o, 'address'),
                 customName: optionalName(o),
             }
         }
-        case BackupAccountType.HdSeed: {
+        case BackupAccountType.hdSeed: {
             return { type, address: requireString(o, 'address') }
         }
-        case BackupAccountType.HdKey: {
+        case BackupAccountType.hdWallet: {
             return {
                 type,
                 address: requireString(o, 'address'),
@@ -109,24 +123,26 @@ export const parseAddressPayload = (raw: string): AddressBackupPayload => {
                 customName: optionalName(o),
             }
         }
-        case BackupAccountType.LedgerBle: {
+        case BackupAccountType.hardware: {
             return {
                 type,
                 address: requireString(o, 'address'),
-                deviceMacAddress: requireString(o, 'deviceMacAddress'),
-                bluetoothName: requireString(o, 'bluetoothName'),
-                indexInLedger: requireNonNegativeInteger(o, 'indexInLedger'),
+                deviceId: requireString(o, 'deviceId'),
+                deviceName: requireString(o, 'deviceName'),
+                accountIndex: requireNonNegativeInteger(o, 'accountIndex'),
+                manufacturer: requireString(o, 'manufacturer'),
+                transportType: requireHardwareTransportType(o, 'transportType'),
                 customName: optionalName(o),
             }
         }
-        case BackupAccountType.NoAuth: {
+        case BackupAccountType.watch: {
             return {
                 type,
                 address: requireString(o, 'address'),
                 customName: optionalName(o),
             }
         }
-        case BackupAccountType.Joint: {
+        case BackupAccountType.multisig: {
             return {
                 type,
                 address: requireString(o, 'address'),
@@ -136,6 +152,13 @@ export const parseAddressPayload = (raw: string): AddressBackupPayload => {
                 ),
                 threshold: requireNonNegativeInteger(o, 'threshold'),
                 version: requireNonNegativeInteger(o, 'version'),
+                customName: optionalName(o),
+            }
+        }
+        case BackupAccountType.quantum: {
+            return {
+                type,
+                address: requireString(o, 'address'),
                 customName: optionalName(o),
             }
         }
@@ -151,15 +174,18 @@ export const parseSecretsPayload = (raw: string): SecretsBackupPayload => {
     const o = parseJson(raw)
     const type = o.type
     switch (type) {
-        case BackupAccountType.Algo25: {
+        case BackupAccountType.algo25: {
             return { type, mnemonic: requireString(o, 'mnemonic') }
         }
-        case BackupAccountType.HdSeed: {
+        case BackupAccountType.hdSeed: {
             return {
                 type,
                 seed: requireString(o, 'seed'),
                 entropy: requireString(o, 'entropy'),
             }
+        }
+        case BackupAccountType.quantum: {
+            return { type, mnemonic: requireString(o, 'mnemonic') }
         }
         default: {
             throw new BackupPayloadParseError(

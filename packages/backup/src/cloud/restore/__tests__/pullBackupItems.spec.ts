@@ -39,7 +39,74 @@ describe('pullBackupItems', () => {
         readItems.mockReset()
     })
 
-    it('groups an Algo25 account with its secret by address', async () => {
+    it('groups a quantum account with its secret by address', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'sha256:global',
+            lastSeq: 10,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([
+            {
+                seq: 9,
+                key: 'accounts/QADDR',
+                type: 'ACCOUNT',
+                ver: 1,
+                status: 'ACTIVE',
+                op: 'UPSERT',
+                hash: 'h1',
+            },
+            {
+                seq: 10,
+                key: 'secrets/QADDR',
+                type: 'ACCOUNT',
+                ver: 1,
+                status: 'ACTIVE',
+                op: 'UPSERT',
+                hash: 'h2',
+            },
+        ])
+        readItems.mockResolvedValue([
+            {
+                key: 'accounts/QADDR',
+                ver: 1,
+                hash: 'h1',
+                payload: enc(
+                    'accounts/QADDR',
+                    JSON.stringify({
+                        type: 'quantum',
+                        address: 'QADDR',
+                        customName: 'Quantum',
+                    }),
+                ),
+            },
+            {
+                key: 'secrets/QADDR',
+                ver: 1,
+                hash: 'h2',
+                payload: enc(
+                    'secrets/QADDR',
+                    JSON.stringify({ type: 'quantum', mnemonic: 'a b c' }),
+                ),
+            },
+        ])
+
+        const result = await pullBackupItems({
+            network: 'mainnet',
+            backupId,
+            deviceId: 'device-1',
+            encryptionKey: encKey,
+        })
+
+        expect(result.accounts).toHaveLength(1)
+        expect(result.accounts[0]).toMatchObject({
+            address: 'QADDR',
+            addressPayload: { type: 'quantum', address: 'QADDR' },
+            secretsPayload: { type: 'quantum', mnemonic: 'a b c' },
+        })
+        expect(result.skipped).toHaveLength(0)
+    })
+
+    it('groups an algo25 account with its secret by address', async () => {
         fetchManifest.mockResolvedValue({
             backupGlobalHash: 'sha256:global',
             lastSeq: 10,
@@ -73,7 +140,7 @@ describe('pullBackupItems', () => {
                 payload: enc(
                     'accounts/ADDR',
                     JSON.stringify({
-                        type: 'Algo25',
+                        type: 'algo25',
                         address: 'ADDR',
                         customName: 'Main',
                     }),
@@ -85,7 +152,7 @@ describe('pullBackupItems', () => {
                 hash: 'h2',
                 payload: enc(
                     'secrets/ADDR',
-                    JSON.stringify({ type: 'Algo25', mnemonic: 'a b c' }),
+                    JSON.stringify({ type: 'algo25', mnemonic: 'a b c' }),
                 ),
             },
         ])
@@ -102,8 +169,8 @@ describe('pullBackupItems', () => {
         expect(result.accounts).toHaveLength(1)
         expect(result.accounts[0]).toMatchObject({
             address: 'ADDR',
-            addressPayload: { type: 'Algo25', address: 'ADDR' },
-            secretsPayload: { type: 'Algo25', mnemonic: 'a b c' },
+            addressPayload: { type: 'algo25', address: 'ADDR' },
+            secretsPayload: { type: 'algo25', mnemonic: 'a b c' },
         })
         expect(result.skipped).toHaveLength(0)
     })

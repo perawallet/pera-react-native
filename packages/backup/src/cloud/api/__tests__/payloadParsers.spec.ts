@@ -18,22 +18,22 @@ import {
 } from '../payloadParsers'
 
 describe('parseAddressPayload', () => {
-    it('parses an Algo25 address payload', () => {
+    it('parses an algo25 address payload', () => {
         const json = JSON.stringify({
-            type: 'Algo25',
+            type: 'algo25',
             address: 'ADDR',
             customName: 'Main',
         })
         expect(parseAddressPayload(json)).toEqual({
-            type: 'Algo25',
+            type: 'algo25',
             address: 'ADDR',
             customName: 'Main',
         })
     })
 
-    it('parses an HdKey address payload with derivation fields', () => {
+    it('parses an hdWallet address payload with derivation fields', () => {
         const json = JSON.stringify({
-            type: 'HdKey',
+            type: 'hdWallet',
             address: 'ADDR',
             seedFirstDerivedAddress: 'SEEDADDR',
             publicKey: 'PUBKEY',
@@ -43,52 +43,69 @@ describe('parseAddressPayload', () => {
             derivationType: 9,
         })
         expect(parseAddressPayload(json)).toMatchObject({
-            type: 'HdKey',
+            type: 'hdWallet',
             keyIndex: 3,
             derivationType: 9,
         })
     })
 
-    it('parses a Joint address payload', () => {
+    it('parses a multisig address payload', () => {
         const json = JSON.stringify({
-            type: 'Joint',
+            type: 'multisig',
             address: 'MSIG',
             participantAddresses: ['A', 'B'],
             threshold: 2,
             version: 1,
         })
         expect(parseAddressPayload(json)).toMatchObject({
-            type: 'Joint',
+            type: 'multisig',
             participantAddresses: ['A', 'B'],
             threshold: 2,
         })
     })
 
-    it('parses a LedgerBle address payload', () => {
+    it('parses a hardware address payload', () => {
         const json = JSON.stringify({
-            type: 'LedgerBle',
+            type: 'hardware',
             address: 'ADDR',
-            deviceMacAddress: 'AA:BB:CC',
-            bluetoothName: 'Ledger Nano',
-            indexInLedger: 2,
+            deviceId: 'AA:BB:CC',
+            deviceName: 'Ledger Nano',
+            accountIndex: 2,
+            manufacturer: 'Ledger',
+            transportType: 'ble',
             customName: 'Hardware',
         })
         expect(parseAddressPayload(json)).toEqual({
-            type: 'LedgerBle',
+            type: 'hardware',
             address: 'ADDR',
-            deviceMacAddress: 'AA:BB:CC',
-            bluetoothName: 'Ledger Nano',
-            indexInLedger: 2,
+            deviceId: 'AA:BB:CC',
+            deviceName: 'Ledger Nano',
+            accountIndex: 2,
+            manufacturer: 'Ledger',
+            transportType: 'ble',
             customName: 'Hardware',
         })
     })
 
-    it('parses a NoAuth address payload without a customName', () => {
-        const json = JSON.stringify({ type: 'NoAuth', address: 'ADDR' })
+    it('parses a watch address payload without a customName', () => {
+        const json = JSON.stringify({ type: 'watch', address: 'ADDR' })
         expect(parseAddressPayload(json)).toEqual({
-            type: 'NoAuth',
+            type: 'watch',
             address: 'ADDR',
             customName: null,
+        })
+    })
+
+    it('parses a quantum address payload', () => {
+        const json = JSON.stringify({
+            type: 'quantum',
+            address: 'ADDR',
+            customName: 'Quantum',
+        })
+        expect(parseAddressPayload(json)).toEqual({
+            type: 'quantum',
+            address: 'ADDR',
+            customName: 'Quantum',
         })
     })
 
@@ -106,54 +123,95 @@ describe('parseAddressPayload', () => {
 
     it('throws when a required field is missing', () => {
         expect(() =>
-            parseAddressPayload(JSON.stringify({ type: 'Algo25' })),
+            parseAddressPayload(JSON.stringify({ type: 'algo25' })),
         ).toThrow(BackupPayloadParseError)
     })
 
     it('rejects a non-finite numeric field (1e999 parses to Infinity)', () => {
         const raw =
-            '{"type":"HdKey","address":"ADDR","seedFirstDerivedAddress":"S","publicKey":"P","account":0,"change":0,"keyIndex":1e999,"derivationType":9}'
+            '{"type":"hdWallet","address":"ADDR","seedFirstDerivedAddress":"S","publicKey":"P","account":0,"change":0,"keyIndex":1e999,"derivationType":9}'
         expect(() => parseAddressPayload(raw)).toThrow(BackupPayloadParseError)
     })
 
     it('rejects a non-integer numeric field', () => {
         const raw =
-            '{"type":"HdKey","address":"ADDR","seedFirstDerivedAddress":"S","publicKey":"P","account":0,"change":0,"keyIndex":1.5,"derivationType":9}'
+            '{"type":"hdWallet","address":"ADDR","seedFirstDerivedAddress":"S","publicKey":"P","account":0,"change":0,"keyIndex":1.5,"derivationType":9}'
         expect(() => parseAddressPayload(raw)).toThrow(BackupPayloadParseError)
     })
 
     it('rejects a negative numeric field', () => {
         const raw =
-            '{"type":"HdKey","address":"ADDR","seedFirstDerivedAddress":"S","publicKey":"P","account":0,"change":0,"keyIndex":-1,"derivationType":9}'
+            '{"type":"hdWallet","address":"ADDR","seedFirstDerivedAddress":"S","publicKey":"P","account":0,"change":0,"keyIndex":-1,"derivationType":9}'
         expect(() => parseAddressPayload(raw)).toThrow(BackupPayloadParseError)
+    })
+
+    it('rejects an unknown or missing hardware transport type', () => {
+        const hardware = {
+            type: 'hardware',
+            address: 'ADDR',
+            deviceId: 'AA:BB:CC',
+            deviceName: 'Ledger Nano',
+            accountIndex: 2,
+            manufacturer: 'Ledger',
+        }
+        expect(() =>
+            parseAddressPayload(
+                JSON.stringify({ ...hardware, transportType: 'nfc' }),
+            ),
+        ).toThrow(BackupPayloadParseError)
+        expect(() => parseAddressPayload(JSON.stringify(hardware))).toThrow(
+            BackupPayloadParseError,
+        )
     })
 })
 
 describe('parseSecretsPayload', () => {
-    it('parses an Algo25 secrets payload', () => {
-        const json = JSON.stringify({ type: 'Algo25', mnemonic: 'a b c' })
+    it('parses an algo25 secrets payload', () => {
+        const json = JSON.stringify({ type: 'algo25', mnemonic: 'a b c' })
         expect(parseSecretsPayload(json)).toEqual({
-            type: 'Algo25',
+            type: 'algo25',
             mnemonic: 'a b c',
         })
     })
 
-    it('parses an HdSeed secrets payload', () => {
+    it('parses an hdSeed secrets payload', () => {
         const json = JSON.stringify({
-            type: 'HdSeed',
+            type: 'hdSeed',
             seed: 'aa',
             entropy: 'bb',
         })
         expect(parseSecretsPayload(json)).toEqual({
-            type: 'HdSeed',
+            type: 'hdSeed',
             seed: 'aa',
             entropy: 'bb',
         })
     })
 
+    it('parses a quantum secrets payload', () => {
+        const json = JSON.stringify({ type: 'quantum', mnemonic: 'a b c' })
+        expect(parseSecretsPayload(json)).toEqual({
+            type: 'quantum',
+            mnemonic: 'a b c',
+        })
+    })
+
+    it('keeps quantum and algo25 secrets distinct for an identical mnemonic', () => {
+        const mnemonic = 'a b c'
+        const asQuantum = parseSecretsPayload(
+            JSON.stringify({ type: 'quantum', mnemonic }),
+        )
+        const asAlgo25 = parseSecretsPayload(
+            JSON.stringify({ type: 'algo25', mnemonic }),
+        )
+
+        expect(asQuantum.type).toBe('quantum')
+        expect(asAlgo25.type).toBe('algo25')
+        expect(asQuantum).not.toEqual(asAlgo25)
+    })
+
     it('throws on an unknown secrets type', () => {
         expect(() =>
-            parseSecretsPayload(JSON.stringify({ type: 'LedgerBle' })),
+            parseSecretsPayload(JSON.stringify({ type: 'hardware' })),
         ).toThrow(BackupPayloadParseError)
     })
 })
