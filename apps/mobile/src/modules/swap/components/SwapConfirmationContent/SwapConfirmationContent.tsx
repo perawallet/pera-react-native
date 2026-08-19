@@ -33,7 +33,9 @@ export type SwapConfirmationResult =
     // The quote outlived its TTL before confirm — nothing executed; the
     // form re-quotes and asks the user to confirm the fresh rate.
     | { kind: 'stale-quote' }
-    | { kind: 'error'; message: string }
+    // title is only set for a resolved submission-phase failure; other
+    // phases fall back to the caller's default title.
+    | { kind: 'error'; message: string; title?: string }
 
 export type SwapConfirmationContentProps = {
     quote: SwapQuote

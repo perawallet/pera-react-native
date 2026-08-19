@@ -619,6 +619,66 @@ describe('useSwapForm', () => {
         expect(mockRequestBottomSheet).not.toHaveBeenCalled()
     })
 
+    describe('handleOpenConfirm error toast', () => {
+        const selectAQuote = async () => {
+            mockCreateQuotes.mockResolvedValue([
+                {
+                    provider: 'tinyman',
+                    amountOut: new Decimal('7000000'),
+                    assetIn: { assetId: '0', unitName: 'ALGO', decimals: 6 },
+                    assetOut: {
+                        assetId: '31566704',
+                        unitName: 'USDC',
+                        decimals: 6,
+                    },
+                },
+            ])
+            const { result } = renderHook(() => useSwapForm())
+            await act(async () => {
+                result.current.handlePayAmountChange(new Decimal(5))
+            })
+            return result
+        }
+
+        // F1: submission-phase failures resolve a title (e.g. the honest
+        // unknown-outcome headline) that must win over the hardcoded
+        // "Swap Failed" default.
+        it('uses the resolved title when the confirmation result carries one', async () => {
+            const result = await selectAQuote()
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                kind: 'error',
+                message: 'body text',
+                title: 'resolved.title',
+            })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'resolved.title',
+                'body text',
+            )
+        })
+
+        it('falls back to the default title when the confirmation result carries none', async () => {
+            const result = await selectAQuote()
+            mockRequestBottomSheet.mockResolvedValueOnce({
+                kind: 'error',
+                message: 'body text',
+            })
+
+            await act(async () => {
+                await result.current.handleOpenConfirm()
+            })
+
+            expect(mockErrorToast).toHaveBeenCalledWith(
+                'swap.execution.error_title',
+                'body text',
+            )
+        })
+    })
+
     describe('insufficient balance', () => {
         it('flags an amount larger than the holding and blocks the swap', () => {
             mockPayBalance = new Decimal(50)

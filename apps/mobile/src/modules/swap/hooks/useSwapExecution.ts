@@ -94,7 +94,16 @@ export type SwapExecutionOutcome =
     // The quote outlived its client TTL (e.g. the app sat offline between
     // quote and confirm) — never executed; the caller re-quotes.
     | { kind: 'stale-quote' }
-    | { kind: 'error'; phase: SwapExecutionErrorPhase; message: string }
+    | {
+          kind: 'error'
+          phase: SwapExecutionErrorPhase
+          message: string
+          // Only set for submission-phase failures: the classification-aware
+          // title resolveErrorCopy computed (e.g. the honest unknown-outcome
+          // headline). Absent for prepare/signing, which are genuine failures
+          // and keep the caller's default title.
+          title?: string
+      }
 
 type UseSwapExecutionResult = {
     execute: (quote: SwapQuote) => Promise<SwapExecutionOutcome>
@@ -378,19 +387,19 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     collectedTxIds.push(...ids)
                 }
             } catch (e) {
-                const message = resolveErrorCopy(
-                    e,
-                    t,
-                    undefined,
-                    getMessage,
-                ).body
-                setError({ phase: 'submission', message })
+                const copy = resolveErrorCopy(e, t, undefined, getMessage)
+                setError({ phase: 'submission', message: copy.body })
                 setStatus('error')
                 void reportSwapFailure(
                     updateSwapStatus,
                     prepareResult.swapIdStr,
                 )
-                return { kind: 'error', phase: 'submission', message }
+                return {
+                    kind: 'error',
+                    phase: 'submission',
+                    message: copy.body,
+                    title: copy.title,
+                }
             }
 
             setTxIds(collectedTxIds)

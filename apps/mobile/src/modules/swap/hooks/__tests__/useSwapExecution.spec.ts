@@ -866,6 +866,10 @@ describe('useSwapExecution', () => {
         expect(outcome?.kind).toBe('error')
         if (outcome?.kind === 'error') {
             expect(outcome.phase).toBe('submission')
+            // Submission-phase failures carry the resolved title through so
+            // the toast headline matches the body (F1) instead of the
+            // caller always rendering a hardcoded "Swap Failed".
+            expect(outcome.title).toBe('errors.general.title')
         }
         expect(result.current.status).toBe('error')
         expect(result.current.error?.phase).toBe('submission')
@@ -905,6 +909,11 @@ describe('useSwapExecution', () => {
         expect(result.current.error?.message).toBe(
             'errors.submission.unknown_outcome.body',
         )
+        // F1: the honest unknown-outcome title must reach the outcome, not
+        // just the body, or callers keep rendering "Swap Failed" over it.
+        if (outcome?.kind === 'error') {
+            expect(outcome.title).toBe('errors.submission.unknown_outcome.title')
+        }
     })
 
     it('still succeeds if status update fails (non-fatal)', async () => {

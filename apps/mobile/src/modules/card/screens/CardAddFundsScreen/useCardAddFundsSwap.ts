@@ -34,7 +34,9 @@ type CardAddFundsSwapOutcome =
     | { kind: 'cancelled' }
     // Shared-account swap proposed; co-signer must approve before it submits.
     | { kind: 'pending-cosign' }
-    | { kind: 'error'; message: string }
+    // title is only set for a resolved submission-phase failure; other
+    // phases fall back to the caller's default title.
+    | { kind: 'error'; message: string; title?: string }
 
 type UseCardAddFundsSwapParams = {
     account: Nullable<WalletAccount>
@@ -112,7 +114,11 @@ export const useCardAddFundsSwap = ({
                 // so the user re-taps with the already-refreshed rate.
                 return { kind: 'cancelled' }
             }
-            return { kind: 'error', message: outcome.message }
+            return {
+                kind: 'error',
+                message: outcome.message,
+                title: outcome.title,
+            }
         }, [quote, execute])
 
     return { quote, rate, usdcOut, isQuoteFetching, isSwapping, executeSwap }
