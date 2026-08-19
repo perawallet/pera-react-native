@@ -63,6 +63,27 @@ describe('WealthTrend', () => {
         expect(container.innerHTML).toBe('')
     })
 
+    it('renders empty on a network with no Pera backend', () => {
+        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+            data: [
+                {
+                    preferredValue: new Decimal(100),
+                    algoValue: new Decimal(100),
+                },
+                {
+                    preferredValue: new Decimal(120),
+                    algoValue: new Decimal(120),
+                },
+            ],
+            isPending: false,
+            isUnavailableOnNetwork: true,
+        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+
+        const { container } = render(<WealthTrend period='one-week' />)
+
+        expect(container.innerHTML).toBe('')
+    })
+
     it('displays positive trend with percentage', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: [

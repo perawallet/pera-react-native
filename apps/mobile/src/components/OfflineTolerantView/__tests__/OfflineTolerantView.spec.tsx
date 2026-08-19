@@ -127,6 +127,43 @@ describe('OfflineTolerantView', () => {
         expect(screen.getByText('custom-error-body')).toBeTruthy()
     })
 
+    it('shows the network-unavailable surface with no retry button, even when a handler is given', () => {
+        render(
+            <OfflineTolerantView
+                isOffline={false}
+                isUnavailable
+                onRetry={vi.fn()}
+            >
+                <Children />
+            </OfflineTolerantView>,
+        )
+
+        expect(
+            screen.getByText('common.network_unavailable.title'),
+        ).toBeTruthy()
+        expect(screen.getByText('common.network_unavailable.body')).toBeTruthy()
+        expect(screen.queryByText('common.retry.label')).toBeNull()
+        expect(screen.queryByText('children-content')).toBeNull()
+    })
+
+    it('prefers the network-unavailable surface over offline and error', () => {
+        render(
+            <OfflineTolerantView
+                isOffline
+                isError
+                isUnavailable
+            >
+                <Children />
+            </OfflineTolerantView>,
+        )
+
+        expect(
+            screen.getByText('common.network_unavailable.title'),
+        ).toBeTruthy()
+        expect(screen.queryByText('common.offline_mode')).toBeNull()
+        expect(screen.queryByText('common.error.title')).toBeNull()
+    })
+
     it('applies the per-arm testIDs', () => {
         const { rerender } = render(
             <OfflineTolerantView

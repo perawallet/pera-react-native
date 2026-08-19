@@ -146,6 +146,36 @@ describe('useAssetSearchQuery', () => {
         expect(mocks.searchAssets).not.toHaveBeenCalled()
     })
 
+    it.each(['betanet', 'custom'])(
+        'reports isUnavailableOnNetwork and skips the fetch on %s',
+        network => {
+            mocks.useNetwork.mockReturnValue({ network })
+
+            const { result } = renderHook(() => useAssetSearchQuery('algo'), {
+                wrapper: createWrapper(queryClient),
+            })
+
+            expect(result.current.isUnavailableOnNetwork).toBe(true)
+            expect(mocks.searchAssets).not.toHaveBeenCalled()
+        },
+    )
+
+    it.each(['mainnet', 'testnet'])(
+        'reports isUnavailableOnNetwork false and fetches normally on %s',
+        async network => {
+            mocks.useNetwork.mockReturnValue({ network })
+            mocks.searchAssets.mockResolvedValue({ results: [], next: null })
+
+            const { result } = renderHook(() => useAssetSearchQuery('algo'), {
+                wrapper: createWrapper(queryClient),
+            })
+
+            expect(result.current.isUnavailableOnNetwork).toBe(false)
+
+            await waitFor(() => expect(mocks.searchAssets).toHaveBeenCalled())
+        },
+    )
+
     it('passes hasCollectible through to the endpoint', async () => {
         mocks.searchAssets.mockResolvedValue({ results: [], next: null })
 

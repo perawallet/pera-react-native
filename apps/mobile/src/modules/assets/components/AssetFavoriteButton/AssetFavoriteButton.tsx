@@ -26,18 +26,20 @@ export type AssetFavoriteButtonProps = {
 export const AssetFavoriteButton = ({
     assetId,
     isFavorite,
+    style,
     ...rest
 }: AssetFavoriteButtonProps) => {
     const styles = useStyles()
-    const { handleToggleFavorite, isDisabled } = useAssetFavoriteButton(
-        assetId,
-        isFavorite,
-    )
+    const { handleToggleFavorite, isDisabled, isUnavailableOnNetwork } =
+        useAssetFavoriteButton(assetId, isFavorite)
 
     return (
         <PWTouchableOpacity
             onPress={handleToggleFavorite}
-            disabled={isDisabled}
+            // Unavailable stays tappable so the press can explain why —
+            // only the visual disabled state applies.
+            disabled={isDisabled && !isUnavailableOnNetwork}
+            style={[isUnavailableOnNetwork && styles.unavailable, style]}
             {...rest}
         >
             <PWRoundIcon

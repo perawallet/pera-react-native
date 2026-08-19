@@ -69,6 +69,9 @@ export type UseGlobalSearchResult = {
     isRemoteError: boolean
     /** Remote asset search is paused because the device is offline. */
     isRemotePaused: boolean
+    /** Remote asset search has no backend on this network, so retrying can
+     *  never help. Unlike `isRemotePaused`, reconnecting will not resolve it. */
+    isRemoteUnavailableOnNetwork: boolean
 }
 
 export const useGlobalSearch = (
@@ -218,5 +221,12 @@ export const useGlobalSearch = (
             : null,
         isRemoteError: remoteAssetQuery.isError,
         isRemotePaused: remoteAssetQuery.isPaused,
+        // Deliberately not gated on `shouldRunRemoteAssets`: the backend is
+        // absent whether or not a query is in flight, so the caller can say so
+        // before the user types rather than after an empty result comes back.
+        isRemoteUnavailableOnNetwork:
+            remoteAssetsEnabled &&
+            includesAssets &&
+            remoteAssetQuery.isUnavailableOnNetwork,
     }
 }

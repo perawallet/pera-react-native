@@ -207,4 +207,14 @@ describe('fetchAndPersistPrices', () => {
             fetchAndPersistPrices(['123', '0'], 'mainnet'),
         ).rejects.toThrow('All price sync batches failed')
     })
+
+    test.each(['betanet', 'custom'] as const)(
+        'no-ops without calling either Pera-backed endpoint on %s',
+        async network => {
+            await fetchAndPersistPrices(['123', '0'], network)
+
+            expect(fetchAssetPricesMock).not.toHaveBeenCalled()
+            expect(fetchPublicAssetDetailsMock).not.toHaveBeenCalled()
+        },
+    )
 })

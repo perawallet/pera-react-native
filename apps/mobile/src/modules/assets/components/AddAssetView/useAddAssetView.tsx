@@ -39,6 +39,7 @@ type UseAddAssetViewResult = {
     isLoading: boolean
     isError: boolean
     isOffline: boolean
+    isUnavailable: boolean
     isFetchingNextPage: boolean
     hasNextPage: boolean
     fetchNextPage: Nullable<() => void>
@@ -78,6 +79,7 @@ export const useAddAssetView = (
         isLoading,
         isRemoteError,
         isRemotePaused,
+        isRemoteUnavailableOnNetwork: isUnavailable,
         hasNextRemotePage: hasNextPage,
         isFetchingNextRemotePage: isFetchingNextPage,
         fetchNextRemotePage: fetchNextPage,
@@ -187,6 +189,7 @@ export const useAddAssetView = (
         isLoading,
         isError,
         isOffline,
+        isUnavailable,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,

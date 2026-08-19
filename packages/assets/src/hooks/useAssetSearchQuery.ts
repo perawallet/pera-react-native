@@ -12,6 +12,7 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { searchAssets } from '../api/assets/search-endpoints'
 import type { DisplayableAsset } from '../models/assets'
 import { transformSearchResult } from './mappers'
@@ -34,6 +35,8 @@ type UseAssetSearchQueryResult = {
     isFetchingNextPage: boolean
     hasNextPage: boolean
     fetchNextPage: () => void
+    /** True when the active network has no Pera backend — this can never succeed here. */
+    isUnavailableOnNetwork: boolean
 }
 
 const getAssetSearchQueryKey = (
@@ -60,7 +63,8 @@ export const useAssetSearchQuery = (
 ): UseAssetSearchQueryResult => {
     const { network } = useNetwork()
     const hasCollectible = options?.hasCollectible ?? false
-    const enabled = options?.enabled ?? true
+    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
+    const enabled = (options?.enabled ?? true) && !isUnavailableOnNetwork
 
     const infiniteQuery = useInfiniteQuery({
         queryKey: getAssetSearchQueryKey(query, network, hasCollectible),
@@ -89,6 +93,7 @@ export const useAssetSearchQuery = (
         isFetchingNextPage: infiniteQuery.isFetchingNextPage,
         hasNextPage: infiniteQuery.hasNextPage,
         fetchNextPage: () => void infiniteQuery.fetchNextPage(),
+        isUnavailableOnNetwork,
     }
 }
 

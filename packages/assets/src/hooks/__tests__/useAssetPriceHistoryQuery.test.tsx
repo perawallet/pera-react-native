@@ -12,6 +12,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { Networks } from '@perawallet/wallet-core-config'
 import { useAssetPriceHistoryQuery } from '../useAssetPriceHistoryQuery'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
@@ -83,5 +84,89 @@ describe('useAssetPriceHistoryQuery', () => {
 
             expect(result.current.isPending).toBe(true)
         })
+
+        it.each(['betanet', 'custom'])(
+            'reports isUnavailableOnNetwork and skips the fetch on %s',
+            network => {
+                mocks.useNetwork.mockReturnValue({ network })
+
+                const { result } = renderHook(
+                    () => useAssetPriceHistoryQuery('123', 'one-day'),
+                    { wrapper: createWrapper(queryClient) },
+                )
+
+                expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(mocks.fetchAssetPriceHistory).not.toHaveBeenCalled()
+            },
+        )
+
+        it.each(['mainnet', 'testnet'])(
+            'reports isUnavailableOnNetwork false and fetches normally on %s',
+            async network => {
+                mocks.useNetwork.mockReturnValue({ network })
+                mocks.fetchAssetPriceHistory.mockResolvedValue([])
+
+                const { result } = renderHook(
+                    () => useAssetPriceHistoryQuery('123', 'one-day'),
+                    { wrapper: createWrapper(queryClient) },
+                )
+
+                expect(result.current.isUnavailableOnNetwork).toBe(false)
+
+                await waitFor(() =>
+                    expect(mocks.fetchAssetPriceHistory).toHaveBeenCalled(),
+                )
+            },
+        )
+
+        it.each([Networks.betanet, Networks.custom])(
+            'does not invoke the queryFn when refetch is called on %s',
+            async network => {
+                mocks.useNetwork.mockReturnValue({ network })
+
+                const { result } = renderHook(
+                    () => useAssetPriceHistoryQuery('123', 'one-day'),
+                    { wrapper: createWrapper(queryClient) },
+                )
+
+                await result.current.refetch()
+
+                expect(mocks.fetchAssetPriceHistory).not.toHaveBeenCalled()
+            },
+        )
+
+        it.each([Networks.mainnet, Networks.testnet])(
+            'still invokes the queryFn when refetch is called on %s',
+            async network => {
+                mocks.useNetwork.mockReturnValue({ network })
+                mocks.fetchAssetPriceHistory.mockResolvedValue([])
+
+                const { result } = renderHook(
+                    () => useAssetPriceHistoryQuery('123', 'one-day'),
+                    { wrapper: createWrapper(queryClient) },
+                )
+
+                await waitFor(() => expect(result.current.isSuccess).toBe(true))
+                mocks.fetchAssetPriceHistory.mockClear()
+
+                await result.current.refetch()
+
+                expect(mocks.fetchAssetPriceHistory).toHaveBeenCalled()
+            },
+        )
+
+        it.each([Networks.betanet, Networks.custom])(
+            'reports isPending false while unavailable on %s',
+            network => {
+                mocks.useNetwork.mockReturnValue({ network })
+
+                const { result } = renderHook(
+                    () => useAssetPriceHistoryQuery('123', 'one-day'),
+                    { wrapper: createWrapper(queryClient) },
+                )
+
+                expect(result.current.isPending).toBe(false)
+            },
+        )
     })
 })

@@ -47,8 +47,14 @@ export const AssetWealthChart = memo(function AssetWealthChart({
     const themeStyle = useStyles()
     const { t } = useLanguage()
 
-    const { data, isPending, isError, isPaused, refetch } =
-        useAccountsAssetsBalanceHistoryQuery(account, asset.assetId, period)
+    const {
+        data,
+        isPending,
+        isError,
+        isPaused,
+        refetch,
+        isUnavailableOnNetwork,
+    } = useAccountsAssetsBalanceHistoryQuery(account, asset.assetId, period)
 
     return (
         <BalanceLineChart
@@ -58,6 +64,7 @@ export const AssetWealthChart = memo(function AssetWealthChart({
             isPending={isPending}
             isError={isError}
             isPaused={isPaused}
+            isUnavailableOnNetwork={isUnavailableOnNetwork}
             onRetry={() => void refetch()}
             emptyBody={t('common.wealth_chart.asset_empty_body')}
             style={themeStyle.container}

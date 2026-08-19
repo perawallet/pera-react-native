@@ -15,7 +15,11 @@ import { useAccountHoldingsInvalidator } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useToggleAssetFavoriteMutation } from '@perawallet/wallet-core-assets'
-import { type Optional } from '@perawallet/wallet-core-shared'
+import {
+    PeraServiceUnavailableError,
+    type Optional,
+} from '@perawallet/wallet-core-shared'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 export const useAssetFavoriteButton = (
     assetId: string,
@@ -24,11 +28,17 @@ export const useAssetFavoriteButton = (
     const { network } = useNetwork()
     const deviceId = useDeviceID(network)
     const { invalidate: invalidateHoldings } = useAccountHoldingsInvalidator()
-    const { toggleAssetFavorite, isLoading } = useToggleAssetFavoriteMutation({
-        onLocalWrite: invalidateHoldings,
-    })
+    const { showError } = useErrorToast()
+    const { toggleAssetFavorite, isLoading, isUnavailableOnNetwork } =
+        useToggleAssetFavoriteMutation({ onLocalWrite: invalidateHoldings })
 
     const handleToggleFavorite = useCallback(() => {
+        // Stays reachable (not truly disabled) so the tap can explain why,
+        // instead of the press being silently swallowed.
+        if (isUnavailableOnNetwork) {
+            showError(new PeraServiceUnavailableError(network))
+            return
+        }
         if (deviceId && isFavorite !== undefined) {
             toggleAssetFavorite({
                 assetID: assetId,
@@ -37,10 +47,19 @@ export const useAssetFavoriteButton = (
                 network,
             })
         }
-    }, [assetId, deviceId, isFavorite, toggleAssetFavorite, network])
+    }, [
+        assetId,
+        deviceId,
+        isFavorite,
+        toggleAssetFavorite,
+        network,
+        isUnavailableOnNetwork,
+        showError,
+    ])
 
     return {
         handleToggleFavorite,
         isDisabled: !deviceId || isFavorite === undefined || isLoading,
+        isUnavailableOnNetwork,
     }
 }

@@ -11,11 +11,15 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { UNAVAILABLE_CONTROL_OPACITY } from '@constants/ui'
 
 export const useStyles = makeStyles(theme => ({
     icon: {
         // Background is always layerGrayLighter for both states in Android
         backgroundColor: theme.colors.layerGrayLighter,
         // We use the variant to control the icon color
+    },
+    unavailable: {
+        opacity: UNAVAILABLE_CONTROL_OPACITY,
     },
 }))

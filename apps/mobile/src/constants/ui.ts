@@ -83,6 +83,10 @@ export const ONRAMP_QUOTE_DEBOUNCE_TIME = 500
 export const ONRAMP_AMOUNT_ERROR_DEBOUNCE_TIME = 300
 
 export const NFT_NOT_OPTED_IN_OPACITY = 0.5
+// Dims a control that stays tappable (e.g. a toggle whose network has no Pera
+// backend) — distinct from TouchableOpacity's `disabled`, which would also
+// swallow the press meant to explain why.
+export const UNAVAILABLE_CONTROL_OPACITY = 0.5
 
 export const SCROLL_EVENT_THROTTLE = 16
 export const DEFAULT_SNAP_THRESHOLD = 0.25

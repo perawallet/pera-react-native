@@ -26,16 +26,20 @@ export type AssetNotificationButtonProps = {
 export const AssetNotificationButton = ({
     assetId,
     isNotificationsEnabled,
+    style,
     ...rest
 }: AssetNotificationButtonProps) => {
     const styles = useStyles()
-    const { handleToggleNotifications, isDisabled } =
+    const { handleToggleNotifications, isDisabled, isUnavailableOnNetwork } =
         useAssetNotificationButton(assetId, isNotificationsEnabled)
 
     return (
         <PWTouchableOpacity
             onPress={handleToggleNotifications}
-            disabled={isDisabled}
+            // Unavailable stays tappable so the press can explain why —
+            // only the visual disabled state applies.
+            disabled={isDisabled && !isUnavailableOnNetwork}
+            style={[isUnavailableOnNetwork && styles.unavailable, style]}
             {...rest}
         >
             <PWRoundIcon

@@ -234,4 +234,41 @@ describe('BalanceLineChart', () => {
         expect(screen.queryByTestId('line-chart')).toBeNull()
         expect(screen.queryByText('Offline Mode')).toBeNull()
     })
+
+    it('renders the network-unavailable state instead of spinning forever', () => {
+        renderChart({
+            series: undefined,
+            isPending: true,
+            isUnavailableOnNetwork: true,
+        })
+
+        expect(screen.getByText('Not available on this network')).toBeTruthy()
+        expect(
+            screen.getByText(
+                "This needs Pera services, which aren't available on BetaNet or custom nodes. Switch to MainNet or TestNet.",
+            ),
+        ).toBeTruthy()
+        expect(screen.queryByTestId('line-chart')).toBeNull()
+    })
+
+    it('omits the retry button on the network-unavailable state — retrying can never succeed', () => {
+        const onRetry = vi.fn()
+        renderChart({
+            series: undefined,
+            isUnavailableOnNetwork: true,
+            onRetry,
+        })
+
+        expect(screen.queryByTestId('balance-chart-retry')).toBeNull()
+    })
+
+    it('keeps rendering the last-known chart when unavailable with stale data', () => {
+        renderChart({
+            series: [{ balance: 1 }, { balance: 2 }],
+            isUnavailableOnNetwork: true,
+        })
+
+        expect(screen.getByTestId('line-chart')).toBeTruthy()
+        expect(screen.queryByText('Not available on this network')).toBeNull()
+    })
 })
