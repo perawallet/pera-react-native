@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { z } from 'zod'
+import type { z } from 'zod'
 import {
-    BackupAccountType,
+    addressBackupPayloadSchema,
+    secretsBackupPayloadSchema,
     type AddressBackupPayload,
     type SecretsBackupPayload,
 } from '../models'
@@ -23,80 +24,6 @@ export class BackupPayloadParseError extends Error {
         this.name = 'BackupPayloadParseError'
     }
 }
-
-const nonNegativeInt = z.number().int().nonnegative()
-
-const customName = z
-    .unknown()
-    .optional()
-    .transform(value => (typeof value === 'string' ? value : null))
-
-const addressPayloadSchema = z.discriminatedUnion('type', [
-    z.object({
-        type: z.literal(BackupAccountType.algo25),
-        address: z.string(),
-        customName,
-    }),
-    z.object({
-        type: z.literal(BackupAccountType.hdSeed),
-        address: z.string(),
-    }),
-    z.object({
-        type: z.literal(BackupAccountType.hdWallet),
-        address: z.string(),
-        seedFirstDerivedAddress: z.string(),
-        publicKey: z.string(),
-        account: nonNegativeInt,
-        change: nonNegativeInt,
-        keyIndex: nonNegativeInt,
-        derivationType: nonNegativeInt,
-        customName,
-    }),
-    z.object({
-        type: z.literal(BackupAccountType.hardware),
-        address: z.string(),
-        deviceId: z.string(),
-        deviceName: z.string(),
-        accountIndex: nonNegativeInt,
-        manufacturer: z.string(),
-        transportType: z.enum(['ble', 'usb']),
-        customName,
-    }),
-    z.object({
-        type: z.literal(BackupAccountType.watch),
-        address: z.string(),
-        customName,
-    }),
-    z.object({
-        type: z.literal(BackupAccountType.multisig),
-        address: z.string(),
-        participantAddresses: z.array(z.string()),
-        threshold: nonNegativeInt,
-        version: nonNegativeInt,
-        customName,
-    }),
-    z.object({
-        type: z.literal(BackupAccountType.quantum),
-        address: z.string(),
-        customName,
-    }),
-]) satisfies z.ZodType<AddressBackupPayload, unknown>
-
-const secretsPayloadSchema = z.discriminatedUnion('type', [
-    z.object({
-        type: z.literal(BackupAccountType.algo25),
-        mnemonic: z.string(),
-    }),
-    z.object({
-        type: z.literal(BackupAccountType.hdSeed),
-        seed: z.string(),
-        entropy: z.string(),
-    }),
-    z.object({
-        type: z.literal(BackupAccountType.quantum),
-        mnemonic: z.string(),
-    }),
-]) satisfies z.ZodType<SecretsBackupPayload, unknown>
 
 const parsePayload = <T>(
     schema: z.ZodType<T, unknown>,
@@ -123,7 +50,7 @@ const parsePayload = <T>(
 }
 
 export const parseAddressPayload = (raw: string): AddressBackupPayload =>
-    parsePayload(addressPayloadSchema, raw, 'account')
+    parsePayload(addressBackupPayloadSchema, raw, 'account')
 
 export const parseSecretsPayload = (raw: string): SecretsBackupPayload =>
-    parsePayload(secretsPayloadSchema, raw, 'secrets')
+    parsePayload(secretsBackupPayloadSchema, raw, 'secrets')

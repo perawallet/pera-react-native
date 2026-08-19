@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { z } from 'zod'
+
 export const BackupAccountType = {
     algo25: 'algo25',
     hdSeed: 'hdSeed',
@@ -22,86 +24,129 @@ export const BackupAccountType = {
 export type BackupAccountType =
     (typeof BackupAccountType)[keyof typeof BackupAccountType]
 
-export type BackupHardwareTransportType = 'ble' | 'usb'
+export const backupHardwareTransportTypeSchema = z.enum(['ble', 'usb'])
+export type BackupHardwareTransportType = z.infer<
+    typeof backupHardwareTransportTypeSchema
+>
 
-type WithName = { customName?: string | null }
+const nonNegativeInt = z.number().int().nonnegative()
 
-export type Algo25AddressPayload = WithName & {
-    type: typeof BackupAccountType.algo25
-    address: string
-}
-export type HdSeedAddressPayload = {
-    type: typeof BackupAccountType.hdSeed
-    address: string
-}
-export type HdWalletAddressPayload = WithName & {
-    type: typeof BackupAccountType.hdWallet
-    address: string
-    seedFirstDerivedAddress: string
-    publicKey: string
-    account: number
-    change: number
-    keyIndex: number
-    derivationType: number
-}
-export type HardwareAddressPayload = WithName & {
-    type: typeof BackupAccountType.hardware
-    address: string
-    /** Device identifier for reconnection (e.g. BLE device id, USB descriptor id). */
-    deviceId: string
-    /** User-visible device name (e.g. "Ledger Nano X"). */
-    deviceName: string
-    /** Sequential account index on the hardware wallet device (0, 1, 2...). */
-    accountIndex: number
-    manufacturer: string
-    transportType: BackupHardwareTransportType
-}
-export type WatchAddressPayload = WithName & {
-    type: typeof BackupAccountType.watch
-    address: string
-}
-export type MultisigAddressPayload = WithName & {
-    type: typeof BackupAccountType.multisig
-    address: string
-    participantAddresses: string[]
-    threshold: number
-    version: number
-}
+// Anything that isn't a string — absent, null, a number — normalizes to null.
+const customName = z
+    .unknown()
+    .optional()
+    .transform(value => (typeof value === 'string' ? value : null))
 
-export type QuantumAddressPayload = WithName & {
-    type: typeof BackupAccountType.quantum
-    address: string
-}
+export const algo25AddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.algo25),
+    address: z.string(),
+    customName,
+})
+export const hdSeedAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.hdSeed),
+    address: z.string(),
+})
+export const hdWalletAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.hdWallet),
+    address: z.string(),
+    seedFirstDerivedAddress: z.string(),
+    publicKey: z.string(),
+    account: nonNegativeInt,
+    change: nonNegativeInt,
+    keyIndex: nonNegativeInt,
+    derivationType: nonNegativeInt,
+    customName,
+})
+export const hardwareAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.hardware),
+    address: z.string(),
+    // Device identifier for reconnection (e.g. BLE device id, USB descriptor id).
+    deviceId: z.string(),
+    // User-visible device name (e.g. "Ledger Nano X").
+    deviceName: z.string(),
+    // Sequential account index on the hardware wallet device (0, 1, 2...).
+    accountIndex: nonNegativeInt,
+    manufacturer: z.string(),
+    transportType: backupHardwareTransportTypeSchema,
+    customName,
+})
+export const watchAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.watch),
+    address: z.string(),
+    customName,
+})
+export const multisigAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.multisig),
+    address: z.string(),
+    participantAddresses: z.array(z.string()),
+    threshold: nonNegativeInt,
+    version: nonNegativeInt,
+    customName,
+})
+/**
+ * Post-quantum (Falcon) account. Flat and single-key — `QuantumAccount.keyPairId`
+ * is a device-local keystore id that restore re-mints, so it is not backed up.
+ */
+export const quantumAddressPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.quantum),
+    address: z.string(),
+    customName,
+})
 
-export type AddressBackupPayload =
-    | Algo25AddressPayload
-    | HdSeedAddressPayload
-    | HdWalletAddressPayload
-    | HardwareAddressPayload
-    | WatchAddressPayload
-    | MultisigAddressPayload
-    | QuantumAddressPayload
+export const addressBackupPayloadSchema = z.discriminatedUnion('type', [
+    algo25AddressPayloadSchema,
+    hdSeedAddressPayloadSchema,
+    hdWalletAddressPayloadSchema,
+    hardwareAddressPayloadSchema,
+    watchAddressPayloadSchema,
+    multisigAddressPayloadSchema,
+    quantumAddressPayloadSchema,
+])
 
-export type Algo25SecretsPayload = {
-    type: typeof BackupAccountType.algo25
-    /** 25-word BIP39 mnemonic. */
-    mnemonic: string
-}
-export type HdSeedSecretsPayload = {
-    type: typeof BackupAccountType.hdSeed
-    /** Hex-encoded XHD seed. */
-    seed: string
-    /** Hex-encoded BIP39 entropy. */
-    entropy: string
-}
+export type Algo25AddressPayload = z.infer<typeof algo25AddressPayloadSchema>
+export type HdSeedAddressPayload = z.infer<typeof hdSeedAddressPayloadSchema>
+export type HdWalletAddressPayload = z.infer<
+    typeof hdWalletAddressPayloadSchema
+>
+export type HardwareAddressPayload = z.infer<
+    typeof hardwareAddressPayloadSchema
+>
+export type WatchAddressPayload = z.infer<typeof watchAddressPayloadSchema>
+export type MultisigAddressPayload = z.infer<
+    typeof multisigAddressPayloadSchema
+>
+export type QuantumAddressPayload = z.infer<typeof quantumAddressPayloadSchema>
+export type AddressBackupPayload = z.infer<typeof addressBackupPayloadSchema>
 
-export type QuantumSecretsPayload = {
-    type: typeof BackupAccountType.quantum
-    /** 25-word recovery phrase */
-    mnemonic: string
-}
+export const algo25SecretsPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.algo25),
+    // 25-word BIP39 mnemonic.
+    mnemonic: z.string(),
+})
+export const hdSeedSecretsPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.hdSeed),
+    // Hex-encoded XHD seed.
+    seed: z.string(),
+    // Hex-encoded BIP39 entropy.
+    entropy: z.string(),
+})
+/**
+ * A quantum recovery phrase is 25 words in the same wire format as algo25 and
+ * is indistinguishable from one by content. The `type` discriminant is the only
+ * signal routing restore to Falcon rather than Ed25519 derivation.
+ */
+export const quantumSecretsPayloadSchema = z.object({
+    type: z.literal(BackupAccountType.quantum),
+    mnemonic: z.string(),
+})
 
-export type SecretsBackupPayload =
-    | Algo25SecretsPayload
-    | HdSeedSecretsPayload
-    | QuantumSecretsPayload
+export const secretsBackupPayloadSchema = z.discriminatedUnion('type', [
+    algo25SecretsPayloadSchema,
+    hdSeedSecretsPayloadSchema,
+    quantumSecretsPayloadSchema,
+])
+
+export type Algo25SecretsPayload = z.infer<typeof algo25SecretsPayloadSchema>
+export type HdSeedSecretsPayload = z.infer<typeof hdSeedSecretsPayloadSchema>
+export type QuantumSecretsPayload = z.infer<typeof quantumSecretsPayloadSchema>
+export type SecretsBackupPayload = z.infer<typeof secretsBackupPayloadSchema>
