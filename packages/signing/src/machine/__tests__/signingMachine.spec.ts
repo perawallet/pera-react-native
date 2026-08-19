@@ -13,7 +13,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createActor, fromPromise, waitFor, setup } from 'xstate'
 import { AppError } from '@perawallet/wallet-core-shared'
+import { AlgodError } from '@perawallet/wallet-core-blockchain'
 import { signingMachine } from '../signingMachine'
+import { SubmissionError } from '../../pipeline/errors'
 import type { SigningMachineInput } from '../context'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
@@ -648,6 +650,67 @@ describe('signingMachine', () => {
                 },
             )
             expect(retried.matches('transporting')).toBe(true)
+        })
+
+        // A transportActor backed by a caller-supplied mock — lets a test
+        // assert on the exact input each invocation received.
+        const makeTransportMachine = (
+            transport: (input: unknown) => Promise<TransportResult>,
+        ) =>
+            signingMachine.provide({
+                actors: {
+                    analyzerActor: fromPromise(
+                        async (): Promise<SignableAnalysis[]> => [mockAnalysis],
+                    ),
+                    localKeySignerActor: fromPromise(
+                        async (): Promise<SigningResult[]> => [
+                            mockSigningResult,
+                        ],
+                    ),
+                    multisigSignerActor: fromPromise(
+                        async (): Promise<SigningResult[]> => {
+                            throw new Error('multisig not implemented')
+                        },
+                    ),
+                    transportActor: fromPromise(({ input }) =>
+                        transport(input),
+                    ),
+                },
+            })
+
+        it('re-broadcasts the identical bytes when retrying an unknown-outcome submission', async () => {
+            // Retry must re-POST, never rebuild: a rebuilt group gets a fresh
+            // validity window and a new txid, which would double-spend if the
+            // first attempt actually landed.
+            const transport = vi
+                .fn()
+                .mockRejectedValueOnce(
+                    new SubmissionError(
+                        ['TXID'],
+                        'unknown-outcome',
+                        new AlgodError('network_unavailable', {}),
+                    ),
+                )
+                .mockResolvedValueOnce({ txIds: ['TXID'] })
+
+            const actor = createActor(makeTransportMachine(transport), {
+                input: makeInput(),
+            })
+            actor.start()
+
+            await waitFor(actor, s => s.matches('awaiting_user'))
+            actor.send({ type: 'USER_APPROVED' })
+            await waitFor(actor, s => s.matches('failed'), { timeout: 1000 })
+
+            actor.send({ type: 'RETRY' })
+            await waitFor(actor, s => s.matches('completed'), {
+                timeout: 1000,
+            })
+
+            expect(transport).toHaveBeenCalledTimes(2)
+            expect(transport.mock.calls[1]?.[0]).toEqual(
+                transport.mock.calls[0]?.[0],
+            )
         })
 
         it('sets a retryable network error when the transport times out', async () => {
