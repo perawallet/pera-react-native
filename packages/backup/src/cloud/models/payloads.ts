@@ -31,7 +31,6 @@ export type BackupHardwareTransportType = z.infer<
 
 const nonNegativeInt = z.number().int().nonnegative()
 
-// Anything that isn't a string — absent, null, a number — normalizes to null.
 const customName = z
     .unknown()
     .optional()
@@ -60,11 +59,8 @@ export const hdWalletAddressPayloadSchema = z.object({
 export const hardwareAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hardware),
     address: z.string(),
-    // Device identifier for reconnection (e.g. BLE device id, USB descriptor id).
     deviceId: z.string(),
-    // User-visible device name (e.g. "Ledger Nano X").
     deviceName: z.string(),
-    // Sequential account index on the hardware wallet device (0, 1, 2...).
     accountIndex: nonNegativeInt,
     manufacturer: z.string(),
     transportType: backupHardwareTransportTypeSchema,
@@ -83,10 +79,6 @@ export const multisigAddressPayloadSchema = z.object({
     version: nonNegativeInt,
     customName,
 })
-/**
- * Post-quantum (Falcon) account. Flat and single-key — `QuantumAccount.keyPairId`
- * is a device-local keystore id that restore re-mints, so it is not backed up.
- */
 export const quantumAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.quantum),
     address: z.string(),
@@ -120,7 +112,6 @@ export type AddressBackupPayload = z.infer<typeof addressBackupPayloadSchema>
 
 export const algo25SecretsPayloadSchema = z.object({
     type: z.literal(BackupAccountType.algo25),
-    // 25-word BIP39 mnemonic.
     mnemonic: z.string(),
 })
 export const hdSeedSecretsPayloadSchema = z.object({
@@ -130,11 +121,6 @@ export const hdSeedSecretsPayloadSchema = z.object({
     // Hex-encoded BIP39 entropy.
     entropy: z.string(),
 })
-/**
- * A quantum recovery phrase is 25 words in the same wire format as algo25 and
- * is indistinguishable from one by content. The `type` discriminant is the only
- * signal routing restore to Falcon rather than Ed25519 derivation.
- */
 export const quantumSecretsPayloadSchema = z.object({
     type: z.literal(BackupAccountType.quantum),
     mnemonic: z.string(),
