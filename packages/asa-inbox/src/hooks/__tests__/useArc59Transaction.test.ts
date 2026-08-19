@@ -102,6 +102,7 @@ const baseParams = {
     assetId: 12345n,
     amount: 1000n,
     summary: baseSummary,
+    senderMinFee: 1000n,
 }
 
 describe('useArc59SendTransaction', () => {
@@ -512,6 +513,88 @@ describe('useArc59SendTransaction', () => {
             expect.objectContaining({ assetReferences: [params.assetId] }),
         )
         expect(populateAppCallResources).not.toHaveBeenCalled()
+    })
+
+    // A quantum (Falcon) sender's own outer txns pay the PQ-aware rate; the
+    // router's inner txns are app-authorized and always pool at the base fee.
+    describe('PQ sender fees', () => {
+        const PQ_FEE = 3000n
+
+        test('raises outer txn fees to senderMinFee, keeps inner pooling at base', async () => {
+            const params = {
+                ...baseParams,
+                summary: {
+                    ...baseSummary,
+                    is_arc59_opted_in: false,
+                    inner_tx_count: 5,
+                },
+                senderMinFee: PQ_FEE,
+            }
+
+            const { result } = renderHook(() => useArc59SendTransaction())
+
+            await act(async () => {
+                await result.current.buildSendViaInboxTxs(params)
+            })
+
+            // funding payment: sender-signed → PQ rate
+            expect(mockComposer.addPayment).toHaveBeenCalledWith(
+                expect.objectContaining({ staticFee: PQ_FEE.microAlgo() }),
+            )
+            // axfer arg: sender-signed → PQ rate
+            expect(
+                mockAlgokit.createTransaction.assetTransfer,
+            ).toHaveBeenCalledWith(
+                expect.objectContaining({ staticFee: PQ_FEE.microAlgo() }),
+            )
+            // optRouterIn: PQ outer + 1 pooled inner at base
+            expect(mockParamsOptRouterIn).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    staticFee: BigInt(4000).microAlgo(),
+                }),
+            )
+            // sendAsset: PQ outer + 5 pooled inners at base
+            expect(mockParamsSendAsset).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    staticFee: BigInt(8000).microAlgo(),
+                }),
+            )
+        })
+
+        test('non-PQ sender keeps extraFee pooling and no staticFee', async () => {
+            const params = {
+                ...baseParams,
+                summary: { ...baseSummary, is_arc59_opted_in: false },
+            }
+
+            const { result } = renderHook(() => useArc59SendTransaction())
+
+            await act(async () => {
+                await result.current.buildSendViaInboxTxs(params)
+            })
+
+            expect(mockComposer.addPayment).toHaveBeenCalledWith(
+                expect.not.objectContaining({ staticFee: expect.anything() }),
+            )
+            expect(
+                mockAlgokit.createTransaction.assetTransfer,
+            ).toHaveBeenCalledWith(
+                expect.not.objectContaining({ staticFee: expect.anything() }),
+            )
+            expect(mockParamsOptRouterIn).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    extraFee: mockSuggestedParams.minFee.microAlgo(),
+                }),
+            )
+            expect(mockParamsSendAsset).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    extraFee: (
+                        mockSuggestedParams.minFee *
+                        BigInt(baseSummary.inner_tx_count)
+                    ).microAlgo(),
+                }),
+            )
+        })
     })
 
     test('building an inbox send on a network without the inbox app fails typed', async () => {
