@@ -11,15 +11,27 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { AlgodError } from '@perawallet/wallet-core-blockchain'
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        logger: {
+            debug: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+            info: vi.fn(),
+        },
+    }
+})
 
 import {
     completeMultisigHandoff,
     type MultisigHandoffCompletionDeps,
 } from '../completeMultisigHandoff'
+import { SubmissionError } from '../errors'
 
 const ASSEMBLED = new Uint8Array([1, 2, 3])
 
@@ -227,5 +239,49 @@ describe('completeMultisigHandoff', () => {
 
         expect(deps.onFailed).toHaveBeenCalledTimes(1)
         expect(deps.removeHandoff).toHaveBeenCalledTimes(1)
+    })
+
+    test('unknown submit outcome: reports and fails, but leaves the live request alone', async () => {
+        // The group may be confirming — declining would cancel a request for a
+        // transaction that lands moments later.
+        deps.submit.mockRejectedValue(
+            new SubmissionError(
+                ['TXID'],
+                'unknown-outcome',
+                new AlgodError('network_unavailable', {}),
+            ),
+        )
+
+        await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
+
+        expect(deps.decline).not.toHaveBeenCalled()
+        expect(deps.reportError).toHaveBeenCalled()
+        // Deliberate: the backend still gets a terminal status. Correcting it later
+        // is reconciliation, which is PERA-4588's scope.
+        expect(deps.onFailed).toHaveBeenCalled()
+    })
+
+    test('definitive node rejection: still declines', async () => {
+        deps.submit.mockRejectedValue(
+            new SubmissionError(
+                ['TXID'],
+                'rejected-by-node',
+                new AlgodError('overspend', {}),
+            ),
+        )
+
+        await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
+
+        expect(deps.decline).toHaveBeenCalled()
+    })
+
+    test('failure before the POST: still declines', async () => {
+        // A pre-POST throw (e.g. a missing assembled slot) is not a submission
+        // outcome at all — nothing is in flight, so cancelling is correct.
+        deps.submit.mockRejectedValue(new Error('missing slot'))
+
+        await run({ kind: 'ready', assembledBytes: [ASSEMBLED] })
+
+        expect(deps.decline).toHaveBeenCalled()
     })
 })
