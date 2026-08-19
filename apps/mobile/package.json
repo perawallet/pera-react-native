@@ -1,6 +1,6 @@
 {
   "name": "mobile",
-  "version": "7.0.4-alpha",
+  "version": "7.1.0-alpha",
   "versionCodeBase": 10000,
   "private": true,
   "main": "index.js",
