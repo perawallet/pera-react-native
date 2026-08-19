@@ -10,8 +10,17 @@
  limitations under the License
  */
 
-import { fetchAssetPrices, fetchPublicAssetDetails } from '../api'
-import { upsertAssetPrices, getStaleOrMissingPriceAssetIds } from '../db'
+import {
+    fetchAssetPrices,
+    fetchPublicAssetDetails,
+    ASSET_PRICES_MAX_IDS_PER_REQUEST,
+} from '../api'
+import {
+    upsertAssetPrices,
+    getStaleOrMissingPriceAssetIds,
+    recordPriceMisses,
+    clearPriceMisses,
+} from '../db'
 
 import { Decimal } from 'decimal.js'
 import {
@@ -21,33 +30,20 @@ import {
     type Network,
 } from '@perawallet/wallet-core-shared'
 
-const PRICE_BATCH_SIZE = 25
+const PRICE_BATCH_SIZE = ASSET_PRICES_MAX_IDS_PER_REQUEST
 const PRICE_FETCH_CONCURRENCY = 5
 // Below the sync service's 60 s price-resync cadence so the periodic pass
 // always refreshes, while the overlapping enrichment/post-submission callers
 // (which have no gate of their own) dedupe against it. Gates the ALGO fetch
 // and the non-ALGO batches alike.
 const PRICE_CACHE_TTL_MS = 30_000
-// Ids the bulk endpoint returned no price for never get a DB row, so a TTL
-// gate alone would refetch them on every pass forever (e.g. every held id
-// after a network switch — none exist on the other network). Remember the
-// attempt in-memory and retry at a slow cadence instead. Bounded so the
-// module-scope map can't grow without limit across long sessions; evicting
-// the oldest entry just means that id becomes fetchable again early.
+// Ids the bulk endpoint returned no price for never get a price row, so the
+// TTL gate alone would refetch them on every pass forever. Misses are
+// persisted per id+network (asset_price_misses) and retried on this slower
+// cadence — durable across any portfolio size, unlike the capped in-memory
+// map this replaced, which thrashed on large accounts and let every
+// priceless id refetch every minute (PERA JS-thread saturation incident).
 const PRICE_MISS_RETRY_MS = 10 * 60 * 1000
-const PRICE_MISS_TOMBSTONES_MAX = 512
-const priceMissTombstones = new Map<string, number>()
-
-const recordPriceMiss = (key: string) => {
-    if (priceMissTombstones.size >= PRICE_MISS_TOMBSTONES_MAX) {
-        const oldest = priceMissTombstones.keys().next().value
-        if (oldest !== undefined) priceMissTombstones.delete(oldest)
-    }
-    priceMissTombstones.set(key, Date.now())
-}
-
-const tombstoneKey = (assetId: string, network: Network) =>
-    `${network}:${assetId}`
 
 export async function fetchAndPersistPrices(
     assetIds: string[],
@@ -55,19 +51,12 @@ export async function fetchAndPersistPrices(
 ): Promise<void> {
     if (assetIds.length === 0) return
 
-    const now = Date.now()
-    const nonAlgoIds = assetIds.filter(id => {
-        if (isAlgoAssetId(id)) return false
-        const attemptedAt = priceMissTombstones.get(tombstoneKey(id, network))
-        return (
-            attemptedAt === undefined ||
-            now - attemptedAt >= PRICE_MISS_RETRY_MS
-        )
-    })
+    const nonAlgoIds = assetIds.filter(id => !isAlgoAssetId(id))
     const staleIds = await getStaleOrMissingPriceAssetIds({
         assetIds: nonAlgoIds,
         network,
         ttlMs: PRICE_CACHE_TTL_MS,
+        missRetryMs: PRICE_MISS_RETRY_MS,
     })
     const batches = partition(staleIds, PRICE_BATCH_SIZE)
 
@@ -110,17 +99,23 @@ export async function fetchAndPersistPrices(
         const sliceResults = await Promise.allSettled(
             slice.map(async batch => {
                 const response = await fetchAssetPrices(batch, network)
-                const prices = response.results.map(r => ({
-                    assetId: `${r.asset_id}`,
-                    usdPrice: new Decimal(r.usd_value ?? '0'),
-                }))
-                const returnedIds = new Set(prices.map(p => p.assetId))
-                for (const id of batch) {
-                    if (returnedIds.has(id)) {
-                        priceMissTombstones.delete(tombstoneKey(id, network))
-                    } else {
-                        recordPriceMiss(tombstoneKey(id, network))
-                    }
+                // The endpoint answers every requested id; `price: null`
+                // means "no price known", not a transport gap — persist it
+                // as a miss rather than inventing a 0 price.
+                const prices = response
+                    .filter(r => r.price !== null)
+                    .map(r => ({
+                        assetId: r.asset_id,
+                        usdPrice: new Decimal(r.price as string),
+                    }))
+                const pricedIds = new Set(prices.map(p => p.assetId))
+                const hitIds = batch.filter(id => pricedIds.has(id))
+                const missedIds = batch.filter(id => !pricedIds.has(id))
+                if (missedIds.length > 0) {
+                    await recordPriceMisses({ assetIds: missedIds, network })
+                }
+                if (hitIds.length > 0) {
+                    await clearPriceMisses({ assetIds: hitIds, network })
                 }
                 await upsertAssetPrices({ prices, network })
             }),

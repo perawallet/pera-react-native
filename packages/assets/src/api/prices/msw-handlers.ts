@@ -19,10 +19,6 @@ import {
     type AssetPriceHistoryResponse,
 } from './schema'
 
-// Note: the asset prices endpoint shares its path with `mockAssets` (both hit
-// `/v1/assets/`). Tests that need both should register the more specific
-// handler first (MSW resolves in registration order). For most flows you'll
-// want only one of them registered per test.
 export type MockAssetPricesParams = {
     response: AssetPricesResponse
     status?: number
@@ -33,7 +29,7 @@ export const mockAssetPrices = ({
     status = 200,
 }: MockAssetPricesParams): HttpHandler => {
     validateMockResponse(assetPricesResponseSchema, response, 'mockAssetPrices')
-    return http.get('*/v1/assets/', () =>
+    return http.get('*/api/v3/asset-prices', () =>
         HttpResponse.json(response, { status }),
     )
 }

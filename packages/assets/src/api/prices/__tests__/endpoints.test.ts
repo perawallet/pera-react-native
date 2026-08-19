@@ -26,13 +26,9 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 import { fetchAssetPrices, fetchAssetPriceHistory } from '../endpoints'
 
 const validPrice = {
-    asset_id: 123,
-    name: 'Test',
-    logo: null,
-    unit_name: 'TST',
-    fraction_decimals: 6,
-    usd_value: '1.5',
-    is_verified: true,
+    asset_id: '123',
+    price: '1.5',
+    currency: 'USD',
 }
 
 describe('prices endpoints', () => {
@@ -40,20 +36,27 @@ describe('prices endpoints', () => {
         queryClientMock.mockReset()
     })
 
-    test('fetchAssetPrices hits /v1/assets/ with comma-joined asset_ids', async () => {
+    test('fetchAssetPrices hits /api/v3/asset-prices with comma-joined asset_ids', async () => {
         queryClientMock.mockResolvedValue({
-            data: { results: [validPrice], next: null, previous: null },
+            data: [
+                validPrice,
+                { asset_id: '456', price: null, currency: 'USD' },
+            ],
         })
 
-        await fetchAssetPrices(['123', '456'], 'mainnet')
+        const result = await fetchAssetPrices(['123', '456'], 'mainnet')
 
         expect(queryClientMock).toHaveBeenCalledWith(
             expect.objectContaining({
-                url: '/v1/assets/',
+                url: '/api/v3/asset-prices',
                 params: { asset_ids: '123,456' },
                 network: 'mainnet',
             }),
         )
+        expect(result).toEqual([
+            { asset_id: '123', price: '1.5', currency: 'USD' },
+            { asset_id: '456', price: null, currency: 'USD' },
+        ])
     })
 
     test('fetchAssetPriceHistory hits /v1/assets/price-chart/ with asset_id and period', async () => {

@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-export { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
+export {
+    AssetsNodeSchema,
+    AssetsPeraSchema,
+    AssetPricesSchema,
+    AssetPriceMissesSchema,
+} from './schema'
 export {
     upsertAssets,
     upsertNodeAssets,
@@ -26,6 +31,8 @@ export {
     getStaleOrMissingPriceAssetIds,
     deleteAssets,
     deleteAssetPrices,
+    recordPriceMisses,
+    clearPriceMisses,
     type AssetPriceRow,
 } from './repository'
 export { seedAlgoAsset } from './seed'

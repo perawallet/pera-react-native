@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-export { fetchAssetPrices, fetchAssetPriceHistory } from './endpoints'
 export {
-    transformAssetPriceResponse,
-    transformAssetPriceHistoryResponse,
-} from './transformers'
+    fetchAssetPrices,
+    fetchAssetPriceHistory,
+    ASSET_PRICES_MAX_IDS_PER_REQUEST,
+} from './endpoints'
+export { transformAssetPriceHistoryResponse } from './transformers'
 export type {
     AssetPriceResponse,
     AssetPricesResponse,

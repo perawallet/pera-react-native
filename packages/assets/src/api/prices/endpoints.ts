@@ -23,6 +23,9 @@ import {
     type AssetPricesResponse,
 } from './schema'
 
+// Capped by the endpoint's own asset_ids validation.
+export const ASSET_PRICES_MAX_IDS_PER_REQUEST = 100
+
 export const fetchAssetPrices = async (
     assetIDs: string[],
     network: Network,
@@ -31,7 +34,7 @@ export const fetchAssetPrices = async (
         backend: 'pera',
         network,
         method: 'GET',
-        url: `/v1/assets/`,
+        url: `/api/v3/asset-prices`,
         params: {
             asset_ids: assetIDs.join(','),
         },
