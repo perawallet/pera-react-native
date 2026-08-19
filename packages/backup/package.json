@@ -32,6 +32,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "tweetnacl": "catalog:",
+    "zod": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {

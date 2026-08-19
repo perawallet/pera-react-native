@@ -303,6 +303,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-backup/test-handlers',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/backup/src/test-handlers.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-backup',
                 replacement: path.resolve(
                     __dirname,
