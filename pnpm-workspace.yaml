@@ -51,25 +51,14 @@ catalog:
   "@vitejs/plugin-react": 6.0.5
   "@vitest/coverage-v8": ^4.1.9
   "@xstate/react": ^6.1.0
-  # The `pqsig` field and scheme-agnostic PQ signer surface Pera's quantum
-  # accounts need landed upstream as algorand/js-algorand-sdk v3.7.0-beta.1
-  # (PR #1102, merged), which official 3.6.0 does not ship. That tag is not on
-  # npm, so it is built from source and packed into libs/ by
-  # tools/vendor-algosdk.sh, then wired in by the `algosdk` entry under
-  # `overrides:` below. A catalog entry cannot hold a `file:` spec
-  # (ERR_PNPM_CATALOG_ENTRY_INVALID_SPEC), so that override — not this line —
-  # is the single place the vendored build is named.
-  #
-  # This range is inert while that override stands; it is what resolution
-  # returns to on swap-back.
-  # SWAP-BACK: when official algosdk 3.7.0 ships, set this to `^3.7.0` and
-  # delete both the `algosdk` entry from `overrides:` and libs/. No source
-  # changes are needed either way — algosdkPqSupport.spec.ts fails loudly if
-  # the resolved build ever loses the PQ surface. Note a brand-new official
-  # 3.7.0 sits inside the `minimumReleaseAge` window for its first 7 days, so
-  # resolution will fail until the window passes — wait it out rather than
-  # adding a permanent carveout for a package that no longer needs one.
-  algosdk: ^3.6.0
+  # 3.7.0 is a floor, not a preference: the `pqsig` field and the
+  # scheme-agnostic PQ signer surface Pera's quantum accounts sign with landed
+  # in that release (algorand/js-algorand-sdk PR #1102). 3.6.x still resolves
+  # and type-checks, it just silently cannot sign a quantum account — so
+  # tools/check-single-algosdk.mjs enforces this range against the *resolved*
+  # version, and packages/blockchain/src/pq/__tests__/algosdkPqSupport.spec.ts
+  # asserts the surface itself.
+  algosdk: ^3.7.0
   before-after-hook: ^4.0.0
   buffer: ^6.0.3
   decimal.js: ^10.6.0
@@ -135,6 +124,15 @@ minimumReleaseAgeExclude:
   - '@algorandfoundation/react-native-passkey-autofill'
   - '@joe-p/react-native-falcon'
   - '@perawallet/walletconnect'
+  # TEMPORARY — delete this entry (and this comment) after 2026-08-26 17:13 UTC,
+  # when 3.7.0 clears the 7-day window on its own. Present only so the PQ floor
+  # above could land the day the release shipped. Verified before adding:
+  # published by the same github-actions[bot] CI path as 3.6.0, npm signature
+  # present, no pre/postinstall scripts, and the maintainer set gained exactly
+  # one name — joe-p (Joe Polny), an Algorand Foundation engineer who also
+  # maintains @algorandfoundation/algokit-utils and authored the PQ PR this
+  # bump is for.
+  - algosdk
   - falcon-1024
   - fast-uri
   # 3.3.18 is the GHSA-2v37-7h3g-55p8 fix and is younger than the 7-day gate.
@@ -180,21 +178,14 @@ patchedDependencies:
   "expo-modules-jsi@57.0.4": patches/expo-modules-jsi@57.0.4.patch
 
 overrides:
-  # Force ONE algosdk across the whole tree, including inside
-  # @algorandfoundation/algokit-utils. Two copies would break cross-boundary
-  # `instanceof Transaction` / `instanceof Address` checks and msgpack schema
-  # identity between algokit-utils and our own code. (algokit-utils declares
-  # algosdk as a `^3.5.2` PEER, which a prerelease does not satisfy by semver;
-  # pnpm does not warn here because the override resolves to a tarball.)
-  #
-  # This is the vendored build of upstream v3.7.0-beta.1 — see the `algosdk`
-  # catalog entry above and tools/vendor-algosdk.sh. It cannot be a git spec:
-  # the tag ships no dist/ (only the ESM `type` marker), and pnpm rewrites
-  # `github:`/`git+https:` to a codeload tarball and then refuses to run the
-  # package's build — "has to be built but the build scripts were ignored" —
-  # regardless of `onlyBuiltDependencies` or `dangerouslyAllowAllBuilds`. A git
-  # spec installs a package with no entry points at all.
-  algosdk: file:./libs/algosdk-3.7.0-beta.1.tgz
+  # No `algosdk` override: official 3.7.0 satisfies @algorandfoundation/
+  # algokit-utils' `^3.5.2` peer on its own, so the catalog range alone yields a
+  # single copy. (A prerelease never satisfied that peer by semver, which is why
+  # the vendored build had to be forced here.) One copy is still load-bearing —
+  # two break cross-boundary `instanceof Transaction`/`instanceof Address` and
+  # msgpack schema identity — so tools/check-single-algosdk.mjs keeps asserting
+  # it on every pre-push.
+
   # Pinned below the catalog's other keystore-family bumps: canary.18+ turned
   # this meta package into a thin `export * from keystore-node` re-export and
   # dropped the flat function API (clearKeyData/encrypt/decrypt/sign/verify/...)
