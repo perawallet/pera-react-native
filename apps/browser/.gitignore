@@ -2,3 +2,7 @@ dist/
 .expo-web/
 test-results/
 screenshots/
+# Chrome "Pack extension" output: dist.crx is a build artifact, dist.pem is
+# the private signing key — neither may be committed.
+*.crx
+*.pem
