@@ -50,7 +50,7 @@ const isValidBackupId = (value: unknown): value is string =>
 const decodeEncryptionKey = (raw: string): Uint8Array => {
     const trimmed = raw.trim()
 
-    // Base64 (or url-safe base64 — base64-js handles `-`/`_` as garbage and
+    // Base64 (or url-safe base64; base64-js handles `-`/`_` as garbage and
     // drops them; this is fine when modern Pera Web emits standard base64).
     let asBase64: Uint8Array | null = null
     try {
