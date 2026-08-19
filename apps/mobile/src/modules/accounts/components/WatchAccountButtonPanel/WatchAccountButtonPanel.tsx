@@ -42,7 +42,7 @@ export const WatchAccountButtonPanel = () => {
             />
             <RoundButton
                 title={t('account_details.watch_button_panel.more')}
-                icon='chevron-right'
+                icon='chevron-down'
                 variant='secondary'
                 onPress={handleMore}
                 testID='more_button'
