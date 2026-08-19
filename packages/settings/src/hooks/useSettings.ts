@@ -16,16 +16,22 @@ export const useSettings = () => {
     const theme = useSettingsStore(state => state.theme)
     const privacyMode = useSettingsStore(state => state.privacyMode)
     const language = useSettingsStore(state => state.language)
+    const confirmationMode = useSettingsStore(state => state.confirmationMode)
     const setTheme = useSettingsStore(state => state.setTheme)
     const setPrivacyMode = useSettingsStore(state => state.setPrivacyMode)
     const setLanguage = useSettingsStore(state => state.setLanguage)
+    const setConfirmationMode = useSettingsStore(
+        state => state.setConfirmationMode,
+    )
 
     return {
         theme,
         privacyMode,
         language,
+        confirmationMode,
         setTheme,
         setPrivacyMode,
         setLanguage,
+        setConfirmationMode,
     }
 }

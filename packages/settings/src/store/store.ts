@@ -12,7 +12,12 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { SettingsState, ThemeMode, LanguagePreference } from '../models'
+import type {
+    SettingsState,
+    ThemeMode,
+    LanguagePreference,
+    ConfirmationMode,
+} from '../models'
 import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -22,6 +27,7 @@ const initialState = {
     theme: 'system' as ThemeMode,
     privacyMode: false,
     language: 'system' as LanguagePreference,
+    confirmationMode: 'slide' as ConfirmationMode,
     preferences: {} as Record<string, string | boolean | number>,
 }
 
@@ -51,6 +57,8 @@ export const useSettingsStore: UseBoundStore<
             setTheme: (theme: ThemeMode) => set({ theme }),
             setPrivacyMode: (privacyMode: boolean) => set({ privacyMode }),
             setLanguage: (language: LanguagePreference) => set({ language }),
+            setConfirmationMode: (confirmationMode: ConfirmationMode) =>
+                set({ confirmationMode }),
             setPreference: (key: string, value: string | boolean | number) => {
                 set({ preferences: { ...get().preferences, [key]: value } })
             },
@@ -80,6 +88,7 @@ export const useSettingsStore: UseBoundStore<
                 theme: state.theme,
                 privacyMode: state.privacyMode,
                 language: state.language,
+                confirmationMode: state.confirmationMode,
                 preferences: state.preferences,
             }),
         },

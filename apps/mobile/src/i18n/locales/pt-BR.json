@@ -566,6 +566,10 @@
         "slide_to_confirm": {
             "label": "Arraste para confirmar"
         },
+        "tap_to_confirm": {
+            "label": "Confirmar",
+            "tap_again_label": "Toque novamente para confirmar"
+        },
         "copied_to_clipboard": {
             "title": "Copiado para a área de transferência",
             "body": ""
@@ -2022,7 +2026,9 @@
         "edit_contact": "Editar contato",
         "add_contact": "Novo contato",
         "settings": "Configurações",
-        "launch_settings": "Configurações de inicialização",
+        "launch_settings": "Configuração de inicialização",
+        "advanced_preferences": "Preferências avançadas",
+        "confirmation_action": "Ação de confirmação",
         "security": "Segurança",
         "notifications": "Notificações",
         "wallet_connect": "Wallet Connect",
@@ -2225,7 +2231,7 @@
             "app_preferences_section": "Preferências do app",
             "currency_title": "Moeda",
             "theme_title": "Tema",
-            "launch_title": "Configurações de inicialização",
+            "advanced_title": "Preferências avançadas",
             "language_title": "Idioma",
             "support_section": "Suporte",
             "rate_title": "Avaliar a Pera Wallet",
@@ -2245,12 +2251,23 @@
             "light_label": "Claro",
             "dark_label": "Escuro"
         },
+        "advanced": {
+            "launch_label": "Configuração de inicialização",
+            "confirmation_label": "Ação de confirmação"
+        },
         "launch": {
-            "account_section": "Seleção de conta",
+            "synopsis": "Escolha em qual conta a Pera abre ao iniciar o app.",
             "last_used_label": "Última conta usada",
             "last_used_description": "A Pera abre na última conta que você usou.",
             "specific_label": "Uma conta específica",
             "specific_description": "A Pera abre sempre na conta que você escolher."
+        },
+        "confirmation": {
+            "synopsis": "Escolha como você confirma transações e outras solicitações de assinatura.",
+            "slide_label": "Arraste para confirmar",
+            "slide_description": "Arraste o controle deslizante para aprovar. A melhor proteção contra toques acidentais.",
+            "tap_label": "Toque para confirmar",
+            "tap_description": "Toque duas vezes no botão para aprovar — mais rápido ao assinar muitas transações."
         },
         "language": {
             "system_label": "Padrão do sistema"

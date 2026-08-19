@@ -43,6 +43,7 @@ import {
     PWSwipeable,
     PWSwitch,
     PWTabView,
+    PWTapToConfirm,
     PWText,
     PWToolbar,
     PWTouchableIcon,
@@ -204,6 +205,48 @@ registerPreview({
                     node: (
                         <PWSlideToConfirm
                             title='Slide to confirm (confirmed)'
+                            onConfirm={() => undefined}
+                            isConfirmed
+                        />
+                    ),
+                },
+            ]}
+        />
+    ),
+})
+
+registerPreview({
+    id: 'comp-pw-tap-to-confirm',
+    render: () => (
+        <VariantPreview
+            items={[
+                {
+                    label: 'idle',
+                    node: (
+                        <PWTapToConfirm
+                            title='Confirm'
+                            armedTitle='Tap again to confirm'
+                            onConfirm={() => undefined}
+                        />
+                    ),
+                },
+                {
+                    label: 'isDisabled',
+                    node: (
+                        <PWTapToConfirm
+                            title='Confirm (disabled)'
+                            armedTitle='Tap again to confirm'
+                            onConfirm={() => undefined}
+                            isDisabled
+                        />
+                    ),
+                },
+                {
+                    label: 'isConfirmed',
+                    node: (
+                        <PWTapToConfirm
+                            title='Confirm (confirmed)'
+                            armedTitle='Tap again to confirm'
                             onConfirm={() => undefined}
                             isConfirmed
                         />
@@ -1323,6 +1366,11 @@ export const getComponentSections = (): GallerySection[] => [
             {
                 id: 'comp-pw-slide-to-confirm',
                 label: 'PWSlideToConfirm',
+                launch: { kind: 'preview' },
+            },
+            {
+                id: 'comp-pw-tap-to-confirm',
+                label: 'PWTapToConfirm',
                 launch: { kind: 'preview' },
             },
             {

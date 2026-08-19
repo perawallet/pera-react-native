@@ -15,12 +15,12 @@ import {
     PWCheckbox,
     PWFlatList,
     PWScreen,
-    PWSlideToConfirm,
     PWText,
     PWTouchableOpacity,
     PWView,
     type PWFlatListRef,
 } from '@components/core'
+import { ConfirmAction } from '@components/ConfirmAction'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
@@ -100,7 +100,7 @@ export const RemoveAssetsScreen = () => {
             scroll='never'
             footer={
                 isRemoveSelectedVisible ? (
-                    <PWSlideToConfirm
+                    <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleRemoveSelected}
                         isLoading={isRemoving}

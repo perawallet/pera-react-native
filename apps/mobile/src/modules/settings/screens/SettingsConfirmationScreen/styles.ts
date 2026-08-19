@@ -31,7 +31,4 @@ export const useStyles = makeStyles(theme => ({
     optionDescription: {
         color: theme.colors.textGray,
     },
-    picker: {
-        flex: 1,
-    },
 }))

@@ -130,9 +130,9 @@ describe('useSettingsOptions', () => {
             title: 'settings.main.currency_title',
         })
         expect(settingsOptions[1].items[2]).toEqual({
-            route: 'LaunchSettings',
-            icon: 'house',
-            title: 'settings.main.launch_title',
+            route: 'AdvancedSettings',
+            icon: 'gear',
+            title: 'settings.main.advanced_title',
         })
 
         // Support Section
@@ -170,11 +170,11 @@ describe('useSettingsOptions', () => {
             expect(appPreferences?.items.map(item => item.route)).toEqual([
                 'CurrencySettings',
                 'ThemeSettings',
-                'LaunchSettings',
+                'AdvancedSettings',
             ])
         })
 
-        it('appends the Language item after Theme when the flag is on', () => {
+        it('inserts the Language item before Advanced when the flag is on', () => {
             ;(useIsLanguageSelectionEnabled as Mock).mockReturnValue(true)
 
             const { result } = renderHook(() => useSettingsOptions())
@@ -187,10 +187,10 @@ describe('useSettingsOptions', () => {
             expect(appPreferences?.items.map(item => item.route)).toEqual([
                 'CurrencySettings',
                 'ThemeSettings',
-                'LaunchSettings',
                 'LanguageSettings',
+                'AdvancedSettings',
             ])
-            expect(appPreferences?.items[3]).toEqual({
+            expect(appPreferences?.items[2]).toEqual({
                 route: 'LanguageSettings',
                 icon: 'globe',
                 title: 'settings.main.language_title',

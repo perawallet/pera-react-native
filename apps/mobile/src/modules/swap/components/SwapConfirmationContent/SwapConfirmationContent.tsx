@@ -11,13 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import {
-    PWDivider,
-    PWSheetLayout,
-    PWSlideToConfirm,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWDivider, PWSheetLayout, PWText, PWView } from '@components/core'
+import { ConfirmAction } from '@components/ConfirmAction'
 import { SheetHeader } from '@modules/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
@@ -156,7 +151,7 @@ export const SwapConfirmationContent = ({
                 </PWView>
             )}
 
-            <PWSlideToConfirm
+            <ConfirmAction
                 title={t('swap.quote.slide_to_confirm')}
                 onConfirm={() => void handleSlideConfirm()}
                 isLoading={isProcessing}

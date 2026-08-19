@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { PWButton, PWScreen, PWSlideToConfirm, PWView } from '@components/core'
+import { PWButton, PWScreen, PWView } from '@components/core'
+import { ConfirmAction } from '@components/ConfirmAction'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
@@ -62,7 +63,7 @@ export const ArbitraryDataSigningScreen = () => {
         <PWScreen
             footer={
                 <PWView style={styles.buttonContainer}>
-                    <PWSlideToConfirm
+                    <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleApprove}
                         isLoading={isPending}

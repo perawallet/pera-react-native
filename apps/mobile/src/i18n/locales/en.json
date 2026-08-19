@@ -566,6 +566,10 @@
         "slide_to_confirm": {
             "label": "Slide To Confirm"
         },
+        "tap_to_confirm": {
+            "label": "Confirm",
+            "tap_again_label": "Tap again to confirm"
+        },
         "copied_to_clipboard": {
             "title": "Copied to clipboard",
             "body": ""
@@ -2006,7 +2010,9 @@
         "edit_contact": "Edit Contact",
         "add_contact": "Add New Contact",
         "settings": "Settings",
-        "launch_settings": "Launch Settings",
+        "launch_settings": "Launch Setting",
+        "advanced_preferences": "Advanced Preferences",
+        "confirmation_action": "Confirmation Action",
         "security": "Security",
         "notifications": "Notifications",
         "wallet_connect": "Wallet Connect",
@@ -2209,7 +2215,7 @@
             "app_preferences_section": "App Preferences",
             "currency_title": "Currency",
             "theme_title": "Theme",
-            "launch_title": "Launch Settings",
+            "advanced_title": "Advanced Preferences",
             "language_title": "Language",
             "support_section": "Support",
             "rate_title": "Rate Pera Wallet",
@@ -2229,12 +2235,23 @@
             "light_label": "Light",
             "dark_label": "Dark"
         },
+        "advanced": {
+            "launch_label": "Launch Setting",
+            "confirmation_label": "Confirmation Action"
+        },
         "launch": {
-            "account_section": "Account Selection",
+            "synopsis": "Choose which account Pera opens on when you launch the app.",
             "last_used_label": "Last used account",
             "last_used_description": "Pera opens on whichever account you used last.",
             "specific_label": "A specific account",
             "specific_description": "Pera opens on the account you choose, every time."
+        },
+        "confirmation": {
+            "synopsis": "Choose how you confirm transactions and other signing requests.",
+            "slide_label": "Slide to confirm",
+            "slide_description": "Drag the slider across to approve. Best protection against accidental taps.",
+            "tap_label": "Tap to confirm",
+            "tap_description": "Tap the button twice to approve — faster when signing many transactions."
         },
         "language": {
             "system_label": "System Default"

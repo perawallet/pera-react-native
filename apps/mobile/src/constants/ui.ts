@@ -50,6 +50,9 @@ export const EXPANDABLE_PANEL_ANIMATION_EASING = Easing.bezier(0.4, 0, 0.2, 1)
 export const BACKUP_REMINDER_BANNER_REVEAL_DELAY = 800
 export const BACKUP_REMINDER_BANNER_REVEAL_DURATION = 200
 export const SLIDE_TO_CONFIRM_ANIMATION_DURATION = 250
+export const TAP_TO_CONFIRM_ANIMATION_DURATION = 250
+// How long the armed "tap again" state waits for the second tap before reverting.
+export const TAP_TO_CONFIRM_ARMED_TIMEOUT = 1000
 
 // How long the "back online" confirmation stays before auto-dismissing.
 export const OFFLINE_RECONNECT_DISPLAY_MS = 3000

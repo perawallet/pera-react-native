@@ -10,13 +10,8 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWSheetLayout,
-    PWSlideToConfirm,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
+import { ConfirmAction } from '@components/ConfirmAction'
 import { AssetAmount } from '@components/AssetAmount'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
@@ -144,7 +139,7 @@ export const OptOutConfirmationContent = ({
                 </PWText>
 
                 <PWView style={styles.buttonContainer}>
-                    <PWSlideToConfirm
+                    <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={() => resolve('confirm')}
                         testID='opt_out_confirm'

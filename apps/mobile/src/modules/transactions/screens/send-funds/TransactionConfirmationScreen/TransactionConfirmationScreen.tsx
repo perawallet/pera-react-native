@@ -14,11 +14,11 @@ import {
     PWDivider,
     PWIcon,
     PWScreen,
-    PWSlideToConfirm,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { ConfirmAction } from '@components/ConfirmAction'
 
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AssetAmount } from '@components/AssetAmount'
@@ -75,7 +75,7 @@ export const TransactionConfirmationScreen = () => {
                             minBalance={recipientMbrDisplay}
                         />
                     )}
-                    <PWSlideToConfirm
+                    <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleConfirm}
                         isLoading={isRecipientInfoPending || isSigning}

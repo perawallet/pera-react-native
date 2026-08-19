@@ -558,6 +558,10 @@
         "slide_to_confirm": {
             "label": "Zum Bestätigen wischen"
         },
+        "tap_to_confirm": {
+            "label": "Bestätigen",
+            "tap_again_label": "Zum Bestätigen erneut tippen"
+        },
         "copied_to_clipboard": {
             "title": "In die Zwischenablage kopiert",
             "body": ""
@@ -1998,7 +2002,9 @@
         "edit_contact": "Kontakt bearbeiten",
         "add_contact": "Neuen Kontakt hinzufügen",
         "settings": "Einstellungen",
-        "launch_settings": "Starteinstellungen",
+        "launch_settings": "Starteinstellung",
+        "advanced_preferences": "Erweiterte Einstellungen",
+        "confirmation_action": "Bestätigungsaktion",
         "security": "Sicherheit",
         "notifications": "Benachrichtigungen",
         "wallet_connect": "Wallet Connect",
@@ -2201,7 +2207,7 @@
             "app_preferences_section": "App-Einstellungen",
             "currency_title": "Währung",
             "theme_title": "Design",
-            "launch_title": "Starteinstellungen",
+            "advanced_title": "Erweiterte Einstellungen",
             "language_title": "Sprache",
             "support_section": "Support",
             "rate_title": "Pera Wallet bewerten",
@@ -2221,12 +2227,23 @@
             "light_label": "Hell",
             "dark_label": "Dunkel"
         },
+        "advanced": {
+            "launch_label": "Starteinstellung",
+            "confirmation_label": "Bestätigungsaktion"
+        },
         "launch": {
-            "account_section": "Kontoauswahl",
+            "synopsis": "Lege fest, mit welchem Konto Pera beim Start geöffnet wird.",
             "last_used_label": "Zuletzt verwendetes Konto",
             "last_used_description": "Pera öffnet sich mit dem Konto, das du zuletzt verwendet hast.",
             "specific_label": "Ein bestimmtes Konto",
             "specific_description": "Pera öffnet sich jedes Mal mit dem Konto, das du auswählst."
+        },
+        "confirmation": {
+            "synopsis": "Lege fest, wie du Transaktionen und andere Signaturanfragen bestätigst.",
+            "slide_label": "Zum Bestätigen wischen",
+            "slide_description": "Ziehe den Regler bis zum Ende, um zu bestätigen. Bester Schutz vor versehentlichem Antippen.",
+            "tap_label": "Zum Bestätigen tippen",
+            "tap_description": "Tippe zweimal auf den Button, um zu bestätigen – schneller, wenn du viele Transaktionen signierst."
         },
         "language": {
             "system_label": "Systemstandard"

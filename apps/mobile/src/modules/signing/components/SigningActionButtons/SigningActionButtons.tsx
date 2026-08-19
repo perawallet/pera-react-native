@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { PWButton, PWSlideToConfirm, PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
+import { ConfirmAction } from '@components/ConfirmAction'
 import { useLanguage } from '@hooks/useLanguage'
 import { MultisigDeclineButton } from '@modules/multisig/components/MultisigDeclineButton'
 import { useStyles } from './styles'
@@ -43,7 +44,7 @@ export const SigningActionButtons = () => {
                     </PWText>
                 </PWView>
             ) : (
-                <PWSlideToConfirm
+                <ConfirmAction
                     key={slideResetKey}
                     title={t('common.slide_to_confirm.label')}
                     onConfirm={handleSignAndSend}

@@ -10,13 +10,8 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWScreen,
-    PWSlideToConfirm,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWScreen, PWText, PWView } from '@components/core'
+import { ConfirmAction } from '@components/ConfirmAction'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
@@ -53,7 +48,7 @@ export const ARC59SendSummaryScreen = () => {
         <PWScreen
             footer={
                 <PWView style={styles.footer}>
-                    <PWSlideToConfirm
+                    <ConfirmAction
                         title={t('common.slide_to_confirm.label')}
                         onConfirm={handleSend}
                         isLoading={isProcessing}
