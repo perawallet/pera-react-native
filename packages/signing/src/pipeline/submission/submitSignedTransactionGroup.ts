@@ -10,27 +10,13 @@
  limitations under the License
  */
 
-import {
-    toAlgodError,
-    type AlgodError,
-    type PeraSignedTransaction,
-} from '@perawallet/wallet-core-blockchain'
-import { concatBytes, logger } from '@perawallet/wallet-core-shared'
-import { SubmissionError } from '../errors'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import { concatBytes } from '@perawallet/wallet-core-shared'
+import { classifySubmitFailure } from './classifySubmitFailure'
 import type {
     AlgokitClientInterface,
     EncodeSignedTransactionsFn,
 } from './types'
-
-/**
- * Codes that carry no node verdict — the request may or may not have reached
- * the pool, so the transaction's fate is unknown until verified on-chain.
- * Every other code is an actual node response, i.e. a definitive rejection.
- */
-const NO_NODE_VERDICT_CODES: ReadonlySet<AlgodError['code']> = new Set([
-    'network_unavailable',
-    'unknown_node_error',
-])
 
 /**
  * Encode, concatenate, and submit a single group of signed transactions to
@@ -73,25 +59,15 @@ export const submitSignedTransactionGroup = async (
             .sendRawTransaction(concatenated)
             .do()) as { txid?: string | string[] }
     } catch (error) {
-        const algodError = toAlgodError(error)
-        // The SubmissionError surfaces only the classification; log the node's
-        // actual response so no-verdict failures stay diagnosable in the field.
-        logger.warn('submitSignedTransactionGroup: submit failed', {
-            code: algodError.code,
-            message: algodError.message,
-        })
-        // "Already in ledger" is proof of success — the bytes are committed
-        // (typically a retry after a lost response). Report the txIds.
-        if (algodError.code === 'duplicate_txn') {
+        const outcome = classifySubmitFailure(
+            error,
+            localIds,
+            'submitSignedTransactionGroup',
+        )
+        if (outcome.kind === 'already-in-ledger') {
             return localIds
         }
-        throw new SubmissionError(
-            localIds,
-            NO_NODE_VERDICT_CODES.has(algodError.code)
-                ? 'unknown-outcome'
-                : 'rejected-by-node',
-            algodError,
-        )
+        throw outcome.error
     }
 
     const ids: string[] = []
