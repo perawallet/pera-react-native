@@ -15,9 +15,7 @@
 // import time, throwing "__fbBatchedBridgeConfig is not set" on web — it has
 // no react-native-web build. There are 5 runtime consumers in this codebase:
 // MediaCarousel, FullScreenMediaViewer, OnrampScreen, BannerCarousel and
-// SpotBannerCarousel (OnrampScreen is off-capability on web today —
-// `routeCapabilities.fundTab` is false — but the shim must still behave
-// correctly if that ever changes, not just avoid crashing). All 5 use only
+// SpotBannerCarousel. All 5 use only
 // `style`, `initialPage`, `onPageSelected` and plain children-as-pages;
 // OnrampScreen additionally drives the pager imperatively via
 // `ref.current?.setPage(index)`. A horizontal, paging-enabled ScrollView is
@@ -153,12 +151,25 @@ const PagerView = forwardRef((props, ref) => {
             onScroll: handleScroll,
             scrollEventThrottle: 16,
             style,
+            // Native RNCViewPager lays every page out to the pager's own
+            // bounds (consumers size the pager, pages fill it). On web that
+            // height has to be pushed down explicitly: 100% on the content
+            // container (the frame's height is definite, so this breaks the
+            // content-drives-height cycle) and 100% on each page wrapper.
+            // Without both, a page's flex:1 resolves against an auto-height
+            // wrapper, any vertical ScrollView inside grows to content
+            // height, and the frame's overflow clips it unscrollably
+            // (PERA-4948: the Fund form's Proceed button was unreachable).
+            contentContainerStyle: { height: '100%' },
             ...rest,
         },
         pages.map((page, index) =>
             React.createElement(
                 View,
-                { key: index, style: { width: pageWidth || '100%' } },
+                {
+                    key: index,
+                    style: { width: pageWidth || '100%', height: '100%' },
+                },
                 page,
             ),
         ),

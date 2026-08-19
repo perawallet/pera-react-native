@@ -138,6 +138,33 @@ describe('react-native-pager-view web shim', () => {
         })
     })
 
+    it('sizes every page to fill the pager frame like native PagerView', () => {
+        // Native RNCViewPager lays each page out to the pager's own bounds
+        // (consumers size the pager, never the pages — see OnrampScreen's
+        // pager/page flex chain). On web that means the height must be pushed
+        // down explicitly: the scroll content container and each page wrapper
+        // are 100% of the frame, otherwise a page's flex:1 (and any vertical
+        // ScrollView inside it) resolves against an auto-height wrapper,
+        // grows to content, and gets clipped unscrollably by the frame
+        // (PERA-4948: the Fund form's Proceed button was unreachable in the
+        // 600px popup).
+        const { getByText } = render(
+            <PagerView>
+                <div>Page 0</div>
+                <div>Page 1</div>
+            </PagerView>,
+        )
+
+        triggerLayout(300)
+
+        expect(scrollViewProps.current.contentContainerStyle).toMatchObject({
+            height: '100%',
+        })
+        const wrapper = getByText('Page 0').parentElement
+        expect(wrapper.style.height).toBe('100%')
+        expect(wrapper.style.width).toBe('300px')
+    })
+
     it('exposes imperative setPage/setPageWithoutAnimation matching the native ref API', () => {
         const ref = React.createRef()
         render(
