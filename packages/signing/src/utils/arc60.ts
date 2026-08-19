@@ -108,6 +108,24 @@ export const buildArc60AuthSigningPayload = (
 ): Uint8Array => concatBytes(sha256(decodedData), sha256(authenticatorData))
 
 /**
+ * The SIWA schema's ISO check allows fractional-second precision outside the
+ * ES Date Time String Format, so `Date.parse` can still return `NaN` here —
+ * a bare comparison would silently fail open.
+ */
+export const parseArc60Timestamp = (
+    value: string | undefined,
+): number | undefined => {
+    if (value === undefined) {
+        return undefined
+    }
+    const parsed = Date.parse(value)
+    if (Number.isNaN(parsed)) {
+        throw new Arc60InvalidDateError(`unparseable timestamp "${value}"`)
+    }
+    return parsed
+}
+
+/**
  * Runs the full host-side ARC-60 AUTH validation shared by the local-key and
  * hardware-wallet signing paths: scope check, domain binding, base64 decode,
  * UTF-8 + canonical SIWA parse, and signer/domain cross-checks against the
@@ -144,11 +162,15 @@ export const validateArc60AuthRequest = (
 
     const siwa = parseSiwa(jsonString)
 
+    const issuedAt = parseArc60Timestamp(siwa['issued-at'])
+    const notBefore = parseArc60Timestamp(siwa['not-before'])
+    const expirationTime = parseArc60Timestamp(siwa['expiration-time'])
+    const now = Date.now()
+
     if (
-        (siwa['issued-at'] && Date.parse(siwa['issued-at']) > Date.now()) ||
-        (siwa['not-before'] && Date.parse(siwa['not-before']) > Date.now()) ||
-        (siwa['expiration-time'] &&
-            Date.parse(siwa['expiration-time']) <= Date.now())
+        (issuedAt !== undefined && issuedAt > now) ||
+        (notBefore !== undefined && notBefore > now) ||
+        (expirationTime !== undefined && expirationTime <= now)
     ) {
         throw new Arc60InvalidDateError(
             `SIWA issued-at, not-before or expiration-date is invalid`,
