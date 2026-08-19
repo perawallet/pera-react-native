@@ -10,19 +10,21 @@
  limitations under the License
  */
 
-import { concatBytes } from '@perawallet/wallet-core-shared'
+import { decodeSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import { concatBytes, logger } from '@perawallet/wallet-core-shared'
+import { classifySubmitFailure } from './classifySubmitFailure'
 import type { AlgokitClientInterface } from './types'
 
 /**
  * Submit a group of already-encoded signed transactions (raw msgpack bytes)
  * to algod, returning the resulting transaction IDs.
  *
- * Unlike {@link submitSignedTransactionGroup}, this takes raw bytes and never
- * decodes/re-encodes them. That matters for assembled composite multisig
- * transactions: re-encoding could produce canonically-different bytes whose
- * per-participant signatures algod would reject. The shared-account swap
- * resolver interleaves pre-signed slot bytes with assembled multisig bytes and
- * submits the result here verbatim.
+ * Unlike {@link submitSignedTransactionGroup}, this takes raw bytes and the
+ * submitted bytes are never re-encoded. That matters for assembled composite
+ * multisig transactions: re-encoding could produce canonically-different
+ * bytes whose per-participant signatures algod would reject. The
+ * shared-account swap resolver interleaves pre-signed slot bytes with
+ * assembled multisig bytes and submits the result here verbatim.
  *
  * Algod returns the txid of the first transaction in the group; callers that
  * need every id should decode the bytes separately. Returns an empty array
@@ -34,9 +36,24 @@ export const submitRawSignedTransactionGroup = async (
 ): Promise<string[]> => {
     const concatenated = concatBytes(...rawSignedTransactions)
 
-    const response = (await algokit.client.algod
-        .sendRawTransaction(concatenated)
-        .do()) as { txid?: string | string[] }
+    const localIds = deriveTxIds(rawSignedTransactions)
+
+    let response: { txid?: string | string[] }
+    try {
+        response = (await algokit.client.algod
+            .sendRawTransaction(concatenated)
+            .do()) as { txid?: string | string[] }
+    } catch (error) {
+        const outcome = classifySubmitFailure(
+            error,
+            localIds,
+            'submitRawSignedTransactionGroup',
+        )
+        if (outcome.kind === 'already-in-ledger') {
+            return localIds
+        }
+        throw outcome.error
+    }
 
     const ids: string[] = []
     if (typeof response?.txid === 'string') {
@@ -45,5 +62,25 @@ export const submitRawSignedTransactionGroup = async (
         ids.push(...response.txid)
     }
 
-    return ids
+    return ids.length > 0 ? ids : localIds
+}
+
+/**
+ * Read-only decode purely to name the transactions for post-failure chain
+ * verification. The submitted bytes stay the caller's originals — re-encoding
+ * assembled multisig bytes could change them canonically and invalidate the
+ * per-participant signatures, which is why this function never round-trips.
+ */
+const deriveTxIds = (rawSignedTransactions: Uint8Array[]): string[] => {
+    try {
+        return rawSignedTransactions.map(bytes =>
+            decodeSignedTransaction(bytes).txn.txID(),
+        )
+    } catch (error) {
+        logger.warn(
+            'submitRawSignedTransactionGroup: txId derivation failed',
+            { error },
+        )
+        return []
+    }
 }
