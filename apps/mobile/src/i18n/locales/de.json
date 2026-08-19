@@ -2103,7 +2103,9 @@
         },
         "destination": {
             "error_title": "Etwas ist schiefgelaufen",
-            "error_body": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut."
+            "error_body": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
+            "inbox_unavailable_title": "Asset-Posteingang nicht verfügbar",
+            "inbox_unavailable_body": "Der Empfänger ist nicht für dieses Asset angemeldet und der Asset-Posteingang ist in diesem Netzwerk nicht verfügbar. Wechsle zu MainNet oder TestNet, um es zu senden."
         },
         "confirmation": {
             "edit": "Bearbeiten",

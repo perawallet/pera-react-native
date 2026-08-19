@@ -20,9 +20,13 @@ import {
     useOnChainAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { getArc59Config } from '@perawallet/wallet-core-config'
 import { useNavigation } from '@react-navigation/native'
 import { type StackNavigationProp } from '@react-navigation/stack'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 
 /**
  * Given a chosen receiver address, decides the correct next send screen
@@ -66,6 +70,26 @@ export const useSendDestinationRouter = () => {
         isError: isExternalQueryError,
     } = useOnChainAccountInformationQuery(pendingExternalAddress ?? '')
 
+    const { network } = useNetwork()
+    const { showToast } = useToast()
+    const { t } = useLanguage()
+
+    // ARC-59 needs the router contract + Pera backend, which only exist on
+    // Pera-backed networks. Block the route up front instead of landing the
+    // user on a summary screen that can never load (PERA-4923).
+    const routeToInbox = useCallback(() => {
+        if (getArc59Config(network) === null) {
+            showToast({
+                title: t('send_funds.destination.inbox_unavailable_title'),
+                body: t('send_funds.destination.inbox_unavailable_body'),
+                type: 'error',
+            })
+            return
+        }
+        setSendMode('sendArc59')
+        navigation.navigate('ARC59SendSummary')
+    }, [network, showToast, t, setSendMode, navigation])
+
     useEffect(() => {
         if (!pendingExternalAddress || !selectedAsset) return
 
@@ -79,8 +103,7 @@ export const useSendDestinationRouter = () => {
             setSendMode('normal')
             navigation.navigate('ConfirmTransaction')
         } else {
-            setSendMode('sendArc59')
-            navigation.navigate('ARC59SendSummary')
+            routeToInbox()
         }
 
         setPendingExternalAddress(null)
@@ -92,6 +115,7 @@ export const useSendDestinationRouter = () => {
         selectedAsset,
         setSendMode,
         navigation,
+        routeToInbox,
     ])
 
     const resolveDestination = useCallback(
@@ -134,8 +158,7 @@ export const useSendDestinationRouter = () => {
             }
 
             if (receiver) {
-                setSendMode('sendArc59')
-                navigation.navigate('ARC59SendSummary')
+                routeToInbox()
                 return
             }
 
@@ -148,6 +171,7 @@ export const useSendDestinationRouter = () => {
             setSendMode,
             setDestination,
             navigation,
+            routeToInbox,
         ],
     )
 

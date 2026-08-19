@@ -25,14 +25,34 @@ import { useSelectDestinationScreen } from '../useSelectDestinationScreen'
 const mockNavigate = vi.fn()
 const mockSetSendMode = vi.fn()
 const mockSetDestination = vi.fn()
+const mockShowToast = vi.fn()
 
-const { mockCanSignWith, mockUseAllAccounts } = vi.hoisted(() => ({
-    mockCanSignWith: vi.fn(),
-    mockUseAllAccounts: vi.fn(),
-}))
+const { mockCanSignWith, mockUseAllAccounts, mockGetArc59Config } = vi.hoisted(
+    () => ({
+        mockCanSignWith: vi.fn(),
+        mockUseAllAccounts: vi.fn(),
+        mockGetArc59Config: vi.fn(),
+    }),
+)
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({ navigate: mockNavigate }),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({ network: 'testnet' }),
+}))
+
+vi.mock('@perawallet/wallet-core-config', () => ({
+    getArc59Config: mockGetArc59Config,
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mockShowToast }),
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: (key: string) => key }),
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -92,6 +112,11 @@ describe('useSelectDestinationScreen', () => {
             isFetching: false,
             isSuccess: false,
             isError: false,
+        })
+
+        mockGetArc59Config.mockReturnValue({
+            appId: 643020148n,
+            appAddress: 'APP_ADDRESS',
         })
     })
 
@@ -220,6 +245,53 @@ describe('useSelectDestinationScreen', () => {
 
         expect(mockSetSendMode).toHaveBeenCalledWith('sendArc59')
         expect(mockNavigate).toHaveBeenCalledWith('ARC59SendSummary')
+    })
+
+    // ARC-59 needs the router contract + Pera backend; on networks without
+    // them (getArc59Config → null) the route is blocked with a toast instead
+    // of landing on a summary screen that can never load (PERA-4923).
+    describe('inbox unavailable on network', () => {
+        it('blocks the inbox route with a toast for a local unsignable receiver', () => {
+            mockGetArc59Config.mockReturnValue(null)
+            mockUseAllAccounts.mockReturnValue([
+                { address: INTERNAL_WATCH_ADDR, name: 'Watch' },
+            ])
+            mockCanSignWith.mockReturnValue(false)
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            act(() => {
+                result.current.handleSelected(INTERNAL_WATCH_ADDR)
+            })
+
+            expect(mockSetSendMode).not.toHaveBeenCalledWith('sendArc59')
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'error' }),
+            )
+        })
+
+        it('blocks the inbox route with a toast for an external receiver not opted in', async () => {
+            mockGetArc59Config.mockReturnValue(null)
+            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+                data: { assets: [] },
+                isFetching: false,
+                isSuccess: true,
+                isError: false,
+            })
+
+            const { result } = renderHook(() => useSelectDestinationScreen())
+
+            await act(async () => {
+                result.current.handleSelected(EXTERNAL_ADDR)
+            })
+
+            expect(mockSetSendMode).not.toHaveBeenCalledWith('sendArc59')
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'error' }),
+            )
+        })
     })
 
     // A value-bearing deeplink (algorand://<address>?amount=…) prefills the
