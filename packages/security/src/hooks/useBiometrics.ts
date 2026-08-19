@@ -51,9 +51,12 @@ type UseBiometricsResult = {
     isEnabled: boolean
     isAvailable: boolean
     /**
-     * Reconciles, so NOT a pure read: when the blob exists but the OS reports no
-     * enrolled biometric, it deletes the blob and returns false. Callers get the
-     * post-reconciliation answer, and a subsequent call is consistent with it.
+     * Reconciles, so NOT a pure read. Returns true only for an enrolled class-3
+     * ("strong") biometric. It also deletes the blob on an affirmative class-2
+     * report, and — coarsely, see the branch itself — whenever no biometric
+     * appears available at all. A returned false therefore does NOT imply the
+     * blob is gone: an unconfirmable level reports false and keeps it. Callers
+     * get the post-reconciliation answer, consistent with a subsequent call.
      */
     checkBiometricsEnabled: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
@@ -94,16 +97,31 @@ export const useBiometrics = (): UseBiometricsResult => {
         // instead and require an explicit re-enable. The PIN record is a
         // separate secret, so this never costs the user access.
         //
-        // The signal is `isEnrolledAsync` underneath, i.e. a positive "no
-        // biometric is enrolled" — not an auth failure. A biometric that is
-        // merely locked out after too many attempts reports through
-        // `authenticate`, not here, so a lockout does not drop the blob.
-        if (await biometricsService.checkBiometricsAvailable()) {
+        // Coarser than the class check below, and not a positive signal:
+        // `checkBiometricsAvailable` folds "no hardware" and Android's
+        // transient HW_UNAVAILABLE in with "none enrolled". Pre-existing.
+        if (!(await biometricsService.checkBiometricsAvailable())) {
+            await removeSecret(BIOMETRIC_BLOB_KEY_ID)
+            setIsEnabled(false)
+            return false
+        }
+
+        const level = await biometricsService.getSecurityLevel()
+        if (level === 'strong') {
             setIsEnabled(true)
             return true
         }
 
-        await removeSecret(BIOMETRIC_BLOB_KEY_ID)
+        // Something is enrolled but cannot be bound by `enableBiometrics` or
+        // pass the Android prompt's `strong` bar, so report disabled. Only an
+        // affirmative class-2 report may also destroy the opt-in (PERA-4702:
+        // removing every fingerprint where weak 2D face remains used to keep
+        // the blob armed). 'secret' and 'none' are ambiguous — iOS reports
+        // enrolled-but-'secret' during a Face ID lockout the user cannot clear
+        // from inside the app.
+        if (level === 'weak') {
+            await removeSecret(BIOMETRIC_BLOB_KEY_ID)
+        }
         setIsEnabled(false)
         return false
     }, [hasSecret, removeSecret, biometricsService, setIsEnabled])
@@ -127,9 +145,8 @@ export const useBiometrics = (): UseBiometricsResult => {
                 id: BIOMETRIC_BLOB_KEY_ID,
                 bytes: code,
             })
-            setIsEnabled(true)
         },
-        [commitSecret, setIsEnabled],
+        [commitSecret],
     )
 
     const enableBiometrics = useCallback(
@@ -154,6 +171,13 @@ export const useBiometrics = (): UseBiometricsResult => {
                         // enroll a fingerprint.
                         const level = await biometricsService.getSecurityLevel()
                         if (level !== 'strong') {
+                            // Clear any blob the reconcile kept for an
+                            // unconfirmable level. With `isEnabled` false the
+                            // Settings toggle reads OFF, so its delete branch
+                            // is unreachable and this is the only user-driven
+                            // moment where dropping it is unambiguously safe.
+                            await removeSecret(BIOMETRIC_BLOB_KEY_ID)
+                            setIsEnabled(false)
                             return { ok: false, reason: 'weak-biometric' }
                         }
 
@@ -167,6 +191,7 @@ export const useBiometrics = (): UseBiometricsResult => {
                         // the original `pinData` here is zeroed by
                         // `withSecret`'s finally after this resolves.
                         await writeBiometricBlob(pinData)
+                        setIsEnabled(true)
                         return { ok: true }
                     },
                 )
@@ -176,7 +201,13 @@ export const useBiometrics = (): UseBiometricsResult => {
                 return { ok: false, reason: 'error' }
             }
         },
-        [biometricsService, withSecret, writeBiometricBlob],
+        [
+            biometricsService,
+            withSecret,
+            writeBiometricBlob,
+            setIsEnabled,
+            removeSecret,
+        ],
     )
 
     // Re-bind the biometric blob to the current PIN_RECORD bytes. Called by
@@ -184,13 +215,18 @@ export const useBiometrics = (): UseBiometricsResult => {
     // already enabled; never re-prompts the OS biometric sheet (we already
     // have the user authenticated via PIN at the call site).
     const refreshBiometricsBinding = useCallback(async (): Promise<void> => {
-        // Goes through the reconciling check, not a bare `hasSecret`, so a PIN
-        // change cannot re-write a blob whose OS enrollment is already gone.
-        if (!(await checkBiometricsEnabled())) return
+        // Reconcile first so a blob whose enrollment is gone is dropped and the
+        // guard below cannot re-arm it. Keyed on the blob surviving rather than
+        // on the return value: the reconcile also returns false while
+        // deliberately keeping a blob it could not confirm, and that one still
+        // has to be re-bound or it would outlive the PIN it mirrors. The
+        // reconcile owns `isEnabled`, so re-binding must not raise it.
+        await checkBiometricsEnabled()
+        if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) return
         await withSecret(PIN_RECORD_KEY_ID, async pinData => {
             await writeBiometricBlob(pinData)
         })
-    }, [checkBiometricsEnabled, withSecret, writeBiometricBlob])
+    }, [checkBiometricsEnabled, hasSecret, withSecret, writeBiometricBlob])
 
     const disableBiometrics = useCallback(async () => {
         await removeSecret(BIOMETRIC_BLOB_KEY_ID)
