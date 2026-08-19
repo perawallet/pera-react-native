@@ -40,6 +40,11 @@ const requiredField = z
     .refine(maxBytes(SIWA_MAX_FIELD_BYTES), {
         message: `exceeds ${SIWA_MAX_FIELD_BYTES} bytes`,
     })
+const cappedDateTime = z.iso
+    .datetime({ offset: true })
+    .refine(maxBytes(SIWA_MAX_FIELD_BYTES), {
+        message: `exceeds ${SIWA_MAX_FIELD_BYTES} bytes`,
+    })
 
 /**
  * Zod schema for a Sign-In With Algorand (SIWA) AUTH-scope payload. Field
@@ -58,9 +63,9 @@ export const siwaSchema = z.object({
         })
         .optional(),
     nonce: cappedField.optional(),
-    'issued-at': cappedField.optional(),
-    'expiration-time': cappedField.optional(),
-    'not-before': cappedField.optional(),
+    'issued-at': cappedDateTime.optional(),
+    'expiration-time': cappedDateTime.optional(),
+    'not-before': cappedDateTime.optional(),
     'request-id': cappedField.optional(),
     chain_id: requiredField,
     resources: z
@@ -75,6 +80,11 @@ export const siwaSchema = z.object({
 })
 
 export type Siwa = z.infer<typeof siwaSchema>
+
+const summarizeIssues = (error: z.ZodError): string =>
+    error.issues
+        .map(i => `${i.path.join('.') || '(root)'}: ${i.message}`)
+        .join('; ')
 
 /**
  * Parses and validates a SIWA AUTH-scope payload.
@@ -100,10 +110,7 @@ export const parseSiwa = (jsonString: string): Siwa => {
 
     const result = siwaSchema.safeParse(parsed)
     if (!result.success) {
-        const summary = result.error.issues
-            .map(i => `${i.path.join('.') || '(root)'}: ${i.message}`)
-            .join('; ')
-        throw new Arc60BadJsonError(summary)
+        throw new Arc60BadJsonError(summarizeIssues(result.error))
     }
 
     const canonical = canonify(result.data)
@@ -165,6 +172,14 @@ export const buildSiwaAuthRequest = ({
         'expiration-time': new Date(now.getTime() + ttlMs).toISOString(),
         chain_id: '283',
         type: 'ed25519',
+    }
+
+    // A payload we emit but siwaSchema rejects would be a request the wallet
+    // then refuses to sign — e.g. a ttlMs large enough that toISOString()
+    // returns the expanded-year form, which is not a valid ISO datetime.
+    const validated = siwaSchema.safeParse(payload)
+    if (!validated.success) {
+        throw new Arc60BadJsonError(summarizeIssues(validated.error))
     }
 
     const canonical = canonify(payload)

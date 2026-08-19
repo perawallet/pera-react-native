@@ -28,6 +28,7 @@ import {
     Arc60MissingDomainError,
     buildArc60AuthSigningPayload,
     decodeArc60Data,
+    parseArc60Timestamp,
     validateArc60AuthRequest,
     verifyAuthenticatorDomain,
 } from '../arc60'
@@ -353,6 +354,28 @@ describe('validateArc60AuthRequest', () => {
         ).toThrow(Arc60InvalidDateError)
     })
 
+    test('throws when expiration-time is an unparseable string', () => {
+        const data = encodeToBase64(
+            utf8(
+                buildSiwa({
+                    'expiration-time': 'never',
+                }),
+            ),
+        )
+        expect(() =>
+            validateArc60AuthRequest(
+                {
+                    data,
+                    signer: SIGNER,
+                    domain: DOMAIN,
+                    authenticatorData: AUTH_DATA,
+                },
+                { scope: ARC60_SCOPE_AUTH, encoding: 'base64' },
+                NO_ACCOUNTS,
+            ),
+        ).toThrow(Arc60BadJsonError)
+    })
+
     test('does not throw when issued-at, not-before and expiration-time are all currently valid', () => {
         const data = encodeToBase64(
             utf8(
@@ -377,6 +400,34 @@ describe('validateArc60AuthRequest', () => {
                 NO_ACCOUNTS,
             ),
         ).not.toThrow()
+    })
+})
+
+describe('parseArc60Timestamp', () => {
+    test('returns undefined for undefined', () => {
+        expect(parseArc60Timestamp(undefined)).toBeUndefined()
+    })
+
+    test('returns a finite epoch for a valid ...Z form', () => {
+        const parsed = parseArc60Timestamp('2026-01-01T00:00:00Z')
+        expect(Number.isFinite(parsed)).toBe(true)
+    })
+
+    test('returns a finite epoch for a +02:00 offset form', () => {
+        const parsed = parseArc60Timestamp('2026-01-01T00:00:00+02:00')
+        expect(Number.isFinite(parsed)).toBe(true)
+    })
+
+    test('throws Arc60InvalidDateError for "never"', () => {
+        expect(() => parseArc60Timestamp('never')).toThrow(
+            Arc60InvalidDateError,
+        )
+    })
+
+    test('throws Arc60InvalidDateError for "not-a-date"', () => {
+        expect(() => parseArc60Timestamp('not-a-date')).toThrow(
+            Arc60InvalidDateError,
+        )
     })
 })
 

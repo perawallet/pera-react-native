@@ -161,6 +161,52 @@ describe('parseSiwa — size limits (ARC-60 DoS hardening)', () => {
     })
 })
 
+describe('parseSiwa — timestamp format validation', () => {
+    test('rejects expiration-time: "never"', () => {
+        const canonical = canonify({
+            ...baseSiwa,
+            'expiration-time': 'never',
+        })!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    test('rejects a malformed not-before', () => {
+        const canonical = canonify({
+            ...baseSiwa,
+            'not-before': 'not-a-date',
+        })!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    test('rejects a timezone-less issued-at', () => {
+        const canonical = canonify({
+            ...baseSiwa,
+            'issued-at': '2026-01-01T00:00:00',
+        })!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    test('rejects a date-only expiration-time', () => {
+        const canonical = canonify({
+            ...baseSiwa,
+            'expiration-time': '2026-01-01',
+        })!
+        expect(() => parseSiwa(canonical)).toThrow(Arc60BadJsonError)
+    })
+
+    // Guards against over-tightening to UTC-only: RFC 3339 offsets must stay valid.
+    test('accepts a +02:00 offset issued-at byte-identical', () => {
+        const payload = {
+            ...baseSiwa,
+            'issued-at': '2026-01-01T00:00:00+02:00',
+            'expiration-time': '2026-01-02T00:00:00+02:00',
+        }
+        const siwa = parseSiwa(canonify(payload)!)
+        expect(siwa['issued-at']).toBe(payload['issued-at'])
+        expect(siwa['expiration-time']).toBe(payload['expiration-time'])
+    })
+})
+
 describe('buildSiwaAuthRequest', () => {
     const args = {
         domain: 'perawallet.app',
@@ -205,6 +251,15 @@ describe('buildSiwaAuthRequest', () => {
         const expected = sha256(new TextEncoder().encode(args.domain))
 
         expect([...authenticatorData]).toEqual([...expected])
+    })
+
+    test('rejects a ttlMs whose expiry overflows the four-digit year form', () => {
+        // Beyond year 9999 toISOString() emits the expanded-year form
+        // (+033714-…), which siwaSchema rejects — catching it here stops the
+        // wallet building a request it would then refuse to sign.
+        expect(() => buildSiwaAuthRequest({ ...args, ttlMs: 1e15 })).toThrow(
+            Arc60BadJsonError,
+        )
     })
 
     test('two calls with different nonces produce different data', () => {
