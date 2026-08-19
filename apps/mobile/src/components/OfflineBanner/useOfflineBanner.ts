@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNetworkStatus, useOfflineFeedbackStore } from '@modules/network'
 import { useLanguage } from '@hooks/useLanguage'
 import {
-    OFFLINE_BANNER_EMPHASIS_MS,
+    OFFLINE_BANNER_EXPANDED_MS,
+    OFFLINE_BANNER_REEXPANDED_MS,
     OFFLINE_RECONNECT_DISPLAY_MS,
 } from '@constants/ui'
 
@@ -24,7 +25,8 @@ type UseOfflineBannerResult = {
     isVisible: boolean
     mode: OfflineBannerMode
     label: string
-    isEmphasized: boolean
+    description: string
+    isExpanded: boolean
 }
 
 export const useOfflineBanner = (): UseOfflineBannerResult => {
@@ -32,11 +34,30 @@ export const useOfflineBanner = (): UseOfflineBannerResult => {
     const { t } = useLanguage()
     const emphasisNonce = useOfflineFeedbackStore(state => state.emphasisNonce)
     const [isReconnectedVisible, setIsReconnectedVisible] = useState(false)
-    const [isEmphasized, setIsEmphasized] = useState(false)
+    const [isExpanded, setIsExpanded] = useState(false)
     const previousHasInternet = useRef(hasInternet)
     const previousEmphasisNonce = useRef(emphasisNonce)
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const emphasisTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    const clearCollapseTimer = useCallback(() => {
+        if (collapseTimerRef.current) {
+            clearTimeout(collapseTimerRef.current)
+            collapseTimerRef.current = null
+        }
+    }, [])
+
+    const expandFor = useCallback(
+        (durationMs: number) => {
+            clearCollapseTimer()
+            setIsExpanded(true)
+            collapseTimerRef.current = setTimeout(() => {
+                setIsExpanded(false)
+                collapseTimerRef.current = null
+            }, durationMs)
+        },
+        [clearCollapseTimer],
+    )
 
     useEffect(() => {
         const wasOffline = previousHasInternet.current === false
@@ -53,8 +74,13 @@ export const useOfflineBanner = (): UseOfflineBannerResult => {
             // Offline again — kill any pending reconnect dismissal.
             clearTimer()
             setIsReconnectedVisible(false)
+            expandFor(OFFLINE_BANNER_EXPANDED_MS)
             return
         }
+
+        // The reconnected pill never carries the explanation.
+        clearCollapseTimer()
+        setIsExpanded(false)
 
         if (wasOffline) {
             setIsReconnectedVisible(true)
@@ -64,24 +90,22 @@ export const useOfflineBanner = (): UseOfflineBannerResult => {
                 timerRef.current = null
             }, OFFLINE_RECONNECT_DISPLAY_MS)
         }
-    }, [hasInternet])
+    }, [hasInternet, expandFor, clearCollapseTimer])
 
     useEffect(() => {
         if (emphasisNonce === previousEmphasisNonce.current) return
         previousEmphasisNonce.current = emphasisNonce
+        if (hasInternet) return
 
-        if (emphasisTimerRef.current) clearTimeout(emphasisTimerRef.current)
-        setIsEmphasized(true)
-        emphasisTimerRef.current = setTimeout(() => {
-            setIsEmphasized(false)
-            emphasisTimerRef.current = null
-        }, OFFLINE_BANNER_EMPHASIS_MS)
-    }, [emphasisNonce])
+        expandFor(OFFLINE_BANNER_REEXPANDED_MS)
+    }, [emphasisNonce, hasInternet, expandFor])
 
     useEffect(
         () => () => {
             if (timerRef.current) clearTimeout(timerRef.current)
-            if (emphasisTimerRef.current) clearTimeout(emphasisTimerRef.current)
+            if (collapseTimerRef.current) {
+                clearTimeout(collapseTimerRef.current)
+            }
         },
         [],
     )
@@ -90,6 +114,7 @@ export const useOfflineBanner = (): UseOfflineBannerResult => {
     const isVisible = !hasInternet || isReconnectedVisible
     const label =
         mode === 'offline' ? t('common.offline_mode') : t('common.back_online')
+    const description = t('common.offline_mode_description')
 
-    return { isVisible, mode, label, isEmphasized }
+    return { isVisible, mode, label, description, isExpanded }
 }

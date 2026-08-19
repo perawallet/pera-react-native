@@ -14,8 +14,18 @@ import { render, screen, act } from '@test-utils/render'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // Ensure i18n is initialised so t() resolves real strings in this test's module graph.
 import '../../../i18n'
-import { useNetworkStatusStore } from '@modules/network'
+import {
+    useNetworkStatusStore,
+    useOfflineFeedbackStore,
+} from '@modules/network'
+import {
+    OFFLINE_BANNER_COLLAPSE_MS,
+    OFFLINE_BANNER_EXPANDED_MS,
+} from '@constants/ui'
 import { OfflineBanner } from '../OfflineBanner'
+
+const DESCRIPTION =
+    'Balances may be out of date and some actions are unavailable until you reconnect.'
 
 // The `@modules/network` barrel also re-exports useNetworkStatusListener,
 // which imports the real @react-native-community/netinfo native module —
@@ -31,11 +41,13 @@ describe('OfflineBanner', () => {
     beforeEach(() => {
         vi.useFakeTimers()
         useNetworkStatusStore.setState({ hasInternet: true })
+        useOfflineFeedbackStore.setState({ emphasisNonce: 0 })
     })
 
     afterEach(() => {
         vi.useRealTimers()
         useNetworkStatusStore.setState({ hasInternet: true })
+        useOfflineFeedbackStore.setState({ emphasisNonce: 0 })
     })
 
     it('renders the localized offline copy when there is no internet', () => {
@@ -64,5 +76,63 @@ describe('OfflineBanner', () => {
             useNetworkStatusStore.setState({ hasInternet: true })
         })
         expect(screen.getByText('Back online')).toBeTruthy()
+    })
+
+    it('shows the explanatory toast when the connection drops', () => {
+        render(<OfflineBanner />)
+        act(() => {
+            useNetworkStatusStore.setState({ hasInternet: false })
+        })
+        expect(screen.getByText(DESCRIPTION)).toBeTruthy()
+    })
+
+    it('shrinks to the plain pill after the expanded window', () => {
+        render(<OfflineBanner />)
+        act(() => {
+            useNetworkStatusStore.setState({ hasInternet: false })
+        })
+        act(() => {
+            vi.advanceTimersByTime(OFFLINE_BANNER_EXPANDED_MS)
+        })
+        // The unmount timer is scheduled by an effect after the collapse state
+        // lands, so the collapse window must be advanced separately.
+        act(() => {
+            vi.advanceTimersByTime(OFFLINE_BANNER_COLLAPSE_MS)
+        })
+        expect(screen.queryByText(DESCRIPTION)).toBeNull()
+        expect(screen.getByText('Offline Mode')).toBeTruthy()
+    })
+
+    it('re-expands the explanation when an offline action is blocked', () => {
+        render(<OfflineBanner />)
+        act(() => {
+            useNetworkStatusStore.setState({ hasInternet: false })
+        })
+        act(() => {
+            vi.advanceTimersByTime(OFFLINE_BANNER_EXPANDED_MS)
+        })
+        // The unmount timer is scheduled by an effect after the collapse state
+        // lands, so the collapse window must be advanced separately.
+        act(() => {
+            vi.advanceTimersByTime(OFFLINE_BANNER_COLLAPSE_MS)
+        })
+        expect(screen.queryByText(DESCRIPTION)).toBeNull()
+
+        act(() => {
+            useOfflineFeedbackStore.getState().emphasizeOfflineStatus()
+        })
+        expect(screen.getByText(DESCRIPTION)).toBeTruthy()
+    })
+
+    it('never shows the explanation on the reconnected pill', () => {
+        render(<OfflineBanner />)
+        act(() => {
+            useNetworkStatusStore.setState({ hasInternet: false })
+        })
+        act(() => {
+            useNetworkStatusStore.setState({ hasInternet: true })
+        })
+        expect(screen.getByText('Back online')).toBeTruthy()
+        expect(screen.queryByText(DESCRIPTION)).toBeNull()
     })
 })

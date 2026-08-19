@@ -527,6 +527,7 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
+        "offline_mode_description": "Balances may be out of date and some actions are unavailable until you reconnect.",
         "offline_refresh_body": "You're offline — this will refresh automatically once you're back online.",
         "back_online": "Back online",
         "network_label": {

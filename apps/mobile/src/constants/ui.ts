@@ -56,14 +56,18 @@ export const TAP_TO_CONFIRM_ARMED_TIMEOUT = 1000
 
 // How long the "back online" confirmation stays before auto-dismissing.
 export const OFFLINE_RECONNECT_DISPLAY_MS = 3000
-// Duration of the offline banner's fade-in animation on mount.
-export const OFFLINE_BANNER_FADE_MS = 200
-// How long the banner stays emphasized after an action is blocked by being offline.
-export const OFFLINE_BANNER_EMPHASIS_MS = 1200
-// Peak scale of the attention pulse the banner plays when emphasized.
-export const OFFLINE_BANNER_EMPHASIS_SCALE = 1.08
-// Duration of each leg (up, then back) of that pulse.
-export const OFFLINE_BANNER_EMPHASIS_PULSE_MS = 200
+// Duration of the banner's slide-down + fade entry animation.
+export const OFFLINE_BANNER_ENTER_MS = 350
+// How long the expanded explanatory toast stays before shrinking to the pill.
+export const OFFLINE_BANNER_EXPANDED_MS = 5000
+// How long a re-expansion (after an offline-blocked action) stays before shrinking again.
+export const OFFLINE_BANNER_REEXPANDED_MS = 3000
+// Duration of the toast → pill crossfade.
+export const OFFLINE_BANNER_COLLAPSE_MS = 250
+// Entry slide-down distance, px.
+export const OFFLINE_BANNER_ENTER_TRANSLATE = 24
+// How far the explanation slides up into the pill while collapsing, px.
+export const OFFLINE_BANNER_COLLAPSE_TRANSLATE = 8
 
 export const SHORT_PROMPT_DISPLAY_DELAY = 300
 export const LONG_PROMPT_DISPLAY_DELAY = 3000

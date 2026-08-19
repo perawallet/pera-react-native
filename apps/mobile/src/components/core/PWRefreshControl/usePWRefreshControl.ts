@@ -35,7 +35,8 @@ export const usePWRefreshControl = ({
     const handleRefresh = useCallback(() => {
         if (!hasInternet) {
             // Never dispatch a doomed request, but never no-op silently either:
-            // the banner pulse is the answer to the pull (docs/OFFLINE_PAUSED_STATE.md).
+            // re-expanding the offline explanation is the answer to the pull
+            // (docs/OFFLINE_PAUSED_STATE.md).
             emphasizeOfflineStatus()
             return
         }
