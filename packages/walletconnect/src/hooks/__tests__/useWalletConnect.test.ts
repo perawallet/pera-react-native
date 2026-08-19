@@ -885,9 +885,70 @@ describe('useWalletConnect', () => {
             // safer check
             expect(args).toEqual([])
         })
+
+        it('filters the current session list when a peer disconnects after it changed', async () => {
+            const sessionA = { clientId: 'client-a' } as any
+            const sessionB = { clientId: 'client-b' } as any
+            mockConnections = [sessionA]
+
+            const { result, rerender } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({ connection: sessionA })
+            })
+
+            // A second session is paired after the connector bound its
+            // listeners, so the list the peer-disconnect handler must filter
+            // is not the one that existed at bind time.
+            mockConnections = [sessionA, sessionB]
+            rerender()
+
+            const connector = (WalletConnect as any).mock.results[0].value
+            const onDisconnect = connector.on.mock.calls.find(
+                ([event]: [string]) => event === 'disconnect',
+            )[1]
+
+            await act(async () => {
+                onDisconnect()
+                await Promise.resolve()
+            })
+
+            expect(mockSetConnections).toHaveBeenLastCalledWith([sessionB])
+        })
     })
 
     describe('approveSession', () => {
+        it('preserves a session paired while the approval was in flight', async () => {
+            const connection = { clientId: 'client-approve' } as any
+            const sessionC = { clientId: 'client-c' } as any
+            mockConnections = [connection]
+
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            // Lands while approveSession awaits socket revival.
+            mockConnections = [connection, sessionC]
+
+            await act(async () => {
+                await result.current.approveSession(
+                    'client-approve',
+                    { chainId: 4160, permissions: {} } as any,
+                    ['addr1'],
+                )
+            })
+
+            const updated = mockSetConnections.mock.calls.at(-1)![0]
+            expect(updated.map((conn: any) => conn.clientId)).toEqual([
+                'client-c',
+                'client-approve',
+            ])
+        })
+
         it('should approve session and update store', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),
@@ -993,6 +1054,28 @@ describe('useWalletConnect', () => {
     })
 
     describe('rejectSession', () => {
+        it('preserves a session paired while the rejection was in flight', async () => {
+            const connection = { clientId: 'client-reject' } as any
+            const sessionC = { clientId: 'client-c' } as any
+            mockConnections = [connection]
+
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            // Lands while rejectSession awaits delivery to the dApp.
+            mockConnections = [connection, sessionC]
+
+            await act(async () => {
+                await result.current.rejectSession('client-reject')
+            })
+
+            expect(mockSetConnections).toHaveBeenLastCalledWith([sessionC])
+        })
+
         it('should reject session and update store', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),
@@ -1099,15 +1182,10 @@ describe('useWalletConnect', () => {
         it('should correctly filter only the rejected session when multiple exist', async () => {
             const connection1 = { clientId: 'client-multi-1' } as any
             const connection2 = { clientId: 'client-multi-2' } as any
-            const connections = [connection1, connection2]
-
-            ;(useWalletConnectStore as any).mockImplementation(
-                (selector: any) =>
-                    selector({
-                        walletConnectConnections: connections,
-                        setWalletConnectConnections: mockSetConnections,
-                    }),
-            )
+            // Assign the shared fixture rather than overriding the selector:
+            // a real zustand store serves the same list through the selector
+            // and through getState(), and this hook reads both.
+            mockConnections = [connection1, connection2]
 
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),
@@ -1257,6 +1335,30 @@ describe('useWalletConnect', () => {
     })
 
     describe('deleteAllSessions', () => {
+        it('keeps a session paired while the disconnects were in flight', async () => {
+            const connection = { clientId: 'client-all' } as any
+            const sessionC = { clientId: 'client-c' } as any
+            mockConnections = [connection]
+
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+            const connector = (WalletConnect as any).mock.results[0].value
+            connector.connected = true
+            connector.killSession = vi.fn(async () => {
+                mockConnections = [...mockConnections, sessionC]
+            })
+
+            await act(async () => {
+                await result.current.deleteAllSessions()
+            })
+
+            expect(mockSetConnections).toHaveBeenLastCalledWith([sessionC])
+        })
+
         it('should kill all sessions and clear store', async () => {
             const connection1 = { clientId: 'client1' } as any
             const connection2 = { clientId: 'client2' } as any
