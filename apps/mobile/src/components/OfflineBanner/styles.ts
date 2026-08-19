@@ -24,10 +24,13 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         zIndex: theme.zIndex.max,
         alignItems: 'center',
     },
+    stack: {
+        marginTop: theme.spacing.xs,
+        alignItems: 'center',
+    },
     banner: {
         backgroundColor: theme.colors.layerGray,
         borderRadius: theme.borderRadius.md,
-        marginTop: theme.spacing.xs,
         paddingHorizontal: theme.spacing.md,
         paddingVertical: theme.spacing.xs,
         alignItems: 'center',
@@ -42,5 +45,18 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     },
     textReconnected: {
         color: theme.colors.textMain,
+    },
+    explanation: {
+        backgroundColor: theme.colors.layerGray,
+        borderRadius: theme.borderRadius.md,
+        marginTop: theme.spacing.xs,
+        marginHorizontal: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+    },
+    explanationText: {
+        ...getTypography(theme, 'caption'),
+        color: theme.colors.textGray,
+        textAlign: 'center',
     },
 }))

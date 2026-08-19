@@ -527,6 +527,7 @@
     },
     "common": {
         "offline_mode": "Modo offline",
+        "offline_mode_description": "Os saldos podem estar desatualizados e algumas ações ficam indisponíveis até você se reconectar.",
         "offline_refresh_body": "Você está offline — isso será atualizado automaticamente quando você voltar a ficar online.",
         "back_online": "De volta online",
         "network_label": {

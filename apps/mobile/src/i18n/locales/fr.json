@@ -527,6 +527,7 @@
     },
     "common": {
         "offline_mode": "Mode hors ligne",
+        "offline_mode_description": "Les soldes peuvent ne pas être à jour et certaines actions sont indisponibles jusqu’à votre reconnexion.",
         "offline_refresh_body": "Vous êtes hors ligne : l’actualisation se fera automatiquement dès votre retour en ligne.",
         "back_online": "De retour en ligne",
         "network_label": {

@@ -527,6 +527,7 @@
     },
     "common": {
         "offline_mode": "Modo sin conexión",
+        "offline_mode_description": "Es posible que los saldos no estén actualizados y algunas acciones no estén disponibles hasta que vuelvas a conectarte.",
         "offline_refresh_body": "Estás sin conexión: esto se actualizará automáticamente cuando vuelvas a estar en línea.",
         "back_online": "De nuevo en línea",
         "network_label": {

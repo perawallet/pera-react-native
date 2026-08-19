@@ -519,6 +519,7 @@
     },
     "common": {
         "offline_mode": "Offline-Modus",
+        "offline_mode_description": "Guthaben sind möglicherweise nicht aktuell und einige Aktionen sind nicht verfügbar, bis du wieder online bist.",
         "offline_refresh_body": "Du bist offline — dies wird automatisch aktualisiert, sobald du wieder online bist.",
         "back_online": "Wieder online",
         "network_label": {

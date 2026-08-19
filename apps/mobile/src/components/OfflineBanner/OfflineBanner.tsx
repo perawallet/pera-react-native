@@ -10,49 +10,24 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withSequence,
-    withTiming,
-} from 'react-native-reanimated'
+import Animated from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWText, PWView } from '@components/core'
-import {
-    OFFLINE_BANNER_EMPHASIS_PULSE_MS,
-    OFFLINE_BANNER_EMPHASIS_SCALE,
-    OFFLINE_BANNER_FADE_MS,
-} from '@constants/ui'
 import { useOfflineBanner } from './useOfflineBanner'
 import { useStyles } from './styles'
 
 export const OfflineBanner = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { isVisible, mode, label, isEmphasized } = useOfflineBanner()
-    const opacity = useSharedValue(0)
-    const scale = useSharedValue(1)
-
-    useEffect(() => {
-        opacity.value = withTiming(1, { duration: OFFLINE_BANNER_FADE_MS })
-    }, [opacity])
-
-    useEffect(() => {
-        if (!isEmphasized) return
-
-        scale.value = withSequence(
-            withTiming(OFFLINE_BANNER_EMPHASIS_SCALE, {
-                duration: OFFLINE_BANNER_EMPHASIS_PULSE_MS,
-            }),
-            withTiming(1, { duration: OFFLINE_BANNER_EMPHASIS_PULSE_MS }),
-        )
-    }, [isEmphasized, scale])
-
-    const animatedStyle = useAnimatedStyle(() => ({
-        opacity: opacity.value,
-        transform: [{ scale: scale.value }],
-    }))
+    const {
+        isVisible,
+        mode,
+        label,
+        description,
+        isExplanationRendered,
+        entryAnimatedStyle,
+        explanationAnimatedStyle,
+    } = useOfflineBanner()
 
     if (!isVisible) return null
 
@@ -63,13 +38,15 @@ export const OfflineBanner = () => {
             style={styles.container}
             pointerEvents='box-none'
         >
-            <Animated.View style={animatedStyle}>
+            <Animated.View
+                style={[styles.stack, entryAnimatedStyle]}
+                pointerEvents='none'
+            >
                 <PWView
                     style={[
                         styles.banner,
                         isReconnected && styles.bannerReconnected,
                     ]}
-                    pointerEvents='none'
                 >
                     <PWText
                         style={[
@@ -80,6 +57,15 @@ export const OfflineBanner = () => {
                         {label}
                     </PWText>
                 </PWView>
+                {isExplanationRendered && !isReconnected && (
+                    <Animated.View style={explanationAnimatedStyle}>
+                        <PWView style={styles.explanation}>
+                            <PWText style={styles.explanationText}>
+                                {description}
+                            </PWText>
+                        </PWView>
+                    </Animated.View>
+                )}
             </Animated.View>
         </PWView>
     )
