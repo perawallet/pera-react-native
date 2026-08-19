@@ -16,9 +16,14 @@ import { Decimal } from 'decimal.js'
 import { useOptInConfirmationContent } from '../useOptInConfirmationContent'
 
 const mockUseMinimumFeeConfig = vi.fn()
+const mockUseMinFeeForSender = vi.fn()
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    useMinFeeForSender: (address: string) => mockUseMinFeeForSender(address),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -31,18 +36,42 @@ describe('useOptInConfirmationContent', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseMinimumFeeConfig.mockReturnValue({ minTxnFee: 1000n })
+        mockUseMinFeeForSender.mockReturnValue({
+            minFee: undefined,
+            isPending: true,
+        })
     })
 
-    it('defaults the fee to the remote-config minimum fee', () => {
+    it('falls back to the remote-config minimum while params load', () => {
         mockUseMinimumFeeConfig.mockReturnValue({ minTxnFee: 2000n })
-        const { result } = renderHook(() => useOptInConfirmationContent())
+        const { result } = renderHook(() =>
+            useOptInConfirmationContent('SENDER'),
+        )
         expect(result.current.resolvedFee.toString()).toBe('0.002')
     })
 
-    it('prefers an explicit fee override over the config value', () => {
-        mockUseMinimumFeeConfig.mockReturnValue({ minTxnFee: 2000n })
+    // PERA-4922: a quantum sender pays the PQ multiple, and the quote has to
+    // match the fee useAssetOptInMutation actually builds.
+    it('quotes the sender-resolved fee once it is available', () => {
+        mockUseMinimumFeeConfig.mockReturnValue({ minTxnFee: 1000n })
+        mockUseMinFeeForSender.mockReturnValue({
+            minFee: 3000n,
+            isPending: false,
+        })
         const { result } = renderHook(() =>
-            useOptInConfirmationContent(new Decimal(0)),
+            useOptInConfirmationContent('QUANTUM_SENDER'),
+        )
+        expect(mockUseMinFeeForSender).toHaveBeenCalledWith('QUANTUM_SENDER')
+        expect(result.current.resolvedFee.toString()).toBe('0.003')
+    })
+
+    it('prefers an explicit fee override over the resolved value', () => {
+        mockUseMinFeeForSender.mockReturnValue({
+            minFee: 3000n,
+            isPending: false,
+        })
+        const { result } = renderHook(() =>
+            useOptInConfirmationContent('SENDER', new Decimal(0)),
         )
         expect(result.current.resolvedFee.toString()).toBe('0')
     })

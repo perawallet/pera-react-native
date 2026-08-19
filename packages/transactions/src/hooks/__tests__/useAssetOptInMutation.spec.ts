@@ -30,7 +30,6 @@ const wrapper = ({ children }: { children: ReactNode }) =>
 
 const mockSubmit = vi.fn()
 const mockAccountInformation = vi.fn()
-const mockGetSuggestedParams = vi.fn()
 const mockBuild = vi.fn()
 const mockNewGroup = vi.fn(() => ({
     addAssetOptIn: vi.fn().mockReturnThis(),
@@ -40,9 +39,13 @@ const mockInsertAssetHolding = vi.fn().mockResolvedValue(undefined)
 const mockFetchAndPersistAssets = vi.fn().mockResolvedValue(undefined)
 const mockInvalidate = vi.fn()
 const mockUseMinimumFeeConfig = vi.fn()
+const mockAssignFeeToGroup = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
+    useMinimumFeeCalculator: () => ({
+        assignFeeToGroup: mockAssignFeeToGroup,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -64,7 +67,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
                 accountInformation: () => ({ do: mockAccountInformation }),
             },
         },
-        getSuggestedParams: mockGetSuggestedParams,
         newGroup: mockNewGroup,
     }),
     useMinimumFeeConfig: () => mockUseMinimumFeeConfig(),
@@ -78,10 +80,17 @@ describe('useAssetOptInMutation', () => {
             minBalance: 100000n,
             assets: [],
         })
-        mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
         mockBuild.mockResolvedValue({
-            transactions: [{ txn: { sender: 'SENDER' } }],
+            transactions: [{ txn: { sender: 'SENDER', fee: 1000n } }],
         })
+        // Default: pass-through, which is what the calculator does for a
+        // non-quantum sender.
+        mockAssignFeeToGroup.mockImplementation(
+            async ({ transactions }: { transactions: unknown[] }) => ({
+                transactions,
+                adjustments: [],
+            }),
+        )
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
         mockUseMinimumFeeConfig.mockReturnValue({
             minTxnFee: 1000n,
@@ -107,7 +116,7 @@ describe('useAssetOptInMutation', () => {
         expect(mockNewGroup).toHaveBeenCalledTimes(1)
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
-                unsignedTxs: [{ sender: 'SENDER' }],
+                unsignedTxs: [{ sender: 'SENDER', fee: 1000n }],
             }),
         )
         expect(mockInsertAssetHolding).toHaveBeenCalledWith({
@@ -197,6 +206,74 @@ describe('useAssetOptInMutation', () => {
         expect(mockSubmit).not.toHaveBeenCalled()
     })
 
+    // PERA-4922: a Falcon-signed opt-in must carry the PQ minimum, or algod
+    // rejects it with `txgroup with 1mA fees is less than 3mA`.
+    it('submits the fee-raised group returned by the minimum-fee calculator', async () => {
+        const built = { sender: 'SENDER', fee: 1000n }
+        const raised = { sender: 'SENDER', fee: 3000n }
+        mockBuild.mockResolvedValueOnce({ transactions: [{ txn: built }] })
+        mockAssignFeeToGroup.mockResolvedValueOnce({
+            transactions: [raised],
+            adjustments: [
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
+            ],
+        })
+
+        const { result } = renderHook(() => useAssetOptInMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await result.current.optIn({ sender: 'SENDER', assetId: 12345n })
+        })
+
+        expect(mockAssignFeeToGroup).toHaveBeenCalledWith({
+            transactions: [built],
+        })
+        expect(mockSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({ unsignedTxs: [raised] }),
+        )
+    })
+
+    it('balance check uses the raised PQ fee, not the base minimum', async () => {
+        // 100000 minBalance + 100000 assetMbr leaves 2000 spare. That clears a
+        // 1000 base fee but not the 3000 a quantum signer actually pays, so the
+        // opt-in must be rejected before anything is signed.
+        mockAssignFeeToGroup.mockResolvedValueOnce({
+            transactions: [{ sender: 'SENDER', fee: 3000n }],
+            adjustments: [
+                {
+                    index: 0,
+                    originalFee: 1000n,
+                    adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
+            ],
+        })
+        mockAccountInformation.mockResolvedValueOnce({
+            amount: 202000n,
+            minBalance: 100000n,
+            assets: [],
+        })
+
+        const { result } = renderHook(() => useAssetOptInMutation(), {
+            wrapper,
+        })
+
+        await act(async () => {
+            await expect(
+                result.current.optIn({ sender: 'SENDER', assetId: 12345n }),
+            ).rejects.toBeInstanceOf(InsufficientBalanceForOptInError)
+        })
+
+        expect(mockSubmit).not.toHaveBeenCalled()
+    })
+
     it('does not run post-submit work when submit fails', async () => {
         mockSubmit.mockRejectedValueOnce(new Error('user cancelled'))
         const { result } = renderHook(() => useAssetOptInMutation(), {
@@ -231,7 +308,7 @@ describe('useAssetOptInMutation', () => {
             })
 
             expect(mockAccountInformation).not.toHaveBeenCalled()
-            expect(mockGetSuggestedParams).not.toHaveBeenCalled()
+            expect(mockBuild).not.toHaveBeenCalled()
         })
     })
 })
