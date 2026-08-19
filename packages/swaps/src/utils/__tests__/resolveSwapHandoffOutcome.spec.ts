@@ -11,6 +11,8 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { AlgodError } from '@perawallet/wallet-core-blockchain'
+import { SubmissionError } from '@perawallet/wallet-core-signing'
 import type { SwapHandoffRecord } from '../../models'
 import {
     resolveSwapHandoffOutcome,
@@ -362,5 +364,23 @@ describe('resolveSwapHandoffOutcome', () => {
         expect(deps.reportError).toHaveBeenCalled()
         expect(deps.declineSignRequest).toHaveBeenCalledWith('req-1')
         expect(deps.removeHandoff).toHaveBeenCalledWith('req-1')
+    })
+
+    test('leaves the sign request alone when the swap submit outcome is unknown', async () => {
+        deps.submitGroup.mockRejectedValueOnce(
+            new SubmissionError(
+                ['TXID'],
+                'unknown-outcome',
+                new AlgodError('network_unavailable', {}),
+            ),
+        )
+
+        await resolveSwapHandoffOutcome({
+            outcome: { kind: 'ready', assembledBytes: [ASSEMBLED_BYTES] },
+            record: makeRecord(),
+            deps: deps as unknown as SwapHandoffResolutionDeps,
+        })
+
+        expect(deps.declineSignRequest).not.toHaveBeenCalled()
     })
 })

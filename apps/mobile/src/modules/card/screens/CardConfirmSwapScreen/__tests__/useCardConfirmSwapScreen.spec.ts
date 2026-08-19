@@ -181,4 +181,36 @@ describe('useCardConfirmSwapScreen', () => {
         await waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
         expect(mockGoBack).not.toHaveBeenCalled()
     })
+
+    // F1: a submission-phase failure (e.g. the honest unknown-outcome
+    // headline) must reach the toast title instead of always rendering the
+    // generic "swap failed" copy.
+    it('uses the resolved title on the error toast when one is present', async () => {
+        mockSwap.quote = QUOTE
+        mockExecuteSwap.mockResolvedValue({
+            kind: 'error',
+            message: 'boom',
+            title: 'resolved.title',
+        })
+        const { result } = renderHook(() => useCardConfirmSwapScreen())
+
+        act(() => result.current.handleConfirm())
+
+        await waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        expect(mockErrorToast).toHaveBeenCalledWith('resolved.title', 'boom')
+    })
+
+    it('falls back to the default title when the outcome carries none', async () => {
+        mockSwap.quote = QUOTE
+        mockExecuteSwap.mockResolvedValue({ kind: 'error', message: 'boom' })
+        const { result } = renderHook(() => useCardConfirmSwapScreen())
+
+        act(() => result.current.handleConfirm())
+
+        await waitFor(() => expect(mockErrorToast).toHaveBeenCalled())
+        expect(mockErrorToast).toHaveBeenCalledWith(
+            'peraCard.add_funds.swap_error_title',
+            'boom',
+        )
+    })
 })

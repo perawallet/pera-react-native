@@ -108,7 +108,11 @@ export const useSwapConfirmationActions = ({
                 return
             }
             trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))
-            resolve({ kind: 'error', message: outcome.message })
+            resolve({
+                kind: 'error',
+                message: outcome.message,
+                title: outcome.title,
+            })
         } finally {
             inFlightRef.current = false
         }

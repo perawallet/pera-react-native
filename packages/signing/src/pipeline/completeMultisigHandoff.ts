@@ -15,6 +15,7 @@ import type {
     HandoffErrorReason,
     TerminalHandoffOutcome,
 } from './classifyHandoffPoll'
+import { SubmissionError } from './errors'
 
 /**
  * Side-effecting collaborators a multisig-handoff completion needs. Injected so
@@ -143,10 +144,20 @@ export const completeMultisigHandoff = async ({
 }
 
 /**
+ * A submit that got no node verdict may still be confirming. Declining would
+ * cancel a live request for a transaction that lands moments later; an
+ * unresolved request expires on its own, which is the recoverable outcome.
+ */
+const isPossiblyLanded = (error: unknown): boolean =>
+    error instanceof SubmissionError &&
+    error.classification === 'unknown-outcome'
+
+/**
  * Common terminal-failure path: notify the user, cancel the still-live
- * sign-request (best-effort), then record the failure. Does NOT remove the
- * handoff — the caller owns that so the `ready` path keeps a single `finally`
- * cleanup point.
+ * sign-request (best-effort, skipped when the submission's outcome is
+ * unknown), then record the failure. Does NOT remove the handoff — the
+ * caller owns that so the `ready` path keeps a single `finally` cleanup
+ * point.
  */
 const failHandoff = async (
     deps: MultisigHandoffCompletionDeps,
@@ -156,7 +167,9 @@ const failHandoff = async (
         error: error instanceof Error ? error.message : String(error),
     })
     deps.reportError(error)
-    await runBestEffort(() => deps.decline(), 'decline')
+    if (!isPossiblyLanded(error)) {
+        await runBestEffort(() => deps.decline(), 'decline')
+    }
     await runBestEffort(() => deps.onFailed(), 'status update')
 }
 

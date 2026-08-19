@@ -129,6 +129,32 @@ describe('useSwapConfirmationActions', () => {
         expect(mockSchedule).not.toHaveBeenCalled()
     })
 
+    // F1: the submission-phase outcome's resolved title must reach the
+    // confirmation result so the form/card toasts can prefer it over their
+    // hardcoded default.
+    it('forwards the resolved title from the outcome', async () => {
+        mockExecute.mockResolvedValueOnce({
+            kind: 'error',
+            phase: 'submission',
+            message: 'may have landed',
+            title: 'errors.submission.unknown_outcome.title',
+        })
+
+        const { result } = renderHook(() =>
+            useSwapConfirmationActions({ quote: makeQuote('quote-3b') }),
+        )
+
+        await act(async () => {
+            await result.current.handleSlideConfirm()
+        })
+
+        expect(mockResolve).toHaveBeenCalledWith({
+            kind: 'error',
+            message: 'may have landed',
+            title: 'errors.submission.unknown_outcome.title',
+        })
+    })
+
     it('does nothing when quoteIdStr is missing', async () => {
         const { result } = renderHook(() =>
             useSwapConfirmationActions({ quote: makeQuote() }),

@@ -27,3 +27,7 @@ export {
     setOnConfirmedHandler,
     type OnConfirmedHandler,
 } from './onConfirmedRegistry'
+export {
+    classifySubmitFailure,
+    type SubmitFailureOutcome,
+} from './classifySubmitFailure'

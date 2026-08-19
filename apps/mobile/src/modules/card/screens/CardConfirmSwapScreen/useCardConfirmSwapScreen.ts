@@ -198,7 +198,7 @@ export const useCardConfirmSwapScreen = (): UseCardConfirmSwapScreenResult => {
                 navigation.goBack()
             } else if (outcome.kind === 'error') {
                 errorToast(
-                    t('peraCard.add_funds.swap_error_title'),
+                    outcome.title ?? t('peraCard.add_funds.swap_error_title'),
                     outcome.message || t('peraCard.account.error_body'),
                 )
             }

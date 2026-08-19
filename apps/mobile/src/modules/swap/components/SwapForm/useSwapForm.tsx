@@ -449,7 +449,10 @@ export const useSwapForm = (): UseSwapFormResult => {
             return
         }
         if (result.kind === 'error') {
-            errorToast(t('swap.execution.error_title'), result.message)
+            errorToast(
+                result.title ?? t('swap.execution.error_title'),
+                result.message,
+            )
             return
         }
 
