@@ -29,3 +29,10 @@ export const uint64IdSchema = z
  * rounded. See `uint64IdToNumber` for building such payloads.
  */
 export const uint64IdNumberSchema = z.number().int().nonnegative()
+
+/**
+ * Response-side URL destined for a WebView, `Linking.openURL`, or an image
+ * loader. The protocol constraint is the point: bare `z.url()` only requires
+ * the value to parse, so `javascript:`, `data:` and `file:` all pass it.
+ */
+export const httpsUrlSchema = z.url({ protocol: /^https$/ })

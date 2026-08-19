@@ -2579,6 +2579,14 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             .number()
             .int()
             .nonnegative(),
+        // Same reason — the card response schemas evaluate httpsUrlSchema at
+        // import time. Taken from the module itself rather than hand-copied:
+        // it imports only zod, so pulling it in by path is side-effect free.
+        httpsUrlSchema: (
+            await vi.importActual<
+                typeof import('../../packages/shared/src/api/schemas')
+            >('../../packages/shared/src/api/schemas')
+        ).httpsUrlSchema,
         uint64IdToNumber: (id: string | number) => {
             if (typeof id === 'string' && id.trim() === '') {
                 throw new RangeError(
