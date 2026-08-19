@@ -22,6 +22,8 @@ import {
     reconnectAllConnectors,
     registerConnector,
     setConnectorHandlerBinder,
+    bindConnectorHandlers,
+    clearConnectorHandlerBinder,
     waitForPairingSocketOpen,
 } from '../connectorRegistry'
 import { useWalletConnectStore } from '../../store'
@@ -45,7 +47,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     return {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...(actual as any),
-        logger: { debug: vi.fn(), error: vi.fn() },
+        logger: { debug: vi.fn(), warn: vi.fn(), error: vi.fn() },
     }
 })
 
@@ -324,6 +326,47 @@ describe('connectorRegistry', () => {
             forgetConnector('c1')
 
             expect(getConnector('c1')).toBeUndefined()
+        })
+    })
+
+    // A connector's event listeners live outside React, so whichever binder
+    // they were attached through keeps serving them for the session's whole
+    // life. Ownership therefore has to belong to one long-lived registrant and
+    // survive transient surfaces registering and going away around it.
+    describe('handler-binder ownership', () => {
+        it('binds through the registered owner rather than the caller, so a transient caller cannot capture the connector', () => {
+            const owner = vi.fn()
+            const caller = vi.fn()
+            setConnectorHandlerBinder(owner)
+            const connector = makeConnector('c1')
+
+            bindConnectorHandlers(connector, caller)
+
+            expect(owner).toHaveBeenCalledWith(connector)
+            expect(caller).not.toHaveBeenCalled()
+        })
+
+        it('falls back to the caller when no owner is registered, so the connector is never left deaf', () => {
+            const caller = vi.fn()
+            const connector = makeConnector('c1')
+
+            bindConnectorHandlers(connector, caller)
+
+            expect(caller).toHaveBeenCalledWith(connector)
+        })
+
+        it('lets a departing owner clear only its own registration, never a successor that already replaced it', () => {
+            const departing = vi.fn()
+            const successor = vi.fn()
+            setConnectorHandlerBinder(departing)
+            setConnectorHandlerBinder(successor)
+
+            clearConnectorHandlerBinder(departing)
+
+            const connector = makeConnector('c1')
+            bindConnectorHandlers(connector)
+            expect(successor).toHaveBeenCalledWith(connector)
+            expect(departing).not.toHaveBeenCalled()
         })
     })
 })

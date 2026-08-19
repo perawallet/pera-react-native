@@ -119,7 +119,12 @@ export const useWalletConnectProvider = () => {
         }
     }
 
-    const { connectSessions } = useWalletConnect(network)
+    // The app's single long-lived WalletConnect instance (mounted once from
+    // `RootComponent`), so it is the only surface that may own the dApp
+    // request handlers a connector's out-of-React listeners call into.
+    const { connectSessions } = useWalletConnect(network, {
+        ownsRequestHandlers: true,
+    })
 
     useEffect(() => {
         connectSessions()

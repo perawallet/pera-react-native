@@ -16,7 +16,7 @@ import {
     useMinimumFeeConfig,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 
 import {
     assignMinimumFeesToGroup,
@@ -67,7 +67,6 @@ export type UseMinimumFeeCalculatorResult = {
  * model on {@link assignMinimumFeesToGroup}.
  */
 export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
-    const accounts = useAllAccounts()
     const fetchSuggestedMinFee = useFetchSuggestedMinFee()
     const { minTxnFee, pqMultiplier } = useMinimumFeeConfig()
 
@@ -75,6 +74,11 @@ export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
         async ({ transactions, signableIndices, signerOverrides }) => {
             const indices =
                 signableIndices ?? transactions.map((_, index) => index)
+            // Read live store state at call time, not a value captured at
+            // render — WalletConnect can invoke this after the owning
+            // component has unmounted, holding a frozen closure over a
+            // pre-rekey accounts array otherwise.
+            const accounts = useAccountsStore.getState().accounts
 
             if (
                 !groupHasQuantumSigner({
@@ -103,7 +107,7 @@ export const useMinimumFeeCalculator = (): UseMinimumFeeCalculatorResult => {
                 pqMultiplier,
             })
         },
-        [accounts, fetchSuggestedMinFee, minTxnFee, pqMultiplier],
+        [fetchSuggestedMinFee, minTxnFee, pqMultiplier],
     )
 
     return { assignFeeToGroup }

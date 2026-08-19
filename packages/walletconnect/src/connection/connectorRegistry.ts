@@ -51,6 +51,12 @@ const readinessInFlight = new Map<string, Promise<WalletConnect>>()
 /**
  * A recreated connector starts with no request handlers, so this re-attaches
  * them and it can still receive `algo_signTxn` after recovery.
+ *
+ * A connector's listeners live outside React and reach the handlers through
+ * this slot, so its owner must outlive every connector: a binder belonging to
+ * an unmounted React instance keeps working, but frozen on the render state it
+ * last saw (accounts, network), which is how a mid-session rekey stopped
+ * reaching a live session.
  */
 let handlerBinder: HandlerBinder | null = null
 
@@ -68,11 +74,52 @@ const isSocketOpen = (connector: WalletConnect): boolean =>
     )
 
 /**
- * Register how dApp request handlers get (re)bound onto a connector.
- * `useWalletConnect` calls this once on mount.
+ * Register how dApp request handlers get (re)bound onto a connector. Reserved
+ * for a single long-lived owner per realm: `useWalletConnect`'s
+ * `ownsRequestHandlers` opt-in on native, the offscreen host on web.
  */
 export const setConnectorHandlerBinder = (binder: HandlerBinder): void => {
     handlerBinder = binder
+}
+
+/**
+ * Symmetric counterpart to {@link setConnectorHandlerBinder}. No-ops unless
+ * `binder` is still the registered one — a departing owner must never clear a
+ * successor that registered after it.
+ */
+export const clearConnectorHandlerBinder = (binder: HandlerBinder): void => {
+    if (handlerBinder === binder) {
+        handlerBinder = null
+    }
+}
+
+/**
+ * Binds dApp request handlers onto `connector` through the registered owner.
+ *
+ * `fallback` is a last resort used only when no owner has registered yet, to
+ * keep the connector functional in the meantime. It accepts the freeze risk
+ * this change exists to eliminate, since nothing re-binds the connector later.
+ */
+export const bindConnectorHandlers = (
+    connector: WalletConnect,
+    fallback?: HandlerBinder,
+): void => {
+    if (handlerBinder) {
+        handlerBinder(connector)
+        return
+    }
+    if (fallback) {
+        logger.warn(
+            'WC bindConnectorHandlers: no handler binder registered — binding through the calling instance, whose handlers freeze if it unmounts',
+            { clientId: connector.clientId },
+        )
+        fallback(connector)
+        return
+    }
+    logger.error(
+        'WC bindConnectorHandlers: no handler binder registered — the connector is deaf to dApp requests',
+        { clientId: connector.clientId },
+    )
 }
 
 /** The current connector for a session, if the registry has one. */
@@ -210,14 +257,7 @@ const recreateConnector = async (
     const fresh = new WalletConnect({ session, clientMeta: PERA_CLIENT_META })
     registerConnector(clientId, fresh)
 
-    if (handlerBinder) {
-        handlerBinder(fresh)
-    } else {
-        logger.error(
-            'WC recreateConnector: no handler binder registered — the recreated connector is deaf to dApp requests',
-            { clientId },
-        )
-    }
+    bindConnectorHandlers(fresh)
 
     await waitForSocketOpen(fresh, timeoutMs)
 

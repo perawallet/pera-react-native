@@ -28,6 +28,8 @@ import {
 } from '../models'
 import { useWalletConnectStore } from '../store'
 import {
+    bindConnectorHandlers,
+    clearConnectorHandlerBinder,
     ensureConnectorReady,
     forgetConnector,
     getConnector,
@@ -69,7 +71,19 @@ const surfaceError = (error: Error, clientId?: string) => {
 /** Re-binds the dApp request handlers onto a (re)created connector. */
 type BindRequestHandlers = (connector: WalletConnect) => void
 
-export const useWalletConnect = (network: Network) => {
+export type UseWalletConnectOptions = {
+    /**
+     * Claims this instance as the app's owner of the dApp request handlers.
+     * Connector listeners live outside React and outlive any single component,
+     * so exactly one long-lived instance must own them (`useWalletConnectProvider`).
+     */
+    ownsRequestHandlers?: boolean
+}
+
+export const useWalletConnect = (
+    network: Network,
+    options?: UseWalletConnectOptions,
+) => {
     const connections = useWalletConnectStore(
         state => state.walletConnectConnections,
     )
@@ -96,6 +110,13 @@ export const useWalletConnect = (network: Network) => {
     // fresh hook state (network, accounts, callbacks).
     const bindRequestHandlersRef = useRef<BindRequestHandlers>(() => {})
 
+    // Stable identity across renders so ownership registration and its cleanup
+    // name the same binder — an unmounting owner must not clear a successor's.
+    const bindThroughThisInstance = useCallback<BindRequestHandlers>(
+        connector => bindRequestHandlersRef.current(connector),
+        [],
+    )
+
     const connect = useCallback(
         async ({ connection }: { connection: WalletConnectConnection }) => {
             logger.debug('[WC] Reconnecting', {
@@ -116,14 +137,17 @@ export const useWalletConnect = (network: Network) => {
             // Bind (or re-bind, for a reused connector) the dApp request
             // handlers, then adopt the connector into the shared registry
             // so its socket liveness is tracked for delivery recovery.
-            bindRequestHandlersRef.current(connector)
+            // Bound through the registered owner, never this instance: pairing
+            // runs from transient surfaces (every screen layout reaches the
+            // pairing hook), and a session outlives the screen that made it.
+            bindConnectorHandlers(connector, bindThroughThisInstance)
             registerConnector(connector.clientId, connector)
             // Return the connector id so a caller pairing via QR can scope its
             // wait to this connector's session_request / connection error
             // rather than reacting to any WalletConnect activity.
             return connector.clientId
         },
-        [],
+        [bindThroughThisInstance],
     )
 
     const connectSessions = useCallback(() => {
@@ -485,14 +509,18 @@ export const useWalletConnect = (network: Network) => {
     }
     bindRequestHandlersRef.current = bindRequestHandlers
 
-    // Register the handler binder once so the connector registry can
-    // re-bind request handlers onto a connector it recreates during
-    // socket recovery.
+    // Registering the binder lets the connector registry re-bind request
+    // handlers onto a connector it recreates during socket recovery — which
+    // happens on every background→foreground transition, so the registration
+    // has to belong to an instance that is still rendering by then.
+    const ownsRequestHandlers = options?.ownsRequestHandlers ?? false
     useEffect(() => {
-        setConnectorHandlerBinder(connector =>
-            bindRequestHandlersRef.current(connector),
-        )
-    }, [])
+        if (!ownsRequestHandlers) {
+            return
+        }
+        setConnectorHandlerBinder(bindThroughThisInstance)
+        return () => clearConnectorHandlerBinder(bindThroughThisInstance)
+    }, [ownsRequestHandlers, bindThroughThisInstance])
 
     return {
         connections,
