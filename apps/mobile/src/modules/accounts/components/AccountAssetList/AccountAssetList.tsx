@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView, type PWFlatListRef } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
-import React, { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback } from 'react'
 import { type RefreshControlProps } from 'react-native'
 import { useStyles } from './styles'
 
@@ -44,7 +44,6 @@ export const AccountAssetList = ({
     isLoading = false,
     refreshControl,
 }: AccountAssetListProps) => {
-    const listRef = useRef<PWFlatListRef>(null)
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -53,7 +52,7 @@ export const AccountAssetList = ({
         convertFiat,
         isPending,
         isReadOnly,
-        assetSortMode,
+        listRef,
         headerState,
         setSearchFilter,
         handleOpenAddAsset,
@@ -62,36 +61,6 @@ export const AccountAssetList = ({
         getEmptyBody,
         renderItemProps,
     } = useAccountAssetList({ account, t })
-
-    const lastScrolledAccountRef = useRef<string | null>(null)
-
-    useEffect(() => {
-        // Only scroll once per account switch, after data first becomes available.
-        // Scrolling synchronously on address change happens before holdings load
-        // from DB; the subsequent FlashList re-population (combined with the
-        // sticky search bar at index 0) pushes the list past the header.
-        if (lastScrolledAccountRef.current === account.address) return
-        if (holdings.length === 0) return
-
-        lastScrolledAccountRef.current = account.address
-        const handle = requestAnimationFrame(() => {
-            listRef.current?.scrollToOffset({ offset: 0, animated: false })
-        })
-        return () => cancelAnimationFrame(handle)
-    }, [account.address, holdings.length])
-
-    // Reset scroll when sort changes within the same account.
-    useEffect(() => {
-        if (holdings.length === 0) return
-        const handle = requestAnimationFrame(() => {
-            listRef.current?.scrollToOffset({ offset: 0, animated: true })
-        })
-        return () => cancelAnimationFrame(handle)
-        // Intentionally fires on sort change only; `balances.length` is read
-        // solely as an empty-list guard (balance-driven scroll reset is handled
-        // by the effect above), so it must not be a trigger here.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [assetSortMode])
 
     const renderItem = useCallback(
         ({ item }: { item: AccountHoldingsLiteRow }) => {
@@ -170,6 +139,12 @@ export const AccountAssetList = ({
                 scrollEnabled={scrollEnabled}
                 refreshControl={refreshControl}
                 keyExtractor={item => item.assetId}
+                // Same anchoring hazard as the NFT gallery (PERA-4921): FlashList
+                // v2 re-anchors on the previously-first-visible row after every
+                // data change, and a re-sort moves every row, so the anchor drags
+                // the viewport to wherever that row went. This list only ever
+                // reorders or narrows — never prepends — so anchoring costs it.
+                maintainVisibleContentPosition={{ disabled: true }}
                 // Render further ahead so fast flings on a long asset list don't
                 // outrun the cell renderer and leave blank gaps.
                 drawDistance={2000}

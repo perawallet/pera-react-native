@@ -255,6 +255,14 @@ export const AccountNfts = () => {
                         // in place, and without the remount rows keep the other
                         // layout's measured heights and render large gaps.
                         key={galleryLayout}
+                        // FlashList v2 anchors the viewport on whichever row was
+                        // first visible and re-applies that anchor on every data
+                        // change. A re-sort keeps every row and moves all of
+                        // them, so the anchor dragged the user to wherever their
+                        // old top row now lived — the bottom, going A-Z → Z-A
+                        // (PERA-4921). The gallery never prepends, so anchoring
+                        // has nothing here to protect.
+                        maintainVisibleContentPosition={{ disabled: true }}
                         data={collectibles}
                         renderItem={renderItem}
                         ItemSeparatorComponent={isGrid ? null : ListSeparator}

@@ -31,6 +31,8 @@ export type UseAccountAssetsQueryParams = {
 export type UseAccountAssetsQueryResult = {
     holdings: AccountHoldingsLiteRow[]
     isPending: boolean
+    /** True while the rows on screen are still the previous request's. */
+    isPlaceholderData: boolean
     isRefetching: boolean
     isError: boolean
     isPaused: boolean
@@ -65,6 +67,19 @@ export const useAccountAssetsQuery = (
         }),
         enabled: !!address && enabled,
         staleTime: Infinity,
+        // Same reason as the collectibles read (PERA-4921): sort mode, filters
+        // and search are part of the key, so changing one starts a cold query
+        // that would empty the list mid-interaction. Hold the previous rows,
+        // but never across accounts or networks.
+        placeholderData: (previousRows, previousQuery) => {
+            const previousParams = previousQuery?.queryKey[2] as
+                | { address?: string; network?: string }
+                | undefined
+            return previousParams?.address === address &&
+                previousParams?.network === network
+                ? previousRows
+                : undefined
+        },
         // SQLite is the source of truth; run the queryFn even while offline
         // instead of pausing it (TanStack's default networkMode: 'online'),
         // which would strand consumers in `pending`. Network segments are
@@ -87,6 +102,7 @@ export const useAccountAssetsQuery = (
     return {
         holdings: query.data ?? [],
         isPending: query.isPending,
+        isPlaceholderData: query.isPlaceholderData,
         isRefetching: query.isRefetching,
         isError: query.isError,
         isPaused: query.isPaused,

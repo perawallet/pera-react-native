@@ -32,6 +32,8 @@ export type UseAccountCollectiblesQueryParams = {
 export type UseAccountCollectiblesQueryResult = {
     collectibles: AccountCollectibleLiteRow[]
     isPending: boolean
+    /** True while the rows on screen are still the previous request's. */
+    isPlaceholderData: boolean
     isRefetching: boolean
     isError: boolean
     isPaused: boolean
@@ -67,6 +69,21 @@ export const useAccountCollectiblesQuery = (
         }),
         enabled: !!address && enabled,
         staleTime: Infinity,
+        // Sort mode and search term are part of the key, so changing either
+        // starts a cold query that would blank the gallery until SQL answers —
+        // on a large, freshly imported account that read as "sorting does
+        // nothing" (PERA-4921). Hold the rows already on screen instead.
+        // Scoped to the same account and network: only those rows are stale
+        // rather than someone else's.
+        placeholderData: (previousRows, previousQuery) => {
+            const previousParams = previousQuery?.queryKey[2] as
+                | { address?: string; network?: string }
+                | undefined
+            return previousParams?.address === address &&
+                previousParams?.network === network
+                ? previousRows
+                : undefined
+        },
         // SQLite is the source of truth; run the queryFn even while offline
         // instead of pausing it (TanStack's default networkMode: 'online'),
         // which would strand consumers in `pending`.
@@ -88,6 +105,7 @@ export const useAccountCollectiblesQuery = (
     return {
         collectibles: query.data ?? [],
         isPending: query.isPending,
+        isPlaceholderData: query.isPlaceholderData,
         isRefetching: query.isRefetching,
         isError: query.isError,
         isPaused: query.isPaused,

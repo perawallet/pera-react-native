@@ -37,6 +37,30 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@react-navigation/native-stack', () => ({}))
 
+const makeHolding = (assetId: string) => ({
+    assetId,
+    amount: new Decimal(0),
+    decimals: null,
+    creatorAddress: null,
+    totalSupply: null,
+    name: null,
+    unitName: null,
+    url: null,
+    metadata: null,
+    peraMetadataJson: null,
+    isFavorited: false,
+    usdPrice: null,
+})
+
+const { mockAssetsQuery, mockPreferences } = vi.hoisted(() => ({
+    mockAssetsQuery: {
+        holdings: [] as unknown[],
+        isPending: false,
+        isPlaceholderData: false,
+    },
+    mockPreferences: { assetSortMode: 'balanceDesc' },
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -45,23 +69,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useAccountAssetsQuery: vi.fn(() => ({
-            holdings: [
-                {
-                    assetId: '123',
-                    amount: new Decimal(0),
-                    decimals: null,
-                    creatorAddress: null,
-                    totalSupply: null,
-                    name: null,
-                    unitName: null,
-                    url: null,
-                    metadata: null,
-                    peraMetadataJson: null,
-                    isFavorited: false,
-                    usdPrice: null,
-                },
-            ],
-            isPending: false,
+            holdings: mockAssetsQuery.holdings,
+            isPending: mockAssetsQuery.isPending,
+            isPlaceholderData: mockAssetsQuery.isPlaceholderData,
             isError: false,
             isRefetching: false,
         })),
@@ -103,7 +113,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
                     hideZeroBalance: false,
                     displayNfts: true,
                     displayOptedInNfts: true,
-                    assetSortMode: 'balanceDesc',
+                    assetSortMode: mockPreferences.assetSortMode,
                 }),
         ),
         isCollectible: vi.fn(() => false),
@@ -137,6 +147,10 @@ vi.mock('@modules/bottom-sheet', () => ({
 describe('useAccountAssetList', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockAssetsQuery.holdings = [makeHolding('123')]
+        mockAssetsQuery.isPending = false
+        mockAssetsQuery.isPlaceholderData = false
+        mockPreferences.assetSortMode = 'balanceDesc'
     })
 
     it('does not show an error toast when user cancels the signing overlay', async () => {
@@ -197,5 +211,106 @@ describe('useAccountAssetList', () => {
             optOutError,
             'asset_opt_out.error',
         )
+    })
+
+    // PERA-4921: re-sorting or switching account is a new query key, so the rows
+    // go through a gap before the new ones land. The reset has to survive it.
+    describe('scroll reset when the requested view changes', () => {
+        const attachListRef = (result: {
+            current: ReturnType<typeof useAccountAssetList>
+        }) => {
+            const scrollToOffset = vi.fn()
+            result.current.listRef.current = {
+                scrollToOffset,
+                scrollToIndex: vi.fn(),
+                scrollToEnd: vi.fn(),
+            }
+            return scrollToOffset
+        }
+
+        const flushFrame = async () => {
+            await act(async () => {
+                await new Promise(resolve =>
+                    requestAnimationFrame(() => resolve(null)),
+                )
+            })
+        }
+
+        it('does not scroll on the first render', async () => {
+            const { result } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+            const scrollToOffset = attachListRef(result)
+
+            await flushFrame()
+
+            expect(scrollToOffset).not.toHaveBeenCalled()
+        })
+
+        it('scrolls to the top once the rows for a new sort arrive after an empty tick', async () => {
+            const { result, rerender } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+            const scrollToOffset = attachListRef(result)
+
+            mockPreferences.assetSortMode = 'nameAsc'
+            mockAssetsQuery.holdings = []
+            mockAssetsQuery.isPending = true
+            rerender({})
+            await flushFrame()
+
+            expect(scrollToOffset).not.toHaveBeenCalled()
+
+            mockAssetsQuery.holdings = [makeHolding('456'), makeHolding('123')]
+            mockAssetsQuery.isPending = false
+            rerender({})
+            await flushFrame()
+
+            expect(scrollToOffset).toHaveBeenCalledWith({
+                offset: 0,
+                animated: true,
+            })
+        })
+
+        it('waits for the new order instead of resetting on placeholder rows', async () => {
+            const { result, rerender } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+            const scrollToOffset = attachListRef(result)
+
+            mockPreferences.assetSortMode = 'nameAsc'
+            mockAssetsQuery.isPlaceholderData = true
+            rerender({})
+            await flushFrame()
+
+            expect(scrollToOffset).not.toHaveBeenCalled()
+
+            mockAssetsQuery.isPlaceholderData = false
+            mockAssetsQuery.holdings = [makeHolding('456')]
+            rerender({})
+            await flushFrame()
+
+            expect(scrollToOffset).toHaveBeenCalledTimes(1)
+        })
+
+        it('starts a switched-to account at the top without animating', async () => {
+            const { result, rerender } = renderHook(
+                ({ account }: { account: WalletAccount }) =>
+                    useAccountAssetList({ account, t: mockT }),
+                { initialProps: { account: mockAccount } },
+            )
+            const scrollToOffset = attachListRef(result)
+
+            mockAssetsQuery.holdings = [makeHolding('789')]
+            rerender({
+                account: { ...mockAccount, address: 'other-address' },
+            })
+            await flushFrame()
+
+            expect(scrollToOffset).toHaveBeenCalledWith({
+                offset: 0,
+                animated: false,
+            })
+        })
     })
 })
