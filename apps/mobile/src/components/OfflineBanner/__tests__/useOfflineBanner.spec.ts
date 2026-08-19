@@ -19,6 +19,7 @@ import {
     useOfflineFeedbackStore,
 } from '@modules/network'
 import {
+    OFFLINE_BANNER_COLLAPSE_MS,
     OFFLINE_BANNER_EXPANDED_MS,
     OFFLINE_BANNER_REEXPANDED_MS,
 } from '@constants/ui'
@@ -201,6 +202,26 @@ describe('useOfflineBanner', () => {
         })
         expect(result.current.mode).toBe('reconnected')
         expect(result.current.isExpanded).toBe(false)
+    })
+
+    it('keeps the explanation mounted through the collapse animation, then unmounts it', () => {
+        const { result } = renderHook(() => useOfflineBanner())
+        act(() => {
+            useNetworkStatusStore.setState({ hasInternet: false })
+        })
+        expect(result.current.isExplanationRendered).toBe(true)
+
+        act(() => {
+            vi.advanceTimersByTime(OFFLINE_BANNER_EXPANDED_MS)
+        })
+        // Collapsed, but still mounted so the fade-out is visible.
+        expect(result.current.isExpanded).toBe(false)
+        expect(result.current.isExplanationRendered).toBe(true)
+
+        act(() => {
+            vi.advanceTimersByTime(OFFLINE_BANNER_COLLAPSE_MS)
+        })
+        expect(result.current.isExplanationRendered).toBe(false)
     })
 
     it('expands again on a later offline episode', () => {

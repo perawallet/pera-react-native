@@ -10,92 +10,24 @@
  limitations under the License
  */
 
-import { useEffect, useState } from 'react'
-import Animated, {
-    Easing,
-    interpolate,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming,
-} from 'react-native-reanimated'
+import Animated from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWText, PWView } from '@components/core'
-import {
-    OFFLINE_BANNER_COLLAPSE_MS,
-    OFFLINE_BANNER_COLLAPSE_TRANSLATE,
-    OFFLINE_BANNER_ENTER_MS,
-    OFFLINE_BANNER_ENTER_TRANSLATE,
-} from '@constants/ui'
 import { useOfflineBanner } from './useOfflineBanner'
 import { useStyles } from './styles'
 
 export const OfflineBanner = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { isVisible, mode, label, description, isExpanded } =
-        useOfflineBanner()
-    const entryProgress = useSharedValue(0)
-    const expandProgress = useSharedValue(0)
-    // Kept mounted through the collapse animation so the fade-out is visible.
-    const [isExplanationRendered, setIsExplanationRendered] =
-        useState(isExpanded)
-
-    useEffect(() => {
-        if (!isVisible) {
-            // Reset so the next appearance replays the entry animation.
-            entryProgress.value = 0
-            return
-        }
-        entryProgress.value = withTiming(1, {
-            duration: OFFLINE_BANNER_ENTER_MS,
-            easing: Easing.out(Easing.cubic),
-        })
-    }, [isVisible, entryProgress])
-
-    useEffect(() => {
-        if (isExpanded) {
-            setIsExplanationRendered(true)
-            expandProgress.value = withTiming(1, {
-                duration: OFFLINE_BANNER_COLLAPSE_MS,
-            })
-            return
-        }
-
-        expandProgress.value = withTiming(0, {
-            duration: OFFLINE_BANNER_COLLAPSE_MS,
-        })
-        const timer = setTimeout(
-            () => setIsExplanationRendered(false),
-            OFFLINE_BANNER_COLLAPSE_MS,
-        )
-        return () => clearTimeout(timer)
-    }, [isExpanded, expandProgress])
-
-    const entryAnimatedStyle = useAnimatedStyle(() => ({
-        opacity: entryProgress.value,
-        transform: [
-            {
-                translateY: interpolate(
-                    entryProgress.value,
-                    [0, 1],
-                    [-OFFLINE_BANNER_ENTER_TRANSLATE, 0],
-                ),
-            },
-        ],
-    }))
-
-    const explanationAnimatedStyle = useAnimatedStyle(() => ({
-        opacity: expandProgress.value,
-        transform: [
-            {
-                translateY: interpolate(
-                    expandProgress.value,
-                    [0, 1],
-                    [-OFFLINE_BANNER_COLLAPSE_TRANSLATE, 0],
-                ),
-            },
-        ],
-    }))
+    const {
+        isVisible,
+        mode,
+        label,
+        description,
+        isExplanationRendered,
+        entryAnimatedStyle,
+        explanationAnimatedStyle,
+    } = useOfflineBanner()
 
     if (!isVisible) return null
 
