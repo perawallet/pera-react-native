@@ -51,7 +51,9 @@ import { createTestQueryClient } from '@test-utils/render'
 import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
     PERA_WEB_BACKUP_ID,
+    PERA_WEB_KEY_BYTES,
     buildMultiAccountPeraWebBackup,
+    buildPeraWebImportUrl,
     buildPeraWebQrString,
     buildSingleAccountPeraWebBackup,
 } from './__fixtures__/peraWeb'
@@ -452,6 +454,52 @@ describe('Entry: QR scan → deeplink dispatch → Loading pipeline', () => {
             await act(async () => {
                 await result.current.handleDeepLink(
                     buildPeraWebQrString(),
+                    true,
+                    'deeplink',
+                )
+            })
+
+            expect(usePeraWebImportFlowStore.getState().qr).toBeNull()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the web-import app-action URL, when dispatched with source="qr", then the flow store is seeded with the parsed payload',
+        async () => {
+            const { result } = renderHook(() => useDeepLink(), {
+                wrapper: HookWrapper,
+            })
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    buildPeraWebImportUrl(),
+                    true,
+                    'qr',
+                )
+            })
+
+            const seeded = usePeraWebImportFlowStore.getState().qr
+            expect(seeded).not.toBeNull()
+            expect(seeded!.backupId).toBe(PERA_WEB_BACKUP_ID)
+            expect(Array.from(seeded!.encryptionKey)).toEqual(
+                Array.from(PERA_WEB_KEY_BYTES),
+            )
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given the web-import app-action URL arrives via source="deeplink" (a tapped link), then it is ignored and no import is staged',
+        async () => {
+            // QR-only by design (PERA-4747): a tappable link would put the
+            // backup encryption key in a URL, so the handler drops non-QR
+            // sources. This pins the decided policy for the URL form too.
+            const { result } = renderHook(() => useDeepLink(), {
+                wrapper: HookWrapper,
+            })
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    buildPeraWebImportUrl(),
                     true,
                     'deeplink',
                 )

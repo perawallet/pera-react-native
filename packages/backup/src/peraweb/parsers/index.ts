@@ -10,5 +10,6 @@
  limitations under the License
  */
 
+export * from './parse-import-fields'
 export * from './parse-qr-payload'
 export * from './decrypt-backup-payload'

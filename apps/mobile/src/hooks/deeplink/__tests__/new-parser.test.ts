@@ -399,6 +399,103 @@ describe('Deeplink Parser - New Format', () => {
         })
     })
 
+    describe('Pera Web import (web-import)', () => {
+        const WEB_IMPORT_KEY_BYTES = Uint8Array.from(
+            Array.from({ length: 32 }, (_, i) => i),
+        )
+        const WEB_IMPORT_KEY_B64 =
+            Buffer.from(WEB_IMPORT_KEY_BYTES).toString('base64')
+
+        it('parses the app-action form with a percent-encoded base64 key', () => {
+            const result = parseDeeplink(
+                `perawallet://app/web-import/?backupId=abc-123_XYZ&encryptionKey=${encodeURIComponent(
+                    WEB_IMPORT_KEY_B64,
+                )}&action=import`,
+            )
+            expect(result?.type).toBe(DeeplinkType.PERA_WEB_IMPORT)
+            if (result?.type === DeeplinkType.PERA_WEB_IMPORT) {
+                expect(result.backupId).toBe('abc-123_XYZ')
+                expect(result.encryptionKey).toEqual(WEB_IMPORT_KEY_BYTES)
+                // The URL embeds the secretbox key; the parsed deeplink must
+                // never echo it back.
+                expect(result.sourceUrl).toBe('')
+            }
+        })
+
+        it('parses the legacy comma-separated decimal key', () => {
+            const commaKey = Array.from(WEB_IMPORT_KEY_BYTES).join(',')
+            const result = parseDeeplink(
+                `perawallet://app/web-import/?backupId=abc&encryptionKey=${commaKey}`,
+            )
+            expect(result?.type).toBe(DeeplinkType.PERA_WEB_IMPORT)
+            if (result?.type === DeeplinkType.PERA_WEB_IMPORT) {
+                expect(result.encryptionKey).toEqual(WEB_IMPORT_KEY_BYTES)
+            }
+        })
+
+        it('parses the universal-link form', () => {
+            const result = parseDeeplink(
+                `https://perawallet.app/qr/perawallet/app/web-import/?backupId=abc&encryptionKey=${encodeURIComponent(
+                    WEB_IMPORT_KEY_B64,
+                )}`,
+            )
+            expect(result?.type).toBe(DeeplinkType.PERA_WEB_IMPORT)
+            if (result?.type === DeeplinkType.PERA_WEB_IMPORT) {
+                expect(result.sourceUrl).toBe('')
+            }
+        })
+
+        // Negative cases target parsePerawalletAppUri directly: through
+        // parseDeeplink they'd hit old parser's catch-all, return HOME not null.
+        it('returns null when backupId is missing', () => {
+            expect(
+                parsePerawalletAppUri(
+                    `perawallet://app/web-import/?encryptionKey=${encodeURIComponent(
+                        WEB_IMPORT_KEY_B64,
+                    )}`,
+                ),
+            ).toBeNull()
+        })
+
+        it('returns null when encryptionKey is missing', () => {
+            expect(
+                parsePerawalletAppUri(
+                    'perawallet://app/web-import/?backupId=abc',
+                ),
+            ).toBeNull()
+        })
+
+        it('returns null for an unknown action', () => {
+            expect(
+                parsePerawalletAppUri(
+                    `perawallet://app/web-import/?backupId=abc&encryptionKey=${encodeURIComponent(
+                        WEB_IMPORT_KEY_B64,
+                    )}&action=modify`,
+                ),
+            ).toBeNull()
+        })
+
+        it('returns null for an unsupported version', () => {
+            expect(
+                parsePerawalletAppUri(
+                    `perawallet://app/web-import/?backupId=abc&encryptionKey=${encodeURIComponent(
+                        WEB_IMPORT_KEY_B64,
+                    )}&version=2`,
+                ),
+            ).toBeNull()
+        })
+
+        it('returns null for a wrong-length key', () => {
+            expect(
+                parsePerawalletAppUri(
+                    `perawallet://app/web-import/?backupId=abc&encryptionKey=${encodeURIComponent(
+                        Buffer.from(new Uint8Array(16)).toString('base64'),
+                    )}`,
+                ),
+            ).toBeNull()
+        })
+    })
+
     describe('Receiver Account Selection', () => {
         it('parses receiver account selection', () => {
             // Coverage for new-parser.ts lines 95-102

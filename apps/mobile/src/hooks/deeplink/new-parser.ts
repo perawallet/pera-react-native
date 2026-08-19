@@ -22,6 +22,7 @@ import {
     type AssetTransferDeeplink,
     type KeyregDeeplink,
     type RecoverAddressDeeplink,
+    type PeraWebImportDeeplink,
     type WalletConnectDeeplink,
     type AssetOptInDeeplink,
     type AssetDetailDeeplink,
@@ -47,6 +48,7 @@ import {
     parseQueryParams,
 } from './utils'
 import { PERAWALLET_SCHEME } from './constants'
+import { parsePeraWebImportFields } from '@perawallet/wallet-core-backup'
 import {
     isAlgoAssetId,
     ALGO_ASSET_ID,
@@ -195,6 +197,33 @@ export function parsePerawalletAppUri(
             sourceUrl: '',
             mnemonic: params.mnemonic,
         } as RecoverAddressDeeplink
+    }
+
+    if (cleanPath === 'web-import') {
+        // Pera Web "Transfer Accounts" app-action form (spec sheet; native
+        // iOS/Android parse it too). Dispatch stays QR-only via
+        // usePeraWebImportDeeplink's source gate, so a tapped link parses
+        // but never stages an import.
+        try {
+            const parsed = parsePeraWebImportFields({
+                backupId: params.backupId,
+                encryptionKey: params.encryptionKey,
+                version: params.version,
+                action: params.action,
+            })
+            return {
+                type: DeeplinkType.PERA_WEB_IMPORT,
+                // `url` embeds the secretbox key; drop it so the secret never
+                // rides on the parsed deeplink. Mirrors recover-address.
+                sourceUrl: '',
+                backupId: parsed.backupId,
+                encryptionKey: parsed.encryptionKey,
+            } as PeraWebImportDeeplink
+        } catch {
+            // Malformed or unsupported payload: treat as unrecognized, same
+            // silent outcome as any other unknown Pera-owned link.
+            return null
+        }
     }
 
     if (cleanPath === 'wallet-connect') {
