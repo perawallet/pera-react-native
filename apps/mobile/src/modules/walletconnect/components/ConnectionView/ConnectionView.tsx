@@ -26,6 +26,7 @@ import {
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import React from 'react'
 import {
     useAccountBalancesQuery,
@@ -62,6 +63,7 @@ export const ConnectionView = ({
     const { network } = useNetwork()
     const { approveSession, rejectSession } = useWalletConnect(network)
     const { errorToast } = useToast()
+    const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const signingAccounts = useSigningAccounts()
     // Honor the user's account-overview sort order instead of raw store order.
     const { accountBalances } = useAccountBalancesQuery(signingAccounts, true)
@@ -71,6 +73,7 @@ export const ConnectionView = ({
     )
     const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([])
     const [isConnecting, setIsConnecting] = React.useState(false)
+    const isHandlingConnect = React.useRef(false)
 
     const handleCancel = () => {
         trackEvent(WalletConnectEvent.SessionRejected, {
@@ -85,6 +88,14 @@ export const ConnectionView = ({
     }
 
     const handleConnect = async () => {
+        // Before approveSession runs, so a 'cancel' can't leave a
+        // half-approved session behind.
+        const decision = await confirmQuantumDappUsage(selectedAccounts)
+        if (decision === 'cancel') {
+            handleCancel()
+            return
+        }
+
         setIsConnecting(true)
         try {
             await approveSession(request.clientId, request, selectedAccounts)
@@ -112,7 +123,15 @@ export const ConnectionView = ({
         }
     }
 
-    const handleConnectPress = () => void handleConnect()
+    // The warning sheet awaits before isConnecting disables the button, so a
+    // second tap would request a second sheet and approve the session twice.
+    const handleConnectPress = () => {
+        if (isHandlingConnect.current) return
+        isHandlingConnect.current = true
+        void handleConnect().finally(() => {
+            isHandlingConnect.current = false
+        })
+    }
 
     const handleAccountPress = (account: WalletAccount) => {
         setSelectedAccounts(prev => {

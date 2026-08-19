@@ -658,6 +658,10 @@
                 "title": "Asset nicht akzeptiert",
                 "body": "Das empfangende Konto hat sich nicht für das Asset {{assetId}} angemeldet. Bitte den Empfänger, sich anzumelden, oder sende über den ASA-Posteingang."
             },
+            "asset_frozen": {
+                "title": "Asset eingefroren",
+                "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Wende dich an den Ersteller des Assets, um es freigeben zu lassen."
+            },
             "duplicate_txn": {
                 "title": "Bereits übermittelt",
                 "body": "Diese Transaktion wurde bereits vom Netzwerk verarbeitet."
@@ -764,6 +768,7 @@
             "permission_body": "Du hast eine nicht autorisierte Anfrage von einer App erhalten. Bitte überprüfe die App und versuche es erneut.",
             "invalid_session_body": "Du hast eine ungültige Sitzungsanfrage von einer App erhalten. Bitte überprüfe die App und versuche es erneut.",
             "connection_timeout_body": "WalletConnect konnte nicht erreicht werden, um deine signierte Transaktion zu übermitteln. Überprüfe deine Verbindung und versuche es erneut.",
+            "bridge_connection_body": "Verbindung zu WalletConnect konnte nicht hergestellt werden. Überprüfe deine Internetverbindung und versuche es erneut.",
             "session_request_expired_body": "Diese Verbindungsanfrage ist abgelaufen. Starte eine neue Verbindung über die dApp und versuche es erneut."
         },
         "signing": {
@@ -1323,7 +1328,9 @@
             "cannot_add_multisig_error": "Gemeinschaftskonto kann nicht hinzugefügt werden",
             "cannot_add_multisig_error_body": "Gemeinschaftskonten können nicht als Teilnehmer eines anderen Gemeinschaftskontos hinzugefügt werden.",
             "cannot_add_watch_error": "Beobachtungskonto kann nicht hinzugefügt werden",
-            "cannot_add_watch_error_body": "Beobachtungskonten können keine Transaktionen signieren und können daher nicht Teilnehmer eines Gemeinschaftskontos sein."
+            "cannot_add_watch_error_body": "Beobachtungskonten können keine Transaktionen signieren und können daher nicht Teilnehmer eines Gemeinschaftskontos sein.",
+            "cannot_add_quantum_error": "Quantum-Konto kann nicht hinzugefügt werden",
+            "cannot_add_quantum_error_body": "Quantum-Schlüssel können nicht an der Multisignatur-Signierung teilnehmen und können daher nicht Teilnehmer eines Gemeinschaftskontos sein."
         },
         "threshold": {
             "title": "Schwellenwert festlegen",
@@ -1550,7 +1557,9 @@
             "addresses_count": "{{count}} Adressen",
             "select_all": "Alle auswählen",
             "already_imported": "bereits importiert",
-            "finish_button": "Kontoerstellung abschließen"
+            "finish_button": "Kontoerstellung abschließen",
+            "all_imported_title": "Bereits in deinem Wallet",
+            "all_imported_body": "Alle Adressen, die dieses Wallet ableitet, sind bereits in Pera — einschließlich derer, die du nur beobachtest. Entferne eine Adresse, um sie mit ihrem privaten Schlüssel erneut hinzuzufügen."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} rekeyed Konten gefunden",
@@ -1772,6 +1781,18 @@
             "pin_description": "Diese 6-stellige PIN wird zur Nutzung von Pera Wallet benötigt. Wir empfehlen dringend, eine PIN zu erstellen, um die Wallet-Sicherheit zu erhöhen, falls dein Telefon gestohlen wird.",
             "pin_setpin": "PIN festlegen",
             "pin_notnow": "Nicht jetzt"
+        }
+    },
+    "quantum": {
+        "dapp_warning": {
+            "title": "Eingeschränkte dApp-Kompatibilität",
+            "body": "Quantum-Konten sind neu, daher hat noch nicht jede dApp die Unterstützung dafür hinzugefügt. Dadurch können manche Transaktionen fehlschlagen oder andere Gebühren als gewohnt anfallen. Falls du auf ein Problem stößt, kann es helfen, dich direkt an die jeweilige dApp zu wenden und sie zu bitten, PQ-Unterstützung hinzuzufügen. Du kannst gerne fortfahren oder in der Zwischenzeit zu einem Nicht-Quantum-Konto wechseln, um volle Kompatibilität zu erhalten. <0>Mehr erfahren</0>",
+            "confirm": "Fortfahren",
+            "cancel": "Abbrechen"
+        },
+        "data_signing_unsupported": {
+            "title": "Quantum-Konten können dies noch nicht signieren",
+            "body": "Diese Art von Anfrage kann mit einer Quantum-Signatur noch nicht verifiziert und daher nicht signiert werden. Wechsle zu einem Nicht-Quantum-Konto oder versuche es erneut, sobald die Unterstützung hinzugefügt wurde."
         }
     },
     "rekey": {
@@ -2325,6 +2346,11 @@
             "remove_body": "Du bist dabei, diesen Passkey zu entfernen. Möchtest du wirklich fortfahren?",
             "remove_confirm": "Entfernen",
             "remove_cancel": "Behalten",
+            "migration_warning_title": "Wiederherstellung nicht möglich",
+            "migration_warning_body": "Jeder unten aufgeführte Passkey meldet dich weiterhin an, kann aber nicht aus deiner Wiederherstellungsphrase wiederhergestellt werden. Entferne ihn und erstelle ihn auf der Website neu, damit er wiederherstellbar wird. Tu das nur, solange du dich bei dieser Website noch auf einem anderen Weg anmelden kannst.",
+            "migration_warning_cta": "Entfernen",
+            "migration_warning_blocked": "Das Entfernen wird gerade nicht angeboten, weil Pera nicht dein aktiver Passkey-Anbieter ist — du könntest keinen Ersatz erstellen. Es wird wieder angeboten, sobald Pera dein aktiver Passkey-Anbieter ist.",
+            "migration_warning_dismiss": "Jetzt nicht",
             "loading": "Passkeys werden geprüft...",
             "error_title": "Etwas ist schiefgelaufen",
             "error_body": "Bitte versuche es erneut.",
@@ -2792,7 +2818,9 @@
             "success_body": "Tausch von {{fromAsset}} zu {{toAsset}} erfolgreich abgeschlossen",
             "user_rejected": "Tausch abgebrochen",
             "pending_cosign_title": "Tauschanfrage gesendet",
-            "pending_cosign_body": "Dein Tausch benötigt eine weitere Signatur. Er wird abgeschlossen, sobald der andere Signierer ihn in seinem Posteingang genehmigt."
+            "pending_cosign_body": "Dein Tausch benötigt eine weitere Signatur. Er wird abgeschlossen, sobald der andere Signierer ihn in seinem Posteingang genehmigt.",
+            "quantum_fee_unsupported": "Quantum-Konten können noch nicht tauschen. Die Tauschgebühr wird von unseren Servern festgelegt und deckt die höhere Gebühr nicht ab, die eine Quantum-Signatur benötigt.",
+            "quantum_multisig_unsupported": "Quantum-Konten können nicht aus einem Gemeinschaftskonto tauschen. Quantum-Schlüssel können nicht an der Multisignatur-Signierung teilnehmen."
         },
         "signing": {
             "source_name": "Tausch",

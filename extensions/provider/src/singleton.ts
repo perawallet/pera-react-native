@@ -13,15 +13,14 @@
 import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
 import type { HookCollection } from 'before-after-hook'
-import type { Key, KeyData, KeyStoreState } from '@algorandfoundation/keystore'
-import { initializeKeyStore } from '@algorandfoundation/keystore'
-import {
-    clear as clearKeystoreStore,
-    decode,
-    decryptData,
-    readMasterKey,
-    storage as keystoreStorage,
-} from '@algorandfoundation/react-native-keystore'
+import type { KeyStoreState } from '@algorandfoundation/keystore-core'
+import type { ReactNativeKeyStore } from '@algorandfoundation/react-native-keystore'
+import type { MigrationReport } from '@algorandfoundation/provider-migrations'
+import { subtle } from './keystore/subtle'
+import { createPeraKeystore } from './keystore/createKeystore'
+import { readPersistedKeys, runMaterialRepair } from './keystore/maintenance'
+import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
+import { createPeraMigrationLedger } from './keystore/migrationsLedger'
 import { PeraProvider } from './pera-provider'
 
 const keystoreStore = new Store<KeyStoreState>({
@@ -30,18 +29,57 @@ const keystoreStore = new Store<KeyStoreState>({
 })
 const keystoreHooks = new Hook.Collection()
 
+// The keystore needs `provider.migrations.ready` to gate its hydration, but
+// the provider needs a concrete keystore to construct (it's injected through
+// `options.api.keystore`). A deferred promise breaks the cycle: the keystore
+// is built against it first, and it's wired to the real
+// `provider.migrations.ready` once the provider exists. `WithMigrations`
+// runs its first pass on a microtask, which can't fire until this
+// synchronous module body — including the `.then` below — has finished, so
+// nothing races.
+let resolveMigrations!: (report: MigrationReport) => void
+let rejectMigrations!: (error: unknown) => void
+const migrationsReady = new Promise<MigrationReport>((resolve, reject) => {
+    resolveMigrations = resolve
+    rejectMigrations = reject
+})
+
+const keystore = createPeraKeystore({
+    store: keystoreStore,
+    hooks: keystoreHooks,
+    before: migrationsReady,
+})
+
 let instance: PeraProvider | null = new PeraProvider(
     {
         id: 'pera-wallet',
         name: 'Pera Wallet',
     },
     {
+        api: { keystore },
         keystore: {
             store: keystoreStore,
             hooks: keystoreHooks,
+            // Upstream builds its migration context as
+            // `subtle: options.keystore.subtle`. Without this its adoption pass
+            // throws on every record, swallows each one, and ledgers itself as
+            // applied — permanently.
+            subtle,
         },
+        migrations: { ledger: createPeraMigrationLedger() },
     },
 )
+
+instance.migrations.ready.then(resolveMigrations, rejectMigrations)
+
+/**
+ * Resolves once the startup migration run settles, mirroring
+ * `provider.migrations.ready`. Exists as a module-level export because the
+ * keystore is built (and gated on this) before the provider — the one that
+ * owns `migrations` — exists.
+ */
+export const getMigrationsReady = (): Promise<MigrationReport> =>
+    migrationsReady
 
 /**
  * Returns the provider singleton. Throws if called before `initializeProvider()`.
@@ -61,6 +99,13 @@ export const getProvider = (): PeraProvider => {
  * keystore mutation. Subscribe via `useSyncExternalStore`.
  */
 export const getKeystoreStore = (): Store<KeyStoreState> => keystoreStore
+
+/**
+ * The keystore the provider was built with. Await its `ready` during bootstrap:
+ * it resolves once the shim stack is layered and persisted metadata has been
+ * loaded into {@link getKeystoreStore}.
+ */
+export const getKeystore = (): ReactNativeKeyStore => keystore
 
 /**
  * Where wallet-domain packages register hooks to intercept keystore operations.
@@ -85,111 +130,97 @@ export const initializeProvider = (provider: PeraProvider): void => {
  * Used during "delete all data" flows as a safety net after individual key deletion.
  */
 export const clearKeystore = async (): Promise<void> => {
-    await clearKeystoreStore({ store: keystoreStore })
-}
-
-/**
- * The web keystore (`extensions/keystore-chrome`, which each app's bundler
- * aliases over this module) binds every ciphertext to the storage key it lives
- * under as GCM additional authenticated data, so it cannot decrypt without that
- * key; the native implementation takes two arguments and ignores a third.
- *
- * The cast is load-bearing, not cosmetic: types here resolve to the native
- * signature, so the web one is invisible to `tsc`. That is precisely how the
- * missing argument shipped as a runtime-only failure — every AAD-bound entry
- * failed its ghash tag during hydration, got skipped, and the wallet then
- * reported its own keys as "not found".
- */
-const decryptEntry = (masterKey: Buffer, payload: string, id: string): string =>
-    (decryptData as (k: Buffer, p: string, keyId?: string) => string)(
-        masterKey,
-        payload,
-        id,
-    )
-
-/**
- * Metadata only — the `privateKey`/`seed` bytes are zeroed before returning.
- * `null` on a missing or undecodable entry, so a caller can skip it rather than
- * abort a whole hydration pass.
- */
-const decodeKeyEntry = (id: string, masterKey: Buffer): Key | null => {
-    const encrypted = keystoreStorage.getString(id)
-    if (!encrypted) return null
-
-    try {
-        const decrypted = decryptEntry(masterKey, encrypted, id)
-        const data = decode(decrypted) as KeyData & { seed?: Uint8Array }
-        if (data.privateKey instanceof Uint8Array) data.privateKey.fill(0)
-        if (data.seed instanceof Uint8Array) data.seed.fill(0)
-        const { privateKey: _pk, seed: _seed, ...meta } = data
-        return meta as Key
-    } catch (err) {
-        console.error(
-            `[provider] keystore decode: failed to decode entry ${id}`,
-            err,
-        )
-        return null
-    }
-}
-
-/**
- * Seeds the reactive store from the keystore MMKV namespace. Must run once at
- * bootstrap: `react-native-keystore` only mutates `state.keys` on
- * `commit`/`removeKey`, so without this, entries persisted in earlier sessions
- * are invisible to the synchronous lookups until a session-local mutation
- * happens to add them.
- *
- * Metadata only — secret bytes are decrypted briefly to read the rest of the
- * record, then zeroed. Idempotent, safe on an empty keystore, and entries that
- * fail to decrypt are logged and skipped rather than aborting.
- */
-export const hydrateKeystore = async (): Promise<void> => {
-    if (keystoreStore.state.keys.length > 0) return
-
-    const ids = keystoreStorage.getAllKeys()
-    if (ids.length === 0) return
-
-    let masterKey: Buffer | null = null
-    try {
-        masterKey = await readMasterKey()
-        const mk = masterKey
-        const keys = ids
-            .map(id => decodeKeyEntry(id, mk))
-            .filter((key): key is Key => key !== null)
-        initializeKeyStore({ store: keystoreStore, keys })
-    } finally {
-        if (masterKey) masterKey.fill(0)
-    }
+    await keystore.clear?.()
 }
 
 /**
  * Re-seeds the store to pick up out-of-process writes. The Android passkey
  * credential provider runs in its own process and writes straight to the MMKV
- * namespace — both new keys and metadata updates on existing ones — none of
- * which the in-process store sees until the next cold-start hydrate.
+ * namespace — both new keys and metadata updates on existing ones — and nothing
+ * in the engine re-reads: its `ready` hydration runs once per launch.
  *
- * Unlike {@link hydrateKeystore} this does NOT skip when the store is already
- * populated: it re-reads every entry and re-initializes the store. Re-reading
- * (rather than merging only the ids not yet present) is what surfaces metadata
- * updates on keys that are already in the store — merging new ids alone would
- * miss them. Skips fetching the master key only when MMKV is empty.
+ * Re-reading every entry (rather than merging only the ids not yet present) is
+ * what surfaces metadata updates on keys already in the store.
+ *
+ * No master key and no biometric prompt: the driver keeps metadata in the `k/`
+ * bucket as plaintext and only material under `m/` is sealed.
  */
 export const reconcileKeystore = async (): Promise<void> => {
-    const ids = keystoreStorage.getAllKeys()
-    if (ids.length === 0) return
+    const keys = readPersistedKeys()
 
-    let masterKey: Buffer | null = null
-    try {
-        masterKey = await readMasterKey()
-        const mk = masterKey
-        const keys = ids
-            .map(id => decodeKeyEntry(id, mk))
-            .filter((key): key is Key => key !== null)
-        initializeKeyStore({ store: keystoreStore, keys })
-    } finally {
-        if (masterKey) masterKey.fill(0)
-    }
+    if (keys.length === 0) return
+
+    keystoreStore.setState(state => ({ ...state, keys }))
 }
+
+/**
+ * Re-mints Falcon children that never had sealed material. Must run after the
+ * engine has hydrated, since it works off the reactive key snapshot.
+ */
+export const runQuantumMaterialRepair =
+    (): Promise<QuantumMaterialRepairResult> =>
+        runMaterialRepair({
+            keys: () => keystoreStore.state.keys,
+            regenerate: async (childId, parentKeyId) => {
+                // `parentKeyId` (not the seed itself): the engine resolves the
+                // parent through the driver, so the seed never reaches JS.
+                await keystore.generate({
+                    type: 'falcon-1024',
+                    algorithm: 'Falcon-1024',
+                    extractable: false,
+                    keyUsages: ['sign', 'verify'],
+                    params: { parentKeyId, id: childId },
+                })
+            },
+        })
+
+export type KeystoreMaintenanceResult = {
+    repair: QuantumMaterialRepairResult
+}
+
+/**
+ * Every one-off pass the on-disk keystore needs at startup, in the one order
+ * that works. Callers await this instead of sequencing the passes themselves.
+ *
+ * `ready` now already sits behind `provider.migrations.ready` (see
+ * `getMigrationsReady` above), so any layout re-indexing has happened before
+ * this ever runs — this no longer sequences a migration itself.
+ *
+ * The ordering that remains is not incidental:
+ *
+ * - `reconcileKeystore` runs first to pick up anything the Android passkey
+ *   credential provider wrote from its own process while this process was not
+ *   yet reading — `ready`'s hydration runs once per launch and nothing else
+ *   re-reads.
+ * - The quantum repair runs on **every** launch: a quantum account minted
+ *   before custody moved into the keystore has a child with no sealed
+ *   material, and that fails only at submit time, after the user has already
+ *   signed. It is not a tracked migration revision for exactly that reason —
+ *   it has no "done" state to record, it must keep checking every launch.
+ * - A second `reconcileKeystore` runs only when the repair actually did
+ *   something, since it re-reads every entry and paying that cost on a launch
+ *   where nothing changed is pure cost.
+ *
+ * Throws if the keystore cannot hydrate. That is deliberate — the alternative
+ * is presenting an empty wallet, which is what prompts users to wipe and
+ * re-onboard on top of keys that are still on disk.
+ *
+ * On web this is inert: `maintenance.web.ts` returns a zeroed repair result,
+ * so nothing reconciles and callers need no platform branch.
+ */
+export const runKeystoreMaintenance =
+    async (): Promise<KeystoreMaintenanceResult> => {
+        await keystore.ready
+
+        await reconcileKeystore()
+
+        const repair = await runQuantumMaterialRepair()
+        if (repair.repaired > 0 || repair.failed > 0) {
+            await reconcileKeystore()
+        }
+
+        return { repair }
+    }
 
 /**
  * Resets the provider singleton. Only for use in tests.

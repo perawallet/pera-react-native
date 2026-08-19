@@ -56,6 +56,11 @@ export const AccountAssetSelectionList = ({
                 onPress={() => onAssetSelected(item)}
                 style={styles.item}
                 accountBalance={item}
+                // Every consumer of this list moves funds (send, swap, card),
+                // and a frozen holding can't be transferred — keep it visible
+                // so the user knows it exists, but not selectable.
+                disabled={item.isFrozen}
+                showFrozenBadge={item.isFrozen}
                 testID={`asset-list-item-${item.assetId}`}
             />
         ),

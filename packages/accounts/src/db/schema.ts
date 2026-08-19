@@ -22,6 +22,10 @@ export const AccountAssetHoldingsSchema = sqliteTable(
         network: text('network').notNull(),
         /** Asset amount in base units (smallest indivisible unit of the asset) */
         amount: decimalColumn('amount').notNull().default(new Decimal(0)),
+        /** Holding-level freeze from algod — frozen assets can't be transferred. */
+        isFrozen: integer('is_frozen', { mode: 'boolean' })
+            .notNull()
+            .default(false),
         updatedAt: integer('updated_at').notNull(),
     },
     table => [

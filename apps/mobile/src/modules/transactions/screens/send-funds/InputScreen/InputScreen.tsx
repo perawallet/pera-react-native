@@ -146,11 +146,11 @@ export const InputScreen = () => {
         title: headerTitle,
     })
 
-    // `params` is deliberately NOT gated here: suggested params are a
-    // network-only fetch that pauses offline, and they're only needed to
-    // build the transaction (fetched fresh at build time in
+    // The min fee is deliberately NOT gated here: it derives from suggested
+    // params, a network-only fetch that pauses offline, and it's only needed
+    // to build the transaction (fetched fresh at build time in
     // useTransactionSendFlow) — not to render the amount form. Gating on
-    // them kept the whole Send entry point on a spinner while offline
+    // it kept the whole Send entry point on a spinner while offline
     // (PERA-4579). The DB-backed gates below resolve offline.
     if (!asset || !accountAssetBalance || !accountInformation) {
         return <LoadingView variant='circle' />

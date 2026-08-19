@@ -654,6 +654,95 @@ describe('useWalletConnect', () => {
             )
         })
 
+        it('silently ignores a bridge replay of the already-approved handshake', async () => {
+            // Re-subscribing the handshake topic (socket flap → reconnect)
+            // makes the bridge replay its pending history, so the exact
+            // frame we already approved can arrive again — noise, not a
+            // repeat connection attempt, and never a user-facing error.
+            const connection = {
+                clientId: 'client-replayed',
+                session: { handshakeId: 111 },
+            } as any
+            mockConnections.push(connection)
+
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            mockConnectorInstance.connected = true
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            const payload = {
+                id: 111,
+                params: [
+                    {
+                        peerMeta: { name: 'Test dApp' },
+                        chainId: AlgorandChainId.mainnet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockAddSessionRequest).not.toHaveBeenCalled()
+            expect(mockSetConnectionError).not.toHaveBeenCalled()
+        })
+
+        it('still surfaces a repeat session_request whose handshake id differs from the approved one', async () => {
+            const connection = {
+                clientId: 'client-new-handshake',
+                session: { handshakeId: 111 },
+            } as any
+            mockConnections.push(connection)
+
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            mockConnectorInstance.connected = true
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            const payload = {
+                id: 222,
+                params: [
+                    {
+                        peerMeta: { name: 'Spoofed dApp' },
+                        chainId: AlgorandChainId.mainnet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockAddSessionRequest).not.toHaveBeenCalled()
+            expect(mockSetConnectionError).toHaveBeenCalledTimes(1)
+            expect(mockSetConnectionError.mock.calls[0][0]).toBeInstanceOf(
+                WalletConnectInvalidSessionError,
+            )
+        })
+
         it('should trigger handleSignData on algo_signData event', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),
@@ -1247,6 +1336,112 @@ describe('useWalletConnect', () => {
 
             // Just ensure it doesn't crash
             errorCallback(new Error('test error'))
+        })
+
+        it('surfaces an error event delivered in the payload argument', async () => {
+            // The SDK's EventManager delivers internal events as
+            // callback(null, event) — the error slot is only populated for
+            // JSON-RPC error responses. A handler reading only the first
+            // argument never fires.
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({
+                    connection: { clientId: 'payload-error' },
+                } as any)
+            })
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            const errorCallback = mockConnectorInstance.on.mock.calls.find(
+                (call: any) => call[0] === 'error',
+            )[1]
+
+            act(() => {
+                errorCallback(null, {
+                    event: 'error',
+                    params: [
+                        {
+                            code: 'SESSION_REQUEST_ERROR',
+                            message: 'handshake failed',
+                        },
+                    ],
+                })
+            })
+
+            expect(mockSetConnectionError).toHaveBeenCalledWith(
+                expect.objectContaining({ clientId: 'payload-error' }),
+            )
+        })
+
+        it('surfaces a scoped bridge error after repeated transport errors while pairing', async () => {
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({
+                    connection: { clientId: 'pairing-client' },
+                } as any)
+            })
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            const transportErrorCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'transport_error',
+                )?.[1]
+            expect(transportErrorCallback).toBeDefined()
+
+            const payload = {
+                event: 'transport_error',
+                params: ['Websocket connection failed'],
+            }
+
+            // First failure: the transport retries on its own (~1s) — a
+            // single flap must not abort a pairing that would recover.
+            act(() => {
+                transportErrorCallback(null, payload)
+            })
+            expect(mockSetConnectionError).not.toHaveBeenCalled()
+
+            act(() => {
+                transportErrorCallback(null, payload)
+            })
+            expect(mockSetConnectionError).toHaveBeenCalledWith(
+                expect.objectContaining({ clientId: 'pairing-client' }),
+            )
+        })
+
+        it('never surfaces transport errors on an established session', async () => {
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            await act(async () => {
+                await result.current.connect({
+                    connection: { clientId: 'live-session' },
+                } as any)
+            })
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            mockConnectorInstance.connected = true
+            const transportErrorCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'transport_error',
+                )?.[1]
+            expect(transportErrorCallback).toBeDefined()
+
+            const payload = {
+                event: 'transport_error',
+                params: ['Websocket connection failed'],
+            }
+            act(() => {
+                transportErrorCallback(null, payload)
+                transportErrorCallback(null, payload)
+                transportErrorCallback(null, payload)
+            })
+
+            // Background flaps on a live session are routine; the reconnect
+            // sweep owns recovery there — no error UI.
+            expect(mockSetConnectionError).not.toHaveBeenCalled()
         })
 
         it('should reject when approving invalid session', async () => {

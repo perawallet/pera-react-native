@@ -126,26 +126,23 @@ export const useLedgerAccountInfoContent = (
                 key: 'h-assets',
                 title: t('ledger.account_info.assets'),
             },
-            ...preview.assets.map(
-                (asset): LedgerInfoListItem => ({
-                    kind: 'asset',
-                    key: `asset-${asset.assetId}`,
-                    accountBalance: {
-                        assetId: asset.assetId,
-                        amount: asset.amount,
-                        // Holding value in ALGOs (display units):
-                        // amount * usdPrice / algoUsdPrice. Falls back to 0
-                        // when the ALGO USD price is unknown (avoids /0).
-                        algoValue: algoUsdPrice.isZero()
-                            ? new Decimal(0)
-                            : asset.amount
-                                  .times(asset.usdPrice)
-                                  .div(algoUsdPrice),
-                    } satisfies AssetWithAccountBalance,
-                    usdPrice: asset.usdPrice,
-                    hasKnownDecimals: asset.hasKnownDecimals,
-                }),
-            ),
+            ...preview.assets.map((asset): LedgerInfoListItem => ({
+                kind: 'asset',
+                key: `asset-${asset.assetId}`,
+                accountBalance: {
+                    assetId: asset.assetId,
+                    amount: asset.amount,
+                    isFrozen: asset.isFrozen,
+                    // Holding value in ALGOs (display units):
+                    // amount * usdPrice / algoUsdPrice. Falls back to 0
+                    // when the ALGO USD price is unknown (avoids /0).
+                    algoValue: algoUsdPrice.isZero()
+                        ? new Decimal(0)
+                        : asset.amount.times(asset.usdPrice).div(algoUsdPrice),
+                } satisfies AssetWithAccountBalance,
+                usdPrice: asset.usdPrice,
+                hasKnownDecimals: asset.hasKnownDecimals,
+            })),
         ]
 
         if (preview.rekey.kind === 'rekeyedTo') {

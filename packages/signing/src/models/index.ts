@@ -11,7 +11,7 @@
  */
 
 import type {
-    PeraSignedTxnResult,
+    PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
@@ -94,7 +94,7 @@ export type TransactionSignRequest = {
      * (contract-signed / unresolved signer) with `null`, preserving the
      * original ARC-0001 slot order.
      */
-    approve?: (signedTxs: Nullable<PeraSignedTxnResult>[]) => Promise<void>
+    approve?: (signedTxs: Nullable<PeraSignedTransaction>[]) => Promise<void>
     reject?: (reason?: RejectReason) => Promise<void>
     error?: (error: Error) => Promise<void>
     /** See {@link SourceCallbacks.approveSignedBytes}. */

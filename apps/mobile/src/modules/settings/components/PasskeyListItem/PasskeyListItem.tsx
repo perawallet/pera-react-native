@@ -18,7 +18,8 @@ import { useStyles } from './styles'
 
 export type PasskeyListItemProps = {
     passkey: Passkey
-    onRemovePress: (passkey: Passkey) => void
+    /** Omitted when this passkey must not be removable — the icon is dropped. */
+    onRemovePress?: (passkey: Passkey) => void
     testID?: string
 }
 
@@ -68,11 +69,13 @@ export const PasskeyListItem = ({
                         </PWText>
                     </PWView>
                 </PWView>
-                <PWTouchableIcon
-                    name='trash'
-                    variant='secondary'
-                    onPress={() => onRemovePress(passkey)}
-                />
+                {onRemovePress && (
+                    <PWTouchableIcon
+                        name='trash'
+                        variant='secondary'
+                        onPress={() => onRemovePress(passkey)}
+                    />
+                )}
             </PWView>
 
             <PWView style={styles.divider} />

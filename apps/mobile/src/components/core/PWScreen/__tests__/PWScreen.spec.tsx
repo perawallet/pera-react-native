@@ -21,6 +21,21 @@ import { PWScreen } from '../PWScreen'
 import { usePWScreenInsets } from '../usePWScreenInsets'
 import { PWInBottomSheetContext } from '../../PWBottomSheet/inSheetContext'
 
+vi.mock('react-native-keyboard-controller', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@test-utils/keyboard-controller-stub')
+        >()
+    return {
+        ...actual,
+        KeyboardAvoidingView: ({
+            children,
+        }: {
+            children?: React.ReactNode
+        }) => <View testID='keyboard-avoiding-view'>{children}</View>,
+    }
+})
+
 describe('PWScreen', () => {
     beforeEach(() => {
         vi.mocked(useSafeAreaInsets).mockReturnValue({
@@ -129,6 +144,32 @@ describe('PWScreen', () => {
         )
         expect(screen.getByText('Body only')).toBeTruthy()
         expect(screen.queryByText('Continue')).toBeNull()
+    })
+
+    it("wraps the fixed body in keyboard avoidance by default (scroll='never')", () => {
+        render(
+            <PWScreen
+                testID='screen'
+                scroll='never'
+            >
+                <View testID='web-content' />
+            </PWScreen>,
+        )
+        expect(screen.getByTestId('keyboard-avoiding-view')).toBeTruthy()
+    })
+
+    it("skips keyboard avoidance when keyboardAvoidance='never'", () => {
+        render(
+            <PWScreen
+                testID='screen'
+                scroll='never'
+                keyboardAvoidance='never'
+            >
+                <View testID='web-content' />
+            </PWScreen>,
+        )
+        expect(screen.queryByTestId('keyboard-avoiding-view')).toBeNull()
+        expect(screen.getByTestId('web-content')).toBeTruthy()
     })
 
     it('accepts horizontalPadding="none" without crashing', () => {

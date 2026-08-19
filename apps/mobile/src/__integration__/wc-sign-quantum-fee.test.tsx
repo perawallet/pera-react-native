@@ -64,7 +64,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS, type QuantumKeyResult } from '@perawallet/wallet-core-kms'
 import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
-import { usePreferences } from '@perawallet/wallet-core-settings'
+import {
+    useSettingsStore,
+    usePreferences,
+} from '@perawallet/wallet-core-settings'
 import {
     decodeSignedTransaction,
     encodeTransactionRaw,
@@ -97,6 +100,7 @@ import {
 } from '@perawallet/wallet-core-walletconnect'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
 import { QUANTUM_FEE_EXPLAINER_TEST_ID } from '@modules/transactions/components/QuantumFeeExplainer'
+import { UserPreferences } from '@constants/user-preferences'
 
 import { HD_TEST_ADDRESS } from './__fixtures__/onboarding'
 import {
@@ -108,6 +112,7 @@ const SLOW_TEST_TIMEOUT_MS = 30_000
 const QUANTUM_FLAG = 'enable_quantum_accounts'
 const ADJUSTED_LABEL_KEY = 'transactions.quantum_fee.adjusted_label'
 const SLIDE_TEST_ID = 'signing-confirm-slide'
+const QUANTUM_DAPP_WARNING_TEST_ID = 'quantum-dapp-warning-sheet'
 
 // The base 1000 µAlgo minimum × the fallback PQ multiplier (3) — what the
 // override raises a quantum signer's fee to given `min-fee: 1000` from algod
@@ -164,6 +169,24 @@ const enableQuantumFlag = async (): Promise<void> => {
  * open a competing bottom sheet.
  */
 const ReviewSurface = () => {
+    const { setPreference } = usePreferences()
+    const ready = useRef(false)
+    useEffect(() => {
+        if (ready.current) return
+        ready.current = true
+        setPreference('hasSeenTransactionRequestFAQ', true)
+        // This file exercises the PQ-017 fee override, not the PQ-025 dApp
+        // warning, so it runs as a returning user who already acknowledged it.
+        setPreference(UserPreferences.quantumDappWarningAcknowledged, true)
+    }, [setPreference])
+    return <SigningOverlays />
+}
+
+/**
+ * Same as `ReviewSurface`, but leaves the quantum dApp warning unacknowledged
+ * — a first-time user, for the PQ-025 backstop coverage below.
+ */
+const ReviewSurfaceFirstTimeQuantumWarning = () => {
     const { setPreference } = usePreferences()
     const ready = useRef(false)
     useEffect(() => {
@@ -304,6 +327,7 @@ describe('Flow: WalletConnect quantum fee override end-to-end (PQ-017)', () => {
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
         walletConnectClientStub.reset()
+        useSettingsStore.getState().resetState()
         useAccountsStore.getState().setAccounts([])
         useWalletConnectStore.getState().setSessionRequests([])
         useWalletConnectStore.getState().setWalletConnectConnections([])
@@ -488,6 +512,49 @@ describe('Flow: WalletConnect quantum fee override end-to-end (PQ-017)', () => {
 
             expect(connector.rejectRequestCalls).toHaveLength(0)
             expect(useWalletConnectStore.getState().connectionError).toBeNull()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a quantum signer whose dApp warning is unacknowledged, when a WC sign request is opened, then the PQ-025 warning sheet appears before signing',
+        async () => {
+            await enableQuantumFlag()
+            const signer = await seedQuantumSender()
+
+            renderWithNavigation(
+                ReviewSurfaceFirstTimeQuantumWarning,
+                'ReviewSurfaceFirstTimeQuantumWarning',
+            )
+            renderHook(() => useSigningRequest(), { wrapper: HookWrapper })
+
+            const { entries } = buildGroupEntries(signer.address)
+            const connector = await pairAndApprove([signer.address])
+            fireSignRequest(connector, 7003, entries)
+
+            await waitFor(
+                () => {
+                    expect(screen.getByTestId(SLIDE_TEST_ID)).toBeTruthy()
+                },
+                { timeout: 15_000 },
+            )
+
+            // The backstop runs from handleSignAndSend, so it only fires once
+            // the user commits via slide-to-confirm.
+            fireEvent.click(screen.getByTestId(SLIDE_TEST_ID))
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
+                    ).toBeTruthy()
+                },
+                { timeout: 15_000 },
+            )
+
+            // Backstop intercepted before signing — no request has gone out.
+            expect(connector.approveRequestCalls).toHaveLength(0)
+            expect(connector.rejectRequestCalls).toHaveLength(0)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

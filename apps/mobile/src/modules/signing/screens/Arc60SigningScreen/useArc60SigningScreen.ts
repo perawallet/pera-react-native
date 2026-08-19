@@ -18,6 +18,8 @@ import {
     type Arc60SignRequest,
     type SigningLifecycleEvent,
     isArc60OriginMismatch,
+    isExternalCallbackSource,
+    resolveAllSignerAddresses,
     useLastSigningEvent,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
@@ -28,6 +30,8 @@ import {
 import type { Nullable, Optional } from '@perawallet/wallet-core-shared'
 import { trackEvent, CardEvent } from '@analytics'
 import { useLanguage } from '@hooks/useLanguage'
+import { useIsQuantumDataSigningBlocked } from '@hooks/useIsQuantumDataSigningBlocked'
+import { useQuantumDappWarning } from '@hooks/useQuantumDappWarning'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 import type { SigningStackParamList } from '@modules/signing/routes'
@@ -49,6 +53,12 @@ type UseArc60SigningScreenResult = {
      * request carries a platform-verified origin (i.e. webview-sourced).
      */
     hasOriginMismatch: boolean
+    /**
+     * The named signer is a quantum account, whose Falcon signature the
+     * ARC-60 protocol can't verify yet — the screen must show a terminal
+     * notice instead of the confirm control (PERA-4918).
+     */
+    isQuantumBlocked: boolean
     handleApprove: () => void
     handleReject: () => void
     handleDetailsPress: () => void
@@ -59,10 +69,12 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const { t } = useLanguage()
     const { getMessage } = useAlgodErrorMessage()
     const pipeline = useSigningPipeline()
+    const { confirmQuantumDappUsage } = useQuantumDappWarning()
     const request =
         (pipeline.currentRequest as Optional<Arc60SignRequest>) ?? null
 
     const account = useFindAccountByAddress(request?.stdSigData.signer ?? '')
+    const isQuantumBlocked = useIsQuantumDataSigningBlocked(request)
     const parsed =
         pipeline.resolved?.kind.type === 'arc60'
             ? pipeline.resolved.kind.parsed
@@ -84,9 +96,34 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const isCardRequest = request?.sourceType === 'arc60'
 
     const handleApprove = useCallback(() => {
+        // Backstop for the blocked terminal state — the confirm control is
+        // not rendered when quantum-blocked, so this should be unreachable.
+        if (isQuantumBlocked) return
+
         if (isCardRequest) trackEvent(CardEvent.CreateArbTxConfirm)
-        pipeline.next()
-    }, [pipeline, isCardRequest])
+
+        void (async () => {
+            // This screen drives the pipeline itself, so the sign-time backstop
+            // in SigningActionButtons never runs for ARC-60.
+            if (request && isExternalCallbackSource(request.sourceType)) {
+                const decision = await confirmQuantumDappUsage(
+                    resolveAllSignerAddresses(request),
+                )
+                if (decision === 'cancel') {
+                    pipeline.fail()
+                    return
+                }
+            }
+
+            pipeline.next()
+        })()
+    }, [
+        pipeline,
+        isCardRequest,
+        request,
+        confirmQuantumDappUsage,
+        isQuantumBlocked,
+    ])
 
     const handleReject = useCallback(() => {
         if (isCardRequest) trackEvent(CardEvent.CreateArbTxClose)
@@ -98,7 +135,8 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     }, [navigation])
 
     const isPending = pipeline.isLoading || isApproving
-    const canConfirm = !isPending && !!account && parsed?.type === 'siwa'
+    const canConfirm =
+        !isPending && !!account && parsed?.type === 'siwa' && !isQuantumBlocked
 
     const hasOriginMismatch = isArc60OriginMismatch(
         request?.stdSigData.domain ?? '',
@@ -117,6 +155,7 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
         canConfirm,
         errorMessage,
         hasOriginMismatch,
+        isQuantumBlocked,
         handleApprove,
         handleReject,
         handleDetailsPress,

@@ -11,12 +11,8 @@
  */
 
 export {
-    mockCreateDevice,
-    mockUpdateDevice,
-    mockNullifyPushToken,
+    mockRegisterDevice,
     mockDeleteDevice,
-    type MockCreateDeviceParams,
-    type MockUpdateDeviceParams,
-    type MockNullifyPushTokenParams,
+    type MockRegisterDeviceParams,
     type MockDeleteDeviceParams,
 } from './hooks/msw-handlers'

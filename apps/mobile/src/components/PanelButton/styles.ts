@@ -55,15 +55,18 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
             justifyContent: 'space-between',
             gap: theme.spacing.sm,
         },
-        titleRowStyle: {
-            flexShrink: 1,
+        footerRowStyle: {
+            marginTop: theme.spacing.sm,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: theme.spacing.sm,
             backgroundColor: 'transparent',
         },
+        badgeContainerStyle: {
+            // Pins the badge right whether or not a learn-more link shares the
+            // row, so neither case needs its own justifyContent.
+            marginLeft: 'auto',
+        },
         learnMoreStyle: {
-            marginTop: theme.spacing.sm,
             backgroundColor: 'transparent',
         },
     }

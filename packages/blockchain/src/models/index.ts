@@ -16,6 +16,7 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { type Address } from 'algosdk'
+import type { PQSchemeId } from '../pq/schemes'
 
 type IndexerTransaction = indexerModels.Transaction
 
@@ -80,44 +81,26 @@ export type PeraSignedTransaction = SignedTransaction
 export type PeraSignedTransactionGroup = PeraSignedTransaction[]
 
 /**
- * Byte carrier for a quantum (post-quantum, Falcon-1024) signed transaction.
+ * A post-quantum signature together with the material needed to verify it.
  *
- * Seam B (`packages/blockchain/src/pq/quantumAdapter.ts`) assembles pqsig
- * transactions via the joe-p algosdk fork, which is the only module
- * allowed to decode/encode that fork's `SignedTransaction` shape (the
- * firewall in `pq/__tests__/pqLibraryFirewall.spec.ts` enforces this). To
- * avoid leaking the fork's types outside Seam B, the adapter instead returns
- * already-encoded, node-ready msgpack bytes, carried here alongside the
- * plain (fork-agnostic) `PeraTransaction` for display/bookkeeping.
+ * Scheme-agnostic by construction: `schemeId` selects the wire scheme, so a
+ * second PQ scheme needs no new type. The address salt is derived from
+ * (scheme, publicKey) and is therefore not carried here.
  */
-export type QuantumSignedTransaction = {
-    txn: PeraTransaction
-    /** Already-encoded, node-ready msgpack bytes (see Seam B). */
-    pqSignedBytes: Uint8Array
+export type PQSignature = {
+    schemeId: PQSchemeId
+    publicKey: Uint8Array
+    signature: Uint8Array
 }
-
-/** Result of signing: either a normal algosdk `SignedTransaction`, or the quantum byte carrier. */
-export type PeraSignedTxnResult =
-    | PeraSignedTransaction
-    | QuantumSignedTransaction
-
-export const isQuantumSignedTransaction = (
-    t: PeraSignedTxnResult,
-): t is QuantumSignedTransaction =>
-    (t as QuantumSignedTransaction).pqSignedBytes instanceof Uint8Array
 
 /**
  * Drops the `null` padding slots a signing result may carry (the ARC-0001
- * slot-order contract pads unsignable positions with `null`) and narrows
- * the rest to `PeraSignedTxnResult`. The single narrowing seam for
- * `TransactionSignRequest.approve` consumers — when the quantum byte
- * carrier collapses into the signed-transaction model (PQ-023/PERA-4653),
- * this is the one place left to update.
+ * slot-order contract pads unsignable positions with `null`).
  */
 export const compactSignedResults = (
-    signed: Nullable<PeraSignedTxnResult>[],
-): PeraSignedTxnResult[] =>
-    signed.filter((tx): tx is PeraSignedTxnResult => tx !== null)
+    signed: Nullable<PeraSignedTransaction>[],
+): PeraSignedTransaction[] =>
+    signed.filter((tx): tx is PeraSignedTransaction => tx !== null)
 
 export type PeraTransactionType =
     | 'payment'

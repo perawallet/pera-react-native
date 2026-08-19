@@ -10,62 +10,80 @@
  limitations under the License
  */
 
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import {
-    compactSignedResults,
-    isQuantumSignedTransaction,
-    encodeSignedTransaction,
-} from '..'
+    encodeMsgpack,
+    makePaymentTxnWithSuggestedParamsFromObject,
+    decodeSignedTransaction,
+} from 'algosdk'
+import { generateKey, signCompressed } from 'falcon-1024'
+import { compactSignedResults, encodeSignedTransaction } from '..'
 import type { PeraSignedTransaction } from '..'
+import {
+    assemblePQSignedTransaction,
+    deriveQuantumAddress,
+    pqSigningDigest,
+} from '../../pq/quantumAdapter'
 
-describe('utils/transact — QuantumSignedTransaction carrier', () => {
-    describe('isQuantumSignedTransaction', () => {
-        it('discriminates the carrier from a plain algosdk SignedTransaction', () => {
-            const carrier = {
-                txn: {} as never,
-                pqSignedBytes: new Uint8Array([9, 9]),
-            }
+describe('utils/transact — compactSignedResults', () => {
+    it('drops null padding slots and preserves the order and identity of the rest', () => {
+        const first = {
+            sig: new Uint8Array([1]),
+        } as unknown as PeraSignedTransaction
+        const second = {
+            sig: new Uint8Array([2]),
+        } as unknown as PeraSignedTransaction
 
-            expect(isQuantumSignedTransaction(carrier)).toBe(true)
-        })
+        const compacted = compactSignedResults([
+            null,
+            first,
+            null,
+            second,
+            null,
+        ])
 
-        it('returns false for a value without pqSignedBytes', () => {
-            const notACarrier = { txn: {} as never } as never
-
-            expect(isQuantumSignedTransaction(notACarrier)).toBe(false)
-        })
+        expect(compacted).toEqual([first, second])
+        expect(compacted[0]).toBe(first)
+        expect(compacted[1]).toBe(second)
     })
 
-    describe('compactSignedResults', () => {
-        it('drops null padding slots and keeps plain and carrier entries by reference', () => {
-            const plain = { sig: new Uint8Array([1]) } as never
-            const carrier = {
-                txn: {} as never,
-                pqSignedBytes: new Uint8Array([9, 9]),
-            }
-
-            const compacted = compactSignedResults([plain, null, carrier, null])
-
-            expect(compacted).toHaveLength(2)
-            expect(compacted[0]).toBe(plain as PeraSignedTransaction)
-            expect(compacted[1]).toBe(carrier)
-        })
-
-        it('returns an empty array for all-null input', () => {
-            expect(compactSignedResults([null, null])).toEqual([])
-        })
+    it('returns an empty array for all-null input', () => {
+        expect(compactSignedResults([null, null])).toEqual([])
     })
+})
 
-    describe('encodeSignedTransaction', () => {
-        it('returns pqSignedBytes verbatim for the carrier (no re-encoding)', () => {
-            const bytes = new Uint8Array([1, 2, 3])
-
-            const encoded = encodeSignedTransaction({
-                txn: {} as never,
-                pqSignedBytes: bytes,
-            })
-
-            expect(encoded).toBe(bytes)
+describe('utils/transact — pqsig transactions use the ordinary encoding path', () => {
+    it('msgpack-encodes a pqsig SignedTransaction like any other', () => {
+        const { publicKey, privateKey } = generateKey(
+            new Uint8Array(48).fill(5),
+        )
+        const sender = deriveQuantumAddress(publicKey)
+        const txn = makePaymentTxnWithSuggestedParamsFromObject({
+            sender,
+            receiver: sender,
+            amount: 1n,
+            suggestedParams: {
+                fee: 1000n,
+                minFee: 1000n,
+                firstValid: 1n,
+                lastValid: 1001n,
+                genesisID: 'testnet-v1.0',
+                genesisHash: new Uint8Array(32).fill(9),
+            },
         })
+        const signed = assemblePQSignedTransaction({
+            txn,
+            signature: {
+                schemeId: 'falcon1024',
+                publicKey,
+                signature: signCompressed(privateKey, pqSigningDigest(txn)),
+            },
+        })
+
+        expect(encodeSignedTransaction(signed)).toEqual(encodeMsgpack(signed))
+        expect(
+            decodeSignedTransaction(encodeSignedTransaction(signed)).pqsig,
+        ).toBeDefined()
     })
 })

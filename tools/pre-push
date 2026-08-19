@@ -111,6 +111,35 @@ else
 fi
 rm "$COPYRIGHT_LOG"
 
+# Run single-algosdk guard. pnpm's peer-dependency auto-install can bypass
+# the workspace-level algosdk override for any importer with no direct
+# algosdk edge, silently reintroducing a second, stock algosdk resolution
+# (see tools/check-single-algosdk.mjs's header for the incident that proved
+# this isn't hypothetical).
+echo "\n${YELLOW}Checking for a single resolved algosdk...${NC}"
+ALGOSDK_LOG=$(mktemp)
+if pnpm run check:single-algosdk > "$ALGOSDK_LOG" 2>&1; then
+    echo "${GREEN}✓ Single algosdk resolution${NC}"
+else
+    echo "${RED}Single-algosdk check failed.${NC}"
+    record_failure "Single algosdk resolution" "$ALGOSDK_LOG" "${YELLOW}A second algosdk resolution was found — see the log below for offending importers.${NC}"
+fi
+rm "$ALGOSDK_LOG"
+
+# Run kms PQ-provider packaging guard. Quantum accounts pick their Falcon
+# backend at build time; if the react-native export condition or the native
+# build pass goes away, mobile silently signs with WASM Falcon and every test
+# stays green (see tools/check-kms-pq-dist.mjs's header).
+echo "\n${YELLOW}Checking kms PQ provider packaging...${NC}"
+KMS_PQ_LOG=$(mktemp)
+if pnpm run check:kms-pq-dist > "$KMS_PQ_LOG" 2>&1; then
+    echo "${GREEN}✓ kms PQ provider packaging valid${NC}"
+else
+    echo "${RED}kms PQ provider check failed.${NC}"
+    record_failure "kms PQ provider packaging" "$KMS_PQ_LOG" "${YELLOW}Mobile would resolve the off-device Falcon provider — see the log below.${NC}"
+fi
+rm "$KMS_PQ_LOG"
+
 # Run i18n check
 echo "\n${YELLOW}Checking i18n...${NC}"
 I18N_LOG=$(mktemp)

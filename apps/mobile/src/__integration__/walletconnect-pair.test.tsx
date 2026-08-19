@@ -44,13 +44,17 @@ import {
     useWalletConnectStore,
     type WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
+import { useRemoteConfigStore } from '@perawallet/wallet-core-remote-config'
+import { useSettingsStore } from '@perawallet/wallet-core-settings'
 import { Networks, type Optional } from '@perawallet/wallet-core-shared'
 import { Linking } from 'react-native'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { useReturnToDappStore } from '@modules/walletconnect/stores/useReturnToDappStore'
 import { BottomSheetManager } from '@modules/bottom-sheet'
+import { UserPreferences } from '@constants/user-preferences'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { QUANTUM_TEST_ADDRESS } from './__fixtures__/quantum'
 
 const SIGNING_ACCOUNT_A: WalletAccount = {
     id: 'wc-a',
@@ -67,7 +71,16 @@ const SIGNING_ACCOUNT_B: WalletAccount = {
     name: 'DeFi',
 }
 
+const QUANTUM_SIGNING_ACCOUNT: WalletAccount = {
+    id: 'wc-q',
+    type: AccountTypes.quantum,
+    address: QUANTUM_TEST_ADDRESS,
+    keyPairId: 'wc-q-key',
+    name: 'Falcon',
+}
+
 const SLOW_TEST_TIMEOUT_MS = 30_000
+const QUANTUM_DAPP_WARNING_TEST_ID = 'quantum-dapp-warning-sheet'
 
 // `useWalletConnect` mounts the signing pipeline, which now reads from
 // React-Query via `useMultisigTransportAdapters`. `renderHook` creates a
@@ -143,10 +156,16 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
         useWalletConnectStore.getState().setSessionRequests([])
         useWalletConnectStore.getState().setWalletConnectConnections([])
         useWalletConnectStore.getState().setConnectionError(null)
+        // The acknowledgement is a persisted preference on a singleton store —
+        // without this, a prior test's Continue hides the warning here.
+        useSettingsStore
+            .getState()
+            .deletePreference(UserPreferences.quantumDappWarningAcknowledged)
         vi.clearAllMocks()
     })
 
     afterEach(() => {
+        useRemoteConfigStore.getState().resetState()
         useWalletConnectStore.getState().setSessionRequests([])
         useWalletConnectStore.getState().setWalletConnectConnections([])
         useWalletConnectStore.getState().setConnectionError(null)
@@ -404,6 +423,151 @@ describe('Flow: WalletConnect v1 pair → approve session', () => {
             expect(
                 useWalletConnectStore.getState().walletConnectConnections,
             ).toHaveLength(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a quantum account is selected, when the user taps Connect, then the PQ-025 warning sheet appears and Cancel rejects the session without approving it',
+        async () => {
+            await useRemoteConfigStore.persist.rehydrate()
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride('enable_quantum_accounts', true)
+            useAccountsStore
+                .getState()
+                .setAccounts([SIGNING_ACCOUNT_A, QUANTUM_SIGNING_ACCOUNT])
+
+            render(
+                <>
+                    <WalletConnectProvider>
+                        <div data-testid='child' />
+                    </WalletConnectProvider>
+                    <BottomSheetManager />
+                </>,
+            )
+
+            const connector = await driveSessionRequest({
+                peerMeta: {
+                    name: 'Quantum dApp',
+                    description: '',
+                    url: 'https://quantum-dapp.example',
+                    icons: [],
+                },
+                permissions: ['algo_signTxn'],
+            })
+
+            const findButton = (label: string): Optional<HTMLButtonElement> =>
+                screen
+                    .getAllByRole('button')
+                    .find(b =>
+                        (b.textContent ?? '').includes(label),
+                    ) as Optional<HTMLButtonElement>
+            await waitFor(() => {
+                expect(findButton('common.connect.label')).toBeTruthy()
+            })
+
+            const matches = screen.getAllByText((_, node) =>
+                (node?.textContent ?? '').includes(
+                    QUANTUM_SIGNING_ACCOUNT.name as string,
+                ),
+            )
+            const leaf =
+                matches.find(el => el.children.length === 0) ?? matches[0]
+            fireEvent.click(leaf.closest('button') as HTMLButtonElement)
+            await waitFor(() => {
+                expect(findButton('common.connect.label')!.disabled).toBe(false)
+            })
+            fireEvent.click(findButton('common.connect.label')!)
+
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
+                ).toBeTruthy()
+            })
+
+            fireEvent.click(
+                findButton('quantum.dapp_warning.cancel') as HTMLButtonElement,
+            )
+
+            await waitFor(() => {
+                expect(connector.rejectSessionCalls).toBe(1)
+            })
+            expect(connector.approveSessionCalls).toHaveLength(0)
+            expect(
+                useWalletConnectStore.getState().walletConnectConnections,
+            ).toHaveLength(0)
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a quantum account is selected, when the user taps Connect twice before the warning sheet settles, then only one warning sheet is requested',
+        async () => {
+            await useRemoteConfigStore.persist.rehydrate()
+            useRemoteConfigStore
+                .getState()
+                .setConfigOverride('enable_quantum_accounts', true)
+            useAccountsStore
+                .getState()
+                .setAccounts([SIGNING_ACCOUNT_A, QUANTUM_SIGNING_ACCOUNT])
+
+            render(
+                <>
+                    <WalletConnectProvider>
+                        <div data-testid='child' />
+                    </WalletConnectProvider>
+                    <BottomSheetManager />
+                </>,
+            )
+
+            await driveSessionRequest({
+                peerMeta: {
+                    name: 'Double-tap dApp',
+                    description: '',
+                    url: 'https://double-tap-dapp.example',
+                    icons: [],
+                },
+                permissions: ['algo_signTxn'],
+            })
+
+            const findButton = (label: string): Optional<HTMLButtonElement> =>
+                screen
+                    .getAllByRole('button')
+                    .find(b =>
+                        (b.textContent ?? '').includes(label),
+                    ) as Optional<HTMLButtonElement>
+            await waitFor(() => {
+                expect(findButton('common.connect.label')).toBeTruthy()
+            })
+
+            const matches = screen.getAllByText((_, node) =>
+                (node?.textContent ?? '').includes(
+                    QUANTUM_SIGNING_ACCOUNT.name as string,
+                ),
+            )
+            const leaf =
+                matches.find(el => el.children.length === 0) ?? matches[0]
+            fireEvent.click(leaf.closest('button') as HTMLButtonElement)
+            await waitFor(() => {
+                expect(findButton('common.connect.label')!.disabled).toBe(false)
+            })
+
+            fireEvent.click(findButton('common.connect.label')!)
+            await waitFor(() => {
+                expect(
+                    screen.getByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
+                ).toBeTruthy()
+            })
+
+            // The sheet's own request is still pending here, so this lands
+            // while `confirmQuantumDappUsage`'s await is genuinely
+            // unresolved — the latch, not timing, is what's under test.
+            fireEvent.click(findButton('common.connect.label')!)
+
+            expect(
+                screen.getAllByTestId(QUANTUM_DAPP_WARNING_TEST_ID),
+            ).toHaveLength(1)
         },
         SLOW_TEST_TIMEOUT_MS,
     )

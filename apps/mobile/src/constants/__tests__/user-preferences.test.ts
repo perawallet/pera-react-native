@@ -12,13 +12,25 @@
 
 // @vitest-environment node
 
-import { UserPreferences } from '../user-preferences'
+import {
+    UserPreferences,
+    OneTimeUserPreferenceFlags,
+} from '../user-preferences'
 
 describe('UserPreferences', () => {
     it('exposes the expected transaction info agreement key', () => {
         expect(UserPreferences).toHaveProperty(
             'transactionInfoAgreed',
             'transaction-info-agreed',
+        )
+    })
+
+    it('includes the quantum dApp warning acknowledgement as a one-time flag', () => {
+        expect(UserPreferences.quantumDappWarningAcknowledged).toBe(
+            'quantum-dapp-warning-acknowledged',
+        )
+        expect(OneTimeUserPreferenceFlags).toContain(
+            UserPreferences.quantumDappWarningAcknowledged,
         )
     })
 })

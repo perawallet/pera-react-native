@@ -67,9 +67,11 @@ vi.mock('@perawallet/wallet-core-kms', async () => {
     }
 })
 
+const mockRegisterDeviceMutation = vi.hoisted(() => vi.fn(async () => ({})))
+
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useUpdateDeviceMutation: vi.fn(() => ({
-        mutateAsync: vi.fn(async () => ({})),
+    useRegisterDeviceMutation: vi.fn(() => ({
+        mutateAsync: mockRegisterDeviceMutation,
     })),
     useDeviceID: vi.fn(() => 'device-id'),
 }))
@@ -138,6 +140,23 @@ describe('useCreateAccount', () => {
         kmsMock.removeKeyAndChildren.mockResolvedValue(undefined)
     })
 
+    test('does not touch the device API — registration is the single writer', async () => {
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
+
+        const { result } = renderHook(() => useCreateAccount())
+
+        await act(async () => {
+            await result.current.saveAccount({
+                id: 'ACC1',
+                address: 'ADDR1',
+                type: 'algo25',
+                keyPairId: 'WALLET1-ed25519',
+            })
+        })
+
+        expect(mockRegisterDeviceMutation).not.toHaveBeenCalled()
+    })
+
     test('creates new HD wallet account when no existing key', async () => {
         uuidSpies.v7
             .mockImplementationOnce(() => 'WALLET1')
@@ -169,6 +188,30 @@ describe('useCreateAccount', () => {
         // is reachable via metadata.parentKeyId on the child.
         expect(created.keyPairId).toBe('WALLET1-acc0-idx0-dt9')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
+    })
+
+    // The discarded mnemonic's passkey main key must go with it — it is a
+    // grandchild of this root (via the entropy child), and `removeKeyAndChildren`
+    // is the only thing that reaches it.
+    test('rolls the whole new wallet root back when building the account fails', async () => {
+        uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
+        kmsMock.getDerivedPublicKey.mockRejectedValueOnce(
+            new Error('derive boom'),
+        )
+
+        const { result } = renderHook(() => useCreateAccount())
+
+        await act(async () => {
+            await expect(
+                result.current.createHdWalletAccount({
+                    account: 0,
+                    keyIndex: 0,
+                }),
+            ).rejects.toThrow('derive boom')
+        })
+
+        expect(kmsMock.removeKeyAndChildren).toHaveBeenCalledWith('WALLET1')
+        expect(useAccountsStore.getState().accounts).toHaveLength(0)
     })
 
     test('creates a sibling HD account on an existing wallet root', async () => {

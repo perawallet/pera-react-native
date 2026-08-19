@@ -105,6 +105,12 @@ export const getOwnedAssetIdsQueryKey = (network: Network) => [
     { network },
 ]
 
+export const getAssetHoldersQueryKey = (assetId: string, network: Network) => [
+    MODULE_PREFIX,
+    'asset-holders',
+    { assetId, network },
+]
+
 export const getAccountAssetBalanceHistoryQueryKey = (
     network: Network,
     account_address: string,

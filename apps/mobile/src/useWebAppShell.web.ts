@@ -18,10 +18,7 @@ import {
 import { armAutoLock } from '@perawallet/wallet-extension-keystore-chrome'
 import { useVaultLockState } from '@modules/vault'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
-import {
-    getProvider,
-    hydrateKeystore,
-} from '@perawallet/wallet-extension-provider'
+import { getKeystore, getProvider } from '@perawallet/wallet-extension-provider'
 import {
     getDatabase,
     initializeDatabase,
@@ -114,7 +111,7 @@ export const useWebAppShell = (): UseWebAppShellResult => {
             // (push token, passkey autofill, splash): keystore first (needs
             // the unlocked master key), then DB through the offscreen proxy,
             // then the sync service.
-            await hydrateKeystore()
+            await getKeystore().ready
             await initializeDatabase(getProvider().database)
             await seedAlgoAsset(getDatabase())
             initializeSyncService({

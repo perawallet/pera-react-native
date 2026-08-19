@@ -12,6 +12,7 @@
 
 import { type ReactNode } from 'react'
 import {
+    PWBadge,
     PWIcon,
     type PWIconSize,
     PWText,
@@ -35,6 +36,8 @@ export type AssetItemViewProps = {
     /** Account-only decorations. Default off so search rows stay clean. */
     showFavorite?: boolean
     showDeletedLabel?: boolean
+    /** Marks a holding-level frozen asset (selection contexts). */
+    showFrozenBadge?: boolean
     copyableAssetId?: boolean
 } & PWTouchableOpacityProps
 
@@ -45,6 +48,7 @@ export const AssetItemView = ({
     logoUrl,
     showFavorite = false,
     showDeletedLabel = false,
+    showFrozenBadge = false,
     copyableAssetId = false,
     onPress,
     style,
@@ -128,6 +132,12 @@ export const AssetItemView = ({
                         <PWIcon
                             name={verificationIcon}
                             size='xs'
+                        />
+                    ) : null}
+                    {showFrozenBadge ? (
+                        <PWBadge
+                            variant='secondary'
+                            value={t('transactions.asset_freeze.frozen')}
                         />
                     ) : null}
                 </PWView>

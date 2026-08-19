@@ -10,47 +10,64 @@
  limitations under the License
  */
 
-// SWAP: joe-p @joe-p/algosdk PQ surface — the ONLY module importing it.
-// Replace with the official algosdk once pqsig lands; if pqsig becomes mainline,
-// delete this module and use the normal SignedTransaction path. See Seam B in
-// docs/QUANTUM_PQ_INTEGRATION.md.
-import {
-    addressFromPQKey,
-    FALCON_1024_SCHEME,
-    addressWithSignersFromRawFalcon1024Signer,
-    decodeUnsignedTransaction,
-} from '@joe-p/algosdk'
+import { addressFromPQKey, SignedTransaction, type Transaction } from 'algosdk'
+import { DEFAULT_PQ_SCHEME_ID, PQ_SCHEMES, type PQSchemeId } from './schemes'
+import type { PQSignature } from '../models'
 
-export const deriveQuantumAddress = (publicKey: Uint8Array): string =>
-    addressFromPQKey(FALCON_1024_SCHEME, publicKey).address.toString()
+/**
+ * The exact bytes a post-quantum signer must sign for `txn`.
+ *
+ * This is the "TX"-prefixed msgpack encoding itself — `txn.bytesToSign()` —
+ * NOT a digest of it. go-algorand verifies a PQ signature over
+ * `HashRep(message)` directly: `FalconVerifier.Verify` calls
+ * `VerifyBytes(HashRep(message), sig)` (`crypto/falconWrapper.go`), and
+ * `HashRep` is exactly the domain-prefixed encoding that `bytesToSign()`
+ * returns. Falcon does its own internal hashing, so hashing first is not
+ * merely redundant — it changes the message and the node rejects the
+ * signature with `falcon verify failed`.
+ *
+ * The node is the authority here, not the interim `algosdk` build — which has
+ * shipped the digest as the preimage before, and no `pqsig`-capable algod
+ * accepts that. Verified against algod 4.8.298720-master (consensus `future`,
+ * which enables `EnablePQSchemeFalcon1024` via v42): signing this preimage
+ * confirms on-chain, and signing its SHA-512/256 digest does not. Pinned by
+ * `__tests__/quantumAdapter.spec.ts`, which asserts byte-parity with the
+ * SDK's own signer so a reintroduced pre-hash fails the build.
+ */
+export const pqSigningDigest = (txn: Transaction): Uint8Array =>
+    txn.bytesToSign()
 
-export const assembleQuantumSignedTxn = async (input: {
-    unsignedTxnBytes: Uint8Array
-    publicKey: Uint8Array
-    falconSignature: Uint8Array
-    // A documented NO-OP, kept for interface parity with the rekey-routing
-    // seam. The fork hardcodes `sgnr` to the signing key's own derived quantum
-    // address; its only override (`sendingAddress`) changes what is COMPARED
-    // against the txn sender to decide whether to emit `sgnr` at all, not the
-    // value written. Wiring `authAddress` through it would either no-op or
-    // silently suppress `sgnr`, so it's left unwired rather than faked —
-    // quantumAdapter.spec.ts's rekey tests show `sgnr` is already set correctly
-    // from the txn's own sender.
-    authAddress?: string
-}): Promise<Uint8Array> => {
-    const txn = decodeUnsignedTransaction(input.unsignedTxnBytes)
-    // The fork's raw signer builds the pqsig SignedTransaction (computing the
-    // salt and the rekey `sgnr` from the txn's own sender vs. the derived
-    // quantum address) and returns node-ready msgpack bytes. We feed it the
-    // pre-computed Falcon signature verbatim (no re-signing). Rekey needs no
-    // extra arg here: leaving `sendingAddress` unset makes the fork set
-    // `sgnr` automatically whenever the txn sender differs from the derived
-    // quantum address. If an explicit sender override is ever required, the
-    // fork's optional `sendingAddress` argument is the seam.
-    const { txnSigner } = addressWithSignersFromRawFalcon1024Signer({
-        falcon1024PublicKey: input.publicKey,
-        falcon1024Signer: () => Promise.resolve(input.falconSignature),
+/** The address a post-quantum public key authorizes under `schemeId`. */
+export const deriveQuantumAddress = (
+    publicKey: Uint8Array,
+    schemeId: PQSchemeId = DEFAULT_PQ_SCHEME_ID,
+): string =>
+    addressFromPQKey(PQ_SCHEMES[schemeId], publicKey).address.toString()
+
+/**
+ * Builds the signed transaction for a post-quantum signature.
+ *
+ * Structurally identical to the Ed25519 path (`new SignedTransaction({ txn,
+ * sig, sgnr })`) — it just fills `pqsig` instead of `sig`. `sgnr` is set
+ * whenever the transaction's sender differs from the address the PQ key
+ * authorizes, which is exactly the rekey case.
+ */
+export const assemblePQSignedTransaction = (input: {
+    txn: Transaction
+    signature: PQSignature
+}): SignedTransaction => {
+    const { txn, signature } = input
+    const scheme = PQ_SCHEMES[signature.schemeId]
+    const { address, salt } = addressFromPQKey(scheme, signature.publicKey)
+
+    return new SignedTransaction({
+        txn,
+        pqsig: {
+            sch: scheme,
+            slt: salt,
+            pk: signature.publicKey,
+            sig: signature.signature,
+        },
+        sgnr: txn.sender.equals(address) ? undefined : address,
     })
-    const [signed] = await txnSigner([txn], [0])
-    return signed
 }

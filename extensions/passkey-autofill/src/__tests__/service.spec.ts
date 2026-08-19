@@ -31,6 +31,7 @@ const makeNative = (
 ): PasskeyAutofillNativeAPI =>
     ({
         setMasterKey: vi.fn().mockResolvedValue(undefined),
+        setMainKeyId: vi.fn().mockResolvedValue(undefined),
         setHdRootKeyId: vi.fn().mockResolvedValue(undefined),
         configureIntentActions: vi.fn().mockResolvedValue(undefined),
         clearCredentials: vi.fn().mockResolvedValue(undefined),
@@ -56,15 +57,15 @@ describe('PasskeyAutofillService', () => {
             expect(native.setMasterKey).toHaveBeenCalledWith(secret)
         })
 
-        it('normalizes the derived main key hex', async () => {
-            const setDerivedMainKey = vi.fn().mockResolvedValue(undefined)
+        it('hands the main key id to native unchanged', async () => {
+            const setMainKeyId = vi.fn().mockResolvedValue(undefined)
             const service = new PasskeyAutofillService(
-                makeNative({ setDerivedMainKey }),
+                makeNative({ setMainKeyId }),
             )
 
-            await service.setDerivedMainKey('0Xfeed')
+            await service.setMainKeyId('main-1')
 
-            expect(setDerivedMainKey).toHaveBeenCalledWith('feed')
+            expect(setMainKeyId).toHaveBeenCalledWith('main-1')
         })
     })
 
@@ -85,25 +86,12 @@ describe('PasskeyAutofillService', () => {
             await expect(service.isProviderActive()).resolves.toBe(false)
         })
 
-        it('no-ops setDerivedMainKey on builds that do not expose it', async () => {
-            const service = new PasskeyAutofillService(makeNative())
+        it('resolves getMainKeyId to null when the native module lacks it', async () => {
+            const native = makeNative()
+            ;(native as { getMainKeyId?: unknown }).getMainKeyId = undefined
+            const service = new PasskeyAutofillService(native)
 
-            await expect(
-                service.setDerivedMainKey('abcd'),
-            ).resolves.toBeUndefined()
-        })
-
-        it('reports supportsDerivedMainKey from the presence of the native method', () => {
-            // Default native double has no setDerivedMainKey → unsupported.
-            expect(
-                new PasskeyAutofillService(makeNative()).supportsDerivedMainKey,
-            ).toBe(false)
-
-            expect(
-                new PasskeyAutofillService(
-                    makeNative({ setDerivedMainKey: vi.fn() }),
-                ).supportsDerivedMainKey,
-            ).toBe(true)
+            await expect(service.getMainKeyId()).resolves.toBeNull()
         })
     })
 

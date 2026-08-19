@@ -11,7 +11,9 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
+import type { PQSchemeId } from '@perawallet/wallet-core-blockchain'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     InvalidKeyError,
     KeyManagementError,
@@ -32,6 +34,7 @@ import { useQuantum } from './useQuantum'
 export type { QuantumKeyResult } from './useQuantum'
 import { useHDWallet } from './useHDWallet'
 export type { HDWalletKeyResult } from './useHDWallet'
+import { isPasskeyMainKey, usePasskeyMainKey } from './usePasskeyMainKey'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import { useKMSService } from './useKMSServices'
 import { useKeystoreKeys } from './useKeystoreState'
@@ -56,6 +59,7 @@ export const useKMS = () => {
     } = useHDWallet()
     const { deleteKey, keyStore, withExportedKey, checkAccess } =
         useKMSService()
+    const { ensurePasskeyMainKey } = usePasskeyMainKey()
 
     // All seed keys mapped by id for quick lookup. No private data is exposed here
     const seeds = useMemo(() => {
@@ -98,22 +102,80 @@ export const useKMS = () => {
 
     /**
      * Removes a top-level key (typically a seed) and every keystore entry
-     * whose `metadata.parentKeyId` points back to it.
+     * reachable from it through `metadata.parentKeyId`. Transitive, because the
+     * passkey main key parents on the BIP39 entropy child and a surviving main
+     * key gets adopted by the next wallet, whose passkeys would then derive
+     * from a discarded mnemonic.
+     *
+     * The device has exactly one main key, so this can strip it from every
+     * other wallet. Nothing else would re-mint it (`ensurePasskeyMainKey`'s only
+     * other caller is wallet creation, and `repairs/0003` is ledgered one-shot),
+     * so this does, below.
+     *
+     * Credentials are NOT spared as a class: the extension's `hd-derived-p256`
+     * records are `k/` entries parented on the main key and hold no private key
+     * of their own, so this destroys them. The native provider's credentials
+     * survive only because they sit at bare ids
+     * (`PasskeyCredentialStore.swift:310`), outside the `k/` namespace the
+     * keystore driver enumerates (`react-native-keystore/dist/storage/driver.js:123`),
+     * so they never appear in `liveKeys` at all.
      */
     const removeKeyAndChildren = useCallback(
         async (rootKeyId: string): Promise<void> => {
             const liveKeys = getKeystoreStore().state.keys
-            for (const k of liveKeys) {
-                if (k.id === rootKeyId) continue
-                const parentKeyId = (k.metadata as Record<string, unknown>)
-                    ?.parentKeyId
-                if (parentKeyId === rootKeyId) {
-                    await keyStore.remove(k.id)
+            const doomed = new Set<string>([rootKeyId])
+            // Re-sweep until nothing new is found: the store is in no
+            // particular order, so a grandchild may precede its parent.
+            let grew = true
+            while (grew) {
+                grew = false
+                for (const k of liveKeys) {
+                    if (doomed.has(k.id)) continue
+                    const parentKeyId = (k.metadata as Record<string, unknown>)
+                        ?.parentKeyId
+                    if (
+                        typeof parentKeyId === 'string' &&
+                        doomed.has(parentKeyId)
+                    ) {
+                        doomed.add(k.id)
+                        grew = true
+                    }
                 }
             }
+
+            for (const id of doomed) {
+                if (id === rootKeyId) continue
+                await keyStore.remove(id)
+            }
             await keyStore.remove(rootKeyId)
+
+            const survivors = liveKeys.filter(k => !doomed.has(k.id))
+            const lostMainKey =
+                liveKeys.some(k => doomed.has(k.id) && isPasskeyMainKey(k)) &&
+                !survivors.some(isPasskeyMainKey)
+            if (!lostMainKey) return
+
+            // Lowest-sorted root with an entropy child wins, matching
+            // `repairs/0003` and the extension's `resolveMainKeyId`, so the
+            // choice never depends on store order. `isSeedKey` states the
+            // intent; `entropyChildIdOf` alone would already exclude non-roots.
+            const heir = survivors
+                .filter(isSeedKey)
+                .map(k => k.id)
+                .sort()
+                .find(id => entropyChildIdOf(id, survivors))
+            if (!heir) return
+
+            try {
+                await ensurePasskeyMainKey(heir)
+            } catch (error) {
+                // The deletion itself succeeded; surfacing a re-mint failure as
+                // a failed wallet removal would be the bigger lie. Passkeys
+                // then fall back to the deprecated XHD-root derivation.
+                logger.error('passkey main key re-mint failed', { error })
+            }
         },
-        [keyStore],
+        [keyStore, ensurePasskeyMainKey],
     )
 
     const getKey = useCallback(
@@ -149,47 +211,12 @@ export const useKMS = () => {
     )
 
     /**
-     * Signs each payload with the real Falcon-1024 PQ signer. The quantum
-     * child entry holds no private material — the keypair is re-derived from
-     * the parent seed's private bytes, exported only for the duration of
-     * this call. Both the seed bytes and the derived secret key are zeroed
-     * in `finally` once signing completes.
-     */
-    const signWithQuantumSeed = (
-        seedKey: Key,
-        payloads: Uint8Array[],
-    ): Promise<Uint8Array[]> =>
-        withExportedKey(seedKey.id, seedData => {
-            if (!seedData.privateKey) {
-                throw new KeyManagementError(
-                    'Quantum seed has no private key bytes',
-                )
-            }
-            const seedBytes = new Uint8Array(seedData.privateKey)
-            try {
-                const provider = getPQProvider()
-                const { secretKey } =
-                    provider.generateKeypairFromSeed(seedBytes)
-                try {
-                    return payloads.map(payload =>
-                        provider.sign(secretKey, payload),
-                    )
-                } finally {
-                    zeroBytes(secretKey)
-                }
-            } finally {
-                zeroBytes(seedBytes)
-            }
-        })
-
-    /**
      * Returns the Falcon public-key bytes committed on the quantum signing
      * child at `keyPairId` (the id `createQuantumKey` returns as
      * `signKeyId`, and what `account.keyPairId` is set to for quantum
      * accounts). Reads from the live reactive store rather than
-     * `keyStore.export`: the child is minted `extractable: false`, and
-     * `commitQuantumChildKey` stores the public key as plain (non-secret)
-     * metadata on the entry itself.
+     * `keyStore.export`: the child is minted `extractable: false`, so only the
+     * public half the keystore records on the entry is readable at all.
      */
     const getQuantumPublicKey = (keyPairId: string): Uint8Array => {
         const child = getKeystoreStore().state.keys.find(
@@ -212,6 +239,62 @@ export const useKMS = () => {
         return new Uint8Array(child.publicKey)
     }
 
+    /**
+     * Describes how to build a signed transaction for `keyPairId`.
+     *
+     * Returns the PQ scheme id and public key for a post-quantum child, or
+     * `null` for an Ed25519 child. Callers use the `null` case to pick the
+     * plain `sig` path — this is the single place the scheme is decided, so
+     * signing callers need no account-type branching.
+     *
+     * Standardised on the SAME oracle {@link signTransactionsWithKey} uses
+     * to pick its signer — the seed's committed `scheme`, via
+     * `resolveSeedKey` + `seedSchemeOf` — rather than the child's own
+     * `type`. Payload selection (here) and signer selection
+     * (`signTransactionsWithKey`) must never be able to disagree: if they
+     * did, this would return `null`, the caller would sign the un-digested
+     * `encodeTransaction(txn)` bytes, and `signTransactionsWithKey` would
+     * still route to the real Falcon signer — silently re-creating the
+     * exact un-digested-signing bug PERA-4653 closed.
+     *
+     * The child's `type` is still cross-checked as a consistency guard
+     * (e.g. `account.keyPairId` resolving to the quantum *seed* id itself,
+     * which `resolveSeedKey` accepts as a legacy-caller convenience,
+     * disagrees with the seed's own scheme here). A mismatch THROWS rather
+     * than falling back to the ed25519 path — silent fallthrough is exactly
+     * the failure mode this function exists to prevent.
+     */
+    const getPQSigningInfo = (
+        keyPairId: string,
+    ): { schemeId: PQSchemeId; publicKey: Uint8Array } | null => {
+        const seedKey = resolveSeedKey(keyPairId)
+        const isQuantumSeed = seedSchemeOf(seedKey) === SeedScheme.Quantum
+
+        const child = getKeystoreStore().state.keys.find(
+            k => k.id === keyPairId,
+        )
+        const isFalconChild = child?.type === FALCON_CHILD_KEY_TYPE
+
+        if (isQuantumSeed !== isFalconChild) {
+            throw new KeyManagementError(
+                `PQ scheme mismatch for keyPairId ${keyPairId}: seed scheme reports quantum=${isQuantumSeed}, child type reports ${FALCON_CHILD_KEY_TYPE}=${isFalconChild}`,
+            )
+        }
+
+        if (!isQuantumSeed) {
+            return null
+        }
+
+        // Report the PROVIDER's own scheme rather than a literal of our own:
+        // `getPQProvider()` is the build-time-selected implementation and is
+        // the authority on which scheme it produces signatures for, so a
+        // second PQ provider needs no edit here.
+        return {
+            schemeId: getPQProvider().scheme,
+            publicKey: getQuantumPublicKey(keyPairId),
+        }
+    }
+
     const hasSeedWithEntropy = useCallback((seedKeyId: string): boolean => {
         const keys = getKeystoreStore().state.keys
         const seed = keys.find(k => k.id === seedKeyId)
@@ -221,6 +304,10 @@ export const useKMS = () => {
 
     /**
      * Signs each item with the child key at `childKeyId`.
+     *
+     * Scheme-agnostic on purpose: Ed25519 and Falcon-1024 children are both
+     * keystore-native, so the private material stays sealed and never
+     * reaches JS on the signing path.
      */
     const signTransactionsWithKey = async (
         childKeyId: string,
@@ -229,9 +316,6 @@ export const useKMS = () => {
     ): Promise<Uint8Array[]> => {
         const seedKey = resolveSeedKey(childKeyId)
         checkAccess(seedKey, domain)
-        if (seedSchemeOf(seedKey) === SeedScheme.Quantum) {
-            return signWithQuantumSeed(seedKey, encodedTxs)
-        }
         return Promise.all(encodedTxs.map(tx => keyStore.sign(childKeyId, tx)))
     }
 
@@ -242,9 +326,6 @@ export const useKMS = () => {
     ): Promise<Uint8Array[]> => {
         const seedKey = resolveSeedKey(childKeyId)
         checkAccess(seedKey, domain)
-        if (seedSchemeOf(seedKey) === SeedScheme.Quantum) {
-            return signWithQuantumSeed(seedKey, data)
-        }
         return Promise.all(data.map(d => keyStore.sign(childKeyId, d)))
     }
 
@@ -346,6 +427,7 @@ export const useKMS = () => {
         generateDerivedKey,
         getDerivedPublicKey,
         getQuantumPublicKey,
+        getPQSigningInfo,
         withExportedKey,
         signTransactionsWithKey,
         signDataWithKey,

@@ -56,8 +56,23 @@ vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
     }
 })
 
+const mockFindAccountByAddress = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useFindAccountByAddress: () => null,
+    useFindAccountByAddress: (address: string) =>
+        mockFindAccountByAddress(address),
+}))
+
+const mockConfirmQuantumDappUsage = vi.fn()
+vi.mock('@hooks/useQuantumDappWarning', () => ({
+    useQuantumDappWarning: () => ({
+        confirmQuantumDappUsage: mockConfirmQuantumDappUsage,
+    }),
+}))
+
+const mockIsQuantumDataSigningBlocked = vi.fn()
+vi.mock('@hooks/useIsQuantumDataSigningBlocked', () => ({
+    useIsQuantumDataSigningBlocked: (request: unknown) =>
+        mockIsQuantumDataSigningBlocked(request),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -78,11 +93,15 @@ describe('useArc60SigningScreen', () => {
         vi.clearAllMocks()
         mockPipeline.currentRequest = {
             id: 'req-1',
+            type: 'arc60',
             stdSigData: { signer: 'ADDR', domain: 'example.com' },
         }
         mockPipeline.resolved = null
         mockPipeline.isLoading = false
         mockPipeline.error = null
+        mockConfirmQuantumDappUsage.mockResolvedValue('continue')
+        mockIsQuantumDataSigningBlocked.mockReturnValue(false)
+        mockFindAccountByAddress.mockReturnValue(null)
     })
 
     it('returns a null errorMessage when the pipeline has no error', () => {
@@ -117,15 +136,16 @@ describe('useArc60SigningScreen', () => {
         expect(result.current.errorMessage).toBe('errors.general.body')
     })
 
-    it('tracks card events only for card-originated (sourceType arc60) requests', () => {
+    it('tracks card events only for card-originated (sourceType arc60) requests', async () => {
         mockPipeline.currentRequest = {
             id: 'req-1',
+            type: 'arc60',
             sourceType: 'arc60',
             stdSigData: { signer: 'ADDR', domain: 'example.com' },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
-        act(() => {
+        await act(async () => {
             result.current.handleApprove()
         })
         expect(mockTrackEvent).toHaveBeenCalledWith(
@@ -138,15 +158,16 @@ describe('useArc60SigningScreen', () => {
         expect(mockTrackEvent).toHaveBeenCalledWith(CardEvent.CreateArbTxClose)
     })
 
-    it('does not track card events for dApp-originated requests', () => {
+    it('does not track card events for dApp-originated requests', async () => {
         mockPipeline.currentRequest = {
             id: 'req-1',
+            type: 'arc60',
             sourceType: 'walletconnect',
             stdSigData: { signer: 'ADDR', domain: 'example.com' },
         }
         const { result } = renderHook(() => useArc60SigningScreen())
 
-        act(() => {
+        await act(async () => {
             result.current.handleApprove()
             result.current.handleReject()
         })
@@ -154,5 +175,76 @@ describe('useArc60SigningScreen', () => {
         expect(mockTrackEvent).not.toHaveBeenCalled()
         expect(mockPipeline.next).toHaveBeenCalledTimes(1)
         expect(mockPipeline.fail).toHaveBeenCalledTimes(1)
+    })
+
+    it('rejects the request when the quantum dApp warning is cancelled', async () => {
+        mockConfirmQuantumDappUsage.mockResolvedValue('cancel')
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            type: 'arc60',
+            sourceType: 'walletconnect',
+            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        await act(async () => {
+            result.current.handleApprove()
+        })
+
+        expect(mockConfirmQuantumDappUsage).toHaveBeenCalledWith(['ADDR'])
+        expect(mockPipeline.fail).toHaveBeenCalledTimes(1)
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+    })
+
+    it('blocks confirmation when the signer is a quantum account', () => {
+        mockIsQuantumDataSigningBlocked.mockReturnValue(true)
+        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockPipeline.resolved = {
+            kind: { type: 'arc60', parsed: { type: 'siwa' } },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        expect(result.current.isQuantumBlocked).toBe(true)
+        expect(result.current.canConfirm).toBe(false)
+    })
+
+    it('allows confirmation of the same request when the signer is not quantum', () => {
+        mockFindAccountByAddress.mockReturnValue({ address: 'ADDR' })
+        mockPipeline.resolved = {
+            kind: { type: 'arc60', parsed: { type: 'siwa' } },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        expect(result.current.isQuantumBlocked).toBe(false)
+        expect(result.current.canConfirm).toBe(true)
+    })
+
+    it('never advances the pipeline from handleApprove when quantum-blocked', async () => {
+        mockIsQuantumDataSigningBlocked.mockReturnValue(true)
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        await act(async () => {
+            result.current.handleApprove()
+        })
+
+        expect(mockPipeline.next).not.toHaveBeenCalled()
+        expect(mockConfirmQuantumDappUsage).not.toHaveBeenCalled()
+    })
+
+    it('does not consult the quantum dApp warning for first-party card requests', async () => {
+        mockPipeline.currentRequest = {
+            id: 'req-1',
+            type: 'arc60',
+            sourceType: 'arc60',
+            stdSigData: { signer: 'ADDR', domain: 'example.com' },
+        }
+        const { result } = renderHook(() => useArc60SigningScreen())
+
+        await act(async () => {
+            result.current.handleApprove()
+        })
+
+        expect(mockConfirmQuantumDappUsage).not.toHaveBeenCalled()
+        expect(mockPipeline.next).toHaveBeenCalledTimes(1)
     })
 })

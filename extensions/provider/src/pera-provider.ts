@@ -12,10 +12,13 @@
 
 import { Provider } from '@algorandfoundation/wallet-provider'
 import { WithKeyStore } from '@algorandfoundation/react-native-keystore'
+import { WithMigrations } from '@algorandfoundation/provider-migrations'
 import { WithPlatformExtension } from '@perawallet/wallet-extension-platform-driver'
 import { WithLedgerExtension } from '@perawallet/wallet-extension-ledger-react-native'
 import { WithLedgerUsbExtension } from '@perawallet/wallet-extension-ledger-react-native-usb'
 import { WithPasskeyAutofill } from '@perawallet/wallet-extension-passkey-autofill'
+import { WithPeraKeystorePreflight } from './keystore/withPeraKeystorePreflight'
+import { WithPeraKeystoreRepairs } from './keystore/withPeraKeystoreRepairs'
 import type {
     PeraExtensions,
     PeraProvider as PeraProviderShape,
@@ -44,9 +47,20 @@ export const PeraProvider: {
     ): PeraProviderShape
     EXTENSIONS: PeraExtensions
 } & typeof Provider = Provider.withExtensions([
+    // First, and load-bearing: every later extension registers its migrations
+    // through `provider.migrations`, which does not exist until this has run.
+    WithMigrations,
     WithPlatformExtension,
     WithLedgerExtension,
     WithLedgerUsbExtension,
+    // Immediately before WithKeyStore, and load-bearing: modules migrate in
+    // registration order, so this is the only thing that gets revision 0001
+    // ahead of upstream's `adopt-flat-records`.
+    WithPeraKeystorePreflight,
     WithKeyStore,
+    // Immediately after WithKeyStore, and equally load-bearing: these
+    // revisions rewrite the `k/` records upstream's `adopt-flat-records`
+    // produces, which do not exist yet before it runs.
+    WithPeraKeystoreRepairs,
     WithPasskeyAutofill,
 ] as const)

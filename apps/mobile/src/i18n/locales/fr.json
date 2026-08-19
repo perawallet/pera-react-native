@@ -666,6 +666,10 @@
                 "title": "Actif non accepté",
                 "body": "Le compte destinataire n’a pas ajouté l’actif {{assetId}}. Demandez au destinataire de l’ajouter, ou envoyez-le via la boîte de réception d’actifs."
             },
+            "asset_frozen": {
+                "title": "Actif gelé",
+                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Contactez le créateur de l’actif pour le dégeler."
+            },
             "duplicate_txn": {
                 "title": "Déjà soumise",
                 "body": "Cette transaction a déjà été traitée par le réseau."
@@ -772,6 +776,7 @@
             "permission_body": "Vous avez reçu une demande non autorisée provenant d’une application. Veuillez vérifier l’application, puis réessayer.",
             "invalid_session_body": "Vous avez reçu une demande de session invalide provenant d’une application. Veuillez vérifier l’application, puis réessayer.",
             "connection_timeout_body": "Impossible de joindre WalletConnect pour transmettre votre transaction signée. Vérifiez votre connexion, puis réessayez.",
+            "bridge_connection_body": "Impossible de se connecter à WalletConnect. Vérifiez votre connexion internet, puis réessayez.",
             "session_request_expired_body": "Cette demande de connexion a expiré. Lancez une nouvelle connexion depuis la dApp, puis réessayez."
         },
         "signing": {
@@ -1331,7 +1336,9 @@
             "cannot_add_multisig_error": "Impossible d’ajouter un compte partagé",
             "cannot_add_multisig_error_body": "Les comptes partagés ne peuvent pas être ajoutés comme participants à un autre compte partagé.",
             "cannot_add_watch_error": "Impossible d’ajouter un compte de suivi",
-            "cannot_add_watch_error_body": "Les comptes de suivi ne peuvent pas signer de transactions ; ils ne peuvent donc pas être participants à un compte partagé."
+            "cannot_add_watch_error_body": "Les comptes de suivi ne peuvent pas signer de transactions ; ils ne peuvent donc pas être participants à un compte partagé.",
+            "cannot_add_quantum_error": "Impossible d’ajouter un compte Quantum",
+            "cannot_add_quantum_error_body": "Les clés Quantum ne peuvent pas participer à la signature Multisig ; elles ne peuvent donc pas être participantes à un compte partagé."
         },
         "threshold": {
             "title": "Définir un seuil",
@@ -1558,7 +1565,9 @@
             "addresses_count": "{{count}} adresses",
             "select_all": "Tout sélectionner",
             "already_imported": "déjà importé",
-            "finish_button": "Terminer la création"
+            "finish_button": "Terminer la création",
+            "all_imported_title": "Déjà dans votre wallet",
+            "all_imported_body": "Toutes les adresses dérivées par ce wallet figurent déjà dans Pera, y compris celles que vous ne faites que suivre. Supprimez une adresse pour l’ajouter à nouveau avec sa clé privée."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} comptes rekeyés trouvés",
@@ -1780,6 +1789,18 @@
             "pin_description": "Ce code PIN à 6 chiffres sera nécessaire pour utiliser Pera Wallet. Nous vous recommandons vivement de créer un code PIN afin de renforcer la sécurité de votre wallet en cas de vol de votre téléphone.",
             "pin_setpin": "Définir le code PIN",
             "pin_notnow": "Pas maintenant"
+        }
+    },
+    "quantum": {
+        "dapp_warning": {
+            "title": "Compatibilité limitée avec les dApps",
+            "body": "Les comptes Quantum sont récents, donc certaines dApps n’ont pas encore été mises à jour pour les prendre en charge. Certaines transactions peuvent alors échouer ou entraîner des frais inhabituels. Si vous rencontrez un problème, contacter directement cette dApp et lui demander d’ajouter la prise en charge PQ peut accélérer les choses. Vous pouvez continuer si vous le souhaitez, ou passer à un compte non-Quantum pour une compatibilité complète en attendant. <0>En savoir plus</0>",
+            "confirm": "Continuer",
+            "cancel": "Annuler"
+        },
+        "data_signing_unsupported": {
+            "title": "Les comptes Quantum ne peuvent pas encore signer ceci",
+            "body": "Ce type de demande ne peut pas encore être vérifié avec une signature Quantum et ne peut donc pas être signé. Passez à un compte non-Quantum ou réessayez une fois la prise en charge ajoutée."
         }
     },
     "rekey": {
@@ -2333,6 +2354,11 @@
             "remove_body": "Vous êtes sur le point de supprimer ce passkey. Voulez-vous vraiment continuer ?",
             "remove_confirm": "Supprimer",
             "remove_cancel": "Conserver",
+            "migration_warning_title": "Restauration indisponible",
+            "migration_warning_body": "Chaque passkey listé ci-dessous vous connecte toujours, mais ne peut pas être restauré à partir de votre passphrase de récupération. Supprimez-le et recréez-le sur le site pour le rendre récupérable. Ne le faites que tant que vous pouvez encore vous connecter à ce site d’une autre manière.",
+            "migration_warning_cta": "Supprimer",
+            "migration_warning_blocked": "La suppression n’est pas proposée pour le moment, car Pera n’est pas votre fournisseur de passkeys actif : vous ne pourriez pas en créer un nouveau. Elle sera de nouveau proposée lorsque Pera sera votre fournisseur de passkeys actif.",
+            "migration_warning_dismiss": "Pas maintenant",
             "loading": "Vérification des passkeys…",
             "error_title": "Une erreur s’est produite",
             "error_body": "Veuillez réessayer.",
@@ -2800,7 +2826,9 @@
             "success_body": "Swap de {{fromAsset}} vers {{toAsset}} effectué avec succès",
             "user_rejected": "Swap annulé",
             "pending_cosign_title": "Demande de swap envoyée",
-            "pending_cosign_body": "Votre swap nécessite une signature supplémentaire. Il sera finalisé dès que l’autre signataire l’aura approuvé depuis sa boîte de réception."
+            "pending_cosign_body": "Votre swap nécessite une signature supplémentaire. Il sera finalisé dès que l’autre signataire l’aura approuvé depuis sa boîte de réception.",
+            "quantum_fee_unsupported": "Les comptes Quantum ne peuvent pas encore échanger. Les frais de swap sont fixés par nos serveurs et ne couvrent pas les frais plus élevés qu’exige une signature Quantum.",
+            "quantum_multisig_unsupported": "Les comptes Quantum ne peuvent pas échanger depuis un compte partagé. Les clés Quantum ne peuvent pas participer à la signature Multisig."
         },
         "signing": {
             "source_name": "Swap",

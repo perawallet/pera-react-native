@@ -137,15 +137,15 @@ describe('PWBottomSheet.web', () => {
         // animation's completion is under this test's control instead of
         // resolving synchronously inside rerender.
         let latestCallback: Animated.EndCallback | undefined
-        const parallelSpy = vi.spyOn(Animated, 'parallel').mockImplementation(
-            (): Animated.CompositeAnimation => ({
+        const parallelSpy = vi
+            .spyOn(Animated, 'parallel')
+            .mockImplementation((): Animated.CompositeAnimation => ({
                 start: callback => {
                     latestCallback = callback
                 },
                 stop: vi.fn(),
                 reset: vi.fn(),
-            }),
-        )
+            }))
 
         const { rerender } = render(
             <PWBottomSheet

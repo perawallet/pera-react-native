@@ -44,6 +44,7 @@ import { GalleryComponentPreviewScreen } from '../screens/developer/GalleryCompo
 import { SettingsDeveloperMigrationViewerScreen } from '../screens/developer/SettingsDeveloperMigrationViewerScreen'
 import { SettingsDeveloperMigrationInfoScreen } from '../screens/developer/SettingsDeveloperMigrationInfoScreen'
 import { SettingsDeveloperMigrationSimulatorScreen } from '../screens/developer/SettingsDeveloperMigrationSimulatorScreen'
+import { SettingsDeveloperKeystoreMigrationsScreen } from '../screens/developer/SettingsDeveloperKeystoreMigrationsScreen'
 
 import type { GalleryCategoryId } from '@modules/settings/screens/developer/gallery-catalog'
 
@@ -60,6 +61,7 @@ export type DeveloperSettingsStackParamsList = {
     MigrationViewer: undefined
     MigrationInfo: undefined
     MigrationSimulator: undefined
+    KeystoreMigrations: undefined
 }
 
 const DeveloperSettingsStack =
@@ -158,6 +160,13 @@ const DeveloperSettingsStackNavigator = () => {
                     title: 'Migration simulator',
                 }}
                 component={SettingsDeveloperMigrationSimulatorScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='KeystoreMigrations'
+                options={{
+                    title: 'Keystore Migrations',
+                }}
+                component={SettingsDeveloperKeystoreMigrationsScreen}
             />
         </DeveloperSettingsStack.Navigator>
     )

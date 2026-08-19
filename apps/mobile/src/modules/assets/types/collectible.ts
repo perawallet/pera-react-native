@@ -34,4 +34,6 @@ export type CollectibleItemProps = {
     /** Row style from the parent list (e.g. shared horizontal padding) so a
      *  collectible row lines up with the fungible rows beside it. */
     style?: StyleProp<ViewStyle>
+    /** Marks a holding-level frozen collectible (selection contexts). */
+    showFrozenBadge?: boolean
 }

@@ -18,7 +18,7 @@ import type {
 import { CannotSignError } from '../../../pipeline/errors'
 
 /**
- * Shared scaffold for the per-signer actors (local-key, quantum, multisig):
+ * Shared scaffold for the per-signer actors (local-key, multisig):
  * signs every group in parallel, resolving each group's signer account by
  * address first and throwing {@link CannotSignError} when it's absent. The
  * per-strategy signing logic is supplied by `signGroup`. Centralizing the

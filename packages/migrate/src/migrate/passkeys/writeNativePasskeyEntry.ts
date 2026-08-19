@@ -11,12 +11,15 @@
  */
 
 import { Platform } from 'react-native'
+import { subtle as quickCryptoSubtle } from 'react-native-quick-crypto'
 import {
-    encode,
-    encryptData,
     readMasterKey,
     storage,
 } from '@algorandfoundation/react-native-keystore'
+import {
+    sealNativeProviderRecord,
+    toNativeByteArray,
+} from '@perawallet/wallet-core-passkeys/native'
 import { zeroBytes } from '@perawallet/wallet-core-kms'
 
 export const nativePasskeyEntryExists = (credentialId: string): boolean =>
@@ -59,8 +62,8 @@ const buildKeystoreKeyData = (params: WriteNativePasskeyEntryParams) => ({
     extractable: false,
     keyUsages: ['sign'],
     name: `Passkey: ${params.origin}`,
-    privateKey: params.privateKey,
-    publicKey: params.publicKeySpkiDer,
+    privateKey: toNativeByteArray(params.privateKey),
+    publicKey: toNativeByteArray(params.publicKeySpkiDer),
     metadata: {
         origin: params.origin,
         // userHandle is platform-overloaded: Android's picker renders it as the
@@ -102,10 +105,16 @@ export type NativePasskeyWriter = ((
  * keystore's `importKey`/`generate` helpers: both force a random key id and
  * re-derive a different keypair instead of persisting the one we supply.
  *
+ * The envelope comes from `sealNativeProviderRecord`, never the keystore's own
+ * `sealData`/`encode` — under canary.14 those are wrong on two axes and both
+ * fail silently. See `packages/passkeys/src/native/nativeProviderRecord.ts`.
+ *
  * A failed fetch isn't cached, so a later write retries rather than inheriting a
  * poisoned key.
  */
-export const createNativePasskeyWriter = (): NativePasskeyWriter => {
+export const createNativePasskeyWriter = (
+    subtle: SubtleCrypto = quickCryptoSubtle as unknown as SubtleCrypto,
+): NativePasskeyWriter => {
     let masterKeyPromise: ReturnType<typeof readMasterKey> | undefined
 
     const resolveMasterKey = (): ReturnType<typeof readMasterKey> => {
@@ -122,18 +131,10 @@ export const createNativePasskeyWriter = (): NativePasskeyWriter => {
         const masterKey = await resolveMasterKey()
         storage.set(
             params.credentialId,
-            // 2-arg native call, no AAD — safe only because migratePasskeys
-            // never runs on web today (ChromeMigrationService.hasLegacyData()
-            // is false and getLegacyData() throws, see stubs.ts). If web
-            // migration becomes real, this needs the keyId arg or it writes
-            // an entry no reader can open.
-            encryptData(
+            await sealNativeProviderRecord(
+                subtle,
                 masterKey,
-                encode(
-                    buildKeystoreKeyData(params) as Parameters<
-                        typeof encode
-                    >[0],
-                ),
+                buildKeystoreKeyData(params),
             ),
         )
     }
@@ -153,8 +154,9 @@ export const createNativePasskeyWriter = (): NativePasskeyWriter => {
  */
 export const writeNativePasskeyEntry = async (
     params: WriteNativePasskeyEntryParams,
+    subtle?: SubtleCrypto,
 ): Promise<void> => {
-    const write = createNativePasskeyWriter()
+    const write = createNativePasskeyWriter(subtle)
     try {
         await write(params)
     } finally {

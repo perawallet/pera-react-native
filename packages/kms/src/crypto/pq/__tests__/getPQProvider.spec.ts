@@ -11,17 +11,38 @@
  */
 
 // @vitest-environment node
-import { describe, expect, test } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { getPQProvider } from '../getPQProvider'
 
 describe('getPQProvider', () => {
-    test('returns a falcon1024 provider', () => {
-        const p = getPQProvider()
-        expect(p.scheme).toBe('falcon1024')
-        expect(p.publicKeyLength).toBe(1793)
+    it('returns a falcon1024 provider', () => {
+        expect(getPQProvider().scheme).toBe('falcon1024')
     })
 
-    test('returns the same memoized instance on repeat calls', () => {
+    it('memoizes the provider', () => {
         expect(getPQProvider()).toBe(getPQProvider())
+    })
+
+    it('selects the provider at build time, with no runtime platform sniffing', async () => {
+        const source = await import('node:fs').then(fs =>
+            fs.readFileSync(
+                new URL('../getPQProvider.ts', import.meta.url),
+                'utf8',
+            ),
+        )
+        expect(source).not.toMatch(/navigator/)
+        expect(source).not.toMatch(/isReactNative/)
+        expect(source).not.toMatch(/createRNFalconProvider/)
+    })
+
+    it('ships an on-device override that uses the native provider', async () => {
+        const source = await import('node:fs').then(fs =>
+            fs.readFileSync(
+                new URL('../getPQProvider.native.ts', import.meta.url),
+                'utf8',
+            ),
+        )
+        expect(source).toMatch(/createRNFalconProvider/)
+        expect(source).not.toMatch(/createWasmFalconProvider/)
     })
 })

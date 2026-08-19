@@ -34,9 +34,6 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
         isAccountEnabled: vi.fn(() => true),
         disabledAccounts: [],
     })),
-    useAccountNotificationEnabledMutation: vi.fn(() => ({
-        mutateAsync: vi.fn().mockResolvedValue({}),
-    })),
 }))
 
 vi.mock('../../../hooks/useSystemNotificationPermission', () => ({

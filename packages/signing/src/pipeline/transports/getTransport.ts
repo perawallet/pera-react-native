@@ -12,7 +12,7 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraSignedTxnResult } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type { DataTransport, SourceMetadata } from '../types'
 import { isExternalCallbackSource } from '../types'
@@ -42,7 +42,7 @@ export interface CreateTransportSelectorOptions {
     /** AlgorandClient for direct submission */
     algokit: AlgokitClientInterface
     /** Function to encode signed transactions */
-    encodeSignedTransactions: (txns: PeraSignedTxnResult[]) => Uint8Array[]
+    encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[]
     /**
      * Captured at actor creation and re-checked at send time, so a mid-flow
      * network switch can't deliver signatures intended for another chain.

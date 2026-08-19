@@ -43,10 +43,9 @@ export type LocalArc60SigningFunction = (
 
 /**
  * Handles an `arbitrary-data` signable group for any strategy backed by a
- * local-key signing function (Algo25 / HD Wallet / Quantum). Extracted so
- * `createLocalKeyStrategy` and `createQuantumStrategy` share one
- * implementation instead of duplicating the signer-mismatch defense and
- * result-shaping logic.
+ * local-key signing function (Algo25 / HD Wallet / Quantum — all three share
+ * `createLocalKeyStrategy`). Extracted so the shared strategy doesn't
+ * duplicate the signer-mismatch defense and result-shaping logic.
  *
  * Does not catch errors — the caller's try/catch wraps any failure
  * (including the mismatch guard below) into a `SigningError` uniformly.

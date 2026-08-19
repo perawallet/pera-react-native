@@ -12,6 +12,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import type { Passkey } from '@perawallet/wallet-core-passkeys'
 import { UserPreferences } from '@constants/user-preferences'
 import { useSettingsPasskeysScreen } from '../useSettingsPasskeysScreen.web'
 
@@ -76,6 +77,9 @@ vi.mock('@analytics', () => ({
     PasskeysEvent: { Deleted: 'passkeys_deleted' },
 }))
 
+const FLAGGED_PASSKEY = { id: 'cred-1', needsMigration: true } as Passkey
+const UNFLAGGED_PASSKEY = { id: 'cred-2', needsMigration: false } as Passkey
+
 describe('useSettingsPasskeysScreen (web)', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -128,5 +132,26 @@ describe('useSettingsPasskeysScreen (web)', () => {
 
         expect(result.current.isInterceptionEnabled).toBe(false)
         expect(result.current.state).toBe('populated')
+    })
+
+    // Web's re-registration prerequisite is the toggle above the list, not an
+    // OS credential-provider trip, so the gate is cheap to satisfy — but it is
+    // still a prerequisite, and a flagged credential deleted while it is off
+    // is as unrecoverable here as on native.
+    it('withholds removal of a flagged passkey while interception is off, and only for that one', () => {
+        mocks.preferences[UserPreferences.webauthnInterceptionEnabled] = false
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.canRemove(FLAGGED_PASSKEY)).toBe(false)
+        expect(result.current.canRemove(UNFLAGGED_PASSKEY)).toBe(true)
+    })
+
+    it('offers removal of a flagged passkey once interception is on', () => {
+        mocks.preferences[UserPreferences.webauthnInterceptionEnabled] = true
+
+        const { result } = renderHook(() => useSettingsPasskeysScreen())
+
+        expect(result.current.canRemove(FLAGGED_PASSKEY)).toBe(true)
     })
 })

@@ -15,6 +15,7 @@ import { renderHook } from '@testing-library/react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockSignTransactionsWithKey = vi.fn()
+const mockGetPQSigningInfo = vi.fn()
 let mockAccounts: WalletAccount[] = []
 
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
@@ -22,11 +23,13 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => ({
     useKMS: () => ({
         signTransactionsWithKey: (...args: unknown[]) =>
             mockSignTransactionsWithKey(...args),
+        getPQSigningInfo: (...args: unknown[]) => mockGetPQSigningInfo(...args),
     }),
 }))
 
 const mockIsHDWalletAccount = vi.fn()
 const mockIsAlgo25Account = vi.fn()
+const mockIsQuantumAccount = vi.fn()
 const mockIsHardwareWalletAccount = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
@@ -39,12 +42,15 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
             selector({ accounts: mockAccounts }),
         isHDWalletAccount: (acc: WalletAccount) => mockIsHDWalletAccount(acc),
         isAlgo25Account: (acc: WalletAccount) => mockIsAlgo25Account(acc),
+        isQuantumAccount: (acc: WalletAccount) => mockIsQuantumAccount(acc),
         isHardwareWalletAccount: (acc: WalletAccount) =>
             mockIsHardwareWalletAccount(acc),
     }
 })
 
 const encodeTransactionMock = vi.fn()
+const assemblePQSignedTransactionMock = vi.fn()
+const pqSigningDigestMock = vi.fn()
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<object>(
@@ -57,9 +63,14 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
         }),
         encodeAlgorandAddress: () => 'SENDER_PK',
         Address: { fromString: (addr: string) => ({ _addr: addr }) },
+        assemblePQSignedTransaction: (...args: unknown[]) =>
+            assemblePQSignedTransactionMock(...args),
+        pqSigningDigest: (...args: unknown[]) => pqSigningDigestMock(...args),
     }
 })
 
+import { pqSigningDigest } from '@perawallet/wallet-core-blockchain'
+import { SIGNING_KEY_DOMAIN } from '../../constants'
 import {
     useLocalKeyTransactionSigner,
     SIGN_BATCH_SIZE,
@@ -81,6 +92,12 @@ const algo25Account = {
     address: 'ALGO25_ADDR',
     keyPairId: 'key-algo25-ed25519',
     type: 'algo25',
+} as unknown as WalletAccount
+
+const quantumAccount = {
+    address: 'QUANTUM_ADDR',
+    keyPairId: 'key-quantum',
+    type: 'quantum',
 } as unknown as WalletAccount
 
 const participantWithRekey = {
@@ -118,10 +135,22 @@ const makeTxn = (senderAddr: string) =>
 describe('useLocalKeyTransactionSigner', () => {
     beforeEach(() => {
         mockSignTransactionsWithKey.mockReset()
+        mockGetPQSigningInfo.mockReset().mockReturnValue(null)
         mockIsHDWalletAccount.mockReset().mockReturnValue(false)
         mockIsAlgo25Account.mockReset().mockReturnValue(false)
+        mockIsQuantumAccount.mockReset().mockReturnValue(false)
         mockIsHardwareWalletAccount.mockReset().mockReturnValue(false)
         encodeTransactionMock.mockReset().mockReturnValue(new Uint8Array([1]))
+        pqSigningDigestMock
+            .mockReset()
+            .mockReturnValue(new Uint8Array([9, 9, 9]))
+        assemblePQSignedTransactionMock
+            .mockReset()
+            .mockImplementation(
+                ({ signature }: { signature: { signature: Uint8Array } }) => ({
+                    pqsig: { sig: signature.signature },
+                }),
+            )
         mockAccounts = []
     })
 
@@ -288,5 +317,144 @@ describe('useLocalKeyTransactionSigner', () => {
                 hardwareAccount,
             ),
         ).rejects.toContain('Unsupported account type')
+    })
+
+    describe('quantum accounts', () => {
+        beforeEach(() => {
+            mockIsQuantumAccount.mockImplementation(
+                acc => acc.type === 'quantum',
+            )
+            mockGetPQSigningInfo.mockImplementation(keyPairId =>
+                keyPairId === quantumAccount.keyPairId
+                    ? { schemeId: 'falcon1024', publicKey: new Uint8Array([5]) }
+                    : null,
+            )
+        })
+
+        test('signs a quantum account through the same entry point as algo25', async () => {
+            mockSignTransactionsWithKey.mockResolvedValue([
+                new Uint8Array([1, 2, 3]),
+            ])
+
+            const { result } = renderHook(() => useLocalKeyTransactionSigner())
+            const txn = makeTxn('QUANTUM_ADDR')
+
+            const signed = await result.current.signTransactions(
+                [txn],
+                [0],
+                quantumAccount,
+            )
+
+            expect(signed).toHaveLength(1)
+            expect(signed[0].pqsig).toBeDefined()
+            expect(signed[0].sig).toBeUndefined()
+
+            // Pin the full PQSignature handed to the adapter, not just that
+            // `pqsig` exists. `assemblePQSignedTransaction` derives BOTH the
+            // authorizing address and the `sgnr` decision from `publicKey`
+            // (see quantumAdapter.ts), so a wrong or stale public key yields
+            // a wrong or spurious `sgnr` with no other visible symptom — and
+            // the mock echoes the signature back, so it cannot catch that on
+            // its own.
+            expect(assemblePQSignedTransactionMock).toHaveBeenCalledTimes(1)
+            expect(assemblePQSignedTransactionMock).toHaveBeenCalledWith({
+                txn,
+                signature: {
+                    schemeId: 'falcon1024',
+                    publicKey: new Uint8Array([5]),
+                    signature: new Uint8Array([1, 2, 3]),
+                },
+            })
+        })
+
+        test('pairs each signature with its own transaction across a multi-transaction group', async () => {
+            // Three transactions, three distinct signatures: an off-by-one or
+            // a reused index in the `pqInfo` branch's `signatures[idx]`
+            // pairing would put the wrong signature on the wrong txn, which a
+            // single-transaction group can never reveal.
+            const txns = [
+                makeTxn('QUANTUM_ADDR'),
+                makeTxn('QUANTUM_ADDR'),
+                makeTxn('QUANTUM_ADDR'),
+            ]
+            const signatures = [
+                new Uint8Array([10]),
+                new Uint8Array([20]),
+                new Uint8Array([30]),
+            ]
+            mockSignTransactionsWithKey.mockResolvedValue(signatures)
+            // Distinct digest per txn so the payload ordering is pinned too.
+            pqSigningDigestMock.mockImplementation(
+                (txn: unknown) =>
+                    new Uint8Array([txns.indexOf(txn as never) + 1]),
+            )
+
+            const { result } = renderHook(() => useLocalKeyTransactionSigner())
+            const signed = await result.current.signTransactions(
+                txns,
+                [0, 1, 2],
+                quantumAccount,
+            )
+
+            expect(mockSignTransactionsWithKey).toHaveBeenCalledWith(
+                quantumAccount.keyPairId,
+                SIGNING_KEY_DOMAIN,
+                [new Uint8Array([1]), new Uint8Array([2]), new Uint8Array([3])],
+            )
+
+            expect(assemblePQSignedTransactionMock).toHaveBeenCalledTimes(3)
+            txns.forEach((txn, idx) => {
+                expect(assemblePQSignedTransactionMock).toHaveBeenNthCalledWith(
+                    idx + 1,
+                    {
+                        txn,
+                        signature: {
+                            schemeId: 'falcon1024',
+                            publicKey: new Uint8Array([5]),
+                            signature: signatures[idx],
+                        },
+                    },
+                )
+            })
+
+            expect(signed).toHaveLength(3)
+            signed.forEach((signedTxn, idx) => {
+                expect(signedTxn.pqsig?.sig).toEqual(signatures[idx])
+            })
+        })
+
+        test('signs the SHA-512/256 digest, not the raw encoding, for quantum accounts', async () => {
+            mockSignTransactionsWithKey.mockResolvedValue([
+                new Uint8Array([1, 2, 3]),
+            ])
+            const txn = makeTxn('QUANTUM_ADDR')
+
+            const { result } = renderHook(() => useLocalKeyTransactionSigner())
+            await result.current.signTransactions([txn], [0], quantumAccount)
+
+            expect(mockSignTransactionsWithKey).toHaveBeenCalledWith(
+                quantumAccount.keyPairId,
+                SIGNING_KEY_DOMAIN,
+                [pqSigningDigest(txn)],
+            )
+            // The raw ("TX"-prefixed) encoder must NEVER be consulted for a
+            // quantum account — that's the exact bug this refactor closes.
+            expect(encodeTransactionMock).not.toHaveBeenCalled()
+        })
+
+        test('still signs algo25 accounts with a plain Ed25519 signature', async () => {
+            mockIsAlgo25Account.mockImplementation(acc => acc.type === 'algo25')
+            mockSignTransactionsWithKey.mockResolvedValue([new Uint8Array([9])])
+
+            const { result } = renderHook(() => useLocalKeyTransactionSigner())
+            const signed = await result.current.signTransactions(
+                [makeTxn('ALGO25_ADDR')],
+                [0],
+                algo25Account,
+            )
+
+            expect(signed[0].sig).toBeDefined()
+            expect(signed[0].pqsig).toBeUndefined()
+        })
     })
 })

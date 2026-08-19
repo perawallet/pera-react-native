@@ -18,7 +18,7 @@ import {
     type AddressSearchItem,
 } from '../useAddressSearchView'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { useAllAccounts, AccountTypes } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
@@ -34,6 +34,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         hardware: 'hardware',
         multisig: 'multisig',
         watch: 'watch',
+        quantum: 'quantum',
     },
 }))
 
@@ -181,6 +182,39 @@ describe('useAddressSearchView', () => {
         expect(accountItems[0]).toEqual(
             expect.objectContaining({
                 account: expect.objectContaining({ address: 'DEF456' }),
+            }),
+        )
+    })
+
+    it('excludes accounts whose type is listed in excludeTypes', () => {
+        const accounts = [
+            {
+                address: 'STD_ADDR',
+                name: 'Standard',
+                type: AccountTypes.algo25,
+            },
+            {
+                address: 'QUANTUM_ADDR',
+                name: 'Quantum',
+                type: AccountTypes.quantum,
+            },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ excludeTypes: [AccountTypes.quantum] }),
+        )
+
+        const accountItems = itemsOfType(
+            result.current.matchingItems,
+            'account',
+        )
+        expect(accountItems).toHaveLength(1)
+        expect(accountItems[0]).toEqual(
+            expect.objectContaining({
+                account: expect.objectContaining({ address: 'STD_ADDR' }),
             }),
         )
     })

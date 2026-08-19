@@ -19,7 +19,7 @@ import {
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { clickThroughPinPrompt } from './pin-prompt'
+import { clickThroughPinPrompt, settlePinPrompt } from './pin-prompt'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -91,6 +91,10 @@ test('data wipe then relaunch re-enters onboarding on both surfaces (no white sc
         timeout: 30_000,
     })
     expect(pageErrors, 'onboarding threw an uncaught error').toEqual([])
+
+    // Settle the security nudge before any sheet-opening test runs: while it
+    // is pending it holds every new bottom-sheet presentation.
+    await settlePinPrompt(page)
 
     // --- Phase 2: Menu → Settings → Remove All Data → confirm ---
     await clickThroughPinPrompt(page, page.getByTestId('tab_menu_button'))

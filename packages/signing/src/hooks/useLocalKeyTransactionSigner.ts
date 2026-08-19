@@ -15,7 +15,9 @@ import { useCallback } from 'react'
 import { SignedTransaction } from 'algosdk'
 import {
     Address,
+    assemblePQSignedTransaction,
     encodeAlgorandAddress,
+    pqSigningDigest,
     type PeraSignedTransaction,
     type PeraTransaction,
     type PeraTransactionGroup,
@@ -24,6 +26,7 @@ import {
 import {
     isAlgo25Account,
     isHDWalletAccount,
+    isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
@@ -64,24 +67,35 @@ export type UseLocalKeyTransactionSignerResult = {
 
 export const useLocalKeyTransactionSigner =
     (): UseLocalKeyTransactionSignerResult => {
-        const { signTransactionsWithKey } = useKMS()
+        const { signTransactionsWithKey, getPQSigningInfo } = useKMS()
         const { encodeTransaction } = useTransactionEncoder()
 
-        // Both HD and algo25 accounts now reference their derived child
-        // signing key directly via `keyPairId`. The keystore's own `sign`
-        // walks `metadata.parentKeyId` and routes correctly per child type
-        // (subtle for `ed25519`, XHD for `hd-derived-ed25519`), so this
-        // hook is type-agnostic — no per-flow branching needed.
+        // Algo25, HD wallet, and quantum accounts all reference their
+        // signing key directly via `keyPairId`. `getPQSigningInfo` is the
+        // single place that resolves the key's scheme — everything below
+        // (batching, rekey `sgnr`, ordering) is shared regardless of which
+        // branch it picks.
         const signSingleAccountTransactions = useCallback(
             async (
                 account: WalletAccount,
                 txns: PeraTransactionGroup,
             ): Promise<PeraSignedTransaction[]> => {
-                if (!isAlgo25Account(account) && !isHDWalletAccount(account)) {
+                if (
+                    !isAlgo25Account(account) &&
+                    !isHDWalletAccount(account) &&
+                    !isQuantumAccount(account)
+                ) {
                     return Promise.reject(
                         `Unsupported account type ${account.type} for ${account.address}`,
                     )
                 }
+
+                // The only scheme-dependent decision in this hook: what bytes
+                // to sign, and which field to put the signature in. Everything
+                // else — batching, rekey `sgnr`, ordering — is shared. This is
+                // the same altitude as the algo25-vs-HD difference, which the
+                // keystore resolves internally by child type.
+                const pqInfo = getPQSigningInfo(account.keyPairId)
 
                 const signed: PeraSignedTransaction[] = []
 
@@ -99,14 +113,30 @@ export const useLocalKeyTransactionSigner =
                     }
 
                     const batch = txns.slice(start, start + SIGN_BATCH_SIZE)
-                    const encoded = batch.map(txn => encodeTransaction(txn))
+                    const payloads = pqInfo
+                        ? batch.map(txn => pqSigningDigest(txn))
+                        : batch.map(txn => encodeTransaction(txn))
                     const signatures = await signTransactionsWithKey(
                         account.keyPairId,
                         SIGNING_KEY_DOMAIN,
-                        encoded,
+                        payloads,
                     )
 
                     batch.forEach((txn, idx) => {
+                        if (pqInfo) {
+                            signed.push(
+                                assemblePQSignedTransaction({
+                                    txn,
+                                    signature: {
+                                        schemeId: pqInfo.schemeId,
+                                        publicKey: pqInfo.publicKey,
+                                        signature: signatures[idx],
+                                    },
+                                }),
+                            )
+                            return
+                        }
+
                         const senderPublicKey = encodeAlgorandAddress(
                             txn.sender.publicKey,
                         )
@@ -125,7 +155,7 @@ export const useLocalKeyTransactionSigner =
 
                 return signed
             },
-            [signTransactionsWithKey, encodeTransaction],
+            [signTransactionsWithKey, getPQSigningInfo, encodeTransaction],
         )
 
         const signTransactions = useCallback(

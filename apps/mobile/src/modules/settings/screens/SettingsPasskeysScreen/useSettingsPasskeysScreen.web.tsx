@@ -44,6 +44,21 @@ export type UseSettingsPasskeysScreenResult = {
     state: SettingsPasskeysScreenState
     passkeys: Passkey[]
     notice: PasskeysNotice
+    /**
+     * Whether a row may offer its remove action. Same shape as native's gate,
+     * against web's own prerequisite for re-registering: the interception
+     * toggle sits above the list and is one tap away, where native needs a trip
+     * to OS settings.
+     *
+     * Defence in depth only — `needsMigration` is never `true` here. The
+     * marker is written solely by `react-native-keystore`'s
+     * `migrations/0001-flag-legacy-passkeys`, and on web Metro resolves that
+     * package to `extensions/keystore-chrome` while the engine comes from
+     * `@algorandfoundation/keystore-web`; neither carries the migration. Web
+     * also has no flat provider records, so there is no second source to union
+     * in either.
+     */
+    canRemove: (passkey: Passkey) => boolean
     canScan: boolean
     isScannerVisible: boolean
     onOpenScanner: () => void
@@ -138,6 +153,12 @@ export const useSettingsPasskeysScreen =
             list.refetch()
         }, [list])
 
+        const canRemove = useCallback(
+            (passkey: Passkey) =>
+                isInterceptionEnabled || !passkey.needsMigration,
+            [isInterceptionEnabled],
+        )
+
         const state = resolveState(isInterceptionEnabled, list)
         const lacksDeviceAuthentication =
             !biometric.isLoading && !biometric.hasStrongBiometricOrCredential
@@ -155,6 +176,7 @@ export const useSettingsPasskeysScreen =
             state,
             passkeys: list.passkeys,
             notice,
+            canRemove,
             canScan:
                 state !== 'loading' &&
                 state !== 'error' &&

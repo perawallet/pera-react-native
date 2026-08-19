@@ -13,7 +13,7 @@
 import { toError, type Network } from '@perawallet/wallet-core-shared'
 import {
     useNetworkStore,
-    type PeraSignedTxnResult,
+    type PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import type { MultisigProposeMode } from '@perawallet/wallet-core-multisig'
 import type {
@@ -73,13 +73,11 @@ export type GetDeviceIdFn = () => string | undefined
 export type CreateDraftSignRequestInput = {
     multisigAddress: string
     /**
-     * Unsigned: `.txn` is populated, `sig`/`msig` absent. Typed
-     * `PeraSignedTxnResult[]` only because it comes straight from
-     * `SigningResult`; deferred propose is multisig-only, so in practice these
-     * are plain. Only `.txn` is read, to encode the unprefixed msgpack bytes
-     * the propose API expects.
+     * Unsigned: `.txn` is populated, `sig`/`msig` absent. Typed as signed only
+     * because it comes straight from `SigningResult`. Only `.txn` is read, to
+     * encode the unprefixed msgpack bytes the propose API expects.
      */
-    signedTransactions: PeraSignedTxnResult[]
+    signedTransactions: PeraSignedTransaction[]
     proposeType: MultisigProposeMode
     source: SourceMetadata
 }

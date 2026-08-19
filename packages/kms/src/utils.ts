@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import { encodeAddress } from 'algosdk'
 import nacl from 'tweetnacl'
 import { AccessControlPermission, type AccessControl } from './models'
@@ -74,6 +74,14 @@ export const entropyChildMetadata = (
 /**
  * Finds the keystore id of a seed's entropy `secret-key` child by its metadata
  * ({@link entropyChildMetadata}), or `undefined` if it has none.
+ *
+ * The `secret-key` clause keeps this identical to the two copies that cannot
+ * import it — `repairs/0003-mint-passkey-main-key.ts:139-143` (MMKV records,
+ * pre-engine) and `keystore-chrome`'s `keystore-signer.ts` — which all three
+ * must be, since they pick the same main key's parent. `commitSecret` writes
+ * entropy through the secrets API, which stamps `type: 'secret-key'`
+ * (`keystore-core@1.0.0-canary.3` `dist/create.js:1180`), so nothing legitimate
+ * is excluded.
  */
 export const entropyChildIdOf = (
     seedKeyId: string,
@@ -84,18 +92,34 @@ export const entropyChildIdOf = (
             parentKeyId?: unknown
             entropyKey?: unknown
         }
-        return meta.parentKeyId === seedKeyId && meta.entropyKey === true
+        return (
+            k.type === 'secret-key' &&
+            meta.parentKeyId === seedKeyId &&
+            meta.entropyKey === true
+        )
     })?.id
 
 const seedMetadata = (key: Key): SeedMetadata =>
     (key.metadata ?? {}) as SeedMetadata
 
 /**
+ * A bip39 wallet's root is stored as `hd-root-key` — canary.14's
+ * `deriveFromSeed` rejects any parent that is not typed that way — but it is
+ * still the entry that owns the scheme and the recovery material, so it counts
+ * as a root here alongside the `seed` types.
+ */
+const SEED_BEARING_TYPES: ReadonlySet<string> = new Set([
+    'seed',
+    'hd-seed',
+    'hd-root-key',
+])
+
+/**
  * `null` for anything that isn't a recognised wallet root — derived children,
  * secret-key entries — which must not be treated as one.
  */
 export const seedSchemeOf = (key: Key): SeedScheme | null => {
-    if (key.type !== 'seed' && key.type !== 'hd-seed') return null
+    if (!SEED_BEARING_TYPES.has(key.type)) return null
     const scheme = seedMetadata(key).scheme
     if (
         scheme === SeedScheme.Bip39 ||

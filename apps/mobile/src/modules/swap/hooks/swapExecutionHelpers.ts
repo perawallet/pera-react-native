@@ -12,19 +12,94 @@
 
 import {
     compactSignedResults,
-    isQuantumSignedTransaction,
     type PeraSignedTransaction,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import {
+    isQuantumAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import type { SwapStatusUpdateRequest } from '@perawallet/wallet-core-swaps'
 import {
     generateOrderedUniqueId,
     logger,
+    type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 
 import { SwapUserRejectedError } from './swapGroupPlan'
+
+/**
+ * Quantum accounts pay a raised post-quantum minimum fee, but a swap group's
+ * fee is fixed by the backend's `prepare-transactions` response and cannot be
+ * raised on device: the group interleaves backend PRE-SIGNED transactions
+ * with the user's, and raising a fee forces a `grp` recomputation that would
+ * invalidate those signatures. The swap flow also never calls the minimum-fee
+ * pipeline at all — there is no `signableIndices` to key an adjustment off.
+ * Enabling quantum swap therefore requires the backend to build the
+ * user-signable transaction with the PQ fee (or isolate it in its own
+ * partition). Tracked as PQ-024 / PERA-4705.
+ */
+export const QUANTUM_SWAP_FEE_BLOCKED_KEY =
+    'swap.execution.quantum_fee_unsupported'
+
+/**
+ * Quantum accounts don't participate in multisig at all (established
+ * separately in this plan), so this branch should be unreachable in
+ * practice — this is defence in depth. Without it, a quantum result handed
+ * to `createMultisigStrategy`'s `extractSignatures` would silently resolve
+ * to `null` for every slot, and the proposer would POST an empty signature
+ * to the backend instead of failing loudly.
+ */
+export const QUANTUM_SWAP_PROPOSE_BLOCKED_KEY =
+    'swap.execution.quantum_multisig_unsupported'
+
+/**
+ * A quantum signer was blocked before signing. Carries the i18n key rather
+ * than an English sentence: the swap error path displays `error.message`
+ * verbatim to the user (see `useSwapExecution`), so a hardcoded English
+ * string there would reach non-English users untranslated — defeating the
+ * whole point of these guards, which is that the failure is loud AND
+ * correctly attributed. `message` stays English for logs/crash reports.
+ */
+export class QuantumSwapBlockedError extends Error {
+    /**
+     * Pinned as a string literal so the name survives minification, matching
+     * the convention in {@link USER_REJECTION_ERROR_NAMES}.
+     */
+    override readonly name = 'QuantumSwapBlockedError'
+
+    /** Key to render with `t()` at the display site. */
+    readonly translationKey: string
+
+    constructor(translationKey: string) {
+        super(`Quantum accounts are not supported here (${translationKey})`)
+        this.translationKey = translationKey
+    }
+}
+
+/**
+ * Rejects with a {@link QuantumSwapBlockedError} for `translationKey` when
+ * `signer` is a quantum account.
+ *
+ * Callers MUST pass the resolved EFFECTIVE signer (e.g. via `useSignerFor`),
+ * not the raw selected/sender account: a standard or multisig account rekeyed
+ * to a quantum auth account still has its own nominal `type` (e.g. `algo25`),
+ * but Falcon-signs via the resolved auth account. Checking the raw account's
+ * `type` alone would let a rekeyed-to-quantum sender sail past this guard —
+ * see `useTransactionConfirmationScreen`'s `isQuantumFee` for the same
+ * resolve-then-check pattern.
+ */
+const rejectIfQuantumAccount = (
+    signer: Nullable<WalletAccount>,
+    translationKey: string,
+): Optional<Promise<never>> => {
+    if (signer && isQuantumAccount(signer)) {
+        return Promise.reject(new QuantumSwapBlockedError(translationKey))
+    }
+    return undefined
+}
 
 /**
  * Cancel-shaped outcomes beyond the swap flow's own wrapper. Matched by name
@@ -57,11 +132,17 @@ type AddSignRequestFn = (request: TransactionSignRequest) => void
 
 export const requestSwapSignatures = (
     addSignRequest: AddSignRequestFn,
+    // Resolved effective signer (`useSignerFor`), not the raw selected
+    // account — see {@link rejectIfQuantumAccount}.
+    signer: Nullable<WalletAccount>,
     source: { name: string; description: string },
     unsignedTxs: PeraTransaction[],
     groupContext: PeraTransaction[],
-): Promise<PeraSignedTransaction[]> =>
-    new Promise((resolve, reject) => {
+): Promise<PeraSignedTransaction[]> => {
+    const blocked = rejectIfQuantumAccount(signer, QUANTUM_SWAP_FEE_BLOCKED_KEY)
+    if (blocked) return blocked
+
+    return new Promise((resolve, reject) => {
         const request: TransactionSignRequest = {
             id: generateOrderedUniqueId(),
             type: 'transactions',
@@ -75,22 +156,11 @@ export const requestSwapSignatures = (
             groupContext,
             sourceMetadata: source,
             approve: async signed => {
-                // Only a feature flag keeps quantum accounts out of swap today
-                // — nothing structural. The null-filter narrows back to the
-                // module's plain-signature contract, but silently dropping a
-                // quantum carrier would vanish signed slots and corrupt the
-                // group into an opaque submission crash downstream. Fail loudly
-                // instead (PQ-024 adds real support).
-                const nonNull = compactSignedResults(signed)
-                if (nonNull.some(isQuantumSignedTransaction)) {
-                    reject(
-                        new Error(
-                            'Quantum accounts are not supported in swap flows yet',
-                        ),
-                    )
-                    return
-                }
-                resolve(nonNull as PeraSignedTransaction[])
+                // The null-filter is defensive narrowing back to the swap
+                // module's plain-signature contract — this single full-group
+                // sign never pads null slots, but a stray null must still be
+                // dropped before resolving.
+                resolve(compactSignedResults(signed))
             },
             reject: async () => {
                 reject(new SwapUserRejectedError())
@@ -101,6 +171,7 @@ export const requestSwapSignatures = (
         }
         addSignRequest(request)
     })
+}
 
 /** Info handed back by the propose transport once the backend record exists. */
 export type SwapProposedInfo = {
@@ -113,15 +184,28 @@ export type SwapProposedInfo = {
  * proposer's local keys and proposes a `sync` sign-request instead of
  * submitting. Resolves once the backend record exists — the proposer does NOT
  * wait here for co-signers, since the cosign resolver completes the swap.
+ *
+ * Takes the RESOLVED signer, not the raw multisig account: a multisig can
+ * itself be rekeyed to a quantum auth account, which the guard below must see
+ * (see {@link QUANTUM_SWAP_PROPOSE_BLOCKED_KEY}).
  */
 export const requestSwapProposal = (
     addSignRequest: AddSignRequestFn,
+    // Resolved effective signer (`useSignerFor`), not the raw selected
+    // account — see {@link rejectIfQuantumAccount}.
+    signer: Nullable<WalletAccount>,
     source: { name: string; description: string },
     unsignedTxs: PeraTransaction[],
     groupContext: PeraTransaction[],
     onProposed: (info: SwapProposedInfo) => void,
-): Promise<void> =>
-    new Promise((resolve, reject) => {
+): Promise<void> => {
+    const blocked = rejectIfQuantumAccount(
+        signer,
+        QUANTUM_SWAP_PROPOSE_BLOCKED_KEY,
+    )
+    if (blocked) return blocked
+
+    return new Promise((resolve, reject) => {
         const request: TransactionSignRequest = {
             id: generateOrderedUniqueId(),
             type: 'transactions',
@@ -150,6 +234,7 @@ export const requestSwapProposal = (
         }
         addSignRequest(request)
     })
+}
 
 type UpdateSwapStatusFn = (params: {
     swapId: string

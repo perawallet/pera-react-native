@@ -44,11 +44,15 @@ const HOLDINGS_WRITE_CHUNK_SIZE = 200
 export type HoldingRow = {
     assetId: string
     amount: Decimal
+    /** Holding-level freeze from algod — frozen assets can't be transferred. */
+    isFrozen: boolean
 }
 
 type UpsertHoldingInput = {
     assetId: string
     amount: Decimal
+    /** Holding-level freeze from algod. Defaults to false when omitted. */
+    isFrozen?: boolean
 }
 
 type UpsertAccountHoldingsParams = {
@@ -76,6 +80,7 @@ export async function refreshAccountHoldings({
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
             amount: AccountAssetHoldingsSchema.amount,
+            isFrozen: AccountAssetHoldingsSchema.isFrozen,
         })
         .from(AccountAssetHoldingsSchema)
         .where(
@@ -86,8 +91,11 @@ export async function refreshAccountHoldings({
         )
         .all()
 
-    const existingAmounts = new Map<string, Decimal>(
-        existingRows.map(r => [r.assetId.toString(), r.amount]),
+    const existing = new Map(
+        existingRows.map(r => [
+            r.assetId.toString(),
+            { amount: r.amount, isFrozen: r.isFrozen },
+        ]),
     )
     const incomingIds = new Set(holdings.map(h => h.assetId))
 
@@ -95,12 +103,14 @@ export async function refreshAccountHoldings({
     // Decimal (production) or another numeric type (some tests), and the DB
     // value always round-trips through Decimal#toString.
     const changed = holdings.filter(h => {
-        const prev = existingAmounts.get(h.assetId)
-        return prev === undefined || prev.toString() !== String(h.amount)
+        const prev = existing.get(h.assetId)
+        return (
+            prev === undefined ||
+            prev.amount.toString() !== String(h.amount) ||
+            prev.isFrozen !== (h.isFrozen ?? false)
+        )
     })
-    const removed = [...existingAmounts.keys()].filter(
-        id => !incomingIds.has(id),
-    )
+    const removed = [...existing.keys()].filter(id => !incomingIds.has(id))
 
     if (changed.length === 0 && removed.length === 0) return false
 
@@ -132,6 +142,7 @@ export async function refreshAccountHoldings({
             assetId: new Decimal(h.assetId),
             network,
             amount: h.amount,
+            isFrozen: h.isFrozen ?? false,
             updatedAt: now,
         }))
         for (const chunk of partition(rows, HOLDINGS_WRITE_CHUNK_SIZE)) {
@@ -146,6 +157,7 @@ export async function refreshAccountHoldings({
                     ],
                     set: {
                         amount: sql`excluded.amount`,
+                        isFrozen: sql`excluded.is_frozen`,
                         updatedAt: sql`excluded.updated_at`,
                     },
                 })
@@ -162,6 +174,7 @@ type InsertAssetHoldingParams = {
     assetId: string
     network: string
     amount?: string
+    isFrozen?: boolean
 }
 
 export async function insertAssetHolding({
@@ -170,6 +183,7 @@ export async function insertAssetHolding({
     assetId,
     network,
     amount,
+    isFrozen,
 }: InsertAssetHoldingParams): Promise<void> {
     await db
         .insert(AccountAssetHoldingsSchema)
@@ -178,6 +192,7 @@ export async function insertAssetHolding({
             assetId: new Decimal(assetId),
             network,
             amount: new Decimal(amount ?? '0'),
+            isFrozen: isFrozen ?? false,
             updatedAt: Date.now(),
         })
         .onConflictDoNothing()
@@ -286,6 +301,7 @@ export async function getAccountHoldings({
             .select({
                 assetId: AccountAssetHoldingsSchema.assetId,
                 amount: AccountAssetHoldingsSchema.amount,
+                isFrozen: AccountAssetHoldingsSchema.isFrozen,
             })
             .from(AccountAssetHoldingsSchema)
             .where(and(...baseConditions))
@@ -294,6 +310,7 @@ export async function getAccountHoldings({
         return rows.map(r => ({
             assetId: r.assetId.toString(),
             amount: r.amount,
+            isFrozen: r.isFrozen,
         }))
     }
 
@@ -332,6 +349,7 @@ export async function getAccountHoldings({
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
             amount: AccountAssetHoldingsSchema.amount,
+            isFrozen: AccountAssetHoldingsSchema.isFrozen,
         })
         .from(AccountAssetHoldingsSchema)
         .leftJoin(
@@ -353,6 +371,7 @@ export async function getAccountHoldings({
     return rows.map(r => ({
         assetId: r.assetId.toString(),
         amount: r.amount,
+        isFrozen: r.isFrozen,
     }))
 }
 
@@ -448,6 +467,8 @@ export type AccountHoldingsPageRow = {
     assetId: string
     /** Amount in base units (microalgos for ALGO). */
     amount: Decimal
+    /** Holding-level freeze from algod — frozen assets can't be transferred. */
+    isFrozen: boolean
     /** Joined asset metadata, or null until the asset metadata syncs. */
     asset: Nullable<PeraAsset>
     /** Joined USD price, or null until the price syncs. */
@@ -565,6 +586,7 @@ async function queryHoldingRows({
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
             amount: AccountAssetHoldingsSchema.amount,
+            isFrozen: AccountAssetHoldingsSchema.isFrozen,
             decimals: AssetsNodeSchema.decimals,
             creatorAddress: AssetsNodeSchema.creatorAddress,
             totalSupply: sql<Nullable<string>>`${AssetsNodeSchema.totalSupply}`,
@@ -602,6 +624,7 @@ export async function getAccountHoldingsPage(
     return rows.map(r => ({
         assetId: r.assetId.toString(),
         amount: r.amount,
+        isFrozen: r.isFrozen,
         asset:
             r.decimals !== null && r.totalSupply !== null
                 ? peraAssetFromColumns({
@@ -721,7 +744,7 @@ export type GetAccountCollectiblesLiteParams = {
     network: string
     /** Omit to order by asset id descending, for callers that re-sort. */
     sortMode?: CollectibleSqlSortMode
-    /** Case-insensitive substring match against title / name / collection. */
+    /** Case-insensitive substring match against title / name / collection / asset id. */
     search?: string
     /** When false, collectibles the account holds none of are excluded. */
     includeOptedInOnly?: boolean
@@ -794,6 +817,7 @@ export async function getAccountCollectiblesLite({
                 sql`${collectibleTitleExpr} LIKE ${pattern}`,
                 sql`${collectionNameExpr} LIKE ${pattern}`,
                 like(AssetsNodeSchema.name, pattern),
+                like(AccountAssetHoldingsSchema.assetId, pattern),
             )!,
         )
     }
@@ -1079,6 +1103,53 @@ export async function getAllHeldAssetIdsForNetwork({
         .all()
 
     return rows.map(r => r.assetId.toString())
+}
+
+type GetAssetHolderAddressesParams = {
+    db?: Database
+    assetId: string
+    network: string
+}
+
+/**
+ * Addresses of the user's accounts that hold, or are opted into, `assetId` on
+ * `network` — owners (non-zero amount) first, then opted-in-with-zero rows, and
+ * by address within each group so repeated lookups agree on the same account.
+ *
+ * ALGO is absent from the holdings table (it lives on the account balance row),
+ * so this returns an empty list for it.
+ */
+export async function getAssetHolderAddresses({
+    db = getDatabase(),
+    assetId,
+    network,
+}: GetAssetHolderAddressesParams): Promise<string[]> {
+    const rows = await db
+        .select({
+            accountAddress: AccountAssetHoldingsSchema.accountAddress,
+            amount: AccountAssetHoldingsSchema.amount,
+        })
+        .from(AccountAssetHoldingsSchema)
+        .where(
+            and(
+                eq(AccountAssetHoldingsSchema.assetId, new Decimal(assetId)),
+                eq(AccountAssetHoldingsSchema.network, network),
+            ),
+        )
+        .orderBy(AccountAssetHoldingsSchema.accountAddress)
+        .all()
+
+    const owned: string[] = []
+    const optedIn: string[] = []
+    for (const row of rows) {
+        if (row.amount.greaterThan(0)) {
+            owned.push(row.accountAddress)
+        } else {
+            optedIn.push(row.accountAddress)
+        }
+    }
+
+    return [...owned, ...optedIn]
 }
 
 export type HeldAssetRef = {

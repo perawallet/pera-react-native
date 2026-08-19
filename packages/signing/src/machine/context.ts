@@ -26,19 +26,15 @@ import type {
     LocalArbitrarySigningFunction,
     LocalArc60SigningFunction,
 } from '../pipeline/signing/createLocalKeyStrategy'
-import type { QuantumSigningFunction } from '../pipeline/signing/createQuantumStrategy'
 import type { EncodeTransactionFunction } from '../pipeline/signing/createHardwareStrategy'
 import type { SignRequest } from '../models'
 
 /**
- * Which signing actor to invoke. `quantum` (Falcon-1024) produces a pqsig byte
- * carrier rather than a plain Ed25519 signature.
+ * Which signing actor to invoke. Quantum (Falcon-1024) accounts resolve to
+ * `localKey` — the signature scheme is picked inside the injected signing
+ * function, so there is no separate actor for them.
  */
-export type ResolvedSignerType =
-    | 'localKey'
-    | 'hardware'
-    | 'multisig'
-    | 'quantum'
+export type ResolvedSignerType = 'localKey' | 'hardware' | 'multisig'
 
 export type GroupSignerTypeMap = Map<string, ResolvedSignerType>
 
@@ -55,7 +51,6 @@ export type TransportFactory = (
 /** Functions and clients that can't be known at machine definition time. */
 export type SigningMachineDeps = {
     signTransactions: LocalSigningFunction
-    signQuantumTransactions: QuantumSigningFunction
     signArbitraryData: LocalArbitrarySigningFunction
     signArc60: LocalArc60SigningFunction
     createTransport: TransportFactory

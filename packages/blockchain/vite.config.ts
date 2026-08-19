@@ -41,6 +41,7 @@ export default defineConfig({
         },
         rollupOptions: {
             external: [
+                'algosdk',
                 'react',
                 'react/jsx-runtime',
                 'zustand',

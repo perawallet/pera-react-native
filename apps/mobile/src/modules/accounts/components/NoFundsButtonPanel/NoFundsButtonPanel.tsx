@@ -40,7 +40,7 @@ export const NoFundsButtonPanel = () => {
             />
             <RoundButton
                 title={t('account_details.no_balance.more')}
-                icon='ellipsis'
+                icon='chevron-right'
                 variant='secondary'
                 onPress={handleMore}
                 testID='more_button'

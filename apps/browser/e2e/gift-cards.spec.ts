@@ -26,7 +26,11 @@ import {
 } from '@playwright/test'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { clickThroughPinPrompt, dismissPinPromptIfPresent } from './pin-prompt'
+import {
+    clickThroughPinPrompt,
+    dismissPinPromptIfPresent,
+    settlePinPrompt,
+} from './pin-prompt'
 
 const dist = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -63,6 +67,19 @@ test.beforeAll(async () => {
     }
     extensionId = new URL(serviceWorker.url()).host
 
+    // Seed the remote-config OVERRIDE, which getBooleanValue checks before
+    // calling the service — the enable_gift_cards default is false everywhere
+    // (Bidali availability switch), so the menu row only renders with the
+    // override in place. Mirrors pera-card.spec.ts.
+    await serviceWorker.evaluate(async () => {
+        await chrome.storage.local.set({
+            'kv:remote-config-store': JSON.stringify({
+                state: { configOverrides: { enable_gift_cards: true } },
+                version: 1,
+            }),
+        })
+    })
+
     // Onboard exactly as onboarding.spec.ts / wallet-smoke.spec.ts.
     page = await context.newPage()
     pageErrors = trackPageErrors(page)
@@ -90,6 +107,10 @@ test.beforeAll(async () => {
         timeout: 30_000,
     })
     expect(pageErrors, 'page threw an uncaught error').toEqual([])
+
+    // Settle the security nudge before any sheet-opening test runs: while it
+    // is pending it holds every new bottom-sheet presentation.
+    await settlePinPrompt(page)
 })
 
 test.afterAll(async () => {

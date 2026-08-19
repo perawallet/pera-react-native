@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
     isMultisigAccount: vi.fn(),
     hasSigningKeys: vi.fn(),
     isHardwareWalletAccount: vi.fn(),
+    isQuantumAccount: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -29,6 +30,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         isMultisigAccount: mocks.isMultisigAccount,
         hasSigningKeys: mocks.hasSigningKeys,
         isHardwareWalletAccount: mocks.isHardwareWalletAccount,
+        isQuantumAccount: mocks.isQuantumAccount,
     }
 })
 
@@ -53,6 +55,13 @@ const makeAccount = (address: string): WalletAccount =>
         keyPairId: `key-${address}`,
     }) as unknown as WalletAccount
 
+const makeQuantumAccount = (address: string): WalletAccount =>
+    ({
+        type: 'quantum',
+        address,
+        keyPairId: `key-${address}`,
+    }) as unknown as WalletAccount
+
 const accountA = makeAccount('A')
 const accountB = makeAccount('B')
 const accountC = makeAccount('C')
@@ -61,6 +70,9 @@ beforeEach(() => {
     mocks.isMultisigAccount.mockReset()
     mocks.hasSigningKeys.mockReset().mockReturnValue(true)
     mocks.isHardwareWalletAccount.mockReset().mockReturnValue(false)
+    mocks.isQuantumAccount
+        .mockReset()
+        .mockImplementation((acc: WalletAccount) => acc.type === 'quantum')
 })
 
 describe('getLocalParticipants', () => {
@@ -136,6 +148,23 @@ describe('getLocalParticipants', () => {
         ])
 
         expect(participants).toEqual([accountA])
+    })
+
+    test('excludes quantum accounts from multisig participants, matching canSignViaParticipants', () => {
+        mocks.isMultisigAccount.mockReturnValue(true)
+        // Quantum has a keyPairId (hasSigningKeys would say yes), but multisig
+        // slots verify Ed25519 only and algosdk's PQ signer refuses multisig
+        // signing outright — so it must still be excluded here, agreeing with
+        // canSignViaParticipants in packages/accounts/src/utils.ts.
+        const quantumAccount = makeQuantumAccount('Q')
+        const multisig = makeMultisig(2, ['Q', 'A'])
+
+        const participants = getLocalParticipants(multisig, [
+            quantumAccount,
+            accountA,
+        ])
+
+        expect(participants.map(p => p.address)).toEqual([accountA.address])
     })
 
     test('returns participants in participant-list order, not wallet order', () => {

@@ -17,7 +17,7 @@ import {
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import type {
-    PeraSignedTxnResult,
+    PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
@@ -92,7 +92,7 @@ export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
                     txs: unsignedTxs,
                     sourceMetadata: source,
                     approve: async (
-                        signed: Nullable<PeraSignedTxnResult>[],
+                        signed: Nullable<PeraSignedTransaction>[],
                     ) => {
                         try {
                             // This headless local-submit request never

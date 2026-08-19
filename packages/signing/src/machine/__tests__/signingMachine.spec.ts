@@ -65,7 +65,6 @@ const mockTransportResult: TransportResult = {
 
 const mockDeps = {
     signTransactions: vi.fn(),
-    signQuantumTransactions: vi.fn(),
     signArbitraryData: vi.fn(),
     signArc60: vi.fn(),
     encodeSignedTransactions: vi
@@ -98,12 +97,12 @@ const makeInput = (
 
 const mockedMachine = signingMachine.provide({
     actors: {
-        analyzerActor: fromPromise(
-            async (): Promise<SignableAnalysis[]> => [mockAnalysis],
-        ),
-        localKeySignerActor: fromPromise(
-            async (): Promise<SigningResult[]> => [mockSigningResult],
-        ),
+        analyzerActor: fromPromise(async (): Promise<SignableAnalysis[]> => [
+            mockAnalysis,
+        ]),
+        localKeySignerActor: fromPromise(async (): Promise<SigningResult[]> => [
+            mockSigningResult,
+        ]),
         multisigSignerActor: fromPromise(async (): Promise<SigningResult[]> => {
             throw new Error('multisig not implemented')
         }),

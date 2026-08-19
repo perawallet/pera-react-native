@@ -24,7 +24,7 @@ import {
     useAssetsQuery,
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
-import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
+import { useMinFeeForSender } from '@perawallet/wallet-core-signing'
 import { useToast } from '@hooks/useToast'
 
 const mockNavigate = vi.fn()
@@ -95,8 +95,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     isPureNft: () => false,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useSuggestedParametersQuery: vi.fn(),
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    useMinFeeForSender: vi.fn(),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -166,8 +166,9 @@ describe('useInputScreen', () => {
                 ],
             ]),
         })
-        ;(useSuggestedParametersQuery as Mock).mockReturnValue({
-            data: { minFee: 1000 },
+        ;(useMinFeeForSender as Mock).mockReturnValue({
+            minFee: 1000n,
+            isPending: false,
         })
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {
@@ -182,6 +183,44 @@ describe('useInputScreen', () => {
     it('calculates max amount for Algo correctly', () => {
         const { result } = renderHook(() => useInputScreen())
         expect(result.current.maxAmount.toNumber()).toBe(99.899)
+    })
+
+    // A quantum signer pays a multiplied fee. Both the spendable max and the
+    // close-out amount must reserve the fee the transaction will actually
+    // carry, or the confirmation screen shows an amount the wire transaction
+    // never sends (observed on fnet: label said 0.886, chain moved 0.884).
+    it('reserves the quantum fee, not the base fee, in max amount', () => {
+        ;(useMinFeeForSender as Mock).mockReturnValue({
+            minFee: 3000n,
+            isPending: false,
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+        expect(result.current.maxAmount.toString()).toBe('99.897')
+    })
+
+    it('reserves the quantum fee in the close-account amount', async () => {
+        ;(useMinFeeForSender as Mock).mockReturnValue({
+            minFee: 3000n,
+            isPending: false,
+        })
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 100_000n,
+                assets: [],
+            },
+        })
+        mockRequestBottomSheet.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('99.95')
+        })
+        await act(async () => {
+            await result.current.handleNext()
+        })
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.997')
     })
 
     it('calculates total balance for Algo correctly', () => {

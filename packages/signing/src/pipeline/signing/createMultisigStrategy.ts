@@ -15,7 +15,6 @@ import {
     isMultisigAccount,
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isQuantumSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { encodeToBase64, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
@@ -139,10 +138,10 @@ const extractSignatures = (signedData: SignedData): Nullable<string>[] => {
         return []
     }
     return signedData.signed.map(stx => {
-        // Quantum accounts aren't multisig participants today, and the
-        // pqsig carrier holds pre-encoded bytes rather than an isolated
-        // signature the backend can combine — nothing to extract.
-        if (isQuantumSignedTransaction(stx)) return null
+        // Quantum accounts aren't multisig participants today, and a
+        // PQ-signed transaction has no `sig` (its signature lives in
+        // `pqsig` instead) — this falls through to `null` for those slots
+        // with no quantum-specific code.
         if (stx.sig) return encodeToBase64(stx.sig)
         const msigSig = stx.msig?.subsig.find(s => s.s)?.s
         if (msigSig) return encodeToBase64(msigSig)

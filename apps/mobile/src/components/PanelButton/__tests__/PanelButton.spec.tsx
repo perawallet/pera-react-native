@@ -124,4 +124,23 @@ describe('PanelButton', () => {
         expect(onLearnMore).toHaveBeenCalledTimes(1)
         expect(onPress).not.toHaveBeenCalled()
     })
+
+    it('renders the badge alongside the learn-more link', () => {
+        const onPress = vi.fn()
+        const onLearnMore = vi.fn()
+        render(
+            <PanelButton
+                title='Quantum'
+                titleWeight='h3'
+                badge={{ label: 'NEW' }}
+                learnMore={{ label: 'Learn more', onPress: onLearnMore }}
+                onPress={onPress}
+            />,
+        )
+
+        expect(screen.getByText('NEW')).toBeTruthy()
+        fireEvent.click(screen.getByText('Learn more'))
+        expect(onLearnMore).toHaveBeenCalledTimes(1)
+        expect(onPress).not.toHaveBeenCalled()
+    })
 })

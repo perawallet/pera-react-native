@@ -263,7 +263,12 @@ const customResolveRequest = (context, moduleName, platform) => {
         };
     }
 
-    // Resolve @perawallet workspace packages to source files for development
+    // Resolve @perawallet workspace packages to source files for development.
+    // Convenience only — every package's dist must be correct on its own. This
+    // used to also be what kept quantum accounts on the native Falcon provider,
+    // since kms's dist carried only the WASM one; kms now ships a second bundle
+    // behind a `react-native` export condition, held by
+    // tools/check-kms-pq-dist.mjs.
     if (moduleName === '@perawallet/wallet-core') {
         const sourcePath = path.resolve(monorepoRoot, 'packages', 'core', 'src', 'index.ts');
         try {
@@ -294,9 +299,18 @@ const customResolveRequest = (context, moduleName, platform) => {
             }
         }
     }
-    // Web builds swap the RN keystore for the chrome implementation with the
-    // same export surface (extensions/keystore-chrome). Native keeps the real
+    // Web builds swap the RN keystore for the chrome implementation
+    // (extensions/keystore-chrome). Native keeps the real
     // react-native-keystore (Keychain + MMKV).
+    //
+    // This alias no longer covers key storage. The two surfaces stopped being
+    // equivalent when the app moved to canary.14 — the port implements
+    // canary.12 and has no engine factory — so the web build gets its engine
+    // from @algorandfoundation/keystore-web instead, via the `.web.ts` files
+    // beside extensions/provider's createKeystore and keystore/maintenance.
+    // What still resolves here is everything the extension owns and the RN
+    // package happens to share a name with: the password vault, auto-lock,
+    // passkey unlock and the WebAuthn signer.
     if (
         platform === 'web' &&
         moduleName === '@algorandfoundation/react-native-keystore'

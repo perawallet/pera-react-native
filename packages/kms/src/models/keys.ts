@@ -45,6 +45,8 @@ export const quantumSignKeyId = (seedId: string): string => `${seedId}-quantum`
 /**
  * Keystore entry `type` for the quantum signing child — this (not the id)
  * names the concrete algorithm, parallel to the `'ed25519'` child type of an
- * algo25 seed.
+ * algo25 seed. Must stay spelled exactly as `keystore-core`'s `KeyType`: the
+ * engine writes this literal onto the entry it generates, and every lookup
+ * that guards "is this child quantum?" compares against it.
  */
-export const FALCON_CHILD_KEY_TYPE = 'falcon1024'
+export const FALCON_CHILD_KEY_TYPE = 'falcon-1024'

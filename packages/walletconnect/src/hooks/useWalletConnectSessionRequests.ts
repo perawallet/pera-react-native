@@ -51,21 +51,46 @@ export const useWalletConnectSessionRequests = () => {
         }
     }, [sessionRequests, allSessionRequests, setSessionRequests])
 
+    // Both mutators read live store state at call time rather than the
+    // render-time snapshot: connector event handlers capture them once, at
+    // connect()/bind time, and that frozen closure would otherwise clobber
+    // every add/remove that happened since binding (dropping a pending
+    // approval or resurrecting a rejected one).
     const addSessionRequest = useCallback(
         (request: WalletConnectSessionRequest) => {
-            setSessionRequests([
-                ...allSessionRequests,
+            const { sessionRequests, setSessionRequests: setRequests } =
+                useWalletConnectStore.getState()
+            // The bridge replays a topic's pending history on every sub
+            // frame, so the same handshake can arrive more than once — a
+            // duplicate must not queue a second approval sheet or refresh
+            // the original's TTL stamp.
+            const isDuplicate = sessionRequests.some(
+                queued =>
+                    queued.clientId === request.clientId &&
+                    queued.handshakeId !== undefined &&
+                    queued.handshakeId === request.handshakeId,
+            )
+            if (isDuplicate) return
+            // One pending handshake per connector: a new session_request on
+            // the same clientId abandons the previous one on the dApp side,
+            // so the stale queued entry is unapprovable and gets replaced.
+            setRequests([
+                ...sessionRequests.filter(
+                    queued => queued.clientId !== request.clientId,
+                ),
                 { ...request, createdAt: Date.now() },
             ])
         },
-        [allSessionRequests],
+        [],
     )
 
     const removeSessionRequest = useCallback(
         (request: WalletConnectSessionRequest) => {
-            setSessionRequests(allSessionRequests.filter(r => r !== request))
+            const { sessionRequests, setSessionRequests: setRequests } =
+                useWalletConnectStore.getState()
+            setRequests(sessionRequests.filter(r => r !== request))
         },
-        [allSessionRequests],
+        [],
     )
 
     return {

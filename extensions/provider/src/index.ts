@@ -21,3 +21,16 @@ export * from './pera-provider'
 export * from './context'
 export * from './singleton'
 export * from './test-platform'
+export {
+    PASSKEY_MAIN_KEY_SCHEME,
+    passkeyMainKeyId,
+} from './keystore/passkeyMainKey'
+export {
+    readKeystoreMigrationLedger,
+    resetKeystoreMigrationModule,
+} from './keystore/migrationsLedger'
+export {
+    KEYSTORE_MIGRATION_MODULES,
+    UPSTREAM_KEYSTORE_MODULE_ID,
+    type KeystoreMigrationModuleDescriptor,
+} from './keystore/keystoreMigrationModules'

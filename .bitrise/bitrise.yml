@@ -366,9 +366,19 @@ workflows:
         - paths: apps/mobile/vendor/bundle
     - restore-cache@3:
         inputs:
-        - key: |-
-            node-modules-ios-{{ checksum "pnpm-lock.yaml" }}
-            node-modules-ios-
+        # Key on BOTH pnpm-lock.yaml AND .npmrc, exact match only (no bare-prefix
+        # fallback). Two independent inputs decide the node_modules layout:
+        #   - pnpm-lock.yaml pins versions;
+        #   - .npmrc's public-hoist-pattern controls which packages get hoisted to
+        #     the root (e.g. @expo/config-plugins, which @react-native-firebase/app's
+        #     config plugin require()s WITHOUT declaring — see EXConstants
+        #     "Generate app.config" archive failures, PR #1015).
+        # A .npmrc hoist change does NOT change pnpm-lock.yaml, so keying on the
+        # lock alone restores a tree missing the hoist symlink, and
+        # `pnpm install --frozen-lockfile` no-ops over it (2s) instead of healing
+        # it. A bare-prefix fallback compounds this by seeding the new key from an
+        # unrelated tree. Both inputs in the key; any change forces a fresh install.
+        - key: node-modules-ios-{{ checksum "pnpm-lock.yaml" }}-{{ checksum ".npmrc" }}
     # `.tool-versions` is asdf-format (`nodejs 22`), which the nvm step's
     # node_version_file does not parse — it silently fell through to the
     # stack default (Node 26) while GitHub Actions' setup-node read the same
@@ -422,7 +432,7 @@ workflows:
             pnpm install --frozen-lockfile --prefer-offline
     - save-cache@1:
         inputs:
-        - key: node-modules-ios-{{ checksum "pnpm-lock.yaml" }}
+        - key: node-modules-ios-{{ checksum "pnpm-lock.yaml" }}-{{ checksum ".npmrc" }}
         - paths: |-
             node_modules
             apps/mobile/node_modules

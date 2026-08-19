@@ -106,6 +106,28 @@ export class WalletConnectConnectionTimeoutError extends WalletConnectError {
 }
 
 /**
+ * The bridge WebSocket failed repeatedly before a pairing handshake
+ * completed — the dApp's session_request can never arrive on this socket.
+ * Surfaced scoped to the pairing connector so the outcome waiter fails
+ * fast with honest copy instead of burning its full budget in silence.
+ * A single transport error is never surfaced (the transport retries on
+ * its own); see the `transport_error` binding in `useWalletConnect`.
+ */
+export class WalletConnectBridgeConnectionError extends WalletConnectError {
+    constructor(message?: string, originalError?: Error) {
+        super(
+            message ??
+                "Couldn't connect to WalletConnect. Check your internet connection and try again.",
+            originalError,
+            {
+                retryable: true,
+                messageKey: 'errors.walletconnect.bridge_connection_body',
+            },
+        )
+    }
+}
+
+/**
  * A queued session request outlived `SESSION_REQUEST_TTL_MS` before the
  * user acted on it — the dApp's side of the handshake has expired, so
  * approving it can only produce a fake "Connected!".

@@ -36,6 +36,7 @@ import {
     getAccountBalance,
     getAllAccountBalances,
     getAllHeldAssetIdsForNetwork,
+    getAssetHolderAddresses,
     getHeldAssetIdsByAccount,
     deleteAllAssetHoldingsForAccount,
     deleteAccountBalance,
@@ -106,6 +107,38 @@ describe('account repository', () => {
             expect(result).toHaveLength(1)
             expect(result[0].assetId).toBe('300')
             expect(result[0].amount).toEqual(new Decimal(999))
+        })
+
+        it('persists the frozen flag and reports an isFrozen-only change', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 5000n, isFrozen: true }],
+                network: 'mainnet',
+            })
+
+            const page = await getAccountHoldingsPage({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            expect(page[0].isFrozen).toBe(true)
+
+            // Unfreeze with the same amount — must still be detected as a change.
+            const changed = await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 5000n, isFrozen: false }],
+                network: 'mainnet',
+            })
+            expect(changed).toBe(true)
+
+            const after = await getAccountHoldingsPage({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            expect(after[0].isFrozen).toBe(false)
         })
 
         it('handles empty holdings', async () => {
@@ -993,6 +1026,70 @@ describe('account repository', () => {
         })
     })
 
+    describe('getAssetHolderAddresses', () => {
+        it('returns owners before opted-in-only accounts, scoped to the network', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR_OPTED_IN',
+                holdings: [{ assetId: '500', amount: 0n }],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR_OWNER',
+                holdings: [{ assetId: '500', amount: 1n }],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR_OTHER_NETWORK',
+                holdings: [{ assetId: '500', amount: 1n }],
+                network: 'testnet',
+            })
+
+            const result = await getAssetHolderAddresses({
+                db,
+                assetId: '500',
+                network: 'mainnet',
+            })
+
+            expect(result).toEqual(['ADDR_OWNER', 'ADDR_OPTED_IN'])
+        })
+
+        it('orders same-status holders by address so repeated lookups agree', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR_B',
+                holdings: [{ assetId: '500', amount: 1n }],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR_A',
+                holdings: [{ assetId: '500', amount: 1n }],
+                network: 'mainnet',
+            })
+
+            const result = await getAssetHolderAddresses({
+                db,
+                assetId: '500',
+                network: 'mainnet',
+            })
+
+            expect(result).toEqual(['ADDR_A', 'ADDR_B'])
+        })
+
+        it('returns an empty list for an asset no account holds', async () => {
+            const result = await getAssetHolderAddresses({
+                db,
+                assetId: '500',
+                network: 'mainnet',
+            })
+
+            expect(result).toEqual([])
+        })
+    })
+
     describe('getAccountCollectiblesLite', () => {
         const collectible = (
             assetId: string,
@@ -1202,6 +1299,26 @@ describe('account repository', () => {
             expect(byTitle.map(r => r.assetId)).toEqual(['30'])
             expect(byCollection.map(r => r.assetId)).toEqual(['30'])
             expect(byName.map(r => r.assetId)).toEqual(['2'])
+        })
+
+        // Substring, not exact: mirrors the global search's
+        // `assetId.includes(term)` semantics (PERA-4900).
+        it('searches by asset id', async () => {
+            const byFullId = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                search: '30',
+            })
+            const byPartialId = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                search: '1',
+            })
+
+            expect(byFullId.map(r => r.assetId)).toEqual(['30'])
+            expect(byPartialId.map(r => r.assetId)).toEqual(['10'])
         })
 
         it('omits collectibles whose node metadata has not synced', async () => {

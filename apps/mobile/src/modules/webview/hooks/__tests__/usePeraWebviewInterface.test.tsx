@@ -117,6 +117,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         hardware: 'hardware',
         multisig: 'multisig',
         watch: 'watch',
+        quantum: 'quantum',
     },
     isHDWalletAccount: vi.fn(account => account.type === 'hdWallet'),
     isRekeyedAccount: vi.fn(() => false),
@@ -245,13 +246,22 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 const mockConnect = vi.fn(() => Promise.resolve('pairing-client'))
 const mockWaitForSessionOutcome = vi.fn(async () => ({ type: 'session' }))
-vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: () => ({ connect: mockConnect }),
-    waitForSessionOutcome: (...args: unknown[]) =>
-        mockWaitForSessionOutcome(...(args as [])),
-    // Real value from packages/walletconnect/src/constants.ts.
-    WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
-}))
+vi.mock('@perawallet/wallet-core-walletconnect', () => {
+    class MockBridgeConnectionError extends Error {}
+    return {
+        useWalletConnect: () => ({ connect: mockConnect }),
+        waitForSessionOutcome: (...args: unknown[]) =>
+            mockWaitForSessionOutcome(...(args as [])),
+        // The socket-open fail-safe never beats a real outcome, so the
+        // pairing always resolves on waitForSessionOutcome here.
+        waitForPairingSocketOpen: () => Promise.resolve(true),
+        abandonPairing: vi.fn(),
+        WalletConnectBridgeConnectionError: MockBridgeConnectionError,
+        // Real values from packages/walletconnect/src/constants.ts.
+        WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
+        WC_DELIVERY_TIMEOUT_MS: 8000,
+    }
+})
 
 vi.mock('uuid', () => ({
     v7: vi.fn(() => 'test-id'),
@@ -1154,6 +1164,40 @@ describe('usePeraWebviewInterface', () => {
                 'second',
                 'third',
             ])
+        })
+
+        it('reports quantum accounts as their own Quantum type', async () => {
+            // PQ-006 shipped quantum signing routing, so the bridge must no
+            // longer tell dApps a quantum account is unsignable — but it must
+            // not claim `Algo25` either: a quantum account produces a ~1.2 KB
+            // Falcon signature with no recoverable Ed25519 public key.
+            await setupAccountsMock({
+                accounts: [
+                    {
+                        address: 'quantum-addr',
+                        name: 'Quantum',
+                        type: 'quantum',
+                    },
+                ],
+                signers: new Set(['quantum-addr']),
+            })
+
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true, null),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'ga-quantum',
+                    jsonrpc: '2.0',
+                    method: 'getAddresses',
+                    params: {},
+                })
+            })
+
+            const payload = getPayload()
+            expect(payload).toHaveLength(1)
+            expect(payload[0].type).toBe('Quantum')
         })
 
         it('sends empty name string when account has no name', async () => {

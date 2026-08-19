@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    type PeraSignedTransaction,
-    type PeraSignedTxnResult,
-    type PeraTransaction,
-} from '../models'
+import { type PeraSignedTransaction, type PeraTransaction } from '../models'
 
 import {
     encodeTransaction,
@@ -33,12 +29,9 @@ export const useTransactionEncoder = () => {
         // Raw msgpack bytes without the "TX" domain-separation prefix.
         // Hardware wallets (Ledger) add the prefix on-device before hashing.
         encodeTransactionRaw: (tx: PeraTransaction) => encodeTransactionRaw(tx),
-        // Carrier-aware: accepts either a plain `PeraSignedTransaction` or the
-        // quantum pqsig byte carrier (`QuantumSignedTransaction`) — see
-        // `encodeSignedTransaction` in `../utils/transact`.
-        encodeSignedTransaction: (tx: PeraSignedTxnResult) =>
+        encodeSignedTransaction: (tx: PeraSignedTransaction) =>
             encodeSignedTransaction(tx),
-        encodeSignedTransactions: (txs: PeraSignedTxnResult[]) =>
+        encodeSignedTransactions: (txs: PeraSignedTransaction[]) =>
             encodeSignedTransactions(txs),
         decodeTransaction: (txn: Uint8Array) =>
             decodeTransaction(txn) as PeraTransaction,

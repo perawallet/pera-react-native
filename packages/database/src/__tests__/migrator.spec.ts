@@ -98,6 +98,51 @@ describe('runMigrations', () => {
         expect(applied).toHaveLength(1)
     })
 
+    it('rolls back a partially failed migration so a retry can apply it cleanly', async () => {
+        const { db, teardown: td } = createTestDatabase()
+        teardown = td
+
+        const broken: MigrationConfig = {
+            '0000_broken': [
+                'CREATE TABLE partial_table (id TEXT PRIMARY KEY)',
+                'THIS IS NOT VALID SQL',
+            ].join('\n--> statement-breakpoint\n'),
+        }
+
+        await expect(runMigrations(db, broken)).rejects.toThrow()
+
+        // Nothing half-applied: neither the table nor the tag row survives.
+        const tables = await db
+            .select({ name: sqliteMaster.name })
+            .from(sqliteMaster)
+            .where(
+                sql`${sqliteMaster.type} = 'table' AND ${sqliteMaster.name} = 'partial_table'`,
+            )
+            .all()
+        expect(tables).toHaveLength(0)
+
+        const applied = await db
+            .select({ tag: drizzleMigrationsTable.tag })
+            .from(drizzleMigrationsTable)
+            .all()
+        expect(applied).toHaveLength(0)
+
+        // The corrected migration under the same tag applies cleanly on retry.
+        const fixed: MigrationConfig = {
+            '0000_broken': 'CREATE TABLE partial_table (id TEXT PRIMARY KEY)',
+        }
+        await runMigrations(db, fixed)
+
+        const tablesAfter = await db
+            .select({ name: sqliteMaster.name })
+            .from(sqliteMaster)
+            .where(
+                sql`${sqliteMaster.type} = 'table' AND ${sqliteMaster.name} = 'partial_table'`,
+            )
+            .all()
+        expect(tablesAfter).toHaveLength(1)
+    })
+
     it('applies multiple migrations in order', async () => {
         const { db, teardown: td } = createTestDatabase()
         teardown = td

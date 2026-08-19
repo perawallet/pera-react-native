@@ -15,10 +15,15 @@ import { describe, expect, it } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { getProvider } from '../singleton'
 
+vi.mock('react-native-quick-crypto', () => ({ subtle: {} }))
+
 vi.mock('@algorandfoundation/react-native-keystore', () => ({
     WithKeyStore: () => ({
         key: { store: {} },
     }),
+    createReactNativeKeyStore: () => ({ ready: Promise.resolve() }),
+    decode: vi.fn(),
+    storage: { getAllKeys: () => [], getString: vi.fn() },
 }))
 
 vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({

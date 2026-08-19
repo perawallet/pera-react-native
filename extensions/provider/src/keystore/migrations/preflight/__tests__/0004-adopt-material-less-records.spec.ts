@@ -1,0 +1,638 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+// @vitest-environment node
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+    createSecretScratch,
+    validateMigrations,
+    type MigrationUtils,
+} from '@algorandfoundation/provider-migrations'
+import { assertIdempotent } from '@algorandfoundation/provider-migrations/testing'
+
+// See 0002-lift-nested-material.spec.ts for why the package root is mocked and
+// why the prefixes, `serializeKey` and `MasterKeyNotFoundError` still come from
+// its real dist while `sealData`/`openData`/`decode` cannot.
+vi.mock('@algorandfoundation/react-native-keystore', async () => {
+    const driver =
+        await import('../../../../../node_modules/@algorandfoundation/react-native-keystore/dist/storage/driver.js')
+    const errors =
+        await import('../../../../../node_modules/@algorandfoundation/react-native-keystore/dist/errors.js')
+    const formats = await import('../../__fixtures__/keystoreFormats')
+
+    return {
+        MATERIAL_PREFIX: driver.MATERIAL_PREFIX,
+        METADATA_PREFIX: driver.METADATA_PREFIX,
+        serializeKey: driver.serializeKey,
+        MasterKeyNotFoundError: errors.MasterKeyNotFoundError,
+        sealData: formats.sealData,
+        openData: formats.openData,
+        decode: formats.decode,
+    }
+})
+
+import {
+    MasterKeyNotFoundError,
+    METADATA_PREFIX,
+} from '@algorandfoundation/react-native-keystore'
+import type { PeraMigrationContext } from '../../types'
+import {
+    fakeStorage,
+    type FakeKeychainStorage,
+} from '../../__fixtures__/fakeStorage'
+import {
+    canary13DerivedChild,
+    decode,
+    sealCanary13Record,
+} from '../../__fixtures__/keystoreFormats'
+import { createDeclinedRegister } from '../../declined'
+import { LAYOUT_VERSION_KEY } from '../0003-remove-layout-version-stamp'
+import { migration } from '../0004-adopt-material-less-records'
+import { PREFLIGHT_MODULE_ID, preflightMigrations } from '../index'
+
+const MASTER_KEY = new Uint8Array(32).fill(7)
+const subtle = globalThis.crypto.subtle
+
+let logWarn: ReturnType<typeof vi.fn>
+
+const utils = (): MigrationUtils => ({
+    revision: {
+        module: PREFLIGHT_MODULE_ID,
+        id: migration.id,
+        name: migration.name,
+    },
+    secrets: createSecretScratch().scratch,
+    log: { info: vi.fn(), warn: logWarn, error: vi.fn() },
+})
+
+/** Stands in for the migrations ledger's MMKV instance. */
+let noteStore: Record<string, string>
+
+const noteStoreApi = () => ({
+    getString: (key: string) => noteStore[key],
+    set: (key: string, value: string) => {
+        noteStore[key] = value
+    },
+})
+
+let masterKeyForRead: ReturnType<typeof vi.fn>
+
+const context = (storage: FakeKeychainStorage): PeraMigrationContext => ({
+    storage,
+    subtle,
+    masterKeyForRead: masterKeyForRead as () => Promise<Uint8Array>,
+    declined: createDeclinedRegister(noteStoreApi()),
+})
+
+const seeded = async (
+    ...records: Record<string, unknown>[]
+): Promise<FakeKeychainStorage> => {
+    const storage = fakeStorage({})
+    for (const record of records) {
+        storage.set(
+            record.id as string,
+            await sealCanary13Record(subtle, MASTER_KEY, record),
+        )
+    }
+    return storage
+}
+
+describe('0004-adopt-material-less-records', () => {
+    beforeEach(() => {
+        masterKeyForRead = vi.fn(async () => MASTER_KEY.slice())
+        noteStore = {}
+        logWarn = vi.fn()
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
+    // Ported from the deleted `migrateKeystoreLayout.spec.ts`: "migrates a
+    // record with no private key without writing a material entry".
+    it('adopts a watch-only record with no material into k/, writing no m/ entry', async () => {
+        const storage = await seeded({
+            id: 'watch-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(3),
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('watch-1')).toBeUndefined()
+        expect(storage.getString(`m/watch-1`)).toBeUndefined()
+        expect(
+            decode(storage.getString(`${METADATA_PREFIX}watch-1`)!),
+        ).toMatchObject({
+            id: 'watch-1',
+            publicKey: new Uint8Array(32).fill(3),
+        })
+    })
+
+    // The material-less path: a record with NO key material of its own,
+    // neither top-level nor nested — a canary.19-minted derived child
+    // (`storage: 'none'`) or a watch-only key. (The canary.13 `deriveFromSeed`
+    // child, which nests its parent's key under `rootKey`, is the separate
+    // nested-only case adopted above.) This revision only lands it in `k/`; the
+    // `path`→`bip44Path` / `storage: 'none'` rewrite is
+    // `repairs/0001-normalize-canary13-records`'s job, covered by that
+    // revision's own spec — so this test pins the untouched canary.13 field
+    // names, not the normalised ones.
+    it('adopts an HD-derived child with no material of its own', async () => {
+        const storage = await seeded({
+            id: 'd-1',
+            type: 'hd-derived-ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(7),
+            metadata: {
+                path: "m/44'/283'/0'/0/0",
+                derivation: 9,
+                parentKeyId: 'r-1',
+            },
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('d-1')).toBeUndefined()
+        const metadata = decode(storage.getString(`${METADATA_PREFIX}d-1`)!)
+        expect(metadata.metadata).toMatchObject({
+            path: "m/44'/283'/0'/0/0",
+            derivation: 9,
+            parentKeyId: 'r-1',
+        })
+    })
+
+    it('leaves a record with top-level material alone', async () => {
+        const storage = await seeded({
+            id: 'key-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            privateKey: new Uint8Array(32).fill(1),
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('key-1')).toBeDefined()
+        expect(storage.getString(`${METADATA_PREFIX}key-1`)).toBeUndefined()
+    })
+
+    // A nested-only HD-derived child (the parent's key nested under
+    // `metadata.rootKey`, none of its own) is adopted into metadata-only `k/`.
+    // canary.19 re-derives the child from its parent on demand, so the nested
+    // copy is redundant — and writing it into plaintext `k/` would leak the
+    // root, the exact hazard `0002` guards. Dropping it is safe only because
+    // the parent survives to carry the material (see the next test).
+    it('adopts a nested-only HD child into metadata-only k/ when its parent root is present', async () => {
+        const storage = await seeded(
+            {
+                id: 'root-1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                seed: new Uint8Array(64).fill(11),
+                metadata: { scheme: 'bip39' },
+            },
+            canary13DerivedChild({
+                id: 'd-2',
+                parentKeyId: 'root-1',
+                rootPrivateKey: new Uint8Array(64).fill(11),
+            }) as unknown as Record<string, unknown>,
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('d-2')).toBeUndefined()
+        expect(storage.getString(`m/d-2`)).toBeUndefined()
+        const child = decode(storage.getString(`${METADATA_PREFIX}d-2`)!)
+        expect(child.metadata).toMatchObject({
+            parentKeyId: 'root-1',
+            storage: 'none',
+            // "m/44'/283'/0'/0/0" parsed, hardened segments offset by 2^31.
+            bip44Path: [0x80_00_00_2c, 0x80_00_01_1b, 0x80_00_00_00, 0, 0],
+        })
+        // The nested root secret must never reach plaintext `k/`.
+        expect(child.metadata).not.toHaveProperty('rootKey')
+        expect(child).not.toHaveProperty('privateKey')
+        // The parent is left at its bare id for upstream to adopt; nothing declined.
+        expect(storage.getString('root-1')).toBeDefined()
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual([])
+    })
+
+    // The nested copy is the wallet's LAST root material when the parent never
+    // survived; dropping it then would be unrecoverable. Left flat and
+    // reported instead, so a later run — once the parent is restored — can
+    // still take it.
+    it('leaves a nested-only child flat when its parent root is absent', async () => {
+        const storage = await seeded(
+            canary13DerivedChild({
+                id: 'd-2',
+                parentKeyId: 'root-1',
+                rootPrivateKey: new Uint8Array(64).fill(11),
+            }) as unknown as Record<string, unknown>,
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('d-2')).toBeDefined()
+        expect(storage.getString(`${METADATA_PREFIX}d-2`)).toBeUndefined()
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual(['d-2'])
+    })
+
+    // `liftSecrets` counts only bare-`Uint8Array` secrets, so a secret-NAMED
+    // container outside `rootKey` (here a top-level `key: {…}`) slips past the
+    // single-secret gate. Serialising the record would then write that
+    // container's bytes into plaintext `k/`. Refuse: left flat, nested root
+    // preserved.
+    it('leaves a nested-only child flat when it carries a secret-named container outside rootKey', async () => {
+        const child = canary13DerivedChild({
+            id: 'd-2',
+            parentKeyId: 'root-1',
+            rootPrivateKey: new Uint8Array(64).fill(11),
+        }) as unknown as Record<string, unknown>
+        child.key = { d: new Uint8Array(32).fill(9) }
+
+        const storage = await seeded(
+            {
+                id: 'root-1',
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                seed: new Uint8Array(64).fill(11),
+                metadata: { scheme: 'bip39' },
+            },
+            child,
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('d-2')).toBeDefined()
+        expect(storage.getString(`${METADATA_PREFIX}d-2`)).toBeUndefined()
+    })
+
+    // The parent-presence guard must prove the root still holds MATERIAL before
+    // dropping the child's nested copy — a `k/<rootId>` metadata entry with no
+    // `m/` is not proof (a root always carries material, so this only ever
+    // means a half-written or unrelated record). Left flat rather than risk
+    // dropping the wallet's last root copy.
+    it('leaves a nested-only child flat when the parent root has only a k/ entry, no material', async () => {
+        const storage = await seeded(
+            canary13DerivedChild({
+                id: 'd-2',
+                parentKeyId: 'root-1',
+                rootPrivateKey: new Uint8Array(64).fill(11),
+            }) as unknown as Record<string, unknown>,
+        )
+        // A `k/root-1` with no `m/root-1` and no bare `root-1`.
+        storage.set(`${METADATA_PREFIX}root-1`, 'metadata-only, no material')
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('d-2')).toBeDefined()
+        expect(storage.getString(`${METADATA_PREFIX}d-2`)).toBeUndefined()
+    })
+
+    // A biometric-wrapped passkey credential carries its key under
+    // `privateKeyEnc`, not a top-level `Uint8Array`, so it would otherwise look
+    // material-less and be moved into `k/`. The native credential providers
+    // read a passkey only at its bare id — leave it there, and do not report it
+    // as declined (it is intentional, not a failure).
+    it('leaves a biometric-wrapped passkey credential flat', async () => {
+        const storage = await seeded({
+            id: 'cred-wrapped',
+            type: 'hd-derived-p256',
+            algorithm: 'P256',
+            extractable: false,
+            keyUsages: ['sign'],
+            publicKey: new Uint8Array(32).fill(2),
+            privateKeyEnc: { iv: 'aa', data: 'bb' },
+            metadata: { origin: 'https://example.com' },
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('cred-wrapped')).toBeDefined()
+        expect(
+            storage.getString(`${METADATA_PREFIX}cred-wrapped`),
+        ).toBeUndefined()
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual([])
+    })
+
+    // Mirrors 0002's identical guard: the driver reads a record back at
+    // `k/<storageKey>`, so an id that disagrees with the storage key cannot
+    // be split coherently under either.
+    it('leaves a record whose id disagrees with its storage key flat', async () => {
+        const storage = fakeStorage({})
+        storage.set(
+            'storage-key-1',
+            await sealCanary13Record(subtle, MASTER_KEY, {
+                id: 'a-different-id',
+                type: 'hd-derived-ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                publicKey: new Uint8Array(32).fill(7),
+            }),
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString('storage-key-1')).toBeDefined()
+        expect(
+            storage.getString(`${METADATA_PREFIX}storage-key-1`),
+        ).toBeUndefined()
+        expect(
+            storage.getString(`${METADATA_PREFIX}a-different-id`),
+        ).toBeUndefined()
+    })
+
+    // A write that fails must not fail the whole module — that would reject
+    // `keystore.ready` and stop the app booting over one record. Left flat
+    // for a later run, same as every other non-adopted outcome.
+    it('leaves a record flat and reports it when the metadata write throws', async () => {
+        const storage = await seeded({
+            id: 'watch-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(3),
+        })
+        const set = storage.set
+        storage.set = () => {
+            throw new Error('MMKV write failed')
+        }
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        storage.set = set
+        expect(storage.getString('watch-1')).toBeDefined()
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual(['watch-1'])
+    })
+
+    // The `left flat` warn sits in a `catch` with no enclosing `try` between
+    // it and `up`'s body, so an unguarded `console.warn` that throws (RN
+    // patches it in dev) escapes `up` verbatim and bricks boot.
+    it('does not reject up when console.warn itself throws during the left-flat log', async () => {
+        const storage = await seeded({
+            id: 'watch-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(3),
+        })
+        storage.set = () => {
+            throw new Error('MMKV write failed')
+        }
+        vi.spyOn(console, 'warn').mockImplementation(() => {
+            throw new Error('LogBox is not ready')
+        })
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+    })
+
+    // The stringify half of the same line. `safeErrorMessage(error)` is an
+    // argument to `safeWarn`, so it is evaluated before `safeWarn`'s `try` is
+    // entered — a throwing `toString` on whatever storage threw escapes `up`.
+    it('does not reject up when the left-flat failure cannot be stringified', async () => {
+        const storage = await seeded({
+            id: 'watch-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(3),
+        })
+        storage.set = () => {
+            throw {
+                toString: () => {
+                    throw new Error('cannot stringify')
+                },
+            }
+        }
+        const consoleWarn = vi.spyOn(console, 'warn')
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+
+        expect(consoleWarn).toHaveBeenCalledWith(
+            expect.stringContaining('entry watch-1 left flat:'),
+        )
+    })
+
+    it('adopts the material-less record while leaving a real key beside it alone', async () => {
+        const storage = await seeded(
+            {
+                id: 'watch-1',
+                type: 'ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                publicKey: new Uint8Array(32).fill(3),
+            },
+            {
+                id: 'key-1',
+                type: 'ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                privateKey: new Uint8Array(32).fill(1),
+            },
+        )
+
+        await migration.up(context(storage), utils())
+
+        expect(storage.getString(`${METADATA_PREFIX}watch-1`)).toBeDefined()
+        expect(storage.getString('key-1')).toBeDefined()
+    })
+
+    // A record this pass cannot open belongs to another writer or is not a
+    // record at all; upstream's own adoption reports it, ours must not fail
+    // the module.
+    it('skips a record it cannot decrypt without throwing', async () => {
+        const storage = fakeStorage({
+            'cred-1': JSON.stringify({ iv: 'AAAA', content: 'BBBB' }),
+        })
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+        expect(storage.getString('cred-1')).toBeDefined()
+    })
+
+    // Not a fresh install — that returns at `candidates.length === 0`, below.
+    // The fixture here *was* sealed: what makes resolving safe is that upstream
+    // takes the identical branch (`legacy.js:87-88`) and is ledgered too, so
+    // nothing adopts behind us — not any claim that nothing was ever sealed.
+    // Recording a decline would be just as wrong as writing, hence both
+    // assertions.
+    it('is a no-op when the master key is missing, not a throw', async () => {
+        const storage = await seeded({
+            id: 'watch-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(3),
+        })
+        const before = storage.entries()
+        masterKeyForRead = vi.fn(async () => {
+            throw new MasterKeyNotFoundError()
+        })
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+        expect(storage.entries()).toEqual(before)
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual([])
+    })
+
+    // Same reasoning as `0002`: declining ledgers this revision (`apply.js:125`)
+    // and the next launch skips it, so its targets — which upstream refuses
+    // (`storage/legacy.js:104-109`) — are never adopted by anything, ever.
+    // Throwing keeps it pending.
+    it('rethrows a master-key read failure that is not MasterKeyNotFoundError', async () => {
+        const storage = await seeded({
+            id: 'watch-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(3),
+        })
+        masterKeyForRead = vi.fn(async () => {
+            throw new Error('unlock cancelled')
+        })
+
+        await expect(migration.up(context(storage), utils())).rejects.toThrow(
+            'unlock cancelled',
+        )
+        expect(
+            createDeclinedRegister(noteStoreApi()).read(PREFLIGHT_MODULE_ID),
+        ).toEqual([])
+    })
+
+    // Reading the master key is the only step that can raise a biometric
+    // prompt; a store with nothing to adopt must never pay for one.
+    it('does not touch the master key when there is no flat candidate', async () => {
+        const storage = fakeStorage({
+            'k/key-1': JSON.stringify({ id: 'key-1', type: 'ed25519' }),
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+    })
+
+    it('does not treat the migrations ledger blob as a flat record', async () => {
+        const storage = fakeStorage({
+            '@algorandfoundation/provider-migrations': '{"modules":{}}',
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+    })
+
+    // `0003` runs first and deletes this key outright, but if it were ever
+    // still present, decrypting it as a record would be nonsensical.
+    it('does not treat the layout-version stamp as a flat record', async () => {
+        const storage = fakeStorage({ [LAYOUT_VERSION_KEY]: '1' })
+
+        await migration.up(context(storage), utils())
+
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+    })
+
+    it('reports every record it could not adopt', async () => {
+        const storage = await seeded({
+            id: 'derived-2',
+            type: 'hd-derived-ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            metadata: {
+                rootKey: {
+                    id: 'root-1',
+                    privateKey: new Uint8Array(64).fill(11),
+                },
+            },
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(logWarn).toHaveBeenCalledWith(
+            expect.stringContaining('1 flat record(s) unadopted'),
+            { entries: ['derived-2'] },
+            PREFLIGHT_MODULE_ID,
+        )
+    })
+
+    it('reports nothing when every candidate was adopted or already had material', async () => {
+        const storage = await seeded({
+            id: 'watch-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(3),
+        })
+
+        await migration.up(context(storage), utils())
+
+        expect(logWarn).not.toHaveBeenCalled()
+    })
+
+    it('is a no-op on empty storage', async () => {
+        const storage = fakeStorage({})
+
+        await expect(
+            migration.up(context(storage), utils()),
+        ).resolves.toBeUndefined()
+        expect(storage.entries()).toEqual({})
+        expect(masterKeyForRead).not.toHaveBeenCalled()
+    })
+
+    it('is idempotent', async () => {
+        const storage = await seeded({
+            id: 'watch-1',
+            type: 'ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            publicKey: new Uint8Array(32).fill(3),
+        })
+
+        await assertIdempotent({
+            migration,
+            context: () => context(storage),
+            snapshot: ({ storage: store }) =>
+                (store as FakeKeychainStorage).entries(),
+        })
+    })
+
+    it('has a valid manifest', () => {
+        expect(() =>
+            validateMigrations(preflightMigrations, PREFLIGHT_MODULE_ID),
+        ).not.toThrow()
+    })
+})

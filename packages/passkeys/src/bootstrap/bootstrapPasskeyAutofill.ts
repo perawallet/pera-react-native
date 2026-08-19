@@ -11,12 +11,13 @@
  */
 
 import {
-    fetchSecret,
+    decode,
     MasterKeyNotFoundError,
+    METADATA_PREFIX,
     readMasterKey,
     storage as keystoreStorage,
 } from '@algorandfoundation/react-native-keystore'
-import type { KeyData } from '@algorandfoundation/keystore'
+import type { KeyData } from '@algorandfoundation/keystore-core'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { PasskeyAutofillService } from '@perawallet/wallet-extension-passkey-autofill'
 
@@ -33,12 +34,27 @@ export interface BootstrapPasskeyAutofillOptions {
     }
 }
 
+/**
+ * Kept in step with `HD_ROOT_SHADOW_TYPES` in the provider extension's
+ * `preflight/0001-retire-hd-root-shadow`, which **deletes** these records'
+ * bare-id copies once the split `k/`+`m/` pair is verifiably present. This
+ * list is the authority — it decides which id the credential provider is
+ * actually handed.
+ */
 const HD_ROOT_KEY_TYPES = new Set<string>([
     'hd-root-key',
     'xhd-root-key',
     'hd-seed',
     'seed',
 ])
+
+/**
+ * The deterministic-P256 main key's `metadata.scheme`, restated rather than
+ * imported from `@perawallet/wallet-extension-provider`: this file's imports
+ * are keystore-level only, and drift between the two copies is pinned on both
+ * sides (`bootstrapPasskeyAutofill.spec.ts`, `0003-mint-passkey-main-key.spec.ts`).
+ */
+const PASSKEY_MAIN_KEY_SCHEME = 'pbkdf2-p256'
 
 /**
  * `storeDisabled` is the expected state when the user hasn't enabled Pera as
@@ -121,7 +137,7 @@ const runBootstrap = async (
             masterKeyBytes.fill(0)
         }
 
-        await configureHdRootKey(service, masterKey)
+        await configureParentKey(service)
 
         await service
             .configureIntentActions(
@@ -168,81 +184,83 @@ const runBootstrap = async (
 }
 
 /**
- * Decrypts every entry's metadata to find the seed — `hydrateKeystore` scoped to
- * the single key the autofill subsystem needs.
+ * The two derivation-parent candidates, from one pass over the plaintext `k/`
+ * bucket. No material is decrypted and no biometric prompt is raised to answer
+ * "which key is it".
+ *
+ * The main key must be found by a full scan rather than by taking the first
+ * `hd-root-key`: it shares that type with the XHD root and is told apart only
+ * by `metadata.scheme`.
  */
-const configureHdRootKey = async (
-    service: PasskeyAutofillService,
-    masterKey: Buffer,
-): Promise<void> => {
-    const keyIds = keystoreStorage.getAllKeys()
-    if (keyIds.length === 0) {
+const findParentKeyCandidates = (): {
+    mainKey: KeyData | null
+    hdRoot: KeyData | null
+} => {
+    let scanned = 0
+    let mainKey: KeyData | null = null
+    let hdRoot: KeyData | null = null
+
+    for (const key of keystoreStorage.getAllKeys()) {
+        if (!key.startsWith(METADATA_PREFIX)) continue
+        const raw = keystoreStorage.getString(key)
+        if (!raw) continue
+        scanned += 1
+        let record: KeyData
+        try {
+            record = decode(raw) as KeyData
+        } catch (err) {
+            logger.warn('Skipping an unreadable keystore metadata entry', {
+                step: 'findParentKeyCandidates',
+                key,
+                err: String(err),
+            })
+            continue
+        }
+
+        const scheme = (record.metadata as { scheme?: unknown } | undefined)
+            ?.scheme
+        if (
+            record.type === 'hd-root-key' &&
+            scheme === PASSKEY_MAIN_KEY_SCHEME
+        ) {
+            mainKey ??= record
+            continue
+        }
+        if (HD_ROOT_KEY_TYPES.has(record.type)) hdRoot ??= record
+    }
+
+    if (!mainKey && !hdRoot) {
         logger.warn(
-            'Keystore MMKV is empty; passkey autofill has no HD root key to derive from',
+            scanned === 0
+                ? 'Keystore MMKV is empty; passkey autofill has no HD root key to derive from'
+                : 'No HD root key found in keystore; passkey autofill will not be able to derive credentials',
+            { keyCount: scanned, lookingFor: Array.from(HD_ROOT_KEY_TYPES) },
         )
+    }
+
+    return { mainKey, hdRoot }
+}
+
+const configureParentKey = async (
+    service: PasskeyAutofillService,
+): Promise<void> => {
+    const { mainKey, hdRoot } = findParentKeyCandidates()
+
+    if (mainKey) {
+        await service
+            .setMainKeyId(mainKey.id)
+            .catch(err => logger.error(err as Error, { step: 'setMainKeyId' }))
         return
     }
 
-    // `fetchSecret` zeroes the master-key buffer it's given, so pass a fresh
-    // copy per call.
-    const secrets = await Promise.all(
-        keyIds.map(keyId =>
-            fetchSecret<KeyData>({
-                keyId,
-                options: { masterKey: Buffer.from(masterKey) },
-            }).catch(() => null),
-        ),
-    )
+    if (!hdRoot) return
 
-    try {
-        const hdRootSecret = secrets.find(
-            (s): s is KeyData => s !== null && HD_ROOT_KEY_TYPES.has(s.type),
-        )
-
-        if (!hdRootSecret) {
-            logger.warn(
-                'No HD root key found in keystore; passkey autofill will not be able to derive credentials',
-                {
-                    keyCount: keyIds.length,
-                    keyTypes: secrets.map(s => s?.type ?? 'undecryptable'),
-                    lookingFor: Array.from(HD_ROOT_KEY_TYPES),
-                },
-            )
-            return
-        }
-
-        await service
-            .setHdRootKeyId(hdRootSecret.id)
-            .catch(err =>
-                logger.error(err as Error, { step: 'setHdRootKeyId' }),
-            )
-
-        // Current builds don't implement setDerivedMainKey, so skip
-        // materializing a non-zeroable secret string for a call that would no-op.
-        // Lights up automatically once native support lands.
-        if (hdRootSecret.privateKey && service.supportsDerivedMainKey) {
-            const pk = hdRootSecret.privateKey
-            // A Buffer *view*, not `Buffer.from(pk)` — that would allocate a
-            // second copy of the private key that nothing zeroes. The view
-            // shares the backing store, so the wipe below covers it.
-            const derived =
-                pk instanceof Uint8Array
-                    ? Buffer.from(pk.buffer, pk.byteOffset, pk.byteLength)
-                    : Buffer.from(pk)
-            await service
-                .setDerivedMainKey(derived.toString('hex'))
-                .catch(err =>
-                    logger.error(err as Error, { step: 'setDerivedMainKey' }),
-                )
-        }
-    } finally {
-        // Zero every decrypted private key we pulled into memory.
-        for (const secret of secrets) {
-            if (secret?.privateKey instanceof Uint8Array) {
-                secret.privateKey.fill(0)
-            }
-        }
-    }
+    // Deprecated upstream, but it is what a wallet with no main key yet still
+    // derives from, and `selectParentKey` honours a credential's pinned scheme
+    // either way.
+    await service
+        .setHdRootKeyId(hdRoot.id)
+        .catch(err => logger.error(err as Error, { step: 'setHdRootKeyId' }))
 }
 
 /**

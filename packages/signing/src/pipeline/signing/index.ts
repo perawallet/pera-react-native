@@ -17,11 +17,6 @@ export type {
     LocalArc60SigningFunction,
     LocalKeyStrategyOptions,
 } from './createLocalKeyStrategy'
-export { createQuantumStrategy } from './createQuantumStrategy'
-export type {
-    QuantumSigningFunction,
-    QuantumStrategyOptions,
-} from './createQuantumStrategy'
 export { createHardwareStrategy } from './createHardwareStrategy'
 export type {
     EncodeTransactionFunction,

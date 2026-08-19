@@ -17,17 +17,29 @@ import {
     useWalletConnectPairing,
 } from '../useWalletConnectPairing'
 import { useReturnToDappStore } from '../../stores/useReturnToDappStore'
+// Resolves to the mock factory's class below.
+import { WalletConnectBridgeConnectionError } from '@perawallet/wallet-core-walletconnect'
 
 const mockConnect = vi.fn()
 const mockWaitForSessionOutcome = vi.fn()
+const mockWaitForPairingSocketOpen = vi.fn()
+const mockAbandonPairing = vi.fn()
 
-vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: () => ({ connect: mockConnect }),
-    waitForSessionOutcome: (...args: unknown[]) =>
-        mockWaitForSessionOutcome(...args),
-    // Real value from packages/walletconnect/src/constants.ts.
-    WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
-}))
+vi.mock('@perawallet/wallet-core-walletconnect', () => {
+    class MockBridgeConnectionError extends Error {}
+    return {
+        useWalletConnect: () => ({ connect: mockConnect }),
+        waitForSessionOutcome: (...args: unknown[]) =>
+            mockWaitForSessionOutcome(...args),
+        waitForPairingSocketOpen: (...args: unknown[]) =>
+            mockWaitForPairingSocketOpen(...args),
+        abandonPairing: (...args: unknown[]) => mockAbandonPairing(...args),
+        WalletConnectBridgeConnectionError: MockBridgeConnectionError,
+        // Real values from packages/walletconnect/src/constants.ts.
+        WC_SESSION_OUTCOME_TIMEOUT_MS: 8000,
+        WC_DELIVERY_TIMEOUT_MS: 8000,
+    }
+})
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
@@ -37,6 +49,8 @@ describe('useWalletConnectPairing (native)', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         resetPairingStateForTesting()
+        // Default: the pairing socket opens normally.
+        mockWaitForPairingSocketOpen.mockResolvedValue(true)
     })
 
     it('connects with the given uri and waits for the outcome scoped to the new connector', async () => {
@@ -122,6 +136,60 @@ describe('useWalletConnectPairing (native)', () => {
         expect(outcome).toEqual({
             type: 'timeout',
             clientId: 'pairing-client',
+        })
+    })
+
+    describe('pairing socket fail-fast', () => {
+        it('fails fast with connect-failed when the pairing socket never opens', async () => {
+            mockConnect.mockResolvedValue('pairing-client')
+            // The outcome waiter would sit out its full budget; the socket
+            // watch must settle the pairing first.
+            mockWaitForSessionOutcome.mockReturnValue(new Promise(() => {}))
+            mockWaitForPairingSocketOpen.mockResolvedValue(false)
+            const { result } = renderHook(() => useWalletConnectPairing())
+
+            const outcome = await result.current.pair('wc:123')
+
+            expect(outcome.type).toBe('connect-failed')
+            if (outcome.type === 'connect-failed') {
+                expect(outcome.error).toBeInstanceOf(
+                    WalletConnectBridgeConnectionError,
+                )
+            }
+            // A socket that never opened can never produce a session — the
+            // pairing is abandoned outright, no ghost-sheet grace needed.
+            expect(mockAbandonPairing).toHaveBeenCalledWith('pairing-client')
+        })
+
+        it('clears the return context when the socket never opens', async () => {
+            useReturnToDappStore.getState().resetState()
+            mockConnect.mockResolvedValue('pairing-client')
+            mockWaitForSessionOutcome.mockReturnValue(new Promise(() => {}))
+            mockWaitForPairingSocketOpen.mockResolvedValue(false)
+            const { result } = renderHook(() => useWalletConnectPairing())
+
+            await result.current.pair('wc:123', {
+                origin: { source: 'external-browser', browserName: 'chrome' },
+            })
+
+            expect(
+                useReturnToDappStore.getState().returnContexts[
+                    'pairing-client'
+                ],
+            ).toBeUndefined()
+        })
+
+        it('resolves the outcome normally when the socket check loses the race to a session', async () => {
+            mockConnect.mockResolvedValue('pairing-client')
+            mockWaitForSessionOutcome.mockResolvedValue({ type: 'session' })
+            // Socket watch never settles — the session outcome must win.
+            mockWaitForPairingSocketOpen.mockReturnValue(new Promise(() => {}))
+            const { result } = renderHook(() => useWalletConnectPairing())
+
+            const outcome = await result.current.pair('wc:123')
+
+            expect(outcome).toEqual({ type: 'session' })
+            expect(mockAbandonPairing).not.toHaveBeenCalled()
         })
     })
 

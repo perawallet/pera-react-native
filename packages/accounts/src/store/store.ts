@@ -14,6 +14,7 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import {
+    ACCOUNT_TYPE_RANK,
     AccountTypes,
     LaunchAccountModes,
     type AccountsState,
@@ -33,6 +34,51 @@ import {
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'accounts-store'
+
+/**
+ * Collapse repeated addresses, the higher-precedence account type winning (see
+ * `ACCOUNT_TYPE_RANK`) and equal ranks keeping the first occurrence. The
+ * survivor sits at the index where its address *first* appeared:
+ * `manualAccountOrder`, `selectedAccountAddress` and the rendered list all read
+ * this array, so a dedupe that reorders accounts would be a worse bug than the
+ * one it fixes.
+ *
+ * The winner is kept wholesale — fields are deliberately NOT merged between
+ * the two entries. Merging watch state into a signing account is a specific,
+ * intentional operation (`upgradeWatchAccountToHardware` below); doing it
+ * implicitly here would be far too subtle to reason about at a call site that
+ * just wanted to write a list of accounts.
+ *
+ * What that surrenders: when a watch entry loses, its `rekeyAddress` and
+ * `rekeyAddressByNetwork` are discarded with it. That is safe — both are
+ * mirrors re-derived from the next sync tick and network switch — and the one
+ * flow that must preserve them (watch → hardware on Ledger verify) routes
+ * around this function through `upgradeWatchAccountToHardware`, which merges
+ * them onto the upgraded account explicitly.
+ */
+const resolveDuplicateAccounts = (
+    accounts: WalletAccount[],
+): WalletAccount[] => {
+    const positionByAddress = new Map<string, number>()
+    const resolved: WalletAccount[] = []
+
+    for (const account of accounts) {
+        const position = positionByAddress.get(account.address)
+        if (position === undefined) {
+            positionByAddress.set(account.address, resolved.length)
+            resolved.push(account)
+            continue
+        }
+        if (
+            ACCOUNT_TYPE_RANK[account.type] >
+            ACCOUNT_TYPE_RANK[resolved[position].type]
+        ) {
+            resolved[position] = account
+        }
+    }
+
+    return resolved
+}
 
 const initialState = {
     accounts: [] as WalletAccount[],
@@ -66,14 +112,13 @@ export const useAccountsStore: UseBoundStore<
             },
             setAccounts: (accounts: WalletAccount[]) => {
                 // Single chokepoint for every account write — dedupe by
-                // address (keep first) so no caller can ever persist the same
-                // account twice. Callers that need to surface duplicates to
-                // the user (batch import) still throw DuplicateAccountError
-                // before reaching here; this is the structural safety net.
-                const seen = new Set<string>()
-                accounts = accounts.filter(a =>
-                    seen.has(a.address) ? false : (seen.add(a.address), true),
-                )
+                // address so no caller can ever persist the same account
+                // twice, keeping the higher-precedence type (see
+                // ACCOUNT_TYPE_RANK) rather than whichever happened to come
+                // first. Callers that need to surface duplicates to the user
+                // (batch import) still throw DuplicateAccountError before
+                // reaching here; this is the structural safety net.
+                accounts = resolveDuplicateAccounts(accounts)
 
                 const currentSelected = get().selectedAccountAddress
                 const currentManualOrder = get().manualAccountOrder

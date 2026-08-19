@@ -12,7 +12,7 @@
 
 import { type AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { waitForConfirmation as algosdkWaitForConfirmation } from 'algosdk'
-import type { PeraSignedTxnResult } from '@perawallet/wallet-core-blockchain'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { logger, type Network } from '@perawallet/wallet-core-shared'
@@ -70,7 +70,7 @@ export interface SubmitAndAutoRefreshCoreInput {
         affectedAddresses: string[],
         network: Network,
     ) => void | Promise<void>
-    signedTxns: readonly PeraSignedTxnResult[]
+    signedTxns: readonly PeraSignedTransaction[]
 }
 
 /**
@@ -83,11 +83,14 @@ export interface SubmitAndAutoRefreshCoreInput {
  * - Confirmation timeouts and other background errors are swallowed and
  *   logged. Periodic sync is the safety net.
  *
- * Quantum (Falcon) groups are not special-cased here: the carrier-aware
- * `encodeSignedTransaction` emits the node-ready `pqsig` bytes, so a
- * quantum-signed group broadcasts through the same path as any other. It
- * therefore reaches the chain only on a `pqsig`-capable node (LocalNet until
- * an official algod ships Falcon support); other nodes reject it at submit.
+ * Quantum (Falcon) groups are not special-cased here: a PQ-signed
+ * transaction is just a `PeraSignedTransaction` with `pqsig` set, so
+ * `encodeSignedTransaction` emits the node-ready bytes the same way it does
+ * for any other transaction, and a quantum-signed group broadcasts through
+ * the same path. It therefore reaches the chain only on a `pqsig`-capable
+ * node, and no algod available today is one — mainnet, testnet and LocalNet
+ * alike reject `pqsig` at submit, so a quantum-signed group cannot currently
+ * be confirmed anywhere. See `docs/QUANTUM_PQ_INTEGRATION.md`.
  *
  * Exposed primarily for unit testing — call sites use {@link submitAndAutoRefresh}.
  */
@@ -200,7 +203,7 @@ const backgroundConfirmAndRefresh = async (
 export const submitAndAutoRefresh = async (
     algokit: AlgokitClientInterface,
     encodeSignedTransactions: EncodeSignedTransactionsFn,
-    signedTxns: PeraSignedTxnResult[],
+    signedTxns: PeraSignedTransaction[],
 ): Promise<string[]> => {
     const network = useNetworkStore.getState().network
     const accounts = useAccountsStore.getState().accounts

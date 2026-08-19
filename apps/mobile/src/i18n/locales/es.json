@@ -666,6 +666,10 @@
                 "title": "Activo no aceptado",
                 "body": "La cuenta receptora no ha añadido el activo {{assetId}}. Pide al destinatario que lo añada o envíalo a través del ASA Inbox."
             },
+            "asset_frozen": {
+                "title": "Activo congelado",
+                "body": "El activo {{assetId}} está congelado, por lo que esta transferencia no se puede completar. Contacta al creador del activo para descongelarlo."
+            },
             "duplicate_txn": {
                 "title": "Ya enviada",
                 "body": "La red ya procesó esta transacción."
@@ -772,6 +776,7 @@
             "permission_body": "Recibiste una solicitud no autorizada de una app. Revisa la app y vuelve a intentarlo.",
             "invalid_session_body": "Recibiste una solicitud de sesión no válida de una app. Revisa la app y vuelve a intentarlo.",
             "connection_timeout_body": "No se pudo conectar con WalletConnect para entregar tu transacción firmada. Revisa tu conexión y vuelve a intentarlo.",
+            "bridge_connection_body": "No se pudo conectar con WalletConnect. Revisa tu conexión a internet y vuelve a intentarlo.",
             "session_request_expired_body": "Esta solicitud de conexión caducó. Inicia una nueva conexión desde la dApp y vuelve a intentarlo."
         },
         "signing": {
@@ -1331,7 +1336,9 @@
             "cannot_add_multisig_error": "No se puede añadir la cuenta compartida",
             "cannot_add_multisig_error_body": "Las cuentas compartidas no se pueden añadir como participantes de otra cuenta compartida.",
             "cannot_add_watch_error": "No se puede añadir la cuenta de observación",
-            "cannot_add_watch_error_body": "Las cuentas de observación no pueden firmar transacciones, por lo que no pueden ser participantes de una cuenta compartida."
+            "cannot_add_watch_error_body": "Las cuentas de observación no pueden firmar transacciones, por lo que no pueden ser participantes de una cuenta compartida.",
+            "cannot_add_quantum_error": "No se puede añadir la cuenta Quantum",
+            "cannot_add_quantum_error_body": "Las claves Quantum no pueden participar en la firma multisig, por lo que no pueden ser participantes de una cuenta compartida."
         },
         "threshold": {
             "title": "Define un umbral",
@@ -1558,7 +1565,9 @@
             "addresses_count": "{{count}} direcciones",
             "select_all": "Seleccionar todo",
             "already_imported": "ya importada",
-            "finish_button": "Finalizar creación de cuenta"
+            "finish_button": "Finalizar creación de cuenta",
+            "all_imported_title": "Ya están en tu wallet",
+            "all_imported_body": "Todas las direcciones que deriva tu wallet ya están en Pera, incluidas las que solo estás observando. Elimina una dirección para volver a añadirla con su clave privada."
         },
         "import_rekeyed_addresses": {
             "title": "{{count}} cuentas con rekey encontradas",
@@ -1780,6 +1789,18 @@
             "pin_description": "Este PIN de 6 dígitos será necesario para usar Pera Wallet. Te recomendamos crear un PIN para aumentar la seguridad de tu wallet en caso de que te roben el teléfono.",
             "pin_setpin": "Establecer PIN",
             "pin_notnow": "Ahora no"
+        }
+    },
+    "quantum": {
+        "dapp_warning": {
+            "title": "Compatibilidad limitada con dApps",
+            "body": "Las cuentas Quantum son nuevas, así que no todas las dApps se han actualizado todavía para admitirlas. Como resultado, algunas transacciones pueden fallar o tener comisiones distintas a las habituales. Si tienes algún problema, puede ayudar contactar directamente con esa dApp y pedirle que añada compatibilidad con PQ. Puedes continuar si lo deseas, o cambiar a una cuenta no Quantum para tener compatibilidad total mientras tanto. <0>Más información</0>",
+            "confirm": "Continuar",
+            "cancel": "Cancelar"
+        },
+        "data_signing_unsupported": {
+            "title": "Las cuentas Quantum todavía no pueden firmar esto",
+            "body": "Este tipo de solicitud todavía no se puede verificar con una firma Quantum, así que no se puede firmar. Cambia a una cuenta no Quantum o vuelve a intentarlo cuando se añada la compatibilidad."
         }
     },
     "rekey": {
@@ -2333,6 +2354,11 @@
             "remove_body": "Estás a punto de eliminar esta passkey. ¿Seguro que quieres continuar?",
             "remove_confirm": "Eliminar",
             "remove_cancel": "Conservar",
+            "migration_warning_title": "La recuperación no está disponible",
+            "migration_warning_body": "Cada passkey de la lista de abajo todavía te permite iniciar sesión, pero no se puede recuperar con tu passphrase de recuperación. Elimínala y vuelve a crearla en el sitio para que sea recuperable. Hazlo solo mientras aún puedas iniciar sesión en ese sitio de otra forma.",
+            "migration_warning_cta": "Eliminar",
+            "migration_warning_blocked": "Ahora mismo no se ofrece eliminarla porque Pera no es tu proveedor de passkeys activo: no podrías crear una de repuesto. Volverá a estar disponible cuando Pera sea tu proveedor de passkeys activo.",
+            "migration_warning_dismiss": "Ahora no",
             "loading": "Comprobando passkeys...",
             "error_title": "Algo ha ido mal",
             "error_body": "Vuelve a intentarlo.",
@@ -2800,7 +2826,9 @@
             "success_body": "Swap de {{fromAsset}} a {{toAsset}} completado correctamente",
             "user_rejected": "Swap cancelado",
             "pending_cosign_title": "Solicitud de swap enviada",
-            "pending_cosign_body": "Tu swap necesita otra firma. Se completará cuando el otro firmante lo apruebe desde su bandeja de entrada."
+            "pending_cosign_body": "Tu swap necesita otra firma. Se completará cuando el otro firmante lo apruebe desde su bandeja de entrada.",
+            "quantum_fee_unsupported": "Las cuentas Quantum aún no pueden intercambiar. La comisión del swap la fijan nuestros servidores y no cubre la comisión más alta que necesita una firma Quantum.",
+            "quantum_multisig_unsupported": "Las cuentas Quantum no pueden intercambiar desde una cuenta compartida. Las claves Quantum no pueden participar en la firma multisig."
         },
         "signing": {
             "source_name": "Swap",

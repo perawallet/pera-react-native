@@ -16,10 +16,25 @@ import { PeraAssetType, type PeraAsset } from '@perawallet/wallet-core-assets'
 
 import { useSearchScreen } from '../useSearchScreen'
 
-const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }))
+const {
+    mockNavigate,
+    mockResolveAssetHolderAddress,
+    mockSetSelectedAccountAddress,
+} = vi.hoisted(() => ({
+    mockNavigate: vi.fn(),
+    mockResolveAssetHolderAddress: vi.fn(),
+    mockSetSelectedAccountAddress: vi.fn(),
+}))
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useSelectedAccountAddress: () => ({
+        setSelectedAccountAddress: mockSetSelectedAccountAddress,
+    }),
+    useResolveAssetHolderAddress: () => mockResolveAssetHolderAddress,
 }))
 
 vi.mock('@perawallet/wallet-core-search', () => ({
@@ -50,12 +65,13 @@ const asset = (type?: PeraAssetType): PeraAsset =>
 describe('useSearchScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockResolveAssetHolderAddress.mockResolvedValue(null)
     })
 
-    it('routes a collectible result to the collectible detail screen', () => {
+    it('routes a collectible result to the collectible detail screen', async () => {
         const { result } = renderHook(() => useSearchScreen())
 
-        result.current.onAssetPress(asset(PeraAssetType.collectible))
+        await result.current.onAssetPress(asset(PeraAssetType.collectible))
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Home',
@@ -66,10 +82,10 @@ describe('useSearchScreen', () => {
         })
     })
 
-    it('routes a fungible result to the asset detail screen', () => {
+    it('routes a fungible result to the asset detail screen', async () => {
         const { result } = renderHook(() => useSearchScreen())
 
-        result.current.onAssetPress(asset(PeraAssetType.standard_asset))
+        await result.current.onAssetPress(asset(PeraAssetType.standard_asset))
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Home',
@@ -78,5 +94,29 @@ describe('useSearchScreen', () => {
                 params: { assetId: '31566704' },
             },
         })
+    })
+
+    it('selects the holding account before opening the detail screen', async () => {
+        mockResolveAssetHolderAddress.mockResolvedValue('HOLDER_ADDRESS')
+        const { result } = renderHook(() => useSearchScreen())
+
+        await result.current.onAssetPress(asset(PeraAssetType.collectible))
+
+        expect(mockResolveAssetHolderAddress).toHaveBeenCalledWith('31566704')
+        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
+            'HOLDER_ADDRESS',
+        )
+        expect(
+            mockSetSelectedAccountAddress.mock.invocationCallOrder[0],
+        ).toBeLessThan(mockNavigate.mock.invocationCallOrder[0])
+    })
+
+    it('leaves the selected account alone when no account holds the asset', async () => {
+        const { result } = renderHook(() => useSearchScreen())
+
+        await result.current.onAssetPress(asset(PeraAssetType.standard_asset))
+
+        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalled()
     })
 })

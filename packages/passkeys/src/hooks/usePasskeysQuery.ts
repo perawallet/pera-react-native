@@ -12,7 +12,7 @@
 
 import { useMemo, useSyncExternalStore } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import { logger } from '@perawallet/wallet-core-shared'
 import { getKeystoreStore } from '@perawallet/wallet-extension-provider'
 import type { NativeStoredCredential } from '@perawallet/wallet-extension-passkey-autofill'
@@ -33,7 +33,18 @@ const KEYSTORE_KEYS_SNAPSHOT_SUBSCRIBE = (
 
 const getKeystoreKeysSnapshot = (): Key[] => getKeystoreStore().state.keys
 
-export const passkeysQueryKey = ['passkeys', 'native-credentials'] as const
+/**
+ * Prefix shared by every passkey query, including ones owned by consumers
+ * (the mobile migration banner keeps its own sibling key under it). Mutations
+ * invalidate the root so those siblings refresh too — TanStack matches by
+ * prefix, and a sibling is not a descendant of `passkeysQueryKey`.
+ */
+export const passkeysQueryKeyRoot = ['passkeys'] as const
+
+export const passkeysQueryKey = [
+    ...passkeysQueryKeyRoot,
+    'native-credentials',
+] as const
 
 export type UsePasskeysQueryResult = {
     passkeys: Passkey[]

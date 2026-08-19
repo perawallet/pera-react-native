@@ -7,11 +7,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "react-native": "./dist/index.native.js",
       "default": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "vite build",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && vite build && vite build --mode native",
     "dev": "vite build --watch",
     "test": "vitest run",
     "test:unit": "vitest run",
@@ -20,7 +21,7 @@
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
     "algosdk": "catalog:",
-    "@algorandfoundation/keystore": "catalog:",
+    "@algorandfoundation/keystore-core": "catalog:",
     "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@babel/runtime": "catalog:",
@@ -39,7 +40,9 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "falcon-1024": "catalog:",
+    "fast-glob": "catalog:",
     "react-dom": "catalog:",
+    "react-native-nitro-modules": "0.36.5",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",

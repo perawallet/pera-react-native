@@ -12,15 +12,26 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 import { calculateSwapAmount } from '../api'
 import type { CalculateSwapAmountRequest } from '../api'
 
 export const useCalculateSwapAmountMutation = () => {
     const { network } = useNetwork()
+    // Ambient like `network`, so it is injected here rather than threaded
+    // through callers.
+    const deviceId = useDeviceID(network)
 
     return useMutation({
-        mutationFn: (data: CalculateSwapAmountRequest) =>
-            calculateSwapAmount(data, network),
+        // Omitted, not sent as null, while the device is unregistered: `device`
+        // is newly optional on this endpoint, and a serializer that tolerates
+        // omission can still reject an explicit null. Percentage/MAX must keep
+        // working on a fresh install, where the id is not there yet.
+        mutationFn: (data: Omit<CalculateSwapAmountRequest, 'device'>) =>
+            calculateSwapAmount(
+                { ...data, ...(deviceId ? { device: deviceId } : {}) },
+                network,
+            ),
         // Handled by the caller — opt out of the global throwOnError default.
         throwOnError: false,
     })

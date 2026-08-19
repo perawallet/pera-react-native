@@ -10,12 +10,14 @@
  limitations under the License
  */
 
-// Quantum accounts route through the signing machine via `quantumSignerActor`
-// and `createQuantumStrategy`, producing a `QuantumSignedTransaction` carrier.
+// Quantum accounts have no dedicated signing path since PQ-006/PERA-4653:
+// `useLocalKeyTransactionSigner` handles them like any other local key and
+// yields an ordinary `SignedTransaction` carrying `pqsig` instead of `sig`.
 //
 // A local send self-submits through the callback transport rather than algod,
-// so this asserts the carrier reaches the request's `approve` callback and that
-// no algod broadcast ever happens — submission itself stays gated (PQ-019).
+// so this asserts the pqsig-bearing transaction reaches the request's `approve`
+// callback and that no algod broadcast ever happens. Submission over the algod
+// transport is covered by submit-quantum-broadcast.test.tsx (PQ-019).
 
 import {
     afterAll,
@@ -204,7 +206,7 @@ describe('send from quantum account (PQ-015)', () => {
     )
 
     it(
-        'Given a real quantum sender, when a local payment is signed, then the machine routes it through the quantum strategy to a QuantumSignedTransaction carrier and delivers it via the callback transport with no algod broadcast',
+        'Given a real quantum sender, when a local payment is signed, then the machine signs it via the ordinary local-key path into a pqsig-bearing SignedTransaction and delivers it via the callback transport with no algod broadcast',
         async () => {
             await enableQuantumFlag()
             await seedQuantumSender()
@@ -243,11 +245,12 @@ describe('send from quantum account (PQ-015)', () => {
 
             renderSignReview(request)
 
-            // The machine dispatches the group to quantumSignerActor, the
-            // dedicated strategy produces a QuantumSignedTransaction carrier,
-            // and the callback delivery step now hands it straight to the
-            // request's approve() (PERA-4490 removed the gate that used to
-            // throw here).
+            // The machine signs the group through the ordinary local-key
+            // strategy (`useLocalKeyTransactionSigner` resolves the account's
+            // key scheme via `getPQSigningInfo`), and the callback delivery
+            // step hands the resulting pqsig-bearing `SignedTransaction`
+            // straight to the request's approve() — no dedicated quantum
+            // strategy or carrier gate in the path anymore.
             await waitFor(
                 () => {
                     expect(approveSpy).toHaveBeenCalled()
@@ -257,15 +260,15 @@ describe('send from quantum account (PQ-015)', () => {
 
             expect(errorSpy).not.toHaveBeenCalled()
 
-            // The pqsig carrier's presence in the delivered array is the
+            // The `pqsig` field's presence in the delivered signed txn is the
             // load-bearing proof that the quantum account signed the payment
             // end-to-end through the machine — not just that some result was
             // delivered.
             const delivered = approveSpy.mock.calls[0]?.[0] as {
-                pqSignedBytes?: Uint8Array
+                pqsig?: { sig?: Uint8Array }
             }[]
             expect(
-                delivered.some(tx => tx?.pqSignedBytes instanceof Uint8Array),
+                delivered.some(tx => tx?.pqsig?.sig instanceof Uint8Array),
             ).toBe(true)
 
             // No node ever saw the Falcon-signed group: callback delivery,

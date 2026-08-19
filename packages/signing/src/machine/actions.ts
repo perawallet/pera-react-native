@@ -15,7 +15,6 @@ import {
     hasSigningKeys,
     isHardwareWalletAccount,
     isMultisigAccount,
-    isQuantumAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
     SignableGroup,
@@ -64,12 +63,6 @@ const determineSignerType = (
     if (isHardwareWalletAccount(authAccount)) {
         return 'hardware'
     }
-    // Quantum accounts carry a keyPairId, so this MUST run before the
-    // hasSigningKeys check below — otherwise a Falcon account is swallowed
-    // into the localKey path and mis-signed as a plain Ed25519 transaction.
-    if (isQuantumAccount(authAccount)) {
-        return 'quantum'
-    }
     if (hasSigningKeys(authAccount)) {
         return 'localKey'
     }
@@ -115,9 +108,9 @@ export const buildGroupSignerTypeMap = (
  * `approve` callback happens to be present, so the selector stays predictable
  * as new caller shapes appear.
  *
- * Delivery is carrier-aware: a quantum group's `signed` array may mix
- * `QuantumSignedTransaction` pqsig carriers with plain ones, and both reach the
- * request's `approve` unchanged. Whether the dApp's node accepts a Falcon
+ * Delivery needs no quantum special-casing: a PQ signature is a `pqsig` field
+ * on the same `PeraSignedTransaction`, not a separate carrier, so it reaches
+ * the request's `approve` unchanged. Whether the dApp's node accepts a Falcon
  * signature is network-gated, not a wallet concern.
  */
 const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
@@ -340,7 +333,6 @@ const buildSignableGroups = (
 /** Keeps dependency wiring out of the context factories. */
 const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     signTransactions: input.signTransactions,
-    signQuantumTransactions: input.signQuantumTransactions,
     signArbitraryData: input.signArbitraryData,
     signArc60: input.signArc60,
     createTransport: input.createTransport,

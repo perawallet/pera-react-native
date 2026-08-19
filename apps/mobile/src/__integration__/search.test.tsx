@@ -26,13 +26,22 @@ import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import { server } from '@test-utils/msw-server'
 import {
     AccountTypes,
+    insertAssetHolding,
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
+import {
+    resetTestDatabase,
+    seedAlgoAsset,
+    seedAssets,
+    setupTestDatabase,
+    teardownTestDatabase,
+} from '@test-utils/database-setup'
 import { SearchScreen } from '@modules/search/screens/SearchScreen'
 
 import { ALGO25_TEST_ADDRESS, HD_TEST_ADDRESS } from './__fixtures__/onboarding'
+import { NFT_TEST_ASSET, NFT_TEST_ASSET_ID } from './__fixtures__/assets'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
 
@@ -66,11 +75,18 @@ const typeQuery = (query: string) => {
 }
 
 describe('Flow: Global search', () => {
-    beforeAll(() => server.listen({ onUnhandledRequest: 'warn' }))
+    beforeAll(async () => {
+        server.listen({ onUnhandledRequest: 'warn' })
+        await setupTestDatabase()
+    })
     afterEach(() => server.resetHandlers())
-    afterAll(() => server.close())
+    afterAll(async () => {
+        server.close()
+        await teardownTestDatabase()
+    })
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        await resetTestDatabase()
         resetTestKeystore()
         useAccountsStore.getState().setAccounts([SEARCH_ACCOUNT])
         useAccountsStore
@@ -160,6 +176,50 @@ describe('Flow: Global search', () => {
                 const { result } = renderHook(() => useContacts())
                 expect(result.current.selectedContact?.address).toBe(
                     HD_TEST_ADDRESS,
+                )
+            })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given an NFT held by another account, when the user taps the result, then that account becomes selected',
+        async () => {
+            // The asset scope spans every account, so searching from
+            // SEARCH_ACCOUNT surfaces an NFT that only NFT_HOLDER holds. Both
+            // detail screens read the selected account for the owner row, so
+            // the tap has to move the selection there.
+            const nftHolder: WalletAccount = {
+                id: 'nft-holder-1',
+                type: AccountTypes.watch,
+                address: HD_TEST_ADDRESS,
+                name: 'nft holder',
+            }
+            useAccountsStore.getState().setAccounts([SEARCH_ACCOUNT, nftHolder])
+            useAccountsStore
+                .getState()
+                .setSelectedAccountAddress(SEARCH_ACCOUNT.address)
+            await seedAlgoAsset()
+            await seedAssets([NFT_TEST_ASSET])
+            await insertAssetHolding({
+                accountAddress: nftHolder.address,
+                assetId: NFT_TEST_ASSET_ID,
+                network: 'mainnet',
+                amount: '1',
+            })
+
+            renderWithNavigation(SearchScreen, 'Search')
+
+            typeQuery('Test Collectible')
+
+            const assetRow = await screen.findByTestId(
+                `search_result_asset_${NFT_TEST_ASSET_ID}`,
+            )
+            fireEvent.click(assetRow)
+
+            await waitFor(() => {
+                expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+                    nftHolder.address,
                 )
             })
         },

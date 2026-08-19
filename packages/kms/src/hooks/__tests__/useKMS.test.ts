@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import type { Key } from '@algorandfoundation/keystore'
+import type { Key } from '@algorandfoundation/keystore-core'
 import type { Optional } from '@perawallet/wallet-core-shared'
 import {
     InvalidKeyError,
@@ -22,7 +22,6 @@ import {
 } from '../../errors'
 import { SeedScheme } from '../../constants'
 import { mnemonicIndexToWord } from '../../crypto/mnemonic-indices'
-import { FALCON_SIGNATURE_LENGTH } from '../../crypto/falcon-utils'
 import { getPQProvider } from '../../crypto/pq'
 import { FALCON_CHILD_KEY_TYPE } from '../../models'
 
@@ -41,10 +40,20 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
             return { keys: mockKeystoreKeys, status: 'idle' as const }
         },
     }),
+    PASSKEY_MAIN_KEY_SCHEME: 'pbkdf2-p256',
+    passkeyMainKeyId: (seedKeyId: string) => `${seedKeyId}-passkey-main`,
 }))
 
 const mockDeleteKey = vi.fn()
-const mockKeyStoreRemove = vi.fn()
+// Drops the key from the shared list, as the real keystore store does. Without
+// this, anything that re-reads the store after a removal still sees the key and
+// a re-mint test would pass vacuously.
+const mockKeyStoreRemove = vi.fn((id: string) => {
+    mockKeystoreKeys = mockKeystoreKeys.filter(k => k.id !== id)
+})
+const mockKeyStoreGenerate = vi.fn(
+    async (options: any) => options?.params?.id ?? 'generated-key',
+)
 const mockKeyStoreSign = vi.fn()
 const mockKeyStoreExport = vi.fn()
 const mockCheckAccess = vi.fn()
@@ -55,6 +64,7 @@ vi.mock('../useKMSServices', () => ({
             remove: (...args: any[]) => mockKeyStoreRemove(...args),
             sign: (...args: any[]) => mockKeyStoreSign(...args),
             export: (...args: any[]) => mockKeyStoreExport(...args),
+            generate: (...args: any[]) => mockKeyStoreGenerate(...args),
         },
         withExportedKey: async (
             keyId: string,
@@ -105,6 +115,39 @@ const mockWithSecret = vi.fn()
 vi.mock('../../storage/secrets', () => ({
     withSecret: (...args: any[]) => mockWithSecret(...args),
 }))
+
+// The REAL `ensurePasskeyMainKey`, wrapped in a spy. Real, because the guards
+// around the re-mint are only meaningful against its own `findPasskeyMainKey`
+// early return; spied, because "did not even ask" is the only observable
+// difference between a guard that fires and one that has been removed.
+const mockEnsurePasskeyMainKey = vi.fn()
+vi.mock('../usePasskeyMainKey', async importOriginal => {
+    const actual = await importOriginal<typeof import('../usePasskeyMainKey')>()
+    return {
+        ...actual,
+        usePasskeyMainKey: () => {
+            const { ensurePasskeyMainKey } = actual.usePasskeyMainKey()
+            mockEnsurePasskeyMainKey.mockImplementation(ensurePasskeyMainKey)
+            return {
+                ensurePasskeyMainKey: (...args: any[]) =>
+                    mockEnsurePasskeyMainKey(...args),
+            }
+        },
+    }
+})
+
+const mockLoggerError = vi.fn()
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        logger: {
+            ...actual.logger,
+            error: (...args: any[]) => mockLoggerError(...args),
+        },
+    }
+})
 
 import { useKMS } from '../useKMS'
 
@@ -467,6 +510,239 @@ describe('useKMS', () => {
         expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('hd-2')
     })
 
+    // The passkey main key hangs off the entropy child, not the root, so a
+    // single-level cascade leaves it behind. A surviving main key is then
+    // reused by `ensurePasskeyMainKey` for the next wallet the user creates,
+    // and every passkey derives from a mnemonic that no longer exists.
+    it('removeKeyAndChildren removes a grandchild such as the passkey main key', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        childOf('hd-1-passkey-main', entropy.id, 'hd-root-key')
+        seedBip39Root('hd-2')
+        const otherEntropy = entropyChildOf('hd-2')
+        childOf('hd-2-passkey-main', otherEntropy.id, 'hd-root-key')
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1-passkey-main')
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith(entropy.id)
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
+        // The other wallet's chain is untouched at every depth.
+        expect(mockKeyStoreRemove).not.toHaveBeenCalledWith('hd-2-passkey-main')
+        expect(mockKeyStoreRemove).not.toHaveBeenCalledWith(otherEntropy.id)
+    })
+
+    // The device has exactly one main key and it hangs off whichever root
+    // sorted lowest. Deleting that wallet takes it from the survivors too, and
+    // nothing else re-mints: `ensurePasskeyMainKey`'s only other caller is
+    // wallet creation, and `repairs/0003` is ledgered one-shot.
+    it('removeKeyAndChildren re-mints the passkey main key from a surviving wallet', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
+        seedBip39Root('hd-2')
+        const survivingEntropy = entropyChildOf('hd-2')
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1-passkey-main')
+        // Re-minted against hd-2's entropy child, under the shared id formula.
+        expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(1)
+        expect(mockKeyStoreGenerate.mock.calls[0]?.[0]).toMatchObject({
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            params: {
+                parentKeyId: survivingEntropy.id,
+                id: 'hd-2-passkey-main',
+            },
+        })
+    })
+
+    // Which survivor inherits must not depend on store order, or the device
+    // disagrees with `repairs/0003` about where the one main key belongs.
+    it('removeKeyAndChildren re-mints from the lowest-sorted survivor, whatever the store order', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
+        // Deliberately out of order: hd-3 is seeded first.
+        seedBip39Root('hd-3')
+        entropyChildOf('hd-3')
+        seedBip39Root('hd-2')
+        const lowestEntropy = entropyChildOf('hd-2')
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(1)
+        expect(mockKeyStoreGenerate.mock.calls[0]?.[0]).toMatchObject({
+            params: { parentKeyId: lowestEntropy.id, id: 'hd-2-passkey-main' },
+        })
+    })
+
+    it('removeKeyAndChildren does not re-mint when the deleted wallet was the last one', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1-passkey-main')
+        expect(mockKeyStoreGenerate).not.toHaveBeenCalled()
+        // The `if (!heir) return` guard, not `ensurePasskeyMainKey` throwing on
+        // an undefined seed id: with no survivors there is nothing to ask about.
+        expect(mockEnsurePasskeyMainKey).not.toHaveBeenCalled()
+        expect(mockLoggerError).not.toHaveBeenCalled()
+    })
+
+    // A device is only supposed to hold one main key, but if it somehow holds
+    // two, deleting one wallet must not mint a third alongside the survivor.
+    it('removeKeyAndChildren leaves a surviving main key alone rather than minting a second', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
+        seedBip39Root('hd-2')
+        const otherEntropy = entropyChildOf('hd-2')
+        mockKeystoreKeys.push({
+            id: 'hd-2-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: otherEntropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1-passkey-main')
+        expect(mockKeyStoreGenerate).not.toHaveBeenCalled()
+        // The `!survivors.some(isPasskeyMainKey)` clause, not
+        // `ensurePasskeyMainKey`'s own early return: a main key survived, so the
+        // re-mint is never even attempted.
+        expect(mockEnsurePasskeyMainKey).not.toHaveBeenCalled()
+    })
+
+    // Deleting a wallet is not an occasion to mint a main key the device never
+    // had — only to replace one this deletion destroyed.
+    it('removeKeyAndChildren mints nothing when the device had no main key at all', async () => {
+        seedBip39Root('hd-1')
+        entropyChildOf('hd-1')
+        seedBip39Root('hd-2')
+        entropyChildOf('hd-2')
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
+        expect(mockKeyStoreGenerate).not.toHaveBeenCalled()
+    })
+
+    // An Algo25 or watch-only survivor has no BIP39 entropy to PBKDF2. Stopping
+    // at the lowest-sorted survivor would leave the device with no main key at
+    // all, even though an eligible bip39 root sorted right behind it.
+    it('removeKeyAndChildren skips a survivor with no entropy child and takes the next eligible root', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
+        // Sorts ahead of hd-3 among the survivors, and has no entropy child.
+        seedAlgo25Root('hd-2')
+        seedBip39Root('hd-3')
+        const eligibleEntropy = entropyChildOf('hd-3')
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await result.current.removeKeyAndChildren('hd-1')
+        })
+
+        expect(mockEnsurePasskeyMainKey).toHaveBeenCalledWith('hd-3')
+        expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(1)
+        expect(mockKeyStoreGenerate.mock.calls[0]?.[0]).toMatchObject({
+            params: {
+                parentKeyId: eligibleEntropy.id,
+                id: 'hd-3-passkey-main',
+            },
+        })
+    })
+
+    // The deletion has already been committed by the time the re-mint runs, so
+    // a Keychain failure there must not surface as a failed wallet removal
+    // (`useRemoveAccountByAddress.ts:51` would show exactly that).
+    it('removeKeyAndChildren completes even when the re-mint rejects', async () => {
+        seedBip39Root('hd-1')
+        const entropy = entropyChildOf('hd-1')
+        mockKeystoreKeys.push({
+            id: 'hd-1-passkey-main',
+            type: 'hd-root-key',
+            algorithm: 'P256',
+            extractable: false,
+            metadata: { parentKeyId: entropy.id, scheme: 'pbkdf2-p256' },
+        } as Key)
+        seedBip39Root('hd-2')
+        entropyChildOf('hd-2')
+        mockKeyStoreGenerate.mockRejectedValueOnce(
+            new Error('keychain unavailable'),
+        )
+
+        const { result } = renderHook(() => useKMS())
+        await act(async () => {
+            await expect(
+                result.current.removeKeyAndChildren('hd-1'),
+            ).resolves.toBeUndefined()
+        })
+
+        // Non-vacuous: the re-mint was actually reached and actually rejected.
+        expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(1)
+        expect(mockLoggerError).toHaveBeenCalledWith(
+            'passkey main key re-mint failed',
+            expect.anything(),
+        )
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('hd-1')
+    })
+
     describe('quantum sign dispatch', () => {
         const QUANTUM_SEED_BYTES = new Uint8Array(32).fill(7)
 
@@ -475,7 +751,7 @@ describe('useKMS', () => {
             const child = childOf(
                 'quantum-1-quantum',
                 'quantum-1',
-                'falcon1024',
+                FALCON_CHILD_KEY_TYPE,
             )
             mockKeyStoreExport.mockResolvedValue({
                 privateKey: new Uint8Array(QUANTUM_SEED_BYTES),
@@ -483,99 +759,70 @@ describe('useKMS', () => {
             return child
         }
 
-        it('signTransactionsWithKey routes quantum children to the real Falcon signer, not keyStore.sign', async () => {
+        it('signs quantum payloads through the keystore, never exporting the seed', async () => {
             const child = arrangeQuantumPair()
-            const tx = new Uint8Array([1, 2, 3])
 
             const { result } = renderHook(() => useKMS())
-            let sigs: Optional<Uint8Array[]>
             await act(async () => {
-                sigs = await result.current.signTransactionsWithKey(
+                await result.current.signTransactionsWithKey(child.id, 'pera', [
+                    new Uint8Array([1, 2, 3]),
+                ])
+            })
+
+            expect(mockKeyStoreSign).toHaveBeenCalledWith(
+                child.id,
+                new Uint8Array([1, 2, 3]),
+            )
+            // The whole point of moving custody: the seed must no longer leave the
+            // keystore on the signing path.
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
+        })
+
+        it('signTransactionsWithKey signs every payload with the child id, one keystore call each', async () => {
+            const child = arrangeQuantumPair()
+
+            const { result } = renderHook(() => useKMS())
+            await act(async () => {
+                await result.current.signTransactionsWithKey(
                     child.id,
                     'pera.accounts',
-                    [tx],
+                    [new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6])],
                 )
             })
 
-            expect(mockKeyStoreSign).not.toHaveBeenCalled()
-            expect(mockKeyStoreExport).toHaveBeenCalledWith('quantum-1')
-            expect(sigs![0].length).toBeGreaterThan(0)
-            expect(sigs![0].length).toBeLessThanOrEqual(FALCON_SIGNATURE_LENGTH)
+            expect(mockKeyStoreSign).toHaveBeenCalledTimes(2)
+            expect(mockKeyStoreSign).toHaveBeenNthCalledWith(
+                1,
+                child.id,
+                new Uint8Array([1, 2, 3]),
+            )
+            expect(mockKeyStoreSign).toHaveBeenNthCalledWith(
+                2,
+                child.id,
+                new Uint8Array([4, 5, 6]),
+            )
         })
 
-        it('signTransactionsWithKey produces a real Falcon signature for the seed keypair', async () => {
-            const child = arrangeQuantumPair()
-            const payload = new Uint8Array([1, 2, 3, 4])
-
-            const { result } = renderHook(() => useKMS())
-            let sigs: Optional<Uint8Array[]>
-            await act(async () => {
-                sigs = await result.current.signTransactionsWithKey(
-                    child.id,
-                    'pera.accounts',
-                    [payload],
-                )
-            })
-
-            // Cross-check against the provider directly: deriving the
-            // keypair from the same seed and signing the same payload must
-            // reproduce byte-identical output. This proves the hook routes
-            // through the real PQ provider rather than the old hash-based
-            // mock (whose output never matched a real Falcon signature).
-            const provider = getPQProvider()
-            const { secretKey } =
-                provider.generateKeypairFromSeed(QUANTUM_SEED_BYTES)
-            const expected = provider.sign(secretKey, payload)
-
-            expect(sigs![0].length).toBeGreaterThan(0)
-            expect(sigs![0].length).toBeLessThanOrEqual(FALCON_SIGNATURE_LENGTH)
-            expect(Array.from(sigs![0])).toEqual(Array.from(expected))
-        })
-
-        it('quantum signatures are deterministic per (seed, payload) and differ across payloads', async () => {
-            const child = arrangeQuantumPair()
-            const txA = new Uint8Array([1, 2, 3])
-            const txB = new Uint8Array([4, 5, 6])
-
-            const { result } = renderHook(() => useKMS())
-            let first: Optional<Uint8Array[]>
-            let second: Optional<Uint8Array[]>
-            await act(async () => {
-                first = await result.current.signTransactionsWithKey(
-                    child.id,
-                    'pera.accounts',
-                    [txA, txB],
-                )
-                second = await result.current.signTransactionsWithKey(
-                    child.id,
-                    'pera.accounts',
-                    [txA],
-                )
-            })
-
-            expect(Array.from(first![0])).toEqual(Array.from(second![0]))
-            expect(Array.from(first![0])).not.toEqual(Array.from(first![1]))
-        })
-
-        it('signDataWithKey routes quantum children to the real Falcon signer', async () => {
+        it('signDataWithKey signs quantum data through the keystore too', async () => {
             const child = arrangeQuantumPair()
 
             const { result } = renderHook(() => useKMS())
-            let sigs: Optional<Uint8Array[]>
             await act(async () => {
-                sigs = await result.current.signDataWithKey(
+                await result.current.signDataWithKey(
                     child.id,
                     'pera.accounts',
                     [new Uint8Array([9])],
                 )
             })
 
-            expect(mockKeyStoreSign).not.toHaveBeenCalled()
-            expect(sigs![0].length).toBeGreaterThan(0)
-            expect(sigs![0].length).toBeLessThanOrEqual(FALCON_SIGNATURE_LENGTH)
+            expect(mockKeyStoreSign).toHaveBeenCalledWith(
+                child.id,
+                new Uint8Array([9]),
+            )
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
         })
 
-        it('rejects and never exports the seed when the ACL denies the domain', async () => {
+        it('rejects and never reaches the keystore signer when the ACL denies the domain', async () => {
             const child = arrangeQuantumPair()
             mockCheckAccess.mockImplementationOnce(() => {
                 throw new KeyAccessError()
@@ -589,6 +836,7 @@ describe('useKMS', () => {
                     [new Uint8Array([1])],
                 ),
             ).rejects.toThrow(KeyAccessError)
+            expect(mockKeyStoreSign).not.toHaveBeenCalled()
             expect(mockKeyStoreExport).not.toHaveBeenCalled()
         })
 
@@ -645,7 +893,7 @@ describe('useKMS', () => {
             // exactly as useQuantum.createQuantumKey({ mnemonic }) persists them.
             const seedBytes = seedFromMnemonic(TEST_MNEMONIC)
             seedQuantumRoot('quantum-1')
-            childOf('quantum-1-quantum', 'quantum-1', 'falcon1024')
+            childOf('quantum-1-quantum', 'quantum-1', FALCON_CHILD_KEY_TYPE)
             mockKeyStoreExport.mockResolvedValue({
                 privateKey: new Uint8Array(seedBytes),
             })
@@ -744,6 +992,91 @@ describe('useKMS', () => {
                     result.current.getQuantumPublicKey('quantum-3-ed25519'),
                 ).toThrow(KeyManagementError)
             })
+        })
+    })
+
+    describe('getPQSigningInfo', () => {
+        it('returns the scheme id and public key for a quantum child', async () => {
+            const { seedFromMnemonic } = await import('algosdk')
+            const seed = seedFromMnemonic(TEST_MNEMONIC)
+            const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
+
+            seedQuantumRoot('quantum-1')
+            mockKeystoreKeys.push({
+                id: 'quantum-1-quantum',
+                type: FALCON_CHILD_KEY_TYPE,
+                algorithm: 'raw',
+                extractable: false,
+                publicKey,
+                metadata: { parentKeyId: 'quantum-1' },
+            })
+
+            const { result } = renderHook(() => useKMS())
+            const info = result.current.getPQSigningInfo('quantum-1-quantum')
+
+            expect(info?.schemeId).toBe('falcon1024')
+            expect(info?.publicKey).toBeInstanceOf(Uint8Array)
+            expect(info?.publicKey.length).toBeGreaterThan(1000)
+        })
+
+        it('returns null for a non-quantum child so callers take the Ed25519 path', () => {
+            seedAlgo25Root('algo-1')
+            const child = childOf('algo-1-ed25519', 'algo-1', 'ed25519')
+
+            const { result } = renderHook(() => useKMS())
+
+            expect(result.current.getPQSigningInfo(child.id)).toBeNull()
+        })
+
+        it('throws when the keyPairId is not in the keystore at all', () => {
+            const { result } = renderHook(() => useKMS())
+
+            expect(() => result.current.getPQSigningInfo('missing-id')).toThrow(
+                KeyNotFoundError,
+            )
+        })
+
+        it('throws when keyPairId resolves to the quantum seed itself rather than its Falcon child, instead of silently returning null', () => {
+            // `resolveSeedKey` accepts a seed id directly as a legacy-caller
+            // convenience (see its own comment). If a caller ever passed the
+            // quantum SEED's id as `account.keyPairId` instead of the child's,
+            // the seed-scheme oracle here would say "quantum" while the
+            // child-type lookup (finding the seed entry itself, type `seed`,
+            // not `falcon1024`) would say "not quantum" — the two oracles
+            // this function reconciles disagreeing. That must throw, not
+            // return null: returning null here would make the caller sign
+            // the un-digested `encodeTransaction(txn)` bytes while
+            // `signTransactionsWithKey` (driven by the seed-scheme oracle
+            // alone) still Falcon-signs them — silently re-creating the
+            // exact un-digested-signing bug PERA-4653 closed.
+            seedQuantumRoot('quantum-1')
+            childOf('quantum-1-quantum', 'quantum-1', FALCON_CHILD_KEY_TYPE)
+
+            const { result } = renderHook(() => useKMS())
+
+            expect(() => result.current.getPQSigningInfo('quantum-1')).toThrow(
+                KeyManagementError,
+            )
+        })
+
+        it('throws when a child claims falcon1024 under a non-quantum seed (oracle disagreement)', () => {
+            // Inverse mismatch: the child's own type says Falcon, but the
+            // seed it hangs off does not carry the quantum scheme metadata.
+            seedAlgo25Root('algo-mismatch')
+            mockKeystoreKeys.push({
+                id: 'algo-mismatch-falcon',
+                type: FALCON_CHILD_KEY_TYPE,
+                algorithm: 'raw',
+                extractable: false,
+                publicKey: new Uint8Array([1, 2, 3]),
+                metadata: { parentKeyId: 'algo-mismatch' },
+            })
+
+            const { result } = renderHook(() => useKMS())
+
+            expect(() =>
+                result.current.getPQSigningInfo('algo-mismatch-falcon'),
+            ).toThrow(KeyManagementError)
         })
     })
 
