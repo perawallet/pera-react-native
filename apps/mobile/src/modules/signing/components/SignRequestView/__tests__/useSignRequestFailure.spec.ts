@@ -41,8 +41,13 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
+// resolveErrorCopy (exercised via the SubmissionError branch below) does an
+// `instanceof AlgodError` check, so the mock needs a real class identity too
+// — importActual pulls in the network store's own module deps, so stub instead.
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
+    AlgodError: class AlgodError extends Error {},
+    toAlgodError: (err: unknown) => err,
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -61,6 +66,30 @@ vi.mock('@perawallet/wallet-core-multisig', () => ({
 
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: () => ({ invalidateQueries: mocks.invalidateQueries }),
+}))
+
+// `instanceof` needs the same class identity the hook and resolveErrorCopy
+// import, so both must resolve to this mock.
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    SubmissionError: class SubmissionError extends Error {
+        readonly metadata = { retryable: true }
+        constructor(
+            readonly txIds: string[],
+            readonly classification: string,
+            readonly algodError: unknown,
+        ) {
+            super(`Submission ${classification}`)
+        }
+    },
+}))
+
+vi.mock('@hooks/useAlgodErrorMessage', () => ({
+    useAlgodErrorMessage: () => ({
+        getMessage: () => ({
+            title: 'errors.algod.overspend.title',
+            body: 'errors.algod.overspend.body',
+        }),
+    }),
 }))
 
 const COSIGN_REQUEST = {
@@ -191,5 +220,48 @@ describe('useSignRequestFailure', () => {
         expect(result.current.body).toBe(
             'multisig.already_resolved.confirmed.body',
         )
+    })
+
+    it('reports an unverified submission as status-unknown rather than failed', async () => {
+        // The transaction may be on chain (lost response, timeout) and the
+        // pipeline's landing probe already came up empty — "failed" would be a lie.
+        const { SubmissionError } =
+            await import('@perawallet/wallet-core-signing')
+        const error = new (SubmissionError as unknown as new (
+            txIds: string[],
+            classification: string,
+            algodError: unknown,
+        ) => Error)(
+            ['TXID'],
+            'unknown-outcome',
+            new Error('network_unavailable'),
+        )
+
+        const { result } = renderHook(() =>
+            useSignRequestFailure(WALLETCONNECT_REQUEST, error as Error),
+        )
+
+        expect(result.current.title).toBe(
+            'errors.submission.unknown_outcome.title',
+        )
+        expect(result.current.body).toBe(
+            'errors.submission.unknown_outcome.body',
+        )
+    })
+
+    it('uses the specific algod copy for a definitive node rejection', async () => {
+        const { SubmissionError } =
+            await import('@perawallet/wallet-core-signing')
+        const error = new (SubmissionError as unknown as new (
+            txIds: string[],
+            classification: string,
+            algodError: unknown,
+        ) => Error)(['TXID'], 'rejected-by-node', new Error('overspend'))
+
+        const { result } = renderHook(() =>
+            useSignRequestFailure(WALLETCONNECT_REQUEST, error as Error),
+        )
+
+        expect(result.current.title).not.toBe('signing.signing_failed.title')
     })
 })

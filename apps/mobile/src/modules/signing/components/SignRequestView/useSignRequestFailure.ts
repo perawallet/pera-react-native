@@ -22,8 +22,13 @@ import {
     type SignRequestStatus,
 } from '@perawallet/wallet-core-multisig'
 import type { Nullable } from '@perawallet/wallet-core-shared'
-import type { SignRequest } from '@perawallet/wallet-core-signing'
+import {
+    SubmissionError,
+    type SignRequest,
+} from '@perawallet/wallet-core-signing'
+import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
+import { resolveErrorCopy } from '@i18n/resolveErrorCopy'
 
 export type UseSignRequestFailureResult = {
     /**
@@ -81,6 +86,7 @@ export const useSignRequestFailure = (
     error: Nullable<Error>,
 ): UseSignRequestFailureResult => {
     const { t } = useLanguage()
+    const { getMessage } = useAlgodErrorMessage()
     const { network } = useNetwork()
     const deviceId = useDeviceID(network) ?? ''
     const queryClient = useQueryClient()
@@ -138,6 +144,19 @@ export const useSignRequestFailure = (
             title: t(alreadyResolved.title),
             body: t(alreadyResolved.body),
         }
+    }
+
+    // A classified submission failure already knows whether the transaction is
+    // definitively rejected or merely unverified; the generic "signing failed"
+    // copy below would assert failure for one that may be on chain.
+    if (error instanceof SubmissionError) {
+        const { title, body } = resolveErrorCopy(
+            error,
+            t,
+            undefined,
+            getMessage,
+        )
+        return { isResolving, title, body }
     }
 
     return {
