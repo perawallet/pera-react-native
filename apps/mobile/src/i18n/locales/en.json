@@ -536,6 +536,10 @@
             "betanet": "BetaNet",
             "custom": "Custom"
         },
+        "network_unavailable": {
+            "title": "Not available on this network",
+            "body": "This needs Pera services, which aren't available on BetaNet or custom nodes. Switch to MainNet or TestNet."
+        },
         "yes": "Yes",
         "no": "No",
         "enter_stealth_mode": "Enter Stealth Mode",

@@ -146,4 +146,24 @@ describe('WealthChart', () => {
 
         expect(screen.getByText('Offline Mode')).toBeTruthy()
     })
+
+    it('renders the network-unavailable state instead of the spinner on a network with no Pera backend', () => {
+        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+            data: undefined,
+            isPending: true,
+            isError: false,
+            isPaused: false,
+            refetch: vi.fn(),
+            isUnavailableOnNetwork: true,
+        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+
+        render(
+            <WealthChart
+                period='one-week'
+                onSelectionChanged={vi.fn()}
+            />,
+        )
+
+        expect(screen.getByText('Not available on this network')).toBeTruthy()
+    })
 })

@@ -57,8 +57,14 @@ export const WealthChart = memo(function WealthChart({
         [account, accounts],
     )
 
-    const { data, isPending, isError, isPaused, refetch } =
-        useAccountBalancesHistoryQuery(addresses, period, enabled)
+    const {
+        data,
+        isPending,
+        isError,
+        isPaused,
+        refetch,
+        isUnavailableOnNetwork,
+    } = useAccountBalancesHistoryQuery(addresses, period, enabled)
 
     return (
         <BalanceLineChart
@@ -68,6 +74,7 @@ export const WealthChart = memo(function WealthChart({
             isPending={isPending}
             isError={isError}
             isPaused={isPaused}
+            isUnavailableOnNetwork={isUnavailableOnNetwork}
             onRetry={() => void refetch()}
             emptyBody={t('common.wealth_chart.empty_body')}
             style={themeStyle.container}

@@ -11,18 +11,20 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toggleAssetPriceAlert } from '../api'
-import {
-    getAssetDetailsQueryKey,
-    getRemoteAssetDetailsQueryKey,
-    invalidateAssetQueries,
-} from './querykeys'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     type Network,
     logger,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
+import { toggleAssetPriceAlert } from '../api'
+import {
+    getAssetDetailsQueryKey,
+    getRemoteAssetDetailsQueryKey,
+    invalidateAssetQueries,
+} from './querykeys'
 import { type ToggleStatusResponse } from '../api/settings/endpoints'
 import { updateAssetPeraMetadata } from '../db'
 import { DEFAULT_ASSET_METADATA, type PeraAsset } from '../models/assets'
@@ -48,11 +50,15 @@ type UseToggleAssetPriceAlertMutationResult = {
     isError: boolean
     error: Nullable<Error>
     isSuccess: boolean
+    /** True when the active network has no Pera backend — this can never succeed here. */
+    isUnavailableOnNetwork: boolean
 }
 
 export const useToggleAssetPriceAlertMutation =
     (): UseToggleAssetPriceAlertMutationResult => {
         const queryClient = useQueryClient()
+        const { network } = useNetwork()
+        const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
 
         const mutation = useMutation<
             ToggleStatusResponse,
@@ -166,5 +172,6 @@ export const useToggleAssetPriceAlertMutation =
             isError: mutation.isError,
             error: mutation.error,
             isSuccess: mutation.isSuccess,
+            isUnavailableOnNetwork,
         }
     }

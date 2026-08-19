@@ -38,6 +38,7 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
         isLoading,
         isError,
         isOffline,
+        isUnavailable,
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
@@ -108,6 +109,7 @@ export const AddAssetView = ({ variant = 'asset' }: AddAssetScreenProps) => {
                     <OfflineTolerantView
                         isOffline={isOffline}
                         isError={isError}
+                        isUnavailable={isUnavailable}
                     >
                         <EmptyView
                             title={t('add_asset.no_results')}

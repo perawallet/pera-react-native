@@ -12,6 +12,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { Networks } from '@perawallet/wallet-core-config'
 import { useAccountsAssetsBalanceHistoryQuery } from '../useAccountsAssetBalanceHistoryQuery'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
@@ -70,6 +71,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockNetwork.network = 'mainnet'
         mockUsdToPreferred.mockImplementation((amount: Decimal) =>
             amount.mul(2),
         )
@@ -221,5 +223,123 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
                 'mainnet',
             )
         })
+
+        it.each([Networks.betanet, Networks.custom])(
+            'disables the query and flags isUnavailableOnNetwork on %s',
+            network => {
+                mockNetwork.network = network
+
+                const { result } = renderHook(
+                    () =>
+                        useAccountsAssetsBalanceHistoryQuery(
+                            mockAccount,
+                            '123',
+                            'one-day',
+                        ),
+                    { wrapper: createWrapper() },
+                )
+
+                expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(
+                    mocks.fetchAccountAssetBalanceHistory,
+                ).not.toHaveBeenCalled()
+            },
+        )
+
+        it.each([Networks.mainnet, Networks.testnet])(
+            'leaves the query enabled and isUnavailableOnNetwork false on %s',
+            async network => {
+                mockNetwork.network = network
+                mocks.fetchAccountAssetBalanceHistory.mockResolvedValue({
+                    results: [],
+                })
+
+                const { result } = renderHook(
+                    () =>
+                        useAccountsAssetsBalanceHistoryQuery(
+                            mockAccount,
+                            '123',
+                            'one-day',
+                        ),
+                    { wrapper: createWrapper() },
+                )
+
+                await waitFor(() =>
+                    expect(result.current.isPending).toBe(false),
+                )
+
+                expect(result.current.isUnavailableOnNetwork).toBe(false)
+                expect(mocks.fetchAccountAssetBalanceHistory).toHaveBeenCalled()
+            },
+        )
+
+        it.each([Networks.betanet, Networks.custom])(
+            'does not invoke the queryFn when refetch is called on %s',
+            async network => {
+                mockNetwork.network = network
+
+                const { result } = renderHook(
+                    () =>
+                        useAccountsAssetsBalanceHistoryQuery(
+                            mockAccount,
+                            '123',
+                            'one-day',
+                        ),
+                    { wrapper: createWrapper() },
+                )
+
+                await result.current.refetch()
+
+                expect(
+                    mocks.fetchAccountAssetBalanceHistory,
+                ).not.toHaveBeenCalled()
+            },
+        )
+
+        it.each([Networks.mainnet, Networks.testnet])(
+            'still invokes the queryFn when refetch is called on %s',
+            async network => {
+                mockNetwork.network = network
+                mocks.fetchAccountAssetBalanceHistory.mockResolvedValue({
+                    results: [],
+                })
+
+                const { result } = renderHook(
+                    () =>
+                        useAccountsAssetsBalanceHistoryQuery(
+                            mockAccount,
+                            '123',
+                            'one-day',
+                        ),
+                    { wrapper: createWrapper() },
+                )
+
+                await waitFor(() => expect(result.current.isSuccess).toBe(true))
+                mocks.fetchAccountAssetBalanceHistory.mockClear()
+
+                await result.current.refetch()
+
+                expect(mocks.fetchAccountAssetBalanceHistory).toHaveBeenCalled()
+            },
+        )
+
+        it.each([Networks.betanet, Networks.custom])(
+            'reports isPending false while unavailable on %s',
+            network => {
+                mockNetwork.network = network
+
+                const { result } = renderHook(
+                    () =>
+                        useAccountsAssetsBalanceHistoryQuery(
+                            mockAccount,
+                            '123',
+                            'one-day',
+                        ),
+                    { wrapper: createWrapper() },
+                )
+
+                expect(result.current.isPending).toBe(false)
+            },
+        )
     })
 })

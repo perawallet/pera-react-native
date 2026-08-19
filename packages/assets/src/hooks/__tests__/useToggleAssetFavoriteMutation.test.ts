@@ -42,6 +42,12 @@ vi.mock('../../db', () => ({
     updateAssetPeraMetadata: vi.fn(),
 }))
 
+const mockUseNetwork = vi.hoisted(() => vi.fn())
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: mockUseNetwork,
+}))
+
 const mockToggleResponse = {
     is_enabled: true,
 }
@@ -51,6 +57,7 @@ describe('useToggleAssetFavoriteMutation', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockUseNetwork.mockReturnValue({ network: 'mainnet' })
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -435,4 +442,32 @@ describe('useToggleAssetFavoriteMutation', () => {
 
         expect(onLocalWrite).toHaveBeenCalledTimes(2)
     })
+
+    it.each(['betanet', 'custom'])(
+        'reports isUnavailableOnNetwork true on %s',
+        network => {
+            mockUseNetwork.mockReturnValue({ network })
+
+            const { result } = renderHook(
+                () => useToggleAssetFavoriteMutation(),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            expect(result.current.isUnavailableOnNetwork).toBe(true)
+        },
+    )
+
+    it.each(['mainnet', 'testnet'])(
+        'reports isUnavailableOnNetwork false on %s',
+        network => {
+            mockUseNetwork.mockReturnValue({ network })
+
+            const { result } = renderHook(
+                () => useToggleAssetFavoriteMutation(),
+                { wrapper: createWrapper(queryClient) },
+            )
+
+            expect(result.current.isUnavailableOnNetwork).toBe(false)
+        },
+    )
 })

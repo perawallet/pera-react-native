@@ -23,6 +23,7 @@ import {
 } from '../db'
 
 import { Decimal } from 'decimal.js'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     isAlgoAssetId,
     ALGO_ASSET_ID,
@@ -50,6 +51,9 @@ export async function fetchAndPersistPrices(
     network: Network,
 ): Promise<void> {
     if (assetIds.length === 0) return
+    // No Pera backend on this network — both fetchAssetPrices and
+    // fetchPublicAssetDetails (the ALGO branch) below would only throw.
+    if (!isPeraBackedNetwork(network)) return
 
     const nonAlgoIds = assetIds.filter(id => !isAlgoAssetId(id))
     const staleIds = await getStaleOrMissingPriceAssetIds({

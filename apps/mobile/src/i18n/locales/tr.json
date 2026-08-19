@@ -536,6 +536,10 @@
             "betanet": "BetaNet",
             "custom": "Özel"
         },
+        "network_unavailable": {
+            "title": "Bu ağda kullanılamıyor",
+            "body": "BetaNet veya özel düğümlerde bulunmayan Pera services gerekiyor. MainNet veya TestNet'e geç."
+        },
         "yes": "Evet",
         "no": "Hayır",
         "enter_stealth_mode": "Gizli moda geç",

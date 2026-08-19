@@ -536,6 +536,10 @@
             "betanet": "BetaNet",
             "custom": "Personnalisé"
         },
+        "network_unavailable": {
+            "title": "Non disponible sur ce réseau",
+            "body": "Ceci nécessite Pera services, qui ne sont pas disponibles sur BetaNet ni sur les nœuds personnalisés. Basculez vers MainNet ou TestNet."
+        },
         "yes": "Oui",
         "no": "Non",
         "enter_stealth_mode": "Activer le mode furtif",

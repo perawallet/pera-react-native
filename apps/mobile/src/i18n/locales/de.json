@@ -528,6 +528,10 @@
             "betanet": "BetaNet",
             "custom": "Benutzerdefiniert"
         },
+        "network_unavailable": {
+            "title": "Auf diesem Netzwerk nicht verfügbar",
+            "body": "Dies erfordert Pera-Services, die auf BetaNet oder benutzerdefinierten Knoten nicht verfügbar sind. Wechsel zu MainNet oder TestNet."
+        },
         "yes": "Ja",
         "no": "Nein",
         "enter_stealth_mode": "Stealth-Modus aktivieren",

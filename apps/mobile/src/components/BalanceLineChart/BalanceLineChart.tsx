@@ -70,6 +70,9 @@ type BalanceLineChartProps<T> = {
     isError?: boolean
     /** True while the query's fetch is offline-paused (fetchStatus 'paused'). */
     isPaused?: boolean
+    /** True when the active network has no Pera backend — renders the
+     *  no-retry unavailable surface instead of spinning forever. */
+    isUnavailableOnNetwork?: boolean
     /** Error-state body; falls back to a generic message when omitted. */
     errorBody?: string
     /** Triggers a refetch from the error state's retry button. */
@@ -85,6 +88,7 @@ export const BalanceLineChart = <T,>({
     emptyBody,
     isError = false,
     isPaused = false,
+    isUnavailableOnNetwork = false,
     errorBody,
     onRetry,
     style,
@@ -115,6 +119,7 @@ export const BalanceLineChart = <T,>({
         isPaused,
         isError,
         isPending,
+        isUnavailableOnNetwork,
         onRetry,
     })
 
@@ -188,6 +193,18 @@ export const BalanceLineChart = <T,>({
                             )}
                         </CartesianChart>
                     </PWView>
+                )
+            }
+            // No Pera backend exists for this network, so the query never
+            // fires and stays isPending forever — this must be checked ahead
+            // of loading/error, and retry is omitted because it can never
+            // succeed here.
+            case 'unavailable': {
+                return (
+                    <EmptyView
+                        title={t('common.network_unavailable.title')}
+                        body={t('common.network_unavailable.body')}
+                    />
                 )
             }
             // Offline must not masquerade as loading: a paused query reports

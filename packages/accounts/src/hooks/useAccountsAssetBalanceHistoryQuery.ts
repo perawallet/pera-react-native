@@ -12,22 +12,36 @@
 
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
-import type { WalletAccount } from '../models'
-import { useQuery } from '@tanstack/react-query'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import type { HistoryPeriod, Nullable } from '@perawallet/wallet-core-shared'
+import type { AccountAssetBalanceHistoryItem, WalletAccount } from '../models'
+import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import { fetchAccountAssetBalanceHistory } from './endpoints'
 import { Decimal } from 'decimal.js'
 import { getAccountAssetBalanceHistoryQueryKey } from './querykeys'
+
+export type UseAccountsAssetsBalanceHistoryQueryResult = {
+    data: AccountAssetBalanceHistoryItem[]
+    isPending: boolean
+    isSuccess: boolean
+    isError: boolean
+    isPaused: boolean
+    error: Nullable<Error>
+    /** True when the active network has no Pera backend — this can never succeed here. */
+    isUnavailableOnNetwork: boolean
+    refetch: (options?: RefetchOptions) => unknown
+}
 
 export const useAccountsAssetsBalanceHistoryQuery = (
     account: WalletAccount,
     assetId: string,
     period: HistoryPeriod,
-) => {
+): UseAccountsAssetsBalanceHistoryQueryResult => {
     const { network } = useNetwork()
     const { preferredCurrency, usdToPreferred } = useCurrency()
+    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
 
-    return useQuery({
+    const query = useQuery({
         queryKey: getAccountAssetBalanceHistoryQueryKey(
             network,
             account.address,
@@ -35,6 +49,7 @@ export const useAccountsAssetsBalanceHistoryQuery = (
             period,
             preferredCurrency,
         ),
+        enabled: !isUnavailableOnNetwork,
         queryFn: () =>
             fetchAccountAssetBalanceHistory(
                 account.address,
@@ -57,4 +72,20 @@ export const useAccountsAssetsBalanceHistoryQuery = (
                 round: item.round,
             })) ?? [],
     })
+
+    return {
+        data: query.data ?? [],
+        isPending: isUnavailableOnNetwork ? false : query.isPending,
+        isSuccess: query.isSuccess,
+        isError: query.isError,
+        isPaused: query.isPaused,
+        error: query.error,
+        isUnavailableOnNetwork,
+        // The observer's refetch() ignores `enabled` and would still fire the
+        // doomed Pera request on a non-backed network.
+        refetch: (options?: RefetchOptions) =>
+            isUnavailableOnNetwork
+                ? Promise.resolve(query)
+                : query.refetch(options),
+    }
 }

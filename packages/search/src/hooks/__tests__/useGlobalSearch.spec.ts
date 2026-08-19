@@ -136,6 +136,57 @@ describe('useGlobalSearch', () => {
         expect(result.current.isRemotePaused).toBe(false)
     })
 
+    test('reports remote asset search unavailable when the network has no Pera backend', () => {
+        mockAllAccounts.mockReturnValue([])
+        mockFindContacts.mockReturnValue([])
+        setOwnedAssets([])
+        mockAssetSearchQuery({
+            results: [],
+            isLoading: false,
+            isError: false,
+            isPaused: false,
+            hasNextPage: false,
+            isFetchingNextPage: false,
+            fetchNextPage: vi.fn(),
+            isUnavailableOnNetwork: true,
+        })
+
+        const { result } = renderHook(
+            () =>
+                useGlobalSearch({
+                    debounceMs: 0,
+                    scopes: ['assets'],
+                    remoteAssets: {},
+                }),
+            { wrapper: makeWrapper() },
+        )
+
+        expect(result.current.isRemoteUnavailableOnNetwork).toBe(true)
+    })
+
+    test('reports remote asset search available for callers that never search remotely', () => {
+        mockAllAccounts.mockReturnValue([])
+        mockFindContacts.mockReturnValue([])
+        setOwnedAssets([])
+        mockAssetSearchQuery({
+            results: [],
+            isLoading: false,
+            isError: false,
+            isPaused: false,
+            hasNextPage: false,
+            isFetchingNextPage: false,
+            fetchNextPage: vi.fn(),
+            isUnavailableOnNetwork: true,
+        })
+
+        const { result } = renderHook(
+            () => useGlobalSearch({ debounceMs: 0, scopes: ['assets'] }),
+            { wrapper: makeWrapper() },
+        )
+
+        expect(result.current.isRemoteUnavailableOnNetwork).toBe(false)
+    })
+
     test('returns empty results with empty query', () => {
         mockAllAccounts.mockReturnValue([makeAccount('ALICE', 'Alice')])
         mockFindContacts.mockReturnValue([])

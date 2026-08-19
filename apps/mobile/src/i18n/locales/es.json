@@ -536,6 +536,10 @@
             "betanet": "BetaNet",
             "custom": "Personalizada"
         },
+        "network_unavailable": {
+            "title": "No disponible en esta red",
+            "body": "Esto necesita Pera services, que no están disponibles en BetaNet ni en nodos personalizados. Cambia a MainNet o TestNet."
+        },
         "yes": "Sí",
         "no": "No",
         "enter_stealth_mode": "Activar modo oculto",

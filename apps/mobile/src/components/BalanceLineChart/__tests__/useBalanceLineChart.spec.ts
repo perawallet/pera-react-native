@@ -31,6 +31,7 @@ const defaultParams = {
     isPaused: false,
     isError: false,
     isPending: false,
+    isUnavailableOnNetwork: false,
 }
 
 describe('useBalanceLineChart', () => {
@@ -47,6 +48,42 @@ describe('useBalanceLineChart', () => {
                 hasData: true,
                 isPaused: true,
                 isError: true,
+            }),
+        )
+
+        expect(result.current.renderState).toBe('chart')
+    })
+
+    it('renders the unavailable state when the network has no Pera backend', () => {
+        const { result } = renderHook(() =>
+            useBalanceLineChart({
+                ...defaultParams,
+                isUnavailableOnNetwork: true,
+            }),
+        )
+
+        expect(result.current.renderState).toBe('unavailable')
+    })
+
+    it('renders unavailable ahead of loading and error — the query is parked pending forever', () => {
+        const { result } = renderHook(() =>
+            useBalanceLineChart({
+                ...defaultParams,
+                isUnavailableOnNetwork: true,
+                isPending: true,
+                isError: true,
+            }),
+        )
+
+        expect(result.current.renderState).toBe('unavailable')
+    })
+
+    it('renders the chart over unavailable when stale data exists', () => {
+        const { result } = renderHook(() =>
+            useBalanceLineChart({
+                ...defaultParams,
+                hasData: true,
+                isUnavailableOnNetwork: true,
             }),
         )
 

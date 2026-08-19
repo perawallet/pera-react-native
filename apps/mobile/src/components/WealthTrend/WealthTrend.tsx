@@ -52,11 +52,8 @@ export const WealthTrend = ({
         [account, accounts],
     )
 
-    const { data, isPending } = useAccountBalancesHistoryQuery(
-        addresses,
-        period,
-        enabled,
-    )
+    const { data, isPending, isUnavailableOnNetwork } =
+        useAccountBalancesHistoryQuery(addresses, period, enabled)
 
     const dataPoints = useMemo(
         () =>
@@ -79,7 +76,7 @@ export const WealthTrend = ({
         ]
     }, [dataPoints])
 
-    return isPending || privacyMode ? (
+    return isPending || privacyMode || isUnavailableOnNetwork ? (
         <></>
     ) : (
         <PWView style={styles.container}>

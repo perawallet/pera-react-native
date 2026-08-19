@@ -92,6 +92,7 @@ const { mockUseGlobalSearch, defaultGlobalSearchResult } = vi.hoisted(() => {
         isLoading: false,
         isRemoteError: false,
         isRemotePaused: false,
+        isRemoteUnavailableOnNetwork: false,
         hasNextRemotePage: false,
         isFetchingNextRemotePage: false,
         fetchNextRemotePage: vi.fn(),
@@ -210,6 +211,23 @@ describe('useAddAssetView', () => {
         const { result } = renderHook(() => useAddAssetView())
 
         expect(result.current.isOffline).toBe(true)
+    })
+
+    it('is unavailable when the network has no Pera backend', () => {
+        mockGlobalSearch({ isRemoteUnavailableOnNetwork: true })
+
+        const { result } = renderHook(() => useAddAssetView())
+
+        expect(result.current.isUnavailable).toBe(true)
+    })
+
+    it('does not report unavailable as an error or as offline', () => {
+        mockGlobalSearch({ isRemoteUnavailableOnNetwork: true })
+
+        const { result } = renderHook(() => useAddAssetView())
+
+        expect(result.current.isError).toBe(false)
+        expect(result.current.isOffline).toBe(false)
     })
 
     it('collapses search error to offline when device has no internet', () => {

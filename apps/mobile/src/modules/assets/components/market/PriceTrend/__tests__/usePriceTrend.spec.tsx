@@ -33,10 +33,12 @@ const point = (usdPrice: number) => ({
 const mockQuery = (
     data: ReturnType<typeof point>[] | undefined,
     isPaused: boolean,
+    isUnavailableOnNetwork = false,
 ) => {
     vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
         data,
         isPaused,
+        isUnavailableOnNetwork,
     } as unknown as ReturnType<typeof useAssetPriceHistoryQuery>)
 }
 
@@ -102,6 +104,28 @@ describe('usePriceTrend', () => {
 
         expect(result.current.isHidden).toBe(false)
         expect(result.current.changePercentage.toNumber()).toBe(50)
+    })
+
+    it('hides the trend on a network with no Pera backend, even with no data', () => {
+        mockQuery(undefined, false, true)
+
+        const { result } = renderHook(() =>
+            usePriceTrend({ assetId: '123', period: 'one-week' }),
+        )
+
+        expect(result.current.isHidden).toBe(true)
+    })
+
+    it('does not fake a trend from stale data on a network with no Pera backend', () => {
+        // Unavailable is a permanent condition, not an offline blip — data
+        // left over from a different network must not render a trend.
+        mockQuery([point(100), point(150)], false, true)
+
+        const { result } = renderHook(() =>
+            usePriceTrend({ assetId: '123', period: 'one-week' }),
+        )
+
+        expect(result.current.isHidden).toBe(true)
     })
 
     it('does not hide the trend during an online load', () => {

@@ -10,9 +10,12 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type RefetchOptions } from '@tanstack/react-query'
 import { fetchAccountsBalanceHistory } from './endpoints'
-import { type HistoryPeriod } from '@perawallet/wallet-core-shared'
+import {
+    type HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type {
     AccountAddress,
     AccountBalanceHistoryItem,
@@ -22,6 +25,7 @@ import type {
 import { useCallback } from 'react'
 import { Decimal } from 'decimal.js'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { getAccountBalancesHistoryQueryKey } from './querykeys'
 
@@ -37,14 +41,27 @@ const mapAccountBalanceHistoryItem = (
     }
 }
 
+export type UseAccountBalancesHistoryQueryResult = {
+    data: AccountBalanceHistoryItem[]
+    isPending: boolean
+    isSuccess: boolean
+    isError: boolean
+    isPaused: boolean
+    error: Nullable<Error>
+    /** True when the active network has no Pera backend — this can never succeed here. */
+    isUnavailableOnNetwork: boolean
+    refetch: (options?: RefetchOptions) => unknown
+}
+
 //TODO do we need to support pagination?
 export const useAccountBalancesHistoryQuery = (
     addresses: AccountAddress[],
     period: HistoryPeriod,
     enabled = true,
-) => {
+): UseAccountBalancesHistoryQueryResult => {
     const { usdToPreferred } = useCurrency()
     const { network } = useNetwork()
+    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
     const queryKey = getAccountBalancesHistoryQueryKey(
         addresses,
         period,
@@ -54,7 +71,7 @@ export const useAccountBalancesHistoryQuery = (
         queryKey,
         // Gated by callers on chart visibility — this hits a slow network
         // endpoint and is only needed to render the wealth chart/trend.
-        enabled: enabled && addresses.length > 0,
+        enabled: enabled && addresses.length > 0 && !isUnavailableOnNetwork,
         queryFn: () => fetchAccountsBalanceHistory(addresses, period, network),
         select: useCallback(
             (data: AccountBalanceHistoryResponse) =>
@@ -65,5 +82,19 @@ export const useAccountBalancesHistoryQuery = (
         ),
     })
 
-    return query
+    return {
+        data: query.data ?? [],
+        isPending: isUnavailableOnNetwork ? false : query.isPending,
+        isSuccess: query.isSuccess,
+        isError: query.isError,
+        isPaused: query.isPaused,
+        error: query.error,
+        isUnavailableOnNetwork,
+        // The observer's refetch() ignores `enabled` and would still fire the
+        // doomed Pera request on a non-backed network.
+        refetch: (options?: RefetchOptions) =>
+            isUnavailableOnNetwork
+                ? Promise.resolve(query)
+                : query.refetch(options),
+    }
 }

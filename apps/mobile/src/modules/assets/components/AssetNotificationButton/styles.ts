@@ -11,11 +11,15 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { UNAVAILABLE_CONTROL_OPACITY } from '@constants/ui'
 
 export const useStyles = makeStyles(theme => ({
     icon: {
         backgroundColor: theme.colors.layerGrayLighter,
         // Android uses text.main for both enabled/disabled bell icon
         // Loading/null uses text.grayLighter
+    },
+    unavailable: {
+        opacity: UNAVAILABLE_CONTROL_OPACITY,
     },
 }))

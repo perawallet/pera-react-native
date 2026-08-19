@@ -19,6 +19,7 @@ import { useLanguage } from '@hooks/useLanguage'
 /** Which of the chart container's mutually exclusive surfaces to render. */
 export type BalanceLineChartRenderState =
     | 'chart'
+    | 'unavailable'
     | 'offline'
     | 'error'
     | 'loading'
@@ -31,6 +32,11 @@ type UseBalanceLineChartParams = {
     isPaused: boolean
     isError: boolean
     isPending: boolean
+    /** True when the active network has no Pera backend — the query is
+     *  `enabled: false` and stays isPending forever, so this must be checked
+     *  before pending/error or the UI hangs on a spinner that can never
+     *  resolve. */
+    isUnavailableOnNetwork: boolean
     onRetry?: () => void
 }
 
@@ -50,6 +56,7 @@ export const useBalanceLineChart = ({
     isPaused,
     isError,
     isPending,
+    isUnavailableOnNetwork,
     onRetry,
 }: UseBalanceLineChartParams): UseBalanceLineChartResult => {
     const { hasInternet } = useNetworkStatus()
@@ -59,6 +66,9 @@ export const useBalanceLineChart = ({
     const renderState = useMemo<BalanceLineChartRenderState>(() => {
         if (hasData) {
             return 'chart'
+        }
+        if (isUnavailableOnNetwork) {
+            return 'unavailable'
         }
         if (isPaused || (isError && !hasInternet)) {
             return 'offline'
@@ -70,7 +80,14 @@ export const useBalanceLineChart = ({
             return 'loading'
         }
         return 'empty'
-    }, [hasData, isPaused, isError, isPending, hasInternet])
+    }, [
+        hasData,
+        isPaused,
+        isError,
+        isPending,
+        isUnavailableOnNetwork,
+        hasInternet,
+    ])
 
     const handleRetry = useMemo(() => {
         if (!onRetry) {

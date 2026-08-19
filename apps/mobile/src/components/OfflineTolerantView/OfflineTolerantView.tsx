@@ -25,6 +25,13 @@ export type OfflineTolerantViewProps = {
      */
     isOffline: boolean
     /**
+     * The active network has no Pera backend at all (BetaNet, custom nodes).
+     * Permanent, not a connectivity blip — takes precedence over offline and
+     * error, and renders with no retry button since retrying can never
+     * succeed.
+     */
+    isUnavailable?: boolean
+    /**
      * The request failed while the device is online. Leave unset on surfaces
      * that render their own error UI — they delegate the offline arm only.
      */
@@ -57,6 +64,7 @@ export type OfflineTolerantViewProps = {
  */
 export const OfflineTolerantView = ({
     isOffline,
+    isUnavailable = false,
     isError = false,
     onRetry,
     retryLabel,
@@ -67,8 +75,20 @@ export const OfflineTolerantView = ({
 }: OfflineTolerantViewProps) => {
     const { t } = useLanguage()
 
-    if (!isOffline && !isError) {
+    if (!isUnavailable && !isOffline && !isError) {
         return <>{children}</>
+    }
+
+    // No retry button here regardless of onRetry: unlike offline or a failed
+    // request, this can never resolve itself.
+    if (isUnavailable) {
+        return (
+            <EmptyView
+                icon='globe'
+                title={t('common.network_unavailable.title')}
+                body={t('common.network_unavailable.body')}
+            />
+        )
     }
 
     const retryButton = onRetry ? (
