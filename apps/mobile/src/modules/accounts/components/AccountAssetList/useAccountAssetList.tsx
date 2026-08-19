@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
 import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { type PWFlatListRef } from '@components/core'
 import {
     useAccountAssetsQuery,
     useCanSignWith,
@@ -23,7 +24,6 @@ import {
 import {
     useAssetPreferencesStore,
     isCollectible,
-    type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
@@ -53,7 +53,6 @@ type UseAccountAssetListResult = {
     isPending: boolean
     isReadOnly: boolean
     hideZeroBalance: boolean
-    assetSortMode: AssetSortMode
     searchFilter: string
     headerState: ModalState
     isOptingOut: boolean
@@ -69,6 +68,7 @@ type UseAccountAssetListResult = {
         goToAssetScreen: (item: AccountHoldingsLiteRow) => void
         handleOptOut: (item: AccountHoldingsLiteRow) => void
     }
+    listRef: React.MutableRefObject<PWFlatListRef | null>
 }
 
 type UseAccountAssetListParams = {
@@ -112,11 +112,14 @@ export const useAccountAssetList = ({
     // DB does the sort + filter + search in one read, returning lightweight
     // rows; FlashList virtualizes rendering and the visible rows materialize
     // their own metadata lazily (see AssetListItemView).
-    const { holdings, isPending } = useAccountAssetsQuery(account.address, {
-        filters: balanceFilters,
-        sortMode: assetSortMode,
-        search: debouncedSearch,
-    })
+    const { holdings, isPending, isPlaceholderData } = useAccountAssetsQuery(
+        account.address,
+        {
+            filters: balanceFilters,
+            sortMode: assetSortMode,
+            search: debouncedSearch,
+        },
+    )
 
     // Exchange rates read once here; the visible rows convert themselves. Keeps
     // per-row render observer-free without precomputing all N holdings.
@@ -130,6 +133,39 @@ export const useAccountAssetList = ({
     useEffect(() => {
         setSearchFilter('')
     }, [account.address])
+
+    const listRef = useRef<PWFlatListRef | null>(null)
+
+    // One reset for both triggers: switching account or sort re-reads holdings
+    // under a new query key, so the rows go through a gap — empty while cold, or
+    // the previous request's held as placeholder data — before the new ones land.
+    // Firing on the *request* and waiting for its own rows is what survives that
+    // gap. Scrolling as soon as the request changes lands before the rows do, and
+    // the FlashList re-population that follows (with the sticky search bar at
+    // index 0) pushes the list past the header; keying off the sort alone missed
+    // the reset entirely whenever the rows hadn't arrived yet (PERA-4921).
+    const viewRequestKey = `${account.address}|${assetSortMode}`
+    const appliedViewRequestKeyRef = useRef(viewRequestKey)
+    const hasRowsForRequest = holdings.length > 0 && !isPlaceholderData
+
+    useEffect(() => {
+        if (appliedViewRequestKeyRef.current === viewRequestKey) return
+        if (!hasRowsForRequest) return
+
+        const [appliedAddress] = appliedViewRequestKeyRef.current.split('|')
+        appliedViewRequestKeyRef.current = viewRequestKey
+        // Next frame: FlashList settles its own offset on the layout pass that
+        // follows a data change, and a scroll issued before it loses (PERA-4406).
+        const frame = requestAnimationFrame(() => {
+            listRef.current?.scrollToOffset({
+                offset: 0,
+                // Animate a re-sort of the list in front of you; an account
+                // switch is a new list and should just start at the top.
+                animated: appliedAddress === account.address,
+            })
+        })
+        return () => cancelAnimationFrame(frame)
+    }, [viewRequestKey, hasRowsForRequest, account.address])
 
     const isReadOnly = !useCanSignWith(account)
 
@@ -266,8 +302,8 @@ export const useAccountAssetList = ({
         convertFiat,
         isPending,
         isReadOnly,
+        listRef,
         hideZeroBalance,
-        assetSortMode,
         searchFilter,
         headerState,
         isOptingOut,

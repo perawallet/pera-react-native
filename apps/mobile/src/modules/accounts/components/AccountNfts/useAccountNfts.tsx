@@ -171,14 +171,15 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     // search, the sort — runs in the engine, and rows come back unparsed.
     const sqlSortMode = sortMode === 'recentlyAdded' ? undefined : sortMode
 
-    const { collectibles: rows, isPending } = useAccountCollectiblesQuery(
-        account?.address,
-        {
-            sortMode: sqlSortMode,
-            search: debouncedSearchFilter || undefined,
-            includeOptedInOnly: showOptedIn,
-        },
-    )
+    const {
+        collectibles: rows,
+        isPending,
+        isPlaceholderData,
+    } = useAccountCollectiblesQuery(account?.address, {
+        sortMode: sqlSortMode,
+        search: debouncedSearchFilter || undefined,
+        includeOptedInOnly: showOptedIn,
+    })
 
     const collectibles = useMemo(() => {
         if (sortMode !== 'recentlyAdded') return rows
@@ -209,31 +210,48 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     )
 
     const flatListRef = useRef<React.ComponentRef<typeof PWFlatList>>(null)
-    const previousFirstItemIdRef = useRef<string | undefined>(undefined)
+
+    // Reordering or narrowing the gallery has to land the user on the first row.
+    // Keyed on the *request* rather than on the rows it produces: a new sort is
+    // a new query key, so the rows go through a gap — empty while cold, or the
+    // previous order held as placeholder data — before the reordered ones land.
+    // Deriving the trigger from the rows read that gap as "nothing changed" and
+    // skipped the reset exactly when it was needed, which is how sorting a
+    // freshly imported account dropped the user mid-list (PERA-4921).
+    const viewRequestKey = [
+        account?.address ?? '',
+        sortMode,
+        debouncedSearchFilter,
+        showOptedIn,
+        // recentlyAdded is ordered by a separate indexer query, whose rounds
+        // arrive after the rows: the map landing is its own reorder.
+        sortMode === 'recentlyAdded' ? optInRounds.size : '',
+    ].join('|')
+    const appliedViewRequestKeyRef = useRef(viewRequestKey)
+    const hasRowsForRequest = collectibles.length > 0 && !isPlaceholderData
 
     useEffect(() => {
-        const currentFirstItemId = collectibles[0]?.assetId
-        if (
-            flatListRef.current &&
-            previousFirstItemIdRef.current !== undefined &&
-            previousFirstItemIdRef.current !== currentFirstItemId
-        ) {
-            flatListRef.current.scrollToOffset({ offset: 0, animated: false })
-        }
-        previousFirstItemIdRef.current = currentFirstItemId
-    }, [collectibles])
+        if (appliedViewRequestKeyRef.current === viewRequestKey) return
+        // Wait for this request's own rows: scrolling an empty list does
+        // nothing, and FlashList re-applies its remembered offset once rows
+        // arrive, undoing the reset.
+        if (!hasRowsForRequest) return
+
+        appliedViewRequestKeyRef.current = viewRequestKey
+        // Next frame, not this commit: FlashList settles its own offset on the
+        // layout pass that follows a data change, and a scroll issued before
+        // that pass loses to it (PERA-4406).
+        const frame = requestAnimationFrame(() => {
+            flatListRef.current?.scrollToOffset({ offset: 0, animated: false })
+        })
+        return () => cancelAnimationFrame(frame)
+    }, [viewRequestKey, hasRowsForRequest])
 
     useEffect(() => {
         if (flatListRef.current) {
             flatListRef.current.scrollToOffset({ offset: 0, animated: false })
         }
     }, [galleryLayout])
-
-    useEffect(() => {
-        if (flatListRef.current && debouncedSearchFilter) {
-            flatListRef.current.scrollToOffset({ offset: 0, animated: false })
-        }
-    }, [debouncedSearchFilter])
 
     return {
         collectibles,

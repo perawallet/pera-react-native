@@ -11,8 +11,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { type MutableRefObject } from 'react'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
+import { type PWFlatListRef } from '@components/core'
 import { useAccountNfts } from '../useAccountNfts'
 
 const mockNavigate = vi.fn()
@@ -141,6 +143,23 @@ const createDeferred = () => {
         resolve = () => res()
     })
     return { promise, resolve }
+}
+
+const attachListRef = (listRef: MutableRefObject<PWFlatListRef | null>) => {
+    const scrollToOffset = vi.fn()
+    listRef.current = {
+        scrollToOffset,
+        scrollToIndex: vi.fn(),
+        scrollToEnd: vi.fn(),
+    }
+    return scrollToOffset
+}
+
+// The reset is deferred a frame so it lands after FlashList's own layout pass.
+const flushFrame = async () => {
+    await act(async () => {
+        await new Promise(resolve => requestAnimationFrame(() => resolve(null)))
+    })
 }
 
 describe('useAccountNfts', () => {
@@ -317,6 +336,149 @@ describe('useAccountNfts', () => {
                 '100',
                 '200',
             ])
+        })
+    })
+
+    // PERA-4921 QA regression: sorting a freshly imported account left the user
+    // in the middle of the list. A new sort is a new query key, so the rows go
+    // through a gap before the reordered ones land, and the reset used to be
+    // driven off the rows themselves — so it read that gap as "nothing changed"
+    // and never fired, leaving FlashList to re-anchor on the old top row.
+    describe('scroll reset when the requested view changes', () => {
+        const rows = [makeRow('100', 'Cool NFT'), makeRow('200', 'Zed')]
+        const reorderedRows = [
+            makeRow('200', 'Zed'),
+            makeRow('100', 'Cool NFT'),
+        ]
+
+        it('does not scroll on the first render', async () => {
+            const { result } = renderHook(() => useAccountNfts())
+            const scrollToOffset = attachListRef(result.current.flatListRef)
+
+            await flushFrame()
+
+            expect(scrollToOffset).not.toHaveBeenCalled()
+        })
+
+        it('scrolls to the top once the rows for a new sort arrive after an empty tick', async () => {
+            const { result, rerender } = renderHook(() => useAccountNfts())
+            const scrollToOffset = attachListRef(result.current.flatListRef)
+
+            mockSortMode = 'titleDesc'
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [],
+                isPending: true,
+            })
+            rerender()
+            await flushFrame()
+
+            expect(scrollToOffset).not.toHaveBeenCalled()
+
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: reorderedRows,
+                isPending: false,
+            })
+            rerender()
+            await flushFrame()
+
+            expect(scrollToOffset).toHaveBeenCalledWith({
+                offset: 0,
+                animated: false,
+            })
+        })
+
+        it('waits for the new order instead of resetting on placeholder rows', async () => {
+            const { result, rerender } = renderHook(() => useAccountNfts())
+            const scrollToOffset = attachListRef(result.current.flatListRef)
+
+            // The previous order, held on screen while the new one resolves.
+            mockSortMode = 'titleDesc'
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: rows,
+                isPending: false,
+                isPlaceholderData: true,
+            })
+            rerender()
+            await flushFrame()
+
+            expect(scrollToOffset).not.toHaveBeenCalled()
+
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: reorderedRows,
+                isPending: false,
+                isPlaceholderData: false,
+            })
+            rerender()
+            await flushFrame()
+
+            expect(scrollToOffset).toHaveBeenCalledTimes(1)
+        })
+
+        it('scrolls to the top when a search term narrows the list', async () => {
+            const { result, rerender } = renderHook(() => useAccountNfts())
+            const scrollToOffset = attachListRef(result.current.flatListRef)
+
+            act(() => {
+                result.current.setSearchFilter('cool')
+            })
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [makeRow('100', 'Cool NFT')],
+                isPending: false,
+            })
+            rerender()
+            await flushFrame()
+
+            expect(scrollToOffset).toHaveBeenCalledWith({
+                offset: 0,
+                animated: false,
+            })
+        })
+
+        // recentlyAdded is ordered by a separate indexer query, so its rows land
+        // before the rounds that order them: the map arriving is a reorder too.
+        it('scrolls to the top once the opt-in rounds reorder recentlyAdded', async () => {
+            mockSortMode = 'recentlyAdded'
+            const { result, rerender } = renderHook(() => useAccountNfts())
+            const scrollToOffset = attachListRef(result.current.flatListRef)
+
+            mockUseAccountOptInRoundsQuery.mockReturnValue({
+                optInRounds: new Map([
+                    ['100', 10],
+                    ['200', 99],
+                ]),
+                isPending: false,
+            })
+            rerender()
+            await flushFrame()
+
+            expect(scrollToOffset).toHaveBeenCalledWith({
+                offset: 0,
+                animated: false,
+            })
+        })
+
+        it('does not scroll again while the same request re-renders', async () => {
+            const { result, rerender } = renderHook(() => useAccountNfts())
+            const scrollToOffset = attachListRef(result.current.flatListRef)
+
+            mockSortMode = 'titleDesc'
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: reorderedRows,
+                isPending: false,
+            })
+            rerender()
+            await flushFrame()
+            expect(scrollToOffset).toHaveBeenCalledTimes(1)
+
+            // A sync invalidation re-reads the same request.
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: [...reorderedRows],
+                isPending: false,
+            })
+            rerender()
+            await flushFrame()
+
+            expect(scrollToOffset).toHaveBeenCalledTimes(1)
         })
     })
 
