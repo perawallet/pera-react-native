@@ -96,6 +96,7 @@ export const hardwareSigningMachine = setup({
             error: () => null,
             currentTx: () => 0,
             results: () => [],
+            retryCount: ({ context }) => context.retryCount + 1,
         }),
         // Fired by a substate's `after` backstop timeout. There is no
         // `event.error` on an `after` transition, so we synthesize a
@@ -129,6 +130,7 @@ export const hardwareSigningMachine = setup({
         currentTx: 0,
         error: null,
         results: [],
+        retryCount: 0,
     }),
     // XState v5: root `output` must be defined for snapshot.output to surface.
     // Per-final-state `output` is delivered as `event.output` on the

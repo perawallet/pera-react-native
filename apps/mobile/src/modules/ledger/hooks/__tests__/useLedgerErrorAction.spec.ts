@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { Platform } from 'react-native'
 
 const requestEnable = vi.fn()
 const openSettings = vi.fn()
@@ -45,9 +46,10 @@ describe('useLedgerErrorAction', () => {
         openSettings.mockReset()
         openLocationSettings.mockReset()
         requestEnable.mockResolvedValue(true)
+        Platform.OS = 'android'
     })
 
-    it('asks the OS to turn Bluetooth on without leaving the app when it can', async () => {
+    it('asks the OS to turn Bluetooth on without leaving the app on Android', async () => {
         const { result } = renderHook(() => useLedgerErrorAction())
 
         result.current.runAction('bluetooth')
@@ -56,13 +58,25 @@ describe('useLedgerErrorAction', () => {
         expect(openSettings).not.toHaveBeenCalled()
     })
 
-    it('falls back to Settings when no enable prompt is available (iOS)', async () => {
+    it('falls back to Settings when the Android dialog could not be shown', async () => {
         requestEnable.mockResolvedValue(false)
         const { result } = renderHook(() => useLedgerErrorAction())
 
         result.current.runAction('bluetooth')
 
         await vi.waitFor(() => expect(openSettings).toHaveBeenCalledOnce())
+    })
+
+    it('goes straight to Settings on iOS, which cannot report whether its power alert appeared', () => {
+        // iOS `requestEnable` resolves true even when the alert is suppressed,
+        // so a result-keyed fallback left the button doing nothing at all.
+        Platform.OS = 'ios'
+        const { result } = renderHook(() => useLedgerErrorAction())
+
+        result.current.runAction('bluetooth')
+
+        expect(openSettings).toHaveBeenCalledOnce()
+        expect(requestEnable).not.toHaveBeenCalled()
     })
 
     it('routes location and permission actions to their own destinations', () => {

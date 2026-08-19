@@ -70,9 +70,15 @@ export type UseLedgerSigningContentResult = {
  * derives the display status, and wires cancel/retry through the parent
  * machine via the pipeline's hardware control methods.
  *
- * `isVisible` is derived from status: the silent-scan phase ('searching')
- * keeps the sheet closed so the user only sees UI once the device responds,
- * matching Android's native behavior.
+ * `isVisible` is derived from status: on the FIRST attempt the silent-scan
+ * phase ('searching') keeps the sheet closed so the user only sees UI once the
+ * device responds, matching Android's native behavior. After a retry the sheet
+ * stays up through 'searching' instead — two reasons, both learned the hard
+ * way. The sheet is keyed by request id, so letting it close and reopen within
+ * one request dismisses and re-presents the same sheet id, which does not come
+ * back and strands the user on the calling screen forever. And a retry the user
+ * asked for must remain cancellable while it reconnects, which a hidden sheet
+ * cannot be.
  *
  * Every terminal error renders in this sheet, including connection-class
  * ones. Auto-opening the troubleshooting sheet instead (the previous
@@ -154,9 +160,10 @@ export const useLedgerSigningContent = (): UseLedgerSigningContentResult => {
     }, [closeTroubleshooting])
 
     const isActive = status !== 'idle'
+    const hasRetried = (hardware?.context.retryCount ?? 0) > 0
 
     return {
-        isVisible: isActive && status !== 'searching',
+        isVisible: isActive && (status !== 'searching' || hasRetried),
         status,
         deviceName,
         currentTx,

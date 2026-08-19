@@ -38,6 +38,7 @@ type ChildSnapshotOverrides = {
     totalTxs?: number | null
     operation?: 'transaction' | 'data'
     errorKind?: LedgerErrorPresetKind | null
+    retryCount?: number
 }
 
 // Lightweight stand-in for the real HardwareChildSnapshot — only the surface
@@ -65,6 +66,7 @@ const buildChildSnapshot = (
             error: overrides.errorKind
                 ? { kind: overrides.errorKind, cause: undefined }
                 : null,
+            retryCount: overrides.retryCount ?? 0,
         },
     } as unknown as HardwareChildSnapshot
 }
@@ -115,6 +117,21 @@ describe('useLedgerSigningContent', () => {
         })
         const { result } = renderHook(() => useLedgerSigningContent())
         expect(result.current.isVisible).toBe(false)
+        expect(result.current.status).toBe('searching')
+    })
+
+    it('stays visible while a retry reconnects', () => {
+        // The sheet is keyed by request id, so closing it here and reopening on
+        // the next error dismisses and re-presents the same id — which does not
+        // come back, stranding the user on the calling screen with no cancel.
+        mockPipeline({
+            snapshot: buildChildSnapshot({
+                value: { active: 'searching' },
+                retryCount: 1,
+            }),
+        })
+        const { result } = renderHook(() => useLedgerSigningContent())
+        expect(result.current.isVisible).toBe(true)
         expect(result.current.status).toBe('searching')
     })
 

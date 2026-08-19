@@ -47,6 +47,14 @@ export type HardwareSigningContext = HardwareSigningInput & {
     currentTx: number
     error: Nullable<HardwareErrorPayload>
     results: SigningResult[]
+    /**
+     * Attempts the user explicitly asked for after a failure. The overlay keeps
+     * its sheet mounted once this is non-zero: the connect phase is otherwise
+     * silent (no UI until the device answers), which after a Retry would tear
+     * the sheet down and leave the user staring at the calling screen with
+     * nothing to cancel.
+     */
+    retryCount: number
 }
 
 export type HardwareSigningEvent =

@@ -11,6 +11,7 @@
  */
 
 import { useCallback } from 'react'
+import { Platform } from 'react-native'
 import type { LedgerErrorActionKind } from '../utils/ledgerErrorPresets'
 import { useBlePermissions } from './useBlePermissions'
 import { useBluetoothState } from './useBluetoothState'
@@ -22,11 +23,17 @@ type UseLedgerErrorActionResult = {
 /**
  * Executes the OS-level shortcut a Ledger error preset asks for.
  *
- * Bluetooth is the asymmetric one: Android can turn the radio on from a system
- * dialog without leaving Pera, while iOS has no such API and no public
- * Bluetooth settings URL — the app's own settings page (which carries its
- * Bluetooth permission toggle) is the closest sanctioned destination, so a
- * failed/absent enable prompt falls back to it on both platforms.
+ * Bluetooth is the asymmetric one. Android's `requestEnable` shows a real
+ * system dialog and reports whether it appeared, so the user never leaves
+ * Pera. iOS cannot toggle the radio at all: its `requestEnable` only asks
+ * CoreBluetooth to present the system power alert and returns `true`
+ * unconditionally because it has no way to know whether anything was shown —
+ * and that alert is suppressed once it has been shown, or when a central
+ * manager already exists (which the signing pre-flight has just created).
+ * Keying the fallback on that return value therefore left the button doing
+ * nothing at all, so iOS goes straight to Pera's settings page — the only
+ * destination guaranteed to be visible, and the closest sanctioned one, since
+ * there is no public URL for the Bluetooth pane.
  */
 export const useLedgerErrorAction = (): UseLedgerErrorActionResult => {
     const { requestEnable } = useBluetoothState()
@@ -39,6 +46,10 @@ export const useLedgerErrorAction = (): UseLedgerErrorActionResult => {
                 return
             }
             if (kind === 'app_settings') {
+                void openSettings()
+                return
+            }
+            if (Platform.OS !== 'android') {
                 void openSettings()
                 return
             }
