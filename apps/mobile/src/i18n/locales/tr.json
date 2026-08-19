@@ -2111,7 +2111,9 @@
         },
         "destination": {
             "error_title": "Bir şeyler ters gitti",
-            "error_body": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene."
+            "error_body": "Beklenmeyen bir hata oluştu. Lütfen tekrar dene.",
+            "inbox_unavailable_title": "Varlık gelen kutusu kullanılamıyor",
+            "inbox_unavailable_body": "Alıcı bu varlığı eklemedi ve varlık gelen kutusu bu ağda kullanılamıyor. Göndermek için MainNet veya TestNet'e geç."
         },
         "confirmation": {
             "edit": "Düzenle",

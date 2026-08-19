@@ -448,6 +448,9 @@ describe('useTransactionSendFlow', () => {
             })
         })
         expect(mockBuildSendViaInbox).toHaveBeenCalledTimes(1)
+        expect(mockBuildSendViaInbox).toHaveBeenCalledWith(
+            expect.objectContaining({ senderMinFee: 1000n }),
+        )
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],
@@ -456,6 +459,38 @@ describe('useTransactionSendFlow', () => {
                     description: 'Send transaction',
                 },
             }),
+        )
+    })
+
+    it('sendArc59: passes the PQ-aware sender fee to the builder', async () => {
+        mockResolveMinFeeForSender.mockReturnValue(3000n)
+        const { result } = renderHook(() => useTransactionSendFlow())
+        await act(async () => {
+            await result.current.execute({
+                params: {
+                    sendMode: 'sendArc59',
+                    sender: { address: 'A' } as any,
+                    receiver: 'B',
+                    asset: { assetId: 99n, decimals: 0 } as any,
+                    amount: new Decimal(1),
+                    arc59Summary: {
+                        algo_fund_amount: 0,
+                        minimum_balance_requirement: 0,
+                        is_arc59_opted_in: true,
+                        inner_tx_count: 1,
+                    } as any,
+                },
+            })
+        })
+        expect(mockResolveMinFeeForSender).toHaveBeenCalledWith({
+            senderAddress: 'A',
+            accounts: [],
+            suggestedMinFee: 1000n,
+            configMinTxnFee: 1000n,
+            pqMultiplier: 3n,
+        })
+        expect(mockBuildSendViaInbox).toHaveBeenCalledWith(
+            expect.objectContaining({ senderMinFee: 3000n }),
         )
     })
 
@@ -474,7 +509,10 @@ describe('useTransactionSendFlow', () => {
         })
         expect(mockBuildClaimAsset).toHaveBeenCalledTimes(1)
         expect(mockBuildClaimAsset).toHaveBeenCalledWith(
-            expect.objectContaining({ inboxAddress: 'INBOX' }),
+            expect.objectContaining({
+                inboxAddress: 'INBOX',
+                senderMinFee: 1000n,
+            }),
         )
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -572,6 +610,7 @@ describe('useTransactionSendFlow', () => {
             expect.objectContaining({
                 inboxAddress: 'INBOX',
                 assetCreator: 'CREATOR',
+                senderMinFee: 1000n,
             }),
         )
         expect(mockSubmit).toHaveBeenCalledWith(

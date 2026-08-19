@@ -306,12 +306,21 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     if (!params.arc59Summary) {
                         throw new InvalidSendParamsError()
                     }
+                    const suggestedMinFee = await fetchSuggestedMinFee()
+                    const senderMinFee = resolveMinFeeForSender({
+                        senderAddress: params.sender.address,
+                        accounts,
+                        suggestedMinFee,
+                        configMinTxnFee: minTxnFee,
+                        pqMultiplier,
+                    })
                     const unsignedTxs = await buildSendViaInboxTxs({
                         sender: params.sender.address,
                         receiver: params.receiver,
                         assetId,
                         amount: amountInBaseUnits,
                         summary: params.arc59Summary,
+                        senderMinFee,
                     })
                     const result = await submit({
                         unsignedTxs,
@@ -333,7 +342,16 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 }
             }
         },
-        [buildExpressTxs, buildSendViaInboxTxs, buildNormalTxs, submit],
+        [
+            buildExpressTxs,
+            buildSendViaInboxTxs,
+            buildNormalTxs,
+            submit,
+            accounts,
+            fetchSuggestedMinFee,
+            minTxnFee,
+            pqMultiplier,
+        ],
     )
 
     const executeArc59 = useCallback(
@@ -342,12 +360,22 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 throw new InvalidSendParamsError()
             }
 
+            const suggestedMinFee = await fetchSuggestedMinFee()
+            const senderMinFee = resolveMinFeeForSender({
+                senderAddress: params.sender.address,
+                accounts,
+                suggestedMinFee,
+                configMinTxnFee: minTxnFee,
+                pqMultiplier,
+            })
+
             if (params.sendMode === 'claimArc59') {
                 const unsignedTxs = await buildClaimAssetTxs({
                     sender: params.sender.address,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
                     inboxAddress: params.inboxAddress ?? null,
+                    senderMinFee,
                 })
                 const result = await submit({
                     unsignedTxs,
@@ -387,6 +415,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     shouldClaimAlgo: params.shouldClaimAlgo,
                     inboxAddress: params.inboxAddress ?? null,
                     assetCreator: params.asset.creator.address,
+                    senderMinFee,
                 })
                 const result = await submit({
                     unsignedTxs,
@@ -401,6 +430,10 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             submit,
             network,
             invalidateBalances,
+            accounts,
+            fetchSuggestedMinFee,
+            minTxnFee,
+            pqMultiplier,
         ],
     )
 

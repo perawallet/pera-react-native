@@ -2127,7 +2127,9 @@
         },
         "destination": {
             "error_title": "Algo deu errado",
-            "error_body": "Ocorreu um erro inesperado. Tente novamente."
+            "error_body": "Ocorreu um erro inesperado. Tente novamente.",
+            "inbox_unavailable_title": "Asset Inbox indisponível",
+            "inbox_unavailable_body": "O destinatário não adicionou este ativo e a Asset Inbox não está disponível nesta rede. Mude para a MainNet ou TestNet para enviá-lo."
         },
         "confirmation": {
             "edit": "Editar",

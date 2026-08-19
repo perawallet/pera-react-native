@@ -2111,7 +2111,9 @@
         },
         "destination": {
             "error_title": "Algo salió mal",
-            "error_body": "Se ha producido un error inesperado. Vuelve a intentarlo."
+            "error_body": "Se ha producido un error inesperado. Vuelve a intentarlo.",
+            "inbox_unavailable_title": "Bandeja de activos no disponible",
+            "inbox_unavailable_body": "El receptor no ha añadido este activo y la bandeja de activos no está disponible en esta red. Cambia a MainNet o TestNet para enviarlo."
         },
         "confirmation": {
             "edit": "Editar",

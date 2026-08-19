@@ -2111,7 +2111,9 @@
         },
         "destination": {
             "error_title": "Une erreur est survenue",
-            "error_body": "Une erreur inattendue s’est produite. Veuillez réessayer."
+            "error_body": "Une erreur inattendue s’est produite. Veuillez réessayer.",
+            "inbox_unavailable_title": "Boîte de réception d’actifs indisponible",
+            "inbox_unavailable_body": "Le destinataire n’a pas ajouté cet actif et la boîte de réception d’actifs n’est pas disponible sur ce réseau. Passez sur MainNet ou TestNet pour l’envoyer."
         },
         "confirmation": {
             "edit": "Modifier",

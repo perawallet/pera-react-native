@@ -30,6 +30,12 @@ type SendViaInboxParams = {
     assetId: bigint
     amount: bigint
     summary: Arc59SendSummaryResponse
+    /**
+     * µAlgo minimum fee for the sender's own (outer) transactions —
+     * PQ-aware, resolved by the caller. Inner txns are app-authorized and
+     * always pool at the network base fee.
+     */
+    senderMinFee: bigint
 }
 
 type UseArc59SendTransactionResult = {
@@ -44,11 +50,17 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
 
     const buildSendViaInboxTxs = useCallback(
         async (params: SendViaInboxParams): Promise<PeraTransaction[]> => {
-            const { sender, receiver, assetId, amount, summary } = params
+            const { sender, receiver, assetId, amount, summary, senderMinFee } =
+                params
             const arc59Config = requireArc59Config(network)
 
             const suggestedParams = await algokit.getSuggestedParams()
             const minFee = BigInt(suggestedParams.minFee)
+            const senderFee = senderMinFee > minFee ? senderMinFee : minFee
+            // Only override AlgoKit's auto-sizing when the sender's rate is
+            // raised (PQ signer), so a classical sender's group is unchanged.
+            const outerFeeOverride =
+                senderFee > minFee ? { staticFee: senderFee.microAlgo() } : {}
 
             const appClient = new ARC59Client({
                 appId: arc59Config.appId,
@@ -68,6 +80,7 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                     sender,
                     receiver: arc59Config.appAddress,
                     amount: totalPaymentAmount.microAlgo(),
+                    ...outerFeeOverride,
                 })
             }
 
@@ -99,7 +112,9 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                 composer.addAppCallMethodCall(
                     await appClient.params.arc59_optRouterIn({
                         args: [assetId],
-                        extraFee: minFee.microAlgo(),
+                        ...(senderFee > minFee
+                            ? { staticFee: (senderFee + minFee).microAlgo() }
+                            : { extraFee: minFee.microAlgo() }),
                         ...optRouterInRefs,
                     }),
                 )
@@ -115,13 +130,23 @@ export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
                             receiver: arc59Config.appAddress,
                             amount,
                             assetId,
+                            ...outerFeeOverride,
                         }),
                         receiver,
                         0,
                     ],
-                    extraFee: (
-                        minFee * BigInt(summary.inner_tx_count)
-                    ).microAlgo(),
+                    ...(senderFee > minFee
+                        ? {
+                              staticFee: (
+                                  senderFee +
+                                  minFee * BigInt(summary.inner_tx_count)
+                              ).microAlgo(),
+                          }
+                        : {
+                              extraFee: (
+                                  minFee * BigInt(summary.inner_tx_count)
+                              ).microAlgo(),
+                          }),
                     ...sendAssetRefs,
                 }),
             )

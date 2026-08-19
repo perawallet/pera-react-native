@@ -2111,7 +2111,9 @@
         },
         "destination": {
             "error_title": "Something went wrong",
-            "error_body": "An unexpected error has occurred. Please try again."
+            "error_body": "An unexpected error has occurred. Please try again.",
+            "inbox_unavailable_title": "Asset Inbox unavailable",
+            "inbox_unavailable_body": "The recipient hasn't opted in to this asset, and Asset Inbox isn't available on this network. Switch to MainNet or TestNet to send it."
         },
         "confirmation": {
             "edit": "Edit",
