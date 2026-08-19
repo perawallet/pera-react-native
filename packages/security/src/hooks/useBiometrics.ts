@@ -52,10 +52,11 @@ type UseBiometricsResult = {
     isAvailable: boolean
     /**
      * Reconciles, so NOT a pure read. Returns true only for an enrolled class-3
-     * ("strong") biometric. It additionally deletes the blob when the OS
-     * positively reports the enrollment gone or downgraded to class-2 — but not
-     * for an ambiguous report such as a transient lockout. Callers get the
-     * post-reconciliation answer, and a subsequent call is consistent with it.
+     * ("strong") biometric. It also deletes the blob on an affirmative class-2
+     * report, and — coarsely, see the branch itself — whenever no biometric
+     * appears available at all. A returned false therefore does NOT imply the
+     * blob is gone: an unconfirmable level reports false and keeps it. Callers
+     * get the post-reconciliation answer, consistent with a subsequent call.
      */
     checkBiometricsEnabled: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
@@ -170,6 +171,13 @@ export const useBiometrics = (): UseBiometricsResult => {
                         // enroll a fingerprint.
                         const level = await biometricsService.getSecurityLevel()
                         if (level !== 'strong') {
+                            // Clear any blob the reconcile kept for an
+                            // unconfirmable level. With `isEnabled` false the
+                            // Settings toggle reads OFF, so its delete branch
+                            // is unreachable and this is the only user-driven
+                            // moment where dropping it is unambiguously safe.
+                            await removeSecret(BIOMETRIC_BLOB_KEY_ID)
+                            setIsEnabled(false)
                             return { ok: false, reason: 'weak-biometric' }
                         }
 
@@ -193,7 +201,13 @@ export const useBiometrics = (): UseBiometricsResult => {
                 return { ok: false, reason: 'error' }
             }
         },
-        [biometricsService, withSecret, writeBiometricBlob],
+        [
+            biometricsService,
+            withSecret,
+            writeBiometricBlob,
+            setIsEnabled,
+            removeSecret,
+        ],
     )
 
     // Re-bind the biometric blob to the current PIN_RECORD bytes. Called by

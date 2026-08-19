@@ -186,9 +186,10 @@ describe('useBiometrics', () => {
 
     // Neither level is a revocation report. iOS reports `isEnrolledAsync` true
     // during biometry lockout (an explicit special case in expo's native module)
-    // while `getEnrolledLevelAsync` drops to 'secret', and the service maps a
-    // thrown `getEnrolledLevelAsync` to 'none'. Both clear on their own, so
-    // deleting on either would destroy a working opt-in over a transient state.
+    // while `getEnrolledLevelAsync` drops to 'secret', which clears when the
+    // user enters their device passcode. 'none' is what the service returns when
+    // `getEnrolledLevelAsync` throws, which may be permanent — but a report it
+    // could not make is still not a report that the enrollment is gone.
     test.each(['secret', 'none'] as const)(
         'checkBiometricsEnabled reports disabled but keeps the blob at level %s',
         async level => {
@@ -246,6 +247,28 @@ describe('useBiometrics', () => {
         })
 
         expect(result.current.isEnabled).toBe(false)
+    })
+
+    // The reconcile keeps an unconfirmable blob, and with `isEnabled` false the
+    // Settings toggle reads OFF — so its delete branch is unpressable and the
+    // blob would be stranded. Refusing an explicit enable is the user-driven
+    // moment where clearing it is unambiguously safe.
+    test('enableBiometrics clears a blob it refuses to bind', async () => {
+        kmsMocks.pinBytes = new TextEncoder().encode('123456')
+        kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+        mockCheckBiometricsAvailable.mockResolvedValue(true)
+        mockGetSecurityLevel.mockResolvedValue('secret')
+
+        const { result } = await renderAndSettle()
+
+        await act(async () => {
+            await result.current.enableBiometrics()
+        })
+
+        expect(kmsMocks.removeSecret).toHaveBeenCalledWith(
+            BIOMETRIC_BLOB_KEY_ID,
+        )
+        expect(kmsMocks.biometricBytes).toBeNull()
     })
 
     // Binding is stricter than the reconcile's delete rule on purpose: the
