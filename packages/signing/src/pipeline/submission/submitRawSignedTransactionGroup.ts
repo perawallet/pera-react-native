@@ -77,10 +77,9 @@ const deriveTxIds = (rawSignedTransactions: Uint8Array[]): string[] => {
             decodeSignedTransaction(bytes).txn.txID(),
         )
     } catch (error) {
-        logger.warn(
-            'submitRawSignedTransactionGroup: txId derivation failed',
-            { error },
-        )
+        logger.warn('submitRawSignedTransactionGroup: txId derivation failed', {
+            error,
+        })
         return []
     }
 }

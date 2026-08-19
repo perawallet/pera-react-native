@@ -19,9 +19,10 @@ const mockSendRawTransaction = vi.fn()
 const mockTxID = vi.fn(() => 'DERIVED_TXID')
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual = await importOriginal<
-        typeof import('@perawallet/wallet-core-blockchain')
-    >()
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
     return {
         ...actual,
         decodeSignedTransaction: () => ({ txn: { txID: mockTxID } }),
