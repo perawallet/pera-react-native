@@ -25,7 +25,8 @@ vi.mock('../../api', async importOriginal => ({
     readItems: (...a: unknown[]) => readItems(...a),
 }))
 
-import { pullBackupItems } from '../pullBackupItems'
+import { pullBackupItems, buildPulledAccounts } from '../pullBackupItems'
+import { BackupAccountType } from '../../models'
 
 const encKey = new Uint8Array(32).fill(7)
 const backupId = 'did:pera:ADDR'
@@ -309,5 +310,34 @@ describe('pullBackupItems', () => {
         expect(result.skipped).toEqual([
             { key: 'unknown/FOO', reason: 'missing-address' },
         ])
+    })
+})
+
+describe('buildPulledAccounts', () => {
+    it('attaches a HdSeed secret to its matching HdKey account', () => {
+        const addr = new Map<string, never>([
+            ['F', { type: 'HdKey', address: 'F', seedFirstDerivedAddress: 'F', publicKey: 'p', account: 0, change: 0, keyIndex: 0, derivationType: 9, customName: null } as never],
+        ])
+        const sec = new Map<string, never>([
+            ['F', { type: 'HdSeed', seed: 's', entropy: 'e' } as never],
+        ])
+        const result = buildPulledAccounts(addr as never, sec as never)
+        expect(result).toHaveLength(1)
+        expect(result[0].addressPayload.type).toBe('HdKey')
+        expect(result[0].secretsPayload).toMatchObject({ type: 'HdSeed' })
+    })
+
+    it('synthesizes a standalone HdSeed entry for an orphan seed secret', () => {
+        const addr = new Map<string, never>()
+        const sec = new Map<string, never>([
+            ['F', { type: 'HdSeed', seed: 's', entropy: 'e' } as never],
+        ])
+        const result = buildPulledAccounts(addr as never, sec as never)
+        expect(result).toHaveLength(1)
+        expect(result[0]).toMatchObject({
+            address: 'F',
+            addressPayload: { type: BackupAccountType.HdSeed, address: 'F' },
+            secretsPayload: { type: 'HdSeed' },
+        })
     })
 })

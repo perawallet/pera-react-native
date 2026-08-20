@@ -36,10 +36,17 @@ const customName = z
     .optional()
     .transform(value => (typeof value === 'string' ? value : null))
 
+/**
+ * Epoch millis of the last local content change. Drives last-write-wins when
+ * two devices edit the same account, so it rides in every mutable payload.
+ */
+const updatedAt = nonNegativeInt.optional()
+
 export const algo25AddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.algo25),
     address: z.string(),
     customName,
+    updatedAt,
 })
 export const hdSeedAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hdSeed),
@@ -55,6 +62,7 @@ export const hdWalletAddressPayloadSchema = z.object({
     keyIndex: nonNegativeInt,
     derivationType: nonNegativeInt,
     customName,
+    updatedAt,
 })
 export const hardwareAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.hardware),
@@ -65,11 +73,13 @@ export const hardwareAddressPayloadSchema = z.object({
     manufacturer: z.string(),
     transportType: backupHardwareTransportTypeSchema,
     customName,
+    updatedAt,
 })
 export const watchAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.watch),
     address: z.string(),
     customName,
+    updatedAt,
 })
 export const multisigAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.multisig),
@@ -78,11 +88,13 @@ export const multisigAddressPayloadSchema = z.object({
     threshold: nonNegativeInt,
     version: nonNegativeInt,
     customName,
+    updatedAt,
 })
 export const quantumAddressPayloadSchema = z.object({
     type: z.literal(BackupAccountType.quantum),
     address: z.string(),
     customName,
+    updatedAt,
 })
 
 export const addressBackupPayloadSchema = z.discriminatedUnion('type', [

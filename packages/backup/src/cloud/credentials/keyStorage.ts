@@ -12,6 +12,7 @@
 
 import {
     commitSecret,
+    hasSecret,
     removeSecret,
     withSecret,
 } from '@perawallet/wallet-core-kms'
@@ -64,6 +65,9 @@ export const withBackupAuthSecretKey = async <T>(
 export const withBackupEncryptionKey = async <T>(
     handler: (bytes: Uint8Array) => T | Promise<T>,
 ): Promise<Nullable<T>> => withSecret(CLOUD_BACKUP_ENC_KEY_ID, handler)
+
+/** True when a backup auth key is present (i.e. backup is configured on-device). */
+export const hasBackupCredentials = (): boolean => hasSecret(CLOUD_BACKUP_AUTH_KEY_ID)
 
 export const deleteBackupKeys = async (): Promise<void> => {
     const results = await Promise.allSettled([

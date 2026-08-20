@@ -28,6 +28,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
 import {
     batchUpsertItems,
     deleteItem,
+    destroyBackup,
     fetchDelta,
     fetchItem,
     upsertItem,
@@ -201,5 +202,30 @@ describe('deleteItem', () => {
             deviceId: 'device-1',
         })
         expect(result).toEqual({ seq: 9 })
+    })
+})
+
+describe('destroyBackup', () => {
+    beforeEach(() => signedBackupRequestMock.mockReset())
+
+    it('issues a signed DELETE to the backup root (empty path suffix)', async () => {
+        signedBackupRequestMock.mockResolvedValue({
+            backup_id: 'did:pera:ADDR',
+        })
+
+        const result = await destroyBackup(
+            'mainnet',
+            'did:pera:ADDR',
+            'device-1',
+        )
+
+        expect(signedBackupRequestMock).toHaveBeenCalledWith({
+            network: 'mainnet',
+            method: 'DELETE',
+            backupId: 'did:pera:ADDR',
+            pathSuffix: '',
+            deviceId: 'device-1',
+        })
+        expect(result).toEqual({ backup_id: 'did:pera:ADDR' })
     })
 })

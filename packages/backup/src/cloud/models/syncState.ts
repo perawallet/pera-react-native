@@ -25,8 +25,13 @@ export type SyncItemState = {
     baseVer: number
     isDirty: boolean
     status: BackupItemStatus
+    /** Server's opaque item hash; detects REMOTE changes only. */
     lastRemoteHash: ItemHash | null
+    /** SHA-256 of canonical PLAINTEXT (sans updatedAt); detects LOCAL changes. */
+    localContentHash?: string | null
     pendingDelete?: boolean
+    /** Epoch millis local content last diverged; written as payload.updatedAt. */
+    localUpdatedAt?: number | null
 }
 
 export type BackupSyncResult = 'SUCCESS' | 'FAILED'

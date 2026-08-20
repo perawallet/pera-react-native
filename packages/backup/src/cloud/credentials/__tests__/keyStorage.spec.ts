@@ -12,11 +12,12 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
-const { commitSecretMock, removeSecretMock, withSecretMock } = vi.hoisted(
+const { commitSecretMock, removeSecretMock, withSecretMock, hasSecretMock } = vi.hoisted(
     () => ({
         commitSecretMock: vi.fn(async () => undefined),
         removeSecretMock: vi.fn(async () => undefined),
         withSecretMock: vi.fn(),
+        hasSecretMock: vi.fn(() => false),
     }),
 )
 
@@ -24,6 +25,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     commitSecret: commitSecretMock,
     removeSecret: removeSecretMock,
     withSecret: withSecretMock,
+    hasSecret: hasSecretMock,
 }))
 
 import {
@@ -31,6 +33,7 @@ import {
     CLOUD_BACKUP_ENC_KEY_ID,
     CLOUD_BACKUP_MNEMONIC_ID,
     deleteBackupKeys,
+    hasBackupCredentials,
     persistBackupKeys,
     withBackupEncryptionKey,
     withBackupMnemonic,
@@ -189,5 +192,23 @@ describe('deleteBackupKeys', () => {
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_ENC_KEY_ID)
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_AUTH_KEY_ID)
         expect(removeSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_MNEMONIC_ID)
+    })
+})
+
+describe('hasBackupCredentials', () => {
+    beforeEach(() => {
+        hasSecretMock.mockReset()
+        hasSecretMock.mockReturnValue(false)
+    })
+
+    test('returns false when the auth key is not present', () => {
+        expect(hasBackupCredentials()).toBe(false)
+        expect(hasSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_AUTH_KEY_ID)
+    })
+
+    test('returns true when the auth key is present', () => {
+        hasSecretMock.mockReturnValue(true)
+        expect(hasBackupCredentials()).toBe(true)
+        expect(hasSecretMock).toHaveBeenCalledWith(CLOUD_BACKUP_AUTH_KEY_ID)
     })
 })

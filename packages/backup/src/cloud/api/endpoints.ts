@@ -30,6 +30,7 @@ import type {
     BatchUpsertResponse,
     DeleteItemResponse,
     DeltaResponse,
+    DestroyBackupResponse,
     ManifestResponse,
     ReadItemsResponse,
     RegisterBackupRequest,
@@ -166,5 +167,21 @@ export const deleteItem = async (
         method: 'DELETE',
         backupId,
         pathSuffix: `/${key}`,
+        deviceId,
+    })
+
+/** Destroys the ENTIRE remote backup: a single signed `DELETE /backup/<id>`
+ *  (empty path suffix, no body). The server wipes all items + the registration
+ *  and pushes BACKUP_DELETED to other devices — do NOT enumerate-and-delete. */
+export const destroyBackup = async (
+    network: Network,
+    backupId: BackupId,
+    deviceId: DeviceId,
+): Promise<DestroyBackupResponse> =>
+    signedBackupRequest<DestroyBackupResponse>({
+        network,
+        method: 'DELETE',
+        backupId,
+        pathSuffix: '',
         deviceId,
     })

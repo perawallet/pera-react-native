@@ -163,6 +163,28 @@ describe('parseAddressPayload', () => {
             BackupPayloadParseError,
         )
     })
+
+    it('parses updatedAt on a renameable address payload', () => {
+        const raw = JSON.stringify({
+            type: 'algo25',
+            address: 'ADDR',
+            customName: 'Main',
+            updatedAt: 1719300000000,
+        })
+
+        expect(parseAddressPayload(raw)).toMatchObject({
+            type: 'algo25',
+            address: 'ADDR',
+            customName: 'Main',
+            updatedAt: 1719300000000,
+        })
+    })
+
+    it('treats a missing updatedAt as undefined (back-compat)', () => {
+        const raw = JSON.stringify({ type: 'algo25', address: 'ADDR' })
+
+        expect(parseAddressPayload(raw).updatedAt).toBeUndefined()
+    })
 })
 
 describe('parseSecretsPayload', () => {

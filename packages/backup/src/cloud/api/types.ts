@@ -132,3 +132,7 @@ export type BatchUpsertResponse = {
 export type DeleteItemResponse = {
     seq: number
 }
+
+export type DestroyBackupResponse = {
+    backup_id: string
+}
