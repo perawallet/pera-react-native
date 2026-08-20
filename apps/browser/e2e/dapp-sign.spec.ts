@@ -315,20 +315,30 @@ test('sign_transactions on a connected origin opens the approval popup and decod
     await expect(approvalPage.getByText(shortAddr).first()).toBeVisible({
         timeout: 20_000,
     })
-    await expect(
-        approvalPage.getByTestId('signing-confirm-slide_thumb'),
-    ).toBeVisible({ timeout: 20_000 })
+    const confirmControl = approvalPage.getByTestId('signing-confirm-slide')
+    await expect(confirmControl).toBeVisible({ timeout: 20_000 })
     // The footer must be pinned inside the fixed 600px surface, not pushed
     // below the overflow:hidden fold.
-    await expect(
-        approvalPage.getByTestId('signing-confirm-slide'),
-    ).toBeInViewport()
+    await expect(confirmControl).toBeInViewport()
 
-    // The slide-to-confirm gesture is a MANUAL acceptance step: a synthetic
-    // pointer can't complete gesture-handler's pan in a programmatically-opened
-    // tab (the thumb tracks, but pointerup never fires onEnd). The signing
-    // pipeline itself is surface-independent.
-    await approvalPage.close()
+    // Web always uses tap-to-confirm (PERA-4949): first tap arms, second
+    // confirms. Unlike the old slide gesture (which a synthetic pointer could
+    // never complete), this lets the test drive acceptance end-to-end and
+    // assert the signed txn actually reaches the dapp.
+    await confirmControl.click()
+    await confirmControl.click()
+
+    await expect
+        .poll(() => dappPage.locator('#sign-result').textContent(), {
+            timeout: 20_000,
+        })
+        .not.toBe('')
+    const signResult = JSON.parse(
+        (await dappPage.locator('#sign-result').textContent()) ?? '{}',
+    ) as { stxns?: string[] }
+    expect(signResult.stxns?.length).toBe(1)
+    expect(signResult.stxns?.[0]).toBeTruthy()
+
     expect(approvalErrors, 'approval popup threw an uncaught error').toEqual([])
     expect(dappPageErrors, 'dapp page threw an uncaught error').toEqual([])
 })
@@ -351,9 +361,9 @@ test('closing the approval popup rejects with MethodCanceledError', async () => 
         await unlockInput.fill(PASSWORD)
         await approvalPage.getByTestId('unlock-submit').click()
     }
-    await expect(
-        approvalPage.getByTestId('signing-confirm-slide_thumb'),
-    ).toBeVisible({ timeout: 20_000 })
+    await expect(approvalPage.getByTestId('signing-confirm-slide')).toBeVisible(
+        { timeout: 20_000 },
+    )
 
     // Closing fires `pagehide`, which useDappRequest turns into a
     // rejectApproval — a popup has no chrome.windows.onRemoved lifecycle, so

@@ -29,6 +29,7 @@ export const routeCapabilities: RouteCapabilities = {
     walletConnectSettings: true,
     passkeysAutofillSettings: true,
     storeRating: true,
+    confirmationModeSetting: true,
     developerSettings: true,
     vaultSecuritySettings: false,
     // Native's WalletConnect covers dapp connections; the ARC-0027 injected

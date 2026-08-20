@@ -13,6 +13,7 @@
 import { PWListItem, PWScreen, PWView } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
+import { routeCapabilities } from '@routes/capabilities'
 import { useStyles } from './styles'
 
 export const SettingsAdvancedScreen = () => {
@@ -30,13 +31,15 @@ export const SettingsAdvancedScreen = () => {
                     style={styles.row}
                     testID='settings_advanced_launch_item'
                 />
-                <PWListItem
-                    icon='check'
-                    title={t('settings.advanced.confirmation_label')}
-                    onPress={() => navigation.push('ConfirmationSettings')}
-                    style={styles.row}
-                    testID='settings_advanced_confirmation_item'
-                />
+                {routeCapabilities.confirmationModeSetting && (
+                    <PWListItem
+                        icon='check'
+                        title={t('settings.advanced.confirmation_label')}
+                        onPress={() => navigation.push('ConfirmationSettings')}
+                        style={styles.row}
+                        testID='settings_advanced_confirmation_item'
+                    />
+                )}
             </PWView>
         </PWScreen>
     )
