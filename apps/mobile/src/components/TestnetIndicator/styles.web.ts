@@ -14,24 +14,30 @@ import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
-    // Absolutely positioned (like OfflineBanner) so it overlays instead of
-    // reflowing the screen beneath it — no persistent banner eating into the
-    // 360x600 popup viewport. `box-none` lets taps pass through to whatever
-    // header content it happens to sit above.
-    container: {
+    // In-flow, not absolute: the bar owns its height, so titles can't
+    // collide with it. Costs ~18px, and only off MainNet.
+    bar: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: theme.spacing.xxs,
+        backgroundColor: theme.colors.testnetBg,
+    },
+    // Ambient not-MainNet signal on the remaining edges. Absolute over the
+    // whole card (the in-flow bar is the top edge, so no borderTopWidth);
+    // zIndex.max keeps the accents above screen content. Bottom sheets still
+    // portal above them (equal z-index, later in DOM order) — while a sheet
+    // is open the signal is the dimmed bar behind the backdrop.
+    frame: {
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
-        alignItems: 'center',
+        bottom: 0,
+        borderLeftWidth: theme.borders.md,
+        borderRightWidth: theme.borders.md,
+        borderBottomWidth: theme.borders.md,
+        borderColor: theme.colors.testnetBg,
         zIndex: theme.zIndex.max,
-    },
-    badge: {
-        marginTop: theme.spacing.xs,
-        paddingHorizontal: theme.spacing.sm,
-        paddingVertical: theme.spacing.xxs,
-        borderRadius: theme.borderRadius.full,
-        backgroundColor: theme.colors.testnetBg,
     },
     text: {
         ...getTypography(theme, 'caption'),

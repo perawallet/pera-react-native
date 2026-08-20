@@ -19,11 +19,9 @@ type UseTestnetIndicatorResult = {
     label: string
 }
 
-// Web has no OS status bar to host native's full-width testnet bar
-// (RootComponent.tsx), and a persistent in-flow banner would eat too much of
-// the 360x600 popup viewport. This surfaces the same "you're on TestNet"
-// signal as a small absolutely-positioned badge instead — see
-// TestnetIndicator.tsx / styles.ts.
+// Web has no OS status bar to host native's testnet bar exactly as native
+// renders it, but the shell shows the same signal: a slim in-flow bar (plus
+// frame accents) rendered by TestnetIndicator.tsx when off MainNet.
 export const useTestnetIndicator = (): UseTestnetIndicatorResult => {
     const { network, isMainnet } = useNetwork()
     const { t } = useLanguage()
