@@ -33,6 +33,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 const mockAddSignRequest = vi.fn()
+const mockSubmitAndAutoRefreshOptions = vi.fn()
 const mockDecodeTransaction = vi.fn()
 const mockDecodeSignedTransaction = vi.fn()
 const mockEncodeSignedTransactions = vi.fn()
@@ -46,6 +47,12 @@ const mockIsMultisigAccount = vi.fn()
 // Hoisted so it's initialized before the (hoisted) wallet-core-swaps mock factory
 // runs during the package import.
 const { mockValidate } = vi.hoisted(() => ({ mockValidate: vi.fn() }))
+// Same reason as mockValidate: the wallet-core-signing factory references
+// `getOpenSubmissionAttemptsForIntent` as an eager property, not inside a
+// function body, so a plain const would still be in TDZ when it runs.
+const { mockGetOpenSubmissionAttemptsForIntent } = vi.hoisted(() => ({
+    mockGetOpenSubmissionAttemptsForIntent: vi.fn(),
+}))
 
 // We deliberately do NOT delegate to the real `submitAndAutoRefresh`
 // via `vi.importActual` here. Importing the signing package transitively
@@ -73,7 +80,9 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
             txns: PeraSignedTransaction[],
         ) => Uint8Array[],
         signedTxns: PeraSignedTransaction[],
+        options?: unknown,
     ): Promise<string[]> => {
+        mockSubmitAndAutoRefreshOptions(options)
         const encoded = encodeSignedTransactions(signedTxns)
         const response = (await mockSendRawTransaction(encoded)) as {
             txid?: string | string[]
@@ -93,6 +102,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         }
         return ids
     },
+    getOpenSubmissionAttemptsForIntent: mockGetOpenSubmissionAttemptsForIntent,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => {
@@ -345,6 +355,10 @@ describe('useSwapExecution', () => {
         // Default: prepare returns valid result
         mockPrepareTransactions.mockResolvedValue(makePrepareResult())
 
+        // Default: no open ledger row for the intent — the retry guard
+        // passes and execution proceeds.
+        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([])
+
         // Default: status update succeeds
         mockUpdateSwapStatus.mockResolvedValue({ status: 'in_progress' })
 
@@ -534,6 +548,82 @@ describe('useSwapExecution', () => {
         expect(outcome).toEqual({ kind: 'stale-quote' })
         expect(mockPrepareTransactions).not.toHaveBeenCalled()
         expect(result.current.status).toBe('idle')
+    })
+
+    it('refuses to broadcast while an open swap attempt exists', async () => {
+        mockPrepareTransactions.mockResolvedValue(
+            makePrepareResult({ swapIdStr: 'SWAP1' }),
+        )
+        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([{}])
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-guard'))
+        })
+
+        expect(outcome).toEqual({ kind: 'verifying-previous' })
+        expect(result.current.status).toBe('verifying')
+        expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledWith({
+            network: 'mainnet',
+            sender: 'SWAPPER',
+            intentKey: { kind: 'swap', swapId: 'SWAP1' },
+        })
+        // The rebuilt attempt must not sign, broadcast, or report anything.
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockSendRawTransaction).not.toHaveBeenCalled()
+        expect(mockSubmitAndAutoRefreshOptions).not.toHaveBeenCalled()
+        expect(mockUpdateSwapStatus).not.toHaveBeenCalled()
+    })
+
+    it('proceeds once the previous attempt resolved', async () => {
+        mockPrepareTransactions.mockResolvedValue(
+            makePrepareResult({ swapIdStr: 'SWAP1' }),
+        )
+        mockGetOpenSubmissionAttemptsForIntent.mockResolvedValue([])
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-clear'))
+        })
+
+        expect(outcome).toEqual({ kind: 'success' })
+        expect(result.current.status).toBe('success')
+        expect(mockGetOpenSubmissionAttemptsForIntent).toHaveBeenCalledWith({
+            network: 'mainnet',
+            sender: 'SWAPPER',
+            intentKey: { kind: 'swap', swapId: 'SWAP1' },
+        })
+        // The submit call carries the ledger metadata for this intent.
+        expect(mockSubmitAndAutoRefreshOptions).toHaveBeenCalledWith({
+            flow: 'swap',
+            intentKey: { kind: 'swap', swapId: 'SWAP1' },
+            sender: 'SWAPPER',
+        })
+        expect(mockAddSignRequest).toHaveBeenCalledTimes(1)
+        expect(mockSendRawTransaction).toHaveBeenCalled()
+        expect(mockUpdateSwapStatus).toHaveBeenCalled()
+    })
+
+    it('skips the retry guard when prepareResult carries no swapId', async () => {
+        mockPrepareTransactions.mockResolvedValue(
+            makePrepareResult({ swapIdStr: '' }),
+        )
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(
+                makeQuote('quote-no-swap-id'),
+            )
+        })
+
+        expect(outcome).toEqual({ kind: 'success' })
+        expect(mockGetOpenSubmissionAttemptsForIntent).not.toHaveBeenCalled()
     })
 
     it('abandons a cancelled execution after prepare settles, before signing', async () => {

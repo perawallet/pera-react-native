@@ -1828,6 +1828,9 @@
             },
             "submission_failed": {
                 "title": "Impossible d’envoyer le rekey"
+            },
+            "submission_pending": {
+                "title": "Vérification de la tentative précédente"
             }
         },
         "confirm": {
@@ -2547,7 +2550,8 @@
             "completed": "Terminée",
             "failed": "Échouée",
             "pending": "En attente",
-            "raw_transaction": "Transaction brute"
+            "raw_transaction": "Transaction brute",
+            "pending_verifying": "En attente — vérification"
         },
         "list_item": {
             "send": "Envoi",
@@ -2852,7 +2856,9 @@
             "pending_cosign_title": "Demande de swap envoyée",
             "pending_cosign_body": "Votre swap nécessite une signature supplémentaire. Il sera finalisé dès que l’autre signataire l’aura approuvé depuis sa boîte de réception.",
             "quantum_fee_unsupported": "Les comptes Quantum ne peuvent pas encore échanger. Les frais de swap sont fixés par nos serveurs et ne couvrent pas les frais plus élevés qu’exige une signature Quantum.",
-            "quantum_multisig_unsupported": "Les comptes Quantum ne peuvent pas échanger depuis un compte partagé. Les clés Quantum ne peuvent pas participer à la signature Multisig."
+            "quantum_multisig_unsupported": "Les comptes Quantum ne peuvent pas échanger depuis un compte partagé. Les clés Quantum ne peuvent pas participer à la signature Multisig.",
+            "verifying_previous_title": "Vérification de la tentative précédente",
+            "verifying_previous_body": "Votre tentative de swap précédente est encore en cours de vérification. Réessayez une fois qu'elle est résolue."
         },
         "signing": {
             "source_name": "Swap",

@@ -12,7 +12,9 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
+import { useLanguage } from '@hooks/useLanguage'
 import { useRunAfterDelay } from '@hooks/useRunAfterDelay'
+import { useToast } from '@hooks/useToast'
 import {
     useSwapExecution,
     type SwapExecutionStatus,
@@ -67,6 +69,8 @@ export const useSwapConfirmationActions = ({
     const swapExecution = useSwapExecution()
     const successCloseTimer = useRunAfterDelay()
     const inFlightRef = useRef(false)
+    const { t } = useLanguage()
+    const { infoToast } = useToast()
 
     const { execute, cancel, reset, status: swapStatus } = swapExecution
     const quoteIdStr = quote.quoteIdStr
@@ -107,6 +111,17 @@ export const useSwapConfirmationActions = ({
                 resolve({ kind: 'stale-quote' })
                 return
             }
+            if (outcome.kind === 'verifying-previous') {
+                // An earlier attempt for this swap is still being verified —
+                // nothing was re-signed or broadcast. Keep the form open so
+                // the user can retry once that attempt resolves.
+                infoToast(
+                    t('swap.execution.verifying_previous_title'),
+                    t('swap.execution.verifying_previous_body'),
+                )
+                resolve({ kind: 'cancelled' })
+                return
+            }
             trackEvent(SwapEvent.Failed, buildSwapStatusPayload(quote))
             resolve({
                 kind: 'error',
@@ -116,7 +131,7 @@ export const useSwapConfirmationActions = ({
         } finally {
             inFlightRef.current = false
         }
-    }, [quote, quoteIdStr, execute, successCloseTimer, resolve])
+    }, [quote, quoteIdStr, execute, successCloseTimer, resolve, t, infoToast])
 
     const handleClose = useCallback(
         (isCommitted: boolean, isCancellable: boolean) => {

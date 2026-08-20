@@ -74,6 +74,7 @@ export const createAlgodTransport = (
                     algokit,
                     encodeSignedTransactions,
                     signed,
+                    { flow: 'pipeline' },
                 )
             } catch (error) {
                 // A classified submit failure keeps its txIds, classification

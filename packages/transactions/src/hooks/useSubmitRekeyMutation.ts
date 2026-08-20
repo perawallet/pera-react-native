@@ -17,9 +17,11 @@ import {
     useAlgorandClient,
     useFetchSuggestedMinFee,
     useMinimumFeeConfig,
+    useNetworkStore,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    getOpenSubmissionAttemptsForIntent,
     resolveMinFeeForSender,
     submitAndAutoRefresh,
     useSigningRequest,
@@ -67,7 +69,8 @@ export type UseSubmitRekeyMutationResult = {
  *
  * Every failure propagates as a {@link RekeyError} tagged with the stage
  * that failed (`build_failed`, `signing_failed`, `submission_failed`,
- * `user_rejected`) so confirm screens can show failure-specific copy.
+ * `submission_pending`, `user_rejected`) so confirm screens can show
+ * failure-specific copy.
  *
  * The rekey transaction is signed by `sourceAddress`'s CURRENT auth account
  * (pre-rekey), so `resolveMinFeeForSender`'s `getSignerFor` resolution is the
@@ -99,6 +102,21 @@ export const useSubmitRekeyMutation = ({
             sourceAddress,
             rekeyToAddress,
         }: SubmitRekeyParams): Promise<string[]> => {
+            // A still-open ledger row for the same rekey may land any
+            // moment — a rebuild would mint a new txid algod cannot dedupe.
+            const network = useNetworkStore.getState().network
+            const openAttempts = await getOpenSubmissionAttemptsForIntent({
+                network,
+                sender: sourceAddress,
+                intentKey: { kind: 'rekey', address: sourceAddress },
+            })
+            if (openAttempts.length > 0) {
+                throw new RekeyError(
+                    'submission_pending',
+                    new Error('previous rekey attempt still being verified'),
+                )
+            }
+
             let unsignedTxn: PeraTransaction
             try {
                 // OFF-004: fail fast offline BEFORE the signing pipeline opens
@@ -162,6 +180,11 @@ export const useSubmitRekeyMutation = ({
                     algokit,
                     encodeSignedTransactions,
                     signed,
+                    {
+                        flow: 'rekey',
+                        intentKey: { kind: 'rekey', address: sourceAddress },
+                        sender: sourceAddress,
+                    },
                 )
             } catch (error) {
                 throw new RekeyError('submission_failed', error)

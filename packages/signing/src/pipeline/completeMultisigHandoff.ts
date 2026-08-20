@@ -32,11 +32,13 @@ export type MultisigHandoffCompletionDeps = {
      */
     submit: (assembledBytes: Uint8Array[]) => Promise<string[]>
     /**
-     * Durably record a successful submission (with its tx ids) the moment
-     * `submit` resolves, before any other post-submit side effect — the
-     * consumer persists it so a crash between submission and cleanup can't
-     * re-submit on relaunch (see `alreadySubmittedTxIds`). Synchronous by
-     * design: a local store write, not a network call. Best-effort.
+     * Durably record the group's tx ids the moment they're known — when
+     * `submit` resolves (before any other post-submit side effect), or from an
+     * `unknown-outcome` throw's deterministic ids so the retained handoff is
+     * crash-safe. The consumer persists them so a crash between submission and
+     * cleanup can't re-submit on relaunch (see `alreadySubmittedTxIds`).
+     * Synchronous by design: a local store write, not a network call.
+     * Best-effort.
      */
     recordSubmitted?: (txIds: string[]) => void
     /** Best-effort: tell the backend the wallet submitted, so it won't broadcast. */
@@ -47,7 +49,11 @@ export type MultisigHandoffCompletionDeps = {
      * instead of lingering. May legitimately fail once threshold is met.
      */
     decline: () => Promise<void>
-    /** Drop the handoff from its registry once terminally resolved. */
+    /**
+     * Drop the handoff from its registry once terminally resolved. Not called
+     * on an `unknown-outcome` submit — the handoff is retained for
+     * reconciliation.
+     */
     removeHandoff: () => void
     /** Surface a terminal failure to the user (e.g. a localized toast). */
     reportError: (error: unknown) => void
@@ -71,14 +77,19 @@ const FALLBACK_ERROR_MESSAGE = 'Multisig sign request could not be completed'
  *
  *  - `ready`: submit the assembled bytes, record the submission with the
  *    resulting tx ids, then best-effort `markConfirmed` so the backend doesn't
- *    also broadcast. Any failure (submit rejected, assembly/interleave bug)
+ *    also broadcast. A definitive failure (submit rejected, assembly bug)
  *    falls through to the failure path.
- *  - failure (`error`, or a thrown `ready`): notify the user, best-effort
- *    cancel the still-live request, then record the failure.
+ *  - `ready` with an `unknown-outcome` submit error: the group may still land,
+ *    so its deterministic tx ids are recorded and the handoff is RETAINED for
+ *    reconciliation to settle — no decline, no failure status, and no
+ *    user-facing error for a transaction that may have succeeded.
+ *  - failure (`error`, or a definitively rejected `ready`): notify the user,
+ *    best-effort cancel the still-live request, then record the failure.
  *  - `soft-reject`: record the clean rejection.
  *
- * The handoff is always removed exactly once (a single cleanup point) so it
- * isn't retried endlessly — there is no retry by design. Status / decline /
+ * Cleanup is outcome-conditional: the handoff is removed exactly once on every
+ * terminal outcome, but retained on an unknown-outcome submit so it isn't
+ * dropped while reconciliation is the only recovery path. Status / decline /
  * mark-confirmed side effects are best-effort: a rejection is logged, never
  * allowed to block teardown.
  */
@@ -125,6 +136,7 @@ export const completeMultisigHandoff = async ({
     }
 
     // outcome.kind === 'ready'
+    let shouldRetainHandoff = false
     try {
         const txIds = await deps.submit(outcome.assembledBytes)
         // The group is on chain from here — nothing below may reach the
@@ -137,9 +149,22 @@ export const completeMultisigHandoff = async ({
         // Non-fatal: the transactions are already on chain.
         await runBestEffort(() => deps.markConfirmed(), 'mark-confirmed')
     } catch (error) {
-        await failHandoff(deps, error)
+        if (isPossiblyLanded(error)) {
+            shouldRetainHandoff = true
+            // The group may still land: persist its deterministic tx ids so the
+            // retained handoff is crash-safe, then let reconciliation settle the
+            // outcome — no decline, no failure status, no user-facing error.
+            await runBestEffort(
+                async () => deps.recordSubmitted?.(error.txIds),
+                'record-submitted',
+            )
+        } else {
+            await failHandoff(deps, error)
+        }
     } finally {
-        deps.removeHandoff()
+        if (!shouldRetainHandoff) {
+            deps.removeHandoff()
+        }
     }
 }
 
@@ -148,7 +173,9 @@ export const completeMultisigHandoff = async ({
  * cancel a live request for a transaction that lands moments later; an
  * unresolved request expires on its own, which is the recoverable outcome.
  */
-const isPossiblyLanded = (error: unknown): boolean =>
+const isPossiblyLanded = (
+    error: unknown,
+): error is SubmissionError & { classification: 'unknown-outcome' } =>
     error instanceof SubmissionError &&
     error.classification === 'unknown-outcome'
 
@@ -156,8 +183,8 @@ const isPossiblyLanded = (error: unknown): boolean =>
  * Common terminal-failure path: notify the user, cancel the still-live
  * sign-request (best-effort, skipped when the submission's outcome is
  * unknown), then record the failure. Does NOT remove the handoff — the
- * caller owns that so the `ready` path keeps a single `finally` cleanup
- * point.
+ * caller owns that so the `ready` path keeps its outcome-conditional
+ * `finally` cleanup.
  */
 const failHandoff = async (
     deps: MultisigHandoffCompletionDeps,

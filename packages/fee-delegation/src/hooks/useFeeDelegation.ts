@@ -244,6 +244,7 @@ export const useFeeDelegation = (): UseFeeDelegationResult => {
                 algokit,
                 encodeSignedTransactions,
                 orderedSigned,
+                { flow: 'fee-delegation', sender: account },
             )
         },
         [

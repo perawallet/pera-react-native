@@ -12,7 +12,12 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { useInfiniteQuery, onlineManager, hashKey } from '@tanstack/react-query'
+import { Decimal } from 'decimal.js'
 import type { Maybe, Network, Nullable } from '@perawallet/wallet-core-shared'
+import {
+    getOpenSubmissionAttempts,
+    type SubmissionAttempt,
+} from '@perawallet/wallet-core-signing'
 import { fetchTransactionHistory, fetchMoreTransactions } from '../api/history'
 import { transactionQueryKeys } from './querykeys'
 import type {
@@ -142,6 +147,55 @@ export type UseTransactionHistoryQueryResult = {
 }
 
 /**
+ * Synthesizes a list row for a broadcast attempt that has not yet been
+ * definitively resolved (PERA-4588) — the "pending — verifying" entry. The
+ * real row replaces it (same txid) once the reconciler confirms it, so the
+ * transaction appears in history exactly once.
+ */
+const toPendingHistoryItem = (
+    attempt: SubmissionAttempt,
+    accountAddress: string,
+): TransactionHistoryItem => ({
+    id: attempt.txIds[0] ?? attempt.id,
+    txType: 'pay',
+    sender: attempt.sender ?? accountAddress,
+    receiver: null,
+    confirmedRound: 0,
+    roundTime: Math.floor(attempt.createdAt / 1000),
+    fee: new Decimal(0),
+    groupId: null,
+    amount: null,
+    closeTo: null,
+    closeAmount: null,
+    applicationId: null,
+    innerTransactionCount: null,
+    asset: null,
+    swapGroupDetail: null,
+    interpretedMeaning: null,
+    balanceImpacts: [],
+})
+
+/**
+ * Open submission attempts surfaced as pending history rows — only on the
+ * unfiltered first page, where the whole history renders. Filtered views
+ * (asset, date range) skip them: their asset/round is not yet known.
+ */
+const buildPendingHistoryItems = async ({
+    accountAddress,
+    network,
+}: {
+    accountAddress: string
+    network: Network
+}): Promise<TransactionHistoryItem[]> => {
+    const attempts = await getOpenSubmissionAttempts({ network })
+    // Only the account that sent the attempt sees its pending row — a row
+    // without a recorded sender can't be scoped and is skipped.
+    return attempts
+        .filter(attempt => attempt.sender === accountAddress)
+        .map(attempt => toPendingHistoryItem(attempt, accountAddress))
+}
+
+/**
  * Hook for fetching transaction history with DB-first reads and infinite scrolling.
  *
  * Pages walk the local database (populated by the sync service) on a round-time
@@ -200,13 +254,39 @@ export const useTransactionHistoryQuery = (
                         ? rows.filter(tx => !alreadyHeld.has(tx.id))
                         : rows
 
+                let transactions = dbTransactions
+                // First unfiltered page only: prepend broadcast-but-unresolved
+                // attempts as pending rows, deduped against what SQLite
+                // already holds (a confirmed row may exist while the ledger
+                // row is still open).
+                if (
+                    pageParam == null &&
+                    assetId === undefined &&
+                    afterTime === undefined &&
+                    beforeTime === undefined
+                ) {
+                    const pending = await buildPendingHistoryItems({
+                        accountAddress,
+                        network,
+                    })
+                    if (pending.length > 0) {
+                        const pendingIds = new Set(pending.map(tx => tx.id))
+                        transactions = [
+                            ...pending,
+                            ...dbTransactions.filter(
+                                tx => !pendingIds.has(tx.id),
+                            ),
+                        ]
+                    }
+                }
+
                 // Gauged on the raw row count, not the deduped one: a page
                 // that filled up in SQLite has more behind it even when the
                 // boundary filter emptied what we kept.
                 const hasMoreInDb = rows.length >= limit
 
                 return {
-                    transactions: dbTransactions,
+                    transactions,
                     // Always continue. A short DB page means SQLite is
                     // exhausted, not that history ended — the API page decides
                     // that. Terminating here stranded partially-synced

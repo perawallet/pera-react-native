@@ -30,6 +30,7 @@ import {
 import {
     invalidateTransactionQueries,
     invalidateTransactionQueriesForAddresses,
+    invalidateOpenSubmissionTxIdsQuery,
     fetchAndPersistTransactions,
 } from '@perawallet/wallet-core-transactions'
 import {
@@ -42,6 +43,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
+import { reconcileOpenSubmissions } from '@perawallet/wallet-core-signing'
 import { onlineManager } from '@tanstack/react-query'
 import type { SyncServiceDeps } from '../models'
 
@@ -285,6 +287,23 @@ export class SyncService {
         if (this.isPaused()) {
             this.scheduleNextTick(PAUSE_RECHECK_MS)
             return
+        }
+
+        // Settle open submission-attempt rows (PERA-4588) before the sync
+        // phases. Piggybacks the tick's online gate and cadence — the pass
+        // is bounded, a no-op when nothing is open, and never throws.
+        const reconcileSummary = await reconcileOpenSubmissions()
+        if (
+            (reconcileSummary?.confirmed ?? 0) +
+                (reconcileSummary?.failed ?? 0) >
+            0
+        ) {
+            // A settled row changes the "pending — verifying" badge set and
+            // must drop the pending history entry (history queries are
+            // DB-cached with staleTime: Infinity, so a settle on a no-work
+            // tick would otherwise leave a resolved row showing).
+            invalidateOpenSubmissionTxIdsQuery(this.deps.queryClient)
+            invalidateTransactionQueries(this.deps.queryClient)
         }
 
         this.syncInProgress = true

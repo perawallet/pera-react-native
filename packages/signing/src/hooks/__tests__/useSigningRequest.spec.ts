@@ -180,6 +180,15 @@ const makeArbRequest = (
     ...overrides,
 })
 
+// The queue effect (useSigningActorLifecycle) awaits its fail-open ledger
+// guard before creating an actor, so a request added in an act() block
+// starts one microtask later.
+const flushQueue = async (): Promise<void> => {
+    await act(async () => {
+        await Promise.resolve()
+    })
+}
+
 describe('useSigningRequest', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -188,12 +197,12 @@ describe('useSigningRequest', () => {
     })
 
     describe('queue management', () => {
-        test('returns empty pending requests initially', () => {
+        test('returns empty pending requests initially', async () => {
             const { result } = renderHook(() => useSigningRequest())
             expect(result.current.pendingSignRequests).toEqual([])
         })
 
-        test('addSignRequest adds to pendingSignRequests and creates an actor', () => {
+        test('addSignRequest adds to pendingSignRequests and creates an actor', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -203,13 +212,14 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
 
             expect(result.current.pendingSignRequests).toHaveLength(1)
             expect(result.current.pendingSignRequests[0].id).toBe('tx-1')
             expect(actor.start).toHaveBeenCalled()
         })
 
-        test('throws when transaction count exceeds limit', () => {
+        test('throws when transaction count exceeds limit', async () => {
             const { result } = renderHook(() => useSigningRequest())
             const txs = Array.from(
                 { length: MAX_TRANSACTION_SIGN_REQUESTS + 1 },
@@ -222,9 +232,10 @@ describe('useSigningRequest', () => {
                     result.current.addSignRequest(request)
                 })
             }).toThrow(AppError)
+            await flushQueue()
         })
 
-        test('accepts transactions at exactly the limit', () => {
+        test('accepts transactions at exactly the limit', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -238,11 +249,12 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
 
             expect(result.current.pendingSignRequests).toHaveLength(1)
         })
 
-        test('throws when data sign count exceeds limit', () => {
+        test('throws when data sign count exceeds limit', async () => {
             const { result } = renderHook(() => useSigningRequest())
             const data = Array.from(
                 { length: MAX_DATA_SIGN_REQUESTS + 1 },
@@ -255,9 +267,10 @@ describe('useSigningRequest', () => {
                     result.current.addSignRequest(request)
                 })
             }).toThrow(AppError)
+            await flushQueue()
         })
 
-        test('does not add duplicate requests', () => {
+        test('does not add duplicate requests', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -268,12 +281,13 @@ describe('useSigningRequest', () => {
                 result.current.addSignRequest(request)
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
 
             expect(result.current.pendingSignRequests).toHaveLength(1)
             expect(createSigningMachine).toHaveBeenCalledTimes(1)
         })
 
-        test('removes request and stops actor on removeSignRequest', () => {
+        test('removes request and stops actor on removeSignRequest', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -283,6 +297,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
             act(() => {
                 result.current.removeSignRequest(request)
             })
@@ -303,6 +318,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
             // Register a gate as the lifecycle would for an interactive
             // source. The hook resolves it; we then assert the deferred
             // resolves to 'approved' by awaiting `waitFor`.
@@ -316,7 +332,7 @@ describe('useSigningRequest', () => {
             await expect(resolution).resolves.toBe('approved')
         })
 
-        test('currentRequest is the first pending request', () => {
+        test('currentRequest is the first pending request', async () => {
             // Only the first actor is created — the queue gate prevents
             // the second from starting until the first completes.
             const actor1 = makeMockActor('tx-1')
@@ -330,6 +346,7 @@ describe('useSigningRequest', () => {
                 result.current.addSignRequest(req1)
                 result.current.addSignRequest(req2)
             })
+            await flushQueue()
 
             expect(result.current.currentRequest?.id).toBe('tx-1')
         })
@@ -345,7 +362,7 @@ describe('useSigningRequest', () => {
                     children,
                 )
 
-        test('currentRequest binds to the scoped request id, not the queue head', () => {
+        test('currentRequest binds to the scoped request id, not the queue head', async () => {
             // The review sheet is opened for a specific request; everything
             // rendered inside it must bind to THAT request even when another
             // request sits at the queue head (e.g. a headless hardware send
@@ -361,11 +378,12 @@ describe('useSigningRequest', () => {
                 result.current.addSignRequest(makeTxRequest({ id: 'tx-1' }))
                 result.current.addSignRequest(makeTxRequest({ id: 'tx-2' }))
             })
+            await flushQueue()
 
             expect(result.current.currentRequest?.id).toBe('tx-2')
         })
 
-        test('currentRequest is undefined when the scoped request left the queue', () => {
+        test('currentRequest is undefined when the scoped request left the queue', async () => {
             const actor1 = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor1 as any)
 
@@ -376,6 +394,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(makeTxRequest({ id: 'tx-1' }))
             })
+            await flushQueue()
 
             expect(result.current.currentRequest).toBeUndefined()
         })
@@ -395,6 +414,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
             approvalGate.register('tx-1')
             const resolution = approvalGate.waitFor('tx-1')
 
@@ -405,7 +425,7 @@ describe('useSigningRequest', () => {
             await expect(resolution).resolves.toBe('rejected')
         })
 
-        test('sends USER_REJECTED directly to a failed actor (gate already spent)', () => {
+        test('sends USER_REJECTED directly to a failed actor (gate already spent)', async () => {
             // After a retryable failure the actor is parked in `failed`, past
             // the approval gate the user already resolved by approving. The
             // gate is one-shot, so `approvalGate.reject` would be a no-op and
@@ -423,6 +443,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
             actor.setState('failed')
 
             act(() => {
@@ -432,7 +453,7 @@ describe('useSigningRequest', () => {
             expect(actor.send).toHaveBeenCalledWith({ type: 'USER_REJECTED' })
         })
 
-        test('sends USER_REJECTED directly during hardware signing (gate already spent)', () => {
+        test('sends USER_REJECTED directly during hardware signing (gate already spent)', async () => {
             // Hardware signing runs in `signing.hardware`, past the approval
             // gate the user resolved when they confirmed the send. The gate is
             // one-shot, so `approvalGate.reject` here is a no-op and the Cancel
@@ -451,6 +472,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
             actor.setState({ signing: 'hardware' })
 
             act(() => {
@@ -460,7 +482,7 @@ describe('useSigningRequest', () => {
             expect(actor.send).toHaveBeenCalledWith({ type: 'USER_REJECTED' })
         })
 
-        test('when no actor, calls reject callback and removes request for callback transport', () => {
+        test('when no actor, calls reject callback and removes request for callback transport', async () => {
             const mockReject = vi.fn()
 
             const { result } = renderHook(() => useSigningRequest())
@@ -482,7 +504,7 @@ describe('useSigningRequest', () => {
     })
 
     describe('actor lifecycle', () => {
-        test('removes request from queue when actor reaches completed state', () => {
+        test('removes request from queue when actor reaches completed state', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -492,6 +514,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
 
             expect(result.current.pendingSignRequests).toHaveLength(1)
 
@@ -502,7 +525,7 @@ describe('useSigningRequest', () => {
             expect(result.current.pendingSignRequests).toHaveLength(0)
         })
 
-        test('removes request from queue when actor reaches rejected state', () => {
+        test('removes request from queue when actor reaches rejected state', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -512,6 +535,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
 
             act(() => {
                 actor.simulateDone('rejected', request)
@@ -520,7 +544,7 @@ describe('useSigningRequest', () => {
             expect(result.current.pendingSignRequests).toHaveLength(0)
         })
 
-        test('calls reject callback when actor reaches rejected state with callback transport', () => {
+        test('calls reject callback when actor reaches rejected state with callback transport', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -534,6 +558,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
             act(() => {
                 actor.simulateDone('rejected', request)
             })
@@ -541,7 +566,7 @@ describe('useSigningRequest', () => {
             expect(mockReject).toHaveBeenCalledTimes(1)
         })
 
-        test('calls reject callback when actor reaches rejected state with algod transport', () => {
+        test('calls reject callback when actor reaches rejected state with algod transport', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -555,6 +580,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
             act(() => {
                 actor.simulateDone('rejected', request)
             })
@@ -562,7 +588,7 @@ describe('useSigningRequest', () => {
             expect(mockReject).toHaveBeenCalledTimes(1)
         })
 
-        test('publishes a completed event on the bus when the actor finishes', () => {
+        test('publishes a completed event on the bus when the actor finishes', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -579,6 +605,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
             act(() => {
                 actor.simulateDone('completed', request, { transportResult })
             })
@@ -593,7 +620,7 @@ describe('useSigningRequest', () => {
             )
         })
 
-        test('drops non-interactive requests from the queue on completion', () => {
+        test('drops non-interactive requests from the queue on completion', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -604,6 +631,7 @@ describe('useSigningRequest', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
+            await flushQueue()
             act(() => {
                 actor.simulateDone('completed', request)
             })

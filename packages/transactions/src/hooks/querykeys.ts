@@ -50,6 +50,14 @@ export const transactionQueryKeys = {
             'page',
             { accountAddress, network, url },
         ] as const,
+
+    /**
+     * Txids with an open submission-ledger row (PERA-4588) — the "pending —
+     * verifying" badge set. Kept under the module prefix so
+     * `invalidateTransactionQueries` also refreshes it.
+     */
+    openSubmissionTxIds: (network: Network) =>
+        [MODULE_PREFIX, 'open-submission-txids', { network }] as const,
 }
 
 export function invalidateTransactionQueries(queryClient: QueryClient): void {

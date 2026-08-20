@@ -114,6 +114,12 @@ export const useCardAddFundsSwap = ({
                 // so the user re-taps with the already-refreshed rate.
                 return { kind: 'cancelled' }
             }
+            if (outcome.kind === 'verifying-previous') {
+                // An earlier attempt for this swap is still being verified —
+                // nothing was re-signed or broadcast. Same treatment as a
+                // stale quote: cancelled, so the user re-taps.
+                return { kind: 'cancelled' }
+            }
             return {
                 kind: 'error',
                 message: outcome.message,

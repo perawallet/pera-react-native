@@ -102,6 +102,12 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 vi.mock('../../machine/createSigningMachine')
 
+const mockIsRequestGroupAlreadySubmitted = vi.hoisted(() => vi.fn())
+vi.mock('../../ledger', () => ({
+    isRequestGroupAlreadySubmitted: (...args: unknown[]) =>
+        mockIsRequestGroupAlreadySubmitted(...args),
+}))
+
 // Imports (must follow vi.mock calls)
 
 import {
@@ -199,14 +205,23 @@ const makeTxRequest = (
         ...overrides,
     }) as TransactionSignRequest
 
+// The queue effect awaits the fail-open ledger guard before creating an
+// actor, so a request added in an act() block starts one microtask later.
+const flushQueue = async (): Promise<void> => {
+    await act(async () => {
+        await Promise.resolve()
+    })
+}
+
 describe('useSigningActorLifecycle', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockIsRequestGroupAlreadySubmitted.mockResolvedValue(false)
         useSigningStore.getState().resetState()
         __resetSigningActorRegistryForTests()
     })
 
-    test('starts an actor when a request is queued', () => {
+    test('starts an actor when a request is queued', async () => {
         const actor = makeMockActor('tx-1')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)
 
@@ -216,13 +231,36 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
 
         expect(createSigningMachine).toHaveBeenCalledTimes(1)
         expect(actor.start).toHaveBeenCalled()
         expect(actor.subscribe).toHaveBeenCalled()
     })
 
-    test('a second hook instance does not duplicate the actor for the same request', () => {
+    test('suppresses a re-presented request whose group is already submitted', async () => {
+        mockIsRequestGroupAlreadySubmitted.mockResolvedValue(true)
+        const actor = makeMockActor('tx-1')
+        vi.mocked(createSigningMachine).mockReturnValue(actor as never)
+
+        renderHook(() => useSigningActorLifecycle())
+        const request = makeTxRequest()
+
+        act(() => {
+            useSigningStore.getState().addSignRequest(request)
+        })
+        await flushQueue()
+
+        // The ledger guard is consulted, the request is dropped instead of
+        // re-presented, and no actor is ever created.
+        expect(mockIsRequestGroupAlreadySubmitted).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'tx-1' }),
+        )
+        expect(createSigningMachine).not.toHaveBeenCalled()
+        expect(useSigningStore.getState().pendingSignRequests).toHaveLength(0)
+    })
+
+    test('a second hook instance does not duplicate the actor for the same request', async () => {
         const actor = makeMockActor('tx-1')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)
 
@@ -233,12 +271,13 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
 
         // Module-level registry dedupes — only one machine ever gets created.
         expect(createSigningMachine).toHaveBeenCalledTimes(1)
     })
 
-    test('registers an approval gate for interactive sources', () => {
+    test('registers an approval gate for interactive sources', async () => {
         const actor = makeMockActor('tx-int')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)
         const registerSpy = vi.spyOn(approvalGate, 'register')
@@ -252,11 +291,12 @@ describe('useSigningActorLifecycle', () => {
                 }),
             )
         })
+        await flushQueue()
 
         expect(registerSpy).toHaveBeenCalledWith('tx-int')
     })
 
-    test('does NOT register an approval gate for headless local sources', () => {
+    test('does NOT register an approval gate for headless local sources', async () => {
         const actor = makeMockActor('tx-local')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)
         const registerSpy = vi.spyOn(approvalGate, 'register')
@@ -267,6 +307,7 @@ describe('useSigningActorLifecycle', () => {
                 .getState()
                 .addSignRequest(makeTxRequest({ id: 'tx-local' }))
         })
+        await flushQueue()
 
         expect(registerSpy).not.toHaveBeenCalled()
     })
@@ -287,6 +328,7 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
 
         // Drive through the awaiting_user state — this is where the lifecycle
         // arms the approvalGate.waitFor closure.
@@ -319,6 +361,7 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
         act(() => {
             actor.emit({ value: 'awaiting_user', request })
         })
@@ -349,6 +392,7 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
         act(() => {
             actor.emit({ value: 'awaiting_user', request })
         })
@@ -382,6 +426,7 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
         const originalError = new AppError('boom', {
             severity: 'medium' as never,
             category: 'execution' as never,
@@ -408,7 +453,7 @@ describe('useSigningActorLifecycle', () => {
         )
     })
 
-    test('failed state normalises a non-Error context.error into a real Error', () => {
+    test('failed state normalises a non-Error context.error into a real Error', async () => {
         // Covers the false branch of `error instanceof Error` in the failed
         // terminal handler. Without normalisation downstream consumers
         // (toast / sheet) crash on `error.message`.
@@ -426,6 +471,7 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
         act(() => {
             actor.emit({
                 value: 'failed',
@@ -439,7 +485,7 @@ describe('useSigningActorLifecycle', () => {
         expect(errorCb.mock.calls[0][0].message).toBe('Signing failed')
     })
 
-    test('non-interactive failure drops both the actor and the request from the queue', () => {
+    test('non-interactive failure drops both the actor and the request from the queue', async () => {
         // Internal/headless requests treat `failed` as terminal; the actor
         // and the queued request both go away.
         const actor = makeMockActor('tx-headless-fail')
@@ -455,6 +501,7 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
         act(() => {
             actor.emit({
                 value: 'failed',
@@ -467,7 +514,7 @@ describe('useSigningActorLifecycle', () => {
         expect(useSigningStore.getState().pendingSignRequests).toHaveLength(0)
     })
 
-    test('interactive failure keeps the request for the inline error UI (keepForInlineError)', () => {
+    test('interactive failure keeps the request for the inline error UI (keepForInlineError)', async () => {
         // Interactive failures stay in the queue so the sheet can render the
         // inline error view — the user dismisses via removeSignRequest.
         const actor = makeMockActor('tx-int-fail')
@@ -483,6 +530,7 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
         // Retryable error: AppError without metadata.retryable=false.
         const retryable = new AppError('retry', {
             severity: 'medium' as never,
@@ -504,7 +552,7 @@ describe('useSigningActorLifecycle', () => {
         expect(useSigningStore.getState().pendingSignRequests).toHaveLength(1)
     })
 
-    test('stopActor stops the running actor and releases the approval gate', () => {
+    test('stopActor stops the running actor and releases the approval gate', async () => {
         const actor = makeMockActor('tx-stop')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)
         const unregisterSpy = vi.spyOn(approvalGate, 'unregister')
@@ -516,6 +564,7 @@ describe('useSigningActorLifecycle', () => {
                 .getState()
                 .addSignRequest(makeTxRequest({ id: 'tx-stop' }))
         })
+        await flushQueue()
 
         act(() => {
             result.current.stopActor('tx-stop')
@@ -528,7 +577,7 @@ describe('useSigningActorLifecycle', () => {
         expect(result.current.getActorRef('tx-stop')).toBeUndefined()
     })
 
-    test('publishes a `started` bus event when the actor enters `validating`', () => {
+    test('publishes a `started` bus event when the actor enters `validating`', async () => {
         const actor = makeMockActor('tx-validating')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)
         const onEvent = vi.fn()
@@ -539,6 +588,7 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
 
         act(() => {
             actor.emit({ value: 'validating', request })
@@ -559,7 +609,7 @@ describe('useSigningActorLifecycle', () => {
         })
     })
 
-    test('publishes a `signing-started` event when entering a signing substate', () => {
+    test('publishes a `signing-started` event when entering a signing substate', async () => {
         const actor = makeMockActor('tx-signing')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)
         const onEvent = vi.fn()
@@ -570,6 +620,7 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
 
         act(() => {
             actor.emit({
@@ -589,7 +640,7 @@ describe('useSigningActorLifecycle', () => {
         })
     })
 
-    test('completed terminal drops the actor, releases the bus, and removes the request', () => {
+    test('completed terminal drops the actor, releases the bus, and removes the request', async () => {
         const actor = makeMockActor('tx-done')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)
         const releaseSpy = vi.spyOn(signingEventBus, 'releaseRequest')
@@ -600,6 +651,7 @@ describe('useSigningActorLifecycle', () => {
         act(() => {
             useSigningStore.getState().addSignRequest(request)
         })
+        await flushQueue()
         act(() => {
             actor.emit({
                 value: 'completed',
@@ -613,3 +665,5 @@ describe('useSigningActorLifecycle', () => {
         expect(useSigningStore.getState().pendingSignRequests).toHaveLength(0)
     })
 })
+
+await flushQueue()

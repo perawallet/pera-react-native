@@ -26,6 +26,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
+    getOpenSubmissionAttemptsForIntent,
     submitAndAutoRefresh,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
@@ -70,6 +71,9 @@ export type SwapExecutionStatus =
     // Shared-account swap: proposed to the backend, waiting for the co-signer.
     // The cosign resolver finishes submission asynchronously.
     | 'pending-cosign'
+    // A rebuild was refused while an earlier attempt for the same swap is
+    // still being verified.
+    | 'verifying'
     | 'error'
 
 export type SwapExecutionErrorPhase =
@@ -94,6 +98,9 @@ export type SwapExecutionOutcome =
     // The quote outlived its client TTL (e.g. the app sat offline between
     // quote and confirm) — never executed; the caller re-quotes.
     | { kind: 'stale-quote' }
+    // An earlier attempt for this swap is still open — nothing was signed or
+    // broadcast; the user should retry once it resolves.
+    | { kind: 'verifying-previous' }
     | {
           kind: 'error'
           phase: SwapExecutionErrorPhase
@@ -195,6 +202,28 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             if (cancelRequestedRef.current) {
                 setStatus('idle')
                 return { kind: 'cancelled' }
+            }
+
+            // A rebuild after a possibly-false failure would produce a new
+            // txid algod can't dedupe — refuse while an earlier attempt for
+            // this swap intent is still open. The sender must match the one
+            // the ledger row was recorded with, so when no sender is known
+            // the guard is skipped rather than matched against a blank.
+            const swapSender =
+                account?.address ?? quote.swapperAddress ?? undefined
+            if (prepareResult.swapIdStr && swapSender) {
+                const openAttempts = await getOpenSubmissionAttemptsForIntent({
+                    network,
+                    sender: swapSender,
+                    intentKey: {
+                        kind: 'swap',
+                        swapId: prepareResult.swapIdStr,
+                    },
+                })
+                if (openAttempts.length > 0) {
+                    setStatus('verifying')
+                    return { kind: 'verifying-previous' }
+                }
             }
 
             const groups = prepareResult.transactionGroups ?? []
@@ -383,6 +412,14 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         algorandClient,
                         encodeSignedTransactions,
                         signedGroup,
+                        {
+                            flow: 'swap',
+                            intentKey: {
+                                kind: 'swap',
+                                swapId: prepareResult.swapIdStr ?? '',
+                            },
+                            sender: account?.address ?? quote.swapperAddress,
+                        },
                     )
                     collectedTxIds.push(...ids)
                 }

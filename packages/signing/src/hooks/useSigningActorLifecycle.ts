@@ -12,7 +12,7 @@
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import type { AnyActorRef, SnapshotFrom } from 'xstate'
-import { AppError, type Optional } from '@perawallet/wallet-core-shared'
+import { AppError, logger, type Optional } from '@perawallet/wallet-core-shared'
 import {
     useAlgorandClient,
     useTransactionEncoder,
@@ -33,6 +33,7 @@ import { getNextQueuedRequest } from '../pipeline/queue'
 import { approvalGate } from '../pipeline/approvalGate'
 import { signingEventBus } from '../pipeline/signingEventBus'
 import { isInteractiveSource } from '../pipeline/types'
+import { isRequestGroupAlreadySubmitted } from '../ledger'
 import type { SigningMachineDeps } from '../machine/context'
 import { type SignRequest } from '../models'
 
@@ -426,9 +427,22 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             pendingSignRequests,
             actorRefsMap.size,
         )
-        if (next) {
+        if (!next) return
+        void (async () => {
+            // Re-presented after an app kill: if the ledger already records
+            // the group as submitted, drop the request instead of inviting a
+            // re-sign/re-submit of bytes that may already be on chain.
+            // Best-effort — on any ledger failure the request is re-presented.
+            if (await isRequestGroupAlreadySubmitted(next)) {
+                logger.info(
+                    'Suppressed re-presented sign request: group already submitted',
+                    { id: next.id },
+                )
+                removeSignRequestFromStoreRef.current(next)
+                return
+            }
             createActorRef.current(next)
-        }
+        })()
     }, [pendingSignRequests])
 
     return { getActorRef, stopActor }

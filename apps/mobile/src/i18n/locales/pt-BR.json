@@ -1843,6 +1843,9 @@
             },
             "submission_failed": {
                 "title": "Não foi possível enviar o rekey"
+            },
+            "submission_pending": {
+                "title": "Verificando tentativa anterior"
             }
         },
         "confirm": {
@@ -2564,7 +2567,8 @@
             "completed": "Concluída",
             "failed": "Falhou",
             "pending": "Pendente",
-            "raw_transaction": "Transação bruta"
+            "raw_transaction": "Transação bruta",
+            "pending_verifying": "Pendente — verificando"
         },
         "list_item": {
             "send": "Enviar",
@@ -2875,7 +2879,9 @@
             "pending_cosign_title": "Solicitação de conversão enviada",
             "pending_cosign_body": "Sua conversão precisa de outra assinatura. Ela será concluída quando o outro signatário aprovar na caixa de entrada dele.",
             "quantum_fee_unsupported": "Contas Quantum ainda não podem converter. A taxa de conversão é definida pelos nossos servidores e não cobre a taxa mais alta que uma assinatura Quantum exige.",
-            "quantum_multisig_unsupported": "Contas Quantum não podem converter a partir de uma conta compartilhada. Chaves Quantum não podem participar da assinatura Multisig."
+            "quantum_multisig_unsupported": "Contas Quantum não podem converter a partir de uma conta compartilhada. Chaves Quantum não podem participar da assinatura Multisig.",
+            "verifying_previous_title": "Verificando tentativa anterior",
+            "verifying_previous_body": "Sua tentativa de swap anterior ainda está sendo verificada. Tente novamente quando ela for resolvida."
         },
         "signing": {
             "source_name": "Converter",
