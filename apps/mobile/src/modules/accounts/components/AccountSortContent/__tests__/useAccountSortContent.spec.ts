@@ -30,7 +30,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         manual: 'manual',
     },
     useAllAccounts: () => h.accounts,
-    useAccountBalancesQuery: () => ({ accountBalances: new Map() }),
+    useAccountValueTotalsQuery: () => ({ accountValueTotals: new Map() }),
     useSortedAccounts: () => ({
         sortedAccounts: h.accounts,
         sortMode: h.sortMode,

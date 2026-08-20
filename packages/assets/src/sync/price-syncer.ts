@@ -46,7 +46,34 @@ const PRICE_CACHE_TTL_MS = 30_000
 // priceless id refetch every minute (PERA JS-thread saturation incident).
 const PRICE_MISS_RETRY_MS = 10 * 60 * 1000
 
-export async function fetchAndPersistPrices(
+// Any list this big is in practice "every asset held on the network" — the
+// sync tick, refreshAccounts, and the per-account syncer all derive it from
+// the same holdings table — so concurrent passes would do identical work.
+// Sharing one in-flight pass per network keeps a switch-triggered pileup from
+// running the (whole-wallet-sized) stale gate several times over (PERA-4953).
+// Small lists are targeted enrichments and stay independent.
+const WHOLE_WALLET_PASS_MIN_IDS = 256
+const inFlightWholeWalletPasses = new Map<Network, Promise<void>>()
+
+export function fetchAndPersistPrices(
+    assetIds: string[],
+    network: Network,
+): Promise<void> {
+    if (assetIds.length < WHOLE_WALLET_PASS_MIN_IDS) {
+        return runPricePass(assetIds, network)
+    }
+
+    const inFlight = inFlightWholeWalletPasses.get(network)
+    if (inFlight) return inFlight
+
+    const pass = runPricePass(assetIds, network).finally(() =>
+        inFlightWholeWalletPasses.delete(network),
+    )
+    inFlightWholeWalletPasses.set(network, pass)
+    return pass
+}
+
+async function runPricePass(
     assetIds: string[],
     network: Network,
 ): Promise<void> {

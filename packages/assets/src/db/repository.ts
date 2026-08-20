@@ -493,9 +493,19 @@ type GetStaleOrMissingAssetIdsParams = {
 }
 
 /**
+ * Above this, the id predicate moves out of SQL: a parameter-per-id query
+ * dies at SQLITE_MAX_VARIABLE_NUMBER and costs seconds of JS in query
+ * build/bind below it on a 10k-asset wallet (PERA-4953). A network-scoped
+ * scan returning one column bridges in tens of milliseconds instead; the
+ * id filter happens here against a Set.
+ */
+const ID_PREDICATE_IN_SQL_MAX = 64
+
+/**
  * Shared freshness scan over any table carrying `assetId`/`network`/
- * `updatedAt` columns. The predicate is pushed into SQL so we only
- * round-trip the matching IDs, not every cached row.
+ * `updatedAt` columns. Small candidate sets push the id predicate into SQL;
+ * large ones fetch the network's fresh ids and diff in JS — see
+ * ID_PREDICATE_IN_SQL_MAX.
  */
 async function getStaleOrMissingIdsFromTable({
     db,
@@ -508,22 +518,29 @@ async function getStaleOrMissingIdsFromTable({
 }): Promise<string[]> {
     if (assetIds.length === 0) return []
 
-    const decimalIds = assetIds.map(id => new Decimal(id))
     const freshThreshold = Date.now() - ttlMs
-
-    const freshRows = await db
-        .select({ assetId: table.assetId })
-        .from(table)
-        .where(
-            and(
-                inArray(table.assetId, decimalIds),
-                eq(table.network, network),
-                gte(table.updatedAt, freshThreshold),
+    const conditions = [
+        eq(table.network, network),
+        gte(table.updatedAt, freshThreshold),
+    ]
+    if (assetIds.length <= ID_PREDICATE_IN_SQL_MAX) {
+        conditions.push(
+            inArray(
+                table.assetId,
+                assetIds.map(id => new Decimal(id)),
             ),
         )
+    }
+
+    const freshRows = await db
+        // Raw TEXT read: routing through the column's Decimal decoder would
+        // cost one Decimal + one toString per row for ids we only compare.
+        .select({ assetId: sql<string>`${table.assetId}` })
+        .from(table)
+        .where(and(...conditions))
         .all()
 
-    const freshSet = new Set(freshRows.map(r => r.assetId.toString()))
+    const freshSet = new Set(freshRows.map(r => r.assetId))
     return assetIds.filter(id => !freshSet.has(id))
 }
 
@@ -572,22 +589,29 @@ export async function getStaleOrMissingPriceAssetIds({
         return staleOrMissing
     }
 
-    const decimalIds = staleOrMissing.map(id => new Decimal(id))
     const retryThreshold = Date.now() - missRetryMs
-
-    const deferredRows = await db
-        .select({ assetId: AssetPriceMissesSchema.assetId })
-        .from(AssetPriceMissesSchema)
-        .where(
-            and(
-                inArray(AssetPriceMissesSchema.assetId, decimalIds),
-                eq(AssetPriceMissesSchema.network, params.network),
-                gte(AssetPriceMissesSchema.attemptedAt, retryThreshold),
+    const conditions = [
+        eq(AssetPriceMissesSchema.network, params.network),
+        gte(AssetPriceMissesSchema.attemptedAt, retryThreshold),
+    ]
+    // Same split as getStaleOrMissingIdsFromTable: past the cap, scanning the
+    // network's recent misses beats binding one parameter per candidate id.
+    if (staleOrMissing.length <= ID_PREDICATE_IN_SQL_MAX) {
+        conditions.push(
+            inArray(
+                AssetPriceMissesSchema.assetId,
+                staleOrMissing.map(id => new Decimal(id)),
             ),
         )
+    }
+
+    const deferredRows = await db
+        .select({ assetId: sql<string>`${AssetPriceMissesSchema.assetId}` })
+        .from(AssetPriceMissesSchema)
+        .where(and(...conditions))
         .all()
 
-    const deferredSet = new Set(deferredRows.map(r => r.assetId.toString()))
+    const deferredSet = new Set(deferredRows.map(r => r.assetId))
     return staleOrMissing.filter(id => !deferredSet.has(id))
 }
 

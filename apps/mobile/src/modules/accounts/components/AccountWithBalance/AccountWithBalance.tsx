@@ -11,7 +11,7 @@
  */
 
 import {
-    useAccountBalancesQuery,
+    useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
@@ -34,7 +34,7 @@ export const AccountWithBalance = ({
     ...rest
 }: AccountWithBalanceProps) => {
     const styles = useStyles({ isHighlighted })
-    const { accountBalances } = useAccountBalancesQuery([account], true)
+    const { accountValueTotals } = useAccountValueTotalsQuery([account], true)
 
     return (
         <PWView
@@ -49,7 +49,7 @@ export const AccountWithBalance = ({
             <PWView style={styles.balanceContainer}>
                 <AssetAmount
                     asset={ALGO_ASSET}
-                    value={accountBalances.get(account.address)?.algoValue}
+                    value={accountValueTotals.get(account.address)?.algoValue}
                     density='compact'
                     variant='bodyLarge'
                     weight={500}
@@ -58,7 +58,7 @@ export const AccountWithBalance = ({
                 <PreferredAmount
                     sourceAssetId={ALGO_ASSET_ID}
                     sourceAmount={
-                        accountBalances.get(account.address)?.algoValue
+                        accountValueTotals.get(account.address)?.algoValue
                     }
                     density='compact'
                     variant='footnoteMedium'

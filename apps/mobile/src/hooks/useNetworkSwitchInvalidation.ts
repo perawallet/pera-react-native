@@ -13,6 +13,59 @@
 import { useEffect, useRef } from 'react'
 import { getSyncService } from '@perawallet/wallet-core-background'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    isAccountBalancesHistoryQuery,
+    isAccountQuery,
+} from '@perawallet/wallet-core-accounts'
+import {
+    isAssetPriceHistoryQuery,
+    isAssetQuery,
+} from '@perawallet/wallet-core-assets'
+import { isTransactionQuery } from '@perawallet/wallet-core-transactions'
+import type { QueryKey } from '@tanstack/react-query'
+import type { Network } from '@perawallet/wallet-core-shared'
+import { queryClient } from '../providers/queryClient'
+
+// Every DB-backed key factory embeds the network either as a bare string
+// element or as a `network` field of an object element.
+const keyReferencesNetwork = (queryKey: QueryKey, network: Network): boolean =>
+    queryKey.some(
+        part =>
+            part === network ||
+            (typeof part === 'object' &&
+                part !== null &&
+                (part as { network?: unknown }).network === network),
+    )
+
+/**
+ * Drops the departed network's DB-backed cache entries instead of letting the
+ * 1-hour default gcTime retain them. On a 10k-asset wallet each holdings-shaped
+ * entry is a multi-MB hydrated array, so a few switches ratchet the heap until
+ * GC pauses dominate the JS thread (PERA-4953). SQLite is the source of truth
+ * for all of these — a re-read on switch-back is cheap. The persisted chart
+ * histories (network-only, no SQLite backing) are deliberately kept.
+ */
+const releasePreviousNetworkCache = (previousNetwork: Network): void => {
+    queryClient.removeQueries({
+        predicate: query => {
+            const key = query.queryKey
+            if (
+                isAccountBalancesHistoryQuery(key) ||
+                isAssetPriceHistoryQuery(key)
+            ) {
+                return false
+            }
+            if (
+                !isAccountQuery(key) &&
+                !isAssetQuery(key) &&
+                !isTransactionQuery(key)
+            ) {
+                return false
+            }
+            return keyReferencesNetwork(key, previousNetwork)
+        },
+    })
+}
 
 /**
  * Single owner of the on-network-switch query invalidation. The imperative
@@ -29,7 +82,9 @@ export const useNetworkSwitchInvalidation = (): void => {
 
     useEffect(() => {
         if (previousNetwork.current === network) return
+        const departed = previousNetwork.current
         previousNetwork.current = network
+        releasePreviousNetworkCache(departed)
         try {
             getSyncService().invalidateQueries()
         } catch {

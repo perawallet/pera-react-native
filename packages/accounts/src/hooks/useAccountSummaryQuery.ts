@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_ID, type Network } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
@@ -40,6 +40,21 @@ export type UseAccountSummaryResult = {
 }
 
 /**
+ * Shared queryFn for the per-account SQL portfolio totals. Exported so
+ * `useAccountValueTotalsQuery` can populate the exact same cache entries this
+ * hook reads — the header and the account lists share one query per account.
+ */
+export const readAccountSummary = async (address: string, network: Network) => {
+    // Self-heal a freshly imported/selected account the background sync
+    // hasn't populated yet (deduped with the holdings-page fetch).
+    await ensureAccountFetched(address, network)
+    return getAccountPortfolioTotals({
+        accountAddress: address,
+        network,
+    })
+}
+
+/**
  * Cheap, use-case-specific portfolio summary for the account header.
  *
  * The total is a single SQL aggregate over the account's holdings — no per-row
@@ -62,15 +77,7 @@ export const useAccountSummaryQuery = (
         // which would strand consumers in `pending`. Network segments are
         // already caught in the syncer.
         networkMode: 'always',
-        queryFn: async () => {
-            // Self-heal a freshly imported/selected account the background sync
-            // hasn't populated yet (deduped with the holdings-page fetch).
-            await ensureAccountFetched(address as string, network)
-            return getAccountPortfolioTotals({
-                accountAddress: address as string,
-                network,
-            })
-        },
+        queryFn: () => readAccountSummary(address as string, network),
     })
 
     const { data: algoPrices } = useAssetPricesQuery([ALGO_ASSET_ID])

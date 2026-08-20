@@ -217,4 +217,66 @@ describe('fetchAndPersistPrices', () => {
             expect(fetchPublicAssetDetailsMock).not.toHaveBeenCalled()
         },
     )
+
+    describe('whole-wallet pass dedupe', () => {
+        const manyIds = Array.from({ length: 1000 }, (_, i) => `${i + 1}`)
+
+        test('concurrent large passes for one network share a single pass', async () => {
+            // The gate resolves on a macrotask so the second call is issued
+            // while the first pass is still in flight.
+            getStaleOrMissingPriceAssetIdsMock.mockImplementation(
+                ({ assetIds }: { assetIds: string[] }) =>
+                    new Promise(resolve =>
+                        setTimeout(() => resolve(assetIds), 10),
+                    ),
+            )
+            fetchAssetPricesMock.mockResolvedValue([])
+
+            await Promise.all([
+                fetchAndPersistPrices(manyIds, 'mainnet'),
+                fetchAndPersistPrices(manyIds, 'mainnet'),
+            ])
+
+            // One gate call for the batch path plus one for the ALGO check —
+            // a second full pass would double both.
+            expect(getStaleOrMissingPriceAssetIdsMock).toHaveBeenCalledTimes(2)
+        })
+
+        test('large passes on different networks run independently', async () => {
+            getStaleOrMissingPriceAssetIdsMock.mockImplementation(
+                async ({ assetIds }: { assetIds: string[] }) => assetIds,
+            )
+            fetchAssetPricesMock.mockResolvedValue([])
+
+            await Promise.all([
+                fetchAndPersistPrices(manyIds, 'mainnet'),
+                fetchAndPersistPrices(manyIds, 'testnet'),
+            ])
+
+            const networks = getStaleOrMissingPriceAssetIdsMock.mock.calls.map(
+                call => call[0].network as string,
+            )
+            expect(networks.filter(n => n === 'mainnet').length).toBe(2)
+            expect(networks.filter(n => n === 'testnet').length).toBe(2)
+        })
+
+        test('small enrichment lists are not deduped against each other', async () => {
+            getStaleOrMissingPriceAssetIdsMock.mockImplementation(
+                async ({ assetIds }: { assetIds: string[] }) => assetIds,
+            )
+            fetchAssetPricesMock.mockResolvedValue([])
+
+            await Promise.all([
+                fetchAndPersistPrices(['123'], 'mainnet'),
+                fetchAndPersistPrices(['456'], 'mainnet'),
+            ])
+
+            const batchGateIds =
+                getStaleOrMissingPriceAssetIdsMock.mock.calls.flatMap(
+                    call => call[0].assetIds as string[],
+                )
+            expect(batchGateIds).toContain('123')
+            expect(batchGateIds).toContain('456')
+        })
+    })
 })

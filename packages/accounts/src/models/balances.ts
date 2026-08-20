@@ -49,6 +49,14 @@ export type AccountBalance = {
 
 export type AccountBalances = Map<string, AccountBalance>
 
+/**
+ * Per-address ALGO-denominated values — the minimal shape balance-ranking
+ * consumers (e.g. `useSortedAccounts`) need. Structural on purpose: both the
+ * full `AccountBalances` map and `useAccountValueTotalsQuery`'s cheap totals
+ * map satisfy it.
+ */
+export type AccountAlgoValues = Map<string, Pick<AccountBalance, 'algoValue'>>
+
 export type AccountBalanceResponse = {
     results: AccountAssetBalanceResponse[]
 }

@@ -213,4 +213,43 @@ describe('TimeoutHttpClient', () => {
             expect(headers['X-Custom']).toBe('value')
         })
     })
+
+    describe('body reading path', () => {
+        // React Native's Response.arrayBuffer() routes through the
+        // Blob/FileReader polyfill, whose per-char conversion is quadratic on
+        // Hermes — a ~110KB indexer page measured ~19s of JS and ~1.5GB of
+        // allocations on device (PERA-4953). Textual bodies must go through
+        // the native text() path instead.
+        it('reads JSON bodies via text(), never arrayBuffer()', async () => {
+            const payload = JSON.stringify({ assets: [{ 'asset-id': 1 }] })
+            const response = new Response(payload, {
+                status: 200,
+                headers: { 'content-type': 'application/json' },
+            })
+            const arrayBufferSpy = vi.spyOn(response, 'arrayBuffer')
+            const { fetch } = createResolvingFetch(response)
+            vi.stubGlobal('fetch', fetch)
+
+            const result = await buildClient().get('/v2/accounts/ADDR')
+
+            expect(arrayBufferSpy).not.toHaveBeenCalled()
+            expect(new TextDecoder().decode(result.body)).toBe(payload)
+        })
+
+        it('reads msgpack bodies via arrayBuffer() to preserve raw bytes', async () => {
+            const bytes = new Uint8Array([0x82, 0xa1, 0x61, 0x01, 0xff])
+            const response = new Response(bytes, {
+                status: 200,
+                headers: { 'content-type': 'application/msgpack' },
+            })
+            const { fetch } = createResolvingFetch(response)
+            vi.stubGlobal('fetch', fetch)
+
+            const result = await buildClient().get('/v2/blocks/1', {
+                format: 'msgpack',
+            })
+
+            expect(result.body).toEqual(bytes)
+        })
+    })
 })

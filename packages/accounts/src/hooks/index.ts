@@ -64,6 +64,7 @@ export {
     isAccountBalancesHistoryQuery,
 } from './querykeys'
 export * from './useAccountSummaryQuery'
+export * from './useAccountValueTotalsQuery'
 export * from './useAccountAssetsQuery'
 export * from './useAccountCollectiblesQuery'
 export * from './useEnsureAccountEnriched'
