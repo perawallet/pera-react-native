@@ -77,7 +77,7 @@ export const PWTapToConfirm = ({
                     pointerEvents='none'
                 >
                     <PWText
-                        variant='body'
+                        variant='h4'
                         style={styles.labelText}
                         truncate
                     >
@@ -89,7 +89,7 @@ export const PWTapToConfirm = ({
                     pointerEvents='none'
                 >
                     <PWText
-                        variant='body'
+                        variant='h4'
                         style={styles.armedLabelText}
                         truncate
                     >
