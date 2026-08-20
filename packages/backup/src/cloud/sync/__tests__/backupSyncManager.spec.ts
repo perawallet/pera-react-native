@@ -1,3 +1,15 @@
+/*
+ Copyright 2022-2026 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
@@ -19,8 +31,12 @@ const {
     mockSyncBackup: vi.fn(),
     mockPullBackupDeltas: vi.fn(),
     mockHasBackupCredentials: vi.fn(() => true),
-    mockWithBackupEncryptionKey: vi.fn(async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32))),
-    mockWithBackupAuthSecretKey: vi.fn(async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(64))),
+    mockWithBackupEncryptionKey: vi.fn(
+        async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
+    ),
+    mockWithBackupAuthSecretKey: vi.fn(
+        async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(64)),
+    ),
     mockDeleteBackupKeys: vi.fn(async () => undefined),
     mockConnect: vi.fn(async () => undefined),
     mockDisconnect: vi.fn(),
@@ -30,7 +46,9 @@ const {
 }))
 
 vi.mock('../syncBackup', () => ({ syncBackup: mockSyncBackup }))
-vi.mock('../pullBackupDeltas', () => ({ pullBackupDeltas: mockPullBackupDeltas }))
+vi.mock('../pullBackupDeltas', () => ({
+    pullBackupDeltas: mockPullBackupDeltas,
+}))
 
 vi.mock('../../credentials/keyStorage', () => ({
     hasBackupCredentials: mockHasBackupCredentials,
@@ -51,12 +69,17 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
-    useDeviceStore: { getState: () => ({ deviceIDs: new Map([['mainnet', 'dev-id']]) }) },
+    useDeviceStore: {
+        getState: () => ({ deviceIDs: new Map([['mainnet', 'dev-id']]) }),
+    },
 }))
 
 vi.mock('../../store', () => ({
     useCloudBackupStore: {
-        getState: () => ({ backupId: 'backup-123', resetState: mockResetCloudBackup }),
+        getState: () => ({
+            backupId: 'backup-123',
+            resetState: mockResetCloudBackup,
+        }),
     },
     useBackupSyncStateStore: {
         getState: () => ({
@@ -71,11 +94,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: { getState: () => ({ accounts: [] }) },
 }))
 
-vi.mock('@perawallet/wallet-core-kms', () => ({
-    withSecret: vi.fn(),
-    algo25SecretKeyToMnemonic: vi.fn(),
-}))
-
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: { backupBaseUrl: 'https://backup.example.com' },
 }))
@@ -85,7 +103,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 
 vi.mock('../../models', () => ({
-    createEmptySyncState: (backupId: string) => ({ backupId, lastSyncResult: 'NONE' }),
+    createEmptySyncState: (backupId: string) => ({
+        backupId,
+        lastSyncResult: 'NONE',
+    }),
 }))
 
 vi.mock('../../crypto/buildBackupWebSocketToken', () => ({
@@ -94,12 +115,20 @@ vi.mock('../../crypto/buildBackupWebSocketToken', () => ({
 
 // ─── import after mocks ───────────────────────────────────────────────────────
 
-import { BackupSyncManager, initializeBackupSyncManager, getBackupSyncManager } from '../backupSyncManager'
+import {
+    BackupSyncManager,
+    initializeBackupSyncManager,
+    getBackupSyncManager,
+} from '../backupSyncManager'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 const makeDeps = () => ({
-    importAccounts: vi.fn(async () => ({ imported: 0, skippedDuplicate: 0, failed: [] })),
+    importAccounts: vi.fn(async () => ({
+        imported: 0,
+        skippedDuplicate: 0,
+        failed: [],
+    })),
 })
 
 // ─── tests ───────────────────────────────────────────────────────────────────
@@ -108,10 +137,18 @@ describe('BackupSyncManager', () => {
     beforeEach(() => {
         vi.useFakeTimers()
         vi.clearAllMocks()
-        mockSyncBackup.mockResolvedValue({ backupId: 'backup-123', lastSyncResult: 'SUCCESS' })
-        mockPullBackupDeltas.mockResolvedValue({ backupId: 'backup-123', lastSyncResult: 'SUCCESS' })
+        mockSyncBackup.mockResolvedValue({
+            backupId: 'backup-123',
+            lastSyncResult: 'SUCCESS',
+        })
+        mockPullBackupDeltas.mockResolvedValue({
+            backupId: 'backup-123',
+            lastSyncResult: 'SUCCESS',
+        })
         mockHasBackupCredentials.mockReturnValue(true)
-        mockWithBackupEncryptionKey.mockImplementation(async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)))
+        mockWithBackupEncryptionKey.mockImplementation(
+            async (fn: (key: Uint8Array) => unknown) => fn(new Uint8Array(32)),
+        )
     })
 
     afterEach(() => {
@@ -136,7 +173,11 @@ describe('BackupSyncManager', () => {
 
     it('handleSocketEvent itemsUpdated calls pullBackupDeltas', async () => {
         const mgr = new BackupSyncManager(makeDeps())
-        await mgr.handleSocketEvent({ kind: 'itemsUpdated', fromSeq: 1, toSeq: 2 })
+        await mgr.handleSocketEvent({
+            kind: 'itemsUpdated',
+            fromSeq: 1,
+            toSeq: 2,
+        })
         expect(mockPullBackupDeltas).toHaveBeenCalledTimes(1)
         mgr.stop()
     })

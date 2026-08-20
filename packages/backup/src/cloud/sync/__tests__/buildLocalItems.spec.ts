@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -26,7 +26,7 @@ const fakeSerialize = async (account: {
             key: `accounts/${account.address}`,
             type: BackupItemType.ACCOUNT,
             payload: {
-                type: 'NoAuth',
+                type: 'watch',
                 address: account.address,
                 updatedAt: 5,
             } as never,
@@ -44,7 +44,7 @@ describe('buildLocalItems', () => {
         expect(items).toHaveLength(1)
         expect(items[0].key).toBe('accounts/A')
         const expected = contentHash(
-            canonicalJson({ type: 'NoAuth', address: 'A' }),
+            canonicalJson({ type: 'watch', address: 'A' }),
         )
         expect(items[0].contentHash).toBe(expected)
     })
@@ -61,14 +61,14 @@ describe('buildLocalItems', () => {
             const seedSecret = {
                 key: 'secrets/A',
                 type: BackupItemType.ACCOUNT,
-                payload: { type: 'HdSeed', seed: 's', entropy: 'e' },
+                payload: { type: 'hdSeed', seed: 's', entropy: 'e' },
             }
             return {
                 address: {
                     key: `accounts/${account.address}`,
                     type: BackupItemType.ACCOUNT,
                     payload: {
-                        type: 'HdKey',
+                        type: 'hdWallet',
                         address: account.address,
                         seedFirstDerivedAddress: 'A',
                         publicKey: 'pp',

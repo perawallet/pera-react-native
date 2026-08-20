@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -21,13 +21,25 @@ vi.mock('../../api', async importOriginal => ({
     readItems: (...a: unknown[]) => readItems(...a),
 }))
 
-import { BackupItemStatus, BackupItemType, DeltaOperation, createEmptySyncState } from '../../models'
+import {
+    BackupItemStatus,
+    BackupItemType,
+    DeltaOperation,
+    createEmptySyncState,
+} from '../../models'
 import { pullBackupDeltas } from '../pullBackupDeltas'
 
 const encryptionKey = new Uint8Array(32).fill(7)
 const deps = () => ({
-    network: 'mainnet' as const, backupId: 'b', deviceId: 'dev', encryptionKey,
-    importAccounts: vi.fn(async () => ({ imported: 0, skippedDuplicate: 0, failed: [] })),
+    network: 'mainnet' as const,
+    backupId: 'b',
+    deviceId: 'dev',
+    encryptionKey,
+    importAccounts: vi.fn(async () => ({
+        imported: 0,
+        skippedDuplicate: 0,
+        failed: [],
+    })),
 })
 
 describe('pullBackupDeltas', () => {
@@ -38,8 +50,15 @@ describe('pullBackupDeltas', () => {
 
     it('fetches deltas from the cursor, applies them, and advances lastSyncedSeq', async () => {
         fetchDelta.mockResolvedValue([
-            { seq: 9, key: 'accounts/X', type: BackupItemType.ACCOUNT, ver: 1,
-              status: BackupItemStatus.ACTIVE, op: DeltaOperation.UPSERT, hash: 'h' },
+            {
+                seq: 9,
+                key: 'accounts/X',
+                type: BackupItemType.ACCOUNT,
+                ver: 1,
+                status: BackupItemStatus.ACTIVE,
+                op: DeltaOperation.UPSERT,
+                hash: 'h',
+            },
         ])
         // Return no item bodies so applyDeltas advances the cursor without needing a real decrypt.
         readItems.mockResolvedValue([])

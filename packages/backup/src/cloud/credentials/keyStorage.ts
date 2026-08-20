@@ -67,7 +67,8 @@ export const withBackupEncryptionKey = async <T>(
 ): Promise<Nullable<T>> => withSecret(CLOUD_BACKUP_ENC_KEY_ID, handler)
 
 /** True when a backup auth key is present (i.e. backup is configured on-device). */
-export const hasBackupCredentials = (): boolean => hasSecret(CLOUD_BACKUP_AUTH_KEY_ID)
+export const hasBackupCredentials = (): boolean =>
+    hasSecret(CLOUD_BACKUP_AUTH_KEY_ID)
 
 export const deleteBackupKeys = async (): Promise<void> => {
     const results = await Promise.allSettled([

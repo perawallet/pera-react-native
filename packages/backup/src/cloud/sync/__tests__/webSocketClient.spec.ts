@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -15,8 +15,15 @@ import { describe, expect, it, vi } from 'vitest'
 import { BackupWebSocketClient, type WebSocketLike } from '../webSocketClient'
 
 const makeFakeSocket = () => {
-    const s: WebSocketLike & { _open: () => void; _msg: (d: unknown) => void; _close: (c?: number) => void } = {
-        onopen: null, onmessage: null, onerror: null, onclose: null,
+    const s: WebSocketLike & {
+        _open: () => void
+        _msg: (d: unknown) => void
+        _close: (c?: number) => void
+    } = {
+        onopen: null,
+        onmessage: null,
+        onerror: null,
+        onclose: null,
         close: vi.fn(),
         _open: () => s.onopen?.(),
         _msg: (d: unknown) => s.onmessage?.({ data: d }),
@@ -46,22 +53,35 @@ describe('BackupWebSocketClient', () => {
         const client = new BackupWebSocketClient({
             ...baseDeps(),
             socketFactory: () => sock,
-            scheduler: { setTimeout: (() => 0) as never, clearTimeout: () => undefined },
+            scheduler: {
+                setTimeout: (() => 0) as never,
+                clearTimeout: () => undefined,
+            },
             onEvent: e => events.push(e),
         })
         await client.connect()
         sock._open()
-        sock._msg(JSON.stringify({ type: 'ITEMS_UPDATED', from_seq: 5, to_seq: 7 }))
+        sock._msg(
+            JSON.stringify({ type: 'ITEMS_UPDATED', from_seq: 5, to_seq: 7 }),
+        )
         expect(events).toContainEqual({ kind: 'connected' })
-        expect(events).toContainEqual({ kind: 'itemsUpdated', fromSeq: 5, toSeq: 7 })
+        expect(events).toContainEqual({
+            kind: 'itemsUpdated',
+            fromSeq: 5,
+            toSeq: 7,
+        })
     })
 
     it('emits backupDeleted on a BACKUP_DELETED message', async () => {
         const sock = makeFakeSocket()
         const events: unknown[] = []
         const client = new BackupWebSocketClient({
-            ...baseDeps(), socketFactory: () => sock,
-            scheduler: { setTimeout: (() => 0) as never, clearTimeout: () => undefined },
+            ...baseDeps(),
+            socketFactory: () => sock,
+            scheduler: {
+                setTimeout: (() => 0) as never,
+                clearTimeout: () => undefined,
+            },
             onEvent: e => events.push(e),
         })
         await client.connect()
@@ -77,7 +97,13 @@ describe('BackupWebSocketClient', () => {
         const client = new BackupWebSocketClient({
             ...deps,
             socketFactory: () => sockets[i++],
-            scheduler: { setTimeout: ((fn: () => void) => { scheduled.push(fn); return 1 }) as never, clearTimeout: () => undefined },
+            scheduler: {
+                setTimeout: ((fn: () => void) => {
+                    scheduled.push(fn)
+                    return 1
+                }) as never,
+                clearTimeout: () => undefined,
+            },
             onEvent: () => undefined,
         })
         await client.connect()
@@ -92,8 +118,15 @@ describe('BackupWebSocketClient', () => {
         const sock = makeFakeSocket()
         const scheduled: Array<() => void> = []
         const client = new BackupWebSocketClient({
-            ...baseDeps(), socketFactory: () => sock,
-            scheduler: { setTimeout: ((fn: () => void) => { scheduled.push(fn); return 1 }) as never, clearTimeout: () => undefined },
+            ...baseDeps(),
+            socketFactory: () => sock,
+            scheduler: {
+                setTimeout: ((fn: () => void) => {
+                    scheduled.push(fn)
+                    return 1
+                }) as never,
+                clearTimeout: () => undefined,
+            },
             onEvent: () => undefined,
         })
         await client.connect()

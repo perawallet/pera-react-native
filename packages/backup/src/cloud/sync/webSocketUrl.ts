@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -9,6 +9,8 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+
+import { API_PREFIX } from '../api/constants'
 
 type BackupWsUrlParams = {
     baseUrl: string
@@ -38,5 +40,5 @@ export const backupWebSocketUrl = ({
         ts: timestamp,
         signature,
     }).toString()
-    return `${wsBase}/api/v3/backup/${backupId}?${query}`
+    return `${wsBase}${API_PREFIX}/backup/${backupId}?${query}`
 }

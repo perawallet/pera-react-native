@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -38,13 +38,14 @@ export type PushDirtyDeps = {
     batchUpsertItems: (
         network: Network,
         backupId: BackupId,
+        deviceId: DeviceId,
         request: BatchUpsertRequest,
     ) => Promise<BatchUpsertResponse>
     deleteItem: (
         network: Network,
         backupId: BackupId,
-        key: BackupItemKey,
         deviceId: DeviceId,
+        key: BackupItemKey,
     ) => Promise<DeleteItemResponse>
 }
 
@@ -80,8 +81,8 @@ export const pushDirty = async ({
             const res = await deps.deleteItem(
                 deps.network,
                 deps.backupId,
-                key,
                 deps.deviceId,
+                key,
             )
             lastSyncedSeq = Math.max(lastSyncedSeq, res.seq)
             delete items[key]
@@ -123,10 +124,15 @@ export const pushDirty = async ({
 
     if (entries.length === 0) return { ...state, items, lastSyncedSeq }
 
-    const response = await deps.batchUpsertItems(deps.network, deps.backupId, {
-        device_id: deps.deviceId,
-        items: entries,
-    })
+    const response = await deps.batchUpsertItems(
+        deps.network,
+        deps.backupId,
+        deps.deviceId,
+        {
+            device_id: deps.deviceId,
+            items: entries,
+        },
+    )
 
     for (const result of response.results) {
         const existing = items[result.key]

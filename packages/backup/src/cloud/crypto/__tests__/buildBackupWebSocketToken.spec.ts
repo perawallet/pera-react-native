@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -22,9 +22,13 @@ import {
 
 describe('buildBackupWebSocketToken', () => {
     it('builds the canonical WS message string', () => {
-        expect(buildBackupWebSocketMessage('did:pera:ABC', 'dev-1', '2026-06-25T00:00:00.000Z')).toBe(
-            'WS|did:pera:ABC|dev-1|2026-06-25T00:00:00.000Z',
-        )
+        expect(
+            buildBackupWebSocketMessage(
+                'did:pera:ABC',
+                'dev-1',
+                '2026-06-25T00:00:00.000Z',
+            ),
+        ).toBe('WS|did:pera:ABC|dev-1|2026-06-25T00:00:00.000Z')
     })
 
     it('produces a base64 Ed25519 signature the matching public key verifies', () => {
@@ -35,7 +39,15 @@ describe('buildBackupWebSocketToken', () => {
             timestamp: '2026-06-25T00:00:00.000Z',
             authSecretKey: kp.secretKey,
         })
-        const message = new TextEncoder().encode('WS|did:pera:ABC|dev-1|2026-06-25T00:00:00.000Z')
-        expect(nacl.sign.detached.verify(message, decodeFromBase64(token), kp.publicKey)).toBe(true)
+        const message = new TextEncoder().encode(
+            'WS|did:pera:ABC|dev-1|2026-06-25T00:00:00.000Z',
+        )
+        expect(
+            nacl.sign.detached.verify(
+                message,
+                decodeFromBase64(token),
+                kp.publicKey,
+            ),
+        ).toBe(true)
     })
 })

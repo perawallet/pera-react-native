@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,45 +10,45 @@
  limitations under the License
  */
 
-import type { WalletAccount } from "@perawallet/wallet-core-accounts";
-import { canonicalJson, contentHash } from "./canonicalize";
-import type { LocalItem, SerializedAccount, SerializedItem } from "./types";
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { canonicalJson, contentHash } from './canonicalize'
+import type { LocalItem, SerializedAccount, SerializedItem } from './types'
 
 /** Content hash ignores `updatedAt` so a pure timestamp bump is not "dirty". */
 const hashOf = (item: SerializedItem): string => {
-  const { updatedAt: _ignored, ...content } = item.payload as Record<
-    string,
-    unknown
-  >;
-  return contentHash(canonicalJson(content));
-};
+    const { updatedAt: _ignored, ...content } = item.payload as Record<
+        string,
+        unknown
+    >
+    return contentHash(canonicalJson(content))
+}
 
 const withHash = (item: SerializedItem): LocalItem => ({
-  ...item,
-  contentHash: hashOf(item),
-});
+    ...item,
+    contentHash: hashOf(item),
+})
 
 export const buildLocalItems = async (
-  accounts: WalletAccount[],
-  serializeAccount: (a: WalletAccount) => Promise<SerializedAccount | null>,
+    accounts: WalletAccount[],
+    serializeAccount: (a: WalletAccount) => Promise<SerializedAccount | null>,
 ): Promise<LocalItem[]> => {
-  // Keyed map dedupes shared items (the HdSeed secret repeats across every
-  // child of a seed with identical content). Last write wins; safe because
-  // duplicate keys only ever carry byte-identical payloads.
-  const byKey = new Map<string, LocalItem>();
-  for (const account of accounts) {
-    const serialized = await serializeAccount(account);
-    if (serialized === null) continue;
-    const items: (SerializedItem | null)[] = [
-      serialized.address,
-      serialized.secrets,
-      ...(serialized.extraItems ?? []),
-    ];
-    for (const item of items) {
-      if (!item) continue;
-      const local = withHash(item);
-      byKey.set(local.key, local);
+    // Keyed map dedupes shared items (the hdSeed secret repeats across every
+    // child of a seed with identical content). Last write wins; safe because
+    // duplicate keys only ever carry byte-identical payloads.
+    const byKey = new Map<string, LocalItem>()
+    for (const account of accounts) {
+        const serialized = await serializeAccount(account)
+        if (serialized === null) continue
+        const items: (SerializedItem | null)[] = [
+            serialized.address,
+            serialized.secrets,
+            ...(serialized.extraItems ?? []),
+        ]
+        for (const item of items) {
+            if (!item) continue
+            const local = withHash(item)
+            byKey.set(local.key, local)
+        }
     }
-  }
-  return [...byKey.values()];
-};
+    return [...byKey.values()]
+}

@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -33,10 +33,10 @@ const algo25: WalletAccount = {
 }
 
 describe('serializeAccountItems', () => {
-    it('serializes an Algo25 account to address + secrets items that round-trip', () => {
+    it('serializes an algo25 account to address + secrets items that round-trip', () => {
         const result = serializeAccountItems(algo25, {
             updatedAt: 1719300000000,
-            secrets: { type: 'Algo25', mnemonic: 'word1 word2' },
+            secrets: { type: 'algo25', mnemonic: 'word1 word2' },
         })
         expect(result).not.toBeNull()
         expect(result?.address.key).toBe('accounts/ADDR')
@@ -44,7 +44,7 @@ describe('serializeAccountItems', () => {
         expect(
             parseAddressPayload(canonicalJson(result!.address.payload)),
         ).toMatchObject({
-            type: 'Algo25',
+            type: 'algo25',
             address: 'ADDR',
             customName: 'Main',
             updatedAt: 1719300000000,
@@ -52,7 +52,7 @@ describe('serializeAccountItems', () => {
         expect(
             parseSecretsPayload(canonicalJson(result!.secrets!.payload)),
         ).toMatchObject({
-            type: 'Algo25',
+            type: 'algo25',
             mnemonic: 'word1 word2',
         })
     })
@@ -73,7 +73,7 @@ describe('serializeAccountItems', () => {
         expect(
             parseAddressPayload(canonicalJson(result!.address.payload)),
         ).toMatchObject({
-            type: 'NoAuth',
+            type: 'watch',
             address: 'WADDR',
             customName: 'Watcher',
         })
@@ -97,14 +97,19 @@ describe('serializeAccountItems', () => {
         ).toBeNull()
     })
 
-    it('builds an HdKey address payload from the injected hd context (no personal secret)', () => {
+    it('builds an hdWallet address payload from the injected hd context (no personal secret)', () => {
         const hd: WalletAccount = {
             id: '3',
             type: AccountTypes.hdWallet,
             address: 'CHILD',
             keyPairId: 'seed-1-acc0-idx1-dt9',
             name: 'Child 1',
-            hdWalletDetails: { account: 0, change: 0, keyIndex: 1, derivationType: 9 },
+            hdWalletDetails: {
+                account: 0,
+                change: 0,
+                keyIndex: 1,
+                derivationType: 9,
+            },
         }
         const result = serializeAccountItems(hd, {
             updatedAt: 1719300000000,
@@ -114,7 +119,7 @@ describe('serializeAccountItems', () => {
         expect(result?.address.key).toBe('accounts/CHILD')
         expect(result?.secrets).toBeNull()
         expect(result?.address.payload).toMatchObject({
-            type: 'HdKey',
+            type: 'hdWallet',
             address: 'CHILD',
             seedFirstDerivedAddress: 'FIRST',
             publicKey: 'aabb',

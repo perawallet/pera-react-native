@@ -314,30 +314,43 @@ describe('pullBackupItems', () => {
 })
 
 describe('buildPulledAccounts', () => {
-    it('attaches a HdSeed secret to its matching HdKey account', () => {
+    it('attaches a hdSeed secret to its matching hdWallet account', () => {
         const addr = new Map<string, never>([
-            ['F', { type: 'HdKey', address: 'F', seedFirstDerivedAddress: 'F', publicKey: 'p', account: 0, change: 0, keyIndex: 0, derivationType: 9, customName: null } as never],
+            [
+                'F',
+                {
+                    type: 'hdWallet',
+                    address: 'F',
+                    seedFirstDerivedAddress: 'F',
+                    publicKey: 'p',
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                    customName: null,
+                } as never,
+            ],
         ])
         const sec = new Map<string, never>([
-            ['F', { type: 'HdSeed', seed: 's', entropy: 'e' } as never],
+            ['F', { type: 'hdSeed', seed: 's', entropy: 'e' } as never],
         ])
         const result = buildPulledAccounts(addr as never, sec as never)
         expect(result).toHaveLength(1)
-        expect(result[0].addressPayload.type).toBe('HdKey')
-        expect(result[0].secretsPayload).toMatchObject({ type: 'HdSeed' })
+        expect(result[0].addressPayload.type).toBe('hdWallet')
+        expect(result[0].secretsPayload).toMatchObject({ type: 'hdSeed' })
     })
 
-    it('synthesizes a standalone HdSeed entry for an orphan seed secret', () => {
+    it('synthesizes a standalone hdSeed entry for an orphan seed secret', () => {
         const addr = new Map<string, never>()
         const sec = new Map<string, never>([
-            ['F', { type: 'HdSeed', seed: 's', entropy: 'e' } as never],
+            ['F', { type: 'hdSeed', seed: 's', entropy: 'e' } as never],
         ])
         const result = buildPulledAccounts(addr as never, sec as never)
         expect(result).toHaveLength(1)
         expect(result[0]).toMatchObject({
             address: 'F',
-            addressPayload: { type: BackupAccountType.HdSeed, address: 'F' },
-            secretsPayload: { type: 'HdSeed' },
+            addressPayload: { type: BackupAccountType.hdSeed, address: 'F' },
+            secretsPayload: { type: 'hdSeed' },
         })
     })
 })

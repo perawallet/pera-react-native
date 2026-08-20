@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -42,7 +42,7 @@ describe('applyDeltas', () => {
             { key: 'accounts/X', ver: 3, hash: 'rh', payload: 'enc' },
         ])
         deps.decrypt.mockReturnValue(
-            JSON.stringify({ type: 'NoAuth', address: 'X', customName: 'N' }),
+            JSON.stringify({ type: 'watch', address: 'X', customName: 'N' }),
         )
 
         const next = await applyDeltas({
@@ -103,7 +103,7 @@ describe('applyDeltas', () => {
             { key: 'accounts/Z', ver: 4, hash: 'rh2', payload: 'enc' },
         ])
         deps.decrypt.mockReturnValue(
-            JSON.stringify({ type: 'NoAuth', address: 'Z', updatedAt: 100 }),
+            JSON.stringify({ type: 'watch', address: 'Z', updatedAt: 100 }),
         )
         const state = createEmptySyncState('b')
         state.items['accounts/Z'] = {
@@ -147,7 +147,7 @@ describe('applyDeltas', () => {
         ])
         // Remote updatedAt equals local localUpdatedAt → tie → remote wins (spec §8).
         deps.decrypt.mockReturnValue(
-            JSON.stringify({ type: 'NoAuth', address: 'Z', updatedAt: 200 }),
+            JSON.stringify({ type: 'watch', address: 'Z', updatedAt: 200 }),
         )
         const state = createEmptySyncState('b')
         state.items['accounts/Z'] = {
@@ -183,7 +183,7 @@ describe('applyDeltas', () => {
         })
     })
 
-    it('synthesizes a standalone HdSeed entry for an orphan seed secret arriving via incremental sync', async () => {
+    it('synthesizes a standalone hdSeed entry for an orphan seed secret arriving via incremental sync', async () => {
         const deps = baseDeps()
         // An orphan seed secret (its first-derived account was deleted) arrives
         // alongside a sibling HD child, but with NO matching accounts/F item.
@@ -193,12 +193,12 @@ describe('applyDeltas', () => {
         ])
         const plaintextByKey: Record<string, string> = {
             'secrets/F': JSON.stringify({
-                type: 'HdSeed',
+                type: 'hdSeed',
                 seed: 'aa'.repeat(96),
                 entropy: 'bb'.repeat(32),
             }),
             'accounts/G': JSON.stringify({
-                type: 'HdKey',
+                type: 'hdWallet',
                 address: 'G',
                 seedFirstDerivedAddress: 'F',
                 publicKey: 'cc',
@@ -239,7 +239,7 @@ describe('applyDeltas', () => {
             deps,
         })
 
-        // The orphan HdSeed secret must be surfaced as a standalone HdSeed entry
+        // The orphan hdSeed secret must be surfaced as a standalone hdSeed entry
         // (mirroring full restore) so its sibling HD children find the seed;
         // otherwise the seed is dropped and accounts/G fails "No parent seed".
         expect(deps.importAccounts).toHaveBeenCalledTimes(1)
@@ -247,8 +247,8 @@ describe('applyDeltas', () => {
             expect.arrayContaining([
                 expect.objectContaining({
                     address: 'F',
-                    addressPayload: { type: 'HdSeed', address: 'F' },
-                    secretsPayload: expect.objectContaining({ type: 'HdSeed' }),
+                    addressPayload: { type: 'hdSeed', address: 'F' },
+                    secretsPayload: expect.objectContaining({ type: 'hdSeed' }),
                 }),
             ]),
         )

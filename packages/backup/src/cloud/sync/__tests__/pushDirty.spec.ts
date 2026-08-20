@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -27,7 +27,7 @@ const item = (key: string): LocalItem => ({
     type: BackupItemType.ACCOUNT,
     contentHash: 'h',
     payload: {
-        type: 'NoAuth',
+        type: 'watch',
         address: key.split('/')[1],
         updatedAt: 0,
     } as never,
@@ -136,8 +136,8 @@ describe('pushDirty', () => {
         expect(deps.deleteItem).toHaveBeenCalledWith(
             'mainnet',
             'b',
-            'accounts/GONE',
             'dev',
+            'accounts/GONE',
         )
         expect(next.items['accounts/GONE']).toBeUndefined()
     })

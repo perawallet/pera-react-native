@@ -183,7 +183,11 @@ describe('parseAddressPayload', () => {
     it('treats a missing updatedAt as undefined (back-compat)', () => {
         const raw = JSON.stringify({ type: 'algo25', address: 'ADDR' })
 
-        expect(parseAddressPayload(raw).updatedAt).toBeUndefined()
+        expect(parseAddressPayload(raw)).toEqual({
+            type: 'algo25',
+            address: 'ADDR',
+            customName: null,
+        })
     })
 })
 

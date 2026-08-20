@@ -12,14 +12,13 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
-const { commitSecretMock, removeSecretMock, withSecretMock, hasSecretMock } = vi.hoisted(
-    () => ({
+const { commitSecretMock, removeSecretMock, withSecretMock, hasSecretMock } =
+    vi.hoisted(() => ({
         commitSecretMock: vi.fn(async () => undefined),
         removeSecretMock: vi.fn(async () => undefined),
         withSecretMock: vi.fn(),
         hasSecretMock: vi.fn(() => false),
-    }),
-)
+    }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     commitSecret: commitSecretMock,

@@ -10,216 +10,215 @@
  limitations under the License
  */
 
-import type { Network } from "@perawallet/wallet-core-shared";
-import { logger } from "@perawallet/wallet-core-shared";
-import { fetchDelta, fetchManifest, readItems } from "../api";
+import type { Network } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
+import { fetchDelta, fetchManifest, readItems } from '../api'
+import { parseAddressPayload, parseSecretsPayload } from '../api/payloadParsers'
+import { decryptItemPayload } from '../crypto/itemPayload'
 import {
-  parseAddressPayload,
-  parseSecretsPayload,
-} from "../api/payloadParsers";
-import { decryptItemPayload } from "../crypto/itemPayload";
-import {
-  BackupAccountType,
-  BackupItemStatus,
-  DeltaOperation,
-  type AddressBackupPayload,
-  type BackupId,
-  type BackupItemKey,
-  type DeltaEntry,
-  type DeviceId,
-  type FetchedItem,
-  type SecretsBackupPayload,
-} from "../models";
+    BackupAccountType,
+    BackupItemStatus,
+    DeltaOperation,
+    type AddressBackupPayload,
+    type BackupId,
+    type BackupItemKey,
+    type DeltaEntry,
+    type DeviceId,
+    type FetchedItem,
+    type SecretsBackupPayload,
+} from '../models'
 
-const ACCOUNTS_PREFIX = "accounts/";
-const SECRETS_PREFIX = "secrets/";
-const READ_BATCH_SIZE = 50;
+const ACCOUNTS_PREFIX = 'accounts/'
+const SECRETS_PREFIX = 'secrets/'
+const READ_BATCH_SIZE = 50
 
 export type PulledAccount = {
-  address: string;
-  addressPayload: AddressBackupPayload;
-  secretsPayload: SecretsBackupPayload | null;
-};
+    address: string
+    addressPayload: AddressBackupPayload
+    secretsPayload: SecretsBackupPayload | null
+}
 
 export type SkippedItem = {
-  key: BackupItemKey;
-  reason: "decrypt" | "parse" | "missing-address";
-};
+    key: BackupItemKey
+    reason: 'decrypt' | 'parse' | 'missing-address'
+}
 
 export type PullBackupItemsResult = {
-  backupGlobalHash: string;
-  lastSeq: number;
-  accounts: PulledAccount[];
-  skipped: SkippedItem[];
-};
+    backupGlobalHash: string
+    lastSeq: number
+    accounts: PulledAccount[]
+    skipped: SkippedItem[]
+}
 
 type PullBackupItemsParams = {
-  network: Network;
-  backupId: BackupId;
-  deviceId: DeviceId;
-  encryptionKey: Uint8Array;
-};
+    network: Network
+    backupId: BackupId
+    deviceId: DeviceId
+    encryptionKey: Uint8Array
+}
 
 const addressFromKey = (key: BackupItemKey): string | null => {
-  if (key.startsWith(ACCOUNTS_PREFIX)) return key.slice(ACCOUNTS_PREFIX.length);
-  if (key.startsWith(SECRETS_PREFIX)) return key.slice(SECRETS_PREFIX.length);
-  return null;
-};
+    if (key.startsWith(ACCOUNTS_PREFIX))
+        return key.slice(ACCOUNTS_PREFIX.length)
+    if (key.startsWith(SECRETS_PREFIX)) return key.slice(SECRETS_PREFIX.length)
+    return null
+}
 
 const chunk = <T>(items: T[], size: number): T[][] => {
-  const out: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    out.push(items.slice(i, i + size));
-  }
-  return out;
-};
+    const out: T[][] = []
+    for (let i = 0; i < items.length; i += size) {
+        out.push(items.slice(i, i + size))
+    }
+    return out
+}
 
 /** Keys of the active account/secret items that should be read and restored. */
 const selectWantedKeys = (deltas: DeltaEntry[]): BackupItemKey[] =>
-  deltas
-    .filter(
-      (d) =>
-        d.op === DeltaOperation.UPSERT &&
-        d.status === BackupItemStatus.ACTIVE &&
-        (d.key.startsWith(ACCOUNTS_PREFIX) || d.key.startsWith(SECRETS_PREFIX)),
-    )
-    .map((d) => d.key);
+    deltas
+        .filter(
+            d =>
+                d.op === DeltaOperation.UPSERT &&
+                d.status === BackupItemStatus.ACTIVE &&
+                (d.key.startsWith(ACCOUNTS_PREFIX) ||
+                    d.key.startsWith(SECRETS_PREFIX)),
+        )
+        .map(d => d.key)
 
 const readItemsInBatches = async (
-  network: Network,
-  backupId: BackupId,
-  deviceId: DeviceId,
-  keys: BackupItemKey[],
+    network: Network,
+    backupId: BackupId,
+    deviceId: DeviceId,
+    keys: BackupItemKey[],
 ): Promise<FetchedItem[]> => {
-  const items: FetchedItem[] = [];
-  for (const batch of chunk(keys, READ_BATCH_SIZE)) {
-    items.push(...(await readItems(network, backupId, deviceId, batch)));
-  }
-  return items;
-};
+    const items: FetchedItem[] = []
+    for (const batch of chunk(keys, READ_BATCH_SIZE)) {
+        items.push(...(await readItems(network, backupId, deviceId, batch)))
+    }
+    return items
+}
 
 const decryptItem = (
-  item: FetchedItem,
-  encryptionKey: Uint8Array,
-  backupId: BackupId,
+    item: FetchedItem,
+    encryptionKey: Uint8Array,
+    backupId: BackupId,
 ): string | null => {
-  try {
-    return decryptItemPayload(item.payload, {
-      encryptionKey,
-      backupId,
-      key: item.key,
-    });
-  } catch {
-    logger.warn("pullBackupItems: failed to decrypt item", {
-      key: item.key,
-    });
-    return null;
-  }
-};
+    try {
+        return decryptItemPayload(item.payload, {
+            encryptionKey,
+            backupId,
+            key: item.key,
+        })
+    } catch {
+        logger.warn('pullBackupItems: failed to decrypt item', {
+            key: item.key,
+        })
+        return null
+    }
+}
 
 type CollectedPayloads = {
-  addressPayloads: Map<string, AddressBackupPayload>;
-  secretsPayloads: Map<string, SecretsBackupPayload>;
-  skipped: SkippedItem[];
-};
+    addressPayloads: Map<string, AddressBackupPayload>
+    secretsPayloads: Map<string, SecretsBackupPayload>
+    skipped: SkippedItem[]
+}
 
 const collectItemPayloads = (
-  items: FetchedItem[],
-  encryptionKey: Uint8Array,
-  backupId: BackupId,
+    items: FetchedItem[],
+    encryptionKey: Uint8Array,
+    backupId: BackupId,
 ): CollectedPayloads => {
-  const addressPayloads = new Map<string, AddressBackupPayload>();
-  const secretsPayloads = new Map<string, SecretsBackupPayload>();
-  const skipped: SkippedItem[] = [];
+    const addressPayloads = new Map<string, AddressBackupPayload>()
+    const secretsPayloads = new Map<string, SecretsBackupPayload>()
+    const skipped: SkippedItem[] = []
 
-  for (const item of items) {
-    const address = addressFromKey(item.key);
-    if (!address) {
-      logger.warn("pullBackupItems: unexpected item key format", {
-        key: item.key,
-      });
-      skipped.push({ key: item.key, reason: "missing-address" });
-      continue;
+    for (const item of items) {
+        const address = addressFromKey(item.key)
+        if (!address) {
+            logger.warn('pullBackupItems: unexpected item key format', {
+                key: item.key,
+            })
+            skipped.push({ key: item.key, reason: 'missing-address' })
+            continue
+        }
+
+        const plaintext = decryptItem(item, encryptionKey, backupId)
+        if (plaintext === null) {
+            skipped.push({ key: item.key, reason: 'decrypt' })
+            continue
+        }
+
+        try {
+            if (item.key.startsWith(ACCOUNTS_PREFIX)) {
+                addressPayloads.set(address, parseAddressPayload(plaintext))
+            } else {
+                secretsPayloads.set(address, parseSecretsPayload(plaintext))
+            }
+        } catch {
+            logger.warn('pullBackupItems: failed to parse item', {
+                key: item.key,
+            })
+            skipped.push({ key: item.key, reason: 'parse' })
+        }
     }
 
-    const plaintext = decryptItem(item, encryptionKey, backupId);
-    if (plaintext === null) {
-      skipped.push({ key: item.key, reason: "decrypt" });
-      continue;
-    }
+    return { addressPayloads, secretsPayloads, skipped }
+}
 
-    try {
-      if (item.key.startsWith(ACCOUNTS_PREFIX)) {
-        addressPayloads.set(address, parseAddressPayload(plaintext));
-      } else {
-        secretsPayloads.set(address, parseSecretsPayload(plaintext));
-      }
-    } catch {
-      logger.warn("pullBackupItems: failed to parse item", {
-        key: item.key,
-      });
-      skipped.push({ key: item.key, reason: "parse" });
-    }
-  }
-
-  return { addressPayloads, secretsPayloads, skipped };
-};
-
-/** Joins address + secrets payloads by address into PulledAccounts. A HdSeed
+/** Joins address + secrets payloads by address into PulledAccounts. A hdSeed
  *  secret with no matching address payload (its first account was removed) is
- *  surfaced as a standalone HdSeed entry so the seed still restores. */
+ *  surfaced as a standalone hdSeed entry so the seed still restores. */
 export const buildPulledAccounts = (
-  addressPayloads: Map<string, AddressBackupPayload>,
-  secretsPayloads: Map<string, SecretsBackupPayload>,
+    addressPayloads: Map<string, AddressBackupPayload>,
+    secretsPayloads: Map<string, SecretsBackupPayload>,
 ): PulledAccount[] => {
-  const accounts: PulledAccount[] = [...addressPayloads.entries()].map(
-    ([address, addressPayload]) => ({
-      address,
-      addressPayload,
-      secretsPayload: secretsPayloads.get(address) ?? null,
-    }),
-  );
-  for (const [address, secretsPayload] of secretsPayloads.entries()) {
-    if (
-      secretsPayload.type === BackupAccountType.HdSeed &&
-      !addressPayloads.has(address)
-    ) {
-      accounts.push({
-        address,
-        addressPayload: { type: BackupAccountType.HdSeed, address },
-        secretsPayload,
-      });
+    const accounts: PulledAccount[] = [...addressPayloads.entries()].map(
+        ([address, addressPayload]) => ({
+            address,
+            addressPayload,
+            secretsPayload: secretsPayloads.get(address) ?? null,
+        }),
+    )
+    for (const [address, secretsPayload] of secretsPayloads.entries()) {
+        if (
+            secretsPayload.type === BackupAccountType.hdSeed &&
+            !addressPayloads.has(address)
+        ) {
+            accounts.push({
+                address,
+                addressPayload: { type: BackupAccountType.hdSeed, address },
+                secretsPayload,
+            })
+        }
     }
-  }
-  return accounts;
-};
+    return accounts
+}
 
 export const pullBackupItems = async ({
-  network,
-  backupId,
-  deviceId,
-  encryptionKey,
-}: PullBackupItemsParams): Promise<PullBackupItemsResult> => {
-  const manifest = await fetchManifest(network, backupId, deviceId);
-  const deltas = await fetchDelta(network, backupId, deviceId, 0);
-
-  const wantedKeys = selectWantedKeys(deltas);
-  const items = await readItemsInBatches(
     network,
     backupId,
     deviceId,
-    wantedKeys,
-  );
-  const { addressPayloads, secretsPayloads, skipped } = collectItemPayloads(
-    items,
     encryptionKey,
-    backupId,
-  );
+}: PullBackupItemsParams): Promise<PullBackupItemsResult> => {
+    const manifest = await fetchManifest(network, backupId, deviceId)
+    const deltas = await fetchDelta(network, backupId, deviceId, 0)
 
-  return {
-    backupGlobalHash: manifest.backupGlobalHash,
-    lastSeq: manifest.lastSeq,
-    accounts: buildPulledAccounts(addressPayloads, secretsPayloads),
-    skipped,
-  };
-};
+    const wantedKeys = selectWantedKeys(deltas)
+    const items = await readItemsInBatches(
+        network,
+        backupId,
+        deviceId,
+        wantedKeys,
+    )
+    const { addressPayloads, secretsPayloads, skipped } = collectItemPayloads(
+        items,
+        encryptionKey,
+        backupId,
+    )
+
+    return {
+        backupGlobalHash: manifest.backupGlobalHash,
+        lastSeq: manifest.lastSeq,
+        accounts: buildPulledAccounts(addressPayloads, secretsPayloads),
+        skipped,
+    }
+}

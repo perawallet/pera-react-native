@@ -1,5 +1,5 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
+ Copyright 2022-2026 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -41,7 +41,12 @@ type ClientParams = {
     deviceId: string
     timestamp: () => string
     withAuthSecretKey: <T>(fn: (key: Uint8Array) => T) => Promise<Nullable<T>>
-    buildToken: (params: { backupId: string; deviceId: string; timestamp: string; authSecretKey: Uint8Array }) => string
+    buildToken: (params: {
+        backupId: string
+        deviceId: string
+        timestamp: string
+        authSecretKey: Uint8Array
+    }) => string
     onEvent: (event: BackupWebSocketEvent) => void
     socketFactory?: BackupSocketFactory
     scheduler?: Scheduler
@@ -55,7 +60,9 @@ const JITTER_MAX_MS = 500
 const MAX_ATTEMPTS = 10
 
 const defaultFactory: BackupSocketFactory = url =>
-    new (globalThis as { WebSocket: new (url: string) => unknown }).WebSocket(url) as unknown as WebSocketLike
+    new (globalThis as { WebSocket: new (url: string) => unknown }).WebSocket(
+        url,
+    ) as unknown as WebSocketLike
 
 const defaultScheduler: Scheduler = {
     setTimeout: (fn, ms) => setTimeout(fn, ms),
@@ -93,7 +100,10 @@ export class BackupWebSocketClient {
             }),
         )
         if (!signature) {
-            this.params.onEvent({ kind: 'error', error: new Error('Backup auth key unavailable for WS') })
+            this.params.onEvent({
+                kind: 'error',
+                error: new Error('Backup auth key unavailable for WS'),
+            })
             return
         }
         const url = backupWebSocketUrl({
@@ -110,8 +120,10 @@ export class BackupWebSocketClient {
             this.params.onEvent({ kind: 'connected' })
         }
         socket.onmessage = ev => this.handleMessage(ev.data)
-        socket.onerror = () => this.params.onEvent({ kind: 'error', error: new Error('WS error') })
-        socket.onclose = ev => this.handleClose(ev.code ?? null, ev.reason ?? null)
+        socket.onerror = () =>
+            this.params.onEvent({ kind: 'error', error: new Error('WS error') })
+        socket.onclose = ev =>
+            this.handleClose(ev.code ?? null, ev.reason ?? null)
     }
 
     private handleMessage(data: unknown): void {
@@ -123,7 +135,11 @@ export class BackupWebSocketClient {
             return
         }
         if (parsed.type === 'ITEMS_UPDATED') {
-            this.params.onEvent({ kind: 'itemsUpdated', fromSeq: parsed.from_seq ?? 0, toSeq: parsed.to_seq ?? 0 })
+            this.params.onEvent({
+                kind: 'itemsUpdated',
+                fromSeq: parsed.from_seq ?? 0,
+                toSeq: parsed.to_seq ?? 0,
+            })
         } else if (parsed.type === 'BACKUP_DELETED') {
             this.params.onEvent({ kind: 'backupDeleted' })
         }
@@ -134,7 +150,10 @@ export class BackupWebSocketClient {
         this.params.onEvent({ kind: 'disconnected', code, reason: _reason })
         if (this.stopped || code === NORMAL_CLOSE) return
         if (this.attempt >= MAX_ATTEMPTS) {
-            this.params.onEvent({ kind: 'error', error: new Error('WS max reconnect attempts reached') })
+            this.params.onEvent({
+                kind: 'error',
+                error: new Error('WS max reconnect attempts reached'),
+            })
             return
         }
         const delay = this.backoffMs()
