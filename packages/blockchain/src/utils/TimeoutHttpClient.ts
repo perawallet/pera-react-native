@@ -118,6 +118,30 @@ export class TimeoutHttpClient implements BaseHTTPClient {
         return headersObj
     }
 
+    /**
+     * On React Native, `Response.arrayBuffer()` routes through the
+     * Blob/FileReader polyfill whose per-char conversion is quadratic on
+     * Hermes — a ~110KB indexer page measured ~19s of JS-thread block and
+     * ~1.5GB of allocations on device (PERA-4953). `text()` is native and
+     * linear, so textual bodies are read as text and re-encoded; only binary
+     * (msgpack) bodies pay the arrayBuffer path, and those are small.
+     */
+    private static async readBody(res: Response): Promise<Uint8Array> {
+        const contentType = res.headers.get('content-type') ?? ''
+        if (contentType.includes('application/msgpack')) {
+            return new Uint8Array(await res.arrayBuffer())
+        }
+        const encoded = new TextEncoder().encode(await res.text())
+        // Zero-copy re-wrap with the local realm's constructor: the polyfilled
+        // encoder can return a foreign-realm Uint8Array that fails instanceof
+        // checks downstream.
+        return new Uint8Array(
+            encoded.buffer,
+            encoded.byteOffset,
+            encoded.byteLength,
+        )
+    }
+
     private static async checkHttpError(res: Response): Promise<void> {
         if (res.ok) {
             return
@@ -127,7 +151,7 @@ export class TimeoutHttpClient implements BaseHTTPClient {
         let bodyErrorMessage: string | undefined
 
         try {
-            body = new Uint8Array(await res.arrayBuffer())
+            body = await TimeoutHttpClient.readBody(res)
             const decoded: unknown = JSON.parse(new TextDecoder().decode(body))
             if (
                 typeof decoded === 'object' &&
@@ -158,7 +182,7 @@ export class TimeoutHttpClient implements BaseHTTPClient {
     ): Promise<BaseHTTPClientResponse> {
         await TimeoutHttpClient.checkHttpError(res)
         return {
-            body: new Uint8Array(await res.arrayBuffer()),
+            body: await TimeoutHttpClient.readBody(res),
             status: res.status,
             headers: TimeoutHttpClient.formatFetchResponseHeaders(res.headers),
         }

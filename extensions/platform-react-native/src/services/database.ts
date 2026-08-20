@@ -56,16 +56,23 @@ function bindParams(
     return [safeSql, bound]
 }
 
-function createExpoSQLiteProxy(client: SQLiteDatabase): Database {
+function createExpoSQLiteProxy(
+    writeClient: SQLiteDatabase,
+    readClient: SQLiteDatabase,
+): Database {
     return drizzle(async (sql, params, method) => {
         const [safeSql, safeParams] = bindParams(sql, params)
 
+        // Writes and reads travel on separate WAL connections so a burst
+        // of large reads can't queue every small insert behind it (and
+        // vice versa). Drizzle maps every write in this codebase to
+        // `run`; reads (`all`/`get`/`values`) go to the read connection.
         if (method === 'run') {
-            await client.runAsync(safeSql, safeParams)
+            await writeClient.runAsync(safeSql, safeParams)
             return { rows: [] }
         }
 
-        const rows = await client.getAllAsync(safeSql, safeParams)
+        const rows = await readClient.getAllAsync(safeSql, safeParams)
 
         return {
             rows: rows.map(row =>
@@ -77,6 +84,7 @@ function createExpoSQLiteProxy(client: SQLiteDatabase): Database {
 
 export class RNDatabaseService implements DatabaseService {
     private databases = new Map<string, SQLiteDatabase>()
+    private readDatabases = new Map<string, SQLiteDatabase>()
 
     async open(name: string): Promise<DatabaseDriver> {
         const db = await this.getOrOpen(name)
@@ -85,9 +93,10 @@ export class RNDatabaseService implements DatabaseService {
     }
 
     async getDatabase(name: string): Promise<Database> {
-        const db = await this.getOrOpen(name)
+        const writeDb = await this.getOrOpen(name)
+        const readDb = await this.getOrOpenRead(name)
 
-        return createExpoSQLiteProxy(db)
+        return createExpoSQLiteProxy(writeDb, readDb)
     }
 
     async close(name: string): Promise<void> {
@@ -96,6 +105,13 @@ export class RNDatabaseService implements DatabaseService {
         if (db) {
             await db.closeAsync()
             this.databases.delete(name)
+        }
+
+        const readDb = this.readDatabases.get(name)
+
+        if (readDb) {
+            await readDb.closeAsync()
+            this.readDatabases.delete(name)
         }
     }
 
@@ -109,9 +125,39 @@ export class RNDatabaseService implements DatabaseService {
 
         if (!db) {
             db = await openDatabaseAsync(name)
+            await applyOpenPragmas(db)
             this.databases.set(name, db)
         }
 
         return db
     }
+
+    // Second connection for the drizzle proxy's reads: under WAL, readers
+    // and the writer proceed independently, so a burst of 10k-row reads
+    // can't queue small writes behind it (PERA-4953). expo-sqlite otherwise
+    // hands back the same cached connection for the same name.
+    private async getOrOpenRead(name: string): Promise<SQLiteDatabase> {
+        let db = this.readDatabases.get(name)
+
+        if (!db) {
+            db = await openDatabaseAsync(name, { useNewConnection: true })
+            await applyOpenPragmas(db)
+            this.readDatabases.set(name, db)
+        }
+
+        return db
+    }
+}
+
+// WAL lets readers proceed while the sync loop writes, NORMAL drops the
+// per-commit fsync WAL makes redundant, and the busy timeout turns "database
+// is locked" throws under concurrent access into short waits (PERA-4953).
+// journal_mode persists in the DB file but is idempotent; the other two are
+// per-connection and must run on every connection.
+async function applyOpenPragmas(db: SQLiteDatabase): Promise<void> {
+    await db.execAsync(
+        `PRAGMA journal_mode = WAL;
+         PRAGMA synchronous = NORMAL;
+         PRAGMA busy_timeout = 5000;`,
+    )
 }

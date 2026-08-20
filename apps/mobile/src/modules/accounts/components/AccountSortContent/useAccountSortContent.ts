@@ -16,7 +16,7 @@ import {
     AccountSortModes,
     useAllAccounts,
     useSortedAccounts,
-    useAccountBalancesQuery,
+    useAccountValueTotalsQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -56,9 +56,9 @@ type UseAccountSortContentResult = {
 export const useAccountSortContent = (): UseAccountSortContentResult => {
     const { t } = useLanguage()
     const accounts = useAllAccounts()
-    const { accountBalances } = useAccountBalancesQuery(accounts, true)
+    const { accountValueTotals } = useAccountValueTotalsQuery(accounts, true)
     const { sortedAccounts, sortMode, setSortMode, setManualAccountOrder } =
-        useSortedAccounts(accounts, accountBalances)
+        useSortedAccounts(accounts, accountValueTotals)
 
     // Snapshot sort state on open; upstream changes are intentionally ignored
     // while the sheet is mounted, so edits aren't clobbered by late updates.

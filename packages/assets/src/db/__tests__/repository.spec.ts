@@ -547,6 +547,31 @@ describe('asset repository', () => {
 
             expect(result).toEqual(['1'])
         })
+
+        it('filters candidate lists beyond SQLite bound-parameter limits', async () => {
+            // A 10k-asset wallet feeds every held id into this gate; a
+            // parameter-per-id query dies at SQLITE_MAX_VARIABLE_NUMBER and
+            // costs seconds of JS in query build below it (PERA-4953).
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '1' })],
+                network: 'mainnet',
+            })
+            const candidates = Array.from(
+                { length: 40_000 },
+                (_, i) => `${i + 1}`,
+            )
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: candidates,
+                network: 'mainnet',
+                ttlMs: 60_000,
+            })
+
+            expect(result).toHaveLength(39_999)
+            expect(result).not.toContain('1')
+        })
     })
 
     describe('getStaleOrMissingPriceAssetIds', () => {
@@ -628,6 +653,37 @@ describe('asset repository', () => {
             })
 
             expect(result).toEqual(['1'])
+        })
+
+        it('applies the fresh and miss filters to candidate lists beyond SQLite bound-parameter limits', async () => {
+            // Same constraint as the assets-gate twin above (PERA-4953): the
+            // whole held set flows through here every price pass.
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '1', usdPrice: new Decimal('1.00') }],
+                network: 'mainnet',
+            })
+            await recordPriceMisses({
+                db,
+                assetIds: ['2'],
+                network: 'mainnet',
+            })
+            const candidates = Array.from(
+                { length: 40_000 },
+                (_, i) => `${i + 1}`,
+            )
+
+            const result = await getStaleOrMissingPriceAssetIds({
+                db,
+                assetIds: candidates,
+                network: 'mainnet',
+                ttlMs: 60_000,
+                missRetryMs: 60_000,
+            })
+
+            expect(result).toHaveLength(39_998)
+            expect(result).not.toContain('1')
+            expect(result).not.toContain('2')
         })
     })
 

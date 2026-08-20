@@ -43,9 +43,8 @@ import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     type AccountBalanceHistoryItem,
-    useAccountBalancesQuery,
+    useAccountValueTotalsQuery,
     useAccountBalancesHistoryQuery,
-    usePortfolioTotals,
     useSigningAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { Decimal } from 'decimal.js'
@@ -65,9 +64,8 @@ export const PortfolioView = ({ ...props }: PortfolioViewProps) => {
     const { t } = useLanguage()
 
     const accounts = useSigningAccounts()
-    const { portfolioAlgoValue, accountBalances, isPending } =
-        useAccountBalancesQuery(accounts)
-    const { portfolioUsdValue } = usePortfolioTotals(accountBalances)
+    const { portfolioAlgoValue, portfolioUsdValue, isPending } =
+        useAccountValueTotalsQuery(accounts)
     const portfolioPreferredValue = useMemo(() => {
         return usdToPreferred(portfolioUsdValue)
     }, [portfolioUsdValue, usdToPreferred])

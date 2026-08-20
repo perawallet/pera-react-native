@@ -88,6 +88,13 @@ export const useAccountBalancesQuery = (
     const { network } = useNetwork()
     const hasAccounts = !!accounts?.length
 
+    // Call sites routinely pass a fresh array literal (`[account]`) per
+    // render. Only addresses are read below, so key the memos on this
+    // signature instead of array identity — otherwise every render of every
+    // such call site re-walks all holdings, a Decimal per field per asset
+    // (PERA-4953).
+    const accountsKey = accounts?.map(a => a.address).join(',') ?? ''
+
     const queries = useMemo(() => {
         if (!hasAccounts) {
             return []
@@ -98,6 +105,12 @@ export const useAccountBalancesQuery = (
                 queryKey: getAccountBalancesQueryKey(address, network, filters),
                 enabled: !!address && enabled,
                 staleTime: Infinity,
+                // These entries hold a hydrated row array that scales with the
+                // account (tens of MB at 10k assets). The 1-hour default gcTime
+                // would retain every unobserved variant (filters, old network)
+                // and ratchet the heap into GC-pause territory (PERA-4953);
+                // SQLite re-reads are cheap, so release quickly instead.
+                gcTime: 60_000,
                 // SQLite is the source of truth; run the queryFn even while offline
                 // instead of pausing it (TanStack's default networkMode: 'online'),
                 // which would strand consumers in `pending`. Network segments are
@@ -113,9 +126,10 @@ export const useAccountBalancesQuery = (
         })
         // filters is a stable object passed from a Zustand selector or memoized
         // by the caller; deep equality is enforced via getAccountBalancesQueryKey.
+        // `accounts` is read inside but represented by accountsKey — see above.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
-        accounts,
+        accountsKey,
         hasAccounts,
         enabled,
         network,
@@ -255,10 +269,11 @@ export const useAccountBalancesQuery = (
             isError,
             isPaused,
         }
-        // `results` is read inside but deliberately not a dep — `resultsSig` is
-        // its stable stand-in; see the comment where it is built.
+        // `results` and `accounts` are read inside but deliberately not deps —
+        // `resultsSig` / `accountsKey` are their stable stand-ins; see the
+        // comments where each is built.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, accounts, hasAccounts])
+    }, [resultsSig, accountsKey, hasAccounts])
 
     return {
         accountBalances,

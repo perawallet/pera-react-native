@@ -16,11 +16,20 @@ import { RNDatabaseService } from '../services/database'
 const mockCloseAsync = vi.fn()
 const mockRunAsync = vi.fn().mockResolvedValue(undefined)
 const mockGetAllAsync = vi.fn().mockResolvedValue([])
+const mockExecAsync = vi.fn().mockResolvedValue(undefined)
 const mockDb = {
     closeAsync: mockCloseAsync,
     runAsync: mockRunAsync,
     getAllAsync: mockGetAllAsync,
+    execAsync: mockExecAsync,
 }
+
+const createClientMock = () => ({
+    closeAsync: vi.fn().mockResolvedValue(undefined),
+    runAsync: vi.fn().mockResolvedValue(undefined),
+    getAllAsync: vi.fn().mockResolvedValue([]),
+    execAsync: vi.fn().mockResolvedValue(undefined),
+})
 const mockOpenDatabaseAsync = vi.fn().mockResolvedValue(mockDb)
 const mockDeleteDatabaseAsync = vi.fn().mockResolvedValue(undefined)
 
@@ -54,7 +63,10 @@ describe('RNDatabaseService', () => {
         })
 
         it('opens separate databases for different names', async () => {
-            const secondMockDb = { closeAsync: vi.fn() }
+            const secondMockDb = {
+                closeAsync: vi.fn(),
+                execAsync: vi.fn().mockResolvedValue(undefined),
+            }
             mockOpenDatabaseAsync
                 .mockResolvedValueOnce(mockDb)
                 .mockResolvedValueOnce(secondMockDb)
@@ -65,6 +77,24 @@ describe('RNDatabaseService', () => {
             expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(2)
             expect(first.driver).toBe(mockDb)
             expect(second.driver).toBe(secondMockDb)
+        })
+
+        it('configures WAL, relaxed sync, and a busy timeout on open', async () => {
+            await service.open('test.db')
+
+            const pragmas = mockExecAsync.mock.calls
+                .map(call => String(call[0]))
+                .join('\n')
+            expect(pragmas).toContain('journal_mode = WAL')
+            expect(pragmas).toContain('synchronous = NORMAL')
+            expect(pragmas).toContain('busy_timeout')
+        })
+
+        it('applies the open pragmas once per connection, not per handle', async () => {
+            await service.open('test.db')
+            await service.open('test.db')
+
+            expect(mockExecAsync).toHaveBeenCalledTimes(1)
         })
     })
 
@@ -80,11 +110,46 @@ describe('RNDatabaseService', () => {
             expect(result).toHaveProperty('all')
         })
 
-        it('reuses the same underlying connection', async () => {
+        it('opens one write and one read connection, reused across calls', async () => {
             await service.getDatabase('test.db')
             await service.getDatabase('test.db')
 
-            expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(1)
+            expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(2)
+            expect(mockOpenDatabaseAsync).toHaveBeenCalledWith('test.db')
+            expect(mockOpenDatabaseAsync).toHaveBeenCalledWith('test.db', {
+                useNewConnection: true,
+            })
+        })
+
+        it('routes writes to the write connection and reads to the read connection', async () => {
+            const writeClient = createClientMock()
+            const readClient = createClientMock()
+            mockOpenDatabaseAsync
+                .mockResolvedValueOnce(writeClient)
+                .mockResolvedValueOnce(readClient)
+
+            const db = await service.getDatabase('test.db')
+            await db.run('insert into t values (1)')
+            await db.all('select * from t')
+
+            expect(writeClient.runAsync).toHaveBeenCalled()
+            expect(readClient.getAllAsync).toHaveBeenCalled()
+            expect(writeClient.getAllAsync).not.toHaveBeenCalled()
+            expect(readClient.runAsync).not.toHaveBeenCalled()
+        })
+
+        it('close tears down both connections', async () => {
+            const writeClient = createClientMock()
+            const readClient = createClientMock()
+            mockOpenDatabaseAsync
+                .mockResolvedValueOnce(writeClient)
+                .mockResolvedValueOnce(readClient)
+
+            await service.getDatabase('test.db')
+            await service.close('test.db')
+
+            expect(writeClient.closeAsync).toHaveBeenCalled()
+            expect(readClient.closeAsync).toHaveBeenCalled()
         })
     })
 

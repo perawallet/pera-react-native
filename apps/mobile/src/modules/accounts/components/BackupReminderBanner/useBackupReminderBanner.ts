@@ -10,11 +10,9 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
-import { isAlgoAssetId } from '@perawallet/wallet-core-shared'
-import { Decimal } from 'decimal.js'
+import { useCallback } from 'react'
 import {
-    useAccountBalancesQuery,
+    useAccountSummaryQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -30,16 +28,14 @@ export const useBackupReminderBanner = (
     account: WalletAccount,
 ): UseBackupReminderBannerResult => {
     const requiresBackup = useRequiresMnemonicBackup(account)
-    const accountsForBalances = useMemo(() => [account], [account])
-    const { accountBalances } = useAccountBalancesQuery(accountsForBalances)
+    // Only the ALGO amount matters here; the one-row SQL summary answers it
+    // without useAccountBalancesQuery's full holdings walk, which on a
+    // 10k-asset account re-read and re-hydrated every holding from the home
+    // screen (PERA-4953).
+    const { algoAmount } = useAccountSummaryQuery(account.address)
     const launch = useBackupFlowLauncher()
 
-    const balanceEntry = accountBalances.get(account.address)
-    const algoBalance: Decimal =
-        balanceEntry?.assetBalances.find(b => isAlgoAssetId(b.assetId))
-            ?.amount ?? new Decimal(0)
-
-    const isVisible = requiresBackup && algoBalance.gt(0)
+    const isVisible = requiresBackup && algoAmount.gt(0)
 
     const onPress = useCallback(() => launch(account), [launch, account])
 
