@@ -36,6 +36,10 @@ export type RouteCapabilities = {
     /** Native passkey-autofill credential-manager settings (not vault passkey unlock). */
     passkeysAutofillSettings: boolean
     storeRating: boolean
+    /** The slide-vs-tap confirmation choice in Advanced Preferences. Web
+     * hides it: swipe is awkward with a mouse, so ConfirmAction.web.tsx
+     * always uses tap-to-confirm and the setting would be a no-op. */
+    confirmationModeSetting: boolean
     developerSettings: boolean
     /** Web vault security screen (auto-lock, lock now, passkey unlock). */
     vaultSecuritySettings: boolean

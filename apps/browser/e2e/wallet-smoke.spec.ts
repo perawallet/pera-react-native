@@ -601,6 +601,54 @@ test('settings scrolls to the remove-all button in the 600px popup', async () =>
     await popupPage.close()
 })
 
+// Web forces tap-to-confirm (PERA-4949), so the slide/tap Confirmation choice
+// must not be offered here — only the Launch row remains.
+test('advanced preferences hides the confirmation-mode setting on web', async () => {
+    await dismissPinPromptIfPresent(page)
+    // The previous test leaves this page on the pushed Settings screen, where
+    // the tab bar is hidden — pop back to it if so (same escape as
+    // feature-tabs.spec.ts).
+    const menuTab = page.getByTestId('tab_menu_button')
+    if (!(await menuTab.isVisible().catch(() => false))) {
+        await clickThroughPinPrompt(
+            page,
+            page.getByTestId('navigation_back_button').last(),
+        )
+        await menuTab.waitFor({ state: 'visible', timeout: 10_000 })
+    }
+    await clickThroughPinPrompt(page, menuTab)
+    await expect(page.getByTestId('menu_screen')).toBeVisible({
+        timeout: 20_000,
+    })
+    await clickThroughPinPrompt(page, page.getByTestId('menu_settings_button'))
+    await expect(page.getByTestId('settings_screen')).toBeVisible()
+
+    await clickThroughPinPrompt(
+        page,
+        page.getByTestId('settings_item_advanced_preferences'),
+    )
+    await expect(page.getByTestId('settings_advanced_screen')).toBeVisible({
+        timeout: 10_000,
+    })
+    await expect(
+        page.getByTestId('settings_advanced_launch_item'),
+    ).toBeVisible()
+    await expect(
+        page.getByTestId('settings_advanced_confirmation_item'),
+    ).toHaveCount(0)
+
+    // Back to the settings root so the vault security tests below start from
+    // the screen they expect. Both stacked screens render a header back
+    // button; the advanced screen's is the last one mounted.
+    await clickThroughPinPrompt(
+        page,
+        page.getByTestId('navigation_back_button').last(),
+    )
+    await expect(page.getByTestId('settings_screen')).toBeVisible({
+        timeout: 10_000,
+    })
+})
+
 // Hits the SUPPORTED branch with no stubbing: real Chromium (headless
 // included) reports `extension:prf: true` even with no platform authenticator
 // attached, since it's a client-software capability flag. The test below

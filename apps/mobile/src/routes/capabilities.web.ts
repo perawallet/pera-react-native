@@ -39,6 +39,9 @@ export const routeCapabilities: RouteCapabilities = {
     walletConnectSettings: true, // WC v1 pairing + sessions on web
     passkeysAutofillSettings: true, // WebAuthn-interception credential provider + settings toggle
     storeRating: false, // permanently off: no store review flow
+    // Off: ConfirmAction.web.tsx always renders tap-to-confirm (swipe is
+    // awkward with a mouse), so the slide/tap choice would be a no-op here.
+    confirmationModeSetting: false,
     developerSettings: true, // internal builds need network/debug toggles
     vaultSecuritySettings: true,
     dappConnections: true,
