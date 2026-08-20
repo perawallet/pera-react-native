@@ -12,7 +12,7 @@
 
 import {
     isQuantumAccount,
-    useFindAccountByAddress,
+    useSignerFor,
 } from '@perawallet/wallet-core-accounts'
 import {
     encodeAlgorandAddress,
@@ -30,10 +30,15 @@ type UseQuantumFeeExplainerResult = {
  * rendered transaction fee. The fee is higher for Quantum accounts, so the
  * explainer only shows when the effective signer is a Quantum account.
  *
- * - Per-transaction (SingleTransactionScreen): resolves the effective signer
- *   from the transaction's auth address (rekey) or sender.
+ * Resolve the authorizer exactly as the fee is priced
+ * (`assignMinimumFeesToGroup` → `getSignerFor`): ARC-0001 authAddr override,
+ * else the sender, then one rekey hop. Reading the authorizer's own type makes
+ * the copy contradict the fee once an account is rekeyed across the quantum
+ * boundary — a rekeyed-away Quantum account pays 0.001 (PERA-4950).
+ *
+ * - Per-transaction (SingleTransactionScreen): resolves from the transaction.
  * - Group total (TransactionListFooter, no transaction): uses the pipeline's
- *   resolved primary signer account.
+ *   resolved primary signer address.
  */
 export const useQuantumFeeExplainer = (
     transaction?: PeraDisplayableTransaction,
@@ -41,19 +46,15 @@ export const useQuantumFeeExplainer = (
     const enabled = useIsQuantumAccountsEnabled()
     const { resolved } = useSigningPipeline()
 
-    const signerAddress = transaction
+    const authorizerAddress = transaction
         ? transaction.authAddr?.publicKey
             ? encodeAlgorandAddress(transaction.authAddr.publicKey)
             : transaction.sender
-        : ''
-    const transactionAccount = useFindAccountByAddress(signerAddress)
+        : resolved?.signerAccount.address
 
-    const account = transaction
-        ? transactionAccount
-        : (resolved?.signerAccount ?? null)
+    const signer = useSignerFor(authorizerAddress)
 
-    const isQuantumFee =
-        enabled && account !== null && isQuantumAccount(account)
+    const isQuantumFee = enabled && signer !== null && isQuantumAccount(signer)
 
     return { isQuantumFee }
 }
