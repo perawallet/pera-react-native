@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET_ID, useStableIdList } from '@perawallet/wallet-core-shared'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type { WalletAccount } from '../models'
@@ -70,16 +70,12 @@ export const useAccountValueTotalsQuery = (
     const hasAccounts = !!accounts?.length
 
     // Call sites routinely pass fresh array literals per render; only
-    // addresses are read below, so the memos key on this signature instead of
-    // array identity (see useAccountBalancesQuery for the long version).
-    const accountsKey = accounts?.map(a => a.address).join(',') ?? ''
+    // addresses are read below, so the memos key on this stable list instead
+    // of array identity (see useAccountBalancesQuery for the long version).
+    const addresses = useStableIdList(accounts?.map(a => a.address) ?? [])
 
     const queries = useMemo(() => {
-        if (!hasAccounts) {
-            return []
-        }
-        return accounts.map(acc => {
-            const address = acc.address
+        return addresses.map(address => {
             return {
                 queryKey: getAccountSummaryQueryKey(address, network),
                 enabled: !!address && enabled !== false,
@@ -95,9 +91,7 @@ export const useAccountValueTotalsQuery = (
                 queryFn: () => readAccountSummary(address, network),
             }
         })
-        // `accounts` is read inside but represented by accountsKey — above.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [accountsKey, hasAccounts, enabled, network])
+    }, [addresses, enabled, network])
 
     const results = useQueries({ queries })
     const { data: algoPrices } = useAssetPricesQuery([ALGO_ASSET_ID])
@@ -109,7 +103,7 @@ export const useAccountValueTotalsQuery = (
     const resultsSig = results
         .map(
             (r, i) =>
-                `${accounts[i]?.address ?? ''}|${r.dataUpdatedAt}|${
+                `${addresses[i] ?? ''}|${r.dataUpdatedAt}|${
                     r.isPending ? 1 : 0
                 }${r.isFetched ? 1 : 0}${r.isRefetching ? 1 : 0}${
                     r.isError ? 1 : 0
@@ -128,7 +122,7 @@ export const useAccountValueTotalsQuery = (
         let portfolioAlgoValue = new Decimal(0)
         let portfolioUsdValue = new Decimal(0)
         const accountValueTotals: AccountValueTotalsMap = new Map(
-            accounts.map((account, i) => {
+            addresses.map((address, i) => {
                 const r = results[i]
                 const algoAmount = r?.data?.algoAmount ?? new Decimal(0)
                 const nonAlgoUsdValue =
@@ -150,7 +144,7 @@ export const useAccountValueTotalsQuery = (
                 portfolioUsdValue = portfolioUsdValue.plus(usdValue)
 
                 return [
-                    account.address,
+                    address,
                     {
                         algoValue,
                         usdValue,
@@ -173,8 +167,8 @@ export const useAccountValueTotalsQuery = (
             isError: results.some(r => r.isError),
             isPaused: results.some(r => r.isPaused),
         }
-        // `results` and `accounts` are read inside but deliberately not deps —
-        // `resultsSig` / `accountsKey` are their stable stand-ins.
+        // `results` / `usdAlgoPrice` are read inside but deliberately not
+        // deps — `resultsSig` / `usdAlgoPriceKey` are their stable stand-ins.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resultsSig, accountsKey, hasAccounts, usdAlgoPriceKey])
+    }, [resultsSig, addresses, hasAccounts, usdAlgoPriceKey])
 }

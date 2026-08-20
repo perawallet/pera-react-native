@@ -251,5 +251,51 @@ describe('TimeoutHttpClient', () => {
 
             expect(result.body).toEqual(bytes)
         })
+
+        // The allowlist gates the text path: anything not known-textual must
+        // preserve raw bytes. text() would UTF-8-mangle these silently, and
+        // the failure surfaces nowhere near this file ("the send never
+        // confirms" while waitForConfirmation polls with format=msgpack).
+        it.each([
+            ['application/x-msgpack', 'application/x-msgpack'],
+            ['a header-stripping proxy (no content-type)', null],
+        ])(
+            'preserves raw bytes for %s via arrayBuffer()',
+            async (_label, contentType) => {
+                // 0xff alone is invalid UTF-8, so a text() round-trip would
+                // corrupt it into U+FFFD.
+                const bytes = new Uint8Array([0x82, 0xa1, 0x61, 0x01, 0xff])
+                const response = new Response(bytes, {
+                    status: 200,
+                    headers: contentType
+                        ? { 'content-type': contentType }
+                        : undefined,
+                })
+                const { fetch } = createResolvingFetch(response)
+                vi.stubGlobal('fetch', fetch)
+
+                const result = await buildClient().get('/v2/blocks/1', {
+                    format: 'msgpack',
+                })
+
+                expect(result.body).toEqual(bytes)
+            },
+        )
+
+        it('reads text/* bodies via text(), never arrayBuffer()', async () => {
+            const payload = 'plain text health response'
+            const response = new Response(payload, {
+                status: 200,
+                headers: { 'content-type': 'text/plain; charset=utf-8' },
+            })
+            const arrayBufferSpy = vi.spyOn(response, 'arrayBuffer')
+            const { fetch } = createResolvingFetch(response)
+            vi.stubGlobal('fetch', fetch)
+
+            const result = await buildClient().get('/v2/health')
+
+            expect(arrayBufferSpy).not.toHaveBeenCalled()
+            expect(new TextDecoder().decode(result.body)).toBe(payload)
+        })
     })
 })

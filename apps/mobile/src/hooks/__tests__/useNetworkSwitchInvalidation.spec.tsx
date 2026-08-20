@@ -10,8 +10,10 @@
  limitations under the License
  */
 
+import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 const { mockInvalidateQueries, mockGetSyncService, networkState } = vi.hoisted(
     () => ({
@@ -21,9 +23,12 @@ const { mockInvalidateQueries, mockGetSyncService, networkState } = vi.hoisted(
     }),
 )
 
-vi.mock('@perawallet/wallet-core-background', () => ({
-    getSyncService: mockGetSyncService,
-}))
+// Keep the real releaseNetworkScopedQueries — the cache-release tests below
+// exercise it — and stub only the sync-service accessor.
+vi.mock('@perawallet/wallet-core-background', async importOriginal => {
+    const actual = await importOriginal<object>()
+    return { ...actual, getSyncService: mockGetSyncService }
+})
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const actual = await importOriginal<object>()
@@ -33,8 +38,8 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     }
 })
 
-// The global test setup stubs these packages; the hook needs the real query-key
-// guards for the previous-network cache release.
+// The global test setup stubs these packages; the release helper needs the
+// real query-key guards for the previous-network cache release.
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual = await importOriginal<object>()
     return { ...actual }
@@ -49,12 +54,24 @@ vi.mock('@perawallet/wallet-core-transactions', async importOriginal => {
 })
 
 import { useNetworkSwitchInvalidation } from '../useNetworkSwitchInvalidation'
-import { queryClient } from '../../providers/queryClient'
+
+// The hook must act on the client it is rendered under (useQueryClient), not a
+// module singleton — the app mounts it inside PersistQueryClientProvider, and
+// this fresh-client-per-render setup is the regression guard for that.
+const renderWithClient = () => {
+    const client = new QueryClient()
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    )
+    return {
+        client,
+        ...renderHook(() => useNetworkSwitchInvalidation(), { wrapper }),
+    }
+}
 
 describe('useNetworkSwitchInvalidation', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        queryClient.clear()
         networkState.network = 'mainnet'
         mockGetSyncService.mockReturnValue({
             invalidateQueries: mockInvalidateQueries,
@@ -62,13 +79,13 @@ describe('useNetworkSwitchInvalidation', () => {
     })
 
     it('does not invalidate on first mount (cold start)', () => {
-        renderHook(() => useNetworkSwitchInvalidation())
+        renderWithClient()
 
         expect(mockInvalidateQueries).not.toHaveBeenCalled()
     })
 
     it('invalidates exactly once when the network changes', () => {
-        const { rerender } = renderHook(() => useNetworkSwitchInvalidation())
+        const { rerender } = renderWithClient()
 
         networkState.network = 'testnet'
         rerender()
@@ -84,7 +101,7 @@ describe('useNetworkSwitchInvalidation', () => {
         mockGetSyncService.mockImplementation(() => {
             throw new Error('not initialized')
         })
-        const { rerender } = renderHook(() => useNetworkSwitchInvalidation())
+        const { rerender } = renderWithClient()
 
         networkState.network = 'testnet'
 
@@ -97,16 +114,16 @@ describe('useNetworkSwitchInvalidation', () => {
         // old network's arrays in the cache — the heap ratchets up per switch
         // until GC pauses dominate (PERA-4953). SQLite is the source of truth
         // for these, so dropping them on switch loses nothing.
-        const seed = () => {
-            queryClient.setQueryData(
+        const seed = (client: QueryClient) => {
+            client.setQueryData(
                 ['accounts', 'balance', { address: 'A1', network: 'mainnet' }],
                 { holdings: ['big'] },
             )
-            queryClient.setQueryData(
+            client.setQueryData(
                 ['assets', { assetIDs: 'h', network: 'mainnet' }],
                 ['rows'],
             )
-            queryClient.setQueryData(
+            client.setQueryData(
                 [
                     'transactions',
                     'history',
@@ -114,11 +131,11 @@ describe('useNetworkSwitchInvalidation', () => {
                 ],
                 ['txs'],
             )
-            queryClient.setQueryData(
+            client.setQueryData(
                 ['accounts', 'balance', { address: 'A1', network: 'testnet' }],
                 { holdings: ['keep'] },
             )
-            queryClient.setQueryData(
+            client.setQueryData(
                 [
                     'accounts',
                     'balance-history',
@@ -129,29 +146,27 @@ describe('useNetworkSwitchInvalidation', () => {
         }
 
         it("drops the previous network's DB-backed queries on switch", () => {
-            seed()
-            const { rerender } = renderHook(() =>
-                useNetworkSwitchInvalidation(),
-            )
+            const { client, rerender } = renderWithClient()
+            seed(client)
 
             networkState.network = 'testnet'
             rerender()
 
             expect(
-                queryClient.getQueryData([
+                client.getQueryData([
                     'accounts',
                     'balance',
                     { address: 'A1', network: 'mainnet' },
                 ]),
             ).toBeUndefined()
             expect(
-                queryClient.getQueryData([
+                client.getQueryData([
                     'assets',
                     { assetIDs: 'h', network: 'mainnet' },
                 ]),
             ).toBeUndefined()
             expect(
-                queryClient.getQueryData([
+                client.getQueryData([
                     'transactions',
                     'history',
                     { accountAddress: 'A1', network: 'mainnet' },
@@ -160,23 +175,21 @@ describe('useNetworkSwitchInvalidation', () => {
         })
 
         it("keeps the new network's queries and persisted chart history", () => {
-            seed()
-            const { rerender } = renderHook(() =>
-                useNetworkSwitchInvalidation(),
-            )
+            const { client, rerender } = renderWithClient()
+            seed(client)
 
             networkState.network = 'testnet'
             rerender()
 
             expect(
-                queryClient.getQueryData([
+                client.getQueryData([
                     'accounts',
                     'balance',
                     { address: 'A1', network: 'testnet' },
                 ]),
             ).toEqual({ holdings: ['keep'] })
             expect(
-                queryClient.getQueryData([
+                client.getQueryData([
                     'accounts',
                     'balance-history',
                     { period: '1W', addresses: ['A1'], network: 'mainnet' },

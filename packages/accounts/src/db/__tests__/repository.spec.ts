@@ -1435,6 +1435,40 @@ describe('account repository', () => {
             expect(totals.missingMetadataCount).toBe(1)
         })
 
+        it('a priced holding without metadata contributes 0 to the USD total', async () => {
+            // Prices and metadata sync in parallel, so on a fresh import a
+            // price can land before its assets_node row. Without decimals we
+            // can't scale base units — the row must contribute 0 (matching
+            // useAccountBalancesQuery's walk), not amount × price un-scaled.
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '0', amount: new Decimal(5_000_000) },
+                    { assetId: '100', amount: new Decimal(2_000_000) },
+                    { assetId: '200', amount: new Decimal(1_000_000) },
+                    { assetId: '300', amount: new Decimal(0) },
+                    { assetId: '999', amount: new Decimal(10_000_000) },
+                ],
+            })
+            await upsertAssetPrices({
+                db,
+                network: 'mainnet',
+                prices: [{ assetId: '999', usdPrice: new Decimal('2') }],
+            })
+
+            const totals = await getAccountPortfolioTotals({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+            // Unchanged from the fully-enriched case: '999' drops out until
+            // its metadata lands (and missingMetadataCount flags the gap).
+            expect(totals.nonAlgoUsdValue.toNumber()).toBeCloseTo(5, 6)
+            expect(totals.missingMetadataCount).toBe(1)
+        })
+
         const pageIds = async (
             params: Partial<Parameters<typeof getAccountHoldingsPage>[0]> = {},
         ) => {
@@ -1465,6 +1499,36 @@ describe('account repository', () => {
                 '0',
                 '100',
                 '200',
+            ])
+        })
+
+        it('sorts a priced holding without metadata with the unsynced rows, not by an inflated value', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '0', amount: new Decimal(5_000_000) },
+                    { assetId: '100', amount: new Decimal(2_000_000) },
+                    { assetId: '200', amount: new Decimal(1_000_000) },
+                    { assetId: '300', amount: new Decimal(0) },
+                    { assetId: '999', amount: new Decimal(10_000_000) },
+                ],
+            })
+            await upsertAssetPrices({
+                db,
+                network: 'mainnet',
+                prices: [{ assetId: '999', usdPrice: new Decimal('2') }],
+            })
+
+            // Base units × price would put '999' first; without decimals its
+            // value is unknowable, so it belongs in the NULLs-last bucket.
+            expect(await pageIds({ sortMode: 'balanceDesc' })).toEqual([
+                '300',
+                '200',
+                '100',
+                '0',
+                '999',
             ])
         })
 

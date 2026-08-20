@@ -260,6 +260,54 @@ describe('fetchAndPersistPrices', () => {
             expect(networks.filter(n => n === 'testnet').length).toBe(2)
         })
 
+        test('a large pass joins an in-flight pass that covers all of its ids', async () => {
+            getStaleOrMissingPriceAssetIdsMock.mockImplementation(
+                ({ assetIds }: { assetIds: string[] }) =>
+                    new Promise(resolve =>
+                        setTimeout(() => resolve(assetIds), 10),
+                    ),
+            )
+            fetchAssetPricesMock.mockResolvedValue([])
+
+            await Promise.all([
+                fetchAndPersistPrices(manyIds, 'mainnet'),
+                // A 300-asset account whose ids the whole-wallet pass already
+                // covers — waiting on that pass prices everything it needs.
+                fetchAndPersistPrices(manyIds.slice(0, 300), 'mainnet'),
+            ])
+
+            // Batch gate + ALGO gate for the single shared pass.
+            expect(getStaleOrMissingPriceAssetIdsMock).toHaveBeenCalledTimes(2)
+        })
+
+        test('a large pass with ids the in-flight pass never saw runs its own pass', async () => {
+            getStaleOrMissingPriceAssetIdsMock.mockImplementation(
+                ({ assetIds }: { assetIds: string[] }) =>
+                    new Promise(resolve =>
+                        setTimeout(() => resolve(assetIds), 10),
+                    ),
+            )
+            fetchAssetPricesMock.mockResolvedValue([])
+
+            // A freshly imported 300-asset account: joining the in-flight
+            // whole-wallet pass would resolve without ever pricing its ids.
+            const freshImportIds = Array.from(
+                { length: 300 },
+                (_, i) => `fresh-${i}`,
+            )
+            await Promise.all([
+                fetchAndPersistPrices(manyIds, 'mainnet'),
+                fetchAndPersistPrices(freshImportIds, 'mainnet'),
+            ])
+
+            const gatedIds =
+                getStaleOrMissingPriceAssetIdsMock.mock.calls.flatMap(
+                    call => call[0].assetIds as string[],
+                )
+            expect(gatedIds).toContain('fresh-0')
+            expect(gatedIds).toContain('fresh-299')
+        })
+
         test('small enrichment lists are not deduped against each other', async () => {
             getStaleOrMissingPriceAssetIdsMock.mockImplementation(
                 async ({ assetIds }: { assetIds: string[] }) => assetIds,

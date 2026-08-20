@@ -18,6 +18,13 @@ export const KEY_DOMAIN = 'pera.accounts'
 // opt-in-rounds read share it).
 export const HOLDINGS_PAGE_LIMIT = 1000
 
+// gcTime for query entries that hold a hydrated per-holding row array, which
+// scales with the account (tens of MB at 10k assets). The 1-hour default
+// would retain every unobserved variant (filters, old network) and ratchet
+// the heap into GC-pause territory (PERA-4953); SQLite re-reads are cheap, so
+// release quickly instead.
+export const HOLDINGS_ROWS_GC_TIME_MS = 60_000
+
 export const MNEMONIC_WORD_COUNT: Record<ImportAccountType, number> = {
     hdWallet: 24,
     algo25: 25,

@@ -19,6 +19,7 @@ import {
     type AccountHoldingsLiteRow,
 } from '../db'
 import { ensureAccountFetched } from '../sync/account-syncer'
+import { HOLDINGS_ROWS_GC_TIME_MS } from '../constants'
 import { getAccountHoldingsPageQueryKey } from './querykeys'
 
 export type UseAccountAssetsQueryParams = {
@@ -67,12 +68,7 @@ export const useAccountAssetsQuery = (
         }),
         enabled: !!address && enabled,
         staleTime: Infinity,
-        // These entries hold a hydrated row array that scales with the
-        // account (tens of MB at 10k assets). The 1-hour default gcTime
-        // would retain every unobserved variant (filters, old network)
-        // and ratchet the heap into GC-pause territory (PERA-4953);
-        // SQLite re-reads are cheap, so release quickly instead.
-        gcTime: 60_000,
+        gcTime: HOLDINGS_ROWS_GC_TIME_MS,
         // Same reason as the collectibles read (PERA-4921): sort mode, filters
         // and search are part of the key, so changing one starts a cold query
         // that would empty the list mid-interaction. Hold the previous rows,

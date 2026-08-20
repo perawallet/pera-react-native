@@ -431,8 +431,9 @@ export async function getAccountPortfolioTotals({
             ), 0)`,
             nonAlgoUsd: sql<Nullable<number>>`COALESCE(SUM(
                 CASE WHEN ${AccountAssetHoldingsSchema.assetId} <> '0'
+                    AND ${AssetsNodeSchema.decimals} IS NOT NULL
                     THEN CAST(${AccountAssetHoldingsSchema.amount} AS REAL)
-                        / CAST('1e' || COALESCE(${AssetsNodeSchema.decimals}, 0) AS REAL)
+                        / CAST('1e' || ${AssetsNodeSchema.decimals} AS REAL)
                         * CAST(${AssetPricesSchema.usdPrice} AS REAL)
                     ELSE 0 END
             ), 0)`,
@@ -550,8 +551,11 @@ async function queryHoldingRows({
         )
     }
 
-    // Portable 10^decimals scaling (no `pow`): base-unit amount → display units.
-    const valueExpr = sql`CAST(${AccountAssetHoldingsSchema.amount} AS REAL) / CAST('1e' || COALESCE(${AssetsNodeSchema.decimals}, 0) AS REAL) * CAST(${AssetPricesSchema.usdPrice} AS REAL)`
+    // Portable 10^decimals scaling (no `pow`): base-unit amount → display
+    // units. NULL decimals (metadata not yet synced) propagates NULL so a
+    // priced-but-unenriched row sorts with the unsynced rows instead of by a
+    // base-units × price value 10^decimals too large.
+    const valueExpr = sql`CAST(${AccountAssetHoldingsSchema.amount} AS REAL) / CAST('1e' || ${AssetsNodeSchema.decimals} AS REAL) * CAST(${AssetPricesSchema.usdPrice} AS REAL)`
 
     // Favorites first; then value/name with NULLs (unsynced rows) last; then a
     // stable assetId tiebreak.
