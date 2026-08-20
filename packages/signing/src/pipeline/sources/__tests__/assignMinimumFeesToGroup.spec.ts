@@ -98,32 +98,114 @@ describe('assignMinimumFeesToGroup', () => {
         expect(tx.fee).toBe(1000n)
     })
 
-    test('leaves a fee exactly at the PQ minimum untouched (same array reference)', () => {
-        const transactions = [makePayment(quantumAddress, 3000n)]
+    test('adds the surcharge on top of a pooled fee above the base minimum', () => {
+        // A Tinyman v2 fixed-input swap app call: 2000 µAlgo = its own fee
+        // plus one pooled inner-transaction fee. Clamping to the PQ minimum
+        // would swallow that pooled 1000 and starve the inner transaction.
+        const tx = makePayment(quantumAddress, 2000n)
 
         const result = assignMinimumFeesToGroup({
             ...baseParams,
-            transactions,
+            transactions: [tx],
             signableIndices: [0],
             accounts: [quantum()],
         })
 
-        expect(result.transactions).toBe(transactions)
-        expect(result.adjustments).toEqual([])
+        expect(result.transactions[0].fee).toBe(4000n)
+        expect(result.adjustments).toEqual([
+            {
+                index: 0,
+                originalFee: 2000n,
+                adjustedFee: 4000n,
+                reason: 'quantum-minimum',
+            },
+        ])
     })
 
-    test('never lowers a fee above the PQ minimum', () => {
-        const transactions = [makePayment(quantumAddress, 5000n)]
+    test('adds the surcharge to a fee already at the PQ minimum', () => {
+        // Fixed-output swap: 3000 µAlgo pools two inner-transaction fees, and
+        // coincidentally equals the PQ minimum — the old skip left it unfunded.
+        const tx = makePayment(quantumAddress, 3000n)
+
+        const result = assignMinimumFeesToGroup({
+            ...baseParams,
+            transactions: [tx],
+            signableIndices: [0],
+            accounts: [quantum()],
+        })
+
+        expect(result.transactions[0].fee).toBe(5000n)
+    })
+
+    test('adds the surcharge to a fee far above the PQ minimum', () => {
+        // Tinyman's router puts the whole pooled fee on one transaction
+        // (7 inner txns here) and zeroes the rest.
+        const tx = makePayment(quantumAddress, 9000n)
+
+        const result = assignMinimumFeesToGroup({
+            ...baseParams,
+            transactions: [tx],
+            signableIndices: [0],
+            accounts: [quantum()],
+        })
+
+        expect(result.transactions[0].fee).toBe(11000n)
+    })
+
+    test('floors at the PQ minimum when the dApp fee is under the base minimum', () => {
+        const tx = makePayment(quantumAddress, 0n)
+
+        const result = assignMinimumFeesToGroup({
+            ...baseParams,
+            transactions: [tx],
+            signableIndices: [0],
+            accounts: [quantum()],
+        })
+
+        expect(result.transactions[0].fee).toBe(3000n)
+    })
+
+    test('charges the surcharge once per quantum signature, not once per group', () => {
+        const grouped = groupTransactions([
+            makePayment(quantumAddress, 1000n),
+            makePayment(quantumAddress, 2000n),
+        ])
+
+        const result = assignMinimumFeesToGroup({
+            ...baseParams,
+            transactions: grouped,
+            signableIndices: [0, 1],
+            accounts: [quantum()],
+        })
+
+        expect(result.transactions[0].fee).toBe(3000n)
+        expect(result.transactions[1].fee).toBe(4000n)
+    })
+
+    test('surcharge scales with the configured multiplier', () => {
+        const result = assignMinimumFeesToGroup({
+            ...baseParams,
+            transactions: [makePayment(quantumAddress, 2000n)],
+            signableIndices: [0],
+            accounts: [quantum()],
+            pqMultiplier: 4n,
+        })
+
+        expect(result.transactions[0].fee).toBe(5000n)
+    })
+
+    test('a multiplier that leaves no premium is a no-op (same array reference)', () => {
+        const transactions = [makePayment(quantumAddress, 2000n)]
 
         const result = assignMinimumFeesToGroup({
             ...baseParams,
             transactions,
             signableIndices: [0],
             accounts: [quantum()],
+            pqMultiplier: 1n,
         })
 
         expect(result.transactions).toBe(transactions)
-        expect(result.transactions[0].fee).toBe(5000n)
         expect(result.adjustments).toEqual([])
     })
 
@@ -400,10 +482,10 @@ describe('assignMinimumFeesToGroup', () => {
             {
                 index: 2,
                 originalFee: 1500n,
-                adjustedFee: 3000n,
+                adjustedFee: 3500n,
                 reason: 'quantum-minimum',
             },
         ])
-        expect(result.transactions[2].fee).toBe(3000n)
+        expect(result.transactions[2].fee).toBe(3500n)
     })
 })

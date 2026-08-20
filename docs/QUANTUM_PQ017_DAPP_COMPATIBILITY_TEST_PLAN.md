@@ -18,9 +18,13 @@ seam architecture.
 For an external (WC / webview) ARC-0001 sign request:
 
 - **When to raise**: the resolved signer for a signable txn is a quantum
-  account AND its dApp-set fee is below
-  `max(algod suggestedParams.minFee, remote-config fee_min_txn_fee) × remote-config fee_pq_multiplier`
-  (defaults 1000 × 3 = 3000 µAlgo). See `assignMinimumFeesToGroup`
+  account. Its fee becomes
+  `max(dAppFee + surcharge, base × fee_pq_multiplier)`, where
+  `base = max(algod suggestedParams.minFee, remote-config fee_min_txn_fee)` and
+  `surcharge = base × (fee_pq_multiplier − 1)` (defaults: +2000 µAlgo, floored
+  at 3000). The surcharge is **additive** because the chain charges it that way
+  — go-algorand's `SignedTxn.FeeFactor` adds `PQSchemeFeeContribution` (2e6 for
+  Falcon-1024) to the transaction's own fee factor. See `assignMinimumFeesToGroup`
   (`packages/signing/src/pipeline/sources/assignMinimumFeesToGroup.ts`) and the
   shared base-fee logic in `resolveMinFeeForSender`
   (`packages/signing/src/pipeline/sources/minFeeResolver.ts`).
@@ -39,10 +43,10 @@ For an external (WC / webview) ARC-0001 sign request:
 - **Keyreg deeplinks**: `useKeyregDeeplink`
   (`apps/mobile/src/hooks/deeplink/handlers/useKeyregDeeplink.ts`) floors the
   built txn's fee the same way — `max(dAppFee, resolvedMin)` — never lowers.
-- **Pooled-fee limitation**: each quantum txn is raised to its **own**
-  minimum only. Another txn's fee surplus in the same group does **not**
-  exempt a quantum txn from being raised (documented as PQ-017 implementation
-  note 3 in `assignMinimumFeesToGroup.ts`).
+- **Pooled fees are preserved**: a fee the dApp set above the base minimum is
+  budget for something else — usually an app call's inner transactions — so the
+  surcharge is added on top of it rather than replacing it. A Tinyman v2
+  fixed-input swap app call at 2000 µAlgo becomes 4000, not 3000.
 - **Delivery failure**: if the transport can't deliver the adjusted response,
   the pipeline surfaces `walletconnect.request.quantum_fee_delivery_failed`
   (`apps/mobile/src/i18n/locales/en.json`) instead of a generic error.
@@ -105,8 +109,13 @@ tracked separately). Fill in **Status** per manual run.
 ## Known Limitations
 
 - **Pooled fees**: a quantum txn is never exempted by a co-member's fee
-  surplus — it is always raised to its own minimum. Expect a higher total
-  group fee than a same-shape non-quantum group in fee-pooling dApps.
+  surplus — every quantum txn pays the surcharge, and one below the base
+  minimum is floored at the PQ minimum. Expect a higher total group fee than a
+  same-shape non-quantum group in fee-pooling dApps.
+- **Underfunded groups aren't rescued**: the wallet adds the PQ delta to what
+  the dApp set, and can't know a group's true cost offline — inner-transaction
+  count only comes from `simulate` (PQ-022). A group that would fail for an
+  Ed25519 signer still fails for a quantum one.
 - **Real-network execution is blocked on PQ-021**: no official `pqsig`-capable
   algod ships yet, so TestNet/MainNet rows stay "Blocked — PQ-021" until then.
 - **dApps that hash-check returned bytes** against what they sent will reject
