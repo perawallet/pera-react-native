@@ -30,18 +30,16 @@ import type {
 
 type Deps = {
     updatedAt: number
-    /** Resolves the 25-word phrase for algo25/quantum accounts; omitted/null
-     *  => the account is skipped rather than backed up without its secret. */
+    /** Omitted/null => the account is skipped rather than backed up without
+     *  its secret. */
     resolveMnemonic?: SerializeMnemonicResolver
     /** Resolves HD seed/derived material; omitted/null => HD account skipped. */
     resolveHd?: SerializeHdResolver
 }
 
 /** Imperative (non-hook) account serializer for the background manager. Both
- *  secret-bearing paths are injected because reading key material is hook-bound
- *  in the KMS: `resolveMnemonic` covers algo25 and quantum (they share the
- *  25-word format), `resolveHd` covers HD (whose seed rides as a shared hdSeed
- *  secret in extraItems); secret-less types => address-only. */
+ *  secret resolvers are injected because reading key material is hook-bound in
+ *  the KMS; secret-less types => address-only. */
 export const serializeAccountForBackup = async (
     account: WalletAccount,
     { updatedAt, resolveMnemonic, resolveHd }: Deps,

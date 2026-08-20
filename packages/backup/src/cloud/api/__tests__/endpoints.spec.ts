@@ -12,6 +12,7 @@
 
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import type { BatchUpsertRequest, UpsertItemRequest } from '../types'
+import { BackupResponseParseError } from '../responseParsers'
 
 const signedBackupRequestMock = vi.fn()
 const queryClientMock = vi.fn().mockResolvedValue({ data: {} })
@@ -31,6 +32,8 @@ import {
     destroyBackup,
     fetchDelta,
     fetchItem,
+    fetchManifest,
+    readItems,
     upsertItem,
 } from '../endpoints'
 
@@ -227,5 +230,130 @@ describe('destroyBackup', () => {
             deviceId: 'device-1',
         })
         expect(result).toEqual({ backup_id: 'did:pera:ADDR' })
+    })
+})
+
+describe('response validation', () => {
+    beforeEach(() => signedBackupRequestMock.mockReset())
+
+    it('rejects a delta entry whose sequence number is not a number', async () => {
+        signedBackupRequestMock.mockResolvedValue({
+            entries: [
+                {
+                    seq: '5',
+                    key: 'accounts/ADDR',
+                    type: 'ACCOUNT',
+                    ver: 1,
+                    status: 'ACTIVE',
+                    op: 'UPSERT',
+                    hash: 'sha256:abc',
+                },
+            ],
+        })
+
+        await expect(
+            fetchDelta('mainnet', 'did:pera:ADDR', 'device-1', 0),
+        ).rejects.toBeInstanceOf(BackupResponseParseError)
+    })
+
+    it('rejects a delta entry carrying an unknown operation', async () => {
+        signedBackupRequestMock.mockResolvedValue({
+            entries: [
+                {
+                    seq: 5,
+                    key: 'accounts/ADDR',
+                    type: 'ACCOUNT',
+                    ver: 1,
+                    status: 'ACTIVE',
+                    op: 'REPLACE',
+                    hash: null,
+                },
+            ],
+        })
+
+        await expect(
+            fetchDelta('mainnet', 'did:pera:ADDR', 'device-1', 0),
+        ).rejects.toBeInstanceOf(BackupResponseParseError)
+    })
+
+    it('normalizes an omitted delta hash to null', async () => {
+        signedBackupRequestMock.mockResolvedValue({
+            entries: [
+                {
+                    seq: 5,
+                    key: 'accounts/ADDR',
+                    type: 'ACCOUNT',
+                    ver: 1,
+                    status: 'ACTIVE',
+                    op: 'DELETE',
+                },
+            ],
+        })
+
+        const [entry] = await fetchDelta(
+            'mainnet',
+            'did:pera:ADDR',
+            'device-1',
+            0,
+        )
+
+        expect(entry.hash).toBeNull()
+    })
+
+    it('names the offending field when the manifest is malformed', async () => {
+        signedBackupRequestMock.mockResolvedValue({
+            backup_id: 'did:pera:ADDR',
+            backup_global_hash: 'sha256:g',
+            global_version: 1,
+            last_seq: 'nope',
+            generated_at: '2026-01-01T00:00:00Z',
+            items: {},
+        })
+
+        await expect(
+            fetchManifest('mainnet', 'did:pera:ADDR', 'device-1'),
+        ).rejects.toThrow(/last_seq/)
+    })
+
+    it('drops a malformed read item instead of failing the whole batch', async () => {
+        signedBackupRequestMock.mockResolvedValue({
+            items: [
+                { key: 'accounts/A', status: 'FOUND', ver: 1 },
+                {
+                    key: 'accounts/B',
+                    status: 'FOUND',
+                    payload: 'BASE64',
+                    hash: 'sha256:b',
+                    ver: 2,
+                },
+            ],
+        })
+
+        const result = await readItems('mainnet', 'did:pera:ADDR', 'device-1', [
+            'accounts/A',
+            'accounts/B',
+        ])
+
+        expect(result).toEqual([
+            {
+                key: 'accounts/B',
+                payload: 'BASE64',
+                hash: 'sha256:b',
+                ver: 2,
+            },
+        ])
+    })
+
+    it('rejects a batch-upsert response whose results are malformed', async () => {
+        signedBackupRequestMock.mockResolvedValue({
+            results: [{ key: 'accounts/A', result: 'MAYBE' }],
+        })
+
+        await expect(
+            batchUpsertItems('mainnet', 'did:pera:ADDR', 'device-1', {
+                device_id: 'device-1',
+                items: [],
+            }),
+        ).rejects.toBeInstanceOf(BackupResponseParseError)
     })
 })

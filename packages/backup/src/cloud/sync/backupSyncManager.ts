@@ -46,8 +46,7 @@ const PERIODIC_SYNC_MS = 5 * 60 * 1000
 
 export type BackupSyncManagerDeps = {
     importAccounts: SyncEngineDeps['importAccounts']
-    /** Hook-bound 25-word phrase resolver (algo25 + quantum), injected from
-     *  RootComponent. Key material is only reachable through a KMS session. */
+    /** Hook-bound 25-word phrase resolver, injected from RootComponent. */
     resolveMnemonic?: SerializeMnemonicResolver
     /** Hook-bound HD seed/derived resolver, injected from RootComponent. */
     resolveHd?: SerializeHdResolver

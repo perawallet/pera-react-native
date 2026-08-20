@@ -49,15 +49,10 @@ export type SerializedAccount = {
     extraItems?: SerializedItem[]
 }
 
-/**
- * Resolves an account's 25-word recovery phrase for serialization. Hook-bound
- * (the phrase is rebuilt inside a `useKMS().executeWithMnemonic` session, which
- * maps the account's signing `keyPairId` back to its seed and zeroes every
- * intermediate buffer); injected from the app layer, null when unavailable.
- *
- * algo25 and quantum share the 25-word wire format, so one resolver covers
- * both — see `executeWithMnemonic` in `@perawallet/wallet-core-kms`.
- */
+/** Resolves an account's 25-word phrase. Hook-bound: the phrase only exists
+ *  inside a `useKMS().executeWithMnemonic` session, which maps the signing
+ *  `keyPairId` back to its seed. algo25 and quantum share the format, so one
+ *  resolver covers both. Null when unavailable. */
 export type SerializeMnemonicResolver = (
     account: Algo25Account | QuantumAccount,
 ) => Promise<string | null>

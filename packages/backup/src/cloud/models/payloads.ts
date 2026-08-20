@@ -36,10 +36,7 @@ const customName = z
     .optional()
     .transform(value => (typeof value === 'string' ? value : null))
 
-/**
- * Epoch millis of the last local content change. Drives last-write-wins when
- * two devices edit the same account, so it rides in every mutable payload.
- */
+/** Epoch millis of the last local content change; drives last-write-wins. */
 const updatedAt = nonNegativeInt.optional()
 
 export const algo25AddressPayloadSchema = z.object({

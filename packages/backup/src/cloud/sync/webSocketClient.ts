@@ -12,6 +12,11 @@
 
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { backupWebSocketUrl } from './webSocketUrl'
+import {
+    BackupWebSocketMessageReject,
+    BackupWebSocketMessageType,
+    parseBackupWebSocketMessage,
+} from './webSocketMessage'
 
 export type BackupWebSocketEvent =
     | { kind: 'connected' }
@@ -127,22 +132,29 @@ export class BackupWebSocketClient {
     }
 
     private handleMessage(data: unknown): void {
-        let parsed: { type?: string; from_seq?: number; to_seq?: number }
-        try {
-            parsed = JSON.parse(typeof data === 'string' ? data : String(data))
-        } catch {
-            logger.warn('BackupWebSocketClient: unparseable message')
+        const parsed = parseBackupWebSocketMessage(data)
+        if (!parsed.ok) {
+            // An unknown type is expected forward-compat traffic, not a fault.
+            if (parsed.reject === BackupWebSocketMessageReject.UnknownType) {
+                return
+            }
+            logger.warn('BackupWebSocketClient: discarded message', {
+                reject: parsed.reject,
+                type: parsed.type,
+            })
             return
         }
-        if (parsed.type === 'ITEMS_UPDATED') {
+
+        const { message } = parsed
+        if (message.type === BackupWebSocketMessageType.ITEMS_UPDATED) {
             this.params.onEvent({
                 kind: 'itemsUpdated',
-                fromSeq: parsed.from_seq ?? 0,
-                toSeq: parsed.to_seq ?? 0,
+                fromSeq: message.from_seq,
+                toSeq: message.to_seq,
             })
-        } else if (parsed.type === 'BACKUP_DELETED') {
-            this.params.onEvent({ kind: 'backupDeleted' })
+            return
         }
+        this.params.onEvent({ kind: 'backupDeleted' })
     }
 
     private handleClose(code: number | null, _reason: string | null): void {

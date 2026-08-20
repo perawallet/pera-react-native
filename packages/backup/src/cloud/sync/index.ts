@@ -31,6 +31,16 @@ export {
     getBackupSyncManager,
 } from './backupSyncManager'
 export type { BackupSyncManagerDeps } from './backupSyncManager'
+export {
+    BackupWebSocketMessageType,
+    BackupWebSocketMessageReject,
+    backupWebSocketMessageSchema,
+    parseBackupWebSocketMessage,
+} from './webSocketMessage'
+export type {
+    BackupWebSocketMessage,
+    ParsedBackupWebSocketMessage,
+} from './webSocketMessage'
 export { UnsupportedBackupAccountTypeError } from './types'
 export type {
     SerializedItem,
