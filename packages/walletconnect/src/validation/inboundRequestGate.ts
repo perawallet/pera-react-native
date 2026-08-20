@@ -20,6 +20,13 @@ export type GateResult = { ok: true } | { ok: false; reason: string }
 const reject = (reason: string): GateResult => ({ ok: false, reason })
 const accept: GateResult = { ok: true }
 
+// An undefined session chain id means the wallet has no record of the session
+// the dapp is using (wiped storage, re-onboarded wallet) — a dapp-visible
+// wrong-network message there sends users chasing the wrong problem
+// (PERA-4958). Keep it distinct from a genuine chain mismatch.
+const SESSION_NOT_FOUND_REASON =
+    'session not found — please disconnect and reconnect the dapp'
+
 type WcEnvelope = { id: number; params: unknown[] }
 
 /**
@@ -63,6 +70,9 @@ export const gateSignTxnRequest = (input: {
     const envelope = asEnvelope(input.payload)
     if (!envelope) return reject('malformed WC envelope')
 
+    if (input.sessionChainId === undefined) {
+        return reject(SESSION_NOT_FOUND_REASON)
+    }
     if (!isChainIdAcceptable(input.sessionChainId, input.network)) {
         return reject('chain id not acceptable on the active network')
     }
@@ -125,6 +135,9 @@ export const gateSignDataRequest = (input: {
         return reject('algo_signTxn shape received on algo_signData request')
     }
 
+    if (input.sessionChainId === undefined) {
+        return reject(SESSION_NOT_FOUND_REASON)
+    }
     if (!isChainIdAcceptable(input.sessionChainId, input.network)) {
         return reject('chain id not acceptable on the active network')
     }
