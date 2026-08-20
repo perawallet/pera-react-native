@@ -43,3 +43,27 @@ export const calculateMinTxnFee = ({
     }
     return baseMinFee * pqMultiplier
 }
+
+export type CalculatePQFeeSurchargeParams = Omit<
+    CalculateMinTxnFeeParams,
+    'isPQSigner'
+>
+
+/**
+ * Computes the µAlgo premium a post-quantum signature adds to a transaction's
+ * fee requirement, on top of whatever that transaction already costs.
+ *
+ * The chain charges this additively, not as a total: go-algorand's
+ * `SignedTxn.FeeFactor` sums `PQSchemeFeeContribution` (2e6 — two basic fees
+ * for Falcon-1024) with the transaction's own factor, and pools the result
+ * across the group. A transaction that already carries a raised fee — pooled
+ * inner-transaction fees, an oversized note — must therefore keep it and pay
+ * the premium on top; clamping it to `calculateMinTxnFee` instead swallows the
+ * pooled budget and starves the inner transactions it was funding.
+ */
+export const calculatePQFeeSurcharge = ({
+    baseMinFee,
+    pqMultiplier,
+}: CalculatePQFeeSurchargeParams): bigint =>
+    calculateMinTxnFee({ baseMinFee, isPQSigner: true, pqMultiplier }) -
+    baseMinFee

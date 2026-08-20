@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { calculateMinTxnFee } from '../feeCalculator'
+import { calculateMinTxnFee, calculatePQFeeSurcharge } from '../feeCalculator'
 
 describe('calculateMinTxnFee', () => {
     it('multiplies the base fee by the PQ multiplier for PQ signers', () => {
@@ -62,5 +62,54 @@ describe('calculateMinTxnFee', () => {
         })
 
         expect(result).toBe(1000n)
+    })
+})
+
+describe('calculatePQFeeSurcharge', () => {
+    it('is the premium a PQ signature adds on top of the base fee', () => {
+        // Mirrors go-algorand's PQSchemeFeeContribution(Falcon1024) = 2e6,
+        // i.e. two extra basic fees, at the default multiplier of 3.
+        const result = calculatePQFeeSurcharge({
+            baseMinFee: 1000n,
+            pqMultiplier: 3n,
+        })
+
+        expect(result).toBe(2000n)
+    })
+
+    it('scales with the configured multiplier', () => {
+        const result = calculatePQFeeSurcharge({
+            baseMinFee: 1000n,
+            pqMultiplier: 4n,
+        })
+
+        expect(result).toBe(3000n)
+    })
+
+    it('follows the base fee under congestion pricing', () => {
+        const result = calculatePQFeeSurcharge({
+            baseMinFee: 2000n,
+            pqMultiplier: 3n,
+        })
+
+        expect(result).toBe(4000n)
+    })
+
+    it('is zero when the multiplier leaves no premium', () => {
+        const result = calculatePQFeeSurcharge({
+            baseMinFee: 1000n,
+            pqMultiplier: 1n,
+        })
+
+        expect(result).toBe(0n)
+    })
+
+    it('is zero for an invalid multiplier', () => {
+        const result = calculatePQFeeSurcharge({
+            baseMinFee: 1000n,
+            pqMultiplier: 0n,
+        })
+
+        expect(result).toBe(0n)
     })
 })

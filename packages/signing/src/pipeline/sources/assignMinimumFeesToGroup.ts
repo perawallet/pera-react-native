@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     calculateMinTxnFee,
+    calculatePQFeeSurcharge,
     groupTransactions,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
@@ -26,10 +27,11 @@ import { bytesToHex } from '@perawallet/wallet-core-shared'
 import { validateTransactionGroupIntegrity } from '../../utils/validateTransactionGroupIntegrity'
 
 /**
- * Why a fee was raised. Today the only rule is the post-quantum minimum for
+ * Why a fee was raised. Today the only rule is the post-quantum surcharge for
  * quantum signers; future protocol rules (per-resource surcharges, a node
  * `simulate()`-derived requirement — see PQ-022) add members here without
- * changing the record shape.
+ * changing the record shape. The `quantum-minimum` value predates the switch
+ * from a minimum to a surcharge and is kept for wire/log compatibility.
  */
 export type FeeAdjustmentReason = 'quantum-minimum'
 
@@ -104,11 +106,11 @@ export const groupHasQuantumSigner = ({
     })
 
 /**
- * Raises transaction fees to the minimum the signer type requires, on the
- * transactions the wallet will sign in an externally-received group. The
- * only rule today is the post-quantum minimum for quantum signers; fees are
- * only ever raised, never lowered, and transactions whose signer needs no
- * raise are returned byte-identical with their original object references.
+ * Raises transaction fees to what the signer type costs on chain, on the
+ * transactions the wallet will sign in an externally-received group. The only
+ * rule today is the post-quantum surcharge for quantum signers; fees are only
+ * ever raised, never lowered, and transactions whose signer needs no raise are
+ * returned byte-identical with their original object references.
  *
  * Integrity model — validate as received, then modify, then re-group:
  * when at least one fee must be raised, the FULL incoming payload is first
@@ -121,10 +123,17 @@ export const groupHasQuantumSigner = ({
  * so the new `grp` is what algod will verify. Untouched partitions and
  * ungrouped transactions keep their original object references.
  *
- * Pooled-fee limitation: each quantum transaction is raised only to its own
- * minimum; pooled-fee groups where another transaction's surplus would
- * already cover the quantum transaction are intentionally still raised —
- * simpler and never underfunds (PQ-017 implementation note 3).
+ * Pooled fees: the surcharge is ADDED to the fee the dApp set, never clamped
+ * to the PQ minimum. Fees pool across a group, so a fee above the base minimum
+ * is budget for something else — most often an app call's inner transactions —
+ * and clamping spends it on the signature instead, leaving the inner
+ * transactions unfunded (`itxn_submit` then fails with "group fee too small").
+ * Adding the premium keeps the dApp's own budget intact for every group shape.
+ *
+ * Underfunded groups are out of scope: a group whose fees don't cover its
+ * pre-quantum cost already fails for an Ed25519 signer, and the wallet can't
+ * know a group's true cost offline (inner-transaction count is only knowable
+ * from `simulate` — PQ-022).
  *
  * ARC-0001 `groupContext` consumers see the modified group: the returned
  * array replaces the original payload for everything downstream (display,
@@ -139,10 +148,12 @@ export const assignMinimumFeesToGroup = ({
     configMinTxnFee,
     pqMultiplier,
 }: AssignMinimumFeesToGroupParams): AssignMinimumFeesToGroupResult => {
-    // Congestion guard (same as resolveMinFeeForSender): multiply the max of
-    // algod's suggested minimum and the configured base, at most once.
+    // Congestion guard (same as resolveMinFeeForSender): derive both the
+    // surcharge and the floor from the max of algod's suggested minimum and
+    // the configured base, at most once.
     const baseMinFee =
         suggestedMinFee > configMinTxnFee ? suggestedMinFee : configMinTxnFee
+    const surcharge = calculatePQFeeSurcharge({ baseMinFee, pqMultiplier })
     const minFee = calculateMinTxnFee({
         baseMinFee,
         isPQSigner: true,
@@ -150,8 +161,7 @@ export const assignMinimumFeesToGroup = ({
     })
 
     // Plan the adjustments: only signable txns whose effective authorizer
-    // resolves to a quantum signer, and only when the fee is below the PQ
-    // minimum (never lower a fee). Non-quantum senders are NEVER touched,
+    // resolves to a quantum signer. Non-quantum senders are NEVER touched,
     // even if their fee is below the plain minimum.
     const adjustments: FeeAdjustment[] = []
     for (let i = 0; i < signableIndices.length; i++) {
@@ -165,11 +175,17 @@ export const assignMinimumFeesToGroup = ({
         )
         const signer = getSignerFor(authorizer, accounts)
         if (signer === null || !isQuantumAccount(signer)) continue
-        if (tx.fee >= minFee) continue
+        // Add the premium to what the dApp set, then floor at the PQ minimum
+        // for a fee that wouldn't even cover a plain transaction. The floor
+        // makes this pointwise ≥ the fee any given group carries today, so no
+        // group that currently submits can start failing.
+        const withSurcharge = tx.fee + surcharge
+        const adjustedFee = withSurcharge > minFee ? withSurcharge : minFee
+        if (adjustedFee <= tx.fee) continue
         adjustments.push({
             index: groupIndex,
             originalFee: tx.fee,
-            adjustedFee: minFee,
+            adjustedFee,
             reason: 'quantum-minimum',
         })
     }

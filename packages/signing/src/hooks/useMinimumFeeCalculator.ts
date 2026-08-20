@@ -48,7 +48,7 @@ export type UseMinimumFeeCalculatorResult = {
  * `FeeAdjustment` record per raise (empty and reference-identical when
  * nothing needed raising — the no-op path is free to always call).
  *
- * Today the only rule is the post-quantum minimum for quantum signers
+ * Today the only rule is the post-quantum surcharge for quantum signers
  * (delegating to {@link assignMinimumFeesToGroup}); the interface is the
  * seam where future rules land — per-resource surcharges or a node
  * `simulate()`-based requirement (PQ-022) — without call sites changing.

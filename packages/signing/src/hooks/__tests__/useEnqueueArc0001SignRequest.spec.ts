@@ -513,12 +513,19 @@ describe('useEnqueueArc0001SignRequest', () => {
             await result.current(resolved, transport)
 
             const req = mockAddSignRequest.mock.calls[0][0]
-            // Only the underfunded txn is reported as adjusted.
+            // Every quantum txn pays the surcharge — the 3000 µAlgo one was
+            // pooling a fee for an inner txn, not sitting at its own minimum.
             expect(req.feeAdjustments).toEqual([
                 {
                     index: 0,
                     originalFee: 1000n,
                     adjustedFee: 3000n,
+                    reason: 'quantum-minimum',
+                },
+                {
+                    index: 1,
+                    originalFee: 3000n,
+                    adjustedFee: 5000n,
                     reason: 'quantum-minimum',
                 },
             ])
@@ -533,7 +540,7 @@ describe('useEnqueueArc0001SignRequest', () => {
             ).toBe(true)
         })
 
-        it('does not adjust when the quantum fee already meets the PQ minimum', async () => {
+        it('adds the surcharge to a dApp fee that already sits at the PQ minimum', async () => {
             mockUseAllAccounts.mockReturnValue([quantumAccount()])
             const txn = makePayment(QUANTUM_ADDRESS, { fee: 3000n })
             const resolved = resolvedFor([txn], [0])
@@ -543,12 +550,16 @@ describe('useEnqueueArc0001SignRequest', () => {
             await result.current(resolved, transport)
 
             const req = mockAddSignRequest.mock.calls[0][0]
-            expect(req.feeAdjustments).toBeUndefined()
-            expect(req.txs[0].fee).toBe(3000n)
-            // Unmodified: the original wire bytes are passed through verbatim.
-            expect(req.rawTransactionsBase64[0]).toBe(
-                resolved.toSign[0].walletTxn.txn,
-            )
+            expect(req.feeAdjustments).toEqual([
+                {
+                    index: 0,
+                    originalFee: 3000n,
+                    adjustedFee: 5000n,
+                    reason: 'quantum-minimum',
+                },
+            ])
+            expect(req.txs[0].fee).toBe(5000n)
+            expect(decodeStub(req.rawTransactionsBase64[0]).fee).toBe(5000n)
         })
 
         it('applies the override from the config base when the suggested-params fetch fails', async () => {

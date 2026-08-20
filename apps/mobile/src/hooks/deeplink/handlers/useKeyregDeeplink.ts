@@ -189,9 +189,9 @@ export const useKeyregDeeplink = (): KeyregDeeplinkHandler => {
                 // Uint8Array byte fields) and otherwise crashes with
                 // `Buffer.from(...) received type object`.
                 const normalizedTx = decodeTransaction(encodeTransaction(tx))
-                // Floors a quantum sender's fee to the PQ minimum (mirrors
-                // the WC/webview enqueue path); a non-quantum sender is a
-                // free no-op — same reference, no network traffic.
+                // Adds a quantum sender's PQ surcharge (mirrors the WC/webview
+                // enqueue path); a non-quantum sender is a free no-op — same
+                // reference, no network traffic.
                 const { transactions, adjustments } = await assignFeeToGroup({
                     transactions: [normalizedTx],
                 })
