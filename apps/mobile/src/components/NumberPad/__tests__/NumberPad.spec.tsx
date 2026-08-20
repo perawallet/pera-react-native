@@ -10,9 +10,30 @@
  limitations under the License
  */
 
+import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { NumberPad } from '../NumberPad'
+
+// The global setup stubs the @components/core barrel with a guard-less
+// <button>, which would let the rapid-repeat test pass even without
+// allowRapidPress. Use the real PWTouchableOpacity so it can't; the rest
+// stay stubs (unmocking the whole barrel drags in react-native-ratings,
+// which ships unparseable JSX).
+vi.mock('@components/core', async () => {
+    const { PWTouchableOpacity } = await vi.importActual<
+        typeof import('@components/core/PWTouchableOpacity')
+    >('@components/core/PWTouchableOpacity')
+    return {
+        PWTouchableOpacity,
+        PWText: ({ children }: { children?: React.ReactNode }) =>
+            React.createElement('span', null, children),
+        PWIcon: ({ name }: { name?: string }) =>
+            React.createElement('span', { 'data-testid': `icon_${name}` }),
+        PWView: ({ children }: { children?: React.ReactNode }) =>
+            React.createElement('div', null, children),
+    }
+})
 
 describe('NumberPad', () => {
     it('renders keys', () => {
@@ -28,6 +49,16 @@ describe('NumberPad', () => {
         render(<NumberPad onPress={onPress} />)
         fireEvent.click(screen.getByText('5'))
         expect(onPress).toHaveBeenCalledWith('5')
+    })
+
+    it('registers rapid repeat presses of the same key', () => {
+        const onPress = vi.fn()
+        render(<NumberPad onPress={onPress} />)
+
+        fireEvent.click(screen.getByText('0'))
+        fireEvent.click(screen.getByText('0'))
+
+        expect(onPress).toHaveBeenCalledTimes(2)
     })
 
     it('renders the decimal key by default', () => {
