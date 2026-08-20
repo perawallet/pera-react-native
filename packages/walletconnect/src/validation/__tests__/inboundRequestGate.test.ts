@@ -118,6 +118,23 @@ describe('gateSignTxnRequest', () => {
             payload: signTxnPayload([[{ txn: 'dHhu' }]]),
         })
         expect(result.ok).toBe(false)
+        expect(result).toMatchObject({
+            reason: 'chain id not acceptable on the active network',
+        })
+    })
+
+    it('rejects an unknown session with a session-not-found reason, not the wrong-network one', () => {
+        // A dapp resuming a session this wallet has no record of (e.g. wiped
+        // extension storage) must not be told it's on the wrong network.
+        const result = gateSignTxnRequest({
+            ...baseInput,
+            sessionChainId: undefined,
+            payload: signTxnPayload([[{ txn: 'dHhu' }]]),
+        })
+        expect(result).toEqual({
+            ok: false,
+            reason: 'session not found — please disconnect and reconnect the dapp',
+        })
     })
 
     it('rejects when every named signer is unknown', () => {
@@ -203,6 +220,21 @@ describe('gateSignDataRequest', () => {
             sessionChainId: AlgorandChainId.testnet,
         })
         expect(result.ok).toBe(false)
+        expect(result).toMatchObject({
+            reason: 'chain id not acceptable on the active network',
+        })
+    })
+
+    it('rejects an unknown session with a session-not-found reason, not the wrong-network one', () => {
+        const result = gateSignDataRequest({
+            payload: { id: 1, params: arc60Payload() },
+            network: Networks.mainnet,
+            sessionChainId: undefined,
+        })
+        expect(result).toEqual({
+            ok: false,
+            reason: 'session not found — please disconnect and reconnect the dapp',
+        })
     })
 
     it('rejects a payload that fails the ARC-60 schema', () => {
