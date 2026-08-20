@@ -15,7 +15,7 @@ import type { SyncServiceDeps } from './models'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type { SyncServiceDeps, SyncCompletionHandler } from './models'
-export { SyncService } from './service'
+export { SyncService, releaseNetworkScopedQueries } from './service'
 
 let instance: Nullable<SyncService> = null
 

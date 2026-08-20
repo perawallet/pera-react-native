@@ -123,18 +123,26 @@ export class TimeoutHttpClient implements BaseHTTPClient {
      * Blob/FileReader polyfill whose per-char conversion is quadratic on
      * Hermes — a ~110KB indexer page measured ~19s of JS-thread block and
      * ~1.5GB of allocations on device (PERA-4953). `text()` is native and
-     * linear, so textual bodies are read as text and re-encoded; only binary
-     * (msgpack) bodies pay the arrayBuffer path, and those are small.
+     * linear, so known-textual bodies are read as text and re-encoded.
+     *
+     * The allowlist gates the *text* path, not the binary one: `text()`
+     * UTF-8-mangles arbitrary bytes with no error, so a msgpack body behind a
+     * proxy that rewrites the header (or a node answering
+     * `application/x-msgpack`) must fall through to `arrayBuffer()` —
+     * unknown content types are slow-but-correct, never fast-but-wrong.
      */
     private static async readBody(res: Response): Promise<Uint8Array> {
         const contentType = res.headers.get('content-type') ?? ''
-        if (contentType.includes('application/msgpack')) {
+        const isTextual =
+            contentType.includes('application/json') ||
+            contentType.includes('text/')
+        if (!isTextual) {
             return new Uint8Array(await res.arrayBuffer())
         }
         const encoded = new TextEncoder().encode(await res.text())
-        // Zero-copy re-wrap with the local realm's constructor: the polyfilled
-        // encoder can return a foreign-realm Uint8Array that fails instanceof
-        // checks downstream.
+        // Zero-copy re-wrap with the local realm's constructor: TextEncoder
+        // can be foreign-realm (e.g. jsdom exposes Node's util implementation,
+        // whose output fails `instanceof Uint8Array` against the page global).
         return new Uint8Array(
             encoded.buffer,
             encoded.byteOffset,

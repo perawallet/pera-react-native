@@ -11,3 +11,4 @@
  */
 
 export { SyncService } from './sync-service'
+export { releaseNetworkScopedQueries } from './query-cache'

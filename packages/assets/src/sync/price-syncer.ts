@@ -46,14 +46,18 @@ const PRICE_CACHE_TTL_MS = 30_000
 // priceless id refetch every minute (PERA JS-thread saturation incident).
 const PRICE_MISS_RETRY_MS = 10 * 60 * 1000
 
-// Any list this big is in practice "every asset held on the network" — the
-// sync tick, refreshAccounts, and the per-account syncer all derive it from
-// the same holdings table — so concurrent passes would do identical work.
-// Sharing one in-flight pass per network keeps a switch-triggered pileup from
-// running the (whole-wallet-sized) stale gate several times over (PERA-4953).
-// Small lists are targeted enrichments and stay independent.
+// Sharing one in-flight pass per network keeps a switch-triggered pileup of
+// whole-wallet passes (the sync tick, refreshAccounts) from running the
+// (whole-wallet-sized) stale gate several times over (PERA-4953). Size alone
+// doesn't prove a list is whole-wallet — the per-account enrichment callers
+// can clear this on a single 300-asset account — so a pass is only joined
+// when the in-flight one covers every arriving id. Otherwise a fresh import
+// would await a pass that never saw its ids (and the reverse would let a
+// per-account pass stamp the wallet-wide lastPriceSyncAt gate). Small lists
+// are targeted enrichments and stay independent.
 const WHOLE_WALLET_PASS_MIN_IDS = 256
-const inFlightWholeWalletPasses = new Map<Network, Promise<void>>()
+type InFlightPricePass = { ids: Set<string>; pass: Promise<void> }
+const inFlightWholeWalletPasses = new Map<Network, InFlightPricePass>()
 
 export function fetchAndPersistPrices(
     assetIds: string[],
@@ -64,12 +68,23 @@ export function fetchAndPersistPrices(
     }
 
     const inFlight = inFlightWholeWalletPasses.get(network)
-    if (inFlight) return inFlight
+    if (inFlight && assetIds.every(id => inFlight.ids.has(id))) {
+        return inFlight.pass
+    }
 
-    const pass = runPricePass(assetIds, network).finally(() =>
-        inFlightWholeWalletPasses.delete(network),
-    )
-    inFlightWholeWalletPasses.set(network, pass)
+    const pass = runPricePass(assetIds, network).finally(() => {
+        if (inFlightWholeWalletPasses.get(network)?.pass === pass) {
+            inFlightWholeWalletPasses.delete(network)
+        }
+    })
+    // First large pass in wins the shareable slot; a concurrent non-covered
+    // pass runs unregistered rather than evicting it.
+    if (!inFlight) {
+        inFlightWholeWalletPasses.set(network, {
+            ids: new Set(assetIds),
+            pass,
+        })
+    }
     return pass
 }
 
