@@ -103,6 +103,17 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 vi.mock('../../machine/createSigningMachine')
 
 const mockIsRequestGroupAlreadySubmitted = vi.hoisted(() => vi.fn())
+// Only storage-restored requests reach the ledger guard; the store's own spec
+// covers which ids get marked, so drive the flag directly here.
+const mockWasRestoredFromStorage = vi.hoisted(() => vi.fn())
+vi.mock('../../store', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../store')>()
+    return {
+        ...actual,
+        wasRestoredFromStorage: (...args: unknown[]) =>
+            mockWasRestoredFromStorage(...args),
+    }
+})
 vi.mock('../../ledger', () => ({
     isRequestGroupAlreadySubmitted: (...args: unknown[]) =>
         mockIsRequestGroupAlreadySubmitted(...args),
@@ -217,6 +228,7 @@ describe('useSigningActorLifecycle', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockIsRequestGroupAlreadySubmitted.mockResolvedValue(false)
+        mockWasRestoredFromStorage.mockReturnValue(false)
         useSigningStore.getState().resetState()
         __resetSigningActorRegistryForTests()
     })
@@ -240,6 +252,7 @@ describe('useSigningActorLifecycle', () => {
 
     test('suppresses a re-presented request whose group is already submitted', async () => {
         mockIsRequestGroupAlreadySubmitted.mockResolvedValue(true)
+        mockWasRestoredFromStorage.mockReturnValue(true)
         const actor = makeMockActor('tx-1')
         vi.mocked(createSigningMachine).mockReturnValue(actor as never)
 

@@ -41,8 +41,7 @@ export const SubmissionAttemptsSchema = sqliteTable(
          */
         bytesHash: text('bytes_hash'),
         /** base64 of the submitted group bytes, for a dedupe-safe re-broadcast. */
-        signedBytesJson: text('signed_bytes_json'),
-        /** submitted | confirmed | failed | unknown */
+        signedBytesBase64: text('signed_bytes_base64'),
         status: text('status').notNull(),
         /** Decoded txn validity window, in rounds (null when undecodable). */
         firstValid: integer('first_valid'),
@@ -52,5 +51,11 @@ export const SubmissionAttemptsSchema = sqliteTable(
     },
     table => [
         index('submission_attempts_open_idx').on(table.network, table.status),
+        // The retention sweep runs on every sync tick; without this it is a
+        // full scan of a table that grows with every submission.
+        index('submission_attempts_retention_idx').on(
+            table.status,
+            table.createdAt,
+        ),
     ],
 )

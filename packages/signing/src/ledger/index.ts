@@ -11,21 +11,6 @@
  */
 
 export {
-    recordSubmissionAttempt,
-    resolveSubmissionAttempt,
-    markSubmissionUnknown,
-    getOpenSubmissionAttempts,
-    getOpenSubmissionAttemptsForIntent,
-    getOpenSubmissionAttemptsByTxIds,
-    type RecordSubmissionAttemptParams,
-    type ResolveSubmissionAttemptParams,
-    type MarkSubmissionUnknownParams,
-    type GetOpenSubmissionAttemptsParams,
-    type GetOpenSubmissionAttemptsForIntentParams,
-    type GetOpenSubmissionAttemptsByTxIdsParams,
-} from './repo'
-export { SubmissionAttemptsSchema } from './schema'
-export {
     deriveSubmissionAttemptFromBytes,
     type DerivedSubmissionAttempt,
 } from './derive'
@@ -46,6 +31,7 @@ export {
     isRequestGroupAlreadySubmitted,
 } from './sign-request-guard'
 export {
+    LANDABLE_SUBMISSION_STATUSES,
     OPEN_SUBMISSION_STATUSES,
     type SubmissionAttempt,
     type SubmissionFlow,

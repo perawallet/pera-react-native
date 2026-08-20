@@ -187,12 +187,15 @@ const buildPendingHistoryItems = async ({
     accountAddress: string
     network: Network
 }): Promise<TransactionHistoryItem[]> => {
-    const attempts = await getOpenSubmissionAttempts({ network })
-    // Only the account that sent the attempt sees its pending row — a row
-    // without a recorded sender can't be scoped and is skipped.
-    return attempts
-        .filter(attempt => attempt.sender === accountAddress)
-        .map(attempt => toPendingHistoryItem(attempt, accountAddress))
+    // Scoped in SQL: history renders per account, and a row without a
+    // recorded sender can't be attributed to one.
+    const attempts = await getOpenSubmissionAttempts({
+        network,
+        sender: accountAddress,
+    })
+    return attempts.map(attempt =>
+        toPendingHistoryItem(attempt, accountAddress),
+    )
 }
 
 /**
@@ -269,14 +272,14 @@ export const useTransactionHistoryQuery = (
                         accountAddress,
                         network,
                     })
-                    if (pending.length > 0) {
-                        const pendingIds = new Set(pending.map(tx => tx.id))
-                        transactions = [
-                            ...pending,
-                            ...dbTransactions.filter(
-                                tx => !pendingIds.has(tx.id),
-                            ),
-                        ]
+                    // The real row always wins: a synthetic entry carries no
+                    // amount or interpreted meaning, so shadowing a row SQLite
+                    // already holds would blank a confirmed transaction until
+                    // the reconciler settles.
+                    const heldIds = new Set(dbTransactions.map(tx => tx.id))
+                    const unheld = pending.filter(tx => !heldIds.has(tx.id))
+                    if (unheld.length > 0) {
+                        transactions = [...unheld, ...dbTransactions]
                     }
                 }
 

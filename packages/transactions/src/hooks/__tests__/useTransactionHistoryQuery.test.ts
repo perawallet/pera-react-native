@@ -837,17 +837,15 @@ describe('useTransactionHistoryQuery', () => {
 
             await waitFor(() => expect(result.current.isFetched).toBe(true))
             expect(result.current.transactions).toHaveLength(1)
+            // The real row wins: a synthetic pending entry must never shadow a
+            // transaction SQLite already holds, or the amount and interpreted
+            // meaning disappear until the reconciler settles.
+            expect(result.current.transactions[0]!.confirmedRound).toBe(12345)
+            expect(result.current.transactions[0]!.amount).not.toBeNull()
         })
 
         test('only merges pending rows sent by the viewing account', async () => {
-            mockGetOpenSubmissionAttempts.mockResolvedValue([
-                pendingAttempt(),
-                pendingAttempt({
-                    id: 'ATTEMPT-2',
-                    txIds: ['PENDING-TX-OTHER'],
-                    sender: 'SOME_OTHER_ACCOUNT',
-                }),
-            ])
+            mockGetOpenSubmissionAttempts.mockResolvedValue([pendingAttempt()])
             mockGetTransactionHistory.mockResolvedValue([])
 
             const { result } = renderHook(
@@ -862,6 +860,11 @@ describe('useTransactionHistoryQuery', () => {
             await waitFor(() => expect(result.current.isFetched).toBe(true))
             expect(result.current.transactions).toHaveLength(1)
             expect(result.current.transactions[0]!.id).toBe('PENDING-TX-1')
+            // Scoping happens in SQL, not by post-filtering every account's rows.
+            expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
+                network: 'mainnet',
+                sender: mockAddress,
+            })
         })
 
         test('does not merge pending rows on filtered views', async () => {

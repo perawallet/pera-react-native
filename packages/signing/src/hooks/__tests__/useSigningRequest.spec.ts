@@ -202,6 +202,23 @@ describe('useSigningRequest', () => {
             expect(result.current.pendingSignRequests).toEqual([])
         })
 
+        test('creates the actor synchronously for a freshly added request', () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
+            const { result } = renderHook(() => useSigningRequest())
+            const request = makeTxRequest()
+
+            act(() => {
+                result.current.addSignRequest(request)
+            })
+
+            // Deliberately no flush: a request the user just initiated must
+            // not wait on a ledger read. Only requests restored from storage
+            // pay for the re-presentation guard.
+            expect(actor.start).toHaveBeenCalled()
+        })
+
         test('addSignRequest adds to pendingSignRequests and creates an actor', async () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)

@@ -14,7 +14,8 @@ import { computeGroupID, Transaction } from 'algosdk'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
-import { getOpenSubmissionAttemptsByTxIds } from './repo'
+import { getSubmissionAttemptsByTxIds } from '../db/repository'
+import { LANDABLE_SUBMISSION_STATUSES } from './types'
 import { isTransactionRequest } from '../models/guards'
 import type { SignRequest } from '../models'
 
@@ -69,10 +70,11 @@ export const deriveRequestGroupTxIds = (
 }
 
 /**
- * Whether the ledger already records an open submission attempt for the
- * request's group — the signal to suppress re-presenting it after an app
- * kill (the bytes may already be on chain). Best-effort: a DB failure
- * returns false (fail open — never drop a legitimately pending request).
+ * Whether the ledger already records a submission attempt for the request's
+ * group whose bytes may be — or provably are — on chain: the signal to
+ * suppress re-presenting it after an app kill. A definitively failed row does
+ * not suppress. Best-effort: a DB failure returns false (fail open — never
+ * drop a legitimately pending request).
  */
 export const isRequestGroupAlreadySubmitted = async (
     request: SignRequest,
@@ -84,7 +86,11 @@ export const isRequestGroupAlreadySubmitted = async (
     if (txIds.length === 0) return false
 
     try {
-        const matches = await getOpenSubmissionAttemptsByTxIds({ db, txIds })
+        const matches = await getSubmissionAttemptsByTxIds({
+            db,
+            txIds,
+            statuses: LANDABLE_SUBMISSION_STATUSES,
+        })
         return matches.length > 0
     } catch (error) {
         logger.warn(

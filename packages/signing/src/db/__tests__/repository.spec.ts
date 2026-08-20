@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { eq } from 'drizzle-orm'
 import {
     runMigrations,
     migrations,
@@ -23,7 +24,8 @@ import {
     markSubmissionUnknown,
     getOpenSubmissionAttempts,
     getOpenSubmissionAttemptsForIntent,
-    getOpenSubmissionAttemptsByTxIds,
+    getSubmissionAttemptsByTxIds,
+    pruneResolvedSubmissionAttempts,
 } from '..'
 import { SubmissionAttemptsSchema } from '../schema'
 
@@ -37,6 +39,15 @@ describe('submission ledger repository', () => {
         teardown = result.teardown
         await runMigrations(db, migrations)
     })
+
+    /** Ages a row so retention windows are exercisable without fake timers. */
+    const backdate = async (id: string, createdAt: number): Promise<void> => {
+        await db
+            .update(SubmissionAttemptsSchema)
+            .set({ createdAt, resolvedAt: createdAt })
+            .where(eq(SubmissionAttemptsSchema.id, id))
+            .run()
+    }
 
     afterEach(() => {
         teardown()
@@ -80,7 +91,7 @@ describe('submission ledger repository', () => {
         const after = await getOpenSubmissionAttempts({ db })
         expect(after).toHaveLength(0)
         // Terminal rows are not open — the txid query only surfaces open ones.
-        const byTxId = await getOpenSubmissionAttemptsByTxIds({
+        const byTxId = await getSubmissionAttemptsByTxIds({
             db,
             txIds: ['TXID-REKEY-1'],
         })
@@ -121,6 +132,42 @@ describe('submission ledger repository', () => {
         expect(mainnet[0]!.network).toBe('mainnet')
     })
 
+    it('filters open rows by sender', async () => {
+        await recordRekey()
+        await recordRekey({
+            txIds: ['TXID-REKEY-B'],
+            intentKey: { kind: 'rekey', address: 'SENDER_B' },
+            sender: 'SENDER_B',
+        })
+
+        // History renders per account: scoping in SQL avoids scanning every
+        // account's attempts on each first-page fetch.
+        const mine = await getOpenSubmissionAttempts({
+            db,
+            sender: 'SENDER_A',
+        })
+        expect(mine).toHaveLength(1)
+        expect(mine[0]!.sender).toBe('SENDER_A')
+    })
+
+    it('prunes resolved rows past the retention window, keeping open ones', async () => {
+        const staleId = await recordRekey({ txIds: ['TXID-STALE'] })
+        await resolveSubmissionAttempt({ db, id: staleId, status: 'confirmed' })
+        const openId = await recordRekey({ txIds: ['TXID-OPEN'] })
+        await backdate(staleId, 0)
+        await backdate(openId, 0)
+
+        const deleted = await pruneResolvedSubmissionAttempts({
+            db,
+            olderThanMs: 1,
+        })
+
+        expect(deleted).toBe(1)
+        const remaining = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(remaining).toHaveLength(1)
+        expect((remaining[0] as { id: string }).id).toBe(openId)
+    })
+
     it('matches open attempts by sender + intent key only', async () => {
         await recordRekey()
         await recordRekey({
@@ -159,7 +206,7 @@ describe('submission ledger repository', () => {
             flow: 'generic',
         })
 
-        const matches = await getOpenSubmissionAttemptsByTxIds({
+        const matches = await getSubmissionAttemptsByTxIds({
             db,
             txIds: ['TXID-GROUP-2', 'UNRELATED'],
         })
@@ -169,7 +216,7 @@ describe('submission ledger repository', () => {
 
     it('returns nothing for an empty txid query', async () => {
         await recordRekey()
-        const matches = await getOpenSubmissionAttemptsByTxIds({
+        const matches = await getSubmissionAttemptsByTxIds({
             db,
             txIds: [],
         })

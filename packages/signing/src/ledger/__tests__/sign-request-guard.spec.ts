@@ -26,12 +26,8 @@ import {
     makeTestAddress,
     makeTestPaymentTx,
 } from '../../test-utils/transactions'
-import {
-    deriveRequestGroupTxIds,
-    isRequestGroupAlreadySubmitted,
-    recordSubmissionAttempt,
-    resolveSubmissionAttempt,
-} from '..'
+import { deriveRequestGroupTxIds, isRequestGroupAlreadySubmitted } from '..'
+import { recordSubmissionAttempt, resolveSubmissionAttempt } from '../../db'
 import type { SignRequest } from '../../models'
 
 // Reproduces the pipeline's submit-time derivation: group copies of the
@@ -129,7 +125,7 @@ describe('isRequestGroupAlreadySubmitted', () => {
         expect(submitted).toBe(true)
     })
 
-    it('is false when the group only has resolved rows', async () => {
+    it('is true when the group already confirmed on chain', async () => {
         const txs = makeGroup()
         const txIds = submitTimeTxIds(txs)
         const id = await recordSubmissionAttempt({
@@ -139,6 +135,26 @@ describe('isRequestGroupAlreadySubmitted', () => {
             flow: 'generic',
         })
         await resolveSubmissionAttempt({ db, id, status: 'confirmed' })
+
+        const submitted = await isRequestGroupAlreadySubmitted(
+            makeTransactionSignRequest(txs),
+            { db },
+        )
+        expect(submitted).toBe(true)
+    })
+
+    it('is false when the group was definitively rejected', async () => {
+        const txs = makeGroup()
+        const txIds = submitTimeTxIds(txs)
+        const id = await recordSubmissionAttempt({
+            db,
+            network: 'mainnet',
+            txIds,
+            flow: 'generic',
+        })
+        // A node rejection means the bytes are provably not on chain — the
+        // user is entitled to approve a fresh attempt.
+        await resolveSubmissionAttempt({ db, id, status: 'failed' })
 
         const submitted = await isRequestGroupAlreadySubmitted(
             makeTransactionSignRequest(txs),

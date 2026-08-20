@@ -2550,8 +2550,8 @@
             "completed": "Tamamlandı",
             "failed": "Başarısız",
             "pending": "Beklemede",
-            "raw_transaction": "Ham işlem",
-            "pending_verifying": "Beklemede — doğrulanıyor"
+            "pending_verifying": "Beklemede — doğrulanıyor",
+            "raw_transaction": "Ham işlem"
         },
         "list_item": {
             "send": "Gönder",

@@ -10,12 +10,11 @@
  limitations under the License
  */
 
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, lt, notInArray, sql } from 'drizzle-orm'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
     encodeToBase64,
     generateOrderedUniqueId,
-    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { SubmissionAttemptsSchema } from './schema'
 import {
@@ -24,25 +23,11 @@ import {
     type SubmissionAttempt,
     type SubmissionFlow,
     type SubmissionStatus,
-} from './types'
+} from '../ledger/types'
 
-type DbRow = {
-    id: string
-    network: string
-    txIdsJson: string
-    intentKeyJson: Nullable<string>
-    flow: string
-    sender: Nullable<string>
-    bytesHash: Nullable<string>
-    signedBytesJson: Nullable<string>
-    status: string
-    firstValid: Nullable<number>
-    lastValid: Nullable<number>
-    createdAt: number
-    resolvedAt: Nullable<number>
-}
+type SubmissionAttemptRow = typeof SubmissionAttemptsSchema.$inferSelect
 
-const fromDb = (row: DbRow): SubmissionAttempt => ({
+const fromDb = (row: SubmissionAttemptRow): SubmissionAttempt => ({
     id: row.id,
     network: row.network,
     txIds: JSON.parse(row.txIdsJson) as string[],
@@ -52,7 +37,7 @@ const fromDb = (row: DbRow): SubmissionAttempt => ({
     flow: row.flow as SubmissionFlow,
     sender: row.sender,
     bytesHash: row.bytesHash,
-    signedBytesBase64: row.signedBytesJson,
+    signedBytesBase64: row.signedBytesBase64,
     status: row.status as SubmissionStatus,
     firstValid: row.firstValid,
     lastValid: row.lastValid,
@@ -106,7 +91,7 @@ export const recordSubmissionAttempt = async ({
             // equal bytes imply equal txids, so the first txid doubles as
             // the bytes identity without an extra crypto dependency.
             bytesHash: txIds[0] ?? null,
-            signedBytesJson: signedBytes ? encodeToBase64(signedBytes) : null,
+            signedBytesBase64: signedBytes ? encodeToBase64(signedBytes) : null,
             status: 'submitted',
             firstValid: firstValid ?? null,
             lastValid: lastValid ?? null,
@@ -159,12 +144,15 @@ export const markSubmissionUnknown = async ({
 export type GetOpenSubmissionAttemptsParams = {
     db?: Database
     network?: string
+    /** Scopes to one account — history renders per account. */
+    sender?: string
     limit?: number
 }
 
 export const getOpenSubmissionAttempts = async ({
     db = getDatabase(),
     network,
+    sender,
     limit,
 }: GetOpenSubmissionAttemptsParams = {}): Promise<SubmissionAttempt[]> => {
     const conditions = [
@@ -173,6 +161,9 @@ export const getOpenSubmissionAttempts = async ({
     if (network !== undefined) {
         conditions.push(eq(SubmissionAttemptsSchema.network, network))
     }
+    if (sender !== undefined) {
+        conditions.push(eq(SubmissionAttemptsSchema.sender, sender))
+    }
 
     const query = db
         .select()
@@ -180,9 +171,7 @@ export const getOpenSubmissionAttempts = async ({
         .where(and(...conditions))
         .orderBy(SubmissionAttemptsSchema.createdAt)
 
-    const rows = (await (
-        limit !== undefined ? query.limit(limit) : query
-    ).all()) as unknown as DbRow[]
+    const rows = await (limit !== undefined ? query.limit(limit) : query).all()
 
     return rows.map(fromDb)
 }
@@ -217,38 +206,42 @@ export const getOpenSubmissionAttemptsForIntent = async ({
         conditions.push(eq(SubmissionAttemptsSchema.network, network))
     }
 
-    const rows = (await db
+    const rows = await db
         .select()
         .from(SubmissionAttemptsSchema)
         .where(and(...conditions))
-        .all()) as unknown as DbRow[]
+        .all()
 
     return rows.map(fromDb)
 }
 
-export type GetOpenSubmissionAttemptsByTxIdsParams = {
+export type GetSubmissionAttemptsByTxIdsParams = {
     db?: Database
     txIds: string[]
+    /** Defaults to the open set; pass a wider set to include terminal rows. */
+    statuses?: readonly SubmissionStatus[]
 }
 
 /**
- * Open attempts whose group shares any of the given txids. Used to
- * suppress re-presented sign requests whose group already hit the chain.
+ * Attempts whose group shares any of the given txids. Used to suppress
+ * re-presented sign requests whose group already hit the chain.
+ *
+ * Deliberately not scoped by network, unlike the queries above: a txid digests
+ * the genesis hash, so the same id cannot occur on two networks.
  */
-export const getOpenSubmissionAttemptsByTxIds = async ({
+export const getSubmissionAttemptsByTxIds = async ({
     db = getDatabase(),
     txIds,
-}: GetOpenSubmissionAttemptsByTxIdsParams): Promise<SubmissionAttempt[]> => {
+    statuses = OPEN_SUBMISSION_STATUSES,
+}: GetSubmissionAttemptsByTxIdsParams): Promise<SubmissionAttempt[]> => {
     if (txIds.length === 0) return []
 
-    const rows = (await db
+    const rows = await db
         .select()
         .from(SubmissionAttemptsSchema)
         .where(
             and(
-                inArray(SubmissionAttemptsSchema.status, [
-                    ...OPEN_SUBMISSION_STATUSES,
-                ]),
+                inArray(SubmissionAttemptsSchema.status, [...statuses]),
                 // JSON1: a row matches when any element of its txid array
                 // equals one of the queried txids.
                 sql`EXISTS (SELECT 1 FROM json_each(${SubmissionAttemptsSchema.txIdsJson}) WHERE json_each.value IN (${sql.join(
@@ -257,7 +250,53 @@ export const getOpenSubmissionAttemptsByTxIds = async ({
                 )}))`,
             ),
         )
-        .all()) as unknown as DbRow[]
+        .all()
 
     return rows.map(fromDb)
+}
+
+export type PruneResolvedSubmissionAttemptsParams = {
+    db?: Database
+    /** Age, in ms, past which a terminally-resolved row is dropped. */
+    olderThanMs?: number
+}
+
+/** Terminal rows retain their signed bytes, so the table needs a floor. */
+const DEFAULT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
+
+/**
+ * Drops terminally-resolved rows past the retention window. Open rows are
+ * never touched — they are the reconciler's only record that a group may be
+ * on chain. Returns how many rows were removed.
+ */
+export const pruneResolvedSubmissionAttempts = async ({
+    db = getDatabase(),
+    olderThanMs = DEFAULT_RETENTION_MS,
+}: PruneResolvedSubmissionAttemptsParams = {}): Promise<number> => {
+    const cutoff = Date.now() - olderThanMs
+    const stale = await db
+        .select({ id: SubmissionAttemptsSchema.id })
+        .from(SubmissionAttemptsSchema)
+        .where(
+            and(
+                notInArray(SubmissionAttemptsSchema.status, [
+                    ...OPEN_SUBMISSION_STATUSES,
+                ]),
+                lt(SubmissionAttemptsSchema.createdAt, cutoff),
+            ),
+        )
+        .all()
+
+    if (stale.length === 0) return 0
+
+    await db
+        .delete(SubmissionAttemptsSchema)
+        .where(
+            inArray(
+                SubmissionAttemptsSchema.id,
+                stale.map(row => row.id),
+            ),
+        )
+        .run()
+    return stale.length
 }

@@ -414,10 +414,15 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                         signedGroup,
                         {
                             flow: 'swap',
-                            intentKey: {
-                                kind: 'swap',
-                                swapId: prepareResult.swapIdStr ?? '',
-                            },
+                            // No swapId means no stable identity — a blank key
+                            // would collide unrelated swaps, and the rebuild
+                            // guard skips them anyway.
+                            intentKey: prepareResult.swapIdStr
+                                ? {
+                                      kind: 'swap',
+                                      swapId: prepareResult.swapIdStr,
+                                  }
+                                : undefined,
                             sender: account?.address ?? quote.swapperAddress,
                         },
                     )

@@ -25,9 +25,8 @@ import {
     markSubmissionUnknown,
     recordSubmissionAttempt,
     resolveSubmissionAttempt,
-    type IntentKey,
-    type SubmissionFlow,
-} from '../../ledger'
+} from '../../db'
+import type { IntentKey, SubmissionFlow } from '../../ledger'
 import type {
     AlgokitClientInterface,
     EncodeSignedTransactionsFn,

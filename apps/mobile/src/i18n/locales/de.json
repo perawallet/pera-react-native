@@ -2542,8 +2542,8 @@
             "completed": "Abgeschlossen",
             "failed": "Fehlgeschlagen",
             "pending": "Ausstehend",
-            "raw_transaction": "Rohtransaktion",
-            "pending_verifying": "Ausstehend — wird überprüft"
+            "pending_verifying": "Ausstehend — wird überprüft",
+            "raw_transaction": "Rohtransaktion"
         },
         "list_item": {
             "send": "Senden",
@@ -2850,7 +2850,7 @@
             "quantum_fee_unsupported": "Quantum-Konten können noch nicht tauschen. Die Tauschgebühr wird von unseren Servern festgelegt und deckt die höhere Gebühr nicht ab, die eine Quantum-Signatur benötigt.",
             "quantum_multisig_unsupported": "Quantum-Konten können nicht aus einem Gemeinschaftskonto tauschen. Quantum-Schlüssel können nicht an der Multisignatur-Signierung teilnehmen.",
             "verifying_previous_title": "Vorheriger Versuch wird überprüft",
-            "verifying_previous_body": "Dein vorheriger Swap-Versuch wird noch überprüft. Versuche es erneut, sobald er abgeschlossen ist."
+            "verifying_previous_body": "Dein vorheriger Tauschversuch wird noch überprüft. Versuche es erneut, sobald er abgeschlossen ist."
         },
         "signing": {
             "source_name": "Tausch",

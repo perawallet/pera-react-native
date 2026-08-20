@@ -2567,8 +2567,8 @@
             "completed": "Concluída",
             "failed": "Falhou",
             "pending": "Pendente",
-            "raw_transaction": "Transação bruta",
-            "pending_verifying": "Pendente — verificando"
+            "pending_verifying": "Pendente — verificando",
+            "raw_transaction": "Transação bruta"
         },
         "list_item": {
             "send": "Enviar",

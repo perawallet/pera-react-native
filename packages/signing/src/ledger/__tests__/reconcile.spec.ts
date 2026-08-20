@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { eq } from 'drizzle-orm'
 import {
     runMigrations,
     migrations,
@@ -18,13 +19,16 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
-    recordSubmissionAttempt,
-    markSubmissionUnknown,
     reconcileOpenSubmissions,
     probeSubmissionAttempt,
     setSubmissionSettledHandler,
 } from '..'
-import { SubmissionAttemptsSchema } from '../schema'
+import {
+    recordSubmissionAttempt,
+    resolveSubmissionAttempt,
+    markSubmissionUnknown,
+} from '../../db'
+import { SubmissionAttemptsSchema } from '../../db/schema'
 import type { SubmissionAttempt } from '../types'
 import type { SubmissionProbeClient } from '../reconcile'
 
@@ -70,6 +74,10 @@ const makeClient = ({
         },
     },
 })
+
+/** algosdk's BaseHTTPClientError shape: a non-2xx carries `.response.status`. */
+const httpError = (status: number): Error =>
+    Object.assign(new Error(`HTTP ${status}`), { response: { status } })
 
 describe('submission reconciler', () => {
     let db: Database
@@ -180,12 +188,27 @@ describe('submission reconciler', () => {
         const outcome = await probeSubmissionAttempt(
             attemptFrom(id),
             makeClient({
-                pendingError: new Error('not found'),
-                indexerError: new Error('not found'),
+                pendingError: httpError(404),
+                indexerError: httpError(404),
                 lastRound: 101,
             }),
         )
         expect(outcome).toBe('failed')
+    })
+
+    it('leaves a row open when the indexer probe fails transiently', async () => {
+        const id = await record()
+        const outcome = await probeSubmissionAttempt(
+            attemptFrom(id),
+            makeClient({
+                pendingError: httpError(404),
+                // A 503 is not evidence of absence — treating it as one would
+                // fail a group that may well be on chain.
+                indexerError: httpError(503),
+                lastRound: 101,
+            }),
+        )
+        expect(outcome).toBeNull()
     })
 
     it('leaves a row open before lastValid expires with nothing found', async () => {
@@ -193,8 +216,8 @@ describe('submission reconciler', () => {
         const outcome = await probeSubmissionAttempt(
             attemptFrom(id),
             makeClient({
-                pendingError: new Error('not found'),
-                indexerError: new Error('not found'),
+                pendingError: httpError(404),
+                indexerError: httpError(404),
                 lastRound: 50,
             }),
         )
@@ -237,8 +260,8 @@ describe('submission reconciler', () => {
             db,
             getClient: () =>
                 makeClient({
-                    pendingError: new Error('not found'),
-                    indexerError: new Error('not found'),
+                    pendingError: httpError(404),
+                    indexerError: httpError(404),
                     lastRound: 101,
                 }),
         })
@@ -246,12 +269,29 @@ describe('submission reconciler', () => {
         expect(summary).toEqual({ probed: 1, confirmed: 0, failed: 1 })
     })
 
+    it('prunes stale resolved rows on each pass, even with nothing open', async () => {
+        const id = await record()
+        await resolveSubmissionAttempt({ db, id, status: 'confirmed' })
+        await db
+            .update(SubmissionAttemptsSchema)
+            .set({ createdAt: 0, resolvedAt: 0 })
+            .where(eq(SubmissionAttemptsSchema.id, id))
+            .run()
+
+        await reconcileOpenSubmissions({ db, retentionMs: 1 })
+
+        // Terminal rows retain their signed bytes; without a sweep the table
+        // grows for the life of the install.
+        const rows = await db.select().from(SubmissionAttemptsSchema).all()
+        expect(rows).toHaveLength(0)
+    })
+
     it('is a no-op when no open rows exist', async () => {
         const summary = await reconcileOpenSubmissions({ db })
         expect(summary).toEqual({ probed: 0, confirmed: 0, failed: 0 })
     })
 
-    it('leaves rows open when the probe itself fails', async () => {
+    it('leaves rows open when the chain is unreachable', async () => {
         const id = await record()
         const summary = await reconcileOpenSubmissions({
             db,
@@ -263,7 +303,9 @@ describe('submission reconciler', () => {
                 }),
         })
 
-        expect(summary).toEqual({ probed: 0, confirmed: 0, failed: 0 })
+        // Examined, but nothing settled: an unreachable node is not evidence
+        // that the group failed.
+        expect(summary).toEqual({ probed: 1, confirmed: 0, failed: 0 })
 
         const rows = await db.select().from(SubmissionAttemptsSchema).all()
         expect(rows[0]).toMatchObject({ status: 'submitted' })

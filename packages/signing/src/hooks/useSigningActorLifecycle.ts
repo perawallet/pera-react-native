@@ -24,7 +24,7 @@ import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
 import { useArbitraryDataSigner } from './useArbitraryDataSigner'
 import { useLocalKeyArc60Signer } from './useLocalKeyArc60Signer'
 import { useMultisigTransportAdapters } from './useMultisigTransportAdapters'
-import { useSigningStore } from '../store'
+import { useSigningStore, wasRestoredFromStorage } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
 import { type signingMachine } from '../machine/signingMachine'
 import { recordAppStateChange } from '../machine/children/appStateTracker'
@@ -428,6 +428,13 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             actorRefsMap.size,
         )
         if (!next) return
+        // Only a request restored from storage can be a re-presentation of a
+        // group that already reached algod; anything the user just initiated
+        // goes straight through, off the critical path of a ledger read.
+        if (!wasRestoredFromStorage(next.id)) {
+            createActorRef.current(next)
+            return
+        }
         void (async () => {
             // Re-presented after an app kill: if the ledger already records
             // the group as submitted, drop the request instead of inviting a

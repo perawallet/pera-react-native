@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import { useQuery, type QueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import type { Network } from '@perawallet/wallet-core-shared'
 import { getOpenSubmissionAttempts } from '@perawallet/wallet-core-signing'
 import { transactionQueryKeys } from './querykeys'
+
+/** Shared empty result: every transaction row subscribes to this hook. */
+const EMPTY_TX_IDS: ReadonlySet<string> = new Set()
 
 export type UseOpenSubmissionTxIdsQueryResult = {
     /** Txids with an open ledger row, empty until the query settles. */
@@ -45,18 +48,7 @@ export const useOpenSubmissionTxIdsQuery = ({
     })
 
     return {
-        openTxIds: query.data ?? new Set<string>(),
+        openTxIds: query.data ?? EMPTY_TX_IDS,
         isPending: query.isPending,
     }
-}
-
-/** Refreshes the open-txid badge set after the reconciler settles rows. */
-export const invalidateOpenSubmissionTxIdsQuery = (
-    queryClient: QueryClient,
-): void => {
-    void queryClient.invalidateQueries({
-        predicate: query =>
-            query.queryKey[0] === 'transactions' &&
-            query.queryKey[1] === 'open-submission-txids',
-    })
 }

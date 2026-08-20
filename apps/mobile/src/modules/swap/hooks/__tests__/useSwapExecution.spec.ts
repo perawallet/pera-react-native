@@ -624,6 +624,11 @@ describe('useSwapExecution', () => {
 
         expect(outcome).toEqual({ kind: 'success' })
         expect(mockGetOpenSubmissionAttemptsForIntent).not.toHaveBeenCalled()
+        // A blank swapId is no identity at all — recording `{swap:''}` would
+        // put unrelated swaps under one intent key.
+        expect(mockSubmitAndAutoRefreshOptions).toHaveBeenCalledWith(
+            expect.objectContaining({ intentKey: undefined }),
+        )
     })
 
     it('abandons a cancelled execution after prepare settles, before signing', async () => {

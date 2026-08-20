@@ -97,6 +97,17 @@ const initialState = {
     pendingSignRequests: [] as SignRequest[],
 }
 
+/**
+ * Ids of requests that came back from persisted storage on this launch. Only
+ * these can be re-presentations of a group that may already be on chain, so
+ * only these pay for the submission-ledger guard before an actor is created —
+ * a request the user just initiated stays on the synchronous path.
+ */
+const restoredRequestIds = new Set<string>()
+
+export const wasRestoredFromStorage = (id: string): boolean =>
+    restoredRequestIds.has(id)
+
 export const useSigningStore: UseBoundStore<
     WithPersist<StoreApi<SigningStore>, PartializedState>
 > = create<SigningStore>()(
@@ -151,6 +162,9 @@ export const useSigningStore: UseBoundStore<
                     state.pendingSignRequests = (
                         state.pendingSignRequests ?? []
                     ).filter(isResumableRehydratedRequest)
+                    state.pendingSignRequests.forEach(request =>
+                        restoredRequestIds.add(request.id),
+                    )
                 }
             },
         },

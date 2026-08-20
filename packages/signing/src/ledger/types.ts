@@ -27,6 +27,16 @@ export const OPEN_SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
     'unknown',
 ]
 
+/**
+ * Statuses under which the group's bytes may be — or provably are — on chain.
+ * `failed` is excluded on purpose: a node-rejected group is provably absent,
+ * so the user is entitled to approve a fresh attempt.
+ */
+export const LANDABLE_SUBMISSION_STATUSES: readonly SubmissionStatus[] = [
+    ...OPEN_SUBMISSION_STATUSES,
+    'confirmed',
+]
+
 export type SubmissionFlow =
     | 'pipeline'
     | 'rekey'

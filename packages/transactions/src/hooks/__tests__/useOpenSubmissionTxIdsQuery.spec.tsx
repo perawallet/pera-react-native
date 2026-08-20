@@ -14,10 +14,7 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import {
-    useOpenSubmissionTxIdsQuery,
-    invalidateOpenSubmissionTxIdsQuery,
-} from '../useOpenSubmissionTxIdsQuery'
+import { useOpenSubmissionTxIdsQuery } from '../useOpenSubmissionTxIdsQuery'
 
 const mockGetOpenSubmissionAttempts = vi.fn()
 
@@ -75,23 +72,18 @@ describe('useOpenSubmissionTxIdsQuery', () => {
         expect([...result.current.openTxIds]).toEqual([])
     })
 
-    it('invalidateOpenSubmissionTxIdsQuery refetches the open set', async () => {
-        mockGetOpenSubmissionAttempts.mockResolvedValue([{ txIds: ['TX-A'] }])
+    it('keeps the empty set identity stable across re-renders', async () => {
+        mockGetOpenSubmissionAttempts.mockReturnValue(new Promise(() => {}))
 
-        const { result } = renderHook(
+        const { result, rerender } = renderHook(
             () => useOpenSubmissionTxIdsQuery({ network: 'mainnet' }),
             { wrapper: wrapper(queryClient) },
         )
-        await waitFor(() =>
-            expect(result.current.openTxIds.has('TX-A')).toBe(true),
-        )
 
-        // A row settled — the next read no longer lists the txid.
-        mockGetOpenSubmissionAttempts.mockResolvedValue([])
-        invalidateOpenSubmissionTxIdsQuery(queryClient)
-
-        await waitFor(() =>
-            expect(result.current.openTxIds.has('TX-A')).toBe(false),
-        )
+        const first = result.current.openTxIds
+        rerender()
+        // Every transaction row subscribes to this hook; a fresh Set per
+        // render re-renders the whole list on any unrelated state change.
+        expect(result.current.openTxIds).toBe(first)
     })
 })

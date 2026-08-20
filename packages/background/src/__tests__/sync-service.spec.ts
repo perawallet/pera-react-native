@@ -126,7 +126,6 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     upsertTransactions: vi.fn(() => Promise.resolve()),
     invalidateTransactionQueries: vi.fn(),
     invalidateTransactionQueriesForAddresses: vi.fn(),
-    invalidateOpenSubmissionTxIdsQuery: vi.fn(),
     fetchAndPersistTransactions: vi.fn(() => Promise.resolve()),
 }))
 
@@ -273,6 +272,36 @@ describe('SyncService', () => {
         await flushMicrotasks()
 
         expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(1)
+
+        service.stop()
+        onlineManager.setOnline(wasOnline)
+    })
+
+    it('does not start a second tick while a reconcile pass is in flight', async () => {
+        const wasOnline = onlineManager.isOnline()
+        let releaseReconcile = (): void => {}
+        const inFlight = new Promise<void>(resolve => {
+            releaseReconcile = resolve
+        })
+        mockReconcileOpenSubmissions.mockImplementationOnce(async () => {
+            await inFlight
+            return { probed: 0, confirmed: 0, failed: 0 }
+        })
+
+        service.start()
+        await flushMicrotasks()
+        expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(1)
+
+        // A reconnect arriving mid-pass must find the tick already marked in
+        // progress — otherwise two passes probe the same rows and two syncAll
+        // runs overlap.
+        onlineManager.setOnline(false)
+        onlineManager.setOnline(true)
+        await flushMicrotasks()
+        expect(mockReconcileOpenSubmissions).toHaveBeenCalledTimes(1)
+
+        releaseReconcile()
+        await flushMicrotasks()
 
         service.stop()
         onlineManager.setOnline(wasOnline)

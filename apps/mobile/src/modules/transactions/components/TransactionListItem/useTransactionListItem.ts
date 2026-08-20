@@ -17,7 +17,10 @@ import {
     baseUnitsToDisplayUnits,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import { useOpenSubmissionTxIdsQuery } from '@perawallet/wallet-core-transactions'
+import {
+    useOpenSubmissionTxIdsQuery,
+    type TransactionHistoryItem,
+} from '@perawallet/wallet-core-transactions'
 import { formatNumber, type Nullable } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
@@ -26,7 +29,6 @@ import { getTransactionIconType } from './utils'
 import { type AmountDisplay } from './amounts'
 import { useTransactionAmounts } from './useTransactionAmounts'
 
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 
 type TFunction = ReturnType<typeof useLanguage>['t']

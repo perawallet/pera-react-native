@@ -25,9 +25,9 @@ import {
 import { setOnConfirmedHandler } from '../onConfirmedRegistry'
 import {
     getOpenSubmissionAttempts,
-    getOpenSubmissionAttemptsByTxIds,
-} from '../../../ledger'
-import { SubmissionAttemptsSchema } from '../../../ledger/schema'
+    getSubmissionAttemptsByTxIds,
+    SubmissionAttemptsSchema,
+} from '../../../db'
 import {
     AccountTypes,
     useAccountsStore,

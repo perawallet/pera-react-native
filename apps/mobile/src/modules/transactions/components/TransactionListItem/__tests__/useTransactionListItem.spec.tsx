@@ -12,7 +12,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+    QueryClient,
+    QueryClientProvider,
+    type UseQueryResult,
+} from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useTransactionListItem } from '../useTransactionListItem'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
@@ -21,7 +25,6 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import type { UseQueryResult } from '@tanstack/react-query'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),

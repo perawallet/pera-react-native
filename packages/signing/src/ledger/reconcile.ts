@@ -11,16 +11,33 @@
  */
 
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import {
+    isNotFoundError,
+    logger,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
-import { getOpenSubmissionAttempts, resolveSubmissionAttempt } from './repo'
+import {
+    getOpenSubmissionAttempts,
+    pruneResolvedSubmissionAttempts,
+    resolveSubmissionAttempt,
+} from '../db/repository'
 import { getSubmissionSettledHandler } from './settle-registry'
 import type { SubmissionAttempt } from './types'
 
 /** Bounded per pass — survivors keep matching and retry on the next tick. */
 const DEFAULT_PASS_LIMIT = 20
 
+/**
+ * The runtime AlgorandClient satisfies {@link SubmissionProbeClient} — the
+ * probe surface is a deliberate narrowing of it, so the cast is confined here
+ * rather than widened across the factory's signature.
+ */
+const defaultProbeClient = (network: Network): SubmissionProbeClient =>
+    getAlgorandClient(network) as unknown as SubmissionProbeClient
+
 export type ReconcileSummary = {
+    /** Rows this pass examined, whether or not they settled. */
     probed: number
     confirmed: number
     failed: number
@@ -51,6 +68,8 @@ export type SubmissionProbeClient = {
 export type ReconcileOpenSubmissionsParams = {
     db?: Database
     limit?: number
+    /** Age past which terminally-resolved rows are swept. */
+    retentionMs?: number
     /**
      * Injectable client factory (tests); defaults to the network-resolved
      * AlgorandClient from the blockchain package.
@@ -68,10 +87,17 @@ export type ReconcileOpenSubmissionsParams = {
 export const reconcileOpenSubmissions = async ({
     db,
     limit = DEFAULT_PASS_LIMIT,
-    getClient = getAlgorandClient as unknown as (
-        network: Network,
-    ) => SubmissionProbeClient,
+    retentionMs,
+    getClient = defaultProbeClient,
 }: ReconcileOpenSubmissionsParams = {}): Promise<ReconcileSummary> => {
+    // Sweep first: terminal rows retain their signed bytes, and a pass that
+    // finds nothing open is still the right cadence to keep the table bounded.
+    try {
+        await pruneResolvedSubmissionAttempts({ db, olderThanMs: retentionMs })
+    } catch (error) {
+        logger.warn('reconcile: retention sweep failed', { error })
+    }
+
     let open: SubmissionAttempt[]
     try {
         open = await getOpenSubmissionAttempts({ db, limit })
@@ -97,9 +123,9 @@ export const reconcileOpenSubmissions = async ({
                 client = getClient(network)
                 clients.set(network, client)
             }
+            summary.probed++
             const outcome = await probeSubmissionAttempt(attempt, client)
             if (outcome === null) continue
-            summary.probed++
             summary[outcome]++
             await resolveSubmissionAttempt({
                 db,
@@ -146,9 +172,14 @@ export const probeSubmissionAttempt = async (
     try {
         await client.client.indexer.lookupTransactionByID(txId).do()
         return 'confirmed'
-    } catch {
-        // Not indexed either. If the decoded validity window has fully
-        // passed, the group can never land — provably not on chain.
+    } catch (error) {
+        // Only a 404 is evidence of absence. A 5xx, timeout or rate-limit
+        // says nothing about the chain, and concluding "failed" from an
+        // unreachable indexer is exactly the false report this ledger exists
+        // to prevent — leave the row open for the next pass instead.
+        if (!isNotFoundError(error)) return null
+        // Not indexed. If the decoded validity window has fully passed, the
+        // group can never land — provably not on chain.
         if (
             attempt.lastValid !== null &&
             (await readLastRound(client)) > attempt.lastValid
