@@ -13,8 +13,8 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import {
-    isQuantumAccount,
-    useFindAccountByAddress,
+    AccountTypes,
+    useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -25,13 +25,14 @@ import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import { useIsQuantumAccountsEnabled } from '@hooks/useIsQuantumAccountsEnabled'
 import { useQuantumFeeExplainer } from '../useQuantumFeeExplainer'
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    isQuantumAccount: vi.fn(),
-    useFindAccountByAddress: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    encodeAlgorandAddress: vi.fn(),
+// Rekey resolution is what these cases exercise, so opt out of the unit
+// setup's blanket accounts mock and run against the real store and the real
+// signer lookup. `encodeAlgorandAddress` stays mocked (setup-wide) and is
+// pointed at the address each authAddr case needs.
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -42,14 +43,35 @@ vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
     useIsQuantumAccountsEnabled: vi.fn(),
 }))
 
-const quantumAccount = { address: 'QUANTUM_ADDR' } as unknown as WalletAccount
-const standardAccount = { address: 'STANDARD_ADDR' } as unknown as WalletAccount
+const QUANTUM_ADDRESS = 'QUANTUM_ADDR'
+const STANDARD_ADDRESS = 'STANDARD_ADDR'
+const FOREIGN_ADDRESS = 'FOREIGN_ADDR'
+
+const quantumAccount = (rekeyAddress?: string): WalletAccount =>
+    ({
+        id: 'quantum-id',
+        type: AccountTypes.quantum,
+        address: QUANTUM_ADDRESS,
+        keyPairId: 'quantum-key',
+        name: 'Quantum',
+        rekeyAddress,
+    }) as WalletAccount
+
+const standardAccount = (rekeyAddress?: string): WalletAccount =>
+    ({
+        id: 'standard-id',
+        type: AccountTypes.algo25,
+        address: STANDARD_ADDRESS,
+        keyPairId: 'standard-key',
+        name: 'Standard',
+        rekeyAddress,
+    }) as WalletAccount
 
 const buildTransaction = (
     overrides: Partial<PeraDisplayableTransaction> = {},
 ): PeraDisplayableTransaction =>
     ({
-        sender: 'SENDER_ADDR',
+        sender: QUANTUM_ADDRESS,
         ...overrides,
     }) as PeraDisplayableTransaction
 
@@ -58,51 +80,93 @@ describe('useQuantumFeeExplainer', () => {
         vi.clearAllMocks()
         ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(true)
         ;(useSigningPipeline as Mock).mockReturnValue({ resolved: null })
-        ;(useFindAccountByAddress as Mock).mockReturnValue(null)
-        ;(isQuantumAccount as unknown as Mock).mockImplementation(
-            (account: WalletAccount) => account === quantumAccount,
-        )
-        ;(encodeAlgorandAddress as Mock).mockReturnValue('ENCODED_AUTH_ADDR')
+        useAccountsStore.getState().setAccounts([])
     })
 
     it('returns true for a single-tx quantum signer', () => {
-        ;(useFindAccountByAddress as Mock).mockReturnValue(quantumAccount)
-        const transaction = buildTransaction()
+        useAccountsStore.getState().setAccounts([quantumAccount()])
 
-        const { result } = renderHook(() => useQuantumFeeExplainer(transaction))
+        const { result } = renderHook(() =>
+            useQuantumFeeExplainer(buildTransaction()),
+        )
 
-        expect(useFindAccountByAddress).toHaveBeenCalledWith('SENDER_ADDR')
         expect(result.current.isQuantumFee).toBe(true)
     })
 
     it('returns false for a single-tx standard signer', () => {
-        ;(useFindAccountByAddress as Mock).mockReturnValue(standardAccount)
-        const transaction = buildTransaction()
+        useAccountsStore.getState().setAccounts([standardAccount()])
 
-        const { result } = renderHook(() => useQuantumFeeExplainer(transaction))
+        const { result } = renderHook(() =>
+            useQuantumFeeExplainer(
+                buildTransaction({ sender: STANDARD_ADDRESS }),
+            ),
+        )
 
         expect(result.current.isQuantumFee).toBe(false)
     })
 
-    it('resolves the auth address for a tx rekeyed to a quantum account', () => {
-        ;(useFindAccountByAddress as Mock).mockReturnValue(quantumAccount)
+    it('resolves the ARC-0001 authAddr override to a quantum account', () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([quantumAccount(), standardAccount()])
         const publicKey = new Uint8Array([1, 2, 3])
-        const transaction = buildTransaction({
-            authAddr: { publicKey },
-        } as Partial<PeraDisplayableTransaction>)
+        ;(encodeAlgorandAddress as Mock).mockReturnValue(QUANTUM_ADDRESS)
 
-        const { result } = renderHook(() => useQuantumFeeExplainer(transaction))
+        const { result } = renderHook(() =>
+            useQuantumFeeExplainer(
+                buildTransaction({
+                    sender: STANDARD_ADDRESS,
+                    authAddr: { publicKey },
+                } as Partial<PeraDisplayableTransaction>),
+            ),
+        )
 
         expect(encodeAlgorandAddress).toHaveBeenCalledWith(publicKey)
-        expect(useFindAccountByAddress).toHaveBeenCalledWith(
-            'ENCODED_AUTH_ADDR',
-        )
         expect(result.current.isQuantumFee).toBe(true)
     })
 
+    it('returns false when a quantum sender is rekeyed to a standard account', () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([quantumAccount(STANDARD_ADDRESS), standardAccount()])
+
+        const { result } = renderHook(() =>
+            useQuantumFeeExplainer(buildTransaction()),
+        )
+
+        expect(result.current.isQuantumFee).toBe(false)
+    })
+
+    it('returns true when a standard sender is rekeyed to a quantum account', () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([standardAccount(QUANTUM_ADDRESS), quantumAccount()])
+
+        const { result } = renderHook(() =>
+            useQuantumFeeExplainer(
+                buildTransaction({ sender: STANDARD_ADDRESS }),
+            ),
+        )
+
+        expect(result.current.isQuantumFee).toBe(true)
+    })
+
+    it('returns false when the rekey target is not a local account', () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([quantumAccount(FOREIGN_ADDRESS)])
+
+        const { result } = renderHook(() =>
+            useQuantumFeeExplainer(buildTransaction()),
+        )
+
+        expect(result.current.isQuantumFee).toBe(false)
+    })
+
     it('returns true for a group total whose pipeline signer is quantum', () => {
+        useAccountsStore.getState().setAccounts([quantumAccount()])
         ;(useSigningPipeline as Mock).mockReturnValue({
-            resolved: { signerAccount: quantumAccount },
+            resolved: { signerAccount: quantumAccount() },
         })
 
         const { result } = renderHook(() => useQuantumFeeExplainer())
@@ -111,8 +175,22 @@ describe('useQuantumFeeExplainer', () => {
     })
 
     it('returns false for a group total whose pipeline signer is standard', () => {
+        useAccountsStore.getState().setAccounts([standardAccount()])
         ;(useSigningPipeline as Mock).mockReturnValue({
-            resolved: { signerAccount: standardAccount },
+            resolved: { signerAccount: standardAccount() },
+        })
+
+        const { result } = renderHook(() => useQuantumFeeExplainer())
+
+        expect(result.current.isQuantumFee).toBe(false)
+    })
+
+    it('returns false for a group total whose quantum signer is rekeyed to a standard account', () => {
+        useAccountsStore
+            .getState()
+            .setAccounts([quantumAccount(STANDARD_ADDRESS), standardAccount()])
+        ;(useSigningPipeline as Mock).mockReturnValue({
+            resolved: { signerAccount: quantumAccount(STANDARD_ADDRESS) },
         })
 
         const { result } = renderHook(() => useQuantumFeeExplainer())
@@ -122,10 +200,11 @@ describe('useQuantumFeeExplainer', () => {
 
     it('returns false when the feature flag is disabled', () => {
         ;(useIsQuantumAccountsEnabled as Mock).mockReturnValue(false)
-        ;(useFindAccountByAddress as Mock).mockReturnValue(quantumAccount)
-        const transaction = buildTransaction()
+        useAccountsStore.getState().setAccounts([quantumAccount()])
 
-        const { result } = renderHook(() => useQuantumFeeExplainer(transaction))
+        const { result } = renderHook(() =>
+            useQuantumFeeExplainer(buildTransaction()),
+        )
 
         expect(result.current.isQuantumFee).toBe(false)
     })
