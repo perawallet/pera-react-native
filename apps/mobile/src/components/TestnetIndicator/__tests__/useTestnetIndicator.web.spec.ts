@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { Networks, type Network } from '@perawallet/wallet-core-shared'
-import { useTestnetIndicator } from '../useTestnetIndicator'
+import { useTestnetIndicator } from '../useTestnetIndicator.web'
 
 const mockNetworkState = vi.hoisted(() => ({
     network: 'mainnet' as Network,
