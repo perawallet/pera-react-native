@@ -142,6 +142,17 @@ const ApprovalPlaceholder = (): React.JSX.Element => {
     )
 }
 
+// Same RootComponent-replacement contract as useNetworkStatusListener below:
+// the single owner of the on-network-switch invalidation lives in this shell.
+// It mounts INSIDE QueryProvider (and outside VaultGate, so it's never
+// unmounted by the lock) because useNetworkSwitchInvalidation reads the query
+// client from context since #1336 — calling it from the shell body crashed
+// every web surface at boot with "No QueryClient set".
+const NetworkSwitchInvalidation = (): null => {
+    useNetworkSwitchInvalidation()
+    return null
+}
+
 const ShellRouter = (): React.JSX.Element => {
     const { shellState, fcmToken } = useWebAppShell()
     const { t } = useLanguage()
@@ -289,11 +300,6 @@ const AppShellThemedRoot = (): React.JSX.Element => {
     // keeps whatever seed initNetworkStatus left.
     useNetworkStatusListener()
 
-    // Same RootComponent-replacement contract: the single owner of the
-    // on-network-switch invalidation must live in this shell too, since the
-    // imperative switch paths only restart() the sync service.
-    useNetworkSwitchInvalidation()
-
     return (
         <SafeAreaProvider>
             <GestureHandlerRootView style={rootStyles.root}>
@@ -306,6 +312,7 @@ const AppShellThemedRoot = (): React.JSX.Element => {
                             }}
                         >
                             <QueryProvider persister={persister}>
+                                <NetworkSwitchInvalidation />
                                 {/* VaultGate OUTERMOST inside providers: locked ⇒ nothing else renders */}
                                 <VaultGate>
                                     <ShellRouter />
