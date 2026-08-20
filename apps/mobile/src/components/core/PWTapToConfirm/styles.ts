@@ -25,7 +25,7 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
         height: TRACK_HEIGHT,
         borderRadius: theme.borderRadius.full,
         justifyContent: 'center',
-        opacity: isDisabled ? 0.6 : 1,
+        opacity: isDisabled ? 0.7 : 1,
     },
     background: {
         position: 'absolute',
@@ -55,7 +55,9 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
         paddingHorizontal: theme.spacing.xl,
     },
     labelText: {
-        color: theme.colors.textMain,
+        color: isDisabled
+            ? theme.colors.buttonPrimaryDisabledText
+            : theme.colors.buttonPrimaryText,
         width: '100%',
         textAlign: 'center',
     },

@@ -112,7 +112,9 @@ export const usePWTapToConfirm = ({
         clearDisarmTimer,
     ])
 
-    const idleColor = theme.colors.layerGrayLighter
+    const idleColor = isDisabled
+        ? theme.colors.buttonPrimaryDisabledBg
+        : theme.colors.buttonPrimaryBg
     const armedColor = theme.colors.buttonHelperPeraIcon
     const loadingColor = theme.colors.buttonHelperPeraIcon
     const confirmedColor = theme.colors.positive
