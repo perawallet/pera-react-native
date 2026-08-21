@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import {logger, type Nullable} from '@perawallet/wallet-core-shared'
-import {backupWebSocketUrl} from './webSocketUrl'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
+import { backupWebSocketUrl } from './webSocketUrl'
 import {
     BackupWebSocketMessageReject,
     BackupWebSocketMessageType,
