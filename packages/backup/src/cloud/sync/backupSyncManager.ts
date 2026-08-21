@@ -47,9 +47,9 @@ const PERIODIC_SYNC_MS = 5 * 60 * 1000
 export type BackupSyncManagerDeps = {
     importAccounts: SyncEngineDeps['importAccounts']
     /** Hook-bound 25-word phrase resolver, injected from RootComponent. */
-    resolveMnemonic?: SerializeMnemonicResolver
+    resolveMnemonic: SerializeMnemonicResolver
     /** Hook-bound HD seed/derived resolver, injected from RootComponent. */
-    resolveHd?: SerializeHdResolver
+    resolveHd: SerializeHdResolver
     socketFactory?: BackupSocketFactory
     onStateChange?: () => void
     /** Called after the server deletes the backup and local state is wiped, so

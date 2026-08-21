@@ -16,52 +16,86 @@ import {
     type SyncItemState,
     type SyncState,
 } from '../models'
-import type { LocalItem } from './types'
+import type { LocalItem, LocalSnapshot } from './types'
 
-/** Pure: returns a new SyncState with isDirty / pendingDelete / localContentHash
- *  / localUpdatedAt derived from the current local items. `now` is injected for
- *  determinism in tests. */
-export const reconcile = (
-    state: SyncState,
+type SyncItems = Record<string, SyncItemState>
+
+const trackNewItem = (item: LocalItem, now: number): SyncItemState => ({
+    type: item.type,
+    knownVer: 0,
+    baseVer: 0,
+    isDirty: true,
+    status: BackupItemStatus.ACTIVE,
+    lastRemoteHash: null,
+    localContentHash: item.contentHash,
+    localUpdatedAt: now,
+})
+
+const markChanged = (
+    tracked: SyncItemState,
+    item: LocalItem,
+    now: number,
+): SyncItemState => ({
+    ...tracked,
+    isDirty: true,
+    localContentHash: item.contentHash,
+    localUpdatedAt: now,
+})
+
+const hasChanged = (tracked: SyncItemState, item: LocalItem): boolean =>
+    tracked.localContentHash !== item.contentHash
+
+const withLocalChanges = (
+    items: SyncItems,
     localItems: LocalItem[],
     now: number,
+): SyncItems => {
+    const next: SyncItems = { ...items }
+    for (const item of localItems) {
+        const tracked = next[item.key]
+        if (tracked?.status === BackupItemStatus.IGNORED) continue
+
+        if (!tracked) next[item.key] = trackNewItem(item, now)
+        else if (hasChanged(tracked, item))
+            next[item.key] = markChanged(tracked, item, now)
+    }
+    return next
+}
+
+const isDeletedLocally = (
+    tracked: SyncItemState,
+    key: string,
+    localKeys: Set<string>,
+): boolean =>
+    tracked.type === BackupItemType.ACCOUNT &&
+    tracked.status === BackupItemStatus.ACTIVE &&
+    !localKeys.has(key)
+
+const withPendingDeletes = (
+    items: SyncItems,
+    localKeys: Set<string>,
+): SyncItems => {
+    const next: SyncItems = { ...items }
+    for (const [key, tracked] of Object.entries(next)) {
+        if (isDeletedLocally(tracked, key, localKeys))
+            next[key] = { ...tracked, pendingDelete: true }
+    }
+    return next
+}
+
+/** Pure: returns a new SyncState with isDirty / pendingDelete / localContentHash
+ *  / localUpdatedAt derived from the current local items. */
+export const reconcile = (
+    state: SyncState,
+    local: LocalSnapshot,
+    now: number,
 ): SyncState => {
-    const items: Record<string, SyncItemState> = { ...state.items }
-    const localByKey = new Map(localItems.map(i => [i.key, i]))
+    const items = withLocalChanges(state.items, local.items, now)
 
-    // 1. Local additions / changes -> dirty.
-    for (const local of localItems) {
-        const existing = items[local.key]
-        if (existing && existing.status === BackupItemStatus.IGNORED) continue
+    // An unreadable secret serializes to nothing, which is the same signal as a
+    // user deletion — so deleting on an incomplete pass wipes the backup.
+    if (local.skipped > 0) return { ...state, items }
 
-        if (!existing) {
-            items[local.key] = {
-                type: local.type,
-                knownVer: 0,
-                baseVer: 0,
-                isDirty: true,
-                status: BackupItemStatus.ACTIVE,
-                lastRemoteHash: null,
-                localContentHash: local.contentHash,
-                localUpdatedAt: now,
-            }
-        } else if (existing.localContentHash !== local.contentHash) {
-            items[local.key] = {
-                ...existing,
-                isDirty: true,
-                localContentHash: local.contentHash,
-                localUpdatedAt: now,
-            }
-        }
-    }
-
-    // 2. Local deletions -> pending-delete for ACTIVE account items.
-    for (const [key, item] of Object.entries(items)) {
-        if (item.type !== BackupItemType.ACCOUNT) continue
-        if (item.status !== BackupItemStatus.ACTIVE) continue
-        if (localByKey.has(key)) continue
-        items[key] = { ...item, pendingDelete: true }
-    }
-
-    return { ...state, items }
+    const localKeys = new Set(local.items.map(item => item.key))
+    return { ...state, items: withPendingDeletes(items, localKeys) }
 }

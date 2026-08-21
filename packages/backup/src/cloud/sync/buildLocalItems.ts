@@ -12,7 +12,12 @@
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { canonicalJson, contentHash } from './canonicalize'
-import type { LocalItem, SerializedAccount, SerializedItem } from './types'
+import type {
+    LocalItem,
+    LocalSnapshot,
+    SerializedAccount,
+    SerializedItem,
+} from './types'
 
 /** Content hash ignores `updatedAt` so a pure timestamp bump is not "dirty". */
 const hashOf = (item: SerializedItem): string => {
@@ -31,14 +36,18 @@ const withHash = (item: SerializedItem): LocalItem => ({
 export const buildLocalItems = async (
     accounts: WalletAccount[],
     serializeAccount: (a: WalletAccount) => Promise<SerializedAccount | null>,
-): Promise<LocalItem[]> => {
+): Promise<LocalSnapshot> => {
     // Keyed map dedupes shared items (the hdSeed secret repeats across every
     // child of a seed with identical content). Last write wins; safe because
     // duplicate keys only ever carry byte-identical payloads.
     const byKey = new Map<string, LocalItem>()
+    let skipped = 0
     for (const account of accounts) {
         const serialized = await serializeAccount(account)
-        if (serialized === null) continue
+        if (serialized === null) {
+            skipped += 1
+            continue
+        }
         const items: (SerializedItem | null)[] = [
             serialized.address,
             serialized.secrets,
@@ -50,5 +59,5 @@ export const buildLocalItems = async (
             byKey.set(local.key, local)
         }
     }
-    return [...byKey.values()]
+    return { items: [...byKey.values()], skipped }
 }

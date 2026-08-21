@@ -18,7 +18,7 @@ import {
     createEmptySyncState,
 } from '../../models'
 import { reconcile } from '../reconcile'
-import type { LocalItem } from '../types'
+import type { LocalItem, LocalSnapshot } from '../types'
 
 const NOW = 1_000
 const item = (key: string, hash: string): LocalItem => ({
@@ -27,12 +27,16 @@ const item = (key: string, hash: string): LocalItem => ({
     contentHash: hash,
     payload: { type: 'watch', address: key.split('/')[1] } as never,
 })
+const snapshot = (items: LocalItem[], skipped = 0): LocalSnapshot => ({
+    items,
+    skipped,
+})
 
 describe('reconcile', () => {
     it('marks a brand-new local item dirty and stamps localUpdatedAt', () => {
         const next = reconcile(
             createEmptySyncState('b'),
-            [item('accounts/A', 'h1')],
+            snapshot([item('accounts/A', 'h1')]),
             NOW,
         )
         expect(next.items['accounts/A']).toMatchObject({
@@ -55,7 +59,7 @@ describe('reconcile', () => {
             localContentHash: 'h1',
             localUpdatedAt: 1,
         }
-        const next = reconcile(base, [item('accounts/A', 'h1')], NOW)
+        const next = reconcile(base, snapshot([item('accounts/A', 'h1')]), NOW)
         expect(next.items['accounts/A'].isDirty).toBe(false)
         expect(next.items['accounts/A'].localUpdatedAt).toBe(1)
     })
@@ -72,7 +76,7 @@ describe('reconcile', () => {
             localContentHash: 'OLD',
             localUpdatedAt: 1,
         }
-        const next = reconcile(base, [item('accounts/A', 'NEW')], NOW)
+        const next = reconcile(base, snapshot([item('accounts/A', 'NEW')]), NOW)
         expect(next.items['accounts/A']).toMatchObject({
             isDirty: true,
             localContentHash: 'NEW',
@@ -92,8 +96,24 @@ describe('reconcile', () => {
             localContentHash: 'h',
             localUpdatedAt: 1,
         }
-        const next = reconcile(base, [], NOW)
+        const next = reconcile(base, snapshot([]), NOW)
         expect(next.items['accounts/GONE'].pendingDelete).toBe(true)
+    })
+
+    it('does not flag pending-delete when an account could not be serialized', () => {
+        const base = createEmptySyncState('b')
+        base.items['accounts/GONE'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 2,
+            baseVer: 2,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: 'h',
+            localUpdatedAt: null,
+        }
+        const next = reconcile(base, snapshot([], 1), NOW)
+        expect(next.items['accounts/GONE'].pendingDelete).toBeUndefined()
     })
 
     it('never marks an IGNORED item dirty or pending-delete', () => {
@@ -108,7 +128,7 @@ describe('reconcile', () => {
             localContentHash: 'h',
             localUpdatedAt: 1,
         }
-        const next = reconcile(base, [], NOW)
+        const next = reconcile(base, snapshot([]), NOW)
         expect(next.items['accounts/IG'].isDirty).toBe(false)
         expect(next.items['accounts/IG'].pendingDelete).toBeFalsy()
     })

@@ -37,11 +37,12 @@ const fakeSerialize = async (account: {
 
 describe('buildLocalItems', () => {
     it('produces one item per serialized key with a content hash excluding updatedAt', async () => {
-        const items = await buildLocalItems(
+        const { items, skipped } = await buildLocalItems(
             [{ address: 'A' } as never],
             fakeSerialize,
         )
         expect(items).toHaveLength(1)
+        expect(skipped).toBe(0)
         expect(items[0].key).toBe('accounts/A')
         const expected = contentHash(
             canonicalJson({ type: 'watch', address: 'A' }),
@@ -49,10 +50,13 @@ describe('buildLocalItems', () => {
         expect(items[0].contentHash).toBe(expected)
     })
 
-    it('skips accounts the serializer returns null for', async () => {
+    it('counts accounts the serializer returns null for instead of silently dropping them', async () => {
         expect(
-            await buildLocalItems([{ id: 'x' } as never], fakeSerialize),
-        ).toEqual([])
+            await buildLocalItems(
+                [{ address: 'A' }, { id: 'x' }] as never,
+                fakeSerialize,
+            ),
+        ).toMatchObject({ skipped: 1 })
     })
 
     it('emits extraItems and dedupes a shared key across HD children', async () => {
@@ -83,7 +87,7 @@ describe('buildLocalItems', () => {
                 extraItems: [seedSecret],
             }
         }
-        const items = await buildLocalItems(
+        const { items } = await buildLocalItems(
             [{ address: 'A' }, { address: 'B' }] as never,
             serialize as never,
         )

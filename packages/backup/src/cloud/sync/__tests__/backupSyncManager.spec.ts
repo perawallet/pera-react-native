@@ -129,6 +129,8 @@ const makeDeps = () => ({
         skippedDuplicate: 0,
         failed: [],
     })),
+    resolveMnemonic: vi.fn(async () => null),
+    resolveHd: vi.fn(async () => null),
 })
 
 // ─── tests ───────────────────────────────────────────────────────────────────

@@ -69,6 +69,11 @@ export type SerializeHdResolver = (account: HDWalletAccount) => Promise<{
 /** A local item with its content hash (sha256 of canonical payload sans updatedAt). */
 export type LocalItem = SerializedItem & { contentHash: string }
 
+export type LocalSnapshot = {
+    items: LocalItem[]
+    skipped: number
+}
+
 export type ImportSummary = {
     imported: number
     skippedDuplicate: number

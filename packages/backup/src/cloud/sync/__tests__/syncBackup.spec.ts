@@ -127,4 +127,32 @@ describe('syncBackup', () => {
             syncBackup(deps(), createEmptySyncState('b')),
         ).rejects.toThrow('network')
     })
+
+    it('does NOT delete a synced account when its serialization fails', async () => {
+        fetchManifest.mockResolvedValue({
+            backupGlobalHash: 'g3',
+            lastSeq: 5,
+            items: {},
+        })
+        fetchDelta.mockResolvedValue([])
+        const state = createEmptySyncState('b')
+        state.items['accounts/W'] = {
+            type: BackupItemType.ACCOUNT,
+            knownVer: 1,
+            baseVer: 1,
+            isDirty: false,
+            status: BackupItemStatus.ACTIVE,
+            lastRemoteHash: 'r',
+            localContentHash: 'previously-synced',
+            localUpdatedAt: null,
+        }
+
+        const next = await syncBackup(
+            { ...deps(), serializeAccount: async () => null },
+            state,
+        )
+
+        expect(deleteItem).not.toHaveBeenCalled()
+        expect(next.items['accounts/W'].pendingDelete).toBeUndefined()
+    })
 })

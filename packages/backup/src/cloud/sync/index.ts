@@ -46,6 +46,7 @@ export type {
     SerializedItem,
     SerializedAccount,
     LocalItem,
+    LocalSnapshot,
     SyncEngineDeps,
     SyncImportFn,
     ImportSummary,

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { logger } from '@perawallet/wallet-core-shared'
 import {
     batchUpsertItems,
     deleteItem,
@@ -37,11 +38,16 @@ export const syncBackup = async (
     now: number = Date.now(),
 ): Promise<SyncState> => {
     // 1. Reconcile local first so the short-circuit below is accurate.
-    const localItems = await buildLocalItems(
+    const local = await buildLocalItems(
         deps.listAccounts(),
         deps.serializeAccount,
     )
-    let next = reconcile(state, localItems, now)
+    if (local.skipped > 0) {
+        logger.warn('syncBackup: accounts skipped, deletions deferred', {
+            skipped: local.skipped,
+        })
+    }
+    let next = reconcile(state, local, now)
 
     // 2. Manifest short-circuit.
     const manifest = await fetchManifest(
@@ -80,7 +86,7 @@ export const syncBackup = async (
     // 5. Push local changes (use the freshly-built local items).
     next = await pushDirty({
         state: next,
-        localItems,
+        localItems: local.items,
         deps: {
             network: deps.network,
             backupId: deps.backupId,
