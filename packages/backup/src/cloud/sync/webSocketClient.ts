@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { logger, type Nullable } from '@perawallet/wallet-core-shared'
-import { backupWebSocketUrl } from './webSocketUrl'
+import {logger, type Nullable} from '@perawallet/wallet-core-shared'
+import {backupWebSocketUrl} from './webSocketUrl'
 import {
     BackupWebSocketMessageReject,
     BackupWebSocketMessageType,
@@ -146,15 +146,26 @@ export class BackupWebSocketClient {
         }
 
         const { message } = parsed
-        if (message.type === BackupWebSocketMessageType.ITEMS_UPDATED) {
-            this.params.onEvent({
-                kind: 'itemsUpdated',
-                fromSeq: message.from_seq,
-                toSeq: message.to_seq,
-            })
-            return
+        switch (message.type) {
+            case BackupWebSocketMessageType.ITEMS_UPDATED: {
+                this.params.onEvent({
+                    kind: 'itemsUpdated',
+                    fromSeq: message.from_seq,
+                    toSeq: message.to_seq,
+                })
+                return
+            }
+            case BackupWebSocketMessageType.BACKUP_DELETED: {
+                this.params.onEvent({ kind: 'backupDeleted' })
+                return
+            }
+            // `backupDeleted` wipes the on-device keys, so a new message type
+            // must never reach it by falling through. Adding one to the schema
+            // breaks this line until it is handled explicitly.
+            default: {
+                return message
+            }
         }
-        this.params.onEvent({ kind: 'backupDeleted' })
     }
 
     private handleClose(code: number | null, _reason: string | null): void {
