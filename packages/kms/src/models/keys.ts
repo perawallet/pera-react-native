@@ -32,15 +32,38 @@ export type AccessControl = {
  */
 export const algo25SignKeyId = (seedId: string): string => `${seedId}-ed25519`
 
+export const PQ_DERIVATION_LEGACY = 'legacy'
+export const PQ_DERIVATION_CANONICAL = 'pqk1'
+
+/**
+ * Which entropy→Falcon-keygen-seed mapping produced a quantum child.
+ *
+ * `legacy` fed Falcon the raw algo25 entropy, which is not what
+ * `algokey pq` does, so the mnemonic restores a different account elsewhere.
+ * `pqk1` is the canonical `SHA512_256("PQK" || scheme || entropy)`. Both are
+ * supported permanently: a legacy address may be the `auth-addr` of accounts
+ * rekeyed to it, so its key can never be retired. See PERA-4972.
+ */
+export type PQDerivation =
+    | typeof PQ_DERIVATION_LEGACY
+    | typeof PQ_DERIVATION_CANONICAL
+
 /**
  * Deterministic keystore id for the quantum signing child of a quantum seed.
- * Deliberately scheme-agnostic (`-quantum`, not `-falcon`): accounts persist
- * this id as `keyPairId`, so the concrete algorithm must not be baked into
- * it. The algorithm lives on the keystore entries instead (seed
- * `metadata.scheme`, child entry `type` — see {@link FALCON_CHILD_KEY_TYPE}),
- * so a future scheme swap needs no keyPairId migration.
+ *
+ * Scheme-agnostic (`-quantum`, not `-falcon`) because accounts persist this as
+ * `keyPairId` and a future scheme swap must not need a `keyPairId` migration.
+ * It is NOT derivation-agnostic: one seed can host both a legacy and a
+ * canonical child, so the derivation is part of the id. `legacy` keeps the
+ * historical bare form — existing `keyPairId`s must keep resolving.
  */
-export const quantumSignKeyId = (seedId: string): string => `${seedId}-quantum`
+export const quantumSignKeyId = (
+    seedId: string,
+    derivation: PQDerivation,
+): string =>
+    derivation === PQ_DERIVATION_LEGACY
+        ? `${seedId}-quantum`
+        : `${seedId}-quantum-${derivation}`
 
 /**
  * Keystore entry `type` for the quantum signing child — this (not the id)

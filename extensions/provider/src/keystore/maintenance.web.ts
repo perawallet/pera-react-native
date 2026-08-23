@@ -12,6 +12,7 @@
 
 import type { Key } from '@algorandfoundation/keystore-core'
 import type { QuantumMaterialRepairResult } from './repairQuantumMaterial'
+import type { PQDerivation } from './pqDerivation'
 
 /**
  * Web build of the keystore maintenance surface. Both operations are
@@ -34,5 +35,9 @@ export const readPersistedKeys = (): Key[] => []
 
 export const runMaterialRepair = async (_deps: {
     keys: () => Key[]
-    regenerate: (childId: string, parentKeyId: string) => Promise<void>
+    regenerate: (
+        childId: string,
+        parentKeyId: string,
+        derivation: PQDerivation,
+    ) => Promise<void>
 }): Promise<QuantumMaterialRepairResult> => ({ repaired: 0, failed: 0 })

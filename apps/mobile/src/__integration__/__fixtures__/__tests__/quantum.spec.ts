@@ -15,9 +15,13 @@
 import { describe, expect, it } from 'vitest'
 import { seedFromMnemonic } from 'algosdk'
 import { getPQProvider } from '@perawallet/wallet-core-kms'
-import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
+import {
+    deriveQuantumAddress,
+    derivePQKeygenSeed,
+} from '@perawallet/wallet-core-blockchain'
 import {
     QUANTUM_TEST_ADDRESS,
+    QUANTUM_TEST_CANONICAL_ADDRESS,
     QUANTUM_TEST_MNEMONIC,
     QUANTUM_TEST_PUBLIC_KEY,
 } from '../quantum'
@@ -25,6 +29,14 @@ import {
 describe('quantumAccountFixtures', () => {
     it('exposes a 25-word mnemonic', () => {
         expect(QUANTUM_TEST_MNEMONIC.split(' ')).toHaveLength(25)
+    })
+
+    it('matches the externally pinned canonical address, not just its own re-derivation', () => {
+        // Every other assertion in this file re-derives through the same
+        // provider as the fixture itself, so a regression in that provider
+        // would pass all of them. This is the one check with an independent
+        // anchor — see QUANTUM_TEST_CANONICAL_ADDRESS in ../quantum.ts.
+        expect(QUANTUM_TEST_ADDRESS).toBe(QUANTUM_TEST_CANONICAL_ADDRESS)
     })
 
     it('derives a valid 58-char Algorand address deterministically', () => {
@@ -42,7 +54,9 @@ describe('quantumAccountFixtures', () => {
         const seed = seedFromMnemonic(QUANTUM_TEST_MNEMONIC)
 
         // Act
-        const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
+        const { publicKey } = getPQProvider().generateKeypairFromSeed(
+            derivePQKeygenSeed(seed),
+        )
 
         // Assert
         expect(new Uint8Array(publicKey)).toEqual(

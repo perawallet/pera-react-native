@@ -20,6 +20,7 @@ import {
     repairQuantumMaterial,
     type QuantumMaterialRepairResult,
 } from './repairQuantumMaterial'
+import type { PQDerivation } from './pqDerivation'
 
 /**
  * One-off repairs of the on-disk keystore, and the only place in the provider
@@ -59,7 +60,11 @@ export const readPersistedKeys = (): Key[] =>
 /** Binds {@link repairQuantumMaterial} to the live keystore's storage. */
 export const runMaterialRepair = (deps: {
     keys: () => Key[]
-    regenerate: (childId: string, parentKeyId: string) => Promise<void>
+    regenerate: (
+        childId: string,
+        parentKeyId: string,
+        derivation: PQDerivation,
+    ) => Promise<void>
 }): Promise<QuantumMaterialRepairResult> =>
     repairQuantumMaterial({
         keys: deps.keys,

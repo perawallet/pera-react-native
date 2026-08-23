@@ -125,6 +125,20 @@ vi.mock('@modules/prompts/components/BannerPrompt', () => ({
     BannerPrompt: () => <div data-testid='banner-prompt'>banner-prompt</div>,
 }))
 
+// Same reason as the banner surface above: part of the container's import
+// graph now, stubbed so this file stays about the mount point.
+vi.mock('@modules/prompts/hooks/useLegacyQuantumPrompt', () => ({
+    useLegacyQuantumPrompt: () => ({
+        isDue: false,
+        shouldUseDependentAwareCopy: false,
+    }),
+}))
+vi.mock('@modules/prompts/components/LegacyQuantumPrompt', () => ({
+    LegacyQuantumPrompt: () => (
+        <div data-testid='legacy-quantum-prompt'>legacy-quantum-prompt</div>
+    ),
+}))
+
 // AutoLockGuard's own JSX (the display-hiding wrapper + LockOverlayProvider)
 // stays real; only its two data-fetching hooks are stubbed so the guard's
 // active/inactive state is directly controllable per test.

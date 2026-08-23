@@ -12,7 +12,10 @@
 
 import { describe, test, expect } from 'vitest'
 import { seedFromMnemonic } from 'algosdk'
-import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
+import {
+    deriveQuantumAddress,
+    derivePQKeygenSeed,
+} from '@perawallet/wallet-core-blockchain'
 import { algo25SeedToIndices } from '../algo25-utils'
 import { mnemonicIndexToWord } from '../mnemonic-indices'
 import { getPQProvider } from '../pq'
@@ -42,7 +45,9 @@ describe('quantum integration', () => {
     test('same mnemonic yields the same quantum public key and address across independent derivations', () => {
         const deriveOnce = (): { publicKey: Uint8Array; address: string } => {
             const seed = seedFromMnemonic(TEST_MNEMONIC)
-            const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
+            const { publicKey } = getPQProvider().generateKeypairFromSeed(
+                derivePQKeygenSeed(seed),
+            )
             return { publicKey, address: deriveQuantumAddress(publicKey) }
         }
 

@@ -39,6 +39,8 @@ import {
     BannerPrompt,
     BANNER_PROMPT_ID,
 } from '@modules/prompts/components/BannerPrompt'
+import { useLegacyQuantumPrompt } from '@modules/prompts/hooks/useLegacyQuantumPrompt'
+import { LegacyQuantumPrompt } from '@modules/prompts/components/LegacyQuantumPrompt'
 
 export type Prompt = {
     id: string
@@ -88,6 +90,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
         state => state.setPresentationHeld,
     )
     const bannerPrompt = useBannerPrompt()
+    const legacyQuantumPrompt = useLegacyQuantumPrompt()
     const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>(undefined)
     const dismissedIds = usePromptStore(state => state.dismissedIds)
     const dismiss = usePromptStore(state => state.dismiss)
@@ -128,12 +131,23 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                 component: PinSecurityPrompt,
                 isDue: !getPreference(UserPreferences._securityPinSetupPrompt),
             },
+            {
+                id: UserPreferences._legacyQuantumNoticePrompt,
+                priority: PromptPriority.legacyQuantumNotice,
+                isGate: false,
+                component: LegacyQuantumPrompt,
+                isDue:
+                    !getPreference(
+                        UserPreferences._legacyQuantumNoticePrompt,
+                    ) && legacyQuantumPrompt.isDue,
+            },
         ],
         [
             needsTermsAcceptance,
             getPreference,
             bannerPrompt.isDue,
             bannerPrompt.isForced,
+            legacyQuantumPrompt.isDue,
         ],
     )
 

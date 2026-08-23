@@ -28,6 +28,14 @@ export default defineConfig({
     resolve: {
         conditions: ['default'],
         alias: {
+            '@perawallet/wallet-core-blockchain/test-handlers': path.resolve(
+                __dirname,
+                '../blockchain/src/test-handlers.ts',
+            ),
+            '@perawallet/wallet-core-blockchain': path.resolve(
+                __dirname,
+                '../blockchain/src/index.ts',
+            ),
             '@perawallet/wallet-extension-provider': path.resolve(
                 __dirname,
                 '../../extensions/provider/src/index.ts',

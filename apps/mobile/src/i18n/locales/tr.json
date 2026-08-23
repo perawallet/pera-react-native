@@ -280,6 +280,15 @@
             "learn_more": "ASA doğrulaması hakkında daha fazla bilgi al"
         }
     },
+    "accounts": {
+        "legacyQuantum": {
+            "title": "Quantum hesabın hakkında",
+            "body": "Ne yazık ki 7.1.0 sürümünde, Quantum hesapları için adresin 25 kelimeden türetilme biçiminde bir sorun tespit ettik; bu da adresi diğer araçlarla uyumsuz hale getiriyor.\n\nVarlıkların güvende ve hesabın normal şekilde çalışıyor.\n\nAncak uyumluluk sorunlarını önlemek için, kurtarma ifadenin her yerde çalışması amacıyla yeni bir Quantum hesabı oluşturup varlıklarını taşımanı öneririz.\n\nYaşanan aksaklık için özür diler, anlayışın için teşekkür ederiz.",
+            "bodyWithDependents": "Ne yazık ki 7.1.0 sürümünde, Quantum hesapları için adresin 25 kelimeden türetilme biçiminde bir sorun tespit ettik; bu da adresi diğer araçlarla uyumsuz hale getiriyor.\n\nVarlıkların güvende ve hesabın normal şekilde çalışıyor.\n\nBaşka bir hesap bu hesaba rekey yapılmış durumda, bu yüzden şimdilik bu hesabı kullanmayı bırakma — şu anda o hesabın tek imzalayıcısı bu hesap. Ancak uyumluluk sorunlarını önlemek için, diğer hesabın rekey işlemi tamamlandıktan sonra yeni bir Quantum hesabı oluşturup varlıklarını taşımanı öneririz, böylece kurtarma ifaden her yerde çalışır.\n\nYaşanan aksaklık için özür diler, anlayışın için teşekkür ederiz.",
+            "markerLabel": "Bu Quantum hesabı hakkında",
+            "dismiss": "Anladım"
+        }
+    },
     "account_details": {
         "assets": {
             "title": "Varlıklar",

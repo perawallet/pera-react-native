@@ -12,25 +12,53 @@
 
 import { describe, test, expect } from 'vitest'
 import {
-    algo25SignKeyId,
     FALCON_CHILD_KEY_TYPE,
+    PQ_DERIVATION_CANONICAL,
+    PQ_DERIVATION_LEGACY,
     quantumSignKeyId,
 } from '../keys'
 
+describe('PQDerivation constants', () => {
+    // `extensions/provider` cannot import these (workspace cycle) so it
+    // declares its own copies of the literals. Pinning the values here, not
+    // just the id shapes below, is what keeps that duplication safe — a
+    // drifted literal on either side would silently break the provider's
+    // ability to recognise legacy vs. canonical children.
+    test('legacy derivation is the literal "legacy"', () => {
+        expect(PQ_DERIVATION_LEGACY).toBe('legacy')
+    })
+
+    test('canonical derivation is the literal "pqk1"', () => {
+        expect(PQ_DERIVATION_CANONICAL).toBe('pqk1')
+    })
+})
+
 describe('quantumSignKeyId', () => {
-    test('appends the scheme-agnostic -quantum suffix to the seed id', () => {
-        expect(quantumSignKeyId('seed-1')).toBe('seed-1-quantum')
+    test('legacy derivation keeps the historical id', () => {
+        // Existing accounts persist this exact string as `keyPairId`. Changing
+        // it orphans every quantum account created before PERA-4972.
+        expect(quantumSignKeyId('seed-1', PQ_DERIVATION_LEGACY)).toBe(
+            'seed-1-quantum',
+        )
     })
 
-    test('never bakes the concrete algorithm into the persisted id', () => {
-        // account.keyPairId persists this id — a future scheme swap must not
-        // require a keyPairId migration.
-        expect(quantumSignKeyId('seed-1')).not.toContain('falcon')
+    test('canonical derivation gets a distinct id', () => {
+        expect(quantumSignKeyId('seed-1', PQ_DERIVATION_CANONICAL)).toBe(
+            'seed-1-quantum-pqk1',
+        )
     })
 
-    test('sits alongside algo25SignKeyId with the same shape', () => {
-        expect(algo25SignKeyId('seed-1')).toBe('seed-1-ed25519')
-        expect(quantumSignKeyId('seed-1')).toBe('seed-1-quantum')
+    test('the two derivations never collide for one seed', () => {
+        // A single seed hosts both children once dual-derivation import lands.
+        expect(quantumSignKeyId('seed-1', PQ_DERIVATION_LEGACY)).not.toBe(
+            quantumSignKeyId('seed-1', PQ_DERIVATION_CANONICAL),
+        )
+    })
+
+    test('does not name the signature algorithm', () => {
+        expect(
+            quantumSignKeyId('seed-1', PQ_DERIVATION_CANONICAL),
+        ).not.toContain('falcon')
     })
 })
 

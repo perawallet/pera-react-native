@@ -129,7 +129,19 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     type: accountType,
                 })
 
-                if (result.type === 'hdWallet' && 'walletKeyId' in result) {
+                if (Array.isArray(result)) {
+                    // Quantum import: one 25-word phrase backs up every
+                    // derivation that got minted, so mark them all complete;
+                    // the first entry (canonical when it was minted, else
+                    // the sole legacy import) carries the flow forward.
+                    result.forEach(account => markBackupComplete(account))
+                    navigation.replace('SearchAccounts', {
+                        account: result[0],
+                    })
+                } else if (
+                    result.type === 'hdWallet' &&
+                    'walletKeyId' in result
+                ) {
                     navigation.replace('SearchAccounts', {
                         mode: 'import',
                         walletKeyId: result.walletKeyId,

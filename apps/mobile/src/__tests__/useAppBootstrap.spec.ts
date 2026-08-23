@@ -96,6 +96,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     algorandSafeQuerySerialize: (value: unknown) => value,
     algorandSafeQueryParse: (value: unknown) => value,
+    derivePQKeygenSeed: (entropy: Uint8Array) => entropy,
 }))
 
 vi.mock('@tanstack/query-async-storage-persister', () => ({

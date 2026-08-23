@@ -61,6 +61,7 @@ export {
     removeAccountQueriesForAddresses,
     isAccountQuery,
     isAccountBalancesHistoryQuery,
+    getRekeyedAddressesQueryKey,
 } from './querykeys'
 export * from './useAccountSummaryQuery'
 export * from './useAccountValueTotalsQuery'

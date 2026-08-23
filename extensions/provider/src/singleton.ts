@@ -20,6 +20,10 @@ import { subtle } from './keystore/subtle'
 import { createPeraKeystore } from './keystore/createKeystore'
 import { readPersistedKeys, runMaterialRepair } from './keystore/maintenance'
 import type { QuantumMaterialRepairResult } from './keystore/repairQuantumMaterial'
+import {
+    PQ_DERIVATION_LEGACY,
+    PQ_DERIVATION_CANONICAL,
+} from './keystore/pqDerivation'
 import { createPeraMigrationLedger } from './keystore/migrationsLedger'
 import { PeraProvider } from './pera-provider'
 
@@ -154,25 +158,92 @@ export const reconcileKeystore = async (): Promise<void> => {
 }
 
 /**
+ * `deriveKeygenSeed` is injected rather than imported: `@perawallet/wallet-core-blockchain`
+ * (home of the real `derivePQKeygenSeed`) depends on this package, so an
+ * import here would close a build-order cycle. Same reasoning as the marker
+ * constants in `./keystore/pqDerivation`.
+ */
+export type QuantumMaterialRepairDependencies = {
+    deriveKeygenSeed: (entropy: Uint8Array) => Uint8Array
+}
+
+/**
+ * Not `@perawallet/wallet-core-kms`'s `zeroBytes`: importing it here closes
+ * the same build-order cycle as `deriveKeygenSeed` above.
+ */
+const zeroSensitiveBytes = (buf: Uint8Array | undefined): void => {
+    buf?.fill(0)
+}
+
+/**
  * Re-mints Falcon children that never had sealed material. Must run after the
  * engine has hydrated, since it works off the reactive key snapshot.
  */
-export const runQuantumMaterialRepair =
-    (): Promise<QuantumMaterialRepairResult> =>
-        runMaterialRepair({
-            keys: () => keystoreStore.state.keys,
-            regenerate: async (childId, parentKeyId) => {
-                // `parentKeyId` (not the seed itself): the engine resolves the
-                // parent through the driver, so the seed never reaches JS.
+export const runQuantumMaterialRepair = (
+    deps: QuantumMaterialRepairDependencies,
+): Promise<QuantumMaterialRepairResult> =>
+    runMaterialRepair({
+        keys: () => keystoreStore.state.keys,
+        regenerate: async (childId, parentKeyId, derivation) => {
+            if (derivation === PQ_DERIVATION_LEGACY) {
+                // `parentKeyId` (not the seed itself): the engine resolves
+                // the parent through the driver, so the raw entropy never
+                // reaches JS — and raw entropy IS the legacy keygen seed.
                 await keystore.generate({
                     type: 'falcon-1024',
                     algorithm: 'Falcon-1024',
                     extractable: false,
                     keyUsages: ['sign', 'verify'],
-                    params: { parentKeyId, id: childId },
+                    params: {
+                        parentKeyId,
+                        id: childId,
+                        pqDerivation: derivation,
+                    },
                 })
-            },
-        })
+                return
+            }
+
+            if (derivation !== PQ_DERIVATION_CANONICAL) {
+                // `PQDerivation` is a closed union today, but this callback
+                // is reachable from an injected dep — a third member added
+                // later must not silently fall into the canonical branch,
+                // which would re-derive the wrong keypair.
+                throw new Error(
+                    `quantum repair: unrecognised derivation "${derivation}" for ${childId}`,
+                )
+            }
+
+            // Canonical children need the derived seed, which the keystore
+            // cannot compute — so the entropy is briefly in JS here. Same
+            // exposure the mint path already accepts; zeroed either way.
+            const exported = await keystore.export(parentKeyId)
+            const entropy = exported.privateKey
+            if (!entropy) {
+                throw new Error(
+                    `quantum repair: seed ${parentKeyId} exported no private key`,
+                )
+            }
+            let seed: Uint8Array | undefined
+            try {
+                seed = deps.deriveKeygenSeed(entropy)
+                await keystore.generate({
+                    type: 'falcon-1024',
+                    algorithm: 'Falcon-1024',
+                    extractable: false,
+                    keyUsages: ['sign', 'verify'],
+                    params: {
+                        seed,
+                        id: childId,
+                        parentKeyId,
+                        pqDerivation: derivation,
+                    },
+                })
+            } finally {
+                zeroSensitiveBytes(seed)
+                zeroSensitiveBytes(entropy)
+            }
+        },
+    })
 
 export type KeystoreMaintenanceResult = {
     repair: QuantumMaterialRepairResult
@@ -208,19 +279,20 @@ export type KeystoreMaintenanceResult = {
  * On web this is inert: `maintenance.web.ts` returns a zeroed repair result,
  * so nothing reconciles and callers need no platform branch.
  */
-export const runKeystoreMaintenance =
-    async (): Promise<KeystoreMaintenanceResult> => {
-        await keystore.ready
+export const runKeystoreMaintenance = async (
+    deps: QuantumMaterialRepairDependencies,
+): Promise<KeystoreMaintenanceResult> => {
+    await keystore.ready
 
+    await reconcileKeystore()
+
+    const repair = await runQuantumMaterialRepair(deps)
+    if (repair.repaired > 0 || repair.failed > 0) {
         await reconcileKeystore()
-
-        const repair = await runQuantumMaterialRepair()
-        if (repair.repaired > 0 || repair.failed > 0) {
-            await reconcileKeystore()
-        }
-
-        return { repair }
     }
+
+    return { repair }
+}
 
 /**
  * Resets the provider singleton. Only for use in tests.

@@ -164,6 +164,81 @@ release landed — quantum transactions already assemble as plain
 `SignedTransaction`s with `pqsig` set (see PQ-023 below), so there was no
 byte-threading to delete once `pqsig` became mainline.
 
+## Seed→keygen-seed derivation (PERA-4972)
+
+Falcon-1024 keygen wants a 32-byte seed. Until 2026-08 this wallet fed it the
+raw algo25 mnemonic entropy verbatim. go-algorand's `algokey pq` does not:
+`derivePQKeySeed` in `cmd/algokey/pq_scheme.go` hashes first —
+`SHA512_256("PQK" || scheme || entropy)` — before calling Falcon keygen. The
+mismatch is silent: both produce a valid, self-consistent Falcon account, so
+nothing errors. It just isn't the _same_ account, so the 25 words a user wrote
+down restored a different address in Pera than in `algokey`, `goal`, or any
+other Algorand tool. `derivePQKeygenSeed`
+(`packages/blockchain/src/pq/derivation.ts`) implements the canonical formula;
+`useQuantum.createQuantumKey` calls it before minting.
+
+**Why the bug existed: the hop is nobody's job by default.**
+`@algorandfoundation/keystore-core`'s Falcon shim (the `FALCON_KEY_TYPE`
+branch in its `generate` handler) takes whatever is in `params.seed` and
+passes it to `falcon.generateKey` unchanged — it does no hashing of its own.
+The keystore does have a generic entropy→seed conversion path, `withSeed`, but
+it only covers the `bip39` and `algo25` key types; there is no quantum case.
+So the canonical hop is entirely the caller's responsibility, and until this
+change nothing performed it — the keystore's contract and the protocol's
+contract simply didn't line up, with no error at any layer to say so.
+
+**Legacy derivation is frozen, not deleted, and permanently supported.** A
+quantum address minted with the raw-entropy (legacy) derivation can be the
+`auth-addr` that other accounts have rekeyed to. Those accounts have no
+mnemonic of their own to re-derive from — the only way to sign for them is the
+legacy key that produced that specific address. Retiring legacy derivation
+would orphan every account rekeyed to a legacy-derived address, so both
+derivations mint and sign forever; only which one _new_ accounts default to
+has changed (canonical, per Task 5).
+
+**Marker and child-id scheme** (Tasks 2–3, `packages/kms/src/models/keys.ts`):
+
+- `PQDerivation = 'legacy' | 'pqk1'` is stamped into the signing child's
+  `params.pqDerivation` at mint time (not stripped by the engine's
+  seed/entropy/passphrase/salt filter) and read back from `metadata` by the
+  repair path. An unmarked child fails the repair closed rather than guessing.
+- `quantumSignKeyId(seedId, derivation)` returns `${seedId}-quantum` for
+  `legacy` (the historical bare form — existing `keyPairId`s must keep
+  resolving unchanged) and `${seedId}-quantum-pqk1` for `pqk1`. One seed can
+  therefore host both a legacy and a canonical child side by side.
+
+**`extensions/provider` declares its own copies of these constants**
+(`extensions/provider/src/keystore/pqDerivation.ts`) rather than importing
+`PQ_DERIVATION_LEGACY`/`PQ_DERIVATION_CANONICAL`/`PQDerivation` from
+`packages/kms` or `derivePQKeygenSeed` from `packages/blockchain`. Both would
+be a workspace dependency cycle — `extensions/provider` is what those packages
+call through `getProvider()`. The two copies are pinned against drift only by
+each side's own tests asserting the literal string values
+(`packages/kms/src/models/__tests__/keys.test.ts`,
+`extensions/provider/src/keystore/migrations/repairs/__tests__/0004-stamp-quantum-derivation.spec.ts`
+and neighbors) — there is no shared source of truth to import instead.
+
+For the same cycle reason, the repair path
+(`extensions/provider/src/keystore/repairQuantumMaterial.ts` via
+`singleton.ts`'s `QuantumMaterialRepairDependencies`) takes
+`deriveKeygenSeed` as an **injected function** rather than importing
+`derivePQKeygenSeed` directly. The app layer (which already depends on both
+`packages/kms` and `packages/blockchain`) wires the real implementation in;
+provider-side tests inject a stub.
+
+**The regression pin is an external oracle, on purpose.**
+`packages/blockchain/src/pq/__tests__/derivation.spec.ts` checks
+`derivePQKeygenSeed` against a vector pinned in go-algorand's
+`cmd/algokey/pq_test.go` (`entropy = bytes 1..32` → a specific address) — a
+value computed by a different codebase, in a different language, that this
+repo does not control. Every other quantum fixture here (including
+`apps/mobile/src/__integration__/__fixtures__/quantum.ts`) derives its
+expected address through the same provider the code under test uses, which
+means a wrong derivation and its "expected" value drift together and no test
+notices. That self-confirming shape is exactly how the original bug shipped
+unnoticed for as long as it did. A fixture this repo cannot compute itself is
+the only kind of check that can catch this bug class again.
+
 ## Swap-back procedure
 
 1. **Official crypto lib** — implement a new `PQSignatureProvider` and change

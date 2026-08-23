@@ -42,19 +42,37 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 })
 
 import { useQuantum, type QuantumKeyResult } from '../useQuantum'
-import { quantumSignKeyId, FALCON_CHILD_KEY_TYPE } from '../../models'
+import {
+    quantumSignKeyId,
+    FALCON_CHILD_KEY_TYPE,
+    PQ_DERIVATION_CANONICAL,
+    PQ_DERIVATION_LEGACY,
+} from '../../models'
 import { SeedScheme } from '../../constants'
 import { getPQProvider } from '../../crypto/pq'
-import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
+import {
+    deriveQuantumAddress,
+    derivePQKeygenSeed,
+} from '@perawallet/wallet-core-blockchain'
 
 // THROWAWAY TEST VECTOR — same as algo25-integration.test.ts; NEVER fund it.
 const TEST_MNEMONIC =
     'evoke unique jaguar rapid silent sister kingdom farm anger brother begin fluid brave sister mixture wedding suffer spin spatial combine ginger neutral lunch absorb upset'
 
-// The address `apps/mobile/src/__integration__/__fixtures__/quantum.ts` derives
-// for this mnemonic, pinned as a literal from before custody moved into the
-// keystore. Custody changed; derivation must not.
-const KNOWN_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC =
+// The canonical (algokey-compatible) address for TEST_MNEMONIC. Derived
+// independently of this codebase: `SHA512_256("PQK" || "f1" || entropy)` fed to
+// Falcon keygen, per go-algorand `cmd/algokey/pq_scheme.go`. The previous value
+// here — TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU — is what
+// raw-entropy derivation produced, and remains the address of accounts minted
+// before PERA-4972.
+const CANONICAL_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC =
+    'H325AXRDHRSZU5727LVZKTKYJVRRGD2MNUXVSPUONMSPTRCXQLWIU36CLI'
+
+/** The pre-PERA-4972 address for TEST_MNEMONIC: raw entropy fed straight to
+ * Falcon keygen, with no SHA512_256("PQK" || scheme || entropy) hop. This is
+ * the address of every legacy quantum account minted before the fix, so the
+ * `legacy` derivation must keep producing it forever. */
+const LEGACY_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC =
     'TQLMWJPC7FZQ2EE7HWCWODSGZPCCESJHQIH3VEGKKJ23YFSFCD4Y662IOU'
 
 /** Public keys the keystore double minted, keyed by the id it minted them under. */
@@ -105,7 +123,9 @@ describe('useQuantum', () => {
             expect(
                 (keyResult!.seedKey.metadata as { scheme?: string }).scheme,
             ).toBe(SeedScheme.Quantum)
-            expect(keyResult!.signKeyId).toBe(quantumSignKeyId('my-key'))
+            expect(keyResult!.signKeyId).toBe(
+                quantumSignKeyId('my-key', PQ_DERIVATION_CANONICAL),
+            )
             expect(keyResult!.address).toHaveLength(58)
             expect(isValidAddress(keyResult!.address)).toBe(true)
         })
@@ -141,8 +161,14 @@ describe('useQuantum', () => {
                 extractable: true,
                 keyUsages: ['deriveKey', 'deriveBits'],
             })
-            expect(privateKeySnapshot).toHaveLength(32)
-            expect(privateKeySnapshot.some(b => b !== 0)).toBe(true)
+            // Pin the exact bytes, not just length/non-zero: those alone are
+            // satisfied by either the raw mnemonic entropy or the derived
+            // Falcon keygen seed, so they would not catch the persisted
+            // record being swapped to the derived seed — which would make
+            // every new account's recovery phrase wrong and unrecoverable.
+            expect(privateKeySnapshot).toEqual(
+                Array.from(seedFromMnemonic(TEST_MNEMONIC)),
+            )
             // Post-call the buffer is wiped — the zeroing path fired.
             expect(Array.from(arg.privateKey)).toEqual(new Array(32).fill(0))
             expect(arg.metadata.scheme).toBe(SeedScheme.Quantum)
@@ -161,10 +187,17 @@ describe('useQuantum', () => {
 
             expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(1)
             const { params } = mockKeyStoreGenerate.mock.calls[0][0]
-            expect(params.id).toBe(quantumSignKeyId('my-key'))
+            expect(params.id).toBe(
+                quantumSignKeyId('my-key', PQ_DERIVATION_CANONICAL),
+            )
             expect(params.parentKeyId).toBe('my-key')
+            // The repair path fails closed on an unmarked child, so the mint
+            // path must stamp the marker, not just bake it into the id.
+            expect(params.pqDerivation).toBe(PQ_DERIVATION_CANONICAL)
 
-            const publicKey = generatedKeys.get(quantumSignKeyId('my-key'))!
+            const publicKey = generatedKeys.get(
+                quantumSignKeyId('my-key', PQ_DERIVATION_CANONICAL),
+            )!
             expect(publicKey).toHaveLength(getPQProvider().publicKeyLength)
             expect(created!.address).toBe(deriveQuantumAddress(publicKey))
         })
@@ -194,8 +227,18 @@ describe('useQuantum', () => {
             }
 
             expect(addresses[0]).toBe(addresses[1])
-            expect(Array.from(generatedKeys.get('key-0-quantum')!)).toEqual(
-                Array.from(generatedKeys.get('key-1-quantum')!),
+            expect(
+                Array.from(
+                    generatedKeys.get(
+                        quantumSignKeyId('key-0', PQ_DERIVATION_CANONICAL),
+                    )!,
+                ),
+            ).toEqual(
+                Array.from(
+                    generatedKeys.get(
+                        quantumSignKeyId('key-1', PQ_DERIVATION_CANONICAL),
+                    )!,
+                ),
             )
         })
 
@@ -226,7 +269,9 @@ describe('useQuantum', () => {
             })
 
             const seed = seedFromMnemonic(TEST_MNEMONIC)
-            const { publicKey } = getPQProvider().generateKeypairFromSeed(seed)
+            const { publicKey } = getPQProvider().generateKeypairFromSeed(
+                derivePQKeygenSeed(seed),
+            )
             expect(created!.address).toBe(deriveQuantumAddress(publicKey))
         })
 
@@ -252,13 +297,14 @@ describe('useQuantum', () => {
                 }),
             )
             expect(created!.signKeyId).toBe(
-                quantumSignKeyId(created!.seedKey.id),
+                quantumSignKeyId(created!.seedKey.id, PQ_DERIVATION_CANONICAL),
             )
         })
 
-        // The address is derived from the Falcon public key, so a custody change
-        // that altered derivation would silently move every quantum account.
-        test('derives the same address as the pre-migration provider path', async () => {
+        // The address is derived from the Falcon public key, so a regression in
+        // derivation would silently move every quantum account minted from
+        // this mnemonic to a different address.
+        test('derives the canonical (algokey-compatible) address for a fixed mnemonic', async () => {
             const { result } = renderHook(() => useQuantum())
 
             let created: Optional<QuantumKeyResult>
@@ -269,7 +315,7 @@ describe('useQuantum', () => {
             })
 
             expect(created!.address).toBe(
-                KNOWN_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC,
+                CANONICAL_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC,
             )
         })
 
@@ -287,10 +333,91 @@ describe('useQuantum', () => {
                 })
             })
 
-            expect(created!.signKeyId).toBe(`${created!.seedKey.id}-quantum`)
+            expect(created!.signKeyId).toBe(
+                `${created!.seedKey.id}-quantum-${PQ_DERIVATION_CANONICAL}`,
+            )
             expect(created!.signKeyId).not.toMatch(
                 /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
             )
+        })
+
+        test('mints a legacy child from raw entropy when derivation is legacy', async () => {
+            const { result } = renderHook(() => useQuantum())
+            const created = await result.current.createQuantumKey({
+                id: 'my-key',
+                mnemonic: TEST_MNEMONIC,
+                derivation: PQ_DERIVATION_LEGACY,
+            })
+
+            // Legacy IS the raw entropy — the seed handed to Falcon must be the
+            // entropy itself, and the address must be the pre-PERA-4972 one.
+            expect(created.signKeyId).toBe(
+                quantumSignKeyId('my-key', PQ_DERIVATION_LEGACY),
+            )
+            expect(created.address).toBe(
+                LEGACY_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC,
+            )
+        })
+
+        test('defaults to canonical when derivation is omitted', async () => {
+            const { result } = renderHook(() => useQuantum())
+            const created = await result.current.createQuantumKey({
+                id: 'my-key',
+                mnemonic: TEST_MNEMONIC,
+            })
+
+            expect(created.address).toBe(
+                CANONICAL_QUANTUM_ADDRESS_FOR_TEST_MNEMONIC,
+            )
+        })
+
+        test('reuseSeedId attaches a second child without importing a second seed', async () => {
+            const { result } = renderHook(() => useQuantum())
+            await result.current.createQuantumKey({
+                id: 'seed-1',
+                mnemonic: TEST_MNEMONIC,
+            })
+            mockKeyStoreImport.mockClear()
+
+            const second = await result.current.createQuantumKey({
+                reuseSeedId: 'seed-1',
+                mnemonic: TEST_MNEMONIC,
+                derivation: PQ_DERIVATION_LEGACY,
+            })
+
+            // The entropy must exist at rest exactly once.
+            expect(mockKeyStoreImport).not.toHaveBeenCalled()
+            expect(second.signKeyId).toBe(
+                quantumSignKeyId('seed-1', PQ_DERIVATION_LEGACY),
+            )
+        })
+
+        test('rejects id and reuseSeedId together', async () => {
+            const { result } = renderHook(() => useQuantum())
+            await expect(
+                result.current.createQuantumKey({
+                    id: 'a',
+                    reuseSeedId: 'b',
+                    mnemonic: TEST_MNEMONIC,
+                }),
+            ).rejects.toThrow()
+        })
+
+        test('does not delete the seed on failure when reusing an existing seed record', async () => {
+            mockKeyStoreGenerate.mockRejectedValueOnce(new Error('boom'))
+
+            const { result } = renderHook(() => useQuantum())
+            await expect(
+                result.current.createQuantumKey({
+                    reuseSeedId: 'seed-1',
+                    mnemonic: TEST_MNEMONIC,
+                    derivation: PQ_DERIVATION_LEGACY,
+                }),
+            ).rejects.toThrow('boom')
+
+            // committedSeed must stay false for a reused seed: this call never
+            // created the seed record, so its failure path must never delete it.
+            expect(mockKeyStoreRemove).not.toHaveBeenCalled()
         })
     })
 })
