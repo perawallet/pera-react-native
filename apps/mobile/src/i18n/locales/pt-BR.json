@@ -280,6 +280,15 @@
             "learn_more": "Saiba mais sobre a verificação de ASA"
         }
     },
+    "accounts": {
+        "legacyQuantum": {
+            "title": "Sobre sua conta Quantum",
+            "body": "Infelizmente identificamos um problema na versão 7.1.0 na forma como o endereço das contas Quantum é derivado das suas 25 palavras, o que o torna incompatível com outras ferramentas.\n\nSeus fundos estão seguros e sua conta funciona normalmente.\n\nNo entanto, para evitar problemas de compatibilidade, recomendamos criar uma nova conta Quantum e mover seus fundos para ela, assim sua frase de recuperação funciona em qualquer lugar.\n\nPedimos desculpas pelo transtorno e agradecemos sua compreensão.",
+            "bodyWithDependents": "Infelizmente identificamos um problema na versão 7.1.0 na forma como o endereço das contas Quantum é derivado das suas 25 palavras, o que o torna incompatível com outras ferramentas.\n\nSeus fundos estão seguros e sua conta funciona normalmente.\n\nOutra conta está com rekey para esta, então não deixe de usá-la por enquanto — ela é a única signatária dessa conta no momento. No entanto, para evitar problemas de compatibilidade, recomendamos criar uma nova conta Quantum e mover seus fundos assim que o rekey da outra conta for refeito, assim sua frase de recuperação funciona em qualquer lugar.\n\nPedimos desculpas pelo transtorno e agradecemos sua compreensão.",
+            "markerLabel": "Sobre esta conta Quantum",
+            "dismiss": "Entendi"
+        }
+    },
     "account_details": {
         "assets": {
             "title": "Ativos",

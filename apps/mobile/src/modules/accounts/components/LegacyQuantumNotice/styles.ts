@@ -10,6 +10,13 @@
  limitations under the License
  */
 
-export * from './derivation'
-export * from './quantumAdapter'
-export * from './schemes'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    markerRow: {
+        marginBottom: theme.spacing.md,
+    },
+    markerLabel: {
+        color: theme.colors.textGray,
+    },
+}))

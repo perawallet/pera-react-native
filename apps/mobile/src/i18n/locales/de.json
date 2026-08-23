@@ -280,6 +280,15 @@
             "learn_more": "Mehr über die ASA-Verifizierung erfahren"
         }
     },
+    "accounts": {
+        "legacyQuantum": {
+            "title": "Über dein Quantum-Konto",
+            "body": "Wir haben leider ein Problem in Version 7.1.0 festgestellt: die Art, wie die Adresse für Quantum-Konten aus deinen 25 Wörtern abgeleitet wird, sodass sie nicht mit anderen Tools übereinstimmt.\n\nDein Guthaben ist sicher und dein Konto funktioniert normal.\n\nUm Kompatibilitätsprobleme zu vermeiden, empfehlen wir dennoch, ein neues Quantum-Konto zu erstellen und dein Guthaben dorthin zu verschieben, damit deine Wiederherstellungsphrase überall funktioniert.\n\nWir entschuldigen uns für die Unannehmlichkeiten und danken dir für dein Verständnis.",
+            "bodyWithDependents": "Wir haben leider ein Problem in Version 7.1.0 festgestellt: die Art, wie die Adresse für Quantum-Konten aus deinen 25 Wörtern abgeleitet wird, sodass sie nicht mit anderen Tools übereinstimmt.\n\nDein Guthaben ist sicher und dein Konto funktioniert normal.\n\nEin anderes Konto ist derzeit auf dieses Konto rekeyed, verlasse es also noch nicht – es ist im Moment dessen einziger Signaturgeber. Um Kompatibilitätsprobleme zu vermeiden, empfehlen wir dennoch, ein neues Quantum-Konto zu erstellen und dein Guthaben zu verschieben, sobald das andere Konto rekeyed wurde, damit deine Wiederherstellungsphrase überall funktioniert.\n\nWir entschuldigen uns für die Unannehmlichkeiten und danken dir für dein Verständnis.",
+            "markerLabel": "Über dieses Quantum-Konto",
+            "dismiss": "Verstanden"
+        }
+    },
     "account_details": {
         "assets": {
             "title": "Assets",

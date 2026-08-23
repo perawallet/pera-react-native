@@ -15,6 +15,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import {
     algorandSafeQuerySerialize,
     algorandSafeQueryParse,
+    derivePQKeygenSeed,
 } from '@perawallet/wallet-core-blockchain'
 import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
 import { initializeSyncService } from '@perawallet/wallet-core-background'
@@ -173,7 +174,9 @@ export const useAppBootstrap = (): UseAppBootstrapResult => {
                 // bootstrap: the alternative is presenting an empty wallet,
                 // which is what prompts users to wipe and re-onboard on top of
                 // keys that were still on disk.
-                const keystoreBranch = runKeystoreMaintenance()
+                const keystoreBranch = runKeystoreMaintenance({
+                    deriveKeygenSeed: derivePQKeygenSeed,
+                })
                     .then(({ repair }) => {
                         if (repair.repaired > 0 || repair.failed > 0) {
                             logger.info('Quantum key material repaired', repair)

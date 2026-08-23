@@ -674,6 +674,7 @@ describe('0003-mint-passkey-main-key', () => {
             'normalize-canary13-records',
             'rematerialize-passkey-credentials',
             'mint-passkey-main-key',
+            'stamp-quantum-derivation',
         ])
     })
 })

@@ -280,6 +280,15 @@
             "learn_more": "Learn more about ASA verification"
         }
     },
+    "accounts": {
+        "legacyQuantum": {
+            "title": "About your quantum account",
+            "body": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nHowever to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds, so your recovery phrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
+            "bodyWithDependents": "We unfortunately discovered an issue in version 7.1.0 with the way the address for Quantum Accounts is derived from your 25-words, making it inconsistent with other tools.\n\nYour funds are safe and your account works normally.\n\nAnother account is rekeyed to this one, so don't move away from it yet — it's currently that account's only signer. However to prevent incompatibility issues, we recommend creating a new quantum account and moving your funds once you've rekeyed the other account, so your recovery phrase works everywhere.\n\nWe apologize for the inconvenience and thank you for your understanding.",
+            "markerLabel": "About this quantum account",
+            "dismiss": "Got it"
+        }
+    },
     "account_details": {
         "assets": {
             "title": "Assets",

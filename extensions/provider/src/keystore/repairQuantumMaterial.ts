@@ -12,6 +12,11 @@
 
 import type { Key } from '@algorandfoundation/keystore-core'
 import { MATERIAL_PREFIX } from '@algorandfoundation/react-native-keystore'
+import {
+    PQ_DERIVATION_LEGACY,
+    PQ_DERIVATION_CANONICAL,
+    type PQDerivation,
+} from './pqDerivation'
 
 const FALCON_CHILD_TYPE = 'falcon-1024'
 
@@ -27,9 +32,14 @@ export type QuantumMaterialRepairDeps = {
     storage: { getString: (key: string) => string | undefined }
     /**
      * Re-mints the Falcon child from its parent seed, sealing the private half.
-     * Resolves the seed through the driver, so it never reaches JS.
+     * `derivation` selects which entropy→keygen-seed mapping to reproduce —
+     * get it wrong and the child's address changes.
      */
-    regenerate: (childId: string, parentKeyId: string) => Promise<void>
+    regenerate: (
+        childId: string,
+        parentKeyId: string,
+        derivation: PQDerivation,
+    ) => Promise<void>
 }
 
 export type QuantumMaterialRepairResult = {
@@ -78,10 +88,25 @@ export const repairQuantumMaterial = async (
             continue
         }
 
+        const derivation = (child.metadata as { pqDerivation?: PQDerivation })
+            ?.pqDerivation
+        if (
+            derivation !== PQ_DERIVATION_LEGACY &&
+            derivation !== PQ_DERIVATION_CANONICAL
+        ) {
+            // Revision 0004 stamps this. Until it has, re-deriving would be a
+            // coin flip between two different addresses.
+            console.error(
+                `[provider] quantum repair: ${child.id} has no derivation marker; refusing to re-derive`,
+            )
+            result.failed += 1
+            continue
+        }
+
         const before = child.publicKey
 
         try {
-            await deps.regenerate(child.id, parentKeyId)
+            await deps.regenerate(child.id, parentKeyId, derivation)
         } catch (err) {
             console.error(
                 `[provider] quantum repair: ${child.id} could not be re-minted`,

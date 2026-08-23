@@ -18,6 +18,7 @@ import {
     algo25SignKeyId,
     hdDerivedKeyId,
     KeyNotFoundError,
+    PQ_DERIVATION_CANONICAL,
     quantumSignKeyId,
     useKMS,
 } from '@perawallet/wallet-core-kms'
@@ -220,7 +221,10 @@ export const useCreateAccount = () => {
                 id: generateOrderedUniqueId(),
                 address: seed.address,
                 type: AccountTypes.quantum,
-                keyPairId: quantumSignKeyId(seed.seedKeyId),
+                keyPairId: quantumSignKeyId(
+                    seed.seedKeyId,
+                    PQ_DERIVATION_CANONICAL,
+                ),
             }
         }
 

@@ -10,6 +10,5 @@
  limitations under the License
  */
 
-export * from './derivation'
-export * from './quantumAdapter'
-export * from './schemes'
+export { LegacyQuantumNotice } from './LegacyQuantumNotice'
+export type { LegacyQuantumNoticeProps } from './LegacyQuantumNotice'

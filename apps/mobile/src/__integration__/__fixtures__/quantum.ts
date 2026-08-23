@@ -12,7 +12,10 @@
 
 import { seedFromMnemonic } from 'algosdk'
 import { getPQProvider } from '@perawallet/wallet-core-kms'
-import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain'
+import {
+    deriveQuantumAddress,
+    derivePQKeygenSeed,
+} from '@perawallet/wallet-core-blockchain'
 import { ALGO25_TEST_MNEMONIC } from './onboarding'
 
 /**
@@ -26,10 +29,29 @@ import { ALGO25_TEST_MNEMONIC } from './onboarding'
  */
 export const QUANTUM_TEST_MNEMONIC = ALGO25_TEST_MNEMONIC
 
+// Canonical (algokey-compatible) address for QUANTUM_TEST_MNEMONIC, pinned
+// independently of this file's own derivation — same role as ALGO25_TEST_ADDRESS
+// in ./onboarding.ts. Without it nothing here catches a derivation regression:
+// QUANTUM_TEST_ADDRESS below and its guard spec would drift together silently.
+export const QUANTUM_TEST_CANONICAL_ADDRESS =
+    'H325AXRDHRSZU5727LVZKTKYJVRRGD2MNUXVSPUONMSPTRCXQLWIU36CLI'
+
 export const QUANTUM_TEST_PUBLIC_KEY = getPQProvider().generateKeypairFromSeed(
-    seedFromMnemonic(QUANTUM_TEST_MNEMONIC),
+    derivePQKeygenSeed(seedFromMnemonic(QUANTUM_TEST_MNEMONIC)),
 ).publicKey
 
 export const QUANTUM_TEST_ADDRESS = deriveQuantumAddress(
     QUANTUM_TEST_PUBLIC_KEY,
+)
+
+// Legacy-derivation address for the same mnemonic — Falcon seeded with the
+// raw entropy instead of the canonical PQK1 hash (see PERA-4972). The dual-
+// probe import path needs both candidate addresses mockable on chain.
+export const QUANTUM_TEST_LEGACY_PUBLIC_KEY =
+    getPQProvider().generateKeypairFromSeed(
+        seedFromMnemonic(QUANTUM_TEST_MNEMONIC),
+    ).publicKey
+
+export const QUANTUM_TEST_LEGACY_ADDRESS = deriveQuantumAddress(
+    QUANTUM_TEST_LEGACY_PUBLIC_KEY,
 )
