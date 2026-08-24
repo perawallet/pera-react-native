@@ -455,6 +455,11 @@ function buildAppConfig(env) {
       // builds don't compile all four ABIs. Release keeps every ABI.
       './plugins/withAndroidAbiFilters',
 
+      // Let R8 optimize (the template's proguard-android.txt sets -dontoptimize)
+      // and let the resource shrinker remove rather than stub. Must run after
+      // expo-build-properties, which owns minify/shrinkResources.
+      './plugins/withAndroidR8Optimization',
+
       // Guard the RN onUserLeaveHint NPE (crash when leaving the app before/after
       // the React host is ready) by overriding it in MainActivity.
       './plugins/withAndroidUserLeaveHintFix',
