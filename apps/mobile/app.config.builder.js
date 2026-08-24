@@ -455,6 +455,11 @@ function buildAppConfig(env) {
       // builds don't compile all four ABIs. Release keeps every ABI.
       './plugins/withAndroidAbiFilters',
 
+      // Drop the Android portrait lock — Android 16 ignores it on large screens
+      // anyway, so keeping it only hides tablet landscape from us. iOS stays
+      // portrait via the top-level `orientation`.
+      './plugins/withAndroidLargeScreenSupport',
+
       // Guard the RN onUserLeaveHint NPE (crash when leaving the app before/after
       // the React host is ready) by overriding it in MainActivity.
       './plugins/withAndroidUserLeaveHintFix',
