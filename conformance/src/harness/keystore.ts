@@ -12,7 +12,6 @@
 
 import {
     createKeyStore,
-    type DriverMaterial,
     type Key,
     type KeyId,
     type KeyStore,
@@ -31,13 +30,31 @@ export type ConformanceKeyStore = KeyStore<void> & {
     store: Store<KeyStoreState>
 }
 
-const wipe = (value: DriverMaterial | undefined): void => {
-    if (value?.kind === 'bytes') value.bytes.fill(0)
+/** AES-256-GCM, the cipher the RN driver seals material with. */
+const MASTER_KEY_ALGORITHM = { name: 'AES-GCM', length: 256 } as const
+
+/** GCM's standard nonce length; a fresh one is drawn for every seal. */
+const IV_BYTES = 12
+
+const ENCODER = new TextEncoder()
+const DECODER = new TextDecoder()
+
+type SealedMaterial = {
+    iv: Uint8Array
+    ciphertext: ArrayBuffer
 }
 
 export const createMemoryDriver = (): KeyStoreDriver<void> => {
-    const material = new Map<KeyId, DriverMaterial>()
+    const material = new Map<KeyId, SealedMaterial>()
     const meta = new Map<KeyId, Key>()
+
+    // The in-memory stand-in for the RN driver's Keychain-held master key:
+    // non-extractable, unreachable outside this closure, and gone with the
+    // process. Every record is sealed under it and opened just-in-time.
+    const masterKey = crypto.subtle.generateKey(MASTER_KEY_ALGORITHM, false, [
+        'encrypt',
+        'decrypt',
+    ])
 
     return {
         capabilities: {
@@ -49,44 +66,65 @@ export const createMemoryDriver = (): KeyStoreDriver<void> => {
             authFactors: [],
         },
 
+        ready: masterKey.then(() => undefined),
+
         put: async (id, value) => {
             if (value.kind !== 'bytes') {
-                material.set(id, value)
-                return
+                throw new Error(
+                    'the conformance memory driver cannot persist a CryptoKey; expected bytes',
+                )
             }
-            // The orchestrator hands over a buffer it expects the driver to
-            // seal and is free to wipe; copy before wiping it.
-            material.set(id, {
-                kind: 'bytes',
-                bytes: Uint8Array.from(value.bytes),
-            })
+            const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES))
+            // Sealing the base64 *text* rather than the raw bytes mirrors the RN
+            // driver, so a payload its base64 round trip would mangle is mangled
+            // here too instead of slipping through on a shortcut.
+            const payload = ENCODER.encode(
+                Buffer.from(value.bytes).toString('base64'),
+            )
+            const ciphertext = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv },
+                await masterKey,
+                payload,
+            )
+            payload.fill(0)
+            material.set(id, { iv, ciphertext })
+            // The orchestrator hands over a buffer it expects the driver to seal
+            // and is then free to wipe.
             value.bytes.fill(0)
         },
 
         use: async (id, _ctx, fn) => {
-            const stored = material.get(id)
-            if (!stored) throw new KeyNotFoundError(id)
-            if (stored.kind !== 'bytes') return fn(stored)
+            const sealed = material.get(id)
+            if (!sealed) throw new KeyNotFoundError(id)
 
-            // A fresh copy per call, never the stored buffer: the Falcon and
-            // XHD shims wipe whatever they are handed, so returning the same
-            // reference twice yields one good signature and then garbage.
-            const plaintext = Uint8Array.from(stored.bytes)
+            // Opened afresh on every call, never cached: the Falcon and XHD
+            // shims wipe whatever buffer they are handed, so a reused plaintext
+            // signs correctly once and then emits garbage from an all-zero key.
+            const opened = new Uint8Array(
+                await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv: sealed.iv },
+                    await masterKey,
+                    sealed.ciphertext,
+                ),
+            )
+            const bytes = new Uint8Array(
+                Buffer.from(DECODER.decode(opened), 'base64'),
+            )
+            opened.fill(0)
+
             try {
-                return await fn({ kind: 'bytes', bytes: plaintext })
+                return await fn({ kind: 'bytes', bytes })
             } finally {
-                plaintext.fill(0)
+                bytes.fill(0)
             }
         },
 
         remove: async id => {
-            wipe(material.get(id))
             material.delete(id)
             meta.delete(id)
         },
 
         clear: async () => {
-            material.forEach(wipe)
             material.clear()
             meta.clear()
         },
