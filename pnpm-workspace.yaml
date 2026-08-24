@@ -195,6 +195,16 @@ overrides:
   '@algorandfoundation/keystore-core': 1.0.0-canary.3
   '@algorandfoundation/keystore-web': 1.0.0-canary.3
   '@algorandfoundation/react-native-keystore': 1.0.0-canary.19
+  # Four upstream packages (keystore-core, keystore@canary.17,
+  # provider-migrations, react-native-keystore) pin `wallet-provider` at exact
+  # `1.0.0-canary.5`, so bumping the catalog alone can't drag them forward and
+  # yields two installed copies. `wallet-provider` exports `Provider` as a
+  # class, so two copies break cross-boundary `instanceof` the same way a
+  # second algosdk copy would. Forcing it here is safe only because canary.5
+  # and canary.6's dists are byte-identical (verified with `diff -r` between
+  # the two installed copies) — retire this override once those four
+  # packages move past canary.5.
+  '@algorandfoundation/wallet-provider': 1.0.0-canary.6
   '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
   '@expo/dom-webview': ~57.0.1
   # Force the SDK-bundled versions across the tree. Both reach us only
