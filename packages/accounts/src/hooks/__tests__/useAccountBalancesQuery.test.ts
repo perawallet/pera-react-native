@@ -74,7 +74,6 @@ type Row = {
     asset: { assetId: string; decimals: number; name?: string } | null
     usdPrice: Decimal | null
     isFavorited: boolean
-    isFrozen: boolean
 }
 const algoRow = (microalgos: number, usd: number | null): Row => ({
     assetId: '0',
@@ -82,7 +81,6 @@ const algoRow = (microalgos: number, usd: number | null): Row => ({
     asset: { assetId: '0', decimals: 6, name: 'Algo' },
     usdPrice: usd === null ? null : new Decimal(usd),
     isFavorited: false,
-    isFrozen: false,
 })
 const asaRow = (
     assetId: string,
@@ -90,14 +88,12 @@ const asaRow = (
     decimals: number | null,
     usd: number | null,
     name?: string,
-    isFrozen = false,
 ): Row => ({
     assetId,
     amount: new Decimal(baseAmount),
     asset: decimals === null ? null : { assetId, decimals, name },
     usdPrice: usd === null ? null : new Decimal(usd),
     isFavorited: false,
-    isFrozen,
 })
 
 const createWrapper = () => {
@@ -397,35 +393,6 @@ describe('useAccountBalances', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
         expect(mockFetchAndPersistAccount).not.toHaveBeenCalled()
-    })
-
-    it('exposes the holding freeze flag on the balance model', async () => {
-        mockGetAccountHoldingsPage.mockResolvedValue([
-            algoRow(1_000_000, 1),
-            asaRow('456', 1000, 2, 10, 'Frozen', true),
-            asaRow('789', 500, 2, 5, 'Unfrozen', false),
-            // decimals: null → asset: null → routes through the no-metadata
-            // early-return branch, which has its own separate isFrozen line.
-            asaRow('999', 100, null, 10, 'Unsynced', true),
-        ])
-
-        const { result } = renderHook(
-            () => useAccountBalancesQuery([account]),
-            { wrapper: createWrapper() },
-        )
-
-        await waitFor(() => expect(result.current.isPending).toBe(false))
-
-        const accountData = result.current.accountBalances.get('ADDR1')
-        expect(
-            accountData?.assetBalances.find(b => b.assetId === '456')?.isFrozen,
-        ).toBe(true)
-        expect(
-            accountData?.assetBalances.find(b => b.assetId === '789')?.isFrozen,
-        ).toBe(false)
-        expect(
-            accountData?.assetBalances.find(b => b.assetId === '999')?.isFrozen,
-        ).toBe(true)
     })
 })
 

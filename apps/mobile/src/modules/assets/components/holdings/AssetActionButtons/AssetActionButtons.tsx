@@ -56,6 +56,7 @@ export const AssetActionButtons = ({
     const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
+    const isFrozen = assetHolding?.isFrozen ?? false
 
     const openReceiveFunds = useCallback(() => {
         trackEvent(AssetDetailsEvent.Receive)
@@ -153,6 +154,8 @@ export const AssetActionButtons = ({
                 icon='swap'
                 variant='primary'
                 onPress={handleSwap}
+                disabled={isFrozen}
+                badgeIcon={isFrozen ? 'snowflake' : undefined}
                 style={styles.buttonFour}
                 testID='asset_detail_swap_button'
             />
@@ -169,6 +172,8 @@ export const AssetActionButtons = ({
                 icon='outflow'
                 variant='secondary'
                 onPress={handleSend}
+                disabled={isFrozen}
+                badgeIcon={isFrozen ? 'snowflake' : undefined}
                 style={styles.buttonFour}
                 testID='asset_detail_send_button'
             />

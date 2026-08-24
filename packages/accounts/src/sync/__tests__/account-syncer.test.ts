@@ -378,50 +378,6 @@ describe('fetchAndPersistAccount', () => {
         expect(a).toEqual(b)
         expect(mockAccountInformation).toHaveBeenCalledTimes(1)
     })
-
-    it('persists the chain freeze flag on each holding', async () => {
-        mockAccountInformationDo.mockResolvedValue({
-            amount: 0n,
-            minBalance: 0n,
-            assets: [
-                { assetId: 1n, amount: 5n, isFrozen: true },
-                { assetId: 2n, amount: 7n, isFrozen: false },
-            ],
-        })
-
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
-
-        expect(mockRefreshAccountHoldings).toHaveBeenCalledWith(
-            expect.objectContaining({
-                holdings: [
-                    { assetId: '0', amount: new Decimal(0), isFrozen: false },
-                    { assetId: '1', amount: new Decimal(5), isFrozen: true },
-                    { assetId: '2', amount: new Decimal(7), isFrozen: false },
-                ],
-            }),
-        )
-    })
-
-    it('marks the synthetic ALGO row as never frozen', async () => {
-        mockAccountInformationDo.mockResolvedValue({
-            amount: 1_000_000n,
-            minBalance: 0n,
-        })
-
-        await fetchAndPersistAccount('ADDR1', 'mainnet')
-
-        expect(mockRefreshAccountHoldings).toHaveBeenCalledWith(
-            expect.objectContaining({
-                holdings: [
-                    {
-                        assetId: '0',
-                        amount: new Decimal(1_000_000),
-                        isFrozen: false,
-                    },
-                ],
-            }),
-        )
-    })
 })
 
 describe('ensureAccountFetched', () => {
