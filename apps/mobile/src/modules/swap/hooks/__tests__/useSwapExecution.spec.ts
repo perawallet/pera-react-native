@@ -43,7 +43,7 @@ const mockRegisterHandoff = vi.fn()
 const mockUseSelectedAccount = vi.fn()
 const mockUseSignerFor = vi.fn()
 const mockIsMultisigAccount = vi.fn()
-const mockGetAccountHoldings = vi.fn()
+const mockIsAssetFrozen = vi.fn()
 // Hoisted so it's initialized before the (hoisted) wallet-core-swaps mock factory
 // runs during the package import.
 const { mockValidate } = vi.hoisted(() => ({ mockValidate: vi.fn() }))
@@ -183,7 +183,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     // the guard against a fixed `quantumAccount` fixture below.
     isQuantumAccount: (account: unknown) =>
         (account as { type?: string } | undefined)?.type === 'quantum',
-    getAccountHoldings: (...args: unknown[]) => mockGetAccountHoldings(...args),
+    isAssetFrozen: (...args: unknown[]) => mockIsAssetFrozen(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -300,6 +300,13 @@ const autoError = (err: Error) => {
     })
 }
 
+// Answers per asset, like the real `isAssetFrozen`. A test asserting a frozen
+// side therefore fails if the hook never asked about that side.
+const freezeHoldings = (...frozenIds: string[]) =>
+    mockIsAssetFrozen.mockImplementation(({ assetId }: { assetId: string }) =>
+        Promise.resolve(frozenIds.includes(assetId)),
+    )
+
 describe('useSwapExecution', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -344,7 +351,7 @@ describe('useSwapExecution', () => {
 
         // Default: nothing held is frozen. The gate reads holdings on
         // every execute.
-        mockGetAccountHoldings.mockResolvedValue([])
+        freezeHoldings()
     })
 
     it('starts with idle status', () => {
@@ -529,9 +536,7 @@ describe('useSwapExecution', () => {
     // makeQuote trades assetIn '0' for assetOut '999'.
     it('refuses a frozen input asset before prepare, with the shared AssetFrozenError copy', async () => {
         mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
-        mockGetAccountHoldings.mockResolvedValue([
-            { assetId: '0', isFrozen: true },
-        ])
+        freezeHoldings('0')
 
         const { result } = renderHook(() => useSwapExecution())
 
@@ -558,10 +563,7 @@ describe('useSwapExecution', () => {
 
     it('refuses a frozen OUTPUT asset — a frozen holding cannot receive either', async () => {
         mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
-        mockGetAccountHoldings.mockResolvedValue([
-            { assetId: '0', isFrozen: false },
-            { assetId: '999', isFrozen: true },
-        ])
+        freezeHoldings('999')
 
         const { result } = renderHook(() => useSwapExecution())
 
@@ -588,8 +590,14 @@ describe('useSwapExecution', () => {
             await result.current.execute(makeQuote('quote-reads-db'))
         })
 
-        expect(mockGetAccountHoldings).toHaveBeenCalledWith({
+        // Both sides of the quote get asked about.
+        const asked = mockIsAssetFrozen.mock.calls.map(
+            ([args]: [{ assetId: string }]) => args.assetId,
+        )
+        expect(asked).toEqual(['0', '999'])
+        expect(mockIsAssetFrozen).toHaveBeenCalledWith({
             accountAddress: 'SENDER_ADDR',
+            assetId: '0',
             network: expect.anything(),
         })
     })

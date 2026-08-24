@@ -20,7 +20,7 @@ import {
     type PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
-    getAccountHoldings,
+    isAssetFrozen,
     isMultisigAccount,
     useSelectedAccount,
     useSignerFor,
@@ -165,19 +165,22 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 return { kind: 'error', phase: 'prepare', message }
             }
 
-            const holdings = account
-                ? await getAccountHoldings({
-                      accountAddress: account.address,
-                      network,
-                  })
-                : []
-            const isFrozen = (assetId: string) =>
-                holdings.find(h => h.assetId === assetId)?.isFrozen === true
+            const [isInFrozen, isOutFrozen] = account
+                ? await Promise.all([
+                      isAssetFrozen({
+                          accountAddress: account.address,
+                          assetId: quote.assetIn.assetId,
+                          network,
+                      }),
+                      isAssetFrozen({
+                          accountAddress: account.address,
+                          assetId: quote.assetOut.assetId,
+                          network,
+                      }),
+                  ])
+                : [false, false]
 
-            if (
-                isFrozen(quote.assetIn.assetId) ||
-                isFrozen(quote.assetOut.assetId)
-            ) {
+            if (isInFrozen || isOutFrozen) {
                 const copy = resolveErrorCopy(
                     new AssetFrozenError(),
                     t,

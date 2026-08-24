@@ -26,6 +26,7 @@ import {
 import {
     refreshAccountHoldings,
     getAccountHoldings,
+    isAssetFrozen,
     getAccountPortfolioTotals,
     getAccountHoldingsPage,
     getAccountCollectiblesLite,
@@ -560,6 +561,80 @@ describe('account repository', () => {
             })
 
             expect(result[0].isFrozen).toBe(false)
+        })
+    })
+
+    describe('isAssetFrozen', () => {
+        const seed = async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '100', amount: new Decimal(1), isFrozen: true },
+                    { assetId: '200', amount: new Decimal(2), isFrozen: false },
+                ],
+            })
+        }
+
+        it('is true for a frozen holding', async () => {
+            await seed()
+
+            await expect(
+                isAssetFrozen({
+                    db,
+                    accountAddress: 'ADDR1',
+                    assetId: '100',
+                    network: 'mainnet',
+                }),
+            ).resolves.toBe(true)
+        })
+
+        it('is false for a holding that is not frozen', async () => {
+            await seed()
+
+            await expect(
+                isAssetFrozen({
+                    db,
+                    accountAddress: 'ADDR1',
+                    assetId: '200',
+                    network: 'mainnet',
+                }),
+            ).resolves.toBe(false)
+        })
+
+        it('is false when there is no holding row — nothing to be frozen', async () => {
+            await seed()
+
+            await expect(
+                isAssetFrozen({
+                    db,
+                    accountAddress: 'ADDR1',
+                    assetId: '999',
+                    network: 'mainnet',
+                }),
+            ).resolves.toBe(false)
+        })
+
+        it('scopes to the account and network', async () => {
+            await seed()
+
+            await expect(
+                isAssetFrozen({
+                    db,
+                    accountAddress: 'ADDR2',
+                    assetId: '100',
+                    network: 'mainnet',
+                }),
+            ).resolves.toBe(false)
+            await expect(
+                isAssetFrozen({
+                    db,
+                    accountAddress: 'ADDR1',
+                    assetId: '100',
+                    network: 'testnet',
+                }),
+            ).resolves.toBe(false)
         })
     })
 

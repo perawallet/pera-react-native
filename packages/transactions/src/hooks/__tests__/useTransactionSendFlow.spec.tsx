@@ -40,7 +40,7 @@ const mockAddPayment = vi.fn()
 const mockAddAssetTransfer = vi.fn()
 const mockAddAssetOptIn = vi.fn()
 const mockAddToAssetHolding = vi.fn()
-const mockGetAccountHoldings = vi.fn()
+const mockIsAssetFrozen = vi.fn()
 const mockFetchAndPersistAssets = vi.fn()
 const mockInvalidateBalances = vi.fn()
 const mockUseAllAccounts = vi.fn()
@@ -62,7 +62,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 // correctly and applies the override guard on its output.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     addToAssetHolding: (...args: unknown[]) => mockAddToAssetHolding(...args),
-    getAccountHoldings: (...args: unknown[]) => mockGetAccountHoldings(...args),
+    isAssetFrozen: (...args: unknown[]) => mockIsAssetFrozen(...args),
     useAccountBalancesInvalidator: () => ({
         invalidate: mockInvalidateBalances,
     }),
@@ -113,11 +113,18 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 const TXN = { sender: 'SENDER' } as unknown
 
+// Answers per asset, like the real `isAssetFrozen`, so a test asserting a
+// frozen asset fails if the guard asked about a different one.
+const freezeHoldings = (...frozenIds: string[]) =>
+    mockIsAssetFrozen.mockImplementation(({ assetId }: { assetId: string }) =>
+        Promise.resolve(frozenIds.includes(assetId)),
+    )
+
 describe('useTransactionSendFlow', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         // Default: nothing frozen. The guard reads holdings on every send.
-        mockGetAccountHoldings.mockResolvedValue([])
+        freezeHoldings()
         mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
         mockBuild.mockResolvedValue({ transactions: [{ txn: TXN }] })
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
@@ -641,9 +648,7 @@ describe('useTransactionSendFlow', () => {
         }
 
         it('refuses to build a send for a frozen holding', async () => {
-            mockGetAccountHoldings.mockResolvedValueOnce([
-                { assetId: '99', isFrozen: true },
-            ])
+            freezeHoldings('99')
 
             const { result } = renderHook(() => useTransactionSendFlow())
             await act(async () => {
@@ -655,9 +660,7 @@ describe('useTransactionSendFlow', () => {
         })
 
         it('builds normally when the holding is not frozen', async () => {
-            mockGetAccountHoldings.mockResolvedValueOnce([
-                { assetId: '99', isFrozen: false },
-            ])
+            freezeHoldings()
 
             const { result } = renderHook(() => useTransactionSendFlow())
             await act(async () => {
@@ -667,9 +670,7 @@ describe('useTransactionSendFlow', () => {
         })
 
         it('reads the sender and network itself rather than trusting the caller', async () => {
-            mockGetAccountHoldings.mockResolvedValueOnce([
-                { assetId: '99', isFrozen: true },
-            ])
+            freezeHoldings('99')
 
             const { result } = renderHook(() => useTransactionSendFlow())
             await act(async () => {
@@ -677,14 +678,16 @@ describe('useTransactionSendFlow', () => {
                     result.current.execute({ params: baseParams }),
                 ).rejects.toBeInstanceOf(AssetFrozenError)
             })
-            expect(mockGetAccountHoldings).toHaveBeenCalledWith({
+            // Only the asset being sent is queried — not the whole portfolio.
+            expect(mockIsAssetFrozen).toHaveBeenCalledWith({
                 accountAddress: 'A',
+                assetId: '99',
                 network: expect.any(String),
             })
         })
 
         it('builds when the holding has not synced yet — algod is the backstop', async () => {
-            mockGetAccountHoldings.mockResolvedValueOnce([])
+            freezeHoldings()
 
             const { result } = renderHook(() => useTransactionSendFlow())
             await act(async () => {

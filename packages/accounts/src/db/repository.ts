@@ -375,6 +375,43 @@ export async function getAccountHoldings({
     }))
 }
 
+type IsAssetFrozenParams = {
+    db?: Database
+    accountAddress: string
+    assetId: string
+    network: string
+}
+
+/**
+ * Whether this account's holding of `assetId` is frozen. A frozen holding can
+ * neither send nor receive, so send and swap both gate on this before building.
+ *
+ * Reads the same SQLite row the balance queries do — no request — and hits the
+ * (account_address, asset_id, network) primary key, so it's a point lookup
+ * rather than a scan of every holding the account has. An account that doesn't
+ * hold the asset has no row, and nothing to be frozen.
+ */
+export async function isAssetFrozen({
+    db = getDatabase(),
+    accountAddress,
+    assetId,
+    network,
+}: IsAssetFrozenParams): Promise<boolean> {
+    const rows = await db
+        .select({ isFrozen: AccountAssetHoldingsSchema.isFrozen })
+        .from(AccountAssetHoldingsSchema)
+        .where(
+            and(
+                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+                eq(AccountAssetHoldingsSchema.network, network),
+                eq(AccountAssetHoldingsSchema.assetId, new Decimal(assetId)),
+            ),
+        )
+        .all()
+
+    return rows[0]?.isFrozen === true
+}
+
 // Home-screen reads. Both join on the indexed accountAddress and let SQLite do
 // the summing, sorting and windowing, so the JS thread only materializes rows
 // actually on screen. ALGO participates like any holding, so there's no
