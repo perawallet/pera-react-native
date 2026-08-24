@@ -12,8 +12,8 @@ catalog:
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
   "@algorandfoundation/provider-migrations": 1.0.0-canary.1
   "@algorandfoundation/react-native-keystore": 1.0.0-canary.19
-  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.24
-  "@algorandfoundation/wallet-provider": 1.0.0-canary.5
+  "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.26
+  "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@lottiefiles/dotlottie-react": 0.19.13
   "@babel/runtime": ^7.29.2
@@ -159,18 +159,16 @@ onlyBuiltDependencies:
   - simple-git-hooks
 
 patchedDependencies:
-  # Four unrelated reasons. One is not a Pera preference at all: canary.24's
-  # `completePendingRegistration` passes an undeclared `derivedParentSecret` to
-  # `attachPrfRegistrationOutput`, so the iOS extension does not compile — carry
-  # that hunk through every bump until upstream fixes it. The other three: the
-  # Android credential provider keeps the legacy
+  # Three unrelated reasons. The Android credential provider keeps the legacy
   # native app's service class name so Credential Manager carries the user's
   # enablement across the upgrade, relying-party scoping so the credential
   # provider doesn't hand every stored passkey to any caller (PERA-4714), and
   # every user-facing string the package ships names "Rocca Wallet" — its own
   # product, shown verbatim in the iOS Face ID / passcode prompts. None of the
   # three is configurable through plugin options.
-  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.24": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.24.patch
+  # canary.26 shipped the derivedParentSecret fix upstream (parent.bytes), so
+  # that hunk is dropped rather than carried forward.
+  "@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.26": patches/@algorandfoundation__react-native-passkey-autofill@1.0.0-canary.26.patch
   # jsi 57.0.2+ added JavaScriptCodable+Date.swift, whose `abs(milliseconds)` on line 53 is
   # ambiguous under the Bitrise Xcode 26.2 Swift/C++-interop toolchain (fails the ExpoModulesJSI
   # xcframework build). No published jsi version fixes it (57.0.2/3/4 are identical here);
