@@ -45,6 +45,11 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     },
 }))
 
+import {
+    ASSET_CACHE_TTL_MS,
+    ASSET_NEWLY_SEEN_WINDOW_MS,
+    ASSET_RECLASSIFY_TTL_MS,
+} from '../../constants'
 import { fetchAndPersistAssets } from '../asset-syncer'
 
 describe('fetchAndPersistAssets', () => {
@@ -125,6 +130,25 @@ describe('fetchAndPersistAssets', () => {
 
         expect(fetchAssetsMock).not.toHaveBeenCalled()
         expect(upsertAssetsMock).not.toHaveBeenCalled()
+    })
+
+    test('opts the freshness gate into rechecking newly seen, unclassified assets', async () => {
+        // Without these the gate answers from the 7-day TTL alone, and a
+        // freshly minted NFT stays typed as a plain asset for a week even
+        // after the backend's crawler classifies it (PERA-4955).
+        fetchAssetsMock.mockResolvedValue({ results: [] })
+
+        await fetchAndPersistAssets(['1'], 'mainnet')
+
+        expect(getStaleOrMissingAssetIdsMock).toHaveBeenCalledWith(
+            expect.objectContaining({
+                ttlMs: ASSET_CACHE_TTL_MS,
+                recheckUnclassified: {
+                    ttlMs: ASSET_RECLASSIFY_TTL_MS,
+                    windowMs: ASSET_NEWLY_SEEN_WINDOW_MS,
+                },
+            }),
+        )
     })
 
     test('only fetches the IDs returned by getStaleOrMissingAssetIds', async () => {
