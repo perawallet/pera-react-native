@@ -1,0 +1,30 @@
+{
+    "name": "@perawallet/conformance",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "test:conformance": "vitest run",
+        "test:conformance:watch": "vitest",
+        "lint": "oxlint src"
+    },
+    "dependencies": {
+        "@algorandfoundation/algokit-utils": "catalog:",
+        "@algorandfoundation/dp256": "catalog:",
+        "@algorandfoundation/keystore-core": "catalog:",
+        "@algorandfoundation/xhd-wallet-api": "catalog:",
+        "@perawallet/wallet-core-accounts": "workspace:*",
+        "@perawallet/wallet-core-blockchain": "workspace:*",
+        "@perawallet/wallet-core-config": "workspace:*",
+        "@perawallet/wallet-core-kms": "workspace:*",
+        "@perawallet/wallet-core-signing": "workspace:*",
+        "@tanstack/store": "catalog:",
+        "algosdk": "catalog:",
+        "falcon-1024": "catalog:",
+        "tweetnacl": "catalog:"
+    },
+    "devDependencies": {
+        "oxlint": "^1.76.0",
+        "vitest": "catalog:"
+    }
+}
