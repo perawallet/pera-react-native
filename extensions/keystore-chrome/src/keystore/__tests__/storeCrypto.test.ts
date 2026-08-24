@@ -369,7 +369,7 @@ describe('state.ts crypto entry points', () => {
         // the same message. Upstream has since fixed this in
         // keystore-core@1.0.0-canary.3's dist/shims/dp256.js; see
         // src/keystore/__tests__/verify.test.ts for the full rationale and
-        // src/webauthn/keystore-signer.ts:258-269 for the workaround on the
+        // src/webauthn/keystore-signer.ts:254-266 for the workaround on the
         // signing side.
         it.fails('P-256: verify(sign(x)) round-trips over the raw message', async () => {
             const store = createStore()

@@ -15,7 +15,7 @@
 // One deliberate behavioural deviation from canary.17, marked at its site in
 // `signXHDDomainP256KeyData`: the re-derived P-256 domain scalar is zeroed
 // after signing. Upstream leaks it. Everything else here is verbatim.
-// oxlint-disable -eslint/no-explicit-any, unicorn/switch-case-braces -- ported verbatim from @algorandfoundation/keystore@1.0.0-canary.17; upstream style preserved
+// oxlint-disable @typescript-eslint/no-explicit-any, unicorn/switch-case-braces -- ported verbatim from @algorandfoundation/keystore@1.0.0-canary.17; upstream style preserved
 // node:crypto's `subtle` replaced by the web-standard `crypto.subtle` (see
 // extensions/keystore-chrome's existing vault/vault.ts convention — this
 // package targets the browser, not Node).

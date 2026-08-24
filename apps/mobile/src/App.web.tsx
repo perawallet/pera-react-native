@@ -23,9 +23,9 @@ import {
     installOffscreenStorageShim,
 } from '@perawallet/wallet-extension-platform-chrome/bootstrap'
 // Bootstrap-only subpath: exports hydrateKeystoreStorage without pulling the
-// extension's vendored ./keystore graph, which reaches xhd-wallet-api and its
-// sumo (libsodium) facade — a heavyweight, WASM-bearing dependency that has no
-// business loading before hydration. The /bootstrap subpath is storage-only.
+// extension's vendored ./keystore graph, which reaches xhd-wallet-api (and,
+// through libs.ts, dp256) — a large pure-JS crypto graph with no business
+// loading before hydration. The /bootstrap subpath is storage-only.
 import { hydrateKeystoreStorage } from '@perawallet/wallet-extension-keystore-chrome/bootstrap'
 
 type ShellComponent = React.ComponentType

@@ -11,7 +11,7 @@
  */
 // Ported from @algorandfoundation/keystore@1.0.0-canary.17 types/extension.ts
 // Portions Copyright Algorand Foundation, Apache-2.0
-// oxlint-disable -eslint/no-explicit-any -- ported verbatim from @algorandfoundation/keystore@1.0.0-canary.17; upstream style preserved
+// oxlint-disable @typescript-eslint/no-explicit-any -- ported verbatim from @algorandfoundation/keystore@1.0.0-canary.17; upstream style preserved
 
 import type { ExtensionOptions } from '@algorandfoundation/wallet-provider'
 import type { Store } from '@tanstack/store'

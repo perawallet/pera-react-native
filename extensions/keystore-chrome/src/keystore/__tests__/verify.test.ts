@@ -139,7 +139,7 @@ describe('verify.ts', () => {
         // upstream's current behaviour: keystore-core@1.0.0-canary.3's
         // `dist/shims/dp256.js` prehashes before calling the same primitive
         // ("we hash here to keep `sign`/`verify` symmetric"), which is why
-        // src/webauthn/keystore-signer.ts:258-269 must hand its payload over
+        // src/webauthn/keystore-signer.ts:254-266 must hand its payload over
         // UNHASHED. We preserve the defect because the vendored P-256 sign and
         // verify are unreachable in production — extension.ts's `WithKeyStore`
         // is exported but wired nowhere, and the passkey path takes
