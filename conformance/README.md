@@ -44,14 +44,23 @@ required for:
 If any of these has no `dist/` (e.g. a fresh clone/worktree that hasn't run a
 build), the import fails at Vitest's collection step — **an unresolvable-import
 crash that takes every file in the run down**, not an isolated test failure.
-Build the affected packages before running this suite in an environment that
-hasn't already built them:
+
+These four are not independent — `wallet-extension-platform` depends on
+`wallet-core-hardware-wallet`'s dist, and both `wallet-core-database` and
+`wallet-core-remote-config` depend on `wallet-extension-platform`'s (building
+`wallet-core-database` first fails with `Cannot find module
+'@perawallet/wallet-extension-platform'`). They also aren't the full picture:
+`wallet-core-remote-config` alone pulls in `wallet-core-shared`,
+`wallet-extension-provider`, and (transitively through provider)
+`wallet-extension-platform-driver` and the ledger extension packages, and
+`conformance/tsconfig.json`'s `paths` reach further still (e.g.
+`wallet-core-multisig`, `wallet-core-assets`, both pulled in via
+`wallet-core-accounts`). Don't hand-enumerate the closure — build everything
+and let turbo's `dependsOn: ["^build"]` resolve the graph in order, the same
+way `pnpm run build` already does for the rest of the repo:
 
 ```sh
-pnpm --filter @perawallet/wallet-core-remote-config build
-pnpm --filter @perawallet/wallet-extension-platform build
-pnpm --filter @perawallet/wallet-core-hardware-wallet build
-pnpm --filter @perawallet/wallet-core-database build
+pnpm run build
 ```
 
 `@perawallet/wallet-extension-provider`'s real implementation additionally

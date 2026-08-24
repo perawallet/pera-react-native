@@ -61,24 +61,25 @@ jobs:
               run: pnpm localnet
 
             # THE CI-BREAKING PREREQUISITE (see docs/LOCALNET_CONFORMANCE.md and
-            # conformance/README.md): the suite's import graph reaches these four
-            # packages' built dist/, not their src, one level below the packages
-            # vitest.config.ts aliases directly. Order matters — platform depends
-            # on hardware-wallet's dist, and database/remote-config both depend on
-            # platform's; building database before platform fails with "Cannot
-            # find module '@perawallet/wallet-extension-platform'".
-            - name: Build packages the suite needs but does not alias to source
-              run: |
-                  pnpm --filter @perawallet/wallet-core-hardware-wallet build
-                  pnpm --filter @perawallet/wallet-extension-platform build
-                  pnpm --filter @perawallet/wallet-core-database build
-                  pnpm --filter @perawallet/wallet-core-remote-config build
+            # conformance/README.md): the suite's import graph — and, separately,
+            # `conformance/tsconfig.json`'s `paths` for the typecheck step below —
+            # reach several packages' built dist/, not their src, one or two levels
+            # below the six packages aliased to source directly. The real closure
+            # is wide (hardware-wallet, platform, database, remote-config, plus
+            # their own deps like shared/config/devtools, PLUS multisig/assets for
+            # the typecheck step) and turbo already knows it via `dependsOn:
+            # ["^build"]` — mirrors pre-merge.yml's own `build` job (`pnpm run
+            # build`, no filter) rather than hand-enumerating packages, which
+            # missed two of them the first time this workflow was written.
+            - name: Build
+              run: pnpm run build
 
             - name: Typecheck
               run: pnpm --filter @perawallet/conformance typecheck
 
             - name: Run conformance suite
               run: |
+                  set -euo pipefail
                   mkdir -p conformance/reports
                   pnpm test:conformance 2>&1 | tee conformance/reports/output.log
 

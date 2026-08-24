@@ -49,29 +49,29 @@ a mock.
 - **Docker**, running.
 - `pnpm localnet` (wraps `algokit localnet start`) — boots algod, indexer,
   and kmd containers.
-- A built `dist/` for four workspace packages the suite's import graph
-  reaches transitively but does not alias to source. See
+- A built `dist/` for the workspace packages the suite's import graph (and,
+  for `pnpm --filter @perawallet/conformance typecheck`, its `tsconfig.json`
+  `paths`) reach transitively but do not alias to source. See
   `conformance/README.md`'s "`dist/` dependency (CI-relevant)" section for
-  the full explanation; the short version:
+  the full explanation of why. The closure is wider than it looks — four
+  packages pull in their own further dependencies (shared, config, the
+  ledger extension packages, `wallet-core-multisig`, `wallet-core-assets`,
+  and more) — so don't hand-build a list; build everything and let turbo's
+  own dependency graph (`dependsOn: ["^build"]`) order it correctly, same as
+  the rest of the repo:
 
     ```sh
-    pnpm --filter @perawallet/wallet-core-hardware-wallet build
-    pnpm --filter @perawallet/wallet-extension-platform build
-    pnpm --filter @perawallet/wallet-core-database build
-    pnpm --filter @perawallet/wallet-core-remote-config build
+    pnpm run build
     ```
 
-    Build **in this order** — `wallet-extension-platform` depends on
-    `wallet-core-hardware-wallet`'s dist, and both `wallet-core-database` and
-    `wallet-core-remote-config` depend on `wallet-extension-platform`'s. Build
-    order was wrong once already while wiring this up: `wallet-core-database`
-    built alone against a stale/missing `wallet-extension-platform` dist fails
-    with `Cannot find module '@perawallet/wallet-extension-platform'`, not the
-    clearer "run this other build first" message you'd want.
-
-    Without these, the suite doesn't fail one test — it fails to **collect**
-    any of the 28 files, because the first file loaded transitively imports the
-    barrel that needs them.
+    Without this, the suite doesn't fail one test — it fails to **collect**
+    any of the 28 files, because the first file loaded transitively imports a
+    barrel that needs an unbuilt package. `pnpm --filter <one-package> build`
+    looks like the cheaper option but is not reliable here: the true closure
+    has cross-package build-order dependencies (building
+    `wallet-core-database` before `wallet-extension-platform`, for instance,
+    fails with `Cannot find module '@perawallet/wallet-extension-platform'`),
+    and it is easy to miss a package the way this doc's own first draft did.
 
 ## The three-proof model
 
