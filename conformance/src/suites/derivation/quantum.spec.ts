@@ -24,7 +24,7 @@ import {
 } from '../../harness/algokey'
 import { getConformanceClient } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
-import { GO_ALGORAND_PQ_VECTOR } from '../../vectors/goAlgorand'
+import { GO_ALGORAND_PQ_VECTOR } from '../../vectors/knownAnswerVectors'
 
 /** Falcon-1024's NIST public-key header byte; `164` was the on-device defect adjacent to PERA-4972. */
 const FALCON_1024_NIST_HEADER_BYTE = 10

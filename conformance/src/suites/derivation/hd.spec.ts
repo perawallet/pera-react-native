@@ -23,7 +23,7 @@ import { describe, expect, it } from 'vitest'
 import { createHdAccount, fundAccount } from '../../harness/accounts'
 import { getConformanceClient } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
-import { IN_REPO_HD_VECTOR } from '../../vectors/goAlgorand'
+import { IN_REPO_HD_VECTOR } from '../../vectors/knownAnswerVectors'
 
 // algokey has no ARC-52 / BIP32-Ed25519 derivation command (verified directly:
 // `import`, `export`, `sign`, `multisig`, `part`, `pq` are the whole surface), so
