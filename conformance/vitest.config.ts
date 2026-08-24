@@ -33,6 +33,9 @@ export default defineConfig({
         environment: 'node',
         globals: true,
         include: ['src/**/*.spec.ts'],
+        // `@perawallet/wallet-extension-provider` mock for the network/accounts
+        // stores the submission chokepoint reaches through — see vitest.setup.ts.
+        setupFiles: ['./vitest.setup.ts'],
         // Chain state is shared across files; parallel runs race on account balances.
         fileParallelism: false,
         testTimeout: 120_000,
