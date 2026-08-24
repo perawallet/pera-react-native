@@ -73,6 +73,19 @@ a mock.
     fails with `Cannot find module '@perawallet/wallet-extension-platform'`),
     and it is easy to miss a package the way this doc's own first draft did.
 
+**CI note**: `localnet-conformance.yml` runs `pnpm run build` uncached —
+no `node_modules`/dist restore step, unlike `pre-merge.yml`'s `build` job,
+which saves/restores both across its multi-job pipeline. That's a
+deliberate simplicity choice, not an oversight: this workflow is a single
+job with nothing downstream to share a cache with, and `pre-merge.yml`'s
+`build-artifacts-${{ github.sha }}` cache key only helps job-to-job within
+one run for exactly that reason — it would buy this workflow nothing
+without restructuring into multiple jobs. `timeout-minutes: 30` is
+comfortable today because LocalNet's Docker image pulls dominate the wall
+clock, not the uncached build; if that stops being true, adding the same
+`actions/cache` pattern `pre-merge.yml` uses is the first lever to pull,
+not a rewrite.
+
 ## The three-proof model
 
 Most suites assert three independent things about a signed transaction, and
@@ -230,8 +243,8 @@ open — gap 5 above).
   (Settings → Developer → Node Settings), re-enter it afterwards, or
   **Fetch from node** to pick up the new hash.
 - **An unresolvable-import crash on the very first test file, not a test
-  failure** — the `dist/` prerequisite above wasn't met. Run the four
-  builds, in order, and re-run.
+  failure** — the `dist/` prerequisite above wasn't met. Run `pnpm run
+build` and re-run.
 - **A single spec file crashes at collection with `Cannot find module
 '.../react-native-mmkv/.../createMMKV'`** — `wallet-extension-provider`'s
   real build (not the `vitest.setup.ts` mock) got loaded. `vitest.config.ts`
