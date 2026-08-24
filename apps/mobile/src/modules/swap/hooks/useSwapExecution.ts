@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import {
     useTransactionEncoder,
     useAlgorandClient,
@@ -20,9 +20,9 @@ import {
     type PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    getAccountHoldings,
     isMultisigAccount,
     useSelectedAccount,
-    useAccountBalancesQuery,
     useSignerFor,
 } from '@perawallet/wallet-core-accounts'
 import { useDeviceID } from '@perawallet/wallet-core-device'
@@ -144,8 +144,6 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     // (Falcon) via the resolved auth account. Same pattern as
     // `useTransactionConfirmationScreen`'s `isQuantumFee` check.
     const signer = useSignerFor(account?.address)
-    const senderAccounts = useMemo(() => (account ? [account] : []), [account])
-    const { accountBalances } = useAccountBalancesQuery(senderAccounts)
     const deviceId = useDeviceID(network)
     const registerHandoff = useSwapHandoffStore(s => s.registerHandoff)
     const { mutateAsync: prepareTransactions } =
@@ -167,14 +165,19 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 return { kind: 'error', phase: 'prepare', message }
             }
 
-            const isInputFrozen =
-                accountBalances
-                    .get(account?.address ?? '')
-                    ?.assetBalances.find(
-                        b => b.assetId === quote.assetIn.assetId,
-                    )?.isFrozen ?? false
+            const holdings = account
+                ? await getAccountHoldings({
+                      accountAddress: account.address,
+                      network,
+                  })
+                : []
+            const isFrozen = (assetId: string) =>
+                holdings.find(h => h.assetId === assetId)?.isFrozen === true
 
-            if (isInputFrozen) {
+            if (
+                isFrozen(quote.assetIn.assetId) ||
+                isFrozen(quote.assetOut.assetId)
+            ) {
                 const copy = resolveErrorCopy(
                     new AssetFrozenError(),
                     t,
@@ -468,7 +471,6 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             network,
             account,
             signer,
-            accountBalances,
             deviceId,
             registerHandoff,
         ],

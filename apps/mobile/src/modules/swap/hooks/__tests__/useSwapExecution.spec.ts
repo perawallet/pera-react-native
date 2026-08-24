@@ -43,7 +43,7 @@ const mockRegisterHandoff = vi.fn()
 const mockUseSelectedAccount = vi.fn()
 const mockUseSignerFor = vi.fn()
 const mockIsMultisigAccount = vi.fn()
-const mockUseAccountBalancesQuery = vi.fn()
+const mockGetAccountHoldings = vi.fn()
 // Hoisted so it's initialized before the (hoisted) wallet-core-swaps mock factory
 // runs during the package import.
 const { mockValidate } = vi.hoisted(() => ({ mockValidate: vi.fn() }))
@@ -183,8 +183,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     // the guard against a fixed `quantumAccount` fixture below.
     isQuantumAccount: (account: unknown) =>
         (account as { type?: string } | undefined)?.type === 'quantum',
-    useAccountBalancesQuery: (...args: unknown[]) =>
-        mockUseAccountBalancesQuery(...args),
+    getAccountHoldings: (...args: unknown[]) => mockGetAccountHoldings(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-device', () => ({
@@ -343,10 +342,9 @@ describe('useSwapExecution', () => {
         // rekeyed" case). Rekey tests override this independently.
         mockUseSignerFor.mockImplementation(() => mockUseSelectedAccount())
 
-        // Default: no cached balances, so the frozen-input gate no-ops.
-        mockUseAccountBalancesQuery.mockReturnValue({
-            accountBalances: new Map(),
-        })
+        // Default: nothing held is frozen. The gate reads holdings on
+        // every execute.
+        mockGetAccountHoldings.mockResolvedValue([])
     })
 
     it('starts with idle status', () => {
@@ -528,18 +526,12 @@ describe('useSwapExecution', () => {
         expect(result.current.status).toBe('idle')
     })
 
+    // makeQuote trades assetIn '0' for assetOut '999'.
     it('refuses a frozen input asset before prepare, with the shared AssetFrozenError copy', async () => {
         mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
-        mockUseAccountBalancesQuery.mockReturnValue({
-            accountBalances: new Map([
-                [
-                    'SENDER_ADDR',
-                    {
-                        assetBalances: [{ assetId: '0', isFrozen: true }],
-                    },
-                ],
-            ]),
-        })
+        mockGetAccountHoldings.mockResolvedValue([
+            { assetId: '0', isFrozen: true },
+        ])
 
         const { result } = renderHook(() => useSwapExecution())
 
@@ -562,6 +554,44 @@ describe('useSwapExecution', () => {
             message: 'errors.transaction.asset_frozen.body',
         })
         expect(mockPrepareTransactions).not.toHaveBeenCalled()
+    })
+
+    it('refuses a frozen OUTPUT asset — a frozen holding cannot receive either', async () => {
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+        mockGetAccountHoldings.mockResolvedValue([
+            { assetId: '0', isFrozen: false },
+            { assetId: '999', isFrozen: true },
+        ])
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(
+                makeQuote('quote-frozen-out'),
+            )
+        })
+
+        expect(outcome).toMatchObject({
+            kind: 'error',
+            phase: 'prepare',
+            title: 'errors.transaction.asset_frozen.title',
+        })
+        expect(mockPrepareTransactions).not.toHaveBeenCalled()
+    })
+
+    it('reads holdings at execute time rather than from a balances subscription', async () => {
+        mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
+
+        const { result } = renderHook(() => useSwapExecution())
+        await act(async () => {
+            await result.current.execute(makeQuote('quote-reads-db'))
+        })
+
+        expect(mockGetAccountHoldings).toHaveBeenCalledWith({
+            accountAddress: 'SENDER_ADDR',
+            network: expect.anything(),
+        })
     })
 
     it('abandons a cancelled execution after prepare settles, before signing', async () => {
