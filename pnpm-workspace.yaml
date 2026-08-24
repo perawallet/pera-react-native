@@ -115,10 +115,11 @@ minimumReleaseAgeExclude:
   # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
   # workspace depends on it (extensions/keystore-chrome vendors the flat
   # canary.17 API locally), so it needs no freshness exemption of its own.
-  # keystore-core and keystore-web ARE direct dependencies (extensions/provider,
-  # extensions/passkey-autofill, packages/kms, packages/passkeys,
-  # packages/migrate) that share the keystore canary publish date, so they
-  # keep their exemption independent of the removed keystore pin.
+  # keystore-core and keystore-web ARE direct dependencies that share the
+  # keystore canary publish date, so they keep their exemption independent of
+  # the removed keystore pin: keystore-core is consumed by
+  # extensions/provider, extensions/passkey-autofill, packages/kms and
+  # packages/passkeys; keystore-web only by extensions/provider.
   # keystore-node is not listed: it arrives transitively, and its own
   # canary.3 publish (2026-08-13) already clears the 7-day minimumReleaseAge
   # window unaided, so no exclude entry is needed for it either.
