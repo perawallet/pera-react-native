@@ -18,6 +18,9 @@ on:
             - 'packages/blockchain/**'
             - 'packages/signing/**'
             - 'packages/kms/**'
+            # Aspirational: ARC-59 (asa-inbox) is out of scope today, so the suite
+            # doesn't import either package yet. Left in so the filter is ready
+            # once that coverage lands, rather than a mistake to prune.
             - 'packages/transactions/**'
             - 'packages/asa-inbox/**'
 
