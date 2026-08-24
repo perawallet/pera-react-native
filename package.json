@@ -51,7 +51,7 @@
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-unused-imports": "catalog:",
     "falcon-1024": "catalog:",
-    "fallow": "3.14.0",
+    "fallow": "3.17.0",
     "msw": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "^1.76.0",
