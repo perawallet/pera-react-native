@@ -11,7 +11,7 @@
  */
 
 import { Store } from '@tanstack/store'
-import type { Key, KeyStoreState } from '@algorandfoundation/keystore'
+import type { Key, KeyStoreState } from '../../keystore'
 import { DeterministicP256 } from '@algorandfoundation/dp256'
 import { sha256 } from '@noble/hashes/sha2'
 import { beforeEach, describe, expect, it } from 'vitest'

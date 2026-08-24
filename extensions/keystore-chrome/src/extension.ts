@@ -29,7 +29,7 @@ import {
     verify,
     type XHDDerivedKeyData,
     type XHDDomainP256KeyData,
-} from '@algorandfoundation/keystore'
+} from './keystore'
 import type { Extension, Provider } from '@algorandfoundation/wallet-provider'
 
 import { context } from './constants'

@@ -27,7 +27,6 @@
   },
   "dependencies": {
     "@algorandfoundation/dp256": "catalog:",
-    "@algorandfoundation/keystore": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@noble/ciphers": "catalog:",
