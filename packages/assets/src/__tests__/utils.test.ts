@@ -16,6 +16,7 @@ import {
     toWholeUnits,
     toDecimalUnits,
     isPureNft,
+    hasNftShape,
     isCollectible,
     formatCollectibleAmount,
     formatAssetAmount,
@@ -207,6 +208,23 @@ describe('utils', () => {
             const asset = createTestAsset(6, 'ALGO')
 
             expect(isPureNft(asset)).toBe(false)
+        })
+    })
+
+    describe('hasNftShape', () => {
+        test.each([
+            ['pure NFT', 0, '1', true],
+            ['editioned NFT (indivisible, many copies)', 0, '1000', true],
+            ['ARC-3 fractional NFT (10^decimals)', 2, '100', true],
+            ['fungible token', 6, '10000000000', false],
+            ['divisible supply below 10^decimals', 2, '50', false],
+        ])('%s', (_label, decimals, totalSupply, expected) => {
+            expect(
+                hasNftShape({
+                    decimals: decimals as number,
+                    totalSupply: new Decimal(totalSupply as string),
+                }),
+            ).toBe(expected)
         })
     })
 

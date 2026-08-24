@@ -10,14 +10,28 @@
  limitations under the License
  */
 
-import { eq, and, inArray, gte, sql } from 'drizzle-orm'
+import {
+    eq,
+    and,
+    inArray,
+    gte,
+    lt,
+    ne,
+    or,
+    isNull,
+    sql,
+    type SQL,
+} from 'drizzle-orm'
+import { type AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
     DEFAULT_ASSET_METADATA,
+    PeraAssetType,
     type PeraAsset,
     type PeraAssetMetadata,
 } from '../models'
+import { hasNftShape } from '../utils'
 import {
     AssetsNodeSchema,
     AssetsPeraSchema,
@@ -225,6 +239,7 @@ export async function upsertPeraAssets({
             assetType: meta?.type ?? null,
             peraMetadataJson: mergedMeta ? JSON.stringify(mergedMeta) : null,
             updatedAt: now,
+            firstSeenAt: now,
         }
     })
 
@@ -241,6 +256,8 @@ export async function upsertPeraAssets({
                     assetType: sql`excluded.asset_type`,
                     peraMetadataJson: sql`excluded.pera_metadata_json`,
                     updatedAt: sql`excluded.updated_at`,
+                    // firstSeenAt absent on purpose — bumping it would keep an
+                    // asset "newly seen" forever.
                 },
             })
             .run()
@@ -397,6 +414,9 @@ export async function updateAssetPeraMetadata({
             isFavorited: merged.isFavorited,
             peraMetadataJson: metaJson,
             updatedAt: now,
+            // A favorite toggle can be the first thing to cache an asset, so
+            // this writer stamps it too — on creation only, as above.
+            firstSeenAt: now,
         })
         .onConflictDoUpdate({
             target: [AssetsPeraSchema.assetId, AssetsPeraSchema.network],
@@ -502,6 +522,21 @@ type GetStaleOrMissingAssetIdsParams = {
 const ID_PREDICATE_IN_SQL_MAX = 64
 
 /**
+ * Id filter for a candidate set, or `undefined` past the cap — callers must
+ * then re-filter the rows in JS. See ID_PREDICATE_IN_SQL_MAX.
+ */
+const idPredicate = (
+    column: AnySQLiteColumn,
+    assetIds: string[],
+): Optional<SQL> =>
+    assetIds.length <= ID_PREDICATE_IN_SQL_MAX
+        ? inArray(
+              column,
+              assetIds.map(id => new Decimal(id)),
+          )
+        : undefined
+
+/**
  * Shared freshness scan over any table carrying `assetId`/`network`/
  * `updatedAt` columns. Small candidate sets push the id predicate into SQL;
  * large ones fetch the network's fresh ids and diff in JS — see
@@ -519,45 +554,124 @@ async function getStaleOrMissingIdsFromTable({
     if (assetIds.length === 0) return []
 
     const freshThreshold = Date.now() - ttlMs
-    const conditions = [
-        eq(table.network, network),
-        gte(table.updatedAt, freshThreshold),
-    ]
-    if (assetIds.length <= ID_PREDICATE_IN_SQL_MAX) {
-        conditions.push(
-            inArray(
-                table.assetId,
-                assetIds.map(id => new Decimal(id)),
-            ),
-        )
-    }
 
     const freshRows = await db
         // Raw TEXT read: routing through the column's Decimal decoder would
         // cost one Decimal + one toString per row for ids we only compare.
         .select({ assetId: sql<string>`${table.assetId}` })
         .from(table)
-        .where(and(...conditions))
+        .where(
+            and(
+                eq(table.network, network),
+                gte(table.updatedAt, freshThreshold),
+                idPredicate(table.assetId, assetIds),
+            ),
+        )
         .all()
 
     const freshSet = new Set(freshRows.map(r => r.assetId))
     return assetIds.filter(id => !freshSet.has(id))
 }
 
+export type UnclassifiedRecheck = {
+    /** How often an unclassified asset is re-asked about. */
+    ttlMs: number
+    /** How long it stays eligible, measured from `first_seen_at`. */
+    windowMs: number
+}
+
+/**
+ * NFT-shaped assets, seen recently, that the backend has not typed as a
+ * collectible yet.
+ *
+ * The backend only flips the type once its crawler has fetched the asset's
+ * media, which lands seconds to hours after a mint — caching that first
+ * answer for the whole of `ASSET_CACHE_TTL_MS` is what stranded minted NFTs
+ * in the tokens tab for a week (PERA-4955). The shape filter is what keeps a
+ * wallet full of fungible tokens from re-asking about all of them.
+ */
+async function getUnclassifiedNftIds({
+    db,
+    assetIds,
+    network,
+    ttlMs,
+    windowMs,
+}: {
+    db: Database
+    assetIds: string[]
+    network: string
+} & UnclassifiedRecheck): Promise<string[]> {
+    const now = Date.now()
+
+    const rows = await db
+        .select({
+            assetId: sql<string>`${AssetsPeraSchema.assetId}`,
+            totalSupply: AssetsNodeSchema.totalSupply,
+            decimals: AssetsNodeSchema.decimals,
+        })
+        .from(AssetsPeraSchema)
+        .innerJoin(
+            AssetsNodeSchema,
+            and(
+                eq(AssetsPeraSchema.assetId, AssetsNodeSchema.assetId),
+                eq(AssetsPeraSchema.network, AssetsNodeSchema.network),
+            ),
+        )
+        .where(
+            and(
+                eq(AssetsPeraSchema.network, network),
+                // NULL on rows cached before the column, which reads as "not
+                // newly seen" and keeps them on the long TTL.
+                gte(AssetsPeraSchema.firstSeenAt, now - windowMs),
+                lt(AssetsPeraSchema.updatedAt, now - ttlMs),
+                or(
+                    isNull(AssetsPeraSchema.assetType),
+                    ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+                ),
+                idPredicate(AssetsPeraSchema.assetId, assetIds),
+            ),
+        )
+        .all()
+
+    const candidates = new Set(assetIds)
+    return rows
+        .filter(row => candidates.has(row.assetId) && hasNftShape(row))
+        .map(row => row.assetId)
+}
+
 /**
  * Given a candidate set of asset IDs, returns those that are either not in
  * the DB at all or older than `ttlMs`. Used by the syncer to skip work
  * during steady-state polling.
+ *
+ * `recheckUnclassified` additionally returns assets still awaiting
+ * classification — see `getUnclassifiedNftIds`.
  */
 export async function getStaleOrMissingAssetIds({
     db = getDatabase(),
+    recheckUnclassified,
     ...params
-}: GetStaleOrMissingAssetIdsParams): Promise<string[]> {
-    return getStaleOrMissingIdsFromTable({
+}: GetStaleOrMissingAssetIdsParams & {
+    recheckUnclassified?: UnclassifiedRecheck
+}): Promise<string[]> {
+    const staleOrMissing = await getStaleOrMissingIdsFromTable({
         db,
         table: AssetsNodeSchema,
         ...params,
     })
+
+    if (!recheckUnclassified) return staleOrMissing
+
+    const unclassified = await getUnclassifiedNftIds({
+        db,
+        assetIds: params.assetIds,
+        network: params.network,
+        ...recheckUnclassified,
+    })
+
+    return unclassified.length === 0
+        ? staleOrMissing
+        : [...new Set([...staleOrMissing, ...unclassified])]
 }
 
 type GetStaleOrMissingPriceAssetIdsParams = GetStaleOrMissingAssetIdsParams & {
