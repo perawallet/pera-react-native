@@ -2595,6 +2595,7 @@
             "app_call": "App Call",
             "key_registration": "Key Registration",
             "heartbeat": "Heartbeat",
+            "state_proof": "State Proof",
             "default": "Transaction",
             "more_impacts": "Show {{count}} more"
         },
@@ -2654,6 +2655,9 @@
         "unknown": {
             "title": "Unsupported Transaction Type",
             "body": "This transaction type is not supported."
+        },
+        "state_proof": {
+            "body": "The network published a state proof so other chains can verify Algorand blocks."
         },
         "asset_transfer": {
             "clawback_from": "Clawback From"

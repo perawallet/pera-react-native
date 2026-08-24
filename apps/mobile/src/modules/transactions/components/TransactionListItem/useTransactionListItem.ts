@@ -101,6 +101,9 @@ const getTitle = (
         case 'hb': {
             return t('transactions.list_item.heartbeat')
         }
+        case 'stpf': {
+            return t('transactions.list_item.state_proof')
+        }
         default: {
             return t('transactions.list_item.default')
         }

@@ -2595,6 +2595,7 @@
             "app_call": "Llamada a app",
             "key_registration": "Registro de clave",
             "heartbeat": "Heartbeat",
+            "state_proof": "State Proof",
             "default": "Transacción",
             "more_impacts": "Ver {{count}} más"
         },
@@ -2654,6 +2655,9 @@
         "unknown": {
             "title": "Tipo de transacción no compatible",
             "body": "Este tipo de transacción no es compatible."
+        },
+        "state_proof": {
+            "body": "La red publicó un State Proof para que otras cadenas puedan verificar los bloques de Algorand."
         },
         "asset_transfer": {
             "clawback_from": "Clawback desde"

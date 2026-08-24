@@ -2587,6 +2587,7 @@
             "app_call": "App-Aufruf",
             "key_registration": "Schlüsselregistrierung",
             "heartbeat": "Heartbeat",
+            "state_proof": "State Proof",
             "default": "Transaktion",
             "more_impacts": "{{count}} weitere anzeigen"
         },
@@ -2646,6 +2647,9 @@
         "unknown": {
             "title": "Nicht unterstützter Transaktionstyp",
             "body": "Dieser Transaktionstyp wird nicht unterstützt."
+        },
+        "state_proof": {
+            "body": "Das Netzwerk hat einen State Proof veröffentlicht, damit andere Chains Algorand-Blöcke verifizieren können."
         },
         "asset_transfer": {
             "clawback_from": "Clawback von"
