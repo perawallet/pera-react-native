@@ -37,16 +37,18 @@ const collectScannedFiles = (): Promise<string[]> =>
         },
     )
 
-// `@algorandfoundation/keystore` is pinned at 1.0.0-canary.17 (see
-// pnpm-workspace.yaml): a pre-split, self-contained implementation with its own
-// flat function API and its own key types — a second, frozen keystore universe
-// beside keystore-core. keystore-chrome is built on it and is exempt; anywhere
-// else it would mean two incompatible type universes for the same key data.
-// Bumping past the pin is worse, not better: in canary.23 (the nearest copy on
-// disk) it is a thin meta re-export that hard-depends on keystore-node, which
-// in turn reaches native `@napi-rs/keyring` — an optionalDependency loaded
-// lazily via `createRequire` in `dist/storage/keyring.js:34`, not a static
-// import — and on keystore-web.
+// `@algorandfoundation/keystore` is no longer pinned in pnpm-workspace.yaml
+// and no package.json in the workspace depends on it — the catalog tracks
+// canary releases freely (currently canary.23). keystore-chrome vendors its
+// own copy of the flat canary.17 function API and key types locally under
+// `src/keystore/` instead of importing the package, so it is exempt below;
+// anywhere else the bare meta package would mean two incompatible type
+// universes for the same key data. Importing it fresh would be worse, not
+// better: canary.23 (the nearest copy on disk) is a thin meta re-export that
+// hard-depends on keystore-node, which in turn reaches native
+// `@napi-rs/keyring` — an optionalDependency loaded lazily via
+// `createRequire` in `dist/storage/keyring.js:34`, not a static import — and
+// on keystore-web.
 //
 // `@algorandfoundation/react-native-keystore` is NOT banned. Since canary.18 it
 // re-exports keystore-core wholesale (`dist/index.js:6` in the installed
