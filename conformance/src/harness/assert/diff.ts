@@ -10,13 +10,20 @@
  limitations under the License
  */
 
-const UNSET = '(unset)'
+const hex = (value: Uint8Array): string =>
+    [...value].map(byte => byte.toString(16).padStart(2, '0')).join('')
 
+/**
+ * Every rendering is distinguishable from every other: an absent field, a
+ * present-but-empty byte string, `1000n` and `1000` must not print the same, or
+ * a real mismatch surfaces as two identical-looking columns.
+ */
 const render = (value: unknown): string => {
-    if (value === undefined || value === null) return UNSET
+    if (value === undefined || value === null) return '(unset)'
     if (value instanceof Uint8Array) {
-        return value.length === 0 ? UNSET : Buffer.from(value).toString('hex')
+        return value.length === 0 ? '(empty)' : hex(value)
     }
+    if (typeof value === 'bigint') return `${value}n`
     return String(value)
 }
 

@@ -14,7 +14,7 @@ import algosdk, { type modelsv2, type Transaction } from 'algosdk'
 
 import { getConformanceClient } from '../client'
 import { formatFieldDiff } from './diff'
-import { compareIntent, type TxnIntent } from './intent'
+import { assertIntentComplete, compareIntent, type TxnIntent } from './intent'
 
 export type ConfirmedTxn = modelsv2.PendingTransactionResponse
 
@@ -90,11 +90,13 @@ const expectedBalanceDelta = (
 /**
  * Asserts that the bytes actually submitted, and the transaction the chain
  * actually confirmed, both match `intent` field-for-field, that the fee charged
- * is the declared one and at least the node's own minimum, and that the sender's
- * ALGO balance moved by exactly what the confirmed transaction accounts for.
+ * is the declared one, and that the sender's ALGO balance moved by exactly what
+ * the confirmed transaction accounts for.
  *
- * Only fields the intent declares are compared — but a declared field the chain
- * does not carry is a failure, not an omission.
+ * Fields the intent declares are compared — and a declared field the chain does
+ * not carry is a failure, not an omission. Fields it omits are not compared,
+ * except the account-handing ones (`rekeyTo`, `assetSender`, the close-tos, the
+ * `acfg` roles, `nonParticipation`), where omission asserts absence.
  */
 export const expectConformant = async (
     params: ExpectConformantParams,
@@ -102,6 +104,8 @@ export const expectConformant = async (
     const { intent, signedBytes, txId, senderBalanceBefore } = params
     const algorand = getConformanceClient()
     const algod = algorand.client.algod
+
+    assertIntentComplete(intent)
 
     const submitted = algosdk.decodeSignedTransaction(signedBytes)
     if (!isSigned(submitted)) {
@@ -143,16 +147,21 @@ export const expectConformant = async (
     assertMatchesIntent('confirmed transaction', intent, confirmed.txn.txn)
 
     const chargedFee = confirmed.txn.txn.fee
-    const { minFee } = await algod.getTransactionParams().do()
-    if (chargedFee < BigInt(minFee)) {
-        fail(
-            `fee ${chargedFee} is below the node's minimum ${minFee} for ${txId}`,
-        )
-    }
-    if (intent.fee !== undefined && chargedFee !== intent.fee) {
+    if (chargedFee !== intent.fee) {
         fail(
             `the chain charged ${chargedFee}, the intent declared ${intent.fee}`,
         )
+    }
+    // A fee-pooled group leg may legitimately pay zero while a sibling covers
+    // it, and one leg cannot see the group's total — the caller asserts that.
+    // For a lone transaction the node's own minimum still applies.
+    if ((intent.groupSize ?? 1) === 1) {
+        const { minFee } = await algod.getTransactionParams().do()
+        if (chargedFee < BigInt(minFee)) {
+            fail(
+                `fee ${chargedFee} is below the node's minimum ${minFee} for ${txId}`,
+            )
+        }
     }
 
     const expectedDelta = expectedBalanceDelta(confirmed, senderBalanceBefore)

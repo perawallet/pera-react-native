@@ -21,9 +21,11 @@ import {
 import {
     buildGroup,
     buildTxn,
+    createTestAsset,
     signGroupWithKeystore,
     signWithKeystore,
     submitAndConfirm,
+    type ConformanceComposer,
 } from '../../build'
 import { getConformanceClient } from '../../client'
 import { createConformanceKeyStore } from '../../keystore'
@@ -278,5 +280,111 @@ describe('expectConformant', () => {
                 signedBytes: withoutNote.signedBytes,
             }),
         ).rejects.toThrow(/not the transaction being asserted/)
+    })
+})
+
+/**
+ * The clawback seizure is the sharpest form of the premise this suite exists
+ * for: the node accepts and confirms it, every field a naive intent declares
+ * matches, and it takes a third party's asset units anyway.
+ */
+describe('expectConformant — asset clawback', () => {
+    let keyStore: Awaited<ReturnType<typeof createConformanceKeyStore>>
+    let minFee: bigint
+    let assetId: bigint
+    let clawbackAuthority: ConformanceAccount
+    let victim: ConformanceAccount
+    let seizure: SubmittedPayment
+
+    const SEIZED = 100n
+
+    const sendAsset = async (
+        sender: ConformanceAccount,
+        compose: (composer: ConformanceComposer) => void,
+    ): Promise<SubmittedPayment> => {
+        const txn = await buildTxn(compose)
+        const signedBytes = await signWithKeystore(keyStore, sender, txn)
+        const { balance } = await getConformanceClient().account.getInformation(
+            sender.address,
+        )
+        const { txId } = await submitAndConfirm(signedBytes)
+        return { signedBytes, txId, senderBalanceBefore: balance.microAlgo }
+    }
+
+    beforeAll(async () => {
+        keyStore = await createConformanceKeyStore()
+        clawbackAuthority = await createAlgo25Account(keyStore)
+        victim = await createAlgo25Account(keyStore)
+
+        await fundAccount(clawbackAuthority.address, 10_000_000n)
+        await fundAccount(victim.address, 10_000_000n)
+
+        const params = await getConformanceClient()
+            .client.algod.getTransactionParams()
+            .do()
+        minFee = BigInt(params.minFee)
+
+        assetId = await createTestAsset(keyStore, clawbackAuthority, {
+            total: 1000n,
+            clawback: clawbackAuthority.address,
+        })
+
+        await sendAsset(victim, composer => {
+            composer.addAssetOptIn({ sender: victim.address, assetId })
+        })
+        await sendAsset(clawbackAuthority, composer => {
+            composer.addAssetTransfer({
+                sender: clawbackAuthority.address,
+                receiver: victim.address,
+                assetId,
+                amount: SEIZED,
+            })
+        })
+
+        seizure = await sendAsset(clawbackAuthority, composer => {
+            composer.addAssetTransfer({
+                sender: clawbackAuthority.address,
+                receiver: clawbackAuthority.address,
+                assetId,
+                amount: SEIZED,
+                clawbackTarget: victim.address,
+            })
+        })
+    })
+
+    const seizureIntent = (): TxnIntent => ({
+        type: 'axfer',
+        sender: clawbackAuthority.address,
+        receiver: clawbackAuthority.address,
+        amount: SEIZED,
+        assetId,
+        fee: minFee,
+        groupSize: 1,
+    })
+
+    it('really did take the units, so the transaction is wrong and not invalid', async () => {
+        const holding =
+            await getConformanceClient().asset.getAccountInformation(
+                victim.address,
+                assetId,
+            )
+
+        expect(holding.balance).toBe(0n)
+    })
+
+    it('rejects a seizure the intent never declared', async () => {
+        const wrong = expectConformant({ intent: seizureIntent(), ...seizure })
+
+        await expect(wrong).rejects.toThrow(/assetSender/)
+        await expect(wrong).rejects.toThrow(new RegExp(victim.address))
+    })
+
+    it('accepts the same seizure once the intent declares assetSender', async () => {
+        await expect(
+            expectConformant({
+                intent: { ...seizureIntent(), assetSender: victim.address },
+                ...seizure,
+            }),
+        ).resolves.toBeDefined()
     })
 })
