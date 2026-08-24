@@ -65,9 +65,6 @@ describe('useErrorToast', () => {
     it('uses the algod-specific title and body for an AlgodError', () => {
         const algodError = new AlgodError('overspend', {
             address: 'A',
-            balance: 0n,
-            spent: 0n,
-            missing: 0n,
         })
         const { result } = renderHook(() => useErrorToast())
 
@@ -121,9 +118,6 @@ describe('useErrorToast', () => {
     it('translates a recognizable plain Error via toAlgodError', () => {
         const recognizableAlgodError = new AlgodError('overspend', {
             address: 'A',
-            balance: 0n,
-            spent: 0n,
-            missing: 0n,
         })
         ;(toAlgodError as Mock).mockReturnValueOnce(recognizableAlgodError)
         const raw = new Error('overspend (account ABC...)')

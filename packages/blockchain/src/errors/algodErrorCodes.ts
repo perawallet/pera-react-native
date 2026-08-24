@@ -62,25 +62,12 @@ export type AlgodErrorCode =
  * boundary.
  */
 export interface AlgodErrorParamsByCode {
+    // No balance/spent/missing fields: the node's overspend message renders a
+    // fee-adjusted figure that cannot be parsed back into a real balance. See
+    // docs/LOCALNET_CONFORMANCE.md and `parseAlgodMessage.ts`'s `OVERSPEND_RE`
+    // comment for the full reasoning.
     overspend: {
         address: string
-        /**
-         * microAlgo balance reported by the node at the time of rejection —
-         * UNAVAILABLE. algod renders this as a human-scaled, unit-suffixed
-         * value (e.g. "299.777mA", "1.233567A") that IS losslessly parseable
-         * as a number — the blocker is semantic, not numeric: the rendered
-         * figure is the account's balance MINUS the rejected transaction's
-         * own fee (confirmed empirically, e.g. 300_777 funded, fee 1000 ->
-         * rendered "299.777mA" = 299_777), so a value parsed from this
-         * position would be fee-adjusted and therefore not actually the
-         * account's balance. See PERA-4908 and `parseAlgodMessage.ts`'s
-         * `OVERSPEND_RE` comment.
-         */
-        balance?: bigint
-        /** microAlgos the rejected transaction tried to debit — UNAVAILABLE for the same reason (kept symmetric with `balance`/`missing` rather than parsed alone; see the comment above). */
-        spent?: bigint
-        /** `spent - balance` — UNAVAILABLE because it inherits `balance`'s fee-adjustment error. */
-        missing?: bigint
     }
     below_min_balance: {
         address: string
