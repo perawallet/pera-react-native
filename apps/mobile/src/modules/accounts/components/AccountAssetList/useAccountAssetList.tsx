@@ -153,10 +153,14 @@ export const useAccountAssetList = ({
         if (!hasRowsForRequest) return
 
         const [appliedAddress] = appliedViewRequestKeyRef.current.split('|')
-        appliedViewRequestKeyRef.current = viewRequestKey
         // Next frame: FlashList settles its own offset on the layout pass that
         // follows a data change, and a scroll issued before it loses (PERA-4406).
         const frame = requestAnimationFrame(() => {
+            // Recorded here, not before scheduling: every placeholder gap
+            // re-runs this effect and its cleanup cancels the pending frame, so
+            // marking the request applied up front turned that cancellation
+            // into a reset that silently never happened (PERA-4932).
+            appliedViewRequestKeyRef.current = viewRequestKey
             listRef.current?.scrollToOffset({
                 offset: 0,
                 // Animate a re-sort of the list in front of you; an account

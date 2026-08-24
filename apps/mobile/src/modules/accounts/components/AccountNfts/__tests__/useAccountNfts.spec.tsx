@@ -414,6 +414,44 @@ describe('useAccountNfts', () => {
             expect(scrollToOffset).toHaveBeenCalledTimes(1)
         })
 
+        // A placeholder gap re-runs the effect, and its cleanup cancels the
+        // frame the previous run scheduled. Recording the request as applied
+        // before that frame ran made the cancellation permanent (PERA-4932).
+        it('still resets once the rows land if a placeholder gap cancelled the scheduled frame', async () => {
+            const { result, rerender } = renderHook(() => useAccountNfts())
+            const scrollToOffset = attachListRef(result.current.flatListRef)
+
+            // The new order's rows land and schedule a reset for the next frame.
+            mockSortMode = 'titleDesc'
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: reorderedRows,
+                isPending: false,
+                isPlaceholderData: false,
+            })
+            rerender()
+
+            // A refetch re-enters the placeholder gap before that frame runs.
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: reorderedRows,
+                isPending: false,
+                isPlaceholderData: true,
+            })
+            rerender()
+            await flushFrame()
+
+            expect(scrollToOffset).not.toHaveBeenCalled()
+
+            mockUseAccountCollectiblesQuery.mockReturnValue({
+                collectibles: reorderedRows,
+                isPending: false,
+                isPlaceholderData: false,
+            })
+            rerender()
+            await flushFrame()
+
+            expect(scrollToOffset).toHaveBeenCalledTimes(1)
+        })
+
         it('scrolls to the top when a search term narrows the list', async () => {
             const { result, rerender } = renderHook(() => useAccountNfts())
             const scrollToOffset = attachListRef(result.current.flatListRef)
