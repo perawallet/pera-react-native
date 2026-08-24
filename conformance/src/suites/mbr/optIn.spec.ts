@@ -45,6 +45,13 @@ const minBalanceOf = async (address: string): Promise<bigint> =>
  * a source independent of the algod reading itself: `useMinimumFeeConfig`'s
  * remote-config path isn't reachable headlessly, so this pins the fallback
  * the app falls back to whenever remote config is unavailable.
+ *
+ * Ceiling: this verifies the CONSTANTS against chain truth, not the app's
+ * MBR arithmetic that consumes them (`useTransactionSendFlow.ts:148`'s
+ * `mbrAfterOptIn = currentMbr + assetMbr`, `useEnsureDestinationOptIn.ts:104`'s
+ * balance-needed calculation) — those are React hooks, unreachable headlessly,
+ * so a bug in how they COMBINE `assetMbr`/`baseAccountMbr` with a live
+ * balance would not be caught here.
  */
 describe('MBR prediction conformance', () => {
     let keyStore: ConformanceKeyStore

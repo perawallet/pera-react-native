@@ -64,12 +64,19 @@ export type AlgodErrorCode =
 export interface AlgodErrorParamsByCode {
     overspend: {
         address: string
-        /** microAlgo balance reported by the node at the time of rejection. */
-        balance: bigint
-        /** microAlgos the rejected transaction tried to debit from the account. */
-        spent: bigint
-        /** `spent - balance` — convenience for UI messaging. */
-        missing: bigint
+        /**
+         * microAlgo balance reported by the node at the time of rejection —
+         * UNAVAILABLE. algod renders this as a human-scaled, unit-suffixed
+         * value (e.g. "299.777mA", "1.233567A") that also silently subtracts
+         * the transaction's own fee before display, so it cannot be safely
+         * reconstructed from the message text alone. See PERA-4908 and
+         * `parseAlgodMessage.ts`'s `OVERSPEND_RE` comment.
+         */
+        balance?: bigint
+        /** microAlgos the rejected transaction tried to debit — UNAVAILABLE for the same reason. */
+        spent?: bigint
+        /** `spent - balance` — UNAVAILABLE for the same reason. */
+        missing?: bigint
     }
     below_min_balance: {
         address: string

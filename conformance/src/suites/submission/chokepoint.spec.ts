@@ -19,6 +19,15 @@ import {
     groupTransactions,
 } from '@perawallet/wallet-core-blockchain/utils/transact'
 import { Networks } from '@perawallet/wallet-core-config/models/network'
+// Unlike every other deep import in this suite, this one is NOT purely a
+// `src`-aliased read: `submitAndAutoRefresh.ts` also imports the full
+// `@perawallet/wallet-core-blockchain` barrel (for real `toAlgodError`
+// classification logic this suite exercises), which transitively requires
+// `wallet-core-remote-config`, `wallet-extension-platform`,
+// `wallet-core-hardware-wallet`, and `wallet-core-database` to have a built
+// `dist/` — see conformance/README.md. Without those dists this import
+// fails at collection time (an unresolvable-import crash, not a test
+// failure) and takes every file in the run down with it.
 import { submitAndAutoRefreshCore } from '@perawallet/wallet-core-signing/pipeline/submission/submitAndAutoRefresh'
 
 import {
@@ -109,11 +118,16 @@ describe('submission chokepoint conformance', () => {
         // Confirmation and the onConfirmed dispatch run in a fire-and-forget
         // background task (see submitAndAutoRefresh.ts's backgroundConfirmAndRefresh);
         // the returned promise resolves before either happens.
-        await vi.waitFor(() =>
-            expect(onConfirmed).toHaveBeenCalledWith(
-                [sender.address],
-                Networks.custom,
-            ),
+        // vi.waitFor's own default timeout (1000ms) is unrelated to this
+        // file's 120s vitest testTimeout — a slow LocalNet round would hit
+        // vi.waitFor's short default first, so it is raised explicitly.
+        await vi.waitFor(
+            () =>
+                expect(onConfirmed).toHaveBeenCalledWith(
+                    [sender.address],
+                    Networks.custom,
+                ),
+            { timeout: 30_000 },
         )
 
         const confirmed = await waitForConfirmation(

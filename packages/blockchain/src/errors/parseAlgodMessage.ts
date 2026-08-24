@@ -29,25 +29,31 @@ type Matcher = (message: string) => ParsedAlgodMessage | null
 const ADDRESS = '[A-Z2-7]{58}'
 const TXID = '[A-Z0-9]{52}'
 
-// "overspend (account ADDR, data {... MicroAlgos:{Raw:N} ... }, tried to spend {M})"
+// "overspend (account ADDR, data {...}, tried to spend ...)" — matched on
+// shape only, not on how the balance/spend figures are rendered. go-algorand
+// has used at least two incompatible formats for that rendering: an older
+// raw-struct dump (`MicroAlgos:{Raw:199000}`, `tried to spend {201000}`,
+// PERA-4038) and algod 5.0.0-stable's human-scaled, unit-suffixed rendering
+// (`MicroAlgos:299.777mA`, `MicroAlgos:1.233567A`, `tried to spend 50A`,
+// decimal digits and the unit itself both varying with magnitude). The
+// balance figure additionally subtracts the transaction's own fee before
+// display in the new format (confirmed empirically against LocalNet:
+// rendered value = balance - fee), which the message text alone cannot
+// invert. Neither figure is safely reconstructable from the string, so this
+// classifies the rejection correctly without extracting numbers from either
+// format — see `AlgodErrorParamsByCode.overspend` for why those params are
+// optional and left unset.
 const OVERSPEND_RE = new RegExp(
-    `overspend \\(account (${ADDRESS}),.*?MicroAlgos:\\{Raw:(\\d+)\\}.*?tried to spend \\{(\\d+)\\}`,
+    `overspend \\(account (${ADDRESS}),.*?tried to spend`,
     's',
 )
 
 const matchOverspend: Matcher = message => {
     const m = OVERSPEND_RE.exec(message)
     if (!m) return null
-    const balance = BigInt(m[2])
-    const spent = BigInt(m[3])
     return {
         code: AlgodErrorCode.OVERSPEND,
-        params: {
-            address: m[1],
-            balance,
-            spent,
-            missing: spent > balance ? spent - balance : 0n,
-        },
+        params: { address: m[1] },
     }
 }
 
@@ -132,7 +138,10 @@ const matchNotAuthorized: Matcher = message => {
 }
 
 // "txn dead: round N outside of A-B" — B is lastValid, N is current round
-const EXPIRED_TXN_RE = /txn dead:\s*round (\d+) outside of (\d+)-(\d+)/
+// go-algorand renders the round range with either one or two dashes
+// depending on version (confirmed against LocalNet: algod 5.0.0-stable
+// uses "outside of 1670--1675"); accept both rather than assuming either.
+const EXPIRED_TXN_RE = /txn dead:\s*round (\d+) outside of (\d+)-{1,2}(\d+)/
 
 const matchExpiredTxn: Matcher = message => {
     const m = EXPIRED_TXN_RE.exec(message)

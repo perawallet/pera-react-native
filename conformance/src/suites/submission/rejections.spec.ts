@@ -69,20 +69,29 @@ const rejectionOf = async (submit: () => Promise<unknown>): Promise<Error> => {
  * never a raw node string. Each case creates its own accounts so a filtered
  * `-t` run exercises the same setup a full run would.
  *
- * Three of the five reveal a real gap between `parseAlgodMessage.ts`'s
- * regexes and algod 5.0.0-stable's actual wording — see the FINDING comments
- * on `overspend`, `expired lastValid`, and `corrupted group id` below and the
- * task report for detail. These are pinned to what `toAlgodError` ACTUALLY
- * returns today (not what the app intends), so the suite stays green as a
- * regression baseline while the gap stays visible and documented rather than
- * silently absorbed.
+ * This suite originally found that THREE of the five (`overspend`,
+ * `expired lastValid`, `corrupted group id`) mapped to `unknown_node_error`
+ * instead of their intended codes — a real gap between `parseAlgodMessage.ts`'s
+ * regexes and algod 5.0.0-stable's actual wording, which additionally routed
+ * each one through `submitAndAutoRefreshCore`'s unknown-outcome verification
+ * retry loop instead of surfacing immediately
+ * (`classifySubmitFailure.ts`'s `NO_NODE_VERDICT_CODES`). `overspend` and
+ * `expired lastValid` are fixed in this PR (see their FINDING comments below
+ * for what changed); `corrupted group id` remains an open finding — see its
+ * comment for why no fix was made here.
  */
 describe('typed rejection paths conformance', () => {
     it('spend more than the balance', async () => {
         const keyStore = await createConformanceKeyStore()
         const sender = await createAlgo25Account(keyStore)
         const receiver = await createAlgo25Account(keyStore)
-        await fundAccount(sender.address, 300_000n)
+        // funded chosen so funded-fee lands on a round milliAlgo figure (see
+        // the renderedBalance guard below) — algod's overspend message
+        // renders the account's balance MINUS the rejected transaction's own
+        // fee (confirmed empirically against LocalNet), abbreviated to a
+        // unit-suffixed figure ("300mA", not "300000" or "{Raw:300000}").
+        const funded = 301_000n
+        await fundAccount(sender.address, funded)
         await fundAccount(receiver.address, 300_000n)
 
         const amount = 900_000n
@@ -93,6 +102,12 @@ describe('typed rejection paths conformance', () => {
                 amount: microAlgo(amount),
             })
         })
+        const renderedBalance = funded - txn.fee
+        if (renderedBalance % 1000n !== 0n) {
+            throw new Error(
+                `funded (${funded}) minus fee (${txn.fee}) is ${renderedBalance}, not a round milliAlgo figure — the "${renderedBalance}mA" assertion below assumes no decimal part`,
+            )
+        }
         const signedBytes = await signWithKeystore(keyStore, sender, txn)
 
         const error = await rejectionOf(() => submitAndConfirm(signedBytes))
@@ -100,16 +115,26 @@ describe('typed rejection paths conformance', () => {
         // to "mA" (e.g. "900mA" for 900_000 microAlgo); chosen as a multiple
         // of 1000 so this holds without guessing the renderer's rounding.
         expect(error.message).toContain(`overspend (account ${sender.address},`)
+        // Guards the exact rendering OVERSPEND_RE's shape-match relies on —
+        // this string previously lived only in a comment, not an assertion.
+        expect(error.message).toContain(
+            `MicroAlgos:${renderedBalance / 1000n}mA`,
+        )
         expect(error.message).toContain(`tried to spend ${amount / 1000n}mA)`)
 
         const algodError = toAlgodError(error)
-        // FINDING (PERA-4908): OVERSPEND_RE in parseAlgodMessage.ts requires
-        // the legacy "MicroAlgos:{Raw:N}" debug format. algod 5.0.0-stable
-        // renders this as "MicroAlgos:299mA" instead, so the regex never
-        // matches and a real overspend rejection — the most common rejection
-        // in the app — falls through to unknown_node_error instead of the
-        // dedicated `overspend` code. See the task report for the fix.
-        expect(algodError.code).toBe(AlgodErrorCode.UNKNOWN_NODE_ERROR)
+        // Was a FINDING (PERA-4908, found in e6d5d5f2f): OVERSPEND_RE
+        // required the legacy "MicroAlgos:{Raw:N}" debug format. algod
+        // 5.0.0-stable renders this as a unit-suffixed figure instead
+        // ("MicroAlgos:300mA"), so the regex never matched and a real
+        // overspend rejection — the most common rejection in the app —
+        // fell through to unknown_node_error, which additionally routed it
+        // into submitAndAutoRefreshCore's unknown-outcome verification retry
+        // loop instead of surfacing immediately (classifySubmitFailure.ts's
+        // NO_NODE_VERDICT_CODES). Fixed in this PR by matching on message
+        // shape instead of the numeric rendering; the balance/spent/missing
+        // params are no longer populated (see algodErrorCodes.ts).
+        expect(algodError.code).toBe(AlgodErrorCode.OVERSPEND)
     })
 
     it('transfer an ASA the receiver has not opted into', async () => {
@@ -241,12 +266,19 @@ describe('typed rejection paths conformance', () => {
         )
 
         const algodError = toAlgodError(error)
-        // FINDING (PERA-4908): no matcher in parseAlgodMessage.ts recognizes
+        // FINDING (PERA-4908), STILL OPEN — recorded as a follow-up, not
+        // fixed in this PR: no matcher in parseAlgodMessage.ts recognizes
         // "inconsistent group values" (algod's group-hash mismatch text), so
         // this real rejection falls through to unknown_node_error. There is
-        // no dedicated AlgodErrorCode for a group-id mismatch today —
-        // pinning to the current (only possible) mapping per the brief, and
-        // flagging it as a real gap rather than the correct/intended one.
+        // no dedicated AlgodErrorCode for a group-id mismatch today, and one
+        // is deliberately NOT invented here — the fix for overspend/expired
+        // above was to correct an existing code's matcher, not to grow the
+        // enum. This is not benign: unknown_node_error is one of
+        // classifySubmitFailure.ts's NO_NODE_VERDICT_CODES, so a corrupted
+        // group id also routes through the pointless unknown-outcome
+        // verification retry before surfacing (same mechanism as the
+        // overspend/expired bug). In practice this needs a hand-corrupted
+        // group id to trigger, which normal signing flows cannot produce.
         expect(algodError.code).toBe(AlgodErrorCode.UNKNOWN_NODE_ERROR)
     })
 
@@ -260,6 +292,15 @@ describe('typed rejection paths conformance', () => {
         const { lastRound } = await getConformanceClient()
             .client.algod.status()
             .do()
+        // A just-started LocalNet can be at a very low round; guard against
+        // firstValid/lastValid underflowing to a negative bigint, which would
+        // build a nonsensical (and differently-rejected) transaction instead
+        // of the expired one this case means to exercise.
+        if (lastRound <= 10n) {
+            throw new Error(
+                `LocalNet is at round ${lastRound}, too early to construct an already-expired validity window (need > round 10)`,
+            )
+        }
         // Both comfortably behind the current round, so the window is
         // already closed by the time this reaches the pool. Set via the
         // composer's own params rather than mutating the built Transaction:
@@ -286,12 +327,19 @@ describe('typed rejection paths conformance', () => {
         expect(txn.lastValid).toBe(lastValid)
 
         const algodError = toAlgodError(error)
-        // FINDING (PERA-4908): EXPIRED_TXN_RE in parseAlgodMessage.ts expects
-        // a single dash between the two round numbers ("outside of A-B").
-        // algod 5.0.0-stable's actual message uses a double dash ("outside of
-        // A--B", confirmed above), so the regex never matches and this real
-        // expired-transaction rejection falls through to unknown_node_error
-        // instead of the dedicated `expired_txn` code.
-        expect(algodError.code).toBe(AlgodErrorCode.UNKNOWN_NODE_ERROR)
+        // Was a FINDING (PERA-4908, found in e6d5d5f2f): EXPIRED_TXN_RE
+        // required a single dash between the two round numbers ("outside of
+        // A-B"). algod 5.0.0-stable's actual message uses a double dash
+        // ("outside of A--B", asserted above), so the regex never matched
+        // and this real expired-transaction rejection fell through to
+        // unknown_node_error — which, like the overspend case, additionally
+        // routed it into the unknown-outcome verification retry loop instead
+        // of surfacing immediately. Fixed in this PR: the regex now accepts
+        // both renderings.
+        expect(algodError.code).toBe(AlgodErrorCode.EXPIRED_TXN)
+        if (algodError.code !== AlgodErrorCode.EXPIRED_TXN) {
+            throw new Error('unreachable: narrowed by the assertion above')
+        }
+        expect(algodError.params.lastValid).toBe(lastValid)
     })
 })
