@@ -61,7 +61,3 @@ export const BLE_CLASS_ERROR_KINDS: ReadonlySet<LedgerErrorPresetKind> =
         'connection_lost',
         'device_not_found',
     ])
-
-export const isBleClassErrorKind = (
-    kind: LedgerErrorPresetKind | undefined,
-): boolean => kind !== undefined && BLE_CLASS_ERROR_KINDS.has(kind)
