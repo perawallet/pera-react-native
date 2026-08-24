@@ -28,6 +28,14 @@ let client: AlgorandClient | undefined
  * Memoised: every suite calls this (directly or via `balanceOf`/`authAddrOf`)
  * on nearly every assertion, and a fresh client per call was otherwise the
  * common case rather than the exception.
+ *
+ * Side effect: a shared client also activates AlgoKit's own suggested-params
+ * cache (`_cachedSuggestedParamsTimeout`, 3s), which the old fresh-client-per-call
+ * pattern defeated — builds within a 3s window can now share `firstValid`/
+ * `lastValid`. Judged benign for this suite: the validity window is 1000
+ * rounds, the expired-txn case reads `lastRound` from an uncached
+ * `algod.status()` call, and every suite uses deliberately distinct amounts
+ * rather than relying on txn identity.
  */
 export const getConformanceClient = (): AlgorandClient => {
     client ??= createTimeoutBoundedAlgorandClient({

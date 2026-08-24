@@ -21,13 +21,13 @@ import {
 import { groupTransactions } from '@perawallet/wallet-core-blockchain/utils/transact'
 
 import { createAlgo25Account, fundAccount } from '../../harness/accounts'
+import { base32Encode } from '../../harness/base32'
 import {
     buildTxn,
     createTestAsset,
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { base32Encode } from '../../harness/base32'
 import { getConformanceClient } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
 
