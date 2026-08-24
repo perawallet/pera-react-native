@@ -180,6 +180,12 @@ export const algokeyQuantumSign = async (params: {
 // preimage blob (msig.v/thr/subsig[].pk populated, sigs empty) — exactly what algosdk's
 // own `createMultisigTransaction` produces. There is no bare-Transaction form to wrap: the
 // caller is expected to hand in that preimage directly as `unsignedTxn`.
+//
+// It does not merge onto a partially-signed input: re-running this against another
+// participant's already-signed output re-derives from the embedded `txn` field and
+// silently drops the earlier signature rather than adding to it. Sign each participant
+// off the bare preimage independently and merge the results locally (e.g. algosdk's
+// `mergeMultisigTransactions`) instead of chaining calls.
 export const algokeyMultisigSign = async (params: {
     mnemonic: string
     unsignedTxn: Uint8Array

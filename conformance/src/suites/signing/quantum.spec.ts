@@ -81,7 +81,7 @@ describe('quantum signing conformance', () => {
         const { minFee } = await getConformanceClient()
             .client.algod.getTransactionParams()
             .do()
-        const fee = calculateMinTxnFee({
+        const expectedFee = calculateMinTxnFee({
             baseMinFee: BigInt(minFee),
             isPQSigner: true,
             pqMultiplier: FALLBACK_PQ_MULTIPLIER,
@@ -91,7 +91,7 @@ describe('quantum signing conformance', () => {
                 sender: sender.address,
                 receiver: receiver.address,
                 amount: microAlgo(amount),
-                staticFee: microAlgo(fee),
+                staticFee: microAlgo(expectedFee),
             })
         })
 
@@ -122,7 +122,11 @@ describe('quantum signing conformance', () => {
             sender: sender.address,
             receiver: receiver.address,
             amount,
-            fee: txn.fee,
+            // The value computed above, not read back off the built
+            // transaction — matches suites/fees/quantum.spec.ts's stronger
+            // form, though here it's a precondition for submission rather
+            // than the thing under test.
+            fee: expectedFee,
         }
 
         // Node acceptance: the actual PERA-4643 catch. Byte-parity against

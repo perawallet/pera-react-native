@@ -138,7 +138,9 @@ describe('multisig signing conformance', () => {
             ],
         })
         if (assembled.kind !== 'success') {
-            throw new Error(`expected success, got ${assembled.kind}`)
+            throw new Error(
+                `expected success, got ${JSON.stringify(assembled)}`,
+            )
         }
         const assembledBytes = assembled.signedTransactionsBytes[0]
 

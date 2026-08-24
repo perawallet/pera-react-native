@@ -48,10 +48,21 @@ const authAddrOf = async (address: string): Promise<string | undefined> =>
  * Full construction-level rekey mechanics (rekey-in, rekey-out, auth-addr
  * assertions) already live in
  * `suites/construction/rekey.spec.ts`. This file is narrower: given an
- * already-rekeyed account, does the keystore sign the exact same bytes a real
- * signer would? A wrong `authAddr`/`sgnr` on a rekeyed account is silently
- * accepted by every mock and rejected only by a real node — the second case
- * here is what catches it.
+ * already-rekeyed account, does the app's Ed25519 signing path (real
+ * `keyStore.sign`, real Falcon/Ed25519 shims) produce bytes byte-identical to
+ * a real signer, and does a real node accept the `sgnr`-carrying envelope and
+ * reject the pre-rekey key?
+ *
+ * Limitation: the `sgnr` field itself is written by
+ * `harness/build.ts`'s `signTransaction`, a harness reimplementation of the
+ * rule — not by the app's own signer
+ * (`packages/signing/src/hooks/useLocalKeyTransactionSigner.ts`). That
+ * duplication exists because the app's signers are React hooks with no pure
+ * entry point a headless suite can call. A regression in the app's own
+ * `sgnr` logic would leave this suite green. Quantum and multisig don't have
+ * this gap: they exercise real app code end to end
+ * (`pqSigningDigest`, `assemblePQSignedTransaction`,
+ * `assembleSignedMultisigTransactions`).
  */
 describe('rekeyed signing conformance', () => {
     let keyStore: ConformanceKeyStore
@@ -148,7 +159,13 @@ describe('rekeyed signing conformance', () => {
             composer.addPayment({
                 sender: source.address,
                 receiver: receiver.address,
-                amount: microAlgo(1000n),
+                // A different amount from the earlier spend in this file: two
+                // otherwise-identical transactions built in the same LocalNet dev
+                // round would share firstValid/lastValid and collide on txID.
+                // Harmless today only because dev mode advances a round per
+                // submission; this suite runs in CI, where that timing isn't
+                // guaranteed.
+                amount: microAlgo(2000n),
             })
         })
         // source's own key is well-formed and produces a validly-signed
