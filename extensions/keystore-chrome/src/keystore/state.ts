@@ -207,7 +207,7 @@ export async function verify({
 }
 
 /**
- * Signs data using the provided key data and optional parent key for HD derivation.
+ * Signs data using the provided key data.
  *
  * @param params - The signing parameters.
  * @param params.store - The TanStack store instance for {@link KeyStoreState}.
