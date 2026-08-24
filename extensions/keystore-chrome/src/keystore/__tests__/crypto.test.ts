@@ -86,3 +86,32 @@ describe('crypto.ts', () => {
         )
     })
 })
+
+// Runs outside the `crypto.ts` describe above so the deterministic
+// getRandomValues stub in its beforeEach never applies here — this is the
+// only test exercising the real crypto.getRandomValues nonce path.
+describe('crypto.ts nonce randomness (real crypto.getRandomValues)', () => {
+    it('encryptWithKeyData produces a different nonce on each call for the same key and plaintext', async () => {
+        const key: KeyData = {
+            id: 'k1',
+            type: 'ecc',
+            algorithm: 'raw',
+            extractable: false,
+            publicKey: makeUint8([10, 11, 12]),
+        }
+        const plaintext = makeUint8([100, 101, 102])
+
+        const first = (await encryptWithKeyData({
+            key: { ...key },
+            data: plaintext,
+        })) as Uint8Array
+        const second = (await encryptWithKeyData({
+            key: { ...key },
+            data: plaintext,
+        })) as Uint8Array
+
+        expect(Array.from(first.slice(0, 24))).not.toEqual(
+            Array.from(second.slice(0, 24)),
+        )
+    })
+})
