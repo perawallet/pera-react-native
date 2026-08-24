@@ -18,6 +18,7 @@
         "@perawallet/wallet-core-config": "workspace:*",
         "@perawallet/wallet-core-kms": "workspace:*",
         "@perawallet/wallet-core-signing": "workspace:*",
+        "@scure/bip39": "catalog:",
         "@tanstack/store": "catalog:",
         "algosdk": "catalog:",
         "falcon-1024": "catalog:",

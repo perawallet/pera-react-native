@@ -1032,6 +1032,9 @@ importers:
       '@perawallet/wallet-core-signing':
         specifier: workspace:*
         version: link:../packages/signing
+      '@scure/bip39':
+        specifier: 'catalog:'
+        version: 2.2.0
       '@tanstack/store':
         specifier: 'catalog:'
         version: 0.11.1

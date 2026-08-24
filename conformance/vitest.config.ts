@@ -26,6 +26,7 @@ export default defineConfig({
             pkg('wallet-core-config', 'config'),
             pkg('wallet-core-kms', 'kms'),
             pkg('wallet-core-signing', 'signing'),
+            pkg('wallet-core-shared', 'shared'),
         ]),
     },
     test: {
