@@ -23,12 +23,8 @@ import {
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { getConformanceClient } from '../../harness/client'
+import { balanceOf } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
-
-const balanceOf = async (address: string): Promise<bigint> =>
-    (await getConformanceClient().account.getInformation(address)).balance
-        .microAlgo
 
 /**
  * Baseline for the suite: a plain Ed25519 spend signed through the keystore

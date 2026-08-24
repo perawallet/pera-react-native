@@ -28,12 +28,8 @@ import { algokeyMultisigSign } from '../../harness/algokey'
 import type { TxnIntent } from '../../harness/assert/intent'
 import { expectConformant } from '../../harness/assert/roundTrip'
 import { buildTxn, submitAndConfirm } from '../../harness/build'
-import { getConformanceClient } from '../../harness/client'
+import { balanceOf } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
-
-const balanceOf = async (address: string): Promise<bigint> =>
-    (await getConformanceClient().account.getInformation(address)).balance
-        .microAlgo
 
 const toBase64 = (bytes: Uint8Array): string =>
     Buffer.from(bytes).toString('base64')

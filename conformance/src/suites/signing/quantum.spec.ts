@@ -31,12 +31,8 @@ import {
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { getConformanceClient } from '../../harness/client'
+import { balanceOf, getConformanceClient } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
-
-const balanceOf = async (address: string): Promise<bigint> =>
-    (await getConformanceClient().account.getInformation(address)).balance
-        .microAlgo
 
 /**
  * PERA-4643: the quantum signing preimage was `sha512_256(bytesToSign())`

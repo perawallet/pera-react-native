@@ -25,22 +25,11 @@ import {
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { getConformanceClient } from '../../harness/client'
+import { authAddrOf, balanceOf } from '../../harness/client'
 import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
-
-const balanceOf = async (address: string): Promise<bigint> =>
-    (await getConformanceClient().account.getInformation(address)).balance
-        .microAlgo
-
-const authAddrOf = async (address: string): Promise<string | undefined> =>
-    (
-        await getConformanceClient()
-            .client.algod.accountInformation(address)
-            .do()
-    ).authAddr?.toString()
 
 /**
  * Full rekey lifecycle against a real node. A mock signer would happily sign
