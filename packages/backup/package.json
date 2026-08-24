@@ -1,48 +1,49 @@
 {
-  "name": "@perawallet/wallet-core-backup",
-  "version": "0.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+    "name": "@perawallet/wallet-core-backup",
+    "version": "0.0.0",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite build --watch",
+        "test": "vitest run",
+        "test:unit": "vitest run",
+        "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+    },
+    "dependencies": {
+        "@algorandfoundation/algokit-utils": "catalog:",
+        "@babel/runtime": "catalog:",
+        "@noble/hashes": "catalog:",
+        "@perawallet/wallet-core-accounts": "workspace:*",
+        "@perawallet/wallet-core-blockchain": "workspace:*",
+        "@perawallet/wallet-core-config": "workspace:*",
+        "@perawallet/wallet-core-device": "workspace:*",
+        "@perawallet/wallet-core-kms": "workspace:*",
+        "@perawallet/wallet-core-shared": "workspace:*",
+        "@perawallet/wallet-extension-provider": "workspace:*",
+        "@scure/bip39": "catalog:",
+        "algosdk": "catalog:",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+        "tweetnacl": "catalog:",
+        "zod": "catalog:",
+        "zustand": "catalog:"
+    },
+    "devDependencies": {
+        "@perawallet/wallet-core-devtools": "workspace:*",
+        "@testing-library/react": "catalog:",
+        "@types/react": "catalog:",
+        "msw": "catalog:",
+        "typescript": "catalog:",
+        "vite": "catalog:",
+        "vite-plugin-dts": "catalog:",
+        "vitest": "catalog:"
     }
-  },
-  "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
-    "test": "vitest run",
-    "test:unit": "vitest run",
-    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
-  },
-  "dependencies": {
-    "@algorandfoundation/algokit-utils": "catalog:",
-    "algosdk": "catalog:",
-    "@babel/runtime": "catalog:",
-    "@noble/hashes": "catalog:",
-    "@perawallet/wallet-core-accounts": "workspace:*",
-    "@perawallet/wallet-core-blockchain": "workspace:*",
-    "@perawallet/wallet-core-config": "workspace:*",
-    "@perawallet/wallet-core-kms": "workspace:*",
-    "@perawallet/wallet-core-shared": "workspace:*",
-    "@perawallet/wallet-extension-provider": "workspace:*",
-    "@scure/bip39": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "tweetnacl": "catalog:",
-    "zod": "catalog:",
-    "zustand": "catalog:"
-  },
-  "devDependencies": {
-    "typescript": "catalog:",
-    "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
-    "vitest": "catalog:",
-    "@types/react": "catalog:",
-    "@perawallet/wallet-core-devtools": "workspace:*",
-    "@testing-library/react": "catalog:",
-    "msw": "catalog:"
-  }
 }

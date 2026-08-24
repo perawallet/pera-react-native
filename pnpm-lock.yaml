@@ -2149,6 +2149,9 @@ importers:
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
+      '@perawallet/wallet-core-device':
+        specifier: workspace:*
+        version: link:../device
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms
