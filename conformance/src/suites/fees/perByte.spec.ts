@@ -25,15 +25,11 @@ import {
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { getConformanceClient } from '../../harness/client'
+import { balanceOf, getConformanceClient } from '../../harness/client'
 import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
-
-const balanceOf = async (address: string): Promise<bigint> =>
-    (await getConformanceClient().account.getInformation(address)).balance
-        .microAlgo
 
 // Probed directly against the running LocalNet (algod 5.0.0-stable,
 // dockernet-v1) before writing this suite:
@@ -50,10 +46,11 @@ const balanceOf = async (address: string): Promise<bigint> =>
 // whenever it clears the floor, so *any* above-floor value would "pass").
 // What this suite CAN verify against the live node: the composer's own fee
 // computation, left to run rather than pinned, matches an
-// independently-predicted value (`max(baseMinFee, feePerByte * size)`, fed
-// from algod's own suggested params, never read off either built
-// transaction) for both a small and a large note — and that the two sizes
-// are charged identically, because `feePerByte` is 0.
+// independently-predicted value (`max(baseMinFee, feePerByte)`, fed from
+// algod's own suggested params, never read off either built transaction) for
+// both a small and a large note — and that the two sizes are charged
+// identically, because `feePerByte` is 0 (the size-sensitive term of the real
+// formula never activates here — see the `feePerByte === 0n` guard below).
 describe('per-byte fee conformance', () => {
     let keyStore: ConformanceKeyStore
     let sender: ConformanceAccount
@@ -81,9 +78,9 @@ describe('per-byte fee conformance', () => {
         // LocalNet's congestion state fails loudly here instead of silently
         // invalidating `expectedFee` below.
         expect(feePerByte).toBe(0n)
-        // Independent of either built transaction: algod's real per-byte rate
-        // is 0, so `max(baseMinFee, feePerByte * size)` collapses to the flat
-        // minimum regardless of note size.
+        // Independent of either built transaction: with feePerByte pinned to 0
+        // above, `max(baseMinFee, feePerByte)` is just `baseMinFee` — the size
+        // term of the real per-byte formula is never computed here.
         const expectedFee = feePerByte > baseMinFee ? feePerByte : baseMinFee
 
         const senderBalanceBeforeSmall = await balanceOf(sender.address)
