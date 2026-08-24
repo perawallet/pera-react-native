@@ -674,7 +674,7 @@
         "algod": {
             "overspend": {
                 "title": "ALGO insuficiente",
-                "body": "Esta conta não tem ALGO suficiente para cobrir a transação e manter o saldo mínimo. Adicione pelo menos {{missing}} microALGO e tente novamente."
+                "body": "Esta conta não tem ALGO suficiente para cobrir a transação e manter o saldo mínimo. Adicione mais ALGO e tente novamente."
             },
             "below_min_balance": {
                 "title": "Abaixo do saldo mínimo",

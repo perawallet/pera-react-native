@@ -666,7 +666,7 @@
         "algod": {
             "overspend": {
                 "title": "Unzureichendes ALGO",
-                "body": "Dieses Konto verfügt nicht über genügend ALGO, um die Transaktion zu decken und sein Mindestguthaben zu halten. Füge mindestens {{missing}} microALGO hinzu und versuche es erneut."
+                "body": "Dieses Konto verfügt nicht über genügend ALGO, um die Transaktion zu decken und sein Mindestguthaben zu halten. Füge mehr ALGO hinzu und versuche es erneut."
             },
             "below_min_balance": {
                 "title": "Unter dem Mindestguthaben",
