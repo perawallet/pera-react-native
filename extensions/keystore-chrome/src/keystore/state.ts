@@ -12,13 +12,15 @@
 // Ported from @algorandfoundation/keystore@1.0.0-canary.17 store.ts
 // Portions Copyright Algorand Foundation, Apache-2.0
 //
-// Only the store-management half of upstream's store.ts is vendored here
-// (addKey, removeKey, setStatus, clearKeyStore, getKey, initializeKeyStore).
-// The crypto entry points (encrypt/decrypt/verify/sign) depend on sign.ts and
-// verify.ts, which are not yet vendored — a later task adds them.
+// Store-management (addKey, removeKey, setStatus, clearKeyStore, getKey,
+// initializeKeyStore) plus the four store-level crypto entry points
+// (encrypt, decrypt, verify, sign) are vendored here.
 
 import type { Store } from '@tanstack/store'
-import type { Key, KeyId, KeyStoreState } from './types'
+import { clearKeyData, decryptWithKeyData, encryptWithKeyData } from './crypto'
+import { signWithKeyData } from './sign'
+import type { Key, KeyData, KeyId, KeyStoreState } from './types'
+import { verifyWithKeyData } from './verify'
 
 /**
  * Adds a key to the reactive store.
@@ -111,4 +113,128 @@ export function initializeKeyStore({
     keys: Key[]
 }): void {
     store.setState(() => ({ keys, status: 'idle' }))
+}
+
+/**
+ * Encrypts data using the provided key data.
+ *
+ * @param params - The encryption parameters.
+ * @param params.store - The TanStack store instance for {@link KeyStoreState}.
+ * @param params.key - The {@link KeyData} containing the secret key.
+ * @param params.data - The data to encrypt.
+ * @param params.algorithm - Optional algorithm to use.
+ * @returns A promise that resolves to the encrypted data.
+ */
+export async function encrypt({
+    store,
+    key,
+    data,
+    algorithm,
+}: {
+    store: Store<KeyStoreState>
+    key: KeyData
+    data: Uint8Array
+    algorithm?: string
+}): Promise<Uint8Array> {
+    setStatus({ store, status: 'encrypting' })
+    try {
+        return encryptWithKeyData({ key, data, algorithm })
+    } finally {
+        clearKeyData(key)
+        setStatus({ store, status: 'idle' })
+    }
+}
+
+/**
+ * Decrypts data using the provided key data.
+ *
+ * @param params - The decryption parameters.
+ * @param params.store - The TanStack store instance for {@link KeyStoreState}.
+ * @param params.key - The {@link KeyData} containing the secret key.
+ * @param params.data - The data to decrypt.
+ * @param params.algorithm - Optional algorithm to use.
+ * @returns A promise that resolves to the decrypted data.
+ */
+export async function decrypt({
+    store,
+    key,
+    data,
+}: {
+    store: Store<KeyStoreState>
+    key: KeyData
+    data: Uint8Array<ArrayBufferLike>
+    algorithm?: string
+}): Promise<Uint8Array<ArrayBufferLike>> {
+    setStatus({ store, status: 'decrypting' })
+    try {
+        return decryptWithKeyData({ key, data })
+    } finally {
+        clearKeyData(key)
+        setStatus({ store, status: 'idle' })
+    }
+}
+
+/**
+ * Verifies a signature using the provided key data.
+ *
+ * @param params - The verification parameters.
+ * @param params.store - The TanStack store instance for {@link KeyStoreState}.
+ * @param params.key - The {@link KeyData} containing the public key.
+ * @param params.data - The data that was signed.
+ * @param params.signature - The signature to verify.
+ * @param params.algorithm - Optional algorithm to use.
+ * @returns A promise that resolves to true if the signature is valid, false otherwise.
+ */
+export async function verify({
+    store,
+    key,
+    data,
+    signature,
+}: {
+    store: Store<KeyStoreState>
+    key: KeyData
+    data: Uint8Array<ArrayBufferLike>
+    signature: Uint8Array<ArrayBufferLike>
+    algorithm?: string
+}): Promise<boolean> {
+    setStatus({ store, status: 'verifying' })
+    try {
+        return verifyWithKeyData({ key, data, signature })
+    } finally {
+        clearKeyData(key)
+        setStatus({ store, status: 'idle' })
+    }
+}
+
+/**
+ * Signs data using the provided key data and optional parent key for HD derivation.
+ *
+ * @param params - The signing parameters.
+ * @param params.store - The TanStack store instance for {@link KeyStoreState}.
+ * @param params.key - The {@link KeyData} containing the private key.
+ * @param params.parentKey - Optional parent key data for HD derivation.
+ * @param params.data - The data to sign.
+ * @param params.algorithm - Optional algorithm to use.
+ * @returns A promise that resolves to the signature.
+ */
+export async function sign({
+    store,
+    key,
+    parentKey,
+    data,
+}: {
+    store: Store<KeyStoreState>
+    key: KeyData
+    parentKey?: KeyData
+    data: Uint8Array
+    algorithm?: string
+}): Promise<Uint8Array> {
+    setStatus({ store, status: 'signing' })
+    try {
+        return signWithKeyData({ key, data, parentKey })
+    } finally {
+        clearKeyData(key)
+        clearKeyData(parentKey)
+        setStatus({ store, status: 'idle' })
+    }
 }
