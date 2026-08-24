@@ -124,7 +124,7 @@ table from `harness/assert/diff.ts`'s `formatFieldDiff` — only the fields
 that differ, one row each:
 
 ```
-sent transaction does not match the declared intent:
+submitted transaction does not match the declared intent:
 field      expected              actual
 amount     300000n               300000
 ```
@@ -210,7 +210,13 @@ catch-all `unknown_node_error` code instead of their intended typed code:
   unit-suffixed figure instead (`MicroAlgos:300mA`). The regex never
   matched. Overspend is the single most common rejection a wallet produces
   — a user fat-fingering an amount. Fixed in this PR by matching on message
-  shape instead of the numeric rendering.
+  shape instead of the numeric rendering. The new format's `balance`/`spent`
+  figures are losslessly parseable numbers, but semantically wrong: the
+  rendered balance is the account's balance MINUS the rejected transaction's
+  own fee (confirmed empirically, e.g. 300_777 funded, fee 1000 -> rendered
+  "299.777mA" = 299_777). `AlgodErrorParamsByCode.overspend` therefore
+  carries only `address` — no `balance`, `spent`, or `missing` field, because
+  nothing in this codebase can populate them correctly.
 - **Expired transaction** (`EXPIRED_TXN_RE`) — expected a single dash
   between the two round numbers (`"outside of A-B"`); algod 5.0.0-stable
   uses a double dash (`"outside of A--B"`). Fixed in this PR: the regex now
