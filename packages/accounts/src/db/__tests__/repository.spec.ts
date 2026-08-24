@@ -28,6 +28,7 @@ import {
     getAccountHoldings,
     getAccountPortfolioTotals,
     getAccountHoldingsPage,
+    getAccountHoldingsLite,
     getAccountCollectiblesLite,
     insertAssetHolding,
     addToAssetHolding,
@@ -139,6 +140,28 @@ describe('account repository', () => {
                 network: 'mainnet',
             })
             expect(after[0].isFrozen).toBe(false)
+        })
+
+        it('carries the frozen flag on the lite rows the asset list renders', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [
+                    { assetId: '100', amount: 5000n, isFrozen: true },
+                    { assetId: '200', amount: 7000n, isFrozen: false },
+                ],
+                network: 'mainnet',
+            })
+
+            const rows = await getAccountHoldingsLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            const byId = new Map(rows.map(r => [r.assetId, r.isFrozen]))
+            expect(byId.get('100')).toBe(true)
+            expect(byId.get('200')).toBe(false)
         })
 
         it('handles empty holdings', async () => {
@@ -1151,6 +1174,28 @@ describe('account repository', () => {
                     token('400', 'USDC'),
                 ],
             })
+        })
+
+        it('carries the frozen flag the gallery badges rows with', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                holdings: [
+                    { assetId: '2', amount: new Decimal(1), isFrozen: true },
+                    { assetId: '10', amount: new Decimal(1) },
+                ],
+            })
+
+            const rows = await getAccountCollectiblesLite({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            const byId = new Map(rows.map(r => [r.assetId, r.isFrozen]))
+            expect(byId.get('2')).toBe(true)
+            expect(byId.get('10')).toBe(false)
         })
 
         it('returns only collectibles, never fungible holdings', async () => {

@@ -11,8 +11,15 @@
  */
 
 import React from 'react'
-import { PWText, PWTouchableOpacity, PWView, PWIcon } from '@components/core'
+import {
+    PWBadge,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+    PWIcon,
+} from '@components/core'
 import { CollectibleThumbnail } from '../CollectibleThumbnail'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import type { CollectibleItemProps } from '@modules/assets/types/collectible'
 import { useCollectibleItem } from '@modules/assets/hooks/useCollectibleItem'
@@ -21,8 +28,13 @@ import { useCollectibleItem } from '@modules/assets/hooks/useCollectibleItem'
 // so 600px covers 3x displays without downloading the full-size original.
 const GRID_IMAGE_WIDTH = 600
 
-const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
+const CollectibleGridItemBase = ({
+    item,
+    onPress,
+    showFrozenBadge = false,
+}: CollectibleItemProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const {
         thumbnailUrl,
         showAmount,
@@ -82,6 +94,12 @@ const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
                         <PWIcon
                             name={verificationIconName}
                             size='xs'
+                        />
+                    ) : null}
+                    {showFrozenBadge ? (
+                        <PWBadge
+                            variant='secondary'
+                            value={t('transactions.asset_freeze.frozen')}
                         />
                     ) : null}
                 </PWView>

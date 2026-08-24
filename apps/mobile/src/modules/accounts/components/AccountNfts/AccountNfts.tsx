@@ -86,6 +86,7 @@ const GalleryCellView = ({
             <CollectibleListItem
                 item={displayItem}
                 onPress={handlePress}
+                showFrozenBadge={item.isFrozen}
             />
         )
     }
@@ -102,6 +103,7 @@ const GalleryCellView = ({
             <CollectibleGridItem
                 item={displayItem}
                 onPress={handlePress}
+                showFrozenBadge={item.isFrozen}
             />
         </PWView>
     )

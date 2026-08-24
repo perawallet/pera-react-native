@@ -66,6 +66,7 @@ type UseCollectibleDetailResult = {
     isOptedIn: boolean
     isOwned: boolean
     isOptedInNotOwned: boolean
+    isFrozen: boolean
     assetBalance: Nullable<AssetWithAccountBalance>
     isOptingOut: boolean
     modelViewerModal: ModalState
@@ -132,6 +133,9 @@ export const useCollectibleDetail = (
     const isOptedIn = assetBalance != null
     const isOwned = isOptedIn && assetAmount.greaterThan(0)
     const isOptedInNotOwned = isOptedIn && !isOwned
+    // Freeze is per holding, not per asset: a creator who froze the asset for
+    // everyone else still holds an unfrozen balance of their own.
+    const isFrozen = assetBalance?.isFrozen ?? false
     const { showToast } = useToast()
     const { showError } = useErrorToast()
 
@@ -167,6 +171,16 @@ export const useCollectibleDetail = (
     const hasSaveableMedia = saveableMediaUrl != null
 
     const handleSendPressed = useCallback(() => {
+        // Dimmed but still tappable, so the press explains why instead of
+        // being silently swallowed.
+        if (isFrozen) {
+            showToast({
+                title: t('asset_details.frozen_notice.title'),
+                body: t('asset_details.frozen_notice.body'),
+                type: 'warning',
+            })
+            return
+        }
         void requestBottomSheet({
             contents: <SendFundsContent assetId={assetId} />,
             options: {
@@ -176,7 +190,7 @@ export const useCollectibleDetail = (
                 autoCreateContainer: false,
             },
         })
-    }, [requestBottomSheet, assetId])
+    }, [requestBottomSheet, assetId, isFrozen, showToast, t])
 
     const handleOptOutPressed = useCallback(async () => {
         if (!account || !asset || !assetBalance) {
@@ -428,6 +442,7 @@ export const useCollectibleDetail = (
         isOptedIn,
         isOwned,
         isOptedInNotOwned,
+        isFrozen,
         assetBalance: assetBalance ?? null,
         isOptingOut,
         modelViewerModal,

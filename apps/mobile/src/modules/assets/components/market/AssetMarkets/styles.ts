@@ -75,6 +75,28 @@ export const useStyles = makeStyles(theme => {
             flexShrink: 1,
         },
         tagText,
+        tagTextPresent: {
+            color: theme.colors.suspiciousBannerContent,
+        },
+        tagsContainer: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: theme.spacing.sm,
+            marginTop: theme.spacing.lg,
+        },
+        tag: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.md,
+            borderRadius: theme.borderRadius.sm,
+            backgroundColor: theme.colors.layerGrayLighter,
+            flexShrink: 1,
+            minWidth: 0,
+        },
+        tagPresent: {
+            backgroundColor: theme.colors.suspiciousBannerBg,
+        },
         loadingContainer: {
             padding: theme.spacing.xl,
             gap: theme.spacing.md,

@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { UNAVAILABLE_CONTROL_OPACITY } from '@constants/ui'
 
 const BIG_SKELETON_HEIGHT = 300
 
@@ -120,6 +121,9 @@ export const useStyles = makeStyles(theme => ({
     },
     mediaContainerDimmed: {
         opacity: 0.4,
+    },
+    unavailable: {
+        opacity: UNAVAILABLE_CONTROL_OPACITY,
     },
     optOutNotice: {
         gap: theme.spacing.md,

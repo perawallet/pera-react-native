@@ -225,6 +225,10 @@
             "holdings_tab": "Holdings",
             "markets_tab": "Markets"
         },
+        "frozen_notice": {
+            "title": "Asset frozen",
+            "body": "This asset is frozen in your account, so it can't be sent or swapped. Contact the asset's creator to unfreeze it."
+        },
         "markets": {
             "something_went_wrong_title": "Something went wrong",
             "something_went_wrong_body": "We were unable to load this asset's details. Please check your connection and try again.",
@@ -235,6 +239,8 @@
             "total_supply": "Total Supply",
             "no_freeze": "No Freeze",
             "no_clawback": "No Clawback",
+            "freeze": "Freeze",
+            "clawback": "Clawback",
             "description": "Description",
             "social_media": "Social Media",
             "chart_empty_body": "You will see a chart here once you have some balance history",

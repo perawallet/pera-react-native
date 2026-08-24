@@ -22,6 +22,7 @@ import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { Decimal } from 'decimal.js'
 import {
+    type IconName,
     PWIcon,
     PWScrollView,
     PWText,
@@ -42,6 +43,7 @@ import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import {
     type AssetPriceHistoryItem,
     type PeraAsset,
+    useAssetChainRolesQuery,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -66,6 +68,31 @@ const Loading = () => {
     )
 }
 
+type RoleTagProps = {
+    icon: IconName
+    label: string
+    /** The creator kept this role, so it's a caution, not a reassurance. */
+    isPresent: boolean
+}
+
+const RoleTag = ({ icon, label, isPresent }: RoleTagProps) => {
+    const styles = useStyles()
+    return (
+        <PWView style={[styles.tag, isPresent && styles.tagPresent]}>
+            <PWIcon
+                name={icon}
+                size='sm'
+                variant={isPresent ? 'error' : 'secondary'}
+            />
+            <PWText
+                style={[styles.tagText, isPresent && styles.tagTextPresent]}
+            >
+                {label}
+            </PWText>
+        </PWView>
+    )
+}
+
 export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const styles = useStyles()
     const { usdToPreferred } = useCurrency()
@@ -83,6 +110,8 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         isError,
         isPending,
     } = useSingleAssetDetailsQuery(asset.assetId)
+
+    const { data: chainRoles } = useAssetChainRolesQuery(asset.assetId)
 
     const openDiscover = () => {
         // mirror native: deep-link straight to the asset's token detail page
@@ -225,25 +254,30 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
 
             <AssetSocialMedia assetDetails={assetDetails} />
 
-            {/* TODO: Add this in when we have the metadata on the asset */}
-            {/* <PWView style={styles.tagsContainer}>
-                {!assetDetails.is_frozen && <PWView style={styles.tag}>
-                    <PWIcon
-                        name='snowflake'
-                        size="sm"
-                        variant='secondary'
+            {/* Withheld rather than defaulted while the roles are unknown: a
+                "No Freeze" tag is a safety claim about the reader's funds. */}
+            {!!chainRoles && (
+                <PWView style={styles.tagsContainer}>
+                    <RoleTag
+                        icon='snowflake'
+                        isPresent={chainRoles.hasFreeze}
+                        label={
+                            chainRoles.hasFreeze
+                                ? t('asset_details.markets.freeze')
+                                : t('asset_details.markets.no_freeze')
+                        }
                     />
-                    <Text style={styles.tagText}>{t('asset_details.markets.no_freeze')}</Text>
-                </PWView>}
-                {!assetDetails.is_clawback && <PWView style={styles.tag}>
-                    <PWIcon
-                        name='undo'
-                        size="sm"
-                        variant='secondary'
+                    <RoleTag
+                        icon='undo'
+                        isPresent={chainRoles.hasClawback}
+                        label={
+                            chainRoles.hasClawback
+                                ? t('asset_details.markets.clawback')
+                                : t('asset_details.markets.no_clawback')
+                        }
                     />
-                    <Text style={styles.tagText}>{t('asset_details.markets.no_clawback')}</Text>
-                </PWView>}
-            </PWView> */}
+                </PWView>
+            )}
         </PWScrollView>
     )
 }

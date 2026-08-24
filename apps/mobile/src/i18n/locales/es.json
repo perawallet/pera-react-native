@@ -225,6 +225,10 @@
             "holdings_tab": "Tenencias",
             "markets_tab": "Mercados"
         },
+        "frozen_notice": {
+            "title": "Activo congelado",
+            "body": "Este activo está congelado en tu cuenta, por lo que no se puede enviar ni intercambiar. Contacta con el creador del activo para descongelarlo."
+        },
         "markets": {
             "something_went_wrong_title": "Algo salió mal",
             "something_went_wrong_body": "No pudimos cargar los detalles de este activo. Comprueba tu conexión e inténtalo de nuevo.",
@@ -235,6 +239,8 @@
             "total_supply": "Suministro total",
             "no_freeze": "Sin congelación",
             "no_clawback": "Sin clawback",
+            "freeze": "Congelación",
+            "clawback": "Clawback",
             "description": "Descripción",
             "social_media": "Redes sociales",
             "chart_empty_body": "Verás un gráfico aquí cuando tengas algo de historial de saldo",

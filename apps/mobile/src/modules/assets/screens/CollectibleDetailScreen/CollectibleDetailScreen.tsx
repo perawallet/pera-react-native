@@ -58,6 +58,7 @@ export const CollectibleDetailScreen = ({
         accountAddress,
         assetAmount,
         isOptedInNotOwned,
+        isFrozen,
         handleSendPressed,
         handleSharePressed,
         handleModelPress,
@@ -168,6 +169,9 @@ export const CollectibleDetailScreen = ({
                                 variant='primary'
                                 size='md'
                                 onPress={handleSendPressed}
+                                style={
+                                    isFrozen ? styles.unavailable : undefined
+                                }
                             />
                             {hasImage && (
                                 <RoundButton

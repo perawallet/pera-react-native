@@ -13,28 +13,11 @@
 import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton'
-import { type ParamListBase, useNavigation } from '@react-navigation/native'
-import { type NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useCallback } from 'react'
 import { type PeraAsset } from '@perawallet/wallet-core-assets'
-import {
-    isAlgoAssetId,
-    ALGO_ASSET_ID,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
-import { SendFundsContent } from '@modules/transactions/components/send-funds/SendFundsContent'
-import { ReceiveFundsContent } from '@modules/transactions/components/receive-funds/ReceiveFundsContent'
-import { useBottomSheet } from '@modules/bottom-sheet'
-import {
-    useSelectedAccount,
-    useCanSignWith,
-    type AssetWithAccountBalance,
-} from '@perawallet/wallet-core-accounts'
-import { useSendFunds } from '@modules/transactions/hooks'
-import { useClipboard } from '@hooks/useClipboard'
-import { useToast } from '@hooks/useToast'
-import { trackEvent, AssetDetailsEvent } from '@analytics'
+import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { useAssetActionButtons } from './useAssetActionButtons'
 
 export type AssetActionButtonsProps = {
     asset: PeraAsset
@@ -48,78 +31,16 @@ export const AssetActionButtons = ({
     isCollectible,
 }: AssetActionButtonsProps) => {
     const styles = useStyles()
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
-    const account = useSelectedAccount()
-    const { request: requestBottomSheet } = useBottomSheet()
-    const isReadOnly = !useCanSignWith(account)
-    const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
-    const { copyToClipboard } = useClipboard()
-    const { showToast } = useToast()
-
-    const openReceiveFunds = useCallback(() => {
-        trackEvent(AssetDetailsEvent.Receive)
-        void requestBottomSheet({
-            contents: <ReceiveFundsContent account={account ?? undefined} />,
-            options: {
-                size: 'modal',
-                enablePanDownToClose: true,
-                autoCreateContainer: false,
-            },
-        })
-    }, [requestBottomSheet, account])
-
-    const goToRootPage = (name: string) => {
-        navigation.replace('TabBar', { screen: name })
-    }
-
-    const handleSwap = useCallback(() => {
-        const isAlgo = isAlgoAssetId(asset.assetId)
-        if (isAlgo) {
-            trackEvent(AssetDetailsEvent.SwapAlgo)
-        }
-        navigation.replace('TabBar', {
-            screen: 'Swap',
-            params: isAlgo
-                ? undefined
-                : { assetInId: ALGO_ASSET_ID, assetOutId: asset.assetId },
-        })
-    }, [asset.assetId, navigation])
-
-    const handleSend = useCallback(() => {
-        trackEvent(AssetDetailsEvent.Send)
-        if (assetHolding) {
-            setSelectedAssetId(assetHolding.assetId)
-            setCanSelectAsset(false)
-        }
-
-        void requestBottomSheet({
-            contents: <SendFundsContent assetId={asset.assetId} />,
-            options: {
-                size: 'modal',
-                enablePanDownToClose: false,
-                enableCloseOnBackdropPress: false,
-                autoCreateContainer: false,
-            },
-        })
-    }, [
-        assetHolding,
-        setSelectedAssetId,
-        setCanSelectAsset,
-        requestBottomSheet,
-        asset.assetId,
-    ])
-
-    const handleCopyAddress = useCallback(() => {
-        if (account) {
-            void copyToClipboard(account.address)
-            showToast({
-                title: t('account_options.copy_address'),
-                body: '',
-                type: 'success',
-            })
-        }
-    }, [account, copyToClipboard, showToast, t])
+    const {
+        isReadOnly,
+        isFrozen,
+        handleSwap,
+        handleSend,
+        handleBuy,
+        handleReceive,
+        handleCopyAddress,
+    } = useAssetActionButtons({ asset, assetHolding })
 
     if (isCollectible) return null
 
@@ -138,7 +59,7 @@ export const AssetActionButtons = ({
                     title={t('asset_details.action_buttons.receive')}
                     icon='inflow'
                     variant='secondary'
-                    onPress={openReceiveFunds}
+                    onPress={handleReceive}
                     style={styles.buttonTwo}
                     testID='asset_detail_receive_button'
                 />
@@ -153,14 +74,14 @@ export const AssetActionButtons = ({
                 icon='swap'
                 variant='primary'
                 onPress={handleSwap}
-                style={styles.buttonFour}
+                style={[styles.buttonFour, isFrozen && styles.unavailable]}
                 testID='asset_detail_swap_button'
             />
             <RoundButton
                 title={t('asset_details.action_buttons.buy')}
                 icon='dollar'
                 variant='secondary'
-                onPress={() => goToRootPage('Fund')}
+                onPress={handleBuy}
                 style={styles.buttonFour}
                 testID='asset_detail_buy_button'
             />
@@ -169,14 +90,14 @@ export const AssetActionButtons = ({
                 icon='outflow'
                 variant='secondary'
                 onPress={handleSend}
-                style={styles.buttonFour}
+                style={[styles.buttonFour, isFrozen && styles.unavailable]}
                 testID='asset_detail_send_button'
             />
             <RoundButton
                 title={t('asset_details.action_buttons.receive')}
                 icon='inflow'
                 variant='secondary'
-                onPress={openReceiveFunds}
+                onPress={handleReceive}
                 style={styles.buttonFour}
                 testID='asset_detail_receive_button'
             />

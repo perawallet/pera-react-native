@@ -40,6 +40,7 @@ vi.mock('@react-navigation/native-stack', () => ({}))
 const makeHolding = (assetId: string) => ({
     assetId,
     amount: new Decimal(0),
+    isFrozen: false,
     decimals: null,
     creatorAddress: null,
     totalSupply: null,
@@ -165,6 +166,7 @@ describe('useAccountAssetList', () => {
             await result.current.handleOptOut({
                 assetId: '123',
                 amount: new Decimal(0),
+                isFrozen: false,
                 decimals: null,
                 creatorAddress: null,
                 totalSupply: null,
@@ -194,6 +196,7 @@ describe('useAccountAssetList', () => {
             await result.current.handleOptOut({
                 assetId: '123',
                 amount: new Decimal(0),
+                isFrozen: false,
                 decimals: null,
                 creatorAddress: null,
                 totalSupply: null,

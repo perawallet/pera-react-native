@@ -225,6 +225,10 @@
             "holdings_tab": "Avoirs",
             "markets_tab": "Marchés"
         },
+        "frozen_notice": {
+            "title": "Actif gelé",
+            "body": "Cet actif est gelé sur votre compte et ne peut donc pas être envoyé ni échangé. Contactez le créateur de l’actif pour le dégeler."
+        },
         "markets": {
             "something_went_wrong_title": "Une erreur est survenue",
             "something_went_wrong_body": "Nous n’avons pas pu charger les détails de cet actif. Vérifiez votre connexion et réessayez.",
@@ -235,6 +239,8 @@
             "total_supply": "Offre totale",
             "no_freeze": "Sans gel",
             "no_clawback": "Sans clawback",
+            "freeze": "Gel",
+            "clawback": "Clawback",
             "description": "Description",
             "social_media": "Réseaux sociaux",
             "chart_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",

@@ -256,6 +256,47 @@ describe('useCollectibleDetail', () => {
         )
     })
 
+    describe('frozen holdings', () => {
+        const freezeHolding = () =>
+            mockUseAccountAssetBalanceQuery.mockReturnValue({
+                data: {
+                    amount: new Decimal(1),
+                    algoValue: new Decimal(0),
+                    isFrozen: true,
+                },
+            })
+
+        it('opens the send sheet when the holding is not frozen', () => {
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            act(() => {
+                result.current.handleSendPressed()
+            })
+
+            expect(result.current.isFrozen).toBe(false)
+            expect(mockRequestBottomSheet).toHaveBeenCalled()
+        })
+
+        it('blocks the send sheet and explains why when the holding is frozen', () => {
+            freezeHolding()
+
+            const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+            act(() => {
+                result.current.handleSendPressed()
+            })
+
+            expect(result.current.isFrozen).toBe(true)
+            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    title: 'asset_details.frozen_notice.title',
+                    type: 'warning',
+                }),
+            )
+        })
+    })
+
     it('returns traits and media', () => {
         const { result } = renderHook(() => useCollectibleDetail('12345'))
 

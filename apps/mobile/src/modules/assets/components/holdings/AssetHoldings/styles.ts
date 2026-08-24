@@ -34,6 +34,10 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
         flexShrink: 0,
     },
+    frozenBadge: {
+        marginHorizontal: theme.spacing.sm,
+        flexShrink: 0,
+    },
     chartContainer: {
         gap: theme.spacing.md,
         marginBottom: theme.spacing.lg,

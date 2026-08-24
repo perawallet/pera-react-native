@@ -11,8 +11,12 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { encodeAlgorandAddress, isValidAlgorandAddress } from '../addresses'
-import { encodeAddress } from 'algosdk'
+import {
+    encodeAlgorandAddress,
+    isValidAlgorandAddress,
+    isZeroAddress,
+} from '../addresses'
+import { encodeAddress, ALGORAND_ZERO_ADDRESS_STRING } from 'algosdk'
 
 describe('addresses utils', () => {
     describe('encodeAlgorandAddress', () => {
@@ -53,6 +57,22 @@ describe('addresses utils', () => {
         it('should return false for empty or undefined', () => {
             expect(isValidAlgorandAddress('')).toBe(false)
             expect(isValidAlgorandAddress(undefined)).toBe(false)
+        })
+    })
+
+    describe('isZeroAddress', () => {
+        it('treats the zero address as unset', () => {
+            expect(isZeroAddress(ALGORAND_ZERO_ADDRESS_STRING)).toBe(true)
+        })
+
+        it('treats an absent address as unset', () => {
+            expect(isZeroAddress(undefined)).toBe(true)
+            expect(isZeroAddress('')).toBe(true)
+        })
+
+        it('treats a real address as set', () => {
+            const address = encodeAddress(new Uint8Array(32).fill(1))
+            expect(isZeroAddress(address)).toBe(false)
         })
     })
 })

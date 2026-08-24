@@ -10,11 +10,23 @@
  limitations under the License
  */
 
-import { encodeAddress, decodeAddress } from 'algosdk'
+import {
+    encodeAddress,
+    decodeAddress,
+    ALGORAND_ZERO_ADDRESS_STRING,
+} from 'algosdk'
 
 export const encodeAlgorandAddress = (bytes: Uint8Array): string => {
     return encodeAddress(bytes)
 }
+
+/**
+ * True when an address slot is unset. An ASA role the creator never assigned
+ * (freeze, clawback, manager, reserve) reads back as either an absent field or
+ * the zero address, depending on the node — treat both as "no role".
+ */
+export const isZeroAddress = (address?: string): boolean =>
+    !address || address === ALGORAND_ZERO_ADDRESS_STRING
 
 export const isValidAlgorandAddress = (address?: string): boolean => {
     if (!address) return false

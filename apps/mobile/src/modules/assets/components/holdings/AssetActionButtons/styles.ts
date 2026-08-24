@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { UNAVAILABLE_CONTROL_OPACITY } from '@constants/ui'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -34,5 +35,8 @@ export const useStyles = makeStyles(theme => ({
         minWidth: 0,
         maxWidth: '50%',
         alignItems: 'center',
+    },
+    unavailable: {
+        opacity: UNAVAILABLE_CONTROL_OPACITY,
     },
 }))

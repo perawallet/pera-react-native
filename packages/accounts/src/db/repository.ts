@@ -653,6 +653,8 @@ export type AccountHoldingsLiteRow = {
     assetId: string
     /** Amount in base units (microalgos for ALGO). */
     amount: Decimal
+    /** Holding-level freeze from algod — frozen assets can't be transferred. */
+    isFrozen: boolean
     decimals: Nullable<number>
     creatorAddress: Nullable<string>
     totalSupply: Nullable<string>
@@ -679,6 +681,7 @@ export async function getAccountHoldingsLite(
     return rows.map(r => ({
         assetId: r.assetId.toString(),
         amount: r.amount,
+        isFrozen: r.isFrozen,
         decimals: r.decimals,
         creatorAddress: r.creatorAddress,
         totalSupply: r.totalSupply,
@@ -737,6 +740,8 @@ export type CollectibleSqlSortMode =
 export type AccountCollectibleLiteRow = AssetColumnsLite & {
     /** Amount held, in base units. Zero means opted in but holding none. */
     amount: Decimal
+    /** Holding-level freeze from algod — frozen assets can't be transferred. */
+    isFrozen: boolean
     /** Pera collectible title; null when metadata hasn't synced. */
     title: Nullable<string>
     collectionName: Nullable<string>
@@ -855,6 +860,7 @@ export async function getAccountCollectiblesLite({
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
             amount: AccountAssetHoldingsSchema.amount,
+            isFrozen: AccountAssetHoldingsSchema.isFrozen,
             decimals: AssetsNodeSchema.decimals,
             creatorAddress: AssetsNodeSchema.creatorAddress,
             totalSupply: sql<Nullable<string>>`${AssetsNodeSchema.totalSupply}`,
@@ -904,6 +910,7 @@ export async function getAccountCollectiblesLite({
     return rows.map(row => ({
         assetId: row.assetId.toString(),
         amount: row.amount,
+        isFrozen: row.isFrozen,
         decimals: row.decimals,
         creatorAddress: row.creatorAddress,
         totalSupply: row.totalSupply,

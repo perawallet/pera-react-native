@@ -11,7 +11,7 @@
  */
 
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import { PWText, PWView } from '@components/core'
+import { PWBadge, PWText, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useMemo } from 'react'
@@ -40,6 +40,7 @@ import {
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { ExpandablePanel } from '@components/ExpandablePanel'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type AssetHoldingsProps = {
     account: WalletAccount
@@ -53,6 +54,7 @@ export const AssetHoldings = ({
     isCollectible,
 }: AssetHoldingsProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountAssetBalanceHistoryItem>()
@@ -86,6 +88,13 @@ export const AssetHoldings = ({
                 <PWView style={styles.header}>
                     <PWView style={styles.assetRow}>
                         <AssetTitle asset={asset} />
+                        {!!assetHolding?.isFrozen && (
+                            <PWBadge
+                                variant='secondary'
+                                value={t('transactions.asset_freeze.frozen')}
+                                containerStyle={styles.frozenBadge}
+                            />
+                        )}
                         <PWView style={styles.headerIcons}>
                             <AssetNotificationButton
                                 assetId={asset.assetId}

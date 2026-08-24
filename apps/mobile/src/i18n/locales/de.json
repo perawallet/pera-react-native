@@ -225,6 +225,10 @@
             "holdings_tab": "Bestände",
             "markets_tab": "Märkte"
         },
+        "frozen_notice": {
+            "title": "Asset eingefroren",
+            "body": "Dieses Asset ist in deinem Konto eingefroren und kann nicht gesendet oder getauscht werden. Wende dich an den Ersteller des Assets, um es freizugeben."
+        },
         "markets": {
             "something_went_wrong_title": "Etwas ist schiefgelaufen",
             "something_went_wrong_body": "Die Details dieses Assets konnten nicht geladen werden. Bitte überprüfe deine Verbindung und versuche es erneut.",
@@ -235,6 +239,8 @@
             "total_supply": "Gesamtangebot",
             "no_freeze": "Kein Freeze",
             "no_clawback": "Kein Clawback",
+            "freeze": "Freeze",
+            "clawback": "Clawback",
             "description": "Beschreibung",
             "social_media": "Soziale Medien",
             "chart_empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",

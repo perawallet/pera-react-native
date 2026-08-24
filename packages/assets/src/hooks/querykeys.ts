@@ -130,6 +130,15 @@ export const getIndexerAssetDetailsQueryKey = (assetId: string) => [
     { assetId },
 ]
 
+/**
+ * Network-scoped: the same asset id identifies different assets on different
+ * chains, and this key caches a claim about who can freeze someone's funds.
+ */
+export const getAssetChainRolesQueryKey = (
+    assetId: string,
+    network: Network,
+) => [MODULE_PREFIX, 'chain-roles', { assetId, network }]
+
 export function invalidateAssetQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({
         predicate: query => query.queryKey[0] === MODULE_PREFIX,

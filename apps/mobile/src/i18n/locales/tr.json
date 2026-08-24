@@ -225,6 +225,10 @@
             "holdings_tab": "Varlıklar",
             "markets_tab": "Piyasalar"
         },
+        "frozen_notice": {
+            "title": "Varlık donduruldu",
+            "body": "Bu varlık hesabında dondurulmuş durumda, bu yüzden gönderilemez veya swap edilemez. Dondurmayı kaldırmak için varlığın oluşturucusuyla iletişime geç."
+        },
         "markets": {
             "something_went_wrong_title": "Bir şeyler ters gitti",
             "something_went_wrong_body": "Bu varlığın detaylarını yükleyemedik. Lütfen bağlantını kontrol edip tekrar dene.",
@@ -235,6 +239,8 @@
             "total_supply": "Toplam arz",
             "no_freeze": "Dondurma yok",
             "no_clawback": "Clawback yok",
+            "freeze": "Dondurma",
+            "clawback": "Clawback",
             "description": "Açıklama",
             "social_media": "Sosyal medya",
             "chart_empty_body": "Bir bakiye geçmişin oluştuğunda burada bir grafik göreceksin",

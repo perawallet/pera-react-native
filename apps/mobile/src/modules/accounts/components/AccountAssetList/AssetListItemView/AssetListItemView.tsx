@@ -89,6 +89,7 @@ const AssetListItemViewBase = ({
             <CollectibleListItem
                 item={collectibleItem}
                 onPress={onPress}
+                showFrozenBadge={holding.isFrozen}
             />
         )
     }
@@ -130,6 +131,7 @@ const AssetListItemViewBase = ({
             right={balance}
             showFavorite
             showDeletedLabel
+            showFrozenBadge={holding.isFrozen}
             copyableAssetId
             onPress={onPress}
             style={style}
