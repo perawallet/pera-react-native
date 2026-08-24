@@ -14,10 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import { Decimal } from 'decimal.js'
-import {
-    useSelectedAccount,
-    useAccountAssetBalanceQuery,
-} from '@perawallet/wallet-core-accounts'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useErrorToast } from '@hooks/useErrorToast'
 import { useSendFunds } from '@modules/transactions/hooks'
@@ -50,7 +47,6 @@ vi.mock('@components/core', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
-    useAccountAssetBalanceQuery: vi.fn(),
     // The processing-screen hook derives Ledger-aware copy from these; the
     // existing tests focus on send-pipeline routing and don't care about
     // the copy branch, so a minimal stub keeps them green.
@@ -126,9 +122,6 @@ describe('useTransactionProcessingScreen', () => {
             showError: mockShowError,
         })
         ;(useSelectedAccount as Mock).mockReturnValue(null)
-        ;(useAccountAssetBalanceQuery as Mock).mockReturnValue({
-            data: null,
-        })
         ;(useAssetsQuery as Mock).mockReturnValue({
             data: new Map([['123', mockAsset]]),
         })
@@ -168,53 +161,10 @@ describe('useTransactionProcessingScreen', () => {
         })
     })
 
-    it('includes isFrozen: true when the selected holding is frozen — the send-store deep-link path bypasses AssetSelectionScreen entirely, so this is the only gate', async () => {
+    // The mount-only submit effect is the whole reason this hook uses an empty
+    // dependency array — a re-run is a duplicate send.
+    it('submits exactly once across re-renders (regression)', async () => {
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
-        ;(useAccountAssetBalanceQuery as Mock).mockReturnValue({
-            data: { assetId: '123', isFrozen: true },
-        })
-        ;(useSendFunds as Mock).mockReturnValue({
-            ...mockSendFundsState,
-            selectedAssetId: '123',
-            amount: new Decimal(5),
-            destination: 'DEST_ADDRESS',
-        })
-
-        await act(async () => {
-            renderHook(() => useTransactionProcessingScreen())
-        })
-
-        expect(mockExecute).toHaveBeenCalledWith({
-            params: expect.objectContaining({ isFrozen: true }),
-        })
-    })
-
-    it('includes isFrozen: false when the selected holding is not frozen', async () => {
-        ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
-        ;(useAccountAssetBalanceQuery as Mock).mockReturnValue({
-            data: { assetId: '123', isFrozen: false },
-        })
-        ;(useSendFunds as Mock).mockReturnValue({
-            ...mockSendFundsState,
-            selectedAssetId: '123',
-            amount: new Decimal(5),
-            destination: 'DEST_ADDRESS',
-        })
-
-        await act(async () => {
-            renderHook(() => useTransactionProcessingScreen())
-        })
-
-        expect(mockExecute).toHaveBeenCalledWith({
-            params: expect.objectContaining({ isFrozen: false }),
-        })
-    })
-
-    it('submits exactly once even when the balances query resolves from not-frozen to frozen after mount (regression)', async () => {
-        ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
-        ;(useAccountAssetBalanceQuery as Mock).mockReturnValue({
-            data: { assetId: '123', isFrozen: false },
-        })
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
             selectedAssetId: '123',
@@ -225,12 +175,7 @@ describe('useTransactionProcessingScreen', () => {
         const { rerender } = renderHook(() => useTransactionProcessingScreen())
 
         await act(async () => {})
-
         expect(mockExecute).toHaveBeenCalledTimes(1)
-
-        ;(useAccountAssetBalanceQuery as Mock).mockReturnValue({
-            data: { assetId: '123', isFrozen: true },
-        })
 
         await act(async () => {
             rerender()

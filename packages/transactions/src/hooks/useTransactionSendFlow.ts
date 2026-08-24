@@ -34,6 +34,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import {
     addToAssetHolding,
+    getAccountHoldings,
     useAccountBalancesInvalidator,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
@@ -49,7 +50,6 @@ type BaseSendParams = {
     asset?: PeraAsset
     amount?: Decimal
     note?: string
-    isFrozen?: boolean
 }
 
 type SendTransactionParams = BaseSendParams & {
@@ -280,7 +280,19 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 throw new InvalidSendParamsError()
             }
 
-            if (params.isFrozen) {
+            // Read at submit time rather than taking the caller's word: a
+            // deeplink, a stale screen or a freeze that landed mid-flow would
+            // all miss a flag passed in from the UI. SQLite is the same source
+            // the balance queries read, so this costs no request.
+            const holdings = await getAccountHoldings({
+                accountAddress: params.sender.address,
+                network,
+            })
+            const isFrozen = holdings.find(
+                h => h.assetId === params.asset?.assetId,
+            )?.isFrozen
+
+            if (isFrozen) {
                 throw new AssetFrozenError()
             }
 
@@ -356,6 +368,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             fetchSuggestedMinFee,
             minTxnFee,
             pqMultiplier,
+            network,
         ],
     )
 

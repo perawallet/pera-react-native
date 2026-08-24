@@ -17,7 +17,6 @@ import {
     AccountTypes,
     isHardwareWalletAccount,
     resolveAuthAccount,
-    useAccountAssetBalanceQuery,
     useAccountBalancesInvalidator,
     useAllAccounts,
     useSelectedAccount,
@@ -76,16 +75,7 @@ export const useTransactionProcessingScreen =
         const { invalidate: invalidateAccountBalances } =
             useAccountBalancesInvalidator()
 
-        const { data: selectedAssetBalance } = useAccountAssetBalanceQuery(
-            selectedAccount ?? undefined,
-            selectedAssetId,
-        )
-        const isSelectedAssetFrozen = selectedAssetBalance?.isFrozen ?? false
-
         const { execute } = useTransactionSendFlow()
-
-        const isFrozenRef = useRef(isSelectedAssetFrozen)
-        isFrozenRef.current = isSelectedAssetFrozen
 
         // Multisig propose returns via the `proposed` transport result instead
         // of resolving the algod submission Promise — `execute()` never settles
@@ -130,7 +120,6 @@ export const useTransactionProcessingScreen =
                 sender: selectedAccount,
                 receiver: destination,
                 asset: selectedAsset,
-                isFrozen: isFrozenRef.current,
                 amount,
                 note,
                 isCloseAccount,
@@ -167,13 +156,7 @@ export const useTransactionProcessingScreen =
 
             return () => subscription.remove()
             // Mount-only: this effect must submit exactly once. Do not add
-            // anything to this array — a re-run means a duplicate send. The
-            // freeze flag is read via isFrozenRef instead of as a dependency,
-            // so a cold balances cache can let a frozen send through to algod;
-            // that's accepted since algod's on-chain freeze rejection is the
-            // backstop for a stale client value, and the asset picker already
-            // blocks the non-deep-link path. Keeping "submit exactly once" is
-            // more important than a marginally fresher check.
+            // anything to this array — a re-run means a duplicate send.
             // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [])
 
