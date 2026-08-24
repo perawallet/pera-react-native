@@ -25,7 +25,13 @@ vi.mock('ky', () => {
     return { HTTPError }
 })
 vi.mock('../../transport', () => ({ getCardTransport: () => ({ request }) }))
-vi.mock('@perawallet/wallet-core-shared', () => ({
+// Spread the real module: the schemas under test pull runtime helpers
+// (httpsUrlSchema) from it at module-eval time, so a wholesale mock breaks the
+// import rather than the assertion.
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() },
     toEnumValue: (
         enumObject: Record<string, string>,
