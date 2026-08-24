@@ -13,7 +13,11 @@
 import algosdk from 'algosdk'
 import { describe, expect, it } from 'vitest'
 
-import { createQuantumAccount, fundAccount } from '../../harness/accounts'
+import {
+    createAlgo25Account,
+    createQuantumAccount,
+    fundAccount,
+} from '../../harness/accounts'
 import {
     algokeyPqCheckAddress,
     algokeyQuantumAddressFromMnemonic,
@@ -34,11 +38,17 @@ describe('quantum derivation conformance', () => {
         expect(account.address).toBe(oracle.address)
     })
 
-    it('is the address the chain credits', async () => {
+    it('funds the algokey-derived address and the chain credits the app-derived one', async () => {
         const ks = await createConformanceKeyStore()
         const account = await createQuantumAccount(ks)
-        await fundAccount(account.address, 1_000_000n)
 
+        const oracle = await algokeyQuantumAddressFromMnemonic(account.mnemonic)
+        await fundAccount(oracle.address, 1_000_000n)
+
+        // Funding the oracle's address and querying the app's makes this leg
+        // sensitive to a wrong derivation (PERA-4972's failure mode): if the two
+        // diverged, this account would show a zero balance instead of the
+        // assertion failing to even find a mismatched address.
         const info = await getConformanceClient()
             .client.algod.accountInformation(account.address)
             .do()
@@ -59,6 +69,13 @@ describe('quantum derivation conformance', () => {
         const account = await createQuantumAccount(ks)
 
         expect(await algokeyPqCheckAddress(account.address)).toBe(true)
+    })
+
+    it('rejects a non-PQ address via algokey pq check-address', async () => {
+        const ks = await createConformanceKeyStore()
+        const account = await createAlgo25Account(ks)
+
+        expect(await algokeyPqCheckAddress(account.address)).toBe(false)
     })
 
     it('reproduces the go-algorand pinned vector', async () => {

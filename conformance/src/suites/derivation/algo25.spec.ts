@@ -27,11 +27,17 @@ describe('algo25 derivation conformance', () => {
         )
     })
 
-    it('is the address the chain credits', async () => {
+    it('funds the algokey-derived address and the chain credits the app-derived one', async () => {
         const ks = await createConformanceKeyStore()
         const account = await createAlgo25Account(ks)
-        await fundAccount(account.address, 1_000_000n)
 
+        const oracleAddress = await algokeyAddressFromMnemonic(account.mnemonic)
+        await fundAccount(oracleAddress, 1_000_000n)
+
+        // Funding the oracle's address and querying the app's makes this leg
+        // sensitive to a wrong derivation: if the two diverged, this account
+        // would show a zero balance instead of the assertion failing to even
+        // find a mismatched address.
         const info = await getConformanceClient()
             .client.algod.accountInformation(account.address)
             .do()
