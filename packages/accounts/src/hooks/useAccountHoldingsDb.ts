@@ -48,6 +48,7 @@ export const useHoldingsDbSync = (
     holdings: Array<{
         assetId: string | number
         amount: string | number | bigint
+        isFrozen?: boolean
     }>,
     isFetched: boolean,
     network: string,
@@ -57,7 +58,7 @@ export const useHoldingsDbSync = (
             const rows = holdings.map(h => ({
                 assetId: `${h.assetId}`,
                 amount: new Decimal(h.amount.toString()),
-                isFrozen: false,
+                isFrozen: h.isFrozen ?? false,
             }))
 
             void persistHoldingsToDb(accountAddress, rows, network)
