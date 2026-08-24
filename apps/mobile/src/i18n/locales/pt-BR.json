@@ -295,11 +295,6 @@
             "dismiss": "Entendi"
         }
     },
-    "assets": {
-        "frozen_info": {
-            "body": "Este ativo está congelado para esta conta e não pode ser enviado nem convertido. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
-        }
-    },
     "account_details": {
         "assets": {
             "title": "Ativos",
@@ -791,7 +786,7 @@
             "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir.",
             "asset_frozen": {
                 "title": "Ativo congelado",
-                "body": "Este ativo está congelado para a sua conta e não pode ser enviado. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
+                "body": "Este ativo está congelado para esta conta e não pode ser enviado nem convertido. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
             }
         },
         "kms": {

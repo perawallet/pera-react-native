@@ -295,11 +295,6 @@
             "dismiss": "Verstanden"
         }
     },
-    "assets": {
-        "frozen_info": {
-            "body": "Dieses Asset ist für dieses Konto eingefroren und kann nicht gesendet oder getauscht werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
-        }
-    },
     "account_details": {
         "assets": {
             "title": "Assets",
@@ -783,7 +778,7 @@
             "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht.",
             "asset_frozen": {
                 "title": "Asset eingefroren",
-                "body": "Dieses Asset ist für dein Konto eingefroren und kann nicht gesendet werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
+                "body": "Dieses Asset ist für dieses Konto eingefroren und kann nicht gesendet oder getauscht werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
             }
         },
         "kms": {

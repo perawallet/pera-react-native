@@ -295,11 +295,6 @@
             "dismiss": "Got it"
         }
     },
-    "assets": {
-        "frozen_info": {
-            "body": "This asset is frozen for this account and can't be sent or swapped. The asset's freeze manager must unfreeze it first."
-        }
-    },
     "account_details": {
         "assets": {
             "title": "Assets",
@@ -791,7 +786,7 @@
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
             "asset_frozen": {
                 "title": "Asset frozen",
-                "body": "This asset is frozen for your account and can't be sent. The asset's freeze manager must unfreeze it first."
+                "body": "This asset is frozen for this account and can't be sent or swapped. The asset's freeze manager must unfreeze it first."
             }
         },
         "kms": {

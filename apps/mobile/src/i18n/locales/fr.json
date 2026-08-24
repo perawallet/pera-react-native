@@ -295,11 +295,6 @@
             "dismiss": "Compris"
         }
     },
-    "assets": {
-        "frozen_info": {
-            "body": "Cet actif est gelé pour ce compte : il ne peut être ni envoyé ni échangé via Swap. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
-        }
-    },
     "account_details": {
         "assets": {
             "title": "Actifs",
@@ -791,7 +786,7 @@
             "body": "Un problème semble être survenu. Veuillez réessayer et contacter l’assistance si le problème persiste.",
             "asset_frozen": {
                 "title": "Actif gelé",
-                "body": "Cet actif est gelé pour votre compte et ne peut pas être envoyé. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
+                "body": "Cet actif est gelé pour ce compte : il ne peut être ni envoyé ni échangé via Swap. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
             }
         },
         "kms": {

@@ -295,11 +295,6 @@
             "dismiss": "Anladım"
         }
     },
-    "assets": {
-        "frozen_info": {
-            "body": "Bu varlık bu hesap için donduruldu; gönderilemez veya swap edilemez. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
-        }
-    },
     "account_details": {
         "assets": {
             "title": "Varlıklar",
@@ -791,7 +786,7 @@
             "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç.",
             "asset_frozen": {
                 "title": "Varlık donduruldu",
-                "body": "Bu varlık senin hesabın için donduruldu ve gönderilemez. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
+                "body": "Bu varlık bu hesap için donduruldu; gönderilemez veya swap edilemez. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
             }
         },
         "kms": {

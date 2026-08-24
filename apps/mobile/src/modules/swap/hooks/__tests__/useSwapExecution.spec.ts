@@ -191,7 +191,10 @@ vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: () => 'device-1',
 }))
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-shared')
+    >()),
     concatBytes: (...arrays: Uint8Array[]) => {
         const totalLength = arrays.reduce((sum, a) => sum + a.length, 0)
         const result = new Uint8Array(totalLength)
@@ -211,25 +214,6 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         warn: vi.fn(),
         error: vi.fn(),
     },
-    // Thrown by the prepare mutation's `assertOnline()` guard when offline
-    // (OFF-004). Kept minimal — this file only needs an identifiable error type.
-    NoConnectionError: class NoConnectionError extends Error {
-        constructor() {
-            super('No network connection found')
-            this.name = 'NoConnectionError'
-        }
-    },
-    // Widened for `resolveErrorCopy`, pulled in transitively via the
-    // submission-phase catch (see useSwapExecution.ts).
-    AppError: class AppError extends Error {
-        constructor(
-            message: string,
-            readonly metadata: Record<string, unknown> = {},
-        ) {
-            super(message)
-        }
-    },
-    ErrorCategory: { UNKNOWN: 'UNKNOWN', TRANSACTIONS: 'TRANSACTIONS' },
     getNetworkErrorMessageKeys: () => ({
         titleKey: 'errors.network.no_connection.title',
         bodyKey: 'errors.network.no_connection.body',
@@ -544,7 +528,7 @@ describe('useSwapExecution', () => {
         expect(result.current.status).toBe('idle')
     })
 
-    it('refuses a frozen input asset before prepare and reports a prepare-phase error', async () => {
+    it('refuses a frozen input asset before prepare, with the shared AssetFrozenError copy', async () => {
         mockUseSelectedAccount.mockReturnValue({ address: 'SENDER_ADDR' })
         mockUseAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map([
@@ -564,15 +548,18 @@ describe('useSwapExecution', () => {
             outcome = await result.current.execute(makeQuote('quote-frozen'))
         })
 
+        // Same keys the send path resolves, so the toast is titled "Asset
+        // frozen" rather than the generic swap headline.
         expect(outcome).toEqual({
             kind: 'error',
             phase: 'prepare',
-            message: 'assets.frozen_info.body',
+            message: 'errors.transaction.asset_frozen.body',
+            title: 'errors.transaction.asset_frozen.title',
         })
         expect(result.current.status).toBe('error')
         expect(result.current.error).toEqual({
             phase: 'prepare',
-            message: 'assets.frozen_info.body',
+            message: 'errors.transaction.asset_frozen.body',
         })
         expect(mockPrepareTransactions).not.toHaveBeenCalled()
     })

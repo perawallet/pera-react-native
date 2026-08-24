@@ -295,11 +295,6 @@
             "dismiss": "Entendido"
         }
     },
-    "assets": {
-        "frozen_info": {
-            "body": "Este activo está congelado para esta cuenta y no se puede enviar ni usar en un swap. El gestor de congelación del activo debe descongelarlo primero."
-        }
-    },
     "account_details": {
         "assets": {
             "title": "Activos",
@@ -791,7 +786,7 @@
             "body": "Algo salió mal. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa.",
             "asset_frozen": {
                 "title": "Activo congelado",
-                "body": "Este activo está congelado para tu cuenta y no se puede enviar. El gestor de congelación del activo debe descongelarlo primero."
+                "body": "Este activo está congelado para esta cuenta y no se puede enviar ni usar en un swap. El gestor de congelación del activo debe descongelarlo primero."
             }
         },
         "kms": {

@@ -39,6 +39,7 @@ import {
     type PrepareTransactionsResult,
     type SwapQuote,
 } from '@perawallet/wallet-core-swaps'
+import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
 import {
     encodeToBase64,
     logger,
@@ -99,10 +100,10 @@ export type SwapExecutionOutcome =
           kind: 'error'
           phase: SwapExecutionErrorPhase
           message: string
-          // Only set for submission-phase failures: the classification-aware
-          // title resolveErrorCopy computed (e.g. the honest unknown-outcome
-          // headline). Absent for prepare/signing, which are genuine failures
-          // and keep the caller's default title.
+          // The classification-aware title resolveErrorCopy computed, for
+          // failures specific enough to name themselves (the honest
+          // unknown-outcome headline, a frozen holding). Absent for the
+          // generic prepare/signing failures, which keep the caller's default.
           title?: string
       }
 
@@ -174,10 +175,20 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     )?.isFrozen ?? false
 
             if (isInputFrozen) {
-                const message = t('assets.frozen_info.body')
-                setError({ phase: 'prepare', message })
+                const copy = resolveErrorCopy(
+                    new AssetFrozenError(),
+                    t,
+                    undefined,
+                    getMessage,
+                )
+                setError({ phase: 'prepare', message: copy.body })
                 setStatus('error')
-                return { kind: 'error', phase: 'prepare', message }
+                return {
+                    kind: 'error',
+                    phase: 'prepare',
+                    message: copy.body,
+                    title: copy.title,
+                }
             }
 
             // A quote that outlived its TTL (e.g. the confirm sat behind an
