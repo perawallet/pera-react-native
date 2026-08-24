@@ -113,6 +113,22 @@ export const algokeyQuantumAddressFromMnemonic = async (
     }
 }
 
+/**
+ * Runs algokey's own PQ address-compliance check — `algokey pq check-address`
+ * exits 0 for a compliant address and non-zero otherwise, so a thrown `docker`
+ * call means "not compliant" rather than a harness failure.
+ */
+export const algokeyPqCheckAddress = async (
+    address: string,
+): Promise<boolean> => {
+    try {
+        await docker([ALGOKEY, 'pq', 'check-address', address])
+        return true
+    } catch {
+        return false
+    }
+}
+
 // algokey sign/pq sign read a SignedTxn-shaped file with only `txn` populated (the same
 // shell `goal clerk send -o` writes) — not the bare Transaction bytes `encodeUnsignedTransaction`
 // produces. Decoding and rewrapping here keeps that CLI quirk out of every caller.
