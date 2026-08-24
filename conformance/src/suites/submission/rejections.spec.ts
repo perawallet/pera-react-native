@@ -27,34 +27,9 @@ import {
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
+import { base32Encode } from '../../harness/base32'
 import { getConformanceClient } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
-
-// The same encoding algod uses for group ids and txids: SHA512/256-sized (32
-// byte) values rendered as unpadded RFC4648 base32 (algosdk's own `txID()` is
-// `hi-base32.encode(hash).slice(0, 52)`, i.e. the same alphabet with the
-// trailing '=' padding dropped). Verified byte-for-byte identical to
-// algosdk's own encoding for 32-byte inputs before pinning the assertion
-// below on it, so the corrupted-group-id case can interpolate concrete
-// values instead of a guessed pattern.
-const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
-const encodeBase32NoPad = (bytes: Uint8Array): string => {
-    let bits = 0
-    let value = 0
-    let output = ''
-    for (const byte of bytes) {
-        value = (value << 8) | byte
-        bits += 8
-        while (bits >= 5) {
-            output += BASE32_ALPHABET[(value >>> (bits - 5)) & 31]
-            bits -= 5
-        }
-    }
-    if (bits > 0) {
-        output += BASE32_ALPHABET[(value << (5 - bits)) & 31]
-    }
-    return output
-}
 
 const rejectionOf = async (submit: () => Promise<unknown>): Promise<Error> => {
     try {
@@ -283,7 +258,7 @@ describe('typed rejection paths conformance', () => {
 
         const error = await rejectionOf(() => submitAndConfirm(signed))
         expect(error.message).toContain(
-            `inconsistent group values: ${encodeBase32NoPad(corruptedGroupId)} != ${encodeBase32NoPad(validGroupId)}`,
+            `inconsistent group values: ${base32Encode(corruptedGroupId)} != ${base32Encode(validGroupId)}`,
         )
 
         const algodError = toAlgodError(error)

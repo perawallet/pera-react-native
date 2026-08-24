@@ -23,30 +23,14 @@ import {
     fundAccount,
     type ConformanceAccount,
 } from '../../harness/accounts'
+import { base32Encode } from '../../harness/base32'
 import { getConformanceClient } from '../../harness/client'
 import { createConformanceKeyStore } from '../../harness/keystore'
 
 const MULTISIG_ADDR_PREFIX = new TextEncoder().encode('MultisigAddr')
-const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
 
 const sha512_256 = (bytes: Uint8Array): Uint8Array =>
     new Uint8Array(createHash('sha512-256').update(bytes).digest())
-
-const base32Encode = (bytes: Uint8Array): string => {
-    let bits = 0
-    let value = 0
-    let output = ''
-    for (const byte of bytes) {
-        value = (value << 8) | byte
-        bits += 8
-        while (bits >= 5) {
-            output += BASE32_ALPHABET[(value >>> (bits - 5)) & 0x1f]
-            bits -= 5
-        }
-    }
-    if (bits > 0) output += BASE32_ALPHABET[(value << (5 - bits)) & 0x1f]
-    return output
-}
 
 /**
  * Independent re-implementation of the Algorand multisig address preimage —
