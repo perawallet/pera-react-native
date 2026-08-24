@@ -6,7 +6,7 @@
     "scripts": {
         "test:conformance": "vitest run",
         "test:conformance:watch": "vitest",
-        "lint": "oxlint src",
+        "lint": "oxlint --config ../.oxlintrc.json src",
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
@@ -28,7 +28,7 @@
     "devDependencies": {
         "@perawallet/wallet-core-devtools": "workspace:*",
         "@types/node": "catalog:",
-        "oxlint": "^1.76.0",
+        "typescript": "catalog:",
         "vitest": "catalog:"
     }
 }
