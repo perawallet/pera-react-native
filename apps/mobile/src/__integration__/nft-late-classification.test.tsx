@@ -49,7 +49,11 @@ import {
     useEnsureAccountEnriched,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useCollectiblePreferencesStore } from '@perawallet/wallet-core-assets'
+import {
+    PeraAssetType,
+    useCollectiblePreferencesStore,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useAccountNfts } from '@modules/accounts/components/AccountNfts/useAccountNfts'
@@ -59,9 +63,12 @@ import { ALGO25_TEST_ADDRESS } from './__fixtures__/onboarding'
 
 // The asset as the backend describes it BEFORE its crawler has run: NFT
 // shaped, but not yet typed as a collectible.
-const UNCLASSIFIED_ASSET = {
+const UNCLASSIFIED_ASSET: PeraAsset = {
     ...NFT_TEST_ASSET,
-    peraMetadata: { ...NFT_TEST_ASSET.peraMetadata!, type: 'standard_asset' },
+    peraMetadata: {
+        ...NFT_TEST_ASSET.peraMetadata!,
+        type: PeraAssetType.standard_asset,
+    },
 }
 
 // Same asset once the crawler finishes — this is what the refetch must pick up.
@@ -156,13 +163,19 @@ describe('Flow: an NFT the backend classifies late still reaches the gallery', (
         await upsertAccountBalance({
             accountAddress: account.address,
             network: 'mainnet',
-            algoBalance: new Decimal('1000000'),
+            algoBalance: new Decimal(1_000_000),
+            totalAssetsOptedIn: 1,
+            totalCreatedAssets: 1,
+            totalAppsOptedIn: 0,
+            minBalance: new Decimal(200_000),
+            status: 'Offline',
+            authAddress: null,
         })
         await insertAssetHolding({
             accountAddress: account.address,
             assetId: NFT_TEST_ASSET_ID,
-            amount: new Decimal(1),
             network: 'mainnet',
+            amount: '1',
         })
 
         useAccountsStore.getState().setAccounts([account])
