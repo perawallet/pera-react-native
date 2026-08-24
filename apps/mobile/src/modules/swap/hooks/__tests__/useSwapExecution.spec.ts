@@ -592,7 +592,7 @@ describe('useSwapExecution', () => {
 
         // Both sides of the quote get asked about.
         const asked = mockIsAssetFrozen.mock.calls.map(
-            ([args]: [{ assetId: string }]) => args.assetId,
+            ([args]) => (args as { assetId: string }).assetId,
         )
         expect(asked).toEqual(['0', '999'])
         expect(mockIsAssetFrozen).toHaveBeenCalledWith({
