@@ -13,12 +13,12 @@
 import { useQuery } from '@tanstack/react-query'
 import {
     isAlgoAssetId,
-    type Network,
     type Nullable,
     type Optional,
 } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchIndexerAssetDetails } from '../api'
+import { getAssetAuthoritiesQueryKey } from './querykeys'
 
 type AssetAuthorities = {
     hasFreeze: boolean
@@ -40,11 +40,6 @@ type UseAssetAuthoritiesQueryResult = AssetAuthorities & {
     isError: boolean
     isSuccess: boolean
 }
-
-export const getAssetAuthoritiesQueryKey = (
-    assetId: string,
-    network: Network,
-): [string, Network, string] => ['assetAuthorities', network, assetId]
 
 export const useAssetAuthoritiesQuery = (
     assetId: string,
