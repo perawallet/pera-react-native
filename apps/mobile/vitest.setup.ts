@@ -39,6 +39,9 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             authenticate: vi
                 .fn()
                 .mockResolvedValue({ success: false, reason: 'unavailable' }),
+            createEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
+            checkEnrollmentBinding: vi.fn().mockResolvedValue('valid'),
+            clearEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
         },
         crashReporting: {
             log: vi.fn(),
@@ -141,6 +144,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             authenticate: vi
                 .fn()
                 .mockResolvedValue({ success: false, reason: 'unavailable' }),
+            createEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
+            checkEnrollmentBinding: vi.fn().mockResolvedValue('valid'),
+            clearEnrollmentBinding: vi.fn().mockResolvedValue(undefined),
         },
         crashReporting: {
             log: vi.fn(),

@@ -27,6 +27,9 @@ describe('capability stubs', () => {
             new ChromeBiometricsService().getSecurityLevel(),
         ).resolves.toBe('none')
         await expect(
+            new ChromeBiometricsService().checkEnrollmentBinding(),
+        ).resolves.toBe('unavailable')
+        await expect(
             new ChromeAgeGateService().requestAgeRange(18),
         ).resolves.toEqual({ status: 'unknown', source: 'self-declared' })
         await expect(

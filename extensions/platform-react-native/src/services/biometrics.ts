@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { requireOptionalNativeModule } from 'expo'
 import {
     AuthenticationType,
     SecurityLevel,
@@ -21,6 +22,7 @@ import {
 } from 'expo-local-authentication'
 import { logger } from '@perawallet/wallet-core-shared'
 import type {
+    BiometricEnrollmentBinding,
     BiometricSecurityLevel,
     BiometricsAuthenticateFailureReason,
     BiometricsAuthenticatePrompt,
@@ -30,6 +32,32 @@ import type {
 } from '@perawallet/wallet-extension-platform'
 
 const LOG_SOURCE = 'RNBiometricsService'
+
+/** `apps/mobile/native-modules/biometric-binding`. */
+interface NativePeraBiometricBinding {
+    createBinding(): Promise<boolean>
+    checkBinding(): Promise<string>
+    clearBinding(): Promise<void>
+}
+
+const getBindingModule = (): NativePeraBiometricBinding | null =>
+    requireOptionalNativeModule<NativePeraBiometricBinding>(
+        'PeraBiometricBinding',
+    )
+
+const BINDING_STATUSES: readonly BiometricEnrollmentBinding[] = [
+    'valid',
+    'changed',
+    'absent',
+    'unavailable',
+]
+
+// 'changed' destroys the user's opt-in, so an unrecognized native string must
+// never fall through to it.
+const asBinding = (status: string): BiometricEnrollmentBinding =>
+    (BINDING_STATUSES as readonly string[]).includes(status)
+        ? (status as BiometricEnrollmentBinding)
+        : 'unavailable'
 
 // Unmapped errors fall through to 'unknown': iOS returns prefixed strings
 // ("unknown: <code>") and strings outside the TS union. Android folds its OS
@@ -144,6 +172,53 @@ export class RNBiometricsService implements BiometricsService {
                 error,
             })
             return { success: false, reason: 'unknown' }
+        }
+    }
+
+    async createEnrollmentBinding(): Promise<void> {
+        const module = getBindingModule()
+        if (!module) return
+        try {
+            const created = await module.createBinding()
+            if (!created) {
+                logger.warn('Biometric enrollment binding was not recorded', {
+                    source: LOG_SOURCE,
+                })
+            }
+        } catch (error) {
+            logger.warn('createBinding native call threw', {
+                source: LOG_SOURCE,
+                error,
+            })
+        }
+    }
+
+    async checkEnrollmentBinding(): Promise<BiometricEnrollmentBinding> {
+        const module = getBindingModule()
+        // A build without the module (or the web bundle) can't report, and
+        // 'unavailable' is the reading that changes nothing.
+        if (!module) return 'unavailable'
+        try {
+            return asBinding(await module.checkBinding())
+        } catch (error) {
+            logger.warn('checkBinding native call threw', {
+                source: LOG_SOURCE,
+                error,
+            })
+            return 'unavailable'
+        }
+    }
+
+    async clearEnrollmentBinding(): Promise<void> {
+        const module = getBindingModule()
+        if (!module) return
+        try {
+            await module.clearBinding()
+        } catch (error) {
+            logger.warn('clearBinding native call threw', {
+                source: LOG_SOURCE,
+                error,
+            })
         }
     }
 }

@@ -161,6 +161,11 @@ export const buildTestPlatform = (
         async authenticate() {
             return { success: true } as const
         },
+        async createEnrollmentBinding() {},
+        async checkEnrollmentBinding() {
+            return 'valid' as const
+        },
+        async clearEnrollmentBinding() {},
     }
 
     const defaultAppIntegrity: AppIntegrityService = {

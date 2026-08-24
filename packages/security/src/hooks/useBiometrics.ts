@@ -52,11 +52,13 @@ type UseBiometricsResult = {
     isAvailable: boolean
     /**
      * Reconciles, so NOT a pure read. Returns true only for an enrolled class-3
-     * ("strong") biometric. It also deletes the blob on an affirmative class-2
-     * report, and — coarsely, see the branch itself — whenever no biometric
-     * appears available at all. A returned false therefore does NOT imply the
-     * blob is gone: an unconfirmable level reports false and keeps it. Callers
-     * get the post-reconciliation answer, consistent with a subsequent call.
+     * ("strong") biometric that still matches the enrollment binding recorded at
+     * opt-in. It deletes the blob on an affirmative class-2 report, on an
+     * affirmative "the enrolled set changed" report, and — coarsely, see the
+     * branch itself — whenever no biometric appears available at all. A returned
+     * false therefore does NOT imply the blob is gone: an unconfirmable level
+     * reports false and keeps it. Callers get the post-reconciliation answer,
+     * consistent with a subsequent call.
      */
     checkBiometricsEnabled: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
@@ -83,6 +85,16 @@ export const useBiometrics = (): UseBiometricsResult => {
     const setIsEnabled = useSecurityStore(state => state.setBiometricsEnabled)
     const [isAvailable, setIsAvailable] = useState(false)
 
+    // The blob and its enrollment binding are two halves of one opt-in and
+    // always die together. A binding outliving its blob leaves a stale keystore
+    // key; a blob outliving its binding re-arms unlock, because the next
+    // reconcile sees no binding and adopts whatever is enrolled by then.
+    const dropOptIn = useCallback(async (): Promise<void> => {
+        await removeSecret(BIOMETRIC_BLOB_KEY_ID)
+        await biometricsService.clearEnrollmentBinding()
+        setIsEnabled(false)
+    }, [removeSecret, biometricsService, setIsEnabled])
+
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
         if (!hasSecret(BIOMETRIC_BLOB_KEY_ID)) {
             setIsEnabled(false)
@@ -101,13 +113,28 @@ export const useBiometrics = (): UseBiometricsResult => {
         // `checkBiometricsAvailable` folds "no hardware" and Android's
         // transient HW_UNAVAILABLE in with "none enrolled". Pre-existing.
         if (!(await biometricsService.checkBiometricsAvailable())) {
-            await removeSecret(BIOMETRIC_BLOB_KEY_ID)
-            setIsEnabled(false)
+            await dropOptIn()
             return false
         }
 
         const level = await biometricsService.getSecurityLevel()
         if (level === 'strong') {
+            // An enrolled strong biometric is not proof it is the *same* one
+            // the user opted in with. Remove-then-re-add never passes through a
+            // state either check above can observe, so the enrollment binding
+            // is the only signal for it. Only an affirmative 'changed' may
+            // destroy the opt-in; 'absent' is every install that opted in
+            // before bindings existed (and everything arriving through the
+            // legacy migration), so adopt the current set instead of forcing a
+            // re-opt-in on upgrade.
+            const binding = await biometricsService.checkEnrollmentBinding()
+            if (binding === 'changed') {
+                await dropOptIn()
+                return false
+            }
+            if (binding === 'absent') {
+                await biometricsService.createEnrollmentBinding()
+            }
             setIsEnabled(true)
             return true
         }
@@ -120,11 +147,12 @@ export const useBiometrics = (): UseBiometricsResult => {
         // enrolled-but-'secret' during a Face ID lockout the user cannot clear
         // from inside the app.
         if (level === 'weak') {
-            await removeSecret(BIOMETRIC_BLOB_KEY_ID)
+            await dropOptIn()
+            return false
         }
         setIsEnabled(false)
         return false
-    }, [hasSecret, removeSecret, biometricsService, setIsEnabled])
+    }, [hasSecret, dropOptIn, biometricsService, setIsEnabled])
 
     const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {
         return biometricsService.checkBiometricsAvailable()
@@ -176,8 +204,7 @@ export const useBiometrics = (): UseBiometricsResult => {
                             // Settings toggle reads OFF, so its delete branch
                             // is unreachable and this is the only user-driven
                             // moment where dropping it is unambiguously safe.
-                            await removeSecret(BIOMETRIC_BLOB_KEY_ID)
-                            setIsEnabled(false)
+                            await dropOptIn()
                             return { ok: false, reason: 'weak-biometric' }
                         }
 
@@ -186,6 +213,12 @@ export const useBiometrics = (): UseBiometricsResult => {
                         if (!authenticated.success) {
                             return { ok: false, reason: 'declined' }
                         }
+
+                        // Before the blob, so the blob is never armed without a
+                        // binding: that combination is the one the reconcile
+                        // adopts, which would bless a set the user never
+                        // approved.
+                        await biometricsService.createEnrollmentBinding()
 
                         // `writeBiometricBlob` copies the bytes into the keystore;
                         // the original `pinData` here is zeroed by
@@ -206,7 +239,7 @@ export const useBiometrics = (): UseBiometricsResult => {
             withSecret,
             writeBiometricBlob,
             setIsEnabled,
-            removeSecret,
+            dropOptIn,
         ],
     )
 
@@ -228,10 +261,9 @@ export const useBiometrics = (): UseBiometricsResult => {
         })
     }, [checkBiometricsEnabled, hasSecret, withSecret, writeBiometricBlob])
 
-    const disableBiometrics = useCallback(async () => {
-        await removeSecret(BIOMETRIC_BLOB_KEY_ID)
-        setIsEnabled(false)
-    }, [removeSecret, setIsEnabled])
+    // Same operation as the reconcile's internal drop; the only difference is
+    // who asked for it.
+    const disableBiometrics = dropOptIn
 
     const authenticateWithBiometrics = useCallback(
         async (

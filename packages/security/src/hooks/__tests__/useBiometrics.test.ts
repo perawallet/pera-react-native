@@ -34,12 +34,18 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 const mockCheckBiometricsAvailable = vi.fn()
 const mockAuthenticate = vi.fn()
 const mockGetSecurityLevel = vi.fn()
+const mockCreateEnrollmentBinding = vi.fn()
+const mockCheckEnrollmentBinding = vi.fn()
+const mockClearEnrollmentBinding = vi.fn()
 
 const mockBiometricsService = {
     checkBiometricsAvailable: mockCheckBiometricsAvailable,
     authenticate: mockAuthenticate,
     getSecurityLevel: mockGetSecurityLevel,
     getSupportedBiometricType: vi.fn(),
+    createEnrollmentBinding: mockCreateEnrollmentBinding,
+    checkEnrollmentBinding: mockCheckEnrollmentBinding,
+    clearEnrollmentBinding: mockClearEnrollmentBinding,
 }
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -109,10 +115,12 @@ describe('useBiometrics', () => {
         // isEnabled lives in the module-level store now, so it outlives a
         // render and would leak into the next test.
         useSecurityStore.getState().resetState()
-        // Default to a device with a strong (class-3) biometric enrolled; tests
-        // covering unavailable / weak / revoked devices override these.
+        // Default to a device with a strong (class-3) biometric enrolled, still
+        // matching the set bound at opt-in; tests covering unavailable / weak /
+        // revoked / re-enrolled devices override these.
         mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockGetSecurityLevel.mockResolvedValue('strong')
+        mockCheckEnrollmentBinding.mockResolvedValue('valid')
     })
 
     test('initializes isEnabled from secure storage on mount', async () => {
@@ -738,5 +746,116 @@ describe('useBiometrics', () => {
         })
 
         expect(authenticated).toEqual({ success: false, reason: 'unknown' })
+    })
+
+    // Remove-then-re-add of a fingerprint leaves every other signal reporting a
+    // healthy strong enrollment, so the binding is the only thing standing
+    // between a biometric the user never approved and the wallet.
+    describe('enrollment binding', () => {
+        test('checkBiometricsEnabled drops the opt-in when the enrolled set changed', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckEnrollmentBinding.mockResolvedValue('changed')
+
+            const { result } = await renderAndSettle()
+
+            let isEnabled: boolean = true
+            await act(async () => {
+                isEnabled = await result.current.checkBiometricsEnabled()
+            })
+
+            expect(isEnabled).toBe(false)
+            expect(kmsMocks.biometricBytes).toBeNull()
+            expect(mockClearEnrollmentBinding).toHaveBeenCalled()
+            expect(result.current.isEnabled).toBe(false)
+        })
+
+        test('authenticateWithBiometrics refuses to prompt after the enrolled set changed', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckEnrollmentBinding.mockResolvedValue('changed')
+            // Succeeds if reached, so a regression reads as "a re-enrolled
+            // biometric unlocked the wallet".
+            mockAuthenticate.mockResolvedValue({ success: true })
+
+            const { result } = await renderAndSettle()
+
+            let authenticated: BiometricsAuthenticateResult | undefined
+            await act(async () => {
+                authenticated =
+                    await result.current.authenticateWithBiometrics()
+            })
+
+            expect(authenticated).toEqual({
+                success: false,
+                reason: 'unavailable',
+            })
+            expect(mockAuthenticate).not.toHaveBeenCalled()
+        })
+
+        // Every install that opted in before bindings existed, plus everything
+        // arriving through the legacy-app migration. Forcing those users to
+        // re-opt-in would be the safer read of an absent binding, but adopting
+        // protects them from every change after the upgrade at no cost.
+        test('checkBiometricsEnabled adopts the current set when no binding is recorded', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckEnrollmentBinding.mockResolvedValue('absent')
+
+            const { result } = await renderAndSettle()
+
+            let isEnabled: boolean = false
+            await act(async () => {
+                isEnabled = await result.current.checkBiometricsEnabled()
+            })
+
+            expect(isEnabled).toBe(true)
+            expect(mockCreateEnrollmentBinding).toHaveBeenCalled()
+            expect(kmsMocks.biometricBytes).not.toBeNull()
+        })
+
+        // A reading that could not be taken is not a report that the set
+        // changed — same rule the security-level branch follows for 'secret'.
+        test('checkBiometricsEnabled keeps the opt-in when the binding cannot be read', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckEnrollmentBinding.mockResolvedValue('unavailable')
+
+            const { result } = await renderAndSettle()
+
+            let isEnabled: boolean = false
+            await act(async () => {
+                isEnabled = await result.current.checkBiometricsEnabled()
+            })
+
+            expect(isEnabled).toBe(true)
+            expect(kmsMocks.removeSecret).not.toHaveBeenCalled()
+            expect(mockCreateEnrollmentBinding).not.toHaveBeenCalled()
+        })
+
+        test('enableBiometrics records a binding before arming the blob', async () => {
+            kmsMocks.pinBytes = new TextEncoder().encode('123456')
+            mockAuthenticate.mockResolvedValue({ success: true })
+
+            const { result } = await renderAndSettle()
+
+            await act(async () => {
+                await result.current.enableBiometrics()
+            })
+
+            expect(mockCreateEnrollmentBinding).toHaveBeenCalled()
+            expect(
+                mockCreateEnrollmentBinding.mock.invocationCallOrder[0],
+            ).toBeLessThan(kmsMocks.commitSecret.mock.invocationCallOrder[0])
+        })
+
+        test('disableBiometrics clears the binding along with the blob', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+
+            const { result } = await renderAndSettle()
+
+            await act(async () => {
+                await result.current.disableBiometrics()
+            })
+
+            expect(kmsMocks.biometricBytes).toBeNull()
+            expect(mockClearEnrollmentBinding).toHaveBeenCalled()
+        })
     })
 })

@@ -46,6 +46,18 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     },
 }))
 
+const bindingMocks = vi.hoisted(() => ({
+    module: null as {
+        createBinding: ReturnType<typeof vi.fn>
+        checkBinding: ReturnType<typeof vi.fn>
+        clearBinding: ReturnType<typeof vi.fn>
+    } | null,
+}))
+
+vi.mock('expo', () => ({
+    requireOptionalNativeModule: () => bindingMocks.module,
+}))
+
 import { RNBiometricsService } from '../services/biometrics'
 
 describe('RNBiometricsService', () => {
@@ -254,6 +266,66 @@ describe('RNBiometricsService', () => {
             const call = authenticateAsyncMock.mock.calls[0][0]
             expect(call.cancelLabel).toEqual(expect.any(String))
             expect(call.cancelLabel.length).toBeGreaterThan(0)
+        })
+    })
+
+    describe('enrollment binding', () => {
+        const nativeModule = {
+            createBinding: vi.fn(),
+            checkBinding: vi.fn(),
+            clearBinding: vi.fn(),
+        }
+
+        beforeEach(() => {
+            nativeModule.createBinding.mockReset()
+            nativeModule.checkBinding.mockReset()
+            nativeModule.clearBinding.mockReset()
+            bindingMocks.module = nativeModule
+        })
+
+        test.each(['valid', 'changed', 'absent', 'unavailable'] as const)(
+            'passes through the native status %j',
+            async status => {
+                nativeModule.checkBinding.mockResolvedValue(status)
+                expect(await service.checkEnrollmentBinding()).toBe(status)
+            },
+        )
+
+        // 'changed' destroys the user's opt-in, so anything the JS side does not
+        // recognize has to land on the status that changes nothing.
+        test.each(['CHANGED', 'invalidated', ''])(
+            'maps unrecognized native status %j to "unavailable"',
+            async status => {
+                nativeModule.checkBinding.mockResolvedValue(status)
+                expect(await service.checkEnrollmentBinding()).toBe(
+                    'unavailable',
+                )
+            },
+        )
+
+        test('reports "unavailable" when the native call throws', async () => {
+            nativeModule.checkBinding.mockRejectedValue(new Error('keystore'))
+            expect(await service.checkEnrollmentBinding()).toBe('unavailable')
+        })
+
+        // A build without the module must not read as a revoked enrollment.
+        test('reports "unavailable" when the native module is absent', async () => {
+            bindingMocks.module = null
+            expect(await service.checkEnrollmentBinding()).toBe('unavailable')
+        })
+
+        test('swallows a failed createBinding rather than rejecting', async () => {
+            nativeModule.createBinding.mockResolvedValue(false)
+            await expect(
+                service.createEnrollmentBinding(),
+            ).resolves.toBeUndefined()
+        })
+
+        test('swallows a throwing clearBinding rather than rejecting', async () => {
+            nativeModule.clearBinding.mockRejectedValue(new Error('keystore'))
+            await expect(
+                service.clearEnrollmentBinding(),
+            ).resolves.toBeUndefined()
         })
     })
 })
