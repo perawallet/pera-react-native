@@ -12,7 +12,7 @@
 // Ported from @algorandfoundation/keystore@1.0.0-canary.17 crypto.test.ts
 // Portions Copyright Algorand Foundation, Apache-2.0
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearKeyData, decryptWithKeyData, encryptWithKeyData } from '../crypto'
 import type { KeyData } from '../types'
 
@@ -20,34 +20,22 @@ import type { KeyData } from '../types'
 const makeUint8 = (arr: number[]) => new Uint8Array(arr)
 
 describe('crypto.ts', () => {
-    const origGetRandomValues = globalThis.crypto?.getRandomValues?.bind(
-        globalThis.crypto,
-    )
-
     beforeEach(() => {
-        // deterministically stub webcrypto getRandomValues for generateId
-        Object.defineProperty(globalThis, 'crypto', {
-            value: {
-                ...globalThis.crypto,
-                getRandomValues: (buf: Uint8Array) => {
-                    for (let i = 0; i < buf.length; i++) buf[i] = i // 00,01,02,...
-                    return buf
-                },
+        // Spy on the real Crypto instance's method instead of replacing
+        // `globalThis.crypto` with an object-literal clone: Crypto's members
+        // (getRandomValues, subtle, ...) live on the prototype, so
+        // `{ ...globalThis.crypto }` copies nothing and a naive restore
+        // leaves `globalThis.crypto` a plain Object with `subtle` gone.
+        vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(
+            (buf: any) => {
+                for (let i = 0; i < buf.length; i++) buf[i] = i // 00,01,02,...
+                return buf
             },
-            configurable: true,
-        })
+        )
     })
 
     afterEach(() => {
-        if (origGetRandomValues) {
-            Object.defineProperty(globalThis, 'crypto', {
-                value: {
-                    ...globalThis.crypto,
-                    getRandomValues: origGetRandomValues,
-                },
-                configurable: true,
-            })
-        }
+        vi.restoreAllMocks()
     })
 
     it('clearKeyData removes privateKey field if present', () => {
@@ -113,5 +101,15 @@ describe('crypto.ts nonce randomness (real crypto.getRandomValues)', () => {
         expect(Array.from(first.slice(0, 24))).not.toEqual(
             Array.from(second.slice(0, 24)),
         )
+    })
+
+    // Proves the `vi.spyOn` fix in the describe above actually restores the
+    // real Crypto instance rather than leaving a crippled plain-object stand-in.
+    // Task 7 vendors sign/verify, which depend on crypto.subtle — a broken
+    // restore here would fail those tests for a reason unrelated to their own code.
+    it('leaves globalThis.crypto as the real Crypto instance after the stubbing describe above has run', () => {
+        expect(globalThis.crypto instanceof Crypto).toBe(true)
+        expect(typeof globalThis.crypto.subtle).toBe('object')
+        expect(typeof globalThis.crypto.subtle.digest).toBe('function')
     })
 })

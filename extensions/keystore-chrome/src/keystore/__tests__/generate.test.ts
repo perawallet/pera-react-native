@@ -41,6 +41,21 @@ vi.mock('@algorandfoundation/wallet-provider', () => ({
 }))
 
 describe('generate.ts', () => {
+    it('bip39.mnemonicToSeed matches the canonical BIP-39 test vector (not a self-recomputation)', async () => {
+        // Canonical vector (BIP-39 reference test vectors, "abandon..." x11 +
+        // "about", empty passphrase). Hardcoded so a derivation regression —
+        // e.g. from the @scure/bip39 1.6.0 -> 2.2.0 bump — would be caught by
+        // comparison against a fixed value, not by recomputing the same
+        // function under test and comparing it to itself.
+        const mnemonic =
+            'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+        const seed = await bip39.mnemonicToSeed(mnemonic)
+        const hex = Array.from(seed)
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('')
+        expect(hex.startsWith('5eb00bbddcf069084889a8ab91555681')).toBe(true)
+    })
+
     it('generateSeedData creates a seed from mnemonic', async () => {
         const seed = (await generateSeedData({
             strength: 128,
