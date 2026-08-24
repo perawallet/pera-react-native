@@ -692,7 +692,7 @@
             },
             "asset_frozen": {
                 "title": "Activo congelado",
-                "body": "El activo {{assetId}} está congelado, por lo que esta transferencia no se puede completar. Contacta al creador del activo para descongelarlo."
+                "body": "El activo {{assetId}} está congelado, por lo que esta transferencia no se puede completar. El gestor de congelación del activo debe descongelarlo primero."
             },
             "duplicate_txn": {
                 "title": "Ya enviada",
@@ -783,11 +783,7 @@
         },
         "transaction": {
             "title": "Error al procesar esta transacción",
-            "body": "Algo salió mal. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa.",
-            "asset_frozen": {
-                "title": "Activo congelado",
-                "body": "Este activo está congelado para esta cuenta y no se puede enviar ni usar en un swap. El gestor de congelación del activo debe descongelarlo primero."
-            }
+            "body": "Algo salió mal. Inténtalo de nuevo y ponte en contacto con soporte si el problema continúa."
         },
         "kms": {
             "key_not_found": "No se pudo encontrar la clave de firma de esta cuenta.",

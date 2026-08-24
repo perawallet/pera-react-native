@@ -290,7 +290,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             })
 
             if (frozen) {
-                throw new AssetFrozenError()
+                throw new AssetFrozenError(params.asset.assetId)
             }
 
             const assetDecimals = params.asset?.decimals ?? 0

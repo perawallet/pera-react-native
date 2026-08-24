@@ -12,12 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { bottomInset: number }
-
-export const useStyles = makeStyles((theme, { bottomInset }: StyleProps) => ({
-    container: {
-        padding: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl + bottomInset,
+export const useStyles = makeStyles(theme => ({
+    content: {
         gap: theme.spacing.lg,
     },
     body: {

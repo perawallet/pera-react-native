@@ -684,7 +684,7 @@
             },
             "asset_frozen": {
                 "title": "Asset eingefroren",
-                "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Wende dich an den Ersteller des Assets, um es freigeben zu lassen."
+                "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
             },
             "duplicate_txn": {
                 "title": "Bereits übermittelt",
@@ -775,11 +775,7 @@
         },
         "transaction": {
             "title": "Bei der Verarbeitung dieser Transaktion ist ein Fehler aufgetreten",
-            "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht.",
-            "asset_frozen": {
-                "title": "Asset eingefroren",
-                "body": "Dieses Asset ist für dieses Konto eingefroren und kann nicht gesendet oder getauscht werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
-            }
+            "body": "Es scheint ein Fehler aufgetreten zu sein. Bitte versuche es erneut und wende dich an den Support, falls das Problem weiterhin besteht."
         },
         "kms": {
             "key_not_found": "Der Signaturschlüssel für dieses Konto konnte nicht gefunden werden.",

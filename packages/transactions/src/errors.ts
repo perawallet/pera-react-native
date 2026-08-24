@@ -15,6 +15,7 @@ import {
     ErrorCategory,
     type ErrorMetadata,
     ErrorSeverity,
+    messageKeysFor,
     toError,
 } from '@perawallet/wallet-core-shared'
 
@@ -81,11 +82,14 @@ export class CreatorCannotOptOutError extends TransactionError {
     }
 }
 
+const ASSET_FROZEN_KEYS = messageKeysFor('errors.algod.asset_frozen')
+
 export class AssetFrozenError extends TransactionError {
-    constructor() {
+    constructor(assetId: string) {
         super("The sender's holding of this asset is frozen.", undefined, {
-            titleKey: 'errors.transaction.asset_frozen.title',
-            messageKey: 'errors.transaction.asset_frozen.body',
+            titleKey: ASSET_FROZEN_KEYS.titleKey,
+            messageKey: ASSET_FROZEN_KEYS.bodyKey,
+            params: { assetId },
         })
     }
 }

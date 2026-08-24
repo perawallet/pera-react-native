@@ -692,7 +692,7 @@
             },
             "asset_frozen": {
                 "title": "Actif gelé",
-                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Contactez le créateur de l’actif pour le dégeler."
+                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
             },
             "duplicate_txn": {
                 "title": "Déjà soumise",
@@ -783,11 +783,7 @@
         },
         "transaction": {
             "title": "Une erreur est survenue lors du traitement de cette transaction",
-            "body": "Un problème semble être survenu. Veuillez réessayer et contacter l’assistance si le problème persiste.",
-            "asset_frozen": {
-                "title": "Actif gelé",
-                "body": "Cet actif est gelé pour ce compte : il ne peut être ni envoyé ni échangé via Swap. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
-            }
+            "body": "Un problème semble être survenu. Veuillez réessayer et contacter l’assistance si le problème persiste."
         },
         "kms": {
             "key_not_found": "Impossible de trouver la clé de signature de ce compte.",

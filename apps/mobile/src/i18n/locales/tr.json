@@ -692,7 +692,7 @@
             },
             "asset_frozen": {
                 "title": "Varlık donduruldu",
-                "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Varlığı çözdürmek için varlığı oluşturanla iletişime geç."
+                "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
             },
             "duplicate_txn": {
                 "title": "Zaten gönderildi",
@@ -783,11 +783,7 @@
         },
         "transaction": {
             "title": "Bu işlem gerçekleştirilirken bir hata oluştu",
-            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç.",
-            "asset_frozen": {
-                "title": "Varlık donduruldu",
-                "body": "Bu varlık bu hesap için donduruldu; gönderilemez veya swap edilemez. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
-            }
+            "body": "Bir şeyler ters gitmiş görünüyor. Tekrar dene ve sorun devam ederse destek ekibiyle iletişime geç."
         },
         "kms": {
             "key_not_found": "Bu hesabın imza anahtarı bulunamadı.",

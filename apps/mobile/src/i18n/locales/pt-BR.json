@@ -692,7 +692,7 @@
             },
             "asset_frozen": {
                 "title": "Ativo congelado",
-                "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. Contate o criador do ativo para descongelá-lo."
+                "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
             },
             "duplicate_txn": {
                 "title": "Já enviada",
@@ -783,11 +783,7 @@
         },
         "transaction": {
             "title": "Ocorreu um erro ao processar esta transação",
-            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir.",
-            "asset_frozen": {
-                "title": "Ativo congelado",
-                "body": "Este ativo está congelado para esta conta e não pode ser enviado nem convertido. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
-            }
+            "body": "Algo deu errado. Tente novamente e entre em contato com o suporte se o problema persistir."
         },
         "kms": {
             "key_not_found": "Não foi possível encontrar a chave de assinatura desta conta.",

@@ -150,11 +150,13 @@ describe('InvalidSendParamsError', () => {
 })
 
 describe('AssetFrozenError', () => {
-    it('carries the frozen-transfer message keys', () => {
-        const { titleKey, messageKey } = new AssetFrozenError().metadata
+    it('reuses the algod frozen copy and interpolates the asset', () => {
+        const { titleKey, messageKey, params } = new AssetFrozenError('123')
+            .metadata
 
-        expect(titleKey).toBe('errors.transaction.asset_frozen.title')
-        expect(messageKey).toBe('errors.transaction.asset_frozen.body')
+        expect(titleKey).toBe('errors.algod.asset_frozen.title')
+        expect(messageKey).toBe('errors.algod.asset_frozen.body')
+        expect(params).toEqual({ assetId: '123' })
     })
 })
 

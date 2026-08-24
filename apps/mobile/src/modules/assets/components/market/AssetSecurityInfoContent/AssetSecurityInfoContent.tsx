@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWSheetLayout, PWText, PWView } from '@components/core'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { type Nullable } from '@perawallet/wallet-core-shared'
 import { useBottomSheetResult } from '@modules/bottom-sheet'
@@ -30,8 +29,7 @@ export const AssetSecurityInfoContent = ({
     address,
 }: AssetSecurityInfoContentProps) => {
     const { t } = useLanguage()
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ bottomInset: insets.bottom })
+    const styles = useStyles()
     const { dismiss } = useBottomSheetResult<void>()
 
     const isFreeze = authority === 'freeze'
@@ -52,35 +50,37 @@ export const AssetSecurityInfoContent = ({
     )
 
     return (
-        <PWView style={styles.container}>
-            <PWText variant='h2'>{title}</PWText>
-            <PWText
-                variant='bodyLarge'
-                style={styles.body}
-            >
-                {body}
-            </PWText>
-            {!!address && (
-                <PWView style={styles.addressRow}>
-                    <PWText
-                        variant='bodyLarge'
-                        style={styles.addressLabel}
-                    >
-                        {addressLabel}
-                    </PWText>
-                    <AddressDisplay
-                        address={address}
-                        displayType='address-only'
-                        hugContent
-                    />
-                </PWView>
-            )}
-            <PWButton
-                variant='secondary'
-                title={t('common.close.label')}
-                onPress={dismiss}
-                style={styles.button}
-            />
-        </PWView>
+        <PWSheetLayout>
+            <PWView style={styles.content}>
+                <PWText variant='h2'>{title}</PWText>
+                <PWText
+                    variant='bodyLarge'
+                    style={styles.body}
+                >
+                    {body}
+                </PWText>
+                {!!address && (
+                    <PWView style={styles.addressRow}>
+                        <PWText
+                            variant='bodyLarge'
+                            style={styles.addressLabel}
+                        >
+                            {addressLabel}
+                        </PWText>
+                        <AddressDisplay
+                            address={address}
+                            displayType='address-only'
+                            hugContent
+                        />
+                    </PWView>
+                )}
+                <PWButton
+                    variant='secondary'
+                    title={t('common.close.label')}
+                    onPress={dismiss}
+                    style={styles.button}
+                />
+            </PWView>
+        </PWSheetLayout>
     )
 }

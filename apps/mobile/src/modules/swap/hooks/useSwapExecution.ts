@@ -181,8 +181,11 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 : [false, false]
 
             if (isInFrozen || isOutFrozen) {
+                const frozenAssetId = isInFrozen
+                    ? quote.assetIn.assetId
+                    : quote.assetOut.assetId
                 const copy = resolveErrorCopy(
-                    new AssetFrozenError(),
+                    new AssetFrozenError(frozenAssetId),
                     t,
                     undefined,
                     getMessage,

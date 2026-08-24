@@ -2701,6 +2701,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         isPeraServiceUnavailableError,
         isConnectivityError,
         getNetworkErrorMessageKeys,
+        messageKeysFor: keysFor,
         ErrorSeverity: {
             LOW: 'low',
             MEDIUM: 'medium',

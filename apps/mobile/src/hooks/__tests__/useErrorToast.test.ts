@@ -321,13 +321,13 @@ describe('useErrorToast', () => {
         const { result } = renderHook(() => useErrorToast())
 
         act(() => {
-            result.current.showError(new AssetFrozenError())
+            result.current.showError(new AssetFrozenError('123'))
         })
 
         expect(mockShowToast).toHaveBeenCalledWith(
             {
-                title: 'errors.transaction.asset_frozen.title',
-                body: 'errors.transaction.asset_frozen.body',
+                title: 'errors.algod.asset_frozen.title',
+                body: 'errors.algod.asset_frozen.body',
                 type: 'error',
             },
             undefined,
