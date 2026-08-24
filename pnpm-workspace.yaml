@@ -204,6 +204,9 @@ overrides:
   # and canary.6's dists are byte-identical (verified with `diff -r` between
   # the two installed copies) — retire this override once those four
   # packages move past canary.5.
+  # While this override stands the catalog entry above is inert — pnpm resolves
+  # 'catalog:' through the override, so bumping line 16 alone changes nothing.
+  # Move both together, or not at all.
   '@algorandfoundation/wallet-provider': 1.0.0-canary.6
   '@babel/plugin-transform-modules-systemjs@>=7.12.0 <7.29.4': '>=7.29.4'
   '@expo/dom-webview': ~57.0.1
