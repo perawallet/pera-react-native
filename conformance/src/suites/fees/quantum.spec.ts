@@ -33,15 +33,11 @@ import {
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { getConformanceClient } from '../../harness/client'
+import { balanceOf, getConformanceClient } from '../../harness/client'
 import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
-
-const balanceOf = async (address: string): Promise<bigint> =>
-    (await getConformanceClient().account.getInformation(address)).balance
-        .microAlgo
 
 describe('quantum fee conformance', () => {
     let keyStore: ConformanceKeyStore
@@ -184,7 +180,6 @@ describe('quantum fee conformance', () => {
         })
         expect(naiveClampedFee).toBeLessThan(additiveExpectedFee)
 
-        const senderBalanceBefore = await balanceOf(sender.address)
         const amountQ = 250_000n
         const amountZero = 260_000n
 
@@ -219,7 +214,6 @@ describe('quantum fee conformance', () => {
             },
             signedBytes: signed[0],
             txId: txIds[0],
-            senderBalanceBefore,
         })
         await expectConformant({
             intent: {
@@ -231,7 +225,6 @@ describe('quantum fee conformance', () => {
             },
             signedBytes: signed[1],
             txId: txIds[1],
-            senderBalanceBefore: await balanceOf(sibling.address),
         })
 
         // Load-bearing: the naive clamped total, which ignores the pooling

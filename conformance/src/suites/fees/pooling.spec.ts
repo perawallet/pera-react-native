@@ -24,15 +24,11 @@ import {
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { getConformanceClient } from '../../harness/client'
+import { balanceOf, getConformanceClient } from '../../harness/client'
 import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
-
-const balanceOf = async (address: string): Promise<bigint> =>
-    (await getConformanceClient().account.getInformation(address)).balance
-        .microAlgo
 
 describe('fee pooling conformance', () => {
     let keyStore: ConformanceKeyStore
@@ -100,7 +96,6 @@ describe('fee pooling conformance', () => {
             },
             signedBytes: signed[0],
             txId: txIds[0],
-            senderBalanceBefore,
         })
         const confirmedB = await expectConformant({
             intent: {
@@ -111,7 +106,6 @@ describe('fee pooling conformance', () => {
             },
             signedBytes: signed[1],
             txId: txIds[1],
-            senderBalanceBefore,
         })
 
         // `totalCharged` is provably `0n + groupMinFee` from the two

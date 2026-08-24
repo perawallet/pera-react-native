@@ -238,16 +238,30 @@ describe('expectConformant', () => {
         await expect(
             expectConformant({
                 intent: { ...baseIntent(senderD), groupSize: 2 },
-                ...grouped,
+                signedBytes: grouped.signedBytes,
+                txId: grouped.txId,
             }),
         ).resolves.toBeDefined()
+    })
+
+    // A grouped leg gets no balance assertion (see expectedBalanceDelta), so a
+    // senderBalanceBefore on it is a value nothing reads — reject it rather
+    // than silently ignore it.
+    it('rejects senderBalanceBefore declared alongside a group', async () => {
+        await expect(
+            expectConformant({
+                intent: { ...baseIntent(senderD), groupSize: 2 },
+                ...grouped,
+            }),
+        ).rejects.toThrow(/senderBalanceBefore/)
     })
 
     it('rejects a single transaction declared as part of a group', async () => {
         await expect(
             expectConformant({
                 intent: { ...baseIntent(senderA), groupSize: 2 },
-                ...withNote,
+                signedBytes: withNote.signedBytes,
+                txId: withNote.txId,
             }),
         ).rejects.toThrow(/isGrouped/)
     })
@@ -270,6 +284,16 @@ describe('expectConformant', () => {
                 senderBalanceBefore: withNote.senderBalanceBefore + 1n,
             }),
         ).rejects.toThrow(/sender balance moved by/)
+    })
+
+    it('rejects an ungrouped transaction with no senderBalanceBefore declared', async () => {
+        await expect(
+            expectConformant({
+                intent: baseIntent(senderA),
+                signedBytes: withNote.signedBytes,
+                txId: withNote.txId,
+            }),
+        ).rejects.toThrow(/senderBalanceBefore is required/)
     })
 
     it('rejects bytes that are not the transaction being asserted', async () => {

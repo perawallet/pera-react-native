@@ -23,8 +23,13 @@ export type ExpectConformantParams = {
     /** The exact bytes handed to algod, not a re-encoding of the builder's output. */
     signedBytes: Uint8Array
     txId: string
-    /** The sender's ALGO balance read immediately before submission. */
-    senderBalanceBefore: bigint
+    /**
+     * The sender's ALGO balance read immediately before submission.
+     * Omit for a grouped leg (`intent.groupSize > 1`) — the balance
+     * assertion below is skipped for groups, so a value here would be inert;
+     * the caller asserts the group's balance movement itself.
+     */
+    senderBalanceBefore?: bigint
 }
 
 /** How many rounds to wait; LocalNet in dev mode confirms on the next block. */
@@ -60,14 +65,16 @@ const isGrouped = (txn: Transaction): boolean =>
  * `undefined` means the delta is not attributable to this transaction alone:
  * an application call can move ALGO through inner transactions, and a grouped
  * transaction shares the sender's balance with its siblings — those callers
- * assert balances themselves.
+ * assert balances themselves. `balanceBefore` is itself `undefined` exactly
+ * when the intent declared a group, so it carries the same signal.
  */
 const expectedBalanceDelta = (
     confirmed: ConfirmedTxn,
-    balanceBefore: bigint,
+    balanceBefore: bigint | undefined,
 ): bigint | undefined => {
     const txn = confirmed.txn.txn
     if (isGrouped(txn)) return undefined
+    if (balanceBefore === undefined) return undefined
     if (txn.type === 'appl') return undefined
 
     const rewards = confirmed.senderRewards ?? 0n
@@ -126,6 +133,15 @@ export const expectConformant = async (
             `transaction ${txId} carries a group id; declare groupSize on the intent so the group is asserted and the sender's balance is accounted for by the caller`,
         )
     }
+    // The inverse of the check above: a grouped intent gets no balance
+    // assertion here (see expectedBalanceDelta), so a `senderBalanceBefore`
+    // on a grouped leg is a value nothing reads — reject it rather than let
+    // it sit there looking meaningful.
+    if ((intent.groupSize ?? 1) > 1 && senderBalanceBefore !== undefined) {
+        fail(
+            `transaction ${txId} declares groupSize ${intent.groupSize}; senderBalanceBefore is not asserted for grouped legs — omit it and assert the group's balance movement in the caller`,
+        )
+    }
     assertMatchesIntent('submitted transaction', intent, submitted.txn)
 
     const confirmed = await algosdk.waitForConfirmation(
@@ -164,16 +180,27 @@ export const expectConformant = async (
         }
     }
 
+    // Mirrors the rejection above: an ungrouped intent gets a balance
+    // assertion, so it must supply the value that assertion needs.
+    if ((intent.groupSize ?? 1) === 1 && senderBalanceBefore === undefined) {
+        fail(
+            `transaction ${txId} has no group declared; senderBalanceBefore is required to assert its balance movement`,
+        )
+    }
+
     const expectedDelta = expectedBalanceDelta(confirmed, senderBalanceBefore)
     if (expectedDelta !== undefined) {
         const { balance } = await algorand.account.getInformation(intent.sender)
-        const actualDelta = balance.microAlgo - senderBalanceBefore
+        // expectedBalanceDelta only returns non-undefined when balanceBefore
+        // was itself defined (see its guard above), so this read is safe —
+        // the two guards earlier in this function rule out every other case.
+        const actualDelta = balance.microAlgo - senderBalanceBefore!
         if (actualDelta !== expectedDelta) {
             fail(
                 `sender balance moved by ${actualDelta} microAlgos, expected ${expectedDelta}`,
                 formatFieldDiff(
                     {
-                        balanceAfter: senderBalanceBefore + expectedDelta,
+                        balanceAfter: senderBalanceBefore! + expectedDelta,
                     },
                     { balanceAfter: balance.microAlgo },
                 ),

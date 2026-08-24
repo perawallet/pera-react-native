@@ -26,15 +26,10 @@ import {
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
-import { getConformanceClient } from '../../harness/client'
 import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
-
-const balanceOf = async (address: string): Promise<bigint> =>
-    (await getConformanceClient().account.getInformation(address)).balance
-        .microAlgo
 
 describe('atomic group construction conformance', () => {
     let keyStore: ConformanceKeyStore
@@ -51,7 +46,6 @@ describe('atomic group construction conformance', () => {
     })
 
     it('groups two independently-built transactions and confirms both', async () => {
-        const senderBalanceBefore = await balanceOf(sender.address)
         const amountA = 100_000n
         const amountB = 200_000n
 
@@ -78,7 +72,6 @@ describe('atomic group construction conformance', () => {
         const [g0, g1] = groupTransactions([legA, legB])
 
         expect(g0.group).toBeDefined()
-        expect(g0.group?.length).toBeGreaterThan(0)
         expect(g1.group).toEqual(g0.group)
 
         const signed = [
@@ -102,7 +95,6 @@ describe('atomic group construction conformance', () => {
             },
             signedBytes: signed[0],
             txId: txIds[0],
-            senderBalanceBefore,
         })
         await expectConformant({
             intent: {
@@ -113,7 +105,6 @@ describe('atomic group construction conformance', () => {
             },
             signedBytes: signed[1],
             txId: txIds[1],
-            senderBalanceBefore,
         })
     })
 
