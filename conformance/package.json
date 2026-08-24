@@ -6,7 +6,8 @@
     "scripts": {
         "test:conformance": "vitest run",
         "test:conformance:watch": "vitest",
-        "lint": "oxlint src"
+        "lint": "oxlint src",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "@algorandfoundation/algokit-utils": "catalog:",
@@ -26,6 +27,7 @@
     },
     "devDependencies": {
         "@perawallet/wallet-core-devtools": "workspace:*",
+        "@types/node": "catalog:",
         "oxlint": "^1.76.0",
         "vitest": "catalog:"
     }

@@ -1,12 +1,43 @@
 {
     "extends": "@perawallet/wallet-core-devtools/tsconfig/vite.json",
     "compilerOptions": {
-        "outDir": "./dist",
-        "rootDir": "./src",
-        "noEmit": false,
-        "declaration": true,
-        "emitDeclarationOnly": true,
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        // Harness code runs under Node (Buffer, node:crypto, node:child_process) —
+        // not auto-included here since `rootDir: ".."` pulls in package sources
+        // whose own tsconfigs never needed this made explicit.
+        "types": ["node"],
+        // No build script consumes this package's dist/ (it has none). The
+        // inherited `outDir` still makes tsc validate every input file is under
+        // a single `rootDir` even with noEmit — widened to the workspace root
+        // since `paths` below pulls in cross-package files from outside
+        // conformance/src.
+        "declaration": false,
+        "declarationMap": false,
+        "rootDir": "..",
+        // Mirrors vitest.config.ts's resolve.alias — without these, tsc resolves
+        // the deep imports (e.g. wallet-core-blockchain/errors) against the
+        // workspace package's dist/*.d.ts (or nothing, pre-build) instead of src,
+        // and reports TS2307.
+        "paths": {
+            "@perawallet/wallet-core-blockchain": [
+                "../packages/blockchain/src"
+            ],
+            "@perawallet/wallet-core-blockchain/*": [
+                "../packages/blockchain/src/*"
+            ],
+            "@perawallet/wallet-core-accounts": ["../packages/accounts/src"],
+            "@perawallet/wallet-core-accounts/*": [
+                "../packages/accounts/src/*"
+            ],
+            "@perawallet/wallet-core-config": ["../packages/config/src"],
+            "@perawallet/wallet-core-config/*": ["../packages/config/src/*"],
+            "@perawallet/wallet-core-kms": ["../packages/kms/src"],
+            "@perawallet/wallet-core-kms/*": ["../packages/kms/src/*"],
+            "@perawallet/wallet-core-signing": ["../packages/signing/src"],
+            "@perawallet/wallet-core-signing/*": ["../packages/signing/src/*"],
+            "@perawallet/wallet-core-shared": ["../packages/shared/src"],
+            "@perawallet/wallet-core-shared/*": ["../packages/shared/src/*"]
+        }
     },
     "include": ["src"]
 }

@@ -15,6 +15,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
     AlgodErrorCode,
+    isAlgodError,
     toAlgodError,
 } from '@perawallet/wallet-core-blockchain/errors'
 import { groupTransactions } from '@perawallet/wallet-core-blockchain/utils/transact'
@@ -140,7 +141,10 @@ describe('typed rejection paths conformance', () => {
         // shape instead of the numeric rendering; the balance/spent/missing
         // params are no longer populated (see algodErrorCodes.ts).
         expect(algodError.code).toBe(AlgodErrorCode.OVERSPEND)
-        if (algodError.code !== AlgodErrorCode.OVERSPEND) {
+        // `code !== X` narrows the literal `code` type but not the generic
+        // `AlgodError<C>` itself, so `params` stays the full union — the
+        // exported type-guard narrows the instance's `C` instead.
+        if (!isAlgodError(algodError, AlgodErrorCode.OVERSPEND)) {
             throw new Error(
                 'unreachable: the if above already narrows the type',
             )
@@ -177,7 +181,7 @@ describe('typed rejection paths conformance', () => {
 
         const algodError = toAlgodError(error)
         expect(algodError.code).toBe(AlgodErrorCode.MISSING_OPT_IN)
-        if (algodError.code !== AlgodErrorCode.MISSING_OPT_IN) {
+        if (!isAlgodError(algodError, AlgodErrorCode.MISSING_OPT_IN)) {
             throw new Error(
                 'unreachable: the if above already narrows the type',
             )
@@ -234,7 +238,7 @@ describe('typed rejection paths conformance', () => {
 
         const algodError = toAlgodError(error)
         expect(algodError.code).toBe(AlgodErrorCode.NOT_AUTHORIZED)
-        if (algodError.code !== AlgodErrorCode.NOT_AUTHORIZED) {
+        if (!isAlgodError(algodError, AlgodErrorCode.NOT_AUTHORIZED)) {
             throw new Error(
                 'unreachable: the if above already narrows the type',
             )
@@ -354,7 +358,7 @@ describe('typed rejection paths conformance', () => {
         // of surfacing immediately. Fixed in this PR: the regex now accepts
         // both renderings.
         expect(algodError.code).toBe(AlgodErrorCode.EXPIRED_TXN)
-        if (algodError.code !== AlgodErrorCode.EXPIRED_TXN) {
+        if (!isAlgodError(algodError, AlgodErrorCode.EXPIRED_TXN)) {
             throw new Error(
                 'unreachable: the if above already narrows the type',
             )
@@ -426,7 +430,7 @@ describe('typed rejection paths conformance', () => {
 
         const algodError = toAlgodError(error)
         expect(algodError.code).toBe(AlgodErrorCode.BELOW_MIN_BALANCE)
-        if (algodError.code !== AlgodErrorCode.BELOW_MIN_BALANCE) {
+        if (!isAlgodError(algodError, AlgodErrorCode.BELOW_MIN_BALANCE)) {
             throw new Error(
                 'unreachable: the if above already narrows the type',
             )

@@ -1,0 +1,91 @@
+name: LocalNet Conformance
+
+# Runs conformance/ (28 files, 102 tests) against a real LocalNet node instead
+# of mocks — see docs/LOCALNET_CONFORMANCE.md. Nightly because it needs Docker
+# + a booted chain (too slow/flaky for every push); also gated on PR to the
+# packages this suite actually exercises, so a regression is caught before
+# merge rather than the following night.
+
+on:
+    schedule:
+        # ~03:00 UTC daily — after Nightly Tag (01:00), ahead of most timezones' morning.
+        - cron: '0 3 * * *'
+    # Allow running on demand from the Actions tab.
+    workflow_dispatch: {}
+    pull_request:
+        paths:
+            - 'conformance/**'
+            - 'packages/blockchain/**'
+            - 'packages/signing/**'
+            - 'packages/kms/**'
+            - 'packages/transactions/**'
+            - 'packages/asa-inbox/**'
+
+# Least-privilege default, matching pre-merge.yml.
+permissions:
+    contents: read
+
+jobs:
+    conformance:
+        name: Conformance
+        runs-on: ubuntu-24.04
+        # Image pulls for a fresh LocalNet plus a full workspace install can run
+        # long; the suite itself is ~1 minute once everything is up.
+        timeout-minutes: 30
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+
+            - name: Setup Node
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version-file: '.tool-versions'
+                  cache: 'pnpm'
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            # ubuntu-24.04 runners ship pipx and a running Docker daemon; algokit
+            # itself is not preinstalled.
+            - name: Install AlgoKit
+              run: pipx install algokit
+
+            - name: Start LocalNet
+              run: pnpm localnet
+
+            # THE CI-BREAKING PREREQUISITE (see docs/LOCALNET_CONFORMANCE.md and
+            # conformance/README.md): the suite's import graph reaches these four
+            # packages' built dist/, not their src, one level below the packages
+            # vitest.config.ts aliases directly. Order matters — platform depends
+            # on hardware-wallet's dist, and database/remote-config both depend on
+            # platform's; building database before platform fails with "Cannot
+            # find module '@perawallet/wallet-extension-platform'".
+            - name: Build packages the suite needs but does not alias to source
+              run: |
+                  pnpm --filter @perawallet/wallet-core-hardware-wallet build
+                  pnpm --filter @perawallet/wallet-extension-platform build
+                  pnpm --filter @perawallet/wallet-core-database build
+                  pnpm --filter @perawallet/wallet-core-remote-config build
+
+            - name: Typecheck
+              run: pnpm --filter @perawallet/conformance typecheck
+
+            - name: Run conformance suite
+              run: |
+                  mkdir -p conformance/reports
+                  pnpm test:conformance 2>&1 | tee conformance/reports/output.log
+
+            - name: Upload failure diff
+              if: failure()
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: conformance-diff
+                  path: conformance/reports/
+                  retention-days: 7

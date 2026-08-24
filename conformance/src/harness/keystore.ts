@@ -102,7 +102,7 @@ export const createMemoryDriver = (): KeyStoreDriver<void> => {
             // signs correctly once and then emits garbage from an all-zero key.
             const opened = new Uint8Array(
                 await crypto.subtle.decrypt(
-                    { name: 'AES-GCM', iv: sealed.iv },
+                    { name: 'AES-GCM', iv: sealed.iv as BufferSource },
                     await masterKey,
                     sealed.ciphertext,
                 ),
