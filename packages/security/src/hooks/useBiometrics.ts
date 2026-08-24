@@ -53,12 +53,11 @@ type UseBiometricsResult = {
     /**
      * Reconciles, so NOT a pure read. Returns true only for an enrolled class-3
      * ("strong") biometric that still matches the enrollment binding recorded at
-     * opt-in. It deletes the blob on an affirmative class-2 report, on an
-     * affirmative "the enrolled set changed" report, and — coarsely, see the
-     * branch itself — whenever no biometric appears available at all. A returned
-     * false therefore does NOT imply the blob is gone: an unconfirmable level
-     * reports false and keeps it. Callers get the post-reconciliation answer,
-     * consistent with a subsequent call.
+     * opt-in. It deletes the blob on the two affirmative reports — a class-2
+     * enrollment, or a changed enrollment set — and on nothing else: a level or
+     * an availability it cannot confirm reports false and keeps the blob, so a
+     * returned false does NOT imply the blob is gone. Callers get the
+     * post-reconciliation answer, consistent with a subsequent call.
      */
     checkBiometricsEnabled: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
@@ -101,19 +100,20 @@ export const useBiometrics = (): UseBiometricsResult => {
             return false
         }
 
-        // Fail closed on OS-level revocation. The blob is the app's only record
-        // that biometric unlock was opted into, so one that outlives its
-        // enrollment would silently re-arm unlock the moment the user enrolls a
-        // new biometric — a fingerprint added after the fact could open the
-        // wallet without the in-app toggle ever being touched. Drop the blob
-        // instead and require an explicit re-enable. The PIN record is a
-        // separate secret, so this never costs the user access.
+        // Reports disabled without destroying anything. Underneath, Android's
+        // `isEnrolledAsync` is `canAuthenticate(BIOMETRIC_WEAK) == SUCCESS`, so
+        // this predicate folds NONE_ENROLLED together with HW_UNAVAILABLE
+        // (sensor busy, or locked out after too many failed attempts),
+        // SECURITY_UPDATE_REQUIRED and STATUS_UNKNOWN — and expo exposes no way
+        // to tell them apart. Deleting the blob here meant a lockout, which
+        // clears itself, permanently cost the user their opt-in.
         //
-        // Coarser than the class check below, and not a positive signal:
-        // `checkBiometricsAvailable` folds "no hardware" and Android's
-        // transient HW_UNAVAILABLE in with "none enrolled". Pre-existing.
+        // Keeping it is safe because the enrollment binding below is the
+        // affirmative signal for the case this branch used to cover: a blob kept
+        // through "every biometric removed" is dropped as soon as a new one is
+        // enrolled, which is the only way it could have re-armed unlock.
         if (!(await biometricsService.checkBiometricsAvailable())) {
-            await dropOptIn()
+            setIsEnabled(false)
             return false
         }
 
