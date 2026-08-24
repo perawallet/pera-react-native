@@ -19,15 +19,17 @@ import {
     groupTransactions,
 } from '@perawallet/wallet-core-blockchain/utils/transact'
 import { Networks } from '@perawallet/wallet-core-config/models/network'
-// Unlike every other deep import in this suite, this one is NOT purely a
-// `src`-aliased read: `submitAndAutoRefresh.ts` also imports the full
-// `@perawallet/wallet-core-blockchain` barrel (for real `toAlgodError`
-// classification logic this suite exercises), which transitively requires
-// `wallet-core-remote-config`, `wallet-extension-platform`,
-// `wallet-core-hardware-wallet`, and `wallet-core-database` to have a built
-// `dist/` — see conformance/README.md. Without those dists this import
-// fails at collection time (an unresolvable-import crash, not a test
-// failure) and takes every file in the run down with it.
+// `submitAndAutoRefresh.ts` also imports the full `@perawallet/wallet-core-blockchain`
+// barrel (for real `toAlgodError` classification logic this suite exercises).
+// That barrel IS aliased to `src` like every other import here — the barrel
+// itself is not the problem. The problem is one level out: the barrel's own
+// source has non-aliased dependencies (`wallet-core-remote-config`,
+// `wallet-extension-platform`, `wallet-core-hardware-wallet`,
+// `wallet-core-database`) that each resolve through their built `dist/` —
+// see conformance/README.md for exactly which files pull in which package.
+// Without those dists this import fails at collection time (an
+// unresolvable-import crash, not a test failure) and takes every file in
+// the run down with it.
 import { submitAndAutoRefreshCore } from '@perawallet/wallet-core-signing/pipeline/submission/submitAndAutoRefresh'
 
 import {

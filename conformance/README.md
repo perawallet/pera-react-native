@@ -17,15 +17,24 @@ reachable at `http://localhost:4001`.
 
 ## `dist/` dependency (CI-relevant)
 
-Every workspace package this suite imports is resolved via `vitest.config.ts`'s
-`resolve.alias`, straight to that package's `src/` — **except** one path in
-`src/suites/submission/chokepoint.spec.ts`, which imports
-`submitAndAutoRefreshCore` from `@perawallet/wallet-core-signing`. That file
-also imports the full `@perawallet/wallet-core-blockchain` barrel (for real
-`toAlgodError` classification logic the suite exercises, not through a `src`
-alias), which is **not** aliased and therefore resolves through each
-package's own `package.json` `main`/`exports` field — i.e. its built `dist/`.
-Transitively, that barrel requires a built `dist/` for:
+Every workspace package this suite imports IS aliased in `vitest.config.ts`'s
+`resolve.alias` — `@perawallet/wallet-core-blockchain` maps to
+`packages/blockchain/src`, and Vite's prefix replacement means both the bare
+specifier and any deep import (`@perawallet/wallet-core-blockchain/errors`,
+etc.) hit `src`, never `dist`. That is not where the problem is.
+
+`src/suites/submission/chokepoint.spec.ts` imports `submitAndAutoRefreshCore`
+from `@perawallet/wallet-core-signing`, and that file also imports the full
+`@perawallet/wallet-core-blockchain` barrel (for real `toAlgodError`
+classification logic the suite exercises). The barrel itself resolves fine —
+but **its own source has non-aliased dependencies one level out**:
+`fees/useMinimumFeeConfig.ts` imports `@perawallet/wallet-core-remote-config`,
+and `utils/clearCustomNetworkCache.ts` imports `@perawallet/wallet-core-database`.
+Neither of those is in `vitest.config.ts`'s alias list, so each resolves
+through its own `package.json` `main`/`exports` field — i.e. its built
+`dist/` — and remote-config transitively pulls in `wallet-extension-platform`
+→ `wallet-core-hardware-wallet` the same way. In short: a built `dist/` is
+required for:
 
 - `@perawallet/wallet-core-remote-config`
 - `@perawallet/wallet-extension-platform`

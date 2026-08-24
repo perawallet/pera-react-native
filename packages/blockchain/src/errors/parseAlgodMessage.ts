@@ -34,15 +34,18 @@ const TXID = '[A-Z0-9]{52}'
 // has used at least two incompatible formats for that rendering: an older
 // raw-struct dump (`MicroAlgos:{Raw:199000}`, `tried to spend {201000}`,
 // PERA-4038) and algod 5.0.0-stable's human-scaled, unit-suffixed rendering
-// (`MicroAlgos:299.777mA`, `MicroAlgos:1.233567A`, `tried to spend 50A`,
-// decimal digits and the unit itself both varying with magnitude). The
-// balance figure additionally subtracts the transaction's own fee before
-// display in the new format (confirmed empirically against LocalNet:
-// rendered value = balance - fee), which the message text alone cannot
-// invert. Neither figure is safely reconstructable from the string, so this
-// classifies the rejection correctly without extracting numbers from either
-// format — see `AlgodErrorParamsByCode.overspend` for why those params are
-// optional and left unset.
+// (`MicroAlgos:299.777mA`, `MicroAlgos:1.233567A`, `tried to spend 50A`).
+// The NUMBERS in the new format are losslessly parseable — decimal Algo/mA
+// figures, no rounding. The blocker is semantic, not parsing: the rendered
+// balance is the account's balance MINUS the rejected transaction's own fee
+// (confirmed empirically against LocalNet across multiple samples, e.g.
+// 300_777 funded, fee 1000 -> rendered "299.777mA" = 299_777), so a figure
+// parsed from this position is not what `AlgodErrorParamsByCode.overspend`'s
+// `balance` field claims to be, and `missing = spent - balance` would
+// inherit the same error. This classifies the rejection correctly without
+// extracting numbers from either format — see
+// `AlgodErrorParamsByCode.overspend` for why those params are optional and
+// left unset.
 const OVERSPEND_RE = new RegExp(
     `overspend \\(account (${ADDRESS}),.*?tried to spend`,
     's',

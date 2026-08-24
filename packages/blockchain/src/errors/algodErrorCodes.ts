@@ -67,15 +67,19 @@ export interface AlgodErrorParamsByCode {
         /**
          * microAlgo balance reported by the node at the time of rejection —
          * UNAVAILABLE. algod renders this as a human-scaled, unit-suffixed
-         * value (e.g. "299.777mA", "1.233567A") that also silently subtracts
-         * the transaction's own fee before display, so it cannot be safely
-         * reconstructed from the message text alone. See PERA-4908 and
-         * `parseAlgodMessage.ts`'s `OVERSPEND_RE` comment.
+         * value (e.g. "299.777mA", "1.233567A") that IS losslessly parseable
+         * as a number — the blocker is semantic, not numeric: the rendered
+         * figure is the account's balance MINUS the rejected transaction's
+         * own fee (confirmed empirically, e.g. 300_777 funded, fee 1000 ->
+         * rendered "299.777mA" = 299_777), so a value parsed from this
+         * position would be fee-adjusted and therefore not actually the
+         * account's balance. See PERA-4908 and `parseAlgodMessage.ts`'s
+         * `OVERSPEND_RE` comment.
          */
         balance?: bigint
-        /** microAlgos the rejected transaction tried to debit — UNAVAILABLE for the same reason. */
+        /** microAlgos the rejected transaction tried to debit — UNAVAILABLE for the same reason (kept symmetric with `balance`/`missing` rather than parsed alone; see the comment above). */
         spent?: bigint
-        /** `spent - balance` — UNAVAILABLE for the same reason. */
+        /** `spent - balance` — UNAVAILABLE because it inherits `balance`'s fee-adjustment error. */
         missing?: bigint
     }
     below_min_balance: {
