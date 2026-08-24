@@ -11,6 +11,7 @@
  */
 // Ported from @algorandfoundation/keystore@1.0.0-canary.17 types/core.ts
 // Portions Copyright Algorand Foundation, Apache-2.0
+// oxlint-disable -eslint/no-explicit-any -- ported verbatim from @algorandfoundation/keystore@1.0.0-canary.17; upstream style preserved
 
 /**
  * Core types and interfaces for the keystore.

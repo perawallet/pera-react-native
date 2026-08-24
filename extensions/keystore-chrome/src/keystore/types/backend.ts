@@ -22,7 +22,6 @@ import type {
     KeyId,
     KeyOptions,
 } from './core'
-import type { KeyStoreState } from './extension'
 
 /**
  * Main interface for keystore operations. This defines what a keystore backend must do.

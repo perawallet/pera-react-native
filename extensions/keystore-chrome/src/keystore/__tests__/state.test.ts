@@ -12,10 +12,10 @@
 // Ported from @algorandfoundation/keystore@1.0.0-canary.17 store.test.ts
 // Portions Copyright Algorand Foundation, Apache-2.0
 //
-// Only the store-management cases are ported (addKey, removeKey, setStatus,
-// clearKeyStore, getKey, initializeKeyStore). The crypto entry points
-// (encrypt/decrypt/verify/sign) live in upstream's store.ts but belong to a
-// later vendoring task.
+// Only the store-management cases are ported here (addKey, removeKey,
+// setStatus, clearKeyStore, getKey, initializeKeyStore). The crypto entry
+// points (encrypt/decrypt/verify/sign) also live in upstream's store.ts; they
+// are vendored too, and covered by storeCrypto.test.ts alongside this file.
 
 import { Store } from '@tanstack/store'
 import { describe, expect, it } from 'vitest'

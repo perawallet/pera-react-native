@@ -26,6 +26,7 @@ import {
     generateXHDFromParent,
     generateXHDRootKeyFromSeed,
 } from '../generate'
+import { encodeAddress } from '../encoding'
 import type {
     Ed25519KeyData,
     SecretKeyData,
@@ -40,6 +41,48 @@ vi.mock('@algorandfoundation/wallet-provider', () => ({
     clearBuffer: vi.fn(),
 }))
 
+const TEST_MNEMONIC =
+    'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+
+const toHex = (bytes: Uint8Array): string =>
+    Array.from(bytes)
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+
+const makeSeed = (id: string, bytes: Uint8Array): SeedData =>
+    ({
+        id,
+        type: 'seed',
+        algorithm: 'raw',
+        extractable: true,
+        privateKey: new Uint8Array(bytes),
+    }) as any
+
+/** Root key + one BIP-44 derived Ed25519 key from a raw 64-byte seed. */
+const deriveAt = async (
+    seedBytes: Uint8Array,
+    account: number,
+    index: number,
+): Promise<{ rootPrivateKey: Uint8Array; derived: XHDDerivedKeyData }> => {
+    const rootKey = await generateXHDRootKeyFromSeed(
+        makeSeed('seed-under-test', seedBytes),
+    )
+    const rootPrivateKey = new Uint8Array(rootKey.privateKey!)
+    const derived = (await generateXHDFromParent({
+        key: {
+            type: 'hd-derived-ed25519',
+            metadata: {
+                context: KeyContext.Address,
+                account,
+                index,
+                derivation: BIP32DerivationType.Peikert,
+            },
+        } as any,
+        parentKey: { ...rootKey, privateKey: new Uint8Array(rootPrivateKey) },
+    })) as XHDDerivedKeyData
+    return { rootPrivateKey, derived }
+}
+
 describe('generate.ts', () => {
     it('bip39.mnemonicToSeed matches the canonical BIP-39 test vector (not a self-recomputation)', async () => {
         // Canonical vector (BIP-39 reference test vectors, "abandon..." x11 +
@@ -47,13 +90,13 @@ describe('generate.ts', () => {
         // e.g. from the @scure/bip39 1.6.0 -> 2.2.0 bump — would be caught by
         // comparison against a fixed value, not by recomputing the same
         // function under test and comparing it to itself.
-        const mnemonic =
-            'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
-        const seed = await bip39.mnemonicToSeed(mnemonic)
-        const hex = Array.from(seed)
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('')
-        expect(hex.startsWith('5eb00bbddcf069084889a8ab91555681')).toBe(true)
+        const seed = await bip39.mnemonicToSeed(TEST_MNEMONIC)
+        // All 64 bytes, not a prefix: a `startsWith` on the first 16 leaves
+        // three quarters of the seed unpinned.
+        expect(toHex(seed)).toBe(
+            '5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc1' +
+                '9a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4',
+        )
     })
 
     it('generateSeedData creates a seed from mnemonic', async () => {
@@ -200,9 +243,7 @@ describe('generate.ts', () => {
     })
 
     it('generateEd25519FromSeed (from a BIP39-derived seed) produces deterministic 32-byte public/64-byte private keys', async () => {
-        const mnemonic =
-            'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
-        const seedBytes = await bip39.mnemonicToSeed(mnemonic)
+        const seedBytes = await bip39.mnemonicToSeed(TEST_MNEMONIC)
         const seed: SeedData = {
             id: 'seed-mnemonic',
             type: 'seed',
@@ -287,9 +328,7 @@ describe('generate.ts', () => {
     })
 
     it('generateKey routes ed25519 + seed parent to generateEd25519FromSeed', async () => {
-        const mnemonic =
-            'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
-        const seedBytes = await bip39.mnemonicToSeed(mnemonic)
+        const seedBytes = await bip39.mnemonicToSeed(TEST_MNEMONIC)
         const seed: SeedData = {
             id: 'seed-route',
             type: 'seed',
@@ -338,5 +377,61 @@ describe('generate.ts', () => {
         expect(key.privateKey).toBeDefined()
         expect(key.publicKey).toBeDefined()
         expect(key.metadata?.subtle).toBe(true)
+    })
+
+    // Every other derivation assertion in this file is a `.length` check or a
+    // same-seed-twice self-consistency check, both of which a hard-coded
+    // constant satisfies. These two pin the inputs the derivation must actually
+    // depend on: the seed bytes, and the BIP-44 account/index.
+    it('derives different root, public key and address from different seeds', async () => {
+        const a = await deriveAt(new Uint8Array(64).fill(0x11), 0, 0)
+        const b = await deriveAt(new Uint8Array(64).fill(0x22), 0, 0)
+
+        expect(toHex(a.rootPrivateKey)).not.toBe(toHex(b.rootPrivateKey))
+        expect(toHex(a.derived.publicKey!)).not.toBe(
+            toHex(b.derived.publicKey!),
+        )
+        expect(a.derived.metadata.address.algorand).not.toBe(
+            b.derived.metadata.address.algorand,
+        )
+    })
+
+    it('derives a distinct address per BIP-44 account/index pair', async () => {
+        const seedBytes = new Uint8Array(64).fill(0x11)
+        const [zeroZero, zeroOne, oneZero] = await Promise.all([
+            deriveAt(seedBytes, 0, 0),
+            deriveAt(seedBytes, 0, 1),
+            deriveAt(seedBytes, 1, 0),
+        ])
+
+        const addresses = [zeroZero, zeroOne, oneZero].map(
+            r => r.derived.metadata.address.algorand,
+        )
+        expect(new Set(addresses).size).toBe(3)
+    })
+
+    it('stamps the derived address as the encoding of that key own public key', async () => {
+        const { derived } = await deriveAt(new Uint8Array(64).fill(0x11), 0, 0)
+
+        // Cross-checked against `encodeAddress` rather than merely asserted
+        // defined: substituting a constant public key at the encode call site
+        // leaves a `toBeDefined()` assertion green.
+        expect(derived.metadata.address.algorand).toBe(
+            encodeAddress(derived.publicKey!),
+        )
+    })
+})
+
+describe('encoding.ts', () => {
+    it('encodes the all-zero public key as the canonical Algorand zero address', () => {
+        expect(encodeAddress(new Uint8Array(32))).toBe(
+            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ',
+        )
+    })
+
+    it('changes the encoded address when a single public-key byte changes', () => {
+        const pk = new Uint8Array(32)
+        pk[31] = 1
+        expect(encodeAddress(pk)).not.toBe(encodeAddress(new Uint8Array(32)))
     })
 })

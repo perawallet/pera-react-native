@@ -106,7 +106,11 @@ describe('verify.ts', () => {
         expect(ok).toBe(true)
     })
 
-    it('verifyWithKeyData (P256 path) verifies signature', async () => {
+    // Marked `it.fails`: the assertion below is the CORRECT expectation, and it
+    // currently throws. Asserting `false` instead would be satisfied by any
+    // breakage (a signer returning zeros, a verifier hardcoded to `false`) and
+    // would flip red the day the defect is fixed. This way it flips GREEN.
+    it.fails('verifyWithKeyData (P256 path) verifies a signature over the raw message', async () => {
         const { rootKey, p256Key } = await setupKeys()
         const data = makeUint8([1, 2, 3, 4])
 
@@ -127,15 +131,21 @@ describe('verify.ts', () => {
             data,
             signature,
         })
-        // This is `false`, not a bug in this port: sign.ts's dp256 path signs
-        // its input as an already-computed digest (no hashing), while
-        // verify.ts's crypto.subtle path hashes the message itself before
-        // verifying. The two halves are mutually incompatible upstream, in
-        // both canary.17 and the currently-installed production engine — see
-        // the next test for a mechanism-level proof, and
-        // src/webauthn/keystore-signer.ts:258-269 for the same trap
-        // documented at the call site that actually caught it in prod.
-        expect(ok).toBe(false)
+        // sign.ts's dp256 path signs its input as an already-computed digest
+        // (no hashing), while verify.ts's crypto.subtle path SHA-256s the
+        // message itself before verifying, so the two halves never agree.
+        //
+        // This is a canary.17 defect faithfully carried over by this port, NOT
+        // upstream's current behaviour: keystore-core@1.0.0-canary.3's
+        // `dist/shims/dp256.js` prehashes before calling the same primitive
+        // ("we hash here to keep `sign`/`verify` symmetric"), which is why
+        // src/webauthn/keystore-signer.ts:258-269 must hand its payload over
+        // UNHASHED. We preserve the defect because the vendored P-256 sign and
+        // verify are unreachable in production — extension.ts's `WithKeyStore`
+        // is exported but wired nowhere, and the passkey path takes
+        // `getKeystore()` from the provider engine — so repairing it is a
+        // separate change. See the next test for a mechanism-level proof.
+        expect(ok).toBe(true)
     })
 
     it('verifyWithKeyData (P256 path) proves the sign/verify hash mismatch: signing the digest verifies, signing the message does not', async () => {

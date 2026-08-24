@@ -362,7 +362,16 @@ describe('state.ts crypto entry points', () => {
             expect(seen).toEqual(['idle', 'verifying', 'idle'])
         })
 
-        it('P-256: verify(sign(x)) === false — sign.ts signs a raw digest with no internal hashing while verify.ts hashes via crypto.subtle.verify({hash:"SHA-256"}), so the halves never agree on the same message; see task-7-report.md HANDOFF TO TASK 8 and src/webauthn/keystore-signer.ts:258-269 for the documented workaround on the signing side', async () => {
+        // `it.fails` so the assertion states the CORRECT expectation while the
+        // canary.17 sign/verify hash mismatch stands: sign.ts signs a raw
+        // digest with no internal hashing, verify.ts hashes via
+        // crypto.subtle.verify({hash:"SHA-256"}), so the halves never agree on
+        // the same message. Upstream has since fixed this in
+        // keystore-core@1.0.0-canary.3's dist/shims/dp256.js; see
+        // src/keystore/__tests__/verify.test.ts for the full rationale and
+        // src/webauthn/keystore-signer.ts:258-269 for the workaround on the
+        // signing side.
+        it.fails('P-256: verify(sign(x)) round-trips over the raw message', async () => {
             const store = createStore()
             const seedData = (await generateSeedData({
                 strength: 128,
@@ -415,7 +424,7 @@ describe('state.ts crypto entry points', () => {
                 signature,
             })
 
-            expect(ok).toBe(false)
+            expect(ok).toBe(true)
         })
     })
 

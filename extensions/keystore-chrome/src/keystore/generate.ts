@@ -11,6 +11,7 @@
  */
 // Ported from @algorandfoundation/keystore@1.0.0-canary.17 generate.ts
 // Portions Copyright Algorand Foundation, Apache-2.0
+// oxlint-disable -eslint/no-explicit-any, unicorn/switch-case-braces -- ported verbatim from @algorandfoundation/keystore@1.0.0-canary.17; upstream style preserved
 // node:crypto's `subtle` replaced by the web-standard `crypto.subtle` (see
 // extensions/keystore-chrome's existing vault/vault.ts convention — this
 // package targets the browser, not Node).

@@ -11,6 +11,11 @@
  */
 // Ported from @algorandfoundation/keystore@1.0.0-canary.17 sign.ts
 // Portions Copyright Algorand Foundation, Apache-2.0
+//
+// One deliberate behavioural deviation from canary.17, marked at its site in
+// `signXHDDomainP256KeyData`: the re-derived P-256 domain scalar is zeroed
+// after signing. Upstream leaks it. Everything else here is verbatim.
+// oxlint-disable -eslint/no-explicit-any, unicorn/switch-case-braces -- ported verbatim from @algorandfoundation/keystore@1.0.0-canary.17; upstream style preserved
 // node:crypto's `subtle` replaced by the web-standard `crypto.subtle` (see
 // extensions/keystore-chrome's existing vault/vault.ts convention — this
 // package targets the browser, not Node).
@@ -170,15 +175,22 @@ export async function signXHDDomainP256KeyData({
     }
 
     try {
-        return dp256.signWithDomainSpecificKeyPair(
-            await dp256.genDomainSpecificKeyPair(
-                root.privateKey,
-                key.metadata.origin,
-                key.metadata.userHandle,
-                key.metadata.counter,
-            ),
-            data,
+        // DELIBERATE DEVIATION FROM canary.17 (see this file's port header):
+        // upstream passes the re-derived domain scalar inline and never wipes
+        // it. It is private key material, so it is hoisted here and zeroed in a
+        // `finally` — matching this port's own `generate.ts` (`clearBuffer(pk)`)
+        // and keystore-core@1.0.0-canary.3's dp256 shim (`scalar.fill(0)`).
+        const scalar = await dp256.genDomainSpecificKeyPair(
+            root.privateKey,
+            key.metadata.origin,
+            key.metadata.userHandle,
+            key.metadata.counter,
         )
+        try {
+            return dp256.signWithDomainSpecificKeyPair(scalar, data)
+        } finally {
+            scalar.fill(0)
+        }
     } finally {
         clearKeyData(key)
         clearKeyData(root)

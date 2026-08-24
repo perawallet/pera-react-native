@@ -246,12 +246,15 @@ export const WithKeyStore: Extension<KeyStoreExtension> = (
                                 // `data`. For `hd-derived-p256` (P-256/ES256)
                                 // keys the underlying dp256/noble path signs the
                                 // bytes directly (prehash:false) — it does NOT
-                                // hash-and-sign. WebAuthn ES256 callers MUST pass
-                                // an already-computed SHA-256 digest (the
-                                // createKeystoreSigner adapter does this in
-                                // signP256); a future P-256 caller through this
+                                // hash-and-sign. A P-256 caller through this
                                 // generic surface that hands a raw message will
-                                // get an invalid ES256 signature.
+                                // get an invalid ES256 signature; it must pass
+                                // an already-computed SHA-256 digest. Note this
+                                // is NOT what webauthn/keystore-signer.ts's
+                                // signP256 does: that adapter goes through the
+                                // provider engine, whose dp256 shim prehashes
+                                // for it, so it deliberately hands its payload
+                                // over unhashed (see keystore-signer.ts:254-266).
                                 return sign({
                                     store: keyStore,
                                     key,

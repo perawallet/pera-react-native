@@ -11,13 +11,14 @@
  */
 // Ported from @algorandfoundation/keystore@1.0.0-canary.17 types/extension.ts
 // Portions Copyright Algorand Foundation, Apache-2.0
+// oxlint-disable -eslint/no-explicit-any -- ported verbatim from @algorandfoundation/keystore@1.0.0-canary.17; upstream style preserved
 
 import type { ExtensionOptions } from '@algorandfoundation/wallet-provider'
 import type { Store } from '@tanstack/store'
 import type { HookCollection } from 'before-after-hook'
 
 import type { KeyStoreAPI } from './backend'
-import type { Key, KeyId } from './core'
+import type { Key } from './core'
 
 /**
  * Configuration for the keystore extension.

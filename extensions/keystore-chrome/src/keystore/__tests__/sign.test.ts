@@ -16,7 +16,7 @@
 // package targets the browser, not Node).
 
 import * as bip39 from '@scure/bip39'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
     generateEd25519FromSeed,
     generateKey,
@@ -33,6 +33,7 @@ import type {
     XHDDerivedKeyData,
     XHDDomainP256KeyData,
 } from '../types'
+import { dp256 } from '../../libs'
 
 describe('sign.ts', () => {
     const makeUint8 = (arr: number[]) => new Uint8Array(arr)
@@ -136,6 +137,37 @@ describe('sign.ts', () => {
         // The library likely returns raw 64 bytes
         expect(sig?.length).toBe(64)
         expect(rootKey.privateKey).toBeUndefined()
+    })
+
+    // Guards this port's one deliberate deviation from canary.17 (see sign.ts's
+    // port header): the re-derived domain scalar is private key material and
+    // must not survive the call. Captured through a spy because the scalar is
+    // never exposed to the caller.
+    it('signXHDDomainP256KeyData zeroes the re-derived P-256 scalar', async () => {
+        const { rootKey, p256Key } = await setupKeys()
+
+        const derive = dp256.genDomainSpecificKeyPair.bind(dp256)
+        let scalar: Uint8Array | undefined
+        const spy = vi
+            .spyOn(dp256, 'genDomainSpecificKeyPair')
+            .mockImplementation(async (...args) => {
+                scalar = await derive(...args)
+                return scalar
+            })
+
+        try {
+            await signXHDDomainP256KeyData({
+                key: p256Key,
+                root: rootKey,
+                data: makeUint8([7, 7]),
+            })
+        } finally {
+            spy.mockRestore()
+        }
+
+        expect(scalar).toBeDefined()
+        expect(scalar!.length).toBeGreaterThan(0)
+        expect(scalar!.every(byte => byte === 0)).toBe(true)
     })
 
     it('signWithKeyData routes to correct signer for ed25519 and P256', async () => {

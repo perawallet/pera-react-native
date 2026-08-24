@@ -6,7 +6,6 @@ packages:
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.0
   "@algorandfoundation/dp256": 1.1.0
-  "@algorandfoundation/keystore": 1.0.0-canary.23
   "@algorandfoundation/keystore-core": 1.0.0-canary.3
   "@algorandfoundation/keystore-web": 1.0.0-canary.3
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
@@ -192,9 +191,12 @@ overrides:
   # msgpack schema identity — so tools/check-single-algosdk.mjs keeps asserting
   # it on every pre-push.
 
-  # No @algorandfoundation/keystore override: keystore-chrome vendors the flat
-  # canary.17 API locally (src/keystore/), so nothing depends on this package's
-  # shape and the catalog can track canary releases freely.
+  # No @algorandfoundation/keystore override, and no catalog entry either:
+  # keystore-chrome vendors the flat canary.17 API locally (src/keystore/), so
+  # nothing in the workspace depends on this package. The catalog pin was
+  # dropped because it resolved to nothing in the lockfile — no importer, no
+  # resolution — leaving Dependabot to bump a spec no consumer used and no test
+  # could validate.
   '@algorandfoundation/keystore-core': 1.0.0-canary.3
   '@algorandfoundation/keystore-web': 1.0.0-canary.3
   '@algorandfoundation/react-native-keystore': 1.0.0-canary.19

@@ -46,6 +46,20 @@ describe('crypto.ts', () => {
         expect(key.privateKey).toBeUndefined()
     })
 
+    // `delete key.privateKey` alone satisfies the assertion above, so dropping
+    // the `clearBuffer` call would be invisible there. Hold the buffer across
+    // the call and inspect the bytes themselves: the secret must be zeroed in
+    // place, not merely dereferenced (any other live alias still sees it).
+    it('clearKeyData zeroes the private key bytes in place, not just the property', () => {
+        const buffer = makeUint8([5, 6, 7, 8])
+        const key: Partial<KeyData> = { privateKey: buffer } as any
+
+        clearKeyData(key)
+
+        expect(key.privateKey).toBeUndefined()
+        expect(Array.from(buffer)).toEqual([0, 0, 0, 0])
+    })
+
     it('encryptWithKeyData + decryptWithKeyData roundtrip', async () => {
         const key: KeyData = {
             id: 'k1',
@@ -72,6 +86,83 @@ describe('crypto.ts', () => {
         expect(Array.from(decrypted as Uint8Array)).toEqual(
             Array.from(plaintext),
         )
+    })
+
+    // The symmetric key is derived as generichash(32, key.publicKey). Replacing
+    // that derivation with a constant would encrypt every user's data under one
+    // global key while leaving the roundtrip above green, so pin the binding
+    // directly: same plaintext, same (stubbed, deterministic) nonce, different
+    // public key => the ciphertext must differ.
+    it('encryptWithKeyData binds the ciphertext to the public key', async () => {
+        const plaintext = makeUint8([100, 101, 102])
+        const base = {
+            id: 'k1',
+            type: 'ecc',
+            algorithm: 'raw',
+            extractable: false,
+        } as const
+
+        const first = (await encryptWithKeyData({
+            key: { ...base, publicKey: makeUint8([10, 11, 12]) },
+            data: plaintext,
+        })) as Uint8Array
+        const second = (await encryptWithKeyData({
+            key: { ...base, publicKey: makeUint8([20, 21, 22]) },
+            data: plaintext,
+        })) as Uint8Array
+
+        // Nonce is stubbed deterministically, so any difference is key-derived.
+        expect(Array.from(first.slice(0, 24))).toEqual(
+            Array.from(second.slice(0, 24)),
+        )
+        expect(Array.from(first.slice(24))).not.toEqual(
+            Array.from(second.slice(24)),
+        )
+    })
+
+    it('decryptWithKeyData rejects a ciphertext encrypted under a different public key', async () => {
+        const plaintext = makeUint8([100, 101, 102])
+        const base = {
+            id: 'k1',
+            type: 'ecc',
+            algorithm: 'raw',
+            extractable: false,
+        } as const
+
+        const encrypted = (await encryptWithKeyData({
+            key: { ...base, publicKey: makeUint8([10, 11, 12]) },
+            data: plaintext,
+        })) as Uint8Array
+
+        await expect(
+            decryptWithKeyData({
+                key: { ...base, publicKey: makeUint8([20, 21, 22]) },
+                data: encrypted,
+            }),
+        ).rejects.toThrow()
+    })
+
+    it('decryptWithKeyData rejects a tampered ciphertext under the correct key', async () => {
+        const key = {
+            id: 'k1',
+            type: 'ecc',
+            algorithm: 'raw',
+            extractable: false,
+            publicKey: makeUint8([10, 11, 12]),
+        } as const
+
+        const encrypted = (await encryptWithKeyData({
+            key: { ...key },
+            data: makeUint8([100, 101, 102]),
+        })) as Uint8Array
+
+        const tampered = new Uint8Array(encrypted)
+        // Flip a bit inside the ciphertext body, past the 24-byte nonce.
+        tampered[25] ^= 0x01
+
+        await expect(
+            decryptWithKeyData({ key: { ...key }, data: tampered }),
+        ).rejects.toThrow()
     })
 })
 

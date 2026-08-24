@@ -11,6 +11,7 @@
  */
 // Ported from @algorandfoundation/keystore@1.0.0-canary.17 crypto.ts
 // Portions Copyright Algorand Foundation, Apache-2.0
+// oxlint-disable unicorn/switch-case-braces -- ported verbatim from @algorandfoundation/keystore@1.0.0-canary.17; upstream style preserved
 // node:crypto's randomBytes replaced by the web-standard crypto.getRandomValues
 // (see extensions/keystore-chrome's existing storage/crypto.ts and vault/vault.ts
 // convention — this package targets the browser, not Node).
