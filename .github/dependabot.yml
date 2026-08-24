@@ -20,7 +20,6 @@ updates:
       include:
         - "*"
       exclude:
-        - "@algorandfoundation/keystore"
         - "@algorandfoundation/keystore-core"
         - "@algorandfoundation/keystore-node"
         - "@algorandfoundation/keystore-web"
