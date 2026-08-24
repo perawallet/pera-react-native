@@ -13,6 +13,7 @@
 import {
     type PeraDisplayableTransaction,
     getAssetConfigType,
+    decodeBytesToText,
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
@@ -40,12 +41,10 @@ export const useAssetConfigDisplay = (
         return `${integer}${fraction}${unit}`
     }, [assetConfig?.params?.total])
 
-    const metadataHash = useMemo(() => {
-        if (!assetConfig?.params?.metadataHash) {
-            return undefined
-        }
-        return Buffer.from(assetConfig?.params?.metadataHash).toString('utf-8')
-    }, [assetConfig?.params?.metadataHash])
+    const metadataHash = useMemo(
+        () => decodeBytesToText(assetConfig?.params?.metadataHash),
+        [assetConfig?.params?.metadataHash],
+    )
 
     return {
         assetConfig,

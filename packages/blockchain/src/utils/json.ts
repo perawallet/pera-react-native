@@ -14,6 +14,7 @@ import { encodeAlgorandAddress } from './addresses'
 
 const BIGINT_TAG = '__bigint__'
 const MAP_TAG = '__map__'
+const BYTES_TAG = '__bytes__'
 
 export const algorandSafeJsonStringify = (value: unknown) => {
     return JSON.stringify(
@@ -38,16 +39,31 @@ export const algorandSafeJsonStringify = (value: unknown) => {
 }
 
 /**
- * Round-trip safe JSON serialization that preserves bigint types.
- * Use with {@link algorandSafeQueryParse} to restore bigint values.
+ * Round-trip safe JSON serialization that preserves bigint, Map and Uint8Array types.
+ * Use with {@link algorandSafeQueryParse} to restore them.
  */
 export const algorandSafeQuerySerialize = (value: unknown): string => {
-    return JSON.stringify(value, (_key, value) => {
-        if (typeof value === 'bigint') {
-            return `${BIGINT_TAG}${value.toString()}`
+    // JSON.stringify applies toJSON before the replacer, and Buffer has one, so a
+    // replacer reading its `value` argument sees {type:'Buffer',data:[...]} and never
+    // recognizes the bytes. Read the raw pre-toJSON value off the holder instead.
+    return JSON.stringify(value, function (key, value) {
+        const raw = (this as Record<string, unknown>)[key]
+        if (typeof raw === 'bigint') {
+            return `${BIGINT_TAG}${raw.toString()}`
         }
-        if (value instanceof Map) {
-            return { [MAP_TAG]: Array.from(value.entries()) }
+        if (raw instanceof Map) {
+            return { [MAP_TAG]: Array.from(raw.entries()) }
+        }
+        // Buffer reports [object Uint8Array] too, and unlike `instanceof` the tag
+        // survives the realm split between Node's Buffer and jsdom's Uint8Array
+        // under vitest — while still excluding Int32Array and DataView, which must
+        // not be re-typed as bytes.
+        if (Object.prototype.toString.call(raw) === '[object Uint8Array]') {
+            return {
+                [BYTES_TAG]: Buffer.from(
+                    raw as Uint8Array<ArrayBufferLike>,
+                ).toString('base64'),
+            }
         }
         return value
     })
@@ -55,7 +71,7 @@ export const algorandSafeQuerySerialize = (value: unknown): string => {
 
 /**
  * Parses JSON produced by {@link algorandSafeQuerySerialize},
- * restoring tagged bigint values.
+ * restoring tagged bigint, Map and Uint8Array values.
  */
 export const algorandSafeQueryParse = <T = unknown>(data: string): T => {
     return JSON.parse(data, (_key, value) => {
@@ -69,6 +85,14 @@ export const algorandSafeQueryParse = <T = unknown>(data: string): T => {
             Array.isArray(value[MAP_TAG])
         ) {
             return new Map(value[MAP_TAG])
+        }
+        if (
+            value !== null &&
+            typeof value === 'object' &&
+            BYTES_TAG in value &&
+            typeof value[BYTES_TAG] === 'string'
+        ) {
+            return new Uint8Array(Buffer.from(value[BYTES_TAG], 'base64'))
         }
         return value
     })

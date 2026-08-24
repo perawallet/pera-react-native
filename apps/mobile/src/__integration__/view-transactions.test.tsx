@@ -235,6 +235,12 @@ describe('Flow: View transactions → tap into details', () => {
                             'confirmed-round': TX_PAYMENT.confirmedRound,
                             'round-time': TX_PAYMENT.roundTime,
                             fee: 1000,
+                            // PERA-4974: a note is what crashed this screen
+                            // once the detail had been cached to disk. The
+                            // indexer sends it base64; algosdk decodes it to
+                            // bytes, so this also guards the note row against
+                            // the byte-decoding hardening silently hiding it.
+                            note: 'UEVSQS00OTc0IG5vdGU=',
                             'payment-transaction': {
                                 receiver: TX_PAYMENT.receiver,
                                 amount: 1_000_000,
@@ -305,6 +311,21 @@ describe('Flow: View transactions → tap into details', () => {
             await waitFor(
                 () => {
                     expect(lookupSpy).toHaveBeenCalled()
+                },
+                { timeout: 5000 },
+            )
+
+            // i18n isn't initialized here, so the note row's button renders
+            // its raw key.
+            await waitFor(
+                () => {
+                    expect(
+                        screen.queryAllByText(
+                            (_, node) =>
+                                (node?.textContent ?? '') ===
+                                'transactions.common.view_note',
+                        ).length,
+                    ).toBeGreaterThan(0)
                 },
                 { timeout: 5000 },
             )

@@ -14,6 +14,7 @@ import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
+import { toBytes } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 
@@ -28,13 +29,13 @@ export const GroupPreviewItem = ({
 }: GroupPreviewItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const groupId = useMemo(
-        () =>
-            Buffer.from(transactions.at(0)?.transaction.group ?? '')
-                .toString('hex')
-                .slice(0, 10),
-        [transactions],
-    )
+    // The signing store persists through the same serializer as the query
+    // cache, so a group written before PERA-4974 rehydrates as a plain object
+    // rather than bytes — truthy, so `?? ''` does not catch it.
+    const groupId = useMemo(() => {
+        const group = toBytes(transactions.at(0)?.transaction.group)
+        return group ? Buffer.from(group).toString('hex').slice(0, 10) : ''
+    }, [transactions])
 
     return (
         <PWTouchableOpacity

@@ -11,7 +11,10 @@
  */
 
 import { PWButton } from '@components/core'
-import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import {
+    type PeraDisplayableTransaction,
+    decodeBytesToText,
+} from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCallback, useMemo } from 'react'
 import { KeyValueRow } from '@components/KeyValueRow'
@@ -26,11 +29,10 @@ export const TransactionNoteRow = ({
     const { t } = useLanguage()
     const { request: requestBottomSheet } = useBottomSheet()
 
-    const note = useMemo(() => {
-        return transaction.note
-            ? Buffer.from(transaction.note).toString()
-            : undefined
-    }, [transaction.note])
+    const note = useMemo(
+        () => decodeBytesToText(transaction.note),
+        [transaction.note],
+    )
 
     const handleOpen = useCallback(() => {
         if (!note) return
