@@ -65,11 +65,11 @@ const rejectionOf = async (submit: () => Promise<unknown>): Promise<Error> => {
 }
 
 /**
- * Asserts the app's TYPED `AlgodErrorCode` for five real algod rejections,
+ * Asserts the app's TYPED `AlgodErrorCode` for six real algod rejections,
  * never a raw node string. Each case creates its own accounts so a filtered
  * `-t` run exercises the same setup a full run would.
  *
- * This suite originally found that THREE of the five (`overspend`,
+ * This suite originally found that THREE of the first five (`overspend`,
  * `expired lastValid`, `corrupted group id`) mapped to `unknown_node_error`
  * instead of their intended codes — a real gap between `parseAlgodMessage.ts`'s
  * regexes and algod 5.0.0-stable's actual wording, which additionally routed
@@ -79,6 +79,11 @@ const rejectionOf = async (submit: () => Promise<unknown>): Promise<Error> => {
  * `expired lastValid` are fixed in this PR (see their FINDING comments below
  * for what changed); `corrupted group id` remains an open finding — see its
  * comment for why no fix was made here.
+ *
+ * The sixth case (`below_min_balance`) was added after a one-off manual
+ * probe confirmed it was NOT affected by the same drift — this case is the
+ * suite catching that class of regression going forward instead of relying
+ * on a human to re-probe it.
  */
 describe('typed rejection paths conformance', () => {
     it('spend more than the balance', async () => {
@@ -135,6 +140,14 @@ describe('typed rejection paths conformance', () => {
         // shape instead of the numeric rendering; the balance/spent/missing
         // params are no longer populated (see algodErrorCodes.ts).
         expect(algodError.code).toBe(AlgodErrorCode.OVERSPEND)
+        if (algodError.code !== AlgodErrorCode.OVERSPEND) {
+            throw new Error(
+                'unreachable: the if above already narrows the type',
+            )
+        }
+        // `address` is now the only field `matchOverspend` extracts — assert
+        // it against a real rejection, not just synthetic fixtures.
+        expect(algodError.params.address).toBe(sender.address)
     })
 
     it('transfer an ASA the receiver has not opted into', async () => {
@@ -165,7 +178,9 @@ describe('typed rejection paths conformance', () => {
         const algodError = toAlgodError(error)
         expect(algodError.code).toBe(AlgodErrorCode.MISSING_OPT_IN)
         if (algodError.code !== AlgodErrorCode.MISSING_OPT_IN) {
-            throw new Error('unreachable: narrowed by the assertion above')
+            throw new Error(
+                'unreachable: the if above already narrows the type',
+            )
         }
         expect(algodError.params.assetId).toBe(assetId)
         expect(algodError.params.address).toBe(receiver.address)
@@ -220,7 +235,9 @@ describe('typed rejection paths conformance', () => {
         const algodError = toAlgodError(error)
         expect(algodError.code).toBe(AlgodErrorCode.NOT_AUTHORIZED)
         if (algodError.code !== AlgodErrorCode.NOT_AUTHORIZED) {
-            throw new Error('unreachable: narrowed by the assertion above')
+            throw new Error(
+                'unreachable: the if above already narrows the type',
+            )
         }
         expect(algodError.params.expectedAuthAddress).toBe(newAuth.address)
         expect(algodError.params.actualAuthAddress).toBe(source.address)
@@ -338,8 +355,85 @@ describe('typed rejection paths conformance', () => {
         // both renderings.
         expect(algodError.code).toBe(AlgodErrorCode.EXPIRED_TXN)
         if (algodError.code !== AlgodErrorCode.EXPIRED_TXN) {
-            throw new Error('unreachable: narrowed by the assertion above')
+            throw new Error(
+                'unreachable: the if above already narrows the type',
+            )
         }
         expect(algodError.params.lastValid).toBe(lastValid)
+    })
+
+    it('spend that would leave the account below its (asset-raised) minimum balance', async () => {
+        const keyStore = await createConformanceKeyStore()
+        const creator = await createAlgo25Account(keyStore)
+        const holder = await createAlgo25Account(keyStore)
+        const receiver = await createAlgo25Account(keyStore)
+        await fundAccount(creator.address, 1_000_000n)
+        // Comfortably above base MBR + asset MBR + the payment below, so
+        // opting in and the payment itself both succeed — only the payment's
+        // effect on the post-opt-in floor should trigger the rejection.
+        await fundAccount(holder.address, 260_000n)
+        await fundAccount(receiver.address, 300_000n)
+        const assetId = await createTestAsset(keyStore, creator, {
+            total: 1000n,
+        })
+
+        const optInTxn = await buildTxn(composer => {
+            composer.addAssetOptIn({ sender: holder.address, assetId })
+        })
+        await submitAndConfirm(
+            await signWithKeystore(keyStore, holder, optInTxn),
+        )
+
+        // Ground truth from algod, not computed from the funded amount: the
+        // opted-in asset has already raised holder's required minimum, and
+        // this is the exact floor/balance pair `matchBelowMinBalance` reads
+        // off the rejection message below.
+        const algod = getConformanceClient().client.algod
+        const postOptIn = await algod.accountInformation(holder.address).do()
+        const requiredMinBalance = postOptIn.minBalance
+        const balanceAfterOptIn = postOptIn.amount
+        if (balanceAfterOptIn <= requiredMinBalance) {
+            throw new Error(
+                `holder's balance (${balanceAfterOptIn}) is not above its post-opt-in minimum (${requiredMinBalance}) — funded too little for this case to isolate below_min_balance from overspend`,
+            )
+        }
+
+        // Overshoot the gap between current balance and the floor so the
+        // resulting balance lands comfortably below it regardless of the
+        // exact fee charged, while staying well short of the total balance
+        // (so this is below_min_balance, not overspend).
+        const overshoot = 50_000n
+        const amount = balanceAfterOptIn - requiredMinBalance + overshoot
+        const txn = await buildTxn(composer => {
+            composer.addPayment({
+                sender: holder.address,
+                receiver: receiver.address,
+                amount: microAlgo(amount),
+            })
+        })
+        const renderedBalance = balanceAfterOptIn - amount - txn.fee
+        if (renderedBalance < 0n || renderedBalance >= requiredMinBalance) {
+            throw new Error(
+                `renderedBalance (${renderedBalance}) is not a valid below-min case relative to requiredMinBalance (${requiredMinBalance}) — adjust amount/overshoot`,
+            )
+        }
+        const signedBytes = await signWithKeystore(keyStore, holder, txn)
+
+        const error = await rejectionOf(() => submitAndConfirm(signedBytes))
+        expect(error.message).toContain(
+            `account ${holder.address} balance ${renderedBalance} below min ${requiredMinBalance} (1 assets)`,
+        )
+
+        const algodError = toAlgodError(error)
+        expect(algodError.code).toBe(AlgodErrorCode.BELOW_MIN_BALANCE)
+        if (algodError.code !== AlgodErrorCode.BELOW_MIN_BALANCE) {
+            throw new Error(
+                'unreachable: the if above already narrows the type',
+            )
+        }
+        expect(algodError.params.address).toBe(holder.address)
+        expect(algodError.params.balance).toBe(renderedBalance)
+        expect(algodError.params.required).toBe(requiredMinBalance)
+        expect(algodError.params.assetCount).toBe(1)
     })
 })
