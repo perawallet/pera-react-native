@@ -36,11 +36,13 @@ const balanceOf = async (address: string): Promise<bigint> =>
         .microAlgo
 
 /**
- * One test per optional field the app is capable of setting. Each field is
- * exercised on a dedicated, single-use account: `rekeyTo` and `closeRemainderTo`
- * permanently change or empty the account they act on, so reusing an account
- * across cases here would make a later case's outcome depend on an earlier
- * one's mutation instead of on the field under test.
+ * One case per optional payment field. `note`, `rekeyTo`, and the MAX-send
+ * shape of `closeRemainderTo` (in payment.spec.ts) each mirror a concrete app
+ * builder call site; `lease` does not — see the comment on that case. Each
+ * field is exercised on a dedicated, single-use account: `rekeyTo` and
+ * `closeRemainderTo` permanently change or empty the account they act on, so
+ * reusing an account across cases here would make a later case's outcome
+ * depend on an earlier one's mutation instead of on the field under test.
  */
 describe('optional-field construction conformance', () => {
     let keyStore: ConformanceKeyStore
@@ -88,6 +90,10 @@ describe('optional-field construction conformance', () => {
         })
     })
 
+    // No app builder sets `lease` today — the only hit for the field
+    // (packages/blockchain/src/utils/transactions.ts:54) only reads it for
+    // display. This case pins the harness's round-trip handling of the field
+    // for the day a builder starts setting one, not an existing app path.
     it('lease: survives to the confirmed transaction', async () => {
         const sender = await createAlgo25Account(keyStore)
         await fundAccount(sender.address, 5_000_000n)
@@ -161,6 +167,10 @@ describe('optional-field construction conformance', () => {
         expect(info.authAddr?.toString()).toBe(newAuth.address)
     })
 
+    // The app's only closeRemainderTo call site (useTransactionSendFlow.ts:249,
+    // MAX send) always sets closeRemainderTo === receiver — that shape is covered
+    // by payment.spec.ts's MAX-send case. This distinct-target case exercises the
+    // harness's general handling of the field, not an additional app path.
     it('closeRemainderTo: sweeps the remainder to a third account distinct from the payment receiver', async () => {
         const closer = await createAlgo25Account(keyStore)
         const remainderTarget = await createAlgo25Account(keyStore)

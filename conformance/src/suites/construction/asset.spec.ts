@@ -45,6 +45,15 @@ const holdingOf = async (
     return info.assets?.find(asset => asset.assetId === assetId)?.amount
 }
 
+// The units the 'transfers' case sends the holder, and the exact amount the
+// 'opts out' case asserts before it sweeps — not just presence. These three
+// cases run as a chain against one holder (opt-in, transfer, opt-out), and a
+// filtered `-t` run that skips 'transfers' would otherwise leave the holder's
+// balance at its post-opt-in 0n, which a mere `!== undefined` guard would
+// accept and then assert vacuously true (0n === 0n) on both sides of the
+// close-out. Pinning the expected value turns that into a loud failure.
+const TRANSFER_AMOUNT = 400n
+
 describe('asset transfer construction conformance', () => {
     let keyStore: ConformanceKeyStore
     let creator: ConformanceAccount
@@ -95,7 +104,7 @@ describe('asset transfer construction conformance', () => {
     })
 
     it('transfers units from the creator to the opted-in holder', async () => {
-        const amount = 400n
+        const amount = TRANSFER_AMOUNT
         const senderBalanceBefore = await balanceOf(creator.address)
 
         const txn = await buildTxn(composer => {
@@ -129,8 +138,10 @@ describe('asset transfer construction conformance', () => {
 
     it('opts out: the holding disappears and remaining units close to the creator', async () => {
         const remaining = await holdingOf(holder.address, assetId)
-        if (remaining === undefined) {
-            throw new Error('holder has no holding to opt out of')
+        if (remaining !== TRANSFER_AMOUNT) {
+            throw new Error(
+                `holder's holding is ${remaining}, expected the ${TRANSFER_AMOUNT} the 'transfers' case establishes — run the whole file, not a filtered subset`,
+            )
         }
         const creatorHoldingBefore = await holdingOf(creator.address, assetId)
         if (creatorHoldingBefore === undefined) {
