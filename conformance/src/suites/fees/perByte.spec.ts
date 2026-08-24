@@ -35,23 +35,25 @@ const balanceOf = async (address: string): Promise<bigint> =>
     (await getConformanceClient().account.getInformation(address)).balance
         .microAlgo
 
-// LocalNet is idle, so algod's own suggested fee-per-byte is 0 and the
-// composer's built-in size-dependent fee math never engages — every payment
-// floors to the flat minimum regardless of note size. To exercise the
-// per-byte path at all, this suite drives a synthetic rate itself (the way a
-// congested MainNet would) and pins it via `staticFee`, rather than relying on
-// algod's dormant suggestion.
-const SYNTHETIC_FEE_PER_BYTE = 5n
-
-const sizeBasedFee = (
-    feePerByte: bigint,
-    size: bigint,
-    minFee: bigint,
-): bigint => {
-    const scaled = feePerByte * size
-    return scaled > minFee ? scaled : minFee
-}
-
+// Probed directly against the running LocalNet (algod 5.0.0-stable,
+// dockernet-v1) before writing this suite:
+//   - `/v2/transactions/params` reports `fee: 0` (algod's suggested per-byte
+//     rate) and `min-fee: 1000`.
+//   - A 1-byte-note and a 900-byte-note payment submitted at fee 999 both
+//     reject with the IDENTICAL pool error: "txgroup with 999uA fees is less
+//     than 1mA (usage=1.000000 * base=1mA)" — `usage` does not move with size.
+//   - The composer's own (unpinned) computed fee is 1000 for both note sizes.
+// LocalNet never leaves the flat-min-fee regime, so real per-byte fee
+// *pricing* cannot be exercised here — there is no size-sensitive floor to
+// probe, and pinning a synthetic fee via `staticFee` and asserting the node
+// charged it back is a tautology (Algorand charges exactly the declared fee
+// whenever it clears the floor, so *any* above-floor value would "pass").
+// What this suite CAN verify against the live node: the composer's own fee
+// computation, left to run rather than pinned, matches an
+// independently-predicted value (`max(baseMinFee, feePerByte * size)`, fed
+// from algod's own suggested params, never read off either built
+// transaction) for both a small and a large note — and that the two sizes
+// are charged identically, because `feePerByte` is 0.
 describe('per-byte fee conformance', () => {
     let keyStore: ConformanceKeyStore
     let sender: ConformanceAccount
@@ -64,75 +66,33 @@ describe('per-byte fee conformance', () => {
         await fundAccount(sender.address, 10_000_000n)
     })
 
-    it('charges more for a large-note payment than a small-note one, in proportion to encoded size', async () => {
-        const senderBalanceBefore = await balanceOf(sender.address)
+    it("matches the composer's own unpinned fee for a small and a large note against an independent prediction, and documents that LocalNet charges both identically", async () => {
         const amount = 250_000n
         const smallNote = new TextEncoder().encode('c')
-        // Both notes stay under msgpack's 256-byte single-length-byte "bin8"
-        // boundary, so the note is the only thing that changes the envelope's
-        // encoded size — no varint-width jump to muddy the measurement.
-        const largeNote = new TextEncoder().encode('c'.repeat(200))
+        const largeNote = new TextEncoder().encode('c'.repeat(900))
 
-        const { minFee } = await getConformanceClient()
+        const { minFee, fee } = await getConformanceClient()
             .client.algod.getTransactionParams()
             .do()
         const baseMinFee = BigInt(minFee)
+        const feePerByte = BigInt(fee)
+        // This test's size-independent expectation only holds while LocalNet
+        // reports no per-byte suggestion; assert it so a future change to
+        // LocalNet's congestion state fails loudly here instead of silently
+        // invalidating `expectedFee` below.
+        expect(feePerByte).toBe(0n)
+        // Independent of either built transaction: algod's real per-byte rate
+        // is 0, so `max(baseMinFee, feePerByte * size)` collapses to the flat
+        // minimum regardless of note size.
+        const expectedFee = feePerByte > baseMinFee ? feePerByte : baseMinFee
 
-        // Measure each transaction's real signed envelope size — the ground
-        // truth for a per-byte fee, independent of anything algod or the
-        // composer suggests. These probe transactions are never submitted.
-        const smallProbeTxn = await buildTxn(composer => {
-            composer.addPayment({
-                sender: sender.address,
-                receiver: receiver.address,
-                amount: microAlgo(amount),
-                note: smallNote,
-            })
-        })
-        const smallProbeSigned = await signWithKeystore(
-            keyStore,
-            sender,
-            smallProbeTxn,
-        )
-        const largeProbeTxn = await buildTxn(composer => {
-            composer.addPayment({
-                sender: sender.address,
-                receiver: receiver.address,
-                amount: microAlgo(amount),
-                note: largeNote,
-            })
-        })
-        const largeProbeSigned = await signWithKeystore(
-            keyStore,
-            sender,
-            largeProbeTxn,
-        )
-
-        const smallSize = BigInt(smallProbeSigned.length)
-        const largeSize = BigInt(largeProbeSigned.length)
-        expect(largeSize).toBeGreaterThan(smallSize)
-
-        const expectedSmallFee = sizeBasedFee(
-            SYNTHETIC_FEE_PER_BYTE,
-            smallSize,
-            baseMinFee,
-        )
-        const expectedLargeFee = sizeBasedFee(
-            SYNTHETIC_FEE_PER_BYTE,
-            largeSize,
-            baseMinFee,
-        )
-        // The scenario must actually exercise scaling, not just the minimum floor.
-        expect(expectedSmallFee).toBeGreaterThan(baseMinFee)
-        expect(expectedLargeFee).toBeGreaterThan(expectedSmallFee)
-
+        const senderBalanceBeforeSmall = await balanceOf(sender.address)
         const smallTxn = await buildTxn(composer => {
             composer.addPayment({
                 sender: sender.address,
                 receiver: receiver.address,
                 amount: microAlgo(amount),
                 note: smallNote,
-                staticFee: microAlgo(expectedSmallFee),
             })
         })
         const smallSignedBytes = await signWithKeystore(
@@ -148,13 +108,17 @@ describe('per-byte fee conformance', () => {
             receiver: receiver.address,
             amount,
             note: smallNote,
-            fee: expectedSmallFee,
+            fee: expectedFee,
         }
+        // Load-bearing: `expectedFee` is predicted from algod's own suggested
+        // params before either transaction was built, and compared against
+        // what the composer actually produced and what the chain actually
+        // charged — never a value pinned via `staticFee` and echoed back.
         await expectConformant({
             intent: smallIntent,
             signedBytes: smallSignedBytes,
             txId: smallTxId,
-            senderBalanceBefore,
+            senderBalanceBefore: senderBalanceBeforeSmall,
         })
 
         const senderBalanceBeforeLarge = await balanceOf(sender.address)
@@ -164,7 +128,6 @@ describe('per-byte fee conformance', () => {
                 receiver: receiver.address,
                 amount: microAlgo(amount),
                 note: largeNote,
-                staticFee: microAlgo(expectedLargeFee),
             })
         })
         const largeSignedBytes = await signWithKeystore(
@@ -180,16 +143,20 @@ describe('per-byte fee conformance', () => {
             receiver: receiver.address,
             amount,
             note: largeNote,
-            fee: expectedLargeFee,
+            fee: expectedFee,
         }
-        // Load-bearing: each intent's fee is the independently-measured,
-        // independently-scaled expectation, compared against what the chain
-        // actually charged — never a value read off either built transaction.
         await expectConformant({
             intent: largeIntent,
             signedBytes: largeSignedBytes,
             txId: largeTxId,
             senderBalanceBefore: senderBalanceBeforeLarge,
         })
+
+        // Documents the finding rather than claiming to prove scaling: on
+        // this network the composer produces the SAME fee for a 1-byte and a
+        // 900-byte note, because algod's per-byte suggestion is 0. Real
+        // per-byte pricing is not exercisable against LocalNet — see the
+        // probe evidence in this file's header comment.
+        expect(largeTxn.fee).toBe(smallTxn.fee)
     })
 })

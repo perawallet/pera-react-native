@@ -114,10 +114,17 @@ describe('fee pooling conformance', () => {
             senderBalanceBefore,
         })
 
-        // Load-bearing: the total charged across the group, read off the
-        // CONFIRMED transactions (not restated from the intents above), equals
-        // the group's independently-computed fee floor — proving pooling, not
-        // just that each leg individually matched a number this test picked.
+        // `totalCharged` is provably `0n + groupMinFee` from the two
+        // `staticFee` values above, without querying the chain — this
+        // equality is arithmetic, not evidence. The actual proof that pooling
+        // works as the app assumes already happened: leg A alone underpays
+        // its own per-transaction minimum, so if pooling did NOT work,
+        // `submitAndConfirm` above would have thrown (or `expectConformant`
+        // would have failed matching leg A's confirmed fee to 0) instead of
+        // this line ever being reached. What the two checks below add is that
+        // the group's ALGO cost lands exactly where the group's own
+        // (independently-computed) fee floor says it should, cross-checked
+        // against the sender's real balance movement.
         const totalCharged = confirmedA.txn.txn.fee + confirmedB.txn.txn.fee
         expect(totalCharged).toBe(groupMinFee)
 
