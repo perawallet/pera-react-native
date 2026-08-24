@@ -13,11 +13,14 @@
 import {
     type PeraDisplayableTransaction,
     getAssetConfigType,
-    decodeBytesToText,
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
+import {
+    decodeBytesToText,
+    formatNumber,
+    formatWithUnits,
+} from '@perawallet/wallet-core-shared'
 
 export const useAssetConfigDisplay = (
     transaction: PeraDisplayableTransaction,

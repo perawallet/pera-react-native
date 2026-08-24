@@ -14,7 +14,7 @@ import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import { useLanguage } from '@hooks/useLanguage'
 import type { SingleTransactionItem } from '@perawallet/wallet-core-signing'
-import { toBytes } from '@perawallet/wallet-core-blockchain'
+import { bytesToHex, toBytes } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 
@@ -34,7 +34,7 @@ export const GroupPreviewItem = ({
     // rather than bytes — truthy, so `?? ''` does not catch it.
     const groupId = useMemo(() => {
         const group = toBytes(transactions.at(0)?.transaction.group)
-        return group ? Buffer.from(group).toString('hex').slice(0, 10) : ''
+        return group ? bytesToHex(group).slice(0, 10) : ''
     }, [transactions])
 
     return (

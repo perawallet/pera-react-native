@@ -49,11 +49,7 @@ export const decodeBytesToText = (value: unknown): string | undefined => {
         return undefined
     }
 
-    const text = Buffer.from(
-        bytes.buffer,
-        bytes.byteOffset,
-        bytes.byteLength,
-    ).toString('utf-8')
+    const text = new TextDecoder().decode(bytes)
 
     return text ? text : undefined
 }
