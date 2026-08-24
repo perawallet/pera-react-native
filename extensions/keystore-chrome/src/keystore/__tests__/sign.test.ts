@@ -98,6 +98,27 @@ describe('sign.ts', () => {
         expect(sig?.length).toBe(64)
         // root privateKey must be cleared by finally
         expect(rootKey.privateKey).toBeUndefined()
+
+        // Independent verifier: crypto.subtle's Ed25519, not our own
+        // verifyWithKeyData (which shares xhd's derivation with signXHDEd25519
+        // and so cannot catch a systematic signing error — see Task 7 fix
+        // round 1 finding 2). edKey.publicKey is the raw 32-byte Ed25519
+        // public key xhd.keyGen derived alongside the private key.
+        const cryptoKey = await crypto.subtle.importKey(
+            'raw',
+            new Uint8Array(edKey.publicKey as Uint8Array),
+            { name: 'Ed25519' },
+            false,
+            ['verify'],
+        )
+        expect(
+            await crypto.subtle.verify(
+                { name: 'Ed25519' },
+                cryptoKey,
+                new Uint8Array(sig),
+                new Uint8Array(data),
+            ),
+        ).toBe(true)
     })
 
     it('signXHDDomainP256KeyData uses real dp256 and clears root privateKey', async () => {

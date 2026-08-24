@@ -12,9 +12,10 @@
 // Ported from @algorandfoundation/keystore@1.0.0-canary.17 verify.test.ts
 // Portions Copyright Algorand Foundation, Apache-2.0
 
+import { sha256 } from '@noble/hashes/sha2.js'
 import { describe, expect, it } from 'vitest'
 import { generateKey } from '../generate'
-import { signWithKeyData } from '../sign'
+import { signWithKeyData, signXHDDomainP256KeyData } from '../sign'
 import type { KeyData, SeedData, XHDRootKey } from '../types'
 import { verifyWithKeyData } from '../verify'
 
@@ -126,7 +127,43 @@ describe('verify.ts', () => {
             data,
             signature,
         })
-        expect(ok).toBeDefined()
+        // This is `false`, not a bug in this port: sign.ts's dp256 path signs
+        // its input as an already-computed digest (no hashing), while
+        // verify.ts's crypto.subtle path hashes the message itself before
+        // verifying. The two halves are mutually incompatible upstream, in
+        // both canary.17 and the currently-installed production engine — see
+        // the next test for a mechanism-level proof, and
+        // src/webauthn/keystore-signer.ts:258-269 for the same trap
+        // documented at the call site that actually caught it in prod.
+        expect(ok).toBe(false)
+    })
+
+    it('verifyWithKeyData (P256 path) proves the sign/verify hash mismatch: signing the digest verifies, signing the message does not', async () => {
+        const { rootKey, p256Key } = await setupKeys()
+        const data = makeUint8([1, 2, 3, 4])
+        const digest = sha256(data)
+
+        const keyToSign = JSON.parse(JSON.stringify(p256Key))
+        keyToSign.publicKey = new Uint8Array(p256Key.publicKey!)
+        const rootToSign = JSON.parse(JSON.stringify(rootKey))
+        rootToSign.privateKey = new Uint8Array(rootKey.privateKey!)
+
+        // dp256.signWithDomainSpecificKeyPair (sign.ts:173) does not hash its
+        // input — sign the SHA-256 digest directly so it lines up with what
+        // crypto.subtle.verify({ hash: 'SHA-256' }) computes internally from
+        // the *original* message.
+        const signature = await signXHDDomainP256KeyData({
+            key: keyToSign,
+            root: rootToSign,
+            data: digest,
+        })
+
+        const ok = await verifyWithKeyData({
+            key: p256Key,
+            data,
+            signature,
+        })
+        expect(ok).toBe(true)
     })
 
     it('verifyWithKeyData throws if no public key', async () => {
