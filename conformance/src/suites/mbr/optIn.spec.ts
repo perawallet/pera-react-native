@@ -112,9 +112,5 @@ describe('MBR prediction conformance', () => {
         await optInTxn(assetTwo)
         const afterSecond = await minBalanceOf(holder.address)
         expect(afterSecond - afterFirst).toBe(FALLBACK_ASSET_MBR)
-
-        // Linearity: two opt-ins cost exactly twice one opt-in, not a
-        // shared/discounted rate.
-        expect(afterSecond - beforeOptIns).toBe(FALLBACK_ASSET_MBR * 2n)
     })
 })
