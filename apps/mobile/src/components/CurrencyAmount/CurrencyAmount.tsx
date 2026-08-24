@@ -101,6 +101,7 @@ export const CurrencyAmount = (props: CurrencyAmountProps) => {
     const { precision, minPrecision } = resolvePrecision(
         precisionVariant,
         assetDecimals,
+        value,
     )
 
     const isAlgo = useMemo(() => isAlgoAssetName(currency), [currency])
