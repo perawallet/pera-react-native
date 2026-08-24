@@ -80,6 +80,46 @@ describe('useAssetConfigDisplay', () => {
         expect(result.current.metadataHash).toBeUndefined()
     })
 
+    it('returns undefined metadataHash for a persisted-cache-poisoned index-keyed plain object', () => {
+        const tx = {
+            ...baseTx,
+            assetConfigTransaction: {
+                ...baseTx.assetConfigTransaction,
+                params: {
+                    ...baseTx.assetConfigTransaction!.params,
+                    metadataHash: JSON.parse(
+                        JSON.stringify(
+                            new Uint8Array(Buffer.from('test-metadata-hash')),
+                        ),
+                    ),
+                },
+            },
+        } as unknown as PeraDisplayableTransaction
+
+        const { result } = renderHook(() => useAssetConfigDisplay(tx))
+
+        expect(result.current.metadataHash).toBeUndefined()
+    })
+
+    it('decodes metadataHash for a persisted-cache Buffer-JSON shape', () => {
+        const tx = {
+            ...baseTx,
+            assetConfigTransaction: {
+                ...baseTx.assetConfigTransaction,
+                params: {
+                    ...baseTx.assetConfigTransaction!.params,
+                    metadataHash: JSON.parse(
+                        JSON.stringify(Buffer.from('test-metadata-hash')),
+                    ),
+                },
+            },
+        } as unknown as PeraDisplayableTransaction
+
+        const { result } = renderHook(() => useAssetConfigDisplay(tx))
+
+        expect(result.current.metadataHash).toBe('test-metadata-hash')
+    })
+
     it('sets showWarnings to true when transaction has no id', () => {
         const tx = {
             ...baseTx,

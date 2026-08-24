@@ -2356,6 +2356,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('../../packages/shared/src/errors/base')
     >('../../packages/shared/src/errors/base')
 
+    // Same reasoning as ErrorCategory: bytes.ts has no runtime imports, so it is
+    // side-effect free to pull in by path. These decode persisted byte fields —
+    // a stub returning undefined would hide every note and group id under test.
+    const { toBytes, decodeBytesToText } = await vi.importActual<
+        typeof import('../../packages/shared/src/utils/bytes')
+    >('../../packages/shared/src/utils/bytes')
+
     // Mirrors packages/shared/src/errors/base.ts: the metadata defaulting, the
     // third `originalError` argument, and the instance members consumers reach
     // for (`timestamp`, `toJSON`, `isMinor`, `shouldReport`). `name` comes from
@@ -2619,6 +2626,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             Array.from(bytes)
                 .map(b => b.toString(16).padStart(2, '0'))
                 .join(''),
+        toBytes,
+        decodeBytesToText,
         // Must mirror the real constant (packages/shared/src/models/constants.ts).
         // The precision policy reads this, so a wrong value silently invalidates
         // every precision/formatting assertion.

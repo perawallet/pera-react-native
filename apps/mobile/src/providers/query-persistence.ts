@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { isTransactionQuery } from '@perawallet/wallet-core-transactions'
 import { isCardQuery } from '@perawallet/wallet-core-card'
+import { isBlockchainQuery } from '@perawallet/wallet-core-blockchain'
 
 export const shouldDehydrateQuery = (query: Query): boolean => {
     // PERA-4581: chart-history snapshots are allowlisted AHEAD of the module
@@ -36,11 +37,17 @@ export const shouldDehydrateQuery = (query: Query): boolean => {
     // Don't persist DB-backed queries — SQLite is the source of truth.
     // Card queries are excluded too: their responses can carry KYC
     // PII that must never land in the unencrypted disk cache.
+    // Blockchain queries are indexer/algod-backed, and the raw byte fields
+    // they carry are what PERA-4974 crashed on once round-tripped through
+    // disk. Both consumers degrade acceptably without a disk copy: Transaction
+    // Details falls back to the mapped SQLite row (losing only the indexer
+    // enrichment), and the group list renders empty until the fetch lands.
     if (
         isAccountQuery(query.queryKey) ||
         isAssetQuery(query.queryKey) ||
         isTransactionQuery(query.queryKey) ||
-        isCardQuery(query.queryKey)
+        isCardQuery(query.queryKey) ||
+        isBlockchainQuery(query.queryKey)
     ) {
         return false
     }
