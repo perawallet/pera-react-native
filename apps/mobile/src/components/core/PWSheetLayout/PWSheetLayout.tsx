@@ -18,7 +18,11 @@ import { PWView } from '../PWView'
 import { useStyles } from './styles'
 
 import type { ReactNode } from 'react'
-import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
+import type {
+    LayoutChangeEvent,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+} from 'react-native'
 import type { HorizontalPaddingMode } from '../PWScreen'
 
 export type PWSheetLayoutProps = {
@@ -31,6 +35,11 @@ export type PWSheetLayoutProps = {
     footer?: ReactNode
     horizontalPadding?: HorizontalPaddingMode
     onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
+    /** Body viewport size. Pair with `onContentSizeChange` to tell whether the
+     * body actually overflows — a scroll-gated action never fires `onScroll`
+     * when everything already fits. */
+    onLayout?: (event: LayoutChangeEvent) => void
+    onContentSizeChange?: (width: number, height: number) => void
     testID?: string
 }
 
@@ -46,6 +55,8 @@ export const PWSheetLayout = ({
     footer,
     horizontalPadding = 'xl',
     onScroll,
+    onLayout,
+    onContentSizeChange,
     testID,
 }: PWSheetLayoutProps) => {
     const insets = useSafeAreaInsets()
@@ -64,6 +75,8 @@ export const PWSheetLayout = ({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps='handled'
             onScroll={onScroll}
+            onLayout={onLayout}
+            onContentSizeChange={onContentSizeChange}
             {...getTestProps(testID)}
             accessible={false}
         >
