@@ -714,7 +714,7 @@
             },
             "group_fee_too_small": {
                 "title": "Comisión de red demasiado baja",
-                "body": "Este grupo de transacciones pagó {{paid}} microALGO de comisión, pero la red requiere {{required}} microALGO. Inténtalo de nuevo."
+                "body": "Las comisiones de este grupo de transacciones son inferiores a las que requiere la red. Inténtalo de nuevo."
             },
             "unknown_node_error": {
                 "title": "Transacción fallida",

@@ -261,21 +261,33 @@ describe('parseAlgodMessage', () => {
     })
 
     describe('group fee too small', () => {
-        test('parses a pooled-fee shortfall', () => {
+        test('parses the legacy pooled-fee shortfall rendering', () => {
             const msg =
                 'TransactionPool.Remember: txgroup had 4000 in fees, which is less than the minimum number of transactions per group * minFee (6 * 1000 = 6000)'
             expect(parseAlgodMessage(msg)).toEqual({
                 code: 'group_fee_too_small',
-                params: { paid: 4000n, required: 6000n },
+                params: {},
             })
         })
 
-        test('parses a required amount even without the arithmetic suffix', () => {
+        test('parses the legacy rendering without the arithmetic suffix', () => {
             const msg =
                 'txgroup had 2000 in fees, which is less than the minimum 5000'
             expect(parseAlgodMessage(msg)).toEqual({
                 code: 'group_fee_too_small',
-                params: { paid: 2000n, required: 5000n },
+                params: {},
+            })
+        })
+
+        // Verbatim from algod 5.0.0-stable, captured by
+        // `conformance/src/suites/fees/pooling.spec.ts`. The scaled `mA`
+        // figures are why no `paid`/`required` is reported — see GROUP_FEE_RE.
+        test("parses algod 5.0.0-stable's scaled-unit rendering", () => {
+            const msg =
+                'TransactionPool.Remember: txgroup with 5.999mA fees is less than 6mA (usage=6.000000 * base=1mA)'
+            expect(parseAlgodMessage(msg)).toEqual({
+                code: 'group_fee_too_small',
+                params: {},
             })
         })
     })

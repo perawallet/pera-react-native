@@ -714,7 +714,7 @@
             },
             "group_fee_too_small": {
                 "title": "Ağ ücreti çok düşük",
-                "body": "Bu işlem grubu ücret olarak {{paid}} microALGO ödedi ancak ağ {{required}} microALGO gerektiriyor. Tekrar dene."
+                "body": "Bu işlem grubunun ücretleri ağın gerektirdiğinin altında. Tekrar dene."
             },
             "unknown_node_error": {
                 "title": "İşlem başarısız oldu",

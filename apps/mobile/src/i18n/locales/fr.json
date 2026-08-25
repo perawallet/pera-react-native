@@ -714,7 +714,7 @@
             },
             "group_fee_too_small": {
                 "title": "Frais de réseau trop bas",
-                "body": "Ce groupe de transactions a payé {{paid}} microALGO de frais, alors que le réseau en exige {{required}} microALGO. Veuillez réessayer."
+                "body": "Les frais de ce groupe de transactions sont inférieurs à ceux exigés par le réseau. Veuillez réessayer."
             },
             "unknown_node_error": {
                 "title": "Échec de la transaction",

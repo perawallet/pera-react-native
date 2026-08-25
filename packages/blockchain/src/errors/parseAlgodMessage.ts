@@ -189,17 +189,22 @@ const matchLogicEval: Matcher = message => {
     }
 }
 
-// "txgroup had N in fees, which is less than the minimum … M[)]"
+// Two renderings, both matched on shape rather than on their figures:
+//
+//   legacy      "txgroup had 1999 in fees, which is less than the minimum 2000"
+//   5.0.0-stable "txgroup with 5.999mA fees is less than 6mA (usage=6.000000 * base=1mA)"
+//
+// The newer one scales both figures into a human unit whose suffix varies with
+// magnitude, so neither `paid` nor `required` can be recovered as a microAlgo
+// count without reimplementing go-algorand's formatter — the same trap that
+// made the old `OVERSPEND_RE` figures wrong. Neither is captured, for the same
+// reason: an absent figure beats one that is wrong.
 const GROUP_FEE_RE =
-    /had (\d+) in fees, which is less than the minimum.*?(\d+)\)?\s*$/s
+    /txgroup (?:had .* in fees, which is less than the minimum|with .* fees is less than)/s
 
 const matchGroupFeeTooSmall: Matcher = message => {
-    const m = GROUP_FEE_RE.exec(message)
-    if (!m) return null
-    return {
-        code: AlgodErrorCode.GROUP_FEE_TOO_SMALL,
-        params: { paid: BigInt(m[1]), required: BigInt(m[2]) },
-    }
+    if (!GROUP_FEE_RE.test(message)) return null
+    return { code: AlgodErrorCode.GROUP_FEE_TOO_SMALL, params: {} }
 }
 
 // Order matters only in the sense that each matcher is independent and

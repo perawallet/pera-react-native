@@ -112,10 +112,10 @@ export interface AlgodErrorParamsByCode {
         resourceType: 'Account' | 'Asset' | 'App' | 'Box'
         resource: string
     }
-    group_fee_too_small: {
-        paid: bigint
-        required: bigint
-    }
+    // No paid/required fields: algod 5.0.0-stable renders both in a scaled,
+    // variable-suffix unit that cannot be parsed back into a microAlgo count.
+    // Same reasoning as `overspend` above.
+    group_fee_too_small: Record<string, never>
     network_unavailable: {
         status?: number
         url?: string

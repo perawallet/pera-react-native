@@ -714,7 +714,7 @@
             },
             "group_fee_too_small": {
                 "title": "Taxa de rede muito baixa",
-                "body": "Este grupo de transações pagou {{paid}} microALGO de taxas, mas a rede exige {{required}} microALGO. Tente novamente."
+                "body": "As taxas deste grupo de transações estão abaixo do que a rede exige. Tente novamente."
             },
             "unknown_node_error": {
                 "title": "A transação falhou",

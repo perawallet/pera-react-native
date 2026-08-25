@@ -106,7 +106,7 @@ describe('toAlgodError', () => {
 
         expect(e).toBeInstanceOf(AlgodError)
         expect(e.code).toBe(AlgodErrorCode.GROUP_FEE_TOO_SMALL)
-        expect(e.params).toEqual({ paid: 4000n, required: 6000n })
+        expect(e.params).toEqual({})
         expect(e.originalError).toBe(raw)
     })
 
