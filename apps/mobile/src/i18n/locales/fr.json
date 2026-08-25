@@ -2577,6 +2577,7 @@
             "asset_freeze": "Gel d’actif",
             "app_call": "Appel d’application",
             "key_registration": "Enregistrement de clé",
+            "heartbeat": "Heartbeat",
             "default": "Transaction",
             "more_impacts": "Afficher {{count}} de plus"
         },
@@ -2667,6 +2668,13 @@
             "status": "Statut d’enregistrement",
             "online": "En ligne",
             "offline": "Hors ligne"
+        },
+        "heartbeat": {
+            "description": "Un heartbeat prouve qu’un compte est toujours en ligne et participe au consensus Algorand. Aucun fonds n’est déplacé.",
+            "account": "Compte vérifié en ligne",
+            "submitted_by": "Soumis par",
+            "key_dilution": "Dilution de clé",
+            "vote_id": "ID de vote"
         },
         "app_call": {
             "app_id": "ID de l’application",

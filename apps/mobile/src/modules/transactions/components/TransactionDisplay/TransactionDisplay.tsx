@@ -22,6 +22,7 @@ import {
     AssetConfigDisplay,
     AssetFreezeDisplay,
     KeyRegistrationDisplay,
+    HeartbeatDisplay,
     AppCallTransactionDisplay,
 } from '../transaction-details'
 
@@ -95,8 +96,16 @@ export const TransactionDisplay = ({
             )
         }
 
+        case 'heartbeat': {
+            return (
+                <HeartbeatDisplay
+                    transaction={transaction}
+                    isInnerTransaction={isInnerTransaction}
+                />
+            )
+        }
+
         case 'state-proof':
-        case 'heartbeat':
         case 'unknown':
         default: {
             return (

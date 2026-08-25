@@ -2577,6 +2577,7 @@
             "asset_freeze": "Asset Freeze",
             "app_call": "App Call",
             "key_registration": "Key Registration",
+            "heartbeat": "Heartbeat",
             "default": "Transaction",
             "more_impacts": "Show {{count}} more"
         },
@@ -2667,6 +2668,13 @@
             "status": "Registration Status",
             "online": "Online",
             "offline": "Offline"
+        },
+        "heartbeat": {
+            "description": "A heartbeat proves an account is still online and participating in Algorand consensus. It moves no funds.",
+            "account": "Account Proved Online",
+            "submitted_by": "Submitted By",
+            "key_dilution": "Key Dilution",
+            "vote_id": "Vote ID"
         },
         "app_call": {
             "app_id": "Application ID",
