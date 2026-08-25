@@ -30,9 +30,7 @@ export const RekeyOptionsContent = () => {
     return (
         <PWSheetLayout
             horizontalPadding='none'
-            header={
-                <SheetHeader title={t('account_options.rekey_options_title')} />
-            }
+            header={<SheetHeader title={t('account_options.rekey_account')} />}
         >
             <PWView style={styles.optionsContainer}>
                 <PanelButton

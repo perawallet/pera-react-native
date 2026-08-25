@@ -365,7 +365,6 @@
         "undo_rekey": "Deshacer rekey",
         "rekeyed_to": "Con rekey a",
         "rekey_account": "Hacer rekey de la cuenta",
-        "rekey_options_title": "Hacer rekey de la cuenta",
         "rekey_option_ledger_title": "A una cuenta Ledger",
         "rekey_option_ledger_description": "Las transacciones se autorizarán en tu dispositivo Ledger.",
         "rekey_option_standard_title": "A una cuenta estándar",

@@ -365,7 +365,6 @@
         "undo_rekey": "Undo Rekey",
         "rekeyed_to": "Rekeyed to",
         "rekey_account": "Rekey Account",
-        "rekey_options_title": "Rekey account",
         "rekey_option_ledger_title": "To a Ledger account",
         "rekey_option_ledger_description": "Transactions will be authorized on your Ledger device.",
         "rekey_option_standard_title": "To a standard account",

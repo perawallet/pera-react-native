@@ -365,7 +365,6 @@
         "undo_rekey": "Annuler le rekey",
         "rekeyed_to": "Rekey vers",
         "rekey_account": "Rekey du compte",
-        "rekey_options_title": "Rekey du compte",
         "rekey_option_ledger_title": "Vers un compte Ledger",
         "rekey_option_ledger_description": "Les transactions seront autorisées sur votre appareil Ledger.",
         "rekey_option_standard_title": "Vers un compte standard",

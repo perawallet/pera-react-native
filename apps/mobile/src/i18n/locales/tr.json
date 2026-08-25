@@ -365,7 +365,6 @@
         "undo_rekey": "Rekey’i geri al",
         "rekeyed_to": "Rekey hedefi",
         "rekey_account": "Hesaba rekey yap",
-        "rekey_options_title": "Hesaba rekey yap",
         "rekey_option_ledger_title": "Bir Ledger hesabına",
         "rekey_option_ledger_description": "İşlemler Ledger cihazında yetkilendirilecek.",
         "rekey_option_standard_title": "Bir standart hesaba",
