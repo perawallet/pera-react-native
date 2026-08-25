@@ -451,10 +451,7 @@ describe('logging', () => {
                 expect(() => logger.error('boom', { error })).not.toThrow()
             })
 
-            // The reviewer proved this leak empirically: a sensitive key at the
-            // top level of context is redacted, but the identical key one `cause`
-            // hop away previously shipped in the clear, because `formatContextValue`
-            // recursed into `cause` without ever routing it through the redactor.
+            // The redactor short-circuits on Errors, so a non-Error cause needs its own route through it.
             test('redacts a sensitive key nested inside a plain-object cause', () => {
                 const error = Object.assign(new Error('import failed'), {
                     cause: { mnemonic: 'word1 word2 word3 word4 word5' },
@@ -466,6 +463,50 @@ describe('logging', () => {
                     cause?: { mnemonic?: string }
                 }
                 expect(captured.cause).toEqual({ mnemonic: '[REDACTED]' })
+            })
+
+            test('redacts a sensitive key on an Error nested inside an object cause', () => {
+                const inner = Object.assign(new Error('kdf'), {
+                    mnemonic: 'LEAK-CANARY-1 word2 word3',
+                })
+                const error = Object.assign(new Error('import failed'), {
+                    cause: { inner },
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: { inner?: { mnemonic?: string } }
+                }
+                expect(captured.cause?.inner?.mnemonic).toBe('[REDACTED]')
+            })
+
+            test('redacts a sensitive key on an Error nested inside an array cause', () => {
+                const inner = Object.assign(new Error('kdf'), {
+                    privateKey: 'LEAK-CANARY-2',
+                })
+                const error = Object.assign(new Error('import failed'), {
+                    cause: [inner],
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: Array<{ privateKey?: string }>
+                }
+                expect(captured.cause?.[0]?.privateKey).toBe('[REDACTED]')
+            })
+
+            test('replaces a typed-array cause with a non-reversible size placeholder', () => {
+                const error = Object.assign(new Error('import failed'), {
+                    cause: new Uint8Array([1, 2, 3, 255, 254]),
+                })
+
+                logger.error('boom', { error })
+
+                expect(capturedContext().error).toMatchObject({
+                    cause: '[Uint8Array(5)]',
+                })
             })
         })
     })

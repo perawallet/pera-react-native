@@ -128,9 +128,14 @@ const TRUNCATED = '[…]'
 
 /**
  * Every string value also goes through `redactSensitiveUrl`, so a stray URL
- * under a non-sensitive key still gets its query params scrubbed. `Error`s pass
- * through verbatim for `formatContextValue` downstream, and cycles or depth past
- * MAX_REDACT_DEPTH short-circuit.
+ * under a non-sensitive key still gets its query params scrubbed. A top-level
+ * `Error` (the `context.error` convention) passes through verbatim — see
+ * `redactSensitiveContext`, which special-cases it before ever calling this —
+ * because `formatContextValue` picks its name/message/stack/code/cause right
+ * after. An `Error` found *while walking* a nested object or array gets no
+ * such follow-up, so it is walked here like any other object. Typed arrays
+ * become a `[Ctor(length)]` placeholder rather than being enumerated byte by
+ * byte, and cycles or depth past MAX_REDACT_DEPTH short-circuit.
  *
  * Applied automatically to every logger context, so callers needn't pre-sanitize
  * — though a hot path with very large objects may still want to.
@@ -143,12 +148,41 @@ const redactSensitiveValue = (
     if (value === null || value === undefined) return value
     if (typeof value === 'string') return redactSensitiveUrl(value)
     if (typeof value !== 'object') return value
-    if (value instanceof Error) return value
+    // A typed array (Uint8Array, Buffer, ...) has one own enumerable key per
+    // byte, so the generic object walk below would happily redact-and-emit
+    // every byte of a key. Byte length is diagnostic; the bytes are secret.
+    // `ArrayBuffer.isView`, not `instanceof Uint8Array`: a typed array from
+    // another realm (e.g. jsdom in tests) fails `instanceof` the local
+    // constructor and would silently fall through to the byte-enumerating path.
+    if (ArrayBuffer.isView(value)) {
+        const ctorName = value.constructor?.name ?? 'TypedArray'
+        const size =
+            'length' in value
+                ? (value as unknown as { length: number }).length
+                : (value as DataView).byteLength
+        return `[${ctorName}(${size})]`
+    }
     if (depth >= MAX_REDACT_DEPTH) return TRUNCATED
     if (seen.has(value)) return TRUNCATED
     seen.add(value)
     if (Array.isArray(value)) {
         return value.map(item => redactSensitiveValue(item, depth + 1, seen))
+    }
+    if (value instanceof Error) {
+        // message/stack are non-enumerable, so Object.entries below never
+        // touches them — only extra own properties (anything a caller attached
+        // via Object.assign, e.g. a leaked secret) need the same redaction as
+        // any other object's keys.
+        const out: Record<string, unknown> = {
+            name: value.name,
+            message: value.message,
+        }
+        for (const [k, v] of Object.entries(value)) {
+            out[k] = isSensitiveKey(k)
+                ? REDACTED
+                : redactSensitiveValue(v, depth + 1, seen)
+        }
+        return out
     }
     // ARC-0001 `algo_signData` / ARC-60 payloads carry the signed message in a
     // `data` field next to `authenticatorData`. `data` is far too common a key
@@ -172,7 +206,16 @@ export const redactSensitiveContext = (context: LogContext): LogContext => {
     const seen = new WeakSet<object>()
     const out: LogContext = {}
     for (const [k, v] of Object.entries(context)) {
-        out[k] = isSensitiveKey(k) ? REDACTED : redactSensitiveValue(v, 0, seen)
+        // A top-level Error is exempted here, not inside redactSensitiveValue:
+        // formatContextValue is about to pick its name/message/stack/code/cause
+        // explicitly, so it must stay `instanceof Error` and untouched. An Error
+        // found while walking a nested value has no such follow-up and is
+        // redacted for real inside redactSensitiveValue.
+        out[k] = isSensitiveKey(k)
+            ? REDACTED
+            : v instanceof Error
+              ? v
+              : redactSensitiveValue(v, 0, seen)
     }
     return out
 }
@@ -264,8 +307,19 @@ class Logger {
                 ...(typeof code === 'string' || typeof code === 'number'
                     ? { code }
                     : {}),
-                ...(typeof nativeStack === 'string'
-                    ? { nativeStackAndroid: nativeStack }
+                // RN's own PromiseImpl/JavaTurboModule copy this onto the JS
+                // Error as an array of frame maps (class/file/line/method), never
+                // a string — a `typeof === 'string'` gate here is always false and
+                // silently drops the one Android diagnostic this ticket needs.
+                // Treat it like `cause`: redacted and depth-capped, not dropped.
+                ...(nativeStack !== undefined
+                    ? {
+                          nativeStackAndroid: redactSensitiveValue(
+                              nativeStack,
+                              0,
+                              new WeakSet(),
+                          ),
+                      }
                     : {}),
                 ...(value.cause !== undefined &&
                 value.cause !== value &&
