@@ -21,10 +21,10 @@ import type {
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string, params?: Record<string, unknown>) => {
-            if (key === 'account_info.type_rekeyed_transition')
-                return `Rekeyed (${params?.from} to ${params?.to})`
-            if (key === 'account_info.rekey_part_standard') return 'Standard'
-            if (key === 'account_info.rekey_part_ledger') return 'Ledger'
+            if (key === 'account_info.type_rekeyed_signer')
+                return `Rekeyed (Signed by ${params?.to})`
+            if (key === 'account_info.rekey_signer_ledger')
+                return 'a Ledger account'
             return key
         },
     }),
@@ -151,18 +151,20 @@ describe('useAccountTypeInfo', () => {
         )
     })
 
-    it('resolves a standard-to-ledger rekey with the split transition title', () => {
+    it('resolves a rekey to a Ledger auth account with the split signer title', () => {
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue({
-            from: 'algo25',
+            from: 'watch',
             to: 'hardware',
         })
         const { result } = renderHook(() =>
-            useAccountTypeInfo({ account: accountOfType('algo25', 'AUTH') }),
+            useAccountTypeInfo({ account: accountOfType('watch', 'AUTH') }),
         )
 
         expect(result.current.title).toBe('Rekeyed')
-        expect(result.current.titleQualifier).toBe('(Standard to Ledger)')
+        expect(result.current.titleQualifier).toBe(
+            '(Signed by a Ledger account)',
+        )
         expect(result.current.description).toBe(
             'account_type_info.rekeyed_ledger_description',
         )

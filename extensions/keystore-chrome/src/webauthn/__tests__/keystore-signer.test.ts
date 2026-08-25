@@ -11,10 +11,17 @@
  */
 
 import { Store } from '@tanstack/store'
-import type { Key, KeyStoreState } from '@algorandfoundation/keystore'
+import type { Key, KeyStoreState } from '../../keystore'
 import { DeterministicP256 } from '@algorandfoundation/dp256'
 import { sha256 } from '@noble/hashes/sha2'
 import { beforeEach, describe, expect, it } from 'vitest'
+// This suite's resolution of the '/webauthn' subpath depends on
+// packages/passkeys/dist existing (workspace subpath exports resolve against
+// the built dist, not src). In a clean worktree without a prior `pnpm build`,
+// this file fails to resolve the import and the keystore-chrome suite reads
+// as 159 passing + 1 failing — that's a build-order artifact, not a bug. Run
+// `pnpm build` (or at least build packages/passkeys) before trusting a red
+// result here.
 import {
     b64urlToBytes,
     bytesToB64url,

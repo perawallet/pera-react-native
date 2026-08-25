@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-// Bootstrap-only entry for App.web.tsx's static import path: no
-// @algorandfoundation/keystore graph, no xhd-wallet-api, no native-module deps.
+// Bootstrap-only entry for App.web.tsx's static import path: no ./keystore
+// graph, no xhd-wallet-api, no native-module deps.
 // The full keystore surface lives behind the dynamic AppShell import.
 //
 // The reference below is duplicated from index.ts because this is a separate

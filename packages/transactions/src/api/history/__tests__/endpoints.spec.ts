@@ -45,9 +45,7 @@ const { fetchTransactionHistory, fetchMoreTransactions } =
 
 // Mock the schema parser
 vi.mock('../schema', () => ({
-    transactionHistoryResponseSchema: {
-        parse: vi.fn(data => data),
-    },
+    parseTransactionHistoryResponse: vi.fn(data => data),
 }))
 
 // Mock the transformers

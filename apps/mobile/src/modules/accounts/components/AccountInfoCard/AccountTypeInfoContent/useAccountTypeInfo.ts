@@ -34,8 +34,8 @@ type UseAccountTypeInfoParams = {
 type UseAccountTypeInfoResult = {
     title: string
     /**
-     * Rekey transition qualifier (e.g. "(Standard to Ledger)"), shown on its
-     * own line below the title. Null for non-rekeyed account types.
+     * Signer qualifier (e.g. "(Signed by a Ledger account)"), shown on its own
+     * line below the title. Null for non-rekeyed account types.
      */
     titleQualifier: string | null
     description: string
@@ -94,9 +94,9 @@ export const useAccountTypeInfo = ({
 
     const { title, titleQualifier, description } = useMemo(() => {
         if (rekeyTransition) {
-            const { labelKey, fromKey, toKey, descriptionKey } =
+            const { labelKey, signerKey, descriptionKey } =
                 getRekeyLabelI18n(rekeyTransition)
-            const label = t(labelKey, { from: t(fromKey), to: t(toKey) })
+            const label = t(labelKey, { to: t(signerKey) })
             const { main, qualifier } = splitAccountTypeLabel(label)
             return {
                 title: main,

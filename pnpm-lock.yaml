@@ -227,7 +227,6 @@ catalogs:
       version: 5.0.14
 
 overrides:
-  '@algorandfoundation/keystore': 1.0.0-canary.17
   '@algorandfoundation/keystore-core': 1.0.0-canary.3
   '@algorandfoundation/keystore-web': 1.0.0-canary.3
   '@algorandfoundation/react-native-keystore': 1.0.0-canary.19
@@ -1070,9 +1069,6 @@ importers:
       '@algorandfoundation/dp256':
         specifier: 'catalog:'
         version: 1.1.0
-      '@algorandfoundation/keystore':
-        specifier: 1.0.0-canary.17
-        version: 1.0.0-canary.17(@tanstack/store@0.11.0)(before-after-hook@4.0.0)
       '@algorandfoundation/wallet-provider':
         specifier: 1.0.0-canary.6
         version: 1.0.0-canary.6
@@ -1089,6 +1085,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/passkeys
       '@scure/base':
+        specifier: 'catalog:'
+        version: 2.2.0
+      '@scure/bip39':
         specifier: 'catalog:'
         version: 2.2.0
       '@tanstack/store':
@@ -4310,16 +4309,6 @@ packages:
     resolution: {integrity: sha512-8BwOJ+zVrdPOR/ywdiCyYIp0mhfQDMSXO4jJ31Q+4BejSLrGGHbW5Afv7u9w58a4hotiNNrhSvHIvkrJ70EpAQ==}
     peerDependencies:
       '@algorandfoundation/log-store': 1.0.0-canary.3
-      '@tanstack/store': 0.9.3
-      before-after-hook: 4.0.0
-    peerDependenciesMeta:
-      '@algorandfoundation/log-store':
-        optional: true
-
-  '@algorandfoundation/keystore@1.0.0-canary.17':
-    resolution: {integrity: sha512-HviZXtMfG1lXT+OeSQac84YiogKRnIsoXL64XMPEYZaffyT+WHGDktrYJu1CHz1uvoKqUN4BidsQs99S5LXiFw==}
-    peerDependencies:
-      '@algorandfoundation/log-store': 1.0.0-canary.4
       '@tanstack/store': 0.9.3
       before-after-hook: 4.0.0
     peerDependenciesMeta:
@@ -11375,17 +11364,6 @@ snapshots:
       '@tanstack/store': 0.11.0
       before-after-hook: 4.0.0
       falcon-1024: 0.2.0
-
-  '@algorandfoundation/keystore@1.0.0-canary.17(@tanstack/store@0.11.0)(before-after-hook@4.0.0)':
-    dependencies:
-      '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/wallet-provider': 1.0.0-canary.6
-      '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
-      '@noble/hashes': 2.0.1
-      '@scure/base': 2.0.0
-      '@scure/bip39': 1.6.0
-      '@tanstack/store': 0.11.0
-      before-after-hook: 4.0.0
 
   '@algorandfoundation/ledger-algorand-js@1.4.3':
     dependencies:

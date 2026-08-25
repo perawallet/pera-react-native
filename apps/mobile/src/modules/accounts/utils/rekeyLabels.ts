@@ -16,22 +16,20 @@ import {
     type RekeyTransition,
 } from '@perawallet/wallet-core-accounts'
 
-const PART_KEY: Record<AccountType, string> = {
-    [AccountTypes.algo25]: 'account_info.rekey_part_standard',
-    [AccountTypes.hdWallet]: 'account_info.rekey_part_standard',
-    [AccountTypes.hardware]: 'account_info.rekey_part_ledger',
-    [AccountTypes.multisig]: 'account_info.rekey_part_shared',
-    [AccountTypes.watch]: 'account_info.rekey_part_watch',
-    [AccountTypes.quantum]: 'account_info.rekey_part_quantum',
+const SIGNER_KEY: Record<AccountType, string> = {
+    [AccountTypes.algo25]: 'account_info.rekey_signer_standard',
+    [AccountTypes.hdWallet]: 'account_info.rekey_signer_standard',
+    [AccountTypes.hardware]: 'account_info.rekey_signer_ledger',
+    [AccountTypes.multisig]: 'account_info.rekey_signer_shared',
+    [AccountTypes.watch]: 'account_info.rekey_signer_watch',
+    [AccountTypes.quantum]: 'account_info.rekey_signer_quantum',
 }
 
 export type RekeyLabelI18n = {
-    /** i18n key for the "Rekeyed ({{from}} to {{to}})" label. */
+    /** i18n key for the "Rekeyed (Signed by {{to}})" label. */
     labelKey: string
-    /** i18n key for the translated `from` part. */
-    fromKey: string
-    /** i18n key for the translated `to` part. */
-    toKey: string
+    /** i18n key for the translated signer type, interpolated as `to`. */
+    signerKey: string
     /** Description key for the account-type info sheet. */
     descriptionKey: string
 }
@@ -47,23 +45,26 @@ const descriptionKeyFor = (transition: RekeyTransition): string => {
     if (to === AccountTypes.hardware) {
         return 'account_type_info.rekeyed_ledger_description'
     }
+    if (to === AccountTypes.quantum) {
+        return 'account_type_info.rekeyed_quantum_description'
+    }
     return 'account_type_info.rekeyed_standard_description'
 }
 
 export const getRekeyLabelI18n = (
     transition: RekeyTransition,
 ): RekeyLabelI18n => ({
-    labelKey: 'account_info.type_rekeyed_transition',
-    fromKey: PART_KEY[transition.from],
-    toKey: PART_KEY[transition.to],
+    labelKey: 'account_info.type_rekeyed_signer',
+    signerKey: SIGNER_KEY[transition.to],
     descriptionKey: descriptionKeyFor(transition),
 })
 
 /**
  * Splits an account type label into its main type and the parenthetical
- * qualifier (e.g. "Rekeyed (Standard to Ledger)" → main "Rekeyed", qualifier
- * "(Standard to Ledger)"), so the qualifier can be rendered in a smaller font.
- * Returns a null qualifier for labels without a parenthetical part.
+ * qualifier (e.g. "Rekeyed (Signed by a Ledger account)" → main "Rekeyed",
+ * qualifier "(Signed by a Ledger account)"), so the qualifier can be rendered
+ * in a smaller font. Returns a null qualifier for labels without a
+ * parenthetical part.
  */
 export const splitAccountTypeLabel = (
     label: string,
