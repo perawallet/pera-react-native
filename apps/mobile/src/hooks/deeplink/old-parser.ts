@@ -18,6 +18,7 @@ import {
     type AlgoTransferDeeplink,
     type AssetTransferDeeplink,
     type KeyregDeeplink,
+    type KeyregParticipationFields,
     type AssetOptInDeeplink,
     type AssetTransactionsDeeplink,
     type AssetInboxDeeplink,
@@ -29,6 +30,7 @@ import {
 } from './types'
 import {
     decodeBase64Param,
+    inferKeyregType,
     isValidAssetId,
     normalizeUrl,
     parseQueryParams,
@@ -166,17 +168,21 @@ export const parsePerawalletUri = (
     }
 
     if (params.type === 'keyreg') {
-        return {
-            type: DeeplinkType.KEYREG,
-            sourceUrl: url,
-            senderAddress: address,
-            keyregType: params.type,
+        const participation: KeyregParticipationFields = {
             voteKey: params.votekey,
             selkey: params.selkey,
             sprfkey: params.sprfkey,
             votefst: params.votefst,
             votelst: params.votelst,
             votekd: params.votekd,
+        }
+
+        return {
+            type: DeeplinkType.KEYREG,
+            sourceUrl: url,
+            senderAddress: address,
+            keyregType: inferKeyregType(participation),
+            ...participation,
             fee: params.fee,
             note: params.note,
         } as KeyregDeeplink

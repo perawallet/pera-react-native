@@ -12,10 +12,7 @@
 
 import { PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
-import {
-    type KeyRegType,
-    type PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { type PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useTheme } from '@rneui/themed'
@@ -26,14 +23,11 @@ import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnin
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useMemo } from 'react'
+import { getKeyRegType } from './utils'
 
 export type KeyRegistrationDisplayProps = {
     transaction: PeraDisplayableTransaction
     isInnerTransaction?: boolean
-}
-
-const getKeyRegType = (tx: PeraDisplayableTransaction): KeyRegType => {
-    return tx.keyregTransaction?.nonParticipation ? 'offline' : 'online'
 }
 
 export const KeyRegistrationDisplay = ({

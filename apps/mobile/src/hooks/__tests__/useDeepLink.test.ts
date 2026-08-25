@@ -1785,7 +1785,7 @@ describe('useDeepLink', () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.KEYREG,
             senderAddress: 'A'.repeat(58),
-            keyregType: 'keyreg',
+            keyregType: 'online',
             voteKey: 'AAAA',
             // missing selkey, sprfkey, votefst, votelst, votekd
         })
@@ -1808,7 +1808,7 @@ describe('useDeepLink', () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.KEYREG,
             senderAddress: 'A'.repeat(58),
-            keyregType: 'keyreg',
+            keyregType: 'online',
             voteKey: 'AAAA',
             selkey: 'BBBB',
             sprfkey: 'CCCC',

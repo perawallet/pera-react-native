@@ -19,10 +19,11 @@ import {
     type AssetTransferDeeplink,
     type AssetOptInDeeplink,
     type KeyregDeeplink,
+    type KeyregParticipationFields,
     type DiscoverBrowserDeeplink,
 } from './types'
 import { parseAlgorandURI } from './arc90-parser'
-import { isValidAssetId } from './utils'
+import { inferKeyregType, isValidAssetId } from './utils'
 // config and Networks removed because unused
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -120,11 +121,7 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
             return null
         }
 
-        return {
-            type: DeeplinkType.KEYREG,
-            sourceUrl: url,
-            senderAddress: address,
-            keyregType: 'keyreg',
+        const participation: KeyregParticipationFields = {
             voteKey: params.votekey,
             selkey: params.selkey,
             sprfkey: params.sprfkey,
@@ -134,6 +131,14 @@ export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
             // The legacy `votekdkey` form is kept as a fallback for old QR
             // codes that may have used the misspelled field.
             votekd: params.votekd ?? params.votekdkey,
+        }
+
+        return {
+            type: DeeplinkType.KEYREG,
+            sourceUrl: url,
+            senderAddress: address,
+            keyregType: inferKeyregType(participation),
+            ...participation,
             fee: params.fee,
             note: params.note,
             xnote: params.xnote,

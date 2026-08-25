@@ -216,6 +216,42 @@ describe('ARC-90 Algorand Parser', () => {
                 expect(result.votekd).toBe('100')
             }
         })
+
+        it('marks a keyreg carrying participation keys as online', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?type=keyreg&votekey=voteKey123&selkey=selKey123&sprfkey=sprfKey123&votefst=1000&votelst=2000&votekd=100`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.keyregType).toBe('online')
+            }
+        })
+
+        // ARC-78 has no online/offline discriminator: the smallest valid URI
+        // (`?type=keyreg` alone) IS the de-registration, and nodekit emits
+        // exactly that when a node runner goes offline.
+        it('marks a keyreg with no participation keys as offline', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?type=keyreg`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.keyregType).toBe('offline')
+            }
+        })
+
+        // A partial key set must NOT read as a de-registration: the user
+        // scanned a go-online QR, and silently signing an offline keyreg
+        // instead would take their node out of consensus.
+        it('treats a partial participation key set as online, not offline', () => {
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?type=keyreg&votekey=voteKey123`,
+            )
+            expect(result?.type).toBe(DeeplinkType.KEYREG)
+            if (result?.type === DeeplinkType.KEYREG) {
+                expect(result.keyregType).toBe('online')
+            }
+        })
     })
 
     describe('Asset Query', () => {
