@@ -172,10 +172,12 @@ const redactSensitiveValue = (
         // message/stack are non-enumerable, so Object.entries below never
         // touches them — only extra own properties (anything a caller attached
         // via Object.assign, e.g. a leaked secret) need the same redaction as
-        // any other object's keys.
+        // any other object's keys. message still goes through redactSensitiveUrl
+        // like any other string reaching this function — a nested Error's
+        // message is free-form and can carry a URI-embedded secret.
         const out: Record<string, unknown> = {
             name: value.name,
-            message: value.message,
+            message: redactSensitiveUrl(value.message),
         }
         for (const [k, v] of Object.entries(value)) {
             out[k] = isSensitiveKey(k)
@@ -299,23 +301,30 @@ class Logger {
 
             return {
                 name: value.name,
-                message: value.message,
-                // Crashlytics truncates the report; a nested stack crowds out the
-                // sibling keys (code, cause) that actually diagnose this class of
-                // bug, and is more device data leaving for no diagnostic gain.
+                message: redactSensitiveUrl(value.message),
+                // Crashlytics truncates the report; a nested stack (JS or native)
+                // crowds out the sibling keys (code, cause) that actually diagnose
+                // this class of bug, and is more device data leaving for no
+                // diagnostic gain — both stacks are gated to depth 0 for the same
+                // reason.
                 ...(value.stack && depth === 0 ? { stack: value.stack } : {}),
                 ...(typeof code === 'string' || typeof code === 'number'
                     ? { code }
                     : {}),
-                // RN's own PromiseImpl/JavaTurboModule copy this onto the JS
-                // Error as an array of frame maps (class/file/line/method), never
-                // a string — a `typeof === 'string'` gate here is always false and
-                // silently drops the one Android diagnostic this ticket needs.
-                // Treat it like `cause`: redacted and depth-capped, not dropped.
-                ...(nativeStack !== undefined
+                // RN's own PromiseImpl/JavaTurboModule copy this onto the JS Error
+                // as an array of frame maps (class/file/line/method), never a
+                // string. Redacted like `cause`, depth-gated like `stack` above,
+                // and frame-capped: a keystore rejection needs only the top of the
+                // native stack, and frame maps are verbose enough (four repeated
+                // key names each) that an uncapped array pushes `cause` — the
+                // primary thing this ticket exists to obtain — out of
+                // Crashlytics' truncation window.
+                ...(nativeStack !== undefined && depth === 0
                     ? {
                           nativeStackAndroid: redactSensitiveValue(
-                              nativeStack,
+                              Array.isArray(nativeStack)
+                                  ? nativeStack.slice(0, 10)
+                                  : nativeStack,
                               0,
                               new WeakSet(),
                           ),

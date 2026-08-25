@@ -508,6 +508,78 @@ describe('logging', () => {
                     cause: '[Uint8Array(5)]',
                 })
             })
+
+            test('preserves nativeStackAndroid frames and redacts a sensitive key planted in one', () => {
+                const error = Object.assign(new Error('keychain failed'), {
+                    code: 'E_CRYPTO_FAILED',
+                    nativeStackAndroid: [
+                        {
+                            className: 'com.oblador.keychain.KeychainModule',
+                            file: 'KeychainModule.java',
+                            lineNumber: 812,
+                            methodName: 'decrypt',
+                        },
+                        {
+                            className: 'com.facebook.react.bridge.PromiseImpl',
+                            file: 'PromiseImpl.kt',
+                            lineNumber: 45,
+                            methodName: 'reject',
+                            mnemonic: 'word1 word2 word3',
+                        },
+                    ],
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    nativeStackAndroid?: Array<Record<string, unknown>>
+                }
+                expect(captured.nativeStackAndroid?.[0]).toMatchObject({
+                    className: 'com.oblador.keychain.KeychainModule',
+                    file: 'KeychainModule.java',
+                    lineNumber: 812,
+                    methodName: 'decrypt',
+                })
+                expect(captured.nativeStackAndroid?.[1]?.mnemonic).toBe(
+                    '[REDACTED]',
+                )
+            })
+
+            test('redacts a URI-embedded secret in a directly-chained cause Error message', () => {
+                const cause = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                )
+                const error = Object.assign(new Error('import failed'), {
+                    cause,
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: { message?: string }
+                }
+                expect(captured.cause?.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+            })
+
+            test('redacts a URI-embedded secret in an Error message nested inside an object cause', () => {
+                const inner = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                )
+                const error = Object.assign(new Error('import failed'), {
+                    cause: { inner },
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: { inner?: { message?: string } }
+                }
+                expect(captured.cause?.inner?.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+            })
         })
     })
 
