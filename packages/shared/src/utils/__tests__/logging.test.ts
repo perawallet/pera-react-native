@@ -16,6 +16,7 @@ import {
     LogLevel,
     redactSensitiveContext,
     redactSensitiveUrl,
+    type LogContext,
 } from '../logging'
 
 describe('logging', () => {
@@ -383,6 +384,537 @@ describe('logging', () => {
             expect(reported.error.message).not.toContain('word1 word2')
             expect(reported.error.message).toContain('[REDACTED]')
             expect(reported.error.message).toContain('public-id')
+        })
+
+        describe('error serialization', () => {
+            const capturedContext = (): LogContext => {
+                const call = (
+                    console.error as ReturnType<typeof vi.fn>
+                ).mock.calls.at(-1) as [string, LogContext]
+                return call[1]
+            }
+
+            test('preserves a native module error code', () => {
+                const error = Object.assign(new Error('keychain failed'), {
+                    code: 'E_CRYPTO_FAILED',
+                })
+
+                logger.error('boom', { error })
+
+                expect(capturedContext().error).toMatchObject({
+                    name: 'Error',
+                    message: 'keychain failed',
+                    code: 'E_CRYPTO_FAILED',
+                })
+            })
+
+            test('preserves a nested cause', () => {
+                const cause = new Error('master key missing')
+                const error = Object.assign(new Error('import failed'), {
+                    cause,
+                })
+
+                logger.error('boom', { error })
+
+                expect(capturedContext().error).toMatchObject({
+                    message: 'import failed',
+                    cause: { name: 'Error', message: 'master key missing' },
+                })
+            })
+
+            test('caps the emitted cause chain at exactly MAX_CAUSE_DEPTH levels', () => {
+                let error = new Error('root')
+                for (let i = 0; i < 10; i += 1) {
+                    error = Object.assign(new Error(`wrap-${i}`), {
+                        cause: error,
+                    })
+                }
+
+                logger.error('boom', { error })
+
+                let node = capturedContext().error as {
+                    cause?: { cause?: unknown }
+                }
+                let depth = 0
+                while (node && 'cause' in node && node.cause !== undefined) {
+                    depth += 1
+                    node = node.cause as { cause?: { cause?: unknown } }
+                }
+
+                expect(depth).toBe(3)
+            })
+
+            test('survives a self-referential cause chain', () => {
+                const error = new Error('loop')
+                Object.defineProperty(error, 'cause', { value: error })
+
+                expect(() => logger.error('boom', { error })).not.toThrow()
+            })
+
+            // The redactor short-circuits on Errors, so a non-Error cause needs its own route through it.
+            test('redacts a sensitive key nested inside a plain-object cause', () => {
+                const error = Object.assign(new Error('import failed'), {
+                    cause: { mnemonic: 'word1 word2 word3 word4 word5' },
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: { mnemonic?: string }
+                }
+                expect(captured.cause).toEqual({ mnemonic: '[REDACTED]' })
+            })
+
+            test('redacts a sensitive key on an Error nested inside an object cause', () => {
+                const inner = Object.assign(new Error('kdf'), {
+                    mnemonic: 'LEAK-CANARY-1 word2 word3',
+                })
+                const error = Object.assign(new Error('import failed'), {
+                    cause: { inner },
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: { inner?: { mnemonic?: string } }
+                }
+                expect(captured.cause?.inner?.mnemonic).toBe('[REDACTED]')
+            })
+
+            test('redacts a sensitive key on an Error nested inside an array cause', () => {
+                const inner = Object.assign(new Error('kdf'), {
+                    privateKey: 'LEAK-CANARY-2',
+                })
+                const error = Object.assign(new Error('import failed'), {
+                    cause: [inner],
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: Array<{ privateKey?: string }>
+                }
+                expect(captured.cause?.[0]?.privateKey).toBe('[REDACTED]')
+            })
+
+            test('replaces a typed-array cause with a non-reversible size placeholder', () => {
+                const error = Object.assign(new Error('import failed'), {
+                    cause: new Uint8Array([1, 2, 3, 255, 254]),
+                })
+
+                logger.error('boom', { error })
+
+                expect(capturedContext().error).toMatchObject({
+                    cause: '[Uint8Array(5)]',
+                })
+            })
+
+            test('preserves nativeStackAndroid frames and redacts a sensitive key planted in one', () => {
+                const error = Object.assign(new Error('keychain failed'), {
+                    code: 'E_CRYPTO_FAILED',
+                    nativeStackAndroid: [
+                        {
+                            className: 'com.oblador.keychain.KeychainModule',
+                            file: 'KeychainModule.java',
+                            lineNumber: 812,
+                            methodName: 'decrypt',
+                        },
+                        {
+                            className: 'com.facebook.react.bridge.PromiseImpl',
+                            file: 'PromiseImpl.kt',
+                            lineNumber: 45,
+                            methodName: 'reject',
+                            mnemonic: 'word1 word2 word3',
+                        },
+                    ],
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    nativeStackAndroid?: Array<Record<string, unknown>>
+                }
+                expect(captured.nativeStackAndroid?.[0]).toMatchObject({
+                    className: 'com.oblador.keychain.KeychainModule',
+                    file: 'KeychainModule.java',
+                    lineNumber: 812,
+                    methodName: 'decrypt',
+                })
+                expect(captured.nativeStackAndroid?.[1]?.mnemonic).toBe(
+                    '[REDACTED]',
+                )
+            })
+
+            test('redacts a URI-embedded secret in a directly-chained cause Error message', () => {
+                const cause = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                )
+                const error = Object.assign(new Error('import failed'), {
+                    cause,
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: { message?: string }
+                }
+                expect(captured.cause?.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+            })
+
+            test('redacts a URI-embedded secret in an Error message nested inside an object cause', () => {
+                const inner = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                )
+                const error = Object.assign(new Error('import failed'), {
+                    cause: { inner },
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: { inner?: { message?: string } }
+                }
+                expect(captured.cause?.inner?.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+            })
+
+            // A stack's first line is the message, so redacting only `message`
+            // leaves the same secret in the sibling `stack`.
+            test('redacts a URI-embedded secret in the top-level error stack', () => {
+                const error = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                )
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as { stack?: string }
+                expect(captured.stack).toContain('mnemonic=[REDACTED]')
+                expect(captured.stack).not.toContain('abandon')
+            })
+
+            test('keeps the rest of the payload when message is not a string', () => {
+                const error = Object.assign(new Error('placeholder'), {
+                    code: 'E_CRYPTO_FAILED',
+                })
+                Object.defineProperty(error, 'message', { value: 12_345 })
+
+                logger.error('boom', { error })
+
+                expect(capturedContext().error).toMatchObject({
+                    name: 'Error',
+                    message: 12_345,
+                    code: 'E_CRYPTO_FAILED',
+                })
+            })
+
+            test('caps nativeStackAndroid at ten frames', () => {
+                const error = Object.assign(new Error('keychain failed'), {
+                    nativeStackAndroid: Array.from(
+                        { length: 20 },
+                        (_, index) => ({
+                            className: 'com.oblador.keychain.KeychainModule',
+                            file: 'KeychainModule.java',
+                            lineNumber: index,
+                            methodName: 'decrypt',
+                        }),
+                    ),
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    nativeStackAndroid?: unknown[]
+                }
+                expect(captured.nativeStackAndroid).toHaveLength(10)
+            })
+
+            test('omits nativeStackAndroid on a nested cause Error', () => {
+                const cause = Object.assign(new Error('keystore rejected'), {
+                    nativeStackAndroid: [
+                        {
+                            className: 'com.oblador.keychain.KeychainModule',
+                            file: 'KeychainModule.java',
+                            lineNumber: 812,
+                            methodName: 'decrypt',
+                        },
+                    ],
+                })
+                const error = Object.assign(new Error('import failed'), {
+                    cause,
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: Record<string, unknown>
+                }
+                expect(captured.cause).not.toHaveProperty('nativeStackAndroid')
+            })
+
+            // An Error reached through a non-Error cause is walked by
+            // redactSensitiveValue, which enumerates own keys and so needs the
+            // same frame cap.
+            test('caps nativeStackAndroid on an Error nested inside an object cause', () => {
+                const inner = Object.assign(new Error('keystore rejected'), {
+                    nativeStackAndroid: Array.from(
+                        { length: 20 },
+                        (_, index) => ({
+                            className: 'com.oblador.keychain.KeychainModule',
+                            file: 'KeychainModule.java',
+                            lineNumber: index,
+                            methodName: 'decrypt',
+                        }),
+                    ),
+                })
+                const error = Object.assign(new Error('import failed'), {
+                    cause: { inner },
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: { inner?: { nativeStackAndroid?: unknown[] } }
+                }
+                expect(captured.cause?.inner?.nativeStackAndroid).toHaveLength(
+                    10,
+                )
+            })
+
+            test('redacts a URI-embedded secret in the reported combined message', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                )
+                logger.error(error, { source: 'test' })
+
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                }
+                expect(reported.error.message).toContain('mnemonic=[REDACTED]')
+                expect(reported.error.message).not.toContain('abandon')
+                expect(reported.error.stack).not.toContain('abandon')
+            })
+
+            test('redacts a URI-embedded secret when the Error is reported without context', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                logger.error(
+                    new Error(
+                        'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                    ),
+                )
+
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                }
+                expect(reported.error.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+                expect(reported.error.stack).not.toContain('abandon')
+            })
+
+            // redactSensitiveUrl throws on a non-string, and reportError's
+            // catch-all would swallow the whole report — losing exactly the
+            // native-module errors this ticket exists to diagnose.
+            test('still reports an Error whose message is not a string', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error('placeholder')
+                Object.defineProperty(error, 'message', { value: 12_345 })
+
+                logger.error(error)
+                logger.error(error, { source: 'test' })
+
+                expect(errorReporter).toHaveBeenCalledTimes(2)
+            })
+
+            test('still reports an Error whose stack is not a string', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error('keychain failed')
+                Object.defineProperty(error, 'stack', { value: 999 })
+
+                logger.error(error)
+                logger.error(error, { source: 'test' })
+
+                expect(errorReporter).toHaveBeenCalledTimes(2)
+            })
+
+            // The reporter reads `.stack` the way a real one does
+            // (`StackTrace.fromError`), so this fails if the reported error
+            // still carries the live throwing accessor.
+            test('still reports an Error whose stack accessor throws', () => {
+                const readStacks: unknown[] = []
+                const errorReporter = vi.fn(({ error }: { error: unknown }) => {
+                    readStacks.push((error as Error).stack)
+                })
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error('keychain failed')
+                Object.defineProperty(error, 'stack', {
+                    get() {
+                        throw new Error('native accessor blew up')
+                    },
+                })
+
+                logger.error(error)
+
+                expect(errorReporter).toHaveBeenCalledTimes(1)
+                expect(readStacks).toHaveLength(1)
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                }
+                expect(reported.error.message).toBe('keychain failed')
+            })
+
+            // String message + context Error is the shape every keystore call
+            // site uses, and that path adopts the context error's stack.
+            test('still reports when a context error stack accessor throws', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error('keychain failed')
+                Object.defineProperty(error, 'stack', {
+                    get() {
+                        throw new Error('native accessor blew up')
+                    },
+                })
+
+                logger.error('createAlgo25Key failed', {
+                    error,
+                    stage: 'seedImport',
+                })
+
+                expect(errorReporter).toHaveBeenCalledTimes(1)
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                    groupingKey?: string
+                }
+                expect(reported.groupingKey).toBe('createAlgo25Key failed')
+                expect(reported.error.message).toContain(
+                    'createAlgo25Key failed',
+                )
+            })
+
+            // A redacted report must stay indistinguishable from an untouched
+            // one to a reporter that branches on `instanceof` or reads `.code`.
+            test('keeps the prototype and own properties when redacting a reported Error subclass', () => {
+                class KeystoreError extends Error {
+                    public readonly code: string
+                    public readonly metadata = { attempt: 2 }
+
+                    constructor(message: string, code: string) {
+                        super(message)
+                        this.name = 'KeystoreError'
+                        this.code = code
+                    }
+                }
+
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                logger.error(
+                    new KeystoreError(
+                        'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                        'E_CRYPTO_FAILED',
+                    ),
+                )
+
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: KeystoreError
+                }
+                expect(reported.error).toBeInstanceOf(KeystoreError)
+                expect(reported.error.constructor).toBe(KeystoreError)
+                expect(reported.error.name).toBe('KeystoreError')
+                expect(reported.error.code).toBe('E_CRYPTO_FAILED')
+                expect(reported.error.metadata).toEqual({ attempt: 2 })
+                expect(reported.error.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+            })
+
+            // A native module can back any own property with an accessor that
+            // throws; copying them in one Object.assign pass would abort on the
+            // first one and lose the report entirely.
+            test('still reports an Error with a throwing own enumerable getter', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                )
+                Object.defineProperty(error, 'code', {
+                    enumerable: true,
+                    get() {
+                        throw new Error('native accessor blew up')
+                    },
+                })
+
+                logger.error(error)
+
+                expect(errorReporter).toHaveBeenCalledTimes(1)
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                }
+                expect(reported.error.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+            })
+
+            // Assigning over an inherited getter-only `message` is a strict-mode
+            // TypeError; the redacted copy has to be defined, not assigned.
+            test('still reports an Error whose inherited message is getter-only', () => {
+                class NativeError extends Error {
+                    public override get message(): string {
+                        return 'failed on perawallet://x?mnemonic=abandon+abandon+art'
+                    }
+                }
+
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                logger.error(new NativeError())
+
+                expect(errorReporter).toHaveBeenCalledTimes(1)
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                }
+                expect(reported.error.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+            })
+
+            test('drops sensitive own properties from the reported Error', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                ) as Error & { mnemonic?: string; privateKey?: string }
+                error.mnemonic = 'abandon abandon art'
+                error.privateKey = 'deadbeefdeadbeef'
+
+                logger.error(error)
+
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error & { mnemonic?: string; privateKey?: string }
+                }
+                expect(reported.error.mnemonic).toBeUndefined()
+                expect(reported.error.privateKey).toBeUndefined()
+
+                const serialized = JSON.stringify(reported.error)
+                expect(serialized).not.toContain('abandon')
+                expect(serialized).not.toContain('deadbeef')
+                expect(serialized).toBe('{}')
+            })
         })
     })
 

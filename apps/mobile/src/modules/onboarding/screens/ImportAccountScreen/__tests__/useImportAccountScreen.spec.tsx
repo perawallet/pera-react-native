@@ -13,6 +13,7 @@
 import { renderHook, act } from '@testing-library/react'
 import * as Clipboard from 'expo-clipboard'
 import { useRoute } from '@react-navigation/native'
+import { mnemonicFromSeed } from 'algosdk'
 import {
     consumePendingImportMnemonic,
     useImportAccount,
@@ -92,6 +93,17 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         'absurd',
         'abuse',
         'zoo',
+        // Real BIP39 words backing the seed-derived mnemonic used by the
+        // wordlist-gating tests below (mnemonicFromSeed(fill(7))).
+        'thought',
+        'bright',
+        'logic',
+        'idea',
+        'asthma',
+        'scrub',
+        'deal',
+        'alpha',
+        'crisp',
     ],
 }))
 
@@ -151,13 +163,15 @@ describe('useImportAccountScreen', () => {
     })
 
     it('pre-fills the passphrase words on mount from the pending-import store', () => {
-        const mnemonic = new Array(24).fill('word').join(' ')
+        // 'abandon' (not 'word') so canImport, now gated on wordlist
+        // membership, is genuinely true rather than incidentally passing.
+        const mnemonic = new Array(24).fill('abandon').join(' ')
         vi.mocked(consumePendingImportMnemonic).mockReturnValue(mnemonic)
 
         const { result } = renderHook(() => useImportAccountScreen())
 
         expect(consumePendingImportMnemonic).toHaveBeenCalledTimes(1)
-        expect(result.current.words.every(w => w === 'word')).toBe(true)
+        expect(result.current.words.every(w => w === 'abandon')).toBe(true)
         expect(result.current.canImport).toBe(true)
     })
 
@@ -607,6 +621,57 @@ describe('useImportAccountScreen', () => {
                 'onboarding.import_account.title',
             )
             expect(result.current.infoNoteKey).toBeNull()
+        })
+    })
+
+    describe('wordlist gating', () => {
+        const VALID_25_WORDS = mnemonicFromSeed(
+            new Uint8Array(32).fill(7),
+        ).split(' ')
+
+        beforeEach(() => {
+            vi.mocked(useRoute).mockReturnValue({
+                params: { accountType: 'algo25' },
+            } as never)
+        })
+
+        it('keeps import disabled while a slot holds a non-wordlist word', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => result.current.updateWord(VALID_25_WORDS.join(' '), 0))
+            act(() => result.current.updateWord('zzzz', 0))
+
+            expect(result.current.canImport).toBe(false)
+            expect(result.current.invalidWordIndices.has(0)).toBe(true)
+        })
+
+        it('enables import once every slot holds a wordlist word', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => result.current.updateWord(VALID_25_WORDS.join(' '), 0))
+
+            expect(result.current.canImport).toBe(true)
+            expect(result.current.invalidWordIndices.size).toBe(0)
+        })
+
+        it('submits the normalized mnemonic when the user typed it capitalized', async () => {
+            mockImportAccount.mockResolvedValue({ type: 'algo25' })
+            const { result } = renderHook(() => useImportAccountScreen())
+            const capitalized = VALID_25_WORDS.map(
+                w => w.charAt(0).toUpperCase() + w.slice(1),
+            ).join(' ')
+
+            act(() => result.current.updateWord(capitalized, 0))
+
+            await act(async () => {
+                result.current.handleImportAccount()
+                await new Promise(resolve => setTimeout(resolve, 0))
+            })
+
+            expect(mockImportAccount).toHaveBeenCalledWith({
+                mnemonic: VALID_25_WORDS.join(' '),
+                type: 'algo25',
+            })
         })
     })
 })

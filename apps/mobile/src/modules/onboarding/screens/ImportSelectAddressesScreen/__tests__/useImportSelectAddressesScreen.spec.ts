@@ -32,6 +32,7 @@ const {
     mockCommitImport,
     mockCancelImport,
     mockMarkBackupComplete,
+    mockShowToast,
 } = vi.hoisted(() => ({
     mockReplace: vi.fn(),
     mockGoBack: vi.fn(),
@@ -44,6 +45,7 @@ const {
     mockCommitImport: vi.fn(),
     mockCancelImport: vi.fn(),
     mockMarkBackupComplete: vi.fn(),
+    mockShowToast: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -56,12 +58,32 @@ vi.mock('@hooks/useAppNavigation', () => ({
         addListener: vi.fn(() => () => {}),
     }),
 }))
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mockShowToast }),
+}))
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({ params: mockRouteParams.current }),
     useNavigation: () => ({ addListener: vi.fn(() => () => {}) }),
 }))
 vi.mock('../../../hooks', () => ({
     useExitAccountFlow: () => ({ exitAccountFlow: mockExitAccountFlow }),
+    // Mirrors the real useRekeyScanNotice: swallow discoverRekeyedAccounts
+    // failures into the sentinel instead of letting them throw.
+    useRekeyScanNotice: () => ({
+        scanRekeyed: async (accountAddresses: string[]) => {
+            try {
+                return await mockDiscoverRekeyedAccounts({ accountAddresses })
+            } catch {
+                mockShowToast({
+                    type: 'info',
+                    title: 'onboarding.searching_accounts.rekey_scan_failed_title',
+                    body: 'onboarding.searching_accounts.rekey_scan_failed_body',
+                })
+                return 'rekey-scan-unavailable'
+            }
+        },
+    }),
+    REKEY_SCAN_UNAVAILABLE: 'rekey-scan-unavailable',
 }))
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
@@ -294,5 +316,69 @@ describe('useImportSelectAddressesScreen — legacy (non-import) mode', () => {
             concurrent,
             sampleDiscovered[0],
         ])
+    })
+})
+
+describe('useImportSelectAddressesScreen - failure reporting', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockAllAccounts.current = []
+        mockRouteParams.current = {
+            mode: 'import',
+            walletKeyId: 'w-1',
+            accounts: sampleDiscovered,
+        }
+        mockCommitImport.mockResolvedValue([sampleDiscovered[0]])
+        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+    })
+
+    test('names the account instead of exiting when only the rekey scan fails', async () => {
+        mockDiscoverRekeyedAccounts.mockRejectedValue(new Error('indexer 500'))
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockReplace).toHaveBeenCalledWith(
+            'NameAccount',
+            expect.anything(),
+        )
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
+    })
+
+    test('tells the user when the import itself fails, instead of exiting silently', async () => {
+        mockCommitImport.mockRejectedValue(new Error('keystore derive failed'))
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                title: 'onboarding.import_account.failed_title',
+            }),
+        )
+        expect(mockExitAccountFlow).toHaveBeenCalled()
+    })
+
+    test('does not report a failed import when a post-commit step throws', async () => {
+        mockMarkBackupComplete.mockImplementation(() => {
+            throw new Error('backup store write failed')
+        })
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockShowToast).not.toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'onboarding.import_account.failed_title',
+            }),
+        )
+        expect(mockExitAccountFlow).toHaveBeenCalled()
     })
 })

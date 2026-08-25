@@ -12,6 +12,8 @@
 
 import React from 'react'
 
+import { Platform } from 'react-native'
+
 import { useTheme } from '@rneui/themed'
 
 import {
@@ -43,6 +45,7 @@ export const ImportAccountScreen = () => {
         focused,
         setFocused,
         canImport,
+        invalidWordIndices,
         processing,
         handleWordChange,
         handleImportAccount,
@@ -157,7 +160,11 @@ export const ImportAccountScreen = () => {
                                                             inputContainerStyle={
                                                                 isFocused
                                                                     ? styles.focusedInputContainer
-                                                                    : styles.inputContainer
+                                                                    : invalidWordIndices.has(
+                                                                            offsetIndex,
+                                                                        )
+                                                                      ? styles.invalidInputContainer
+                                                                      : styles.inputContainer
                                                             }
                                                             inputStyle={
                                                                 styles.input
@@ -204,6 +211,18 @@ export const ImportAccountScreen = () => {
                                                             }
                                                             autoCapitalize='none'
                                                             autoCorrect={false}
+                                                            spellCheck={false}
+                                                            autoComplete='off'
+                                                            // autoCapitalize is only a hint and Samsung
+                                                            // Keyboard / Gboard ignore it; visible-password
+                                                            // is the one Android input type that actually
+                                                            // disables capitalization and prediction.
+                                                            keyboardType={
+                                                                Platform.OS ===
+                                                                'android'
+                                                                    ? 'visible-password'
+                                                                    : 'default'
+                                                            }
                                                         />
                                                     </PWView>
                                                 </PWView>
