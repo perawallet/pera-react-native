@@ -396,6 +396,41 @@ describe('useTransactionConfirmationScreen', () => {
             expect(result.current.isRecipientBelowMbr).toBe(false)
         })
 
+        // The ledger allows leaving a receiver at exactly 0 — a zero-amount
+        // note payment to an empty account is valid (PERA-4968).
+        it('does not flag a zero-amount send that leaves an empty recipient at zero', () => {
+            setupAlgoSend(new Decimal('0'))
+            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+                data: { amount: 0n, minBalance: 100_000n },
+                isPending: false,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            expect(result.current.isRecipientBelowMbr).toBe(false)
+        })
+
+        it('confirms a zero-amount ALGO send to a funded recipient', () => {
+            setupAlgoSend(new Decimal('0'))
+            ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
+                data: { amount: 200_000n, minBalance: 100_000n },
+                isPending: false,
+            })
+
+            const { result } = renderHook(() =>
+                useTransactionConfirmationScreen(),
+            )
+
+            act(() => {
+                result.current.handleConfirm()
+            })
+
+            expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
+            expect(mockShowToast).not.toHaveBeenCalled()
+        })
+
         it('does not flag when recipient already has balance above MBR', () => {
             setupAlgoSend(new Decimal('0.01'))
             ;(useOnChainAccountInformationQuery as Mock).mockReturnValue({
