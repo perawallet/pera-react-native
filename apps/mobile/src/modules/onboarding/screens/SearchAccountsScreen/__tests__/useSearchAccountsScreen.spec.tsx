@@ -120,6 +120,23 @@ vi.mock('../../../hooks', () => ({
     useShouldPlayConfetti: () => ({
         setShouldPlayConfetti: mockSetShouldPlayConfetti,
     }),
+    // Mirrors the real useRekeyScanNotice: swallow discoverRekeyedAccounts
+    // failures into the sentinel instead of letting them throw.
+    useRekeyScanNotice: () => ({
+        scanRekeyed: async (accountAddresses: string[]) => {
+            try {
+                return await mockDiscoverRekeyedAccounts({ accountAddresses })
+            } catch {
+                mockShowToast({
+                    type: 'info',
+                    title: 'onboarding.searching_accounts.rekey_scan_failed_title',
+                    body: 'onboarding.searching_accounts.rekey_scan_failed_body',
+                })
+                return 'rekey-scan-unavailable'
+            }
+        },
+    }),
+    REKEY_SCAN_UNAVAILABLE: 'rekey-scan-unavailable',
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -607,5 +624,71 @@ describe('useSearchAccountsScreen', () => {
             })
             expect(mockExitAccountFlow).not.toHaveBeenCalled()
         })
+    })
+
+    it('algo25 account with a failed rekey scan: continues to NameAccount instead of reporting an import failure', async () => {
+        const algo25Account = {
+            id: '1',
+            address: 'PARENT_ADDRESS',
+            type: AccountTypes.algo25,
+            keyPairId: 'wallet-1',
+        }
+        mockRouteParams.current = {
+            account: algo25Account,
+            createIfEmpty: undefined,
+        } as SearchAccountsParams
+        mockDiscoverRekeyedAccounts.mockRejectedValue(new Error('indexer 500'))
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+                account: algo25Account,
+            })
+        })
+        expect(mockShowToast).not.toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'onboarding.import_account.failed_title',
+            }),
+        )
+        expect(mockGoBack).not.toHaveBeenCalled()
+    })
+
+    it('HD account with a failed rekey scan: exits the flow without claiming no new addresses were found', async () => {
+        mockRouteParams.current = {
+            account: {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+            createIfEmpty: false,
+            notifyOnEmpty: true,
+        } as SearchAccountsParams
+        const singleAccount = {
+            id: '1',
+            address: 'MOCK_ADDRESS',
+            type: AccountTypes.hdWallet,
+        }
+        mockDiscoverAccounts.mockResolvedValue([singleAccount])
+        mockDiscoverRekeyedAccounts.mockRejectedValue(new Error('indexer 500'))
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockExitAccountFlow).toHaveBeenCalled()
+        })
+        expect(mockShowToast).not.toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'onboarding.searching_accounts.no_new_addresses_title',
+            }),
+        )
+        expect(mockGoBack).not.toHaveBeenCalled()
     })
 })
