@@ -305,7 +305,17 @@ export const useInputScreen = () => {
     }, [maxAmount, proceedToDestination, setAmount, setValueAndRef])
 
     const handleNext = useCallback(async () => {
-        if (!value || new Decimal(value).lte(0)) {
+        const amountValue = value ? new Decimal(value) : null
+        // Zero-amount ALGO payments are valid on-chain (used for notes and
+        // sync pings). Zero stays rejected for ASAs, where the destination
+        // router could misroute a 0 send into the Express/ARC-59 opt-in
+        // flows that cost the sender real ALGO.
+        const isZeroAllowed = isAlgoAssetId(selectedAssetId)
+        if (
+            !amountValue ||
+            amountValue.lt(0) ||
+            (!isZeroAllowed && amountValue.isZero())
+        ) {
             showToast(
                 {
                     title: t('send_funds.input.error_title'),
@@ -319,7 +329,7 @@ export const useInputScreen = () => {
             return
         }
 
-        if (new Decimal(value).gt(totalBalance)) {
+        if (amountValue.gt(totalBalance)) {
             showToast(
                 {
                     title: t('send_funds.input.exceeds_max_title'),
@@ -333,7 +343,7 @@ export const useInputScreen = () => {
             return
         }
 
-        if (new Decimal(value).gt(maxAmount)) {
+        if (amountValue.gt(maxAmount)) {
             if (isRekeyedSender) {
                 // No close-account path for a rekeyed account — clamp to the
                 // spendable max instead.
@@ -356,10 +366,11 @@ export const useInputScreen = () => {
         }
 
         setIsCloseAccount(false)
-        setAmount(new Decimal(value ?? '0'))
+        setAmount(amountValue)
         proceedToDestination()
     }, [
         value,
+        selectedAssetId,
         maxAmount,
         totalBalance,
         proceedToDestination,
