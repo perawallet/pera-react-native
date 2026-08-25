@@ -152,6 +152,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                     // dropped with the stale snapshot.
                     const currentAccounts = useAccountsStore.getState().accounts
                     setAccounts([...currentAccounts, ...accountsToAdd])
+                    hasCommittedRef.current = true
                     setSelectedAccountAddress(accountsToAdd[0].address)
                 }
 
@@ -208,12 +209,18 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                     isImportMode,
                     error,
                 })
-                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
-                showToast({
-                    type: 'error',
-                    title: t('onboarding.import_account.failed_title'),
-                    body: t('onboarding.import_account.failed_body'),
-                })
+                // Anything after the accounts are persisted (naming, backup
+                // flag, navigation) failing must not be reported as a failed
+                // import: the user holds the account, and their retry would
+                // then say "already added".
+                if (!hasCommittedRef.current) {
+                    // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
+                    showToast({
+                        type: 'error',
+                        title: t('onboarding.import_account.failed_title'),
+                        body: t('onboarding.import_account.failed_body'),
+                    })
+                }
                 exitAccountFlow()
             } finally {
                 setIsProcessing(false)

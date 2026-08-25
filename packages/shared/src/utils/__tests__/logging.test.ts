@@ -775,6 +775,35 @@ describe('logging', () => {
                 expect(reported.error.message).toBe('keychain failed')
             })
 
+            // String message + context Error is the shape every keystore call
+            // site uses, and that path adopts the context error's stack.
+            test('still reports when a context error stack accessor throws', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error('keychain failed')
+                Object.defineProperty(error, 'stack', {
+                    get() {
+                        throw new Error('native accessor blew up')
+                    },
+                })
+
+                logger.error('createAlgo25Key failed', {
+                    error,
+                    stage: 'seedImport',
+                })
+
+                expect(errorReporter).toHaveBeenCalledTimes(1)
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                    groupingKey?: string
+                }
+                expect(reported.groupingKey).toBe('createAlgo25Key failed')
+                expect(reported.error.message).toContain(
+                    'createAlgo25Key failed',
+                )
+            })
+
             // A redacted report must stay indistinguishable from an untouched
             // one to a reporter that branches on `instanceof` or reads `.code`.
             test('keeps the prototype and own properties when redacting a reported Error subclass', () => {

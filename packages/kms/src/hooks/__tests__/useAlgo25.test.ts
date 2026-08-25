@@ -255,6 +255,29 @@ describe('useAlgo25', () => {
             )
         })
 
+        test('reports the seedImport stage when the seed import throws', async () => {
+            mockSeedFromMnemonic.mockReturnValue(new Uint8Array(32).fill(1))
+            mockEncodeAddress.mockReturnValue('ADDR')
+            mockKeyStoreImport.mockRejectedValueOnce(
+                new Error('keystore rejected'),
+            )
+
+            const { result } = renderHook(() => useAlgo25())
+            await expect(
+                act(async () => {
+                    await result.current.createAlgo25Key({
+                        id: 'my-key',
+                        mnemonic: 'words',
+                    })
+                }),
+            ).rejects.toThrow('keystore rejected')
+
+            expect(mockLoggerError).toHaveBeenCalledWith(
+                'createAlgo25Key failed',
+                expect.objectContaining({ stage: 'seedImport' }),
+            )
+        })
+
         test('reports the seed stage when the mnemonic is unusable', async () => {
             mockSeedFromMnemonic.mockImplementation(() => {
                 throw new Error('not a mnemonic')

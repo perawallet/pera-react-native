@@ -158,7 +158,7 @@ describe('Flow: Onboarding → Import Algo25 (IME-capitalized passphrase)', () =
     )
 
     it(
-        'keeps Recover disabled and marks the bad slot on a typo',
+        'keeps Recover disabled on a typo',
         async () => {
             await startAlgo25Import()
 

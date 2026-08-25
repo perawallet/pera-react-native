@@ -363,4 +363,22 @@ describe('useImportSelectAddressesScreen - failure reporting', () => {
         )
         expect(mockExitAccountFlow).toHaveBeenCalled()
     })
+
+    test('does not report a failed import when a post-commit step throws', async () => {
+        mockMarkBackupComplete.mockImplementation(() => {
+            throw new Error('backup store write failed')
+        })
+        const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        await act(async () => {
+            await result.current.handleContinue()
+        })
+
+        expect(mockShowToast).not.toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'onboarding.import_account.failed_title',
+            }),
+        )
+        expect(mockExitAccountFlow).toHaveBeenCalled()
+    })
 })

@@ -542,8 +542,13 @@ class Logger {
             // 2. Adopting the stack of an `Error` passed in context, so the
             //    frames below point at the real origin instead of at `log()`.
             const contextError = this.findContextError(context)
-            if (contextError?.stack) {
-                reportableError.stack = redactMaybeString(contextError.stack)
+            // Read through readSafely: a throwing `stack` accessor here would
+            // land in the outer catch and drop the whole report.
+            const adoptedStack = readSafely(() => contextError?.stack).value
+            if (adoptedStack) {
+                reportableError.stack = redactMaybeString(
+                    adoptedStack,
+                ) as typeof reportableError.stack
             }
 
             this.errorReporter({
