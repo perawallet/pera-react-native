@@ -40,12 +40,15 @@ export default defineConfig({
         rollupOptions: {
             external: [
                 '@algorandfoundation/dp256',
-                '@algorandfoundation/keystore',
                 '@algorandfoundation/wallet-provider',
                 '@algorandfoundation/xhd-wallet-api',
+                '@algorandfoundation/xhd-wallet-api/dist/sumo.facade.js',
                 '@noble/ciphers',
                 '@noble/hashes/sha2',
+                '@noble/hashes/sha2.js',
                 '@scure/base',
+                '@scure/bip39',
+                '@scure/bip39/wordlists/english.js',
                 '@tanstack/store',
                 'before-after-hook',
                 '@perawallet/wallet-core-passkeys/webauthn',

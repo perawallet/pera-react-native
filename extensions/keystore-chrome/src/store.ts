@@ -33,7 +33,7 @@ import {
     type XHDDerivedKeyData,
     type XHDDomainP256KeyData,
     type XHDRootKey,
-} from '@algorandfoundation/keystore'
+} from './keystore'
 
 import { clearBuffer, generateId } from '@algorandfoundation/wallet-provider'
 import {

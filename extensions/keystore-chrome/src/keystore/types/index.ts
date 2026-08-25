@@ -9,12 +9,9 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+// Ported from @algorandfoundation/keystore@1.0.0-canary.17 types/index.ts
+// Portions Copyright Algorand Foundation, Apache-2.0
 
-// Bootstrap-only entry for App.web.tsx's static import path: no ./keystore
-// graph, no xhd-wallet-api, no native-module deps.
-// The full keystore surface lives behind the dynamic AppShell import.
-//
-// The reference below is duplicated from index.ts because this is a separate
-// root, pulled into consumer tsc programs independently of it.
-/// <reference types="chrome" />
-export { hydrateKeystoreStorage } from './storage/chrome-storage'
+export * from './backend'
+export * from './core'
+export * from './extension'

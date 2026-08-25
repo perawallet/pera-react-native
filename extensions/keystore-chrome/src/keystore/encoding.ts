@@ -9,12 +9,15 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+// Ported from @algorandfoundation/keystore@1.0.0-canary.17 encoding.ts
+// Portions Copyright Algorand Foundation, Apache-2.0
 
-// Bootstrap-only entry for App.web.tsx's static import path: no ./keystore
-// graph, no xhd-wallet-api, no native-module deps.
-// The full keystore surface lives behind the dynamic AppShell import.
-//
-// The reference below is duplicated from index.ts because this is a separate
-// root, pulled into consumer tsc programs independently of it.
-/// <reference types="chrome" />
-export { hydrateKeystoreStorage } from './storage/chrome-storage'
+import { sha512_256 } from '@noble/hashes/sha2.js'
+import { base32 } from '@scure/base'
+
+export function encodeAddress(publicKey: Uint8Array<ArrayBufferLike>): string {
+    const hash = sha512_256(publicKey) // 32 bytes
+    const checksum = hash.slice(-4) // last 4 bytes
+    const addressBytes = new Uint8Array([...publicKey, ...checksum])
+    return base32.encode(addressBytes).replace(/=+$/, '').toUpperCase()
+}
