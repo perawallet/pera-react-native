@@ -17,6 +17,14 @@ export type {
     LocalArc60SigningFunction,
     LocalKeyStrategyOptions,
 } from './createLocalKeyStrategy'
+export {
+    signTransactionsWithLocalKey,
+    SIGN_BATCH_SIZE,
+} from './signTransactionsWithLocalKey'
+export type {
+    LocalKeySigningDeps,
+    PQSigningInfo,
+} from './signTransactionsWithLocalKey'
 export { createHardwareStrategy } from './createHardwareStrategy'
 export type {
     EncodeTransactionFunction,
