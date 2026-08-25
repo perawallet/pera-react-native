@@ -1558,7 +1558,9 @@
         "searching_accounts": {
             "title": "Hesapların aranıyor",
             "no_new_addresses_title": "Yeni adres bulunamadı",
-            "no_new_addresses_body": "Bu cüzdanla ilişkili başka bir adres bulamadık."
+            "no_new_addresses_body": "Bu cüzdanla ilişkili başka bir adres bulamadık.",
+            "rekey_scan_failed_title": "Rekey yapılmış hesaplar kontrol edilemedi",
+            "rekey_scan_failed_body": "Hesabın içe aktarıldı. Başka hesapların bu hesaba rekey yapılıp yapılmadığını kontrol edemedik — Ayarlar'dan yeniden tarayabilirsin."
         },
         "create_account": {
             "processing": "Cüzdanın hazırlanıyor...",

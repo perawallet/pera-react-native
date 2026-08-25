@@ -1550,7 +1550,9 @@
         "searching_accounts": {
             "title": "Deine Konten werden gesucht",
             "no_new_addresses_title": "Keine neuen Adressen gefunden",
-            "no_new_addresses_body": "Wir konnten keine weiteren, mit diesem Wallet verbundenen Adressen finden."
+            "no_new_addresses_body": "Wir konnten keine weiteren, mit diesem Wallet verbundenen Adressen finden.",
+            "rekey_scan_failed_title": "Rekeyed Konten konnten nicht geprüft werden",
+            "rekey_scan_failed_body": "Dein Konto wurde importiert. Wir konnten nicht prüfen, ob andere Konten darauf rekeyed sind — du kannst den Scan in den Einstellungen wiederholen."
         },
         "create_account": {
             "processing": "Dein Wallet wird eingerichtet...",

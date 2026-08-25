@@ -1562,7 +1562,9 @@
         "searching_accounts": {
             "title": "Buscando suas contas",
             "no_new_addresses_title": "Nenhum novo endereço encontrado",
-            "no_new_addresses_body": "Não encontramos nenhum endereço adicional associado a esta wallet."
+            "no_new_addresses_body": "Não encontramos nenhum endereço adicional associado a esta wallet.",
+            "rekey_scan_failed_title": "Não foi possível verificar contas com rekey",
+            "rekey_scan_failed_body": "Sua conta foi importada. Não foi possível verificar se outras contas têm rekey para ela — você pode escanear novamente em Configurações."
         },
         "create_account": {
             "processing": "Configurando sua wallet...",
