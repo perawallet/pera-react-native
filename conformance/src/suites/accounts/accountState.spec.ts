@@ -42,6 +42,7 @@ import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
+import { assertIndexerCaughtUp } from '../../harness/localnet'
 
 /**
  * Every balance the app shows starts as an algod response and becomes an
@@ -67,6 +68,9 @@ describe('account state conformance', () => {
             decimals: 3,
             unitName: 'STATE',
         })
+        // Only the opt-in-round test reads the indexer, but gating here fails
+        // the file once and diagnosably instead of as a bare timeout.
+        await assertIndexerCaughtUp()
     })
 
     it('reports the funded balance and the base MBR the constants declare', async () => {

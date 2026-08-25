@@ -39,6 +39,7 @@ import {
     createConformanceKeyStore,
     type ConformanceKeyStore,
 } from '../../harness/keystore'
+import { assertIndexerCaughtUp } from '../../harness/localnet'
 
 /**
  * The app reads transaction history off the chain's own indexer on every
@@ -64,6 +65,10 @@ describe('indexer history transformer conformance', () => {
         receiver = await createAlgo25Account(keyStore)
         await fundAccount(sender.address, 10_000_000n)
         await fundAccount(receiver.address, 1_000_000n)
+        // Funding advanced the chain, so the indexer now has something to be
+        // behind on — fail here, once and diagnosably, rather than three times
+        // as a per-transaction timeout.
+        await assertIndexerCaughtUp()
     })
 
     const rowFor = (

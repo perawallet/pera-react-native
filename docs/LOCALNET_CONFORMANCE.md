@@ -1,6 +1,6 @@
 # LocalNet Conformance Suite
 
-`conformance/` is a Vitest suite — 30 files, 118 tests — that runs the app's
+`conformance/` is a Vitest suite — 30 files, 117 tests — that runs the app's
 own builders, keystore, signing, transformers, and error-classification code
 against a **real** Algorand node (LocalNet) instead of a mock. See
 `conformance/README.md` for the package layout and the `dist/` build
@@ -65,7 +65,7 @@ a mock.
     ```
 
     Without this, the suite doesn't fail one test — it fails to **collect**
-    any of the 28 files, because the first file loaded transitively imports a
+    any of the 30 files, because the first file loaded transitively imports a
     barrel that needs an unbuilt package. `pnpm --filter <one-package> build`
     looks like the cheaper option but is not reliable here: the true closure
     has cross-package build-order dependencies (building

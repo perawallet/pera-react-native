@@ -89,7 +89,7 @@ export type IndexerTransactionsPage = { transactions: { id?: string }[] }
 export const fetchIndexerTransactionsFor = async (
     address: string,
     txId: string,
-    attempts = 30,
+    attempts = 60,
 ): Promise<IndexerTransactionsPage> => {
     for (let attempt = 0; attempt < attempts; attempt++) {
         const response = await fetch(
@@ -103,5 +103,10 @@ export const fetchIndexerTransactionsFor = async (
         }
         await new Promise(resolve => setTimeout(resolve, 500))
     }
-    throw new Error(`indexer never reported ${txId} for ${address}`)
+    // `assertIndexerCaughtUp` runs in these suites' `beforeAll`, so reaching
+    // here means the indexer is ingesting but never saw this transaction —
+    // not the stale-conduit case that gate covers.
+    throw new Error(
+        `indexer never reported ${txId} for ${address} after ${attempts} attempts`,
+    )
 }

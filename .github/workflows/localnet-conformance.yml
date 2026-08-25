@@ -1,10 +1,14 @@
 name: LocalNet Conformance
 
-# Runs conformance/ (28 files, 102 tests) against a real LocalNet node instead
+# Runs conformance/ (30 files, 117 tests) against a real LocalNet node instead
 # of mocks — see docs/LOCALNET_CONFORMANCE.md. Nightly because it needs Docker
 # + a booted chain (too slow/flaky for every push); also gated on PR to the
 # packages this suite actually exercises, so a regression is caught before
 # merge rather than the following night.
+#
+# Keep the `paths` filter below in step with what the suite imports. A package
+# the suite exercises but does not list here is the bad case: it regresses on a
+# PR that never runs this workflow, and only the next nightly catches it.
 
 on:
     schedule:
@@ -18,10 +22,16 @@ on:
             - 'packages/blockchain/**'
             - 'packages/signing/**'
             - 'packages/kms/**'
-            # Aspirational: ARC-59 (asa-inbox) is out of scope today, so the suite
-            # doesn't import either package yet. Left in so the filter is ready
-            # once that coverage lands, rather than a mistake to prune.
+            # `api/history/indexer/*` — the transformers and balance-impact
+            # arithmetic pinned by suites/history against real indexer output.
             - 'packages/transactions/**'
+            # `hooks/endpoints`, `hooks/mappers`, `bip44`, `models/accounts` —
+            # every balance and auth-addr assertion in the suite reads the chain
+            # through this package's transformer.
+            - 'packages/accounts/**'
+            # Aspirational: ARC-59 is out of scope today, so the suite doesn't
+            # import this one yet. Left in so the filter is ready once that
+            # coverage lands, rather than a mistake to prune.
             - 'packages/asa-inbox/**'
 
 # Least-privilege default, matching pre-merge.yml.
