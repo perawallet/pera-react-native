@@ -22,7 +22,6 @@ import {
     useSetAccounts,
     useSelectedAccountAddress,
     type HDWalletAccount,
-    useAccountDiscovery,
     useHDImportSession,
     isHDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -32,7 +31,12 @@ import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useAddressSelection } from '@hooks/useAddressSelection'
-import { useExitAccountFlow } from '@modules/onboarding/hooks'
+import { useToast } from '@hooks/useToast'
+import {
+    useExitAccountFlow,
+    useRekeyScanNotice,
+    REKEY_SCAN_UNAVAILABLE,
+} from '@modules/onboarding/hooks'
 import { type OnboardingStackParamList } from '../../routes/types'
 
 type ImportSelectAddressesRouteProp = RouteProp<
@@ -61,14 +65,15 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const importWalletKeyId = isImportMode ? params.walletKeyId : null
 
     const { t } = useLanguage()
+    const { showToast } = useToast()
     const allAccounts = useAllAccounts()
-    const { discoverRekeyedAccounts } = useAccountDiscovery()
     const { commitImport, cancelImport } = useHDImportSession()
     const markBackupComplete = useMarkMnemonicBackupComplete()
     const navigation = useAppNavigation()
     const reactNavigation = useNavigation()
 
     const { exitAccountFlow } = useExitAccountFlow()
+    const { scanRekeyed } = useRekeyScanNotice()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { setAccounts } = useSetAccounts()
     const { seedIdOf } = useKMS()
@@ -174,16 +179,13 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                             .map(a => a.address),
                     ]),
                 ]
-                const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
-                    { accountAddresses: scanAddresses },
-                )
+                const discoveredRekeyedAccounts =
+                    await scanRekeyed(scanAddresses)
 
-                if (!discoveredRekeyedAccounts) {
-                    exitAccountFlow()
-                    return
-                }
-
-                if (discoveredRekeyedAccounts.length === 0) {
+                if (
+                    discoveredRekeyedAccounts === REKEY_SCAN_UNAVAILABLE ||
+                    discoveredRekeyedAccounts.length === 0
+                ) {
                     // A single freshly-imported account gets a naming step so
                     // the user can confirm a custom name; NameAccount renames
                     // the committed account and exits the flow on confirm.
@@ -206,6 +208,12 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                     isImportMode,
                     error,
                 })
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
+                showToast({
+                    type: 'error',
+                    title: t('onboarding.import_account.failed_title'),
+                    body: t('onboarding.import_account.failed_body'),
+                })
                 exitAccountFlow()
             } finally {
                 setIsProcessing(false)
@@ -219,12 +227,14 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         importWalletKeyId,
         commitImport,
         markBackupComplete,
-        discoverRekeyedAccounts,
+        scanRekeyed,
         exitAccountFlow,
         navigation,
         setSelectedAccountAddress,
         setAccounts,
         seedIdOf,
+        showToast,
+        t,
     ])
 
     useEffect(() => {
