@@ -196,7 +196,12 @@ describe('PWInput', () => {
     })
 
     it('forwards spellCheck to the underlying input', () => {
-        render(<PWInput placeholder='spell-check' spellCheck={false} />)
+        render(
+            <PWInput
+                placeholder='spell-check'
+                spellCheck={false}
+            />,
+        )
 
         expect(
             screen
