@@ -422,7 +422,7 @@ describe('logging', () => {
                 })
             })
 
-            test('stops recursing at the cause depth cap instead of overflowing', () => {
+            test('caps the emitted cause chain at exactly MAX_CAUSE_DEPTH levels', () => {
                 let error = new Error('root')
                 for (let i = 0; i < 10; i += 1) {
                     error = Object.assign(new Error(`wrap-${i}`), {
@@ -430,7 +430,18 @@ describe('logging', () => {
                     })
                 }
 
-                expect(() => logger.error('boom', { error })).not.toThrow()
+                logger.error('boom', { error })
+
+                let node = capturedContext().error as {
+                    cause?: { cause?: unknown }
+                }
+                let depth = 0
+                while (node && 'cause' in node && node.cause !== undefined) {
+                    depth += 1
+                    node = node.cause as { cause?: { cause?: unknown } }
+                }
+
+                expect(depth).toBe(3)
             })
 
             test('survives a self-referential cause chain', () => {
@@ -438,6 +449,23 @@ describe('logging', () => {
                 Object.defineProperty(error, 'cause', { value: error })
 
                 expect(() => logger.error('boom', { error })).not.toThrow()
+            })
+
+            // The reviewer proved this leak empirically: a sensitive key at the
+            // top level of context is redacted, but the identical key one `cause`
+            // hop away previously shipped in the clear, because `formatContextValue`
+            // recursed into `cause` without ever routing it through the redactor.
+            test('redacts a sensitive key nested inside a plain-object cause', () => {
+                const error = Object.assign(new Error('import failed'), {
+                    cause: { mnemonic: 'word1 word2 word3 word4 word5' },
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: { mnemonic?: string }
+                }
+                expect(captured.cause).toEqual({ mnemonic: '[REDACTED]' })
             })
         })
     })

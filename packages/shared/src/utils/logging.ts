@@ -237,9 +237,11 @@ class Logger {
     }
 
     // Wrapped re-throws are normal in this codebase (useAlgo25.ts, useHDWallet.ts,
-    // useCreateAccount.ts), so the cause chain can be several Errors deep; the
-    // cap bounds that recursion, and self-reference is checked separately since
-    // a cycle would otherwise loop past the cap forever on the same node.
+    // useCreateAccount.ts), so the cause chain can be several Errors deep. The cap
+    // bounds recursion regardless of shape, including a mutual cycle (x.cause = y,
+    // y.cause = x) that a same-node self-reference check wouldn't catch; the
+    // separate `cause !== value` check only stops a self-referential Error from
+    // emitting a redundant copy of itself as its own cause.
     private static readonly MAX_CAUSE_DEPTH = 3
 
     private formatContextValue(value: unknown, depth = 0): unknown {
@@ -255,19 +257,37 @@ class Logger {
             return {
                 name: value.name,
                 message: value.message,
-                ...(value.stack ? { stack: value.stack } : {}),
+                // Crashlytics truncates the report; a nested stack crowds out the
+                // sibling keys (code, cause) that actually diagnose this class of
+                // bug, and is more device data leaving for no diagnostic gain.
+                ...(value.stack && depth === 0 ? { stack: value.stack } : {}),
                 ...(typeof code === 'string' || typeof code === 'number'
                     ? { code }
                     : {}),
-                ...(nativeStack ? { nativeStackAndroid: nativeStack } : {}),
+                ...(typeof nativeStack === 'string'
+                    ? { nativeStackAndroid: nativeStack }
+                    : {}),
                 ...(value.cause !== undefined &&
                 value.cause !== value &&
                 depth < Logger.MAX_CAUSE_DEPTH
                     ? {
-                          cause: this.formatContextValue(
-                              value.cause,
-                              depth + 1,
-                          ),
+                          // A non-Error cause (plain object, array, Uint8Array...)
+                          // never reaches the `instanceof Error` branch above, so it
+                          // must be routed back through the same redactor every other
+                          // context value goes through — otherwise a sensitive key
+                          // nested under `cause` ships unredacted while the identical
+                          // key at the top level of context gets scrubbed.
+                          cause:
+                              value.cause instanceof Error
+                                  ? this.formatContextValue(
+                                        value.cause,
+                                        depth + 1,
+                                    )
+                                  : redactSensitiveValue(
+                                        value.cause,
+                                        0,
+                                        new WeakSet(),
+                                    ),
                       }
                     : {}),
             }
@@ -411,7 +431,17 @@ class Logger {
                 ? messageOrError.message
                 : messageOrError
 
-        const args = context ? [this.formatContext(context)] : []
+        // A throwing getter (e.g. a native module's `code` accessor) must not
+        // escape into the caller's error handler — this file's whole premise is
+        // that logging never crashes the app.
+        let args: LogContext[] = []
+        if (context) {
+            try {
+                args = [this.formatContext(context)]
+            } catch {
+                args = [{ context: '[unformattable context]' }]
+            }
+        }
 
         switch (level) {
             case LogLevel.DEBUG:
