@@ -10,5 +10,14 @@
  limitations under the License
  */
 
-export { normalizeMnemonicWord } from './normalizeMnemonicWord'
-export { splitMnemonic } from './splitMnemonic'
+/**
+ * Folds a typed mnemonic token to the exact form the wordlists use.
+ *
+ * `seedFromMnemonic` matches the wordlist byte-exactly, and Android IMEs
+ * (Samsung Keyboard, Gboard) can capitalize or append punctuation even with
+ * `autoCapitalize='none'` — so a passphrase that is genuinely correct arrives
+ * unusable. Both wordlists are pure lowercase a-z, which makes dropping every
+ * other character safe rather than lossy.
+ */
+export const normalizeMnemonicWord = (value: string): string =>
+    value.toLowerCase().replace(/[^a-z]/g, '')
