@@ -680,7 +680,7 @@
         "algod": {
             "overspend": {
                 "title": "ALGO insuficiente",
-                "body": "Esta cuenta no tiene suficiente ALGO para cubrir la transacción y mantener su saldo mínimo. Añade al menos {{missing}} microALGO y vuelve a intentarlo."
+                "body": "Esta cuenta no tiene suficiente ALGO para cubrir la transacción y mantener su saldo mínimo. Añade más ALGO y vuelve a intentarlo."
             },
             "below_min_balance": {
                 "title": "Por debajo del saldo mínimo",
@@ -720,7 +720,7 @@
             },
             "group_fee_too_small": {
                 "title": "Comisión de red demasiado baja",
-                "body": "Este grupo de transacciones pagó {{paid}} microALGO de comisión, pero la red requiere {{required}} microALGO. Inténtalo de nuevo."
+                "body": "Las comisiones de este grupo de transacciones son inferiores a las que requiere la red. Inténtalo de nuevo."
             },
             "unknown_node_error": {
                 "title": "Transacción fallida",

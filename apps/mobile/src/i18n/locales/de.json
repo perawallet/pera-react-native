@@ -672,7 +672,7 @@
         "algod": {
             "overspend": {
                 "title": "Unzureichendes ALGO",
-                "body": "Dieses Konto verfügt nicht über genügend ALGO, um die Transaktion zu decken und sein Mindestguthaben zu halten. Füge mindestens {{missing}} microALGO hinzu und versuche es erneut."
+                "body": "Dieses Konto verfügt nicht über genügend ALGO, um die Transaktion zu decken und sein Mindestguthaben zu halten. Füge mehr ALGO hinzu und versuche es erneut."
             },
             "below_min_balance": {
                 "title": "Unter dem Mindestguthaben",
@@ -712,7 +712,7 @@
             },
             "group_fee_too_small": {
                 "title": "Netzwerkgebühr zu niedrig",
-                "body": "Diese Transaktionsgruppe hat {{paid}} microALGO an Gebühren gezahlt, das Netzwerk verlangt jedoch {{required}} microALGO. Bitte versuche es erneut."
+                "body": "Die Gebühren dieser Transaktionsgruppe liegen unter dem, was das Netzwerk verlangt. Bitte versuche es erneut."
             },
             "unknown_node_error": {
                 "title": "Transaktion fehlgeschlagen",

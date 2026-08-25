@@ -18,10 +18,8 @@ import {
     FALLBACK_ASSET_MBR,
     FALLBACK_BASE_ACCOUNT_MBR,
     FALLBACK_MIN_TXN_FEE,
+    FALLBACK_PQ_MULTIPLIER,
 } from '../constants'
-
-/** Fee multiplier applied to PQ-signed transactions when remote config is unavailable. */
-const FALLBACK_PQ_MULTIPLIER = 3n
 
 type UseMinimumFeeConfigResult = {
     /** Minimum transaction fee in µAlgo (base units). */

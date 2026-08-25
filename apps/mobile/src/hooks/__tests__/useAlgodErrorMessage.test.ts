@@ -53,23 +53,31 @@ describe('useAlgodErrorMessage', () => {
         })
     })
 
+    // PERA-4908: overspend can no longer carry balance/spent/missing —
+    // parseAlgodMessage.ts leaves them unset because the message's rendered
+    // balance is fee-adjusted, not the account's actual balance (see
+    // algodErrorCodes.ts). below_min_balance's params aren't affected by that
+    // and still exercise the same bigint-to-string interpolation path.
     test('converts bigint params to strings for i18n interpolation', () => {
-        const err = new AlgodError('overspend', {
+        const err = new AlgodError('below_min_balance', {
             address: ADDR,
-            balance: 199_000n,
-            spent: 201_000n,
-            missing: 2000n,
+            balance: 148_000n,
+            required: 200_000n,
+            assetCount: 1,
         })
         const { result } = renderHook(() => useAlgodErrorMessage())
 
         result.current.getMessage(err)
 
-        expect(mockT).toHaveBeenCalledWith('errors.algod.overspend.body', {
-            address: ADDR,
-            balance: '199000',
-            spent: '201000',
-            missing: '2000',
-        })
+        expect(mockT).toHaveBeenCalledWith(
+            'errors.algod.below_min_balance.body',
+            {
+                address: ADDR,
+                balance: '148000',
+                required: '200000',
+                assetCount: 1,
+            },
+        )
     })
 
     test('translates raw Errors via toAlgodError before rendering', () => {

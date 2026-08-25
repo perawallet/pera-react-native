@@ -12,36 +12,16 @@
 
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
-import { SignedTransaction } from 'algosdk'
 import {
-    Address,
-    assemblePQSignedTransaction,
-    encodeAlgorandAddress,
-    pqSigningDigest,
     type PeraSignedTransaction,
     type PeraTransaction,
-    type PeraTransactionGroup,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    isAlgo25Account,
-    isHDWalletAccount,
-    isQuantumAccount,
-} from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { SIGNING_KEY_DOMAIN } from '../constants'
+import { signTransactionsWithLocalKey } from '../pipeline/signing/signTransactionsWithLocalKey'
 
-/**
- * How many transactions to encode + sign per chunk before yielding back to
- * the event loop. HD signing re-derives the child key and runs Ed25519 per
- * transaction synchronously, so signing a large batch (up to 1000) in one
- * burst starves the JS thread — the slide-to-confirm loading state never
- * paints and the whole UI freezes until it finishes (PERA-3353). Yielding
- * between chunks lets React commit the loading state and gives the UI thread
- * frames. Lower = smoother UI but more total overhead; tune as needed.
- */
-export const SIGN_BATCH_SIZE = 16
+export { SIGN_BATCH_SIZE } from '../pipeline/signing/signTransactionsWithLocalKey'
 
 export type UseLocalKeyTransactionSignerResult = {
     /**
@@ -65,120 +45,39 @@ export type UseLocalKeyTransactionSignerResult = {
     ) => Promise<PeraSignedTransaction[]>
 }
 
+/**
+ * React binding for {@link signTransactionsWithLocalKey}: supplies key
+ * custody (`useKMS`) and the transaction encoder, and holds no signing logic
+ * of its own. The batching, `sgnr` and `pqsig` rules live in the pure
+ * pipeline function so they can be proven against a real node.
+ */
 export const useLocalKeyTransactionSigner =
     (): UseLocalKeyTransactionSignerResult => {
         const { signTransactionsWithKey, getPQSigningInfo } = useKMS()
         const { encodeTransaction } = useTransactionEncoder()
 
-        // Algo25, HD wallet, and quantum accounts all reference their
-        // signing key directly via `keyPairId`. `getPQSigningInfo` is the
-        // single place that resolves the key's scheme — everything below
-        // (batching, rekey `sgnr`, ordering) is shared regardless of which
-        // branch it picks.
-        const signSingleAccountTransactions = useCallback(
-            async (
-                account: WalletAccount,
-                txns: PeraTransactionGroup,
-            ): Promise<PeraSignedTransaction[]> => {
-                if (
-                    !isAlgo25Account(account) &&
-                    !isHDWalletAccount(account) &&
-                    !isQuantumAccount(account)
-                ) {
-                    return Promise.reject(
-                        `Unsupported account type ${account.type} for ${account.address}`,
-                    )
-                }
-
-                // The only scheme-dependent decision in this hook: what bytes
-                // to sign, and which field to put the signature in. Everything
-                // else — batching, rekey `sgnr`, ordering — is shared. This is
-                // the same altitude as the algo25-vs-HD difference, which the
-                // keystore resolves internally by child type.
-                const pqInfo = getPQSigningInfo(account.keyPairId)
-
-                const signed: PeraSignedTransaction[] = []
-
-                for (
-                    let start = 0;
-                    start < txns.length;
-                    start += SIGN_BATCH_SIZE
-                ) {
-                    // Yield between chunks so the UI thread gets a frame and
-                    // React can paint the signing state. Skipped before the
-                    // first chunk so small/single signs keep their snappy,
-                    // single-tick path.
-                    if (start > 0) {
-                        await deferToNextCycle()
-                    }
-
-                    const batch = txns.slice(start, start + SIGN_BATCH_SIZE)
-                    const payloads = pqInfo
-                        ? batch.map(txn => pqSigningDigest(txn))
-                        : batch.map(txn => encodeTransaction(txn))
-                    const signatures = await signTransactionsWithKey(
-                        account.keyPairId,
-                        SIGNING_KEY_DOMAIN,
-                        payloads,
-                    )
-
-                    batch.forEach((txn, idx) => {
-                        if (pqInfo) {
-                            signed.push(
-                                assemblePQSignedTransaction({
-                                    txn,
-                                    signature: {
-                                        schemeId: pqInfo.schemeId,
-                                        publicKey: pqInfo.publicKey,
-                                        signature: signatures[idx],
-                                    },
-                                }),
-                            )
-                            return
-                        }
-
-                        const senderPublicKey = encodeAlgorandAddress(
-                            txn.sender.publicKey,
-                        )
-                        signed.push(
-                            new SignedTransaction({
-                                txn,
-                                sig: signatures[idx],
-                                sgnr:
-                                    account.address !== senderPublicKey
-                                        ? Address.fromString(account.address)
-                                        : undefined,
-                            }),
-                        )
-                    })
-                }
-
-                return signed
-            },
-            [signTransactionsWithKey, getPQSigningInfo, encodeTransaction],
-        )
-
         const signTransactions = useCallback(
-            async (
+            (
                 txnGroup: PeraTransaction[],
                 indexesToSign: number[],
                 account: WalletAccount,
-            ): Promise<PeraSignedTransaction[]> => {
-                const result = txnGroup.map(
-                    txn => new SignedTransaction({ txn }),
-                )
-
-                const toSign = indexesToSign.map(i => txnGroup[i])
-                const signedTxns = await signSingleAccountTransactions(
+            ): Promise<PeraSignedTransaction[]> =>
+                signTransactionsWithLocalKey(
+                    {
+                        signPayloads: (keyPairId, payloads) =>
+                            signTransactionsWithKey(
+                                keyPairId,
+                                SIGNING_KEY_DOMAIN,
+                                payloads,
+                            ),
+                        getPQSigningInfo,
+                        encodeTransaction,
+                    },
+                    txnGroup,
+                    indexesToSign,
                     account,
-                    toSign,
-                )
-                signedTxns.forEach((signedTxn, idx) => {
-                    result[indexesToSign[idx]] = signedTxn
-                })
-                return result
-            },
-            [signSingleAccountTransactions],
+                ),
+            [signTransactionsWithKey, getPQSigningInfo, encodeTransaction],
         )
 
         return {

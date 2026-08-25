@@ -19,8 +19,15 @@ const TXID = 'X4CQTNNARMMELORLYBJY27776Z2453LLREFIZKJYVE3B5FJSL7HA'
 
 describe('parseAlgodMessage', () => {
     describe('overspend', () => {
-        test('parses the PERA-4038 overspend error from a real node response', () => {
-            // Full message copied verbatim from an algod rejection.
+        // PERA-4908: go-algorand has shipped at least two incompatible
+        // renderings of the balance/spend figures inside this message, and
+        // the newer one also folds in an un-recoverable fee subtraction (see
+        // `algodErrorCodes.ts`'s `overspend.balance` doc). Every case here
+        // asserts classification + address only — no numeric params — since
+        // that is now deliberately all `matchOverspend` extracts.
+        test('parses the legacy PERA-4038 raw-struct rendering', () => {
+            // Full message copied verbatim from an algod rejection (older
+            // go-algorand build).
             const message =
                 `TransactionPool.Remember: transaction ${TXID}: ` +
                 `overspend (account ${ADDR}, data {AccountBaseData:{Status:Offline ` +
@@ -33,25 +40,53 @@ describe('parseAlgodMessage', () => {
 
             expect(parseAlgodMessage(message)).toEqual({
                 code: AlgodErrorCode.OVERSPEND,
-                params: {
-                    address: ADDR,
-                    balance: 199000n,
-                    spent: 201000n,
-                    missing: 2000n,
-                },
+                params: { address: ADDR },
             })
         })
 
-        test('sets missing=0 when spent equals balance (edge case)', () => {
-            const message = `overspend (account ${ADDR}, data {AccountBaseData:{MicroAlgos:{Raw:1000}}}, tried to spend {1000})`
+        test('parses algod 5.0.0-stable rendering with a non-round mA balance', () => {
+            // Verbatim from a real LocalNet rejection (funded 300_777 µAlgo,
+            // fee 1000, spend 50_000_000 µAlgo): the node subtracts the fee
+            // before display (300_777 - 1000 = 299_777 = "299.777mA") and
+            // renders the requested spend in whole Algo ("50A").
+            const message =
+                `TransactionPool.Remember: transaction ${TXID}: ` +
+                `overspend (account ${ADDR}, data {AccountBaseData:{Status:Offline ` +
+                `MicroAlgos:299.777mA RewardsBase:0 RewardedMicroAlgos:0.0A ` +
+                `AuthAddr:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ}}, ` +
+                `tried to spend 50A)`
+
             expect(parseAlgodMessage(message)).toEqual({
                 code: AlgodErrorCode.OVERSPEND,
-                params: {
-                    address: ADDR,
-                    balance: 1000n,
-                    spent: 1000n,
-                    missing: 0n,
-                },
+                params: { address: ADDR },
+            })
+        })
+
+        test('parses algod 5.0.0-stable rendering with the A-suffix (>= 1 Algo) variant', () => {
+            // Verbatim from a real LocalNet rejection (funded 1_234_567
+            // µAlgo, fee 1000, spend 50_000_000 µAlgo):
+            // 1_234_567 - 1000 = 1_233_567 µAlgo = "1.233567A".
+            const message =
+                `overspend (account ${ADDR}, data {AccountBaseData:{Status:Offline ` +
+                `MicroAlgos:1.233567A RewardsBase:0}}, tried to spend 50A)`
+
+            expect(parseAlgodMessage(message)).toEqual({
+                code: AlgodErrorCode.OVERSPEND,
+                params: { address: ADDR },
+            })
+        })
+
+        test('parses a round mA balance with no decimal part', () => {
+            // Verbatim from a real LocalNet rejection: a whole-milliAlgo
+            // balance renders with neither a decimal point nor trailing
+            // zeros ("299mA", not "299.000mA").
+            const message =
+                `overspend (account ${ADDR}, data {AccountBaseData:{Status:Offline ` +
+                `MicroAlgos:299mA RewardsBase:0}}, tried to spend 900mA)`
+
+            expect(parseAlgodMessage(message)).toEqual({
+                code: AlgodErrorCode.OVERSPEND,
+                params: { address: ADDR },
             })
         })
     })
@@ -125,7 +160,7 @@ describe('parseAlgodMessage', () => {
     })
 
     describe('expired_txn', () => {
-        test('parses txn-dead validity-window error', () => {
+        test('parses txn-dead validity-window error (single dash)', () => {
             const message =
                 'TransactionPool.Remember: txn dead: round 50000000 outside of 49999000-49999999'
             expect(parseAlgodMessage(message)).toEqual({
@@ -133,6 +168,19 @@ describe('parseAlgodMessage', () => {
                 params: {
                     currentRound: 50000000n,
                     lastValid: 49999999n,
+                },
+            })
+        })
+
+        test("parses algod 5.0.0-stable's double-dash rendering", () => {
+            // Verbatim from a real LocalNet rejection.
+            const message =
+                'TransactionPool.Remember: txn dead: round 1681 outside of 1670--1675'
+            expect(parseAlgodMessage(message)).toEqual({
+                code: AlgodErrorCode.EXPIRED_TXN,
+                params: {
+                    currentRound: 1681n,
+                    lastValid: 1675n,
                 },
             })
         })
@@ -218,21 +266,33 @@ describe('parseAlgodMessage', () => {
     })
 
     describe('group fee too small', () => {
-        test('parses a pooled-fee shortfall', () => {
+        test('parses the legacy pooled-fee shortfall rendering', () => {
             const msg =
                 'TransactionPool.Remember: txgroup had 4000 in fees, which is less than the minimum number of transactions per group * minFee (6 * 1000 = 6000)'
             expect(parseAlgodMessage(msg)).toEqual({
                 code: 'group_fee_too_small',
-                params: { paid: 4000n, required: 6000n },
+                params: {},
             })
         })
 
-        test('parses a required amount even without the arithmetic suffix', () => {
+        test('parses the legacy rendering without the arithmetic suffix', () => {
             const msg =
                 'txgroup had 2000 in fees, which is less than the minimum 5000'
             expect(parseAlgodMessage(msg)).toEqual({
                 code: 'group_fee_too_small',
-                params: { paid: 2000n, required: 5000n },
+                params: {},
+            })
+        })
+
+        // Verbatim from algod 5.0.0-stable, captured by
+        // `conformance/src/suites/fees/pooling.spec.ts`. The scaled `mA`
+        // figures are why no `paid`/`required` is reported — see GROUP_FEE_RE.
+        test("parses algod 5.0.0-stable's scaled-unit rendering", () => {
+            const msg =
+                'TransactionPool.Remember: txgroup with 5.999mA fees is less than 6mA (usage=6.000000 * base=1mA)'
+            expect(parseAlgodMessage(msg)).toEqual({
+                code: 'group_fee_too_small',
+                params: {},
             })
         })
     })

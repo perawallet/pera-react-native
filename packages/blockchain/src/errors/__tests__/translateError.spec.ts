@@ -60,12 +60,10 @@ describe('toAlgodError', () => {
 
         expect(e).toBeInstanceOf(AlgodError)
         expect(e.code).toBe(AlgodErrorCode.OVERSPEND)
-        expect(e.params).toEqual({
-            address: ADDR,
-            balance: 199000n,
-            spent: 201000n,
-            missing: 2000n,
-        })
+        // PERA-4908: balance/spent/missing are no longer extracted — algod's
+        // rendering of these figures isn't safely reconstructable from the
+        // message text (see algodErrorCodes.ts's overspend doc).
+        expect(e.params).toEqual({ address: ADDR })
         expect(e.originalError).toBe(raw)
     })
 
@@ -108,7 +106,7 @@ describe('toAlgodError', () => {
 
         expect(e).toBeInstanceOf(AlgodError)
         expect(e.code).toBe(AlgodErrorCode.GROUP_FEE_TOO_SMALL)
-        expect(e.params).toEqual({ paid: 4000n, required: 6000n })
+        expect(e.params).toEqual({})
         expect(e.originalError).toBe(raw)
     })
 
@@ -178,12 +176,7 @@ describe('toAlgodError', () => {
         const e = toAlgodError(err)
 
         expect(e.code).toBe(AlgodErrorCode.OVERSPEND)
-        expect(e.params).toMatchObject({
-            address: ADDR,
-            balance: 199000n,
-            spent: 201000n,
-            missing: 2000n,
-        })
+        expect(e.params).toMatchObject({ address: ADDR })
         expect(e.originalError).toBe(err)
     })
 

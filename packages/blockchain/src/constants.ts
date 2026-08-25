@@ -18,3 +18,6 @@ export const FALLBACK_ASSET_MBR = 100_000n
 
 /** µAlgo. Fallback only — see `useMinimumFeeConfig`. */
 export const FALLBACK_MIN_TXN_FEE = 1000n
+
+/** Fallback only — see `useMinimumFeeConfig`. Applied to PQ-signed transactions when remote config is unavailable. */
+export const FALLBACK_PQ_MULTIPLIER = 3n

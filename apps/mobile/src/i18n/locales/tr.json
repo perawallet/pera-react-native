@@ -680,7 +680,7 @@
         "algod": {
             "overspend": {
                 "title": "Yetersiz ALGO",
-                "body": "Bu hesapta işlemi karşılamak ve minimum bakiyesini korumak için yeterli ALGO yok. En az {{missing}} microALGO ekle ve tekrar dene."
+                "body": "Bu hesapta işlemi karşılamak ve minimum bakiyesini korumak için yeterli ALGO yok. Daha fazla ALGO ekle ve tekrar dene."
             },
             "below_min_balance": {
                 "title": "Minimum bakiyenin altında",
@@ -720,7 +720,7 @@
             },
             "group_fee_too_small": {
                 "title": "Ağ ücreti çok düşük",
-                "body": "Bu işlem grubu ücret olarak {{paid}} microALGO ödedi ancak ağ {{required}} microALGO gerektiriyor. Tekrar dene."
+                "body": "Bu işlem grubunun ücretleri ağın gerektirdiğinin altında. Tekrar dene."
             },
             "unknown_node_error": {
                 "title": "İşlem başarısız oldu",
