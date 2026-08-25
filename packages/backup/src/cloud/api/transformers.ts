@@ -10,13 +10,13 @@
  limitations under the License
  */
 
+import { logger } from '@perawallet/wallet-core-shared'
 import type { DeltaEntry, FetchedItem, Manifest, ManifestItem } from '../models'
-import { ItemReadStatus } from './types'
+import { ItemReadStatus, readItemEntrySchema } from './types'
 import type {
     DeltaEntryResponse,
     ManifestItemResponse,
     ManifestResponse,
-    ReadItemResponseEntry,
 } from './types'
 
 const transformManifestItem = (item: ManifestItemResponse): ManifestItem => ({
@@ -55,20 +55,26 @@ export const transformDeltaEntries = (
     entries: DeltaEntryResponse[],
 ): DeltaEntry[] => entries.map(transformDeltaEntry)
 
-export const transformReadItems = (
-    entries: ReadItemResponseEntry[],
-): FetchedItem[] =>
-    entries
-        .filter(
-            (entry): entry is Required<ReadItemResponseEntry> =>
-                entry.status === ItemReadStatus.FOUND &&
-                entry.payload !== undefined &&
-                entry.hash !== undefined &&
-                entry.ver !== undefined,
-        )
-        .map(entry => ({
+/** Per-entry validation: a dropped item is just not restored this round, and
+ *  advances no delta pointer, so the next sync retries it. */
+export const transformReadItems = (entries: unknown[]): FetchedItem[] => {
+    const items: FetchedItem[] = []
+    for (const raw of entries) {
+        const parsed = readItemEntrySchema.safeParse(raw)
+        if (!parsed.success) {
+            logger.warn('transformReadItems: discarded malformed entry', {
+                issue: parsed.error.issues[0]?.message,
+            })
+            continue
+        }
+        const entry = parsed.data
+        if (entry.status !== ItemReadStatus.FOUND) continue
+        items.push({
             key: entry.key,
             payload: entry.payload,
             hash: entry.hash,
             ver: entry.ver,
-        }))
+        })
+    }
+    return items
+}

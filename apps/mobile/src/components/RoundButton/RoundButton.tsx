@@ -16,6 +16,7 @@ import {
     PWView,
     PWTouchableOpacity,
     type PWTouchableOpacityProps,
+    PWIcon,
     PWText,
     PWRoundIcon,
 } from '@components/core'
@@ -26,6 +27,7 @@ export type RoundButtonProps = {
     title?: string
     size?: 'sm' | 'md' | 'lg' | 'xl'
     variant?: 'primary' | 'secondary'
+    badgeIcon?: IconName
     testID?: string
 } & PWTouchableOpacityProps
 
@@ -36,29 +38,45 @@ export const RoundButton = (props: RoundButtonProps) => {
         title,
         size = 'lg',
         variant = 'secondary',
+        badgeIcon,
         style: propStyle,
         testID,
         ...rest
     } = props
 
+    const dimmed = rest.disabled ? styles.dimmed : undefined
+
     return (
         <PWView style={[styles.container, propStyle]}>
-            <PWTouchableOpacity
-                style={styles.buttonWrapper}
-                {...getTestProps(testID)}
-                {...rest}
-            >
-                <PWRoundIcon
-                    icon={icon}
-                    size={size}
-                    variant={variant}
-                />
-            </PWTouchableOpacity>
+            <PWView style={styles.buttonSlot}>
+                <PWTouchableOpacity
+                    style={dimmed}
+                    {...getTestProps(testID)}
+                    {...rest}
+                >
+                    <PWRoundIcon
+                        icon={icon}
+                        size={size}
+                        variant={variant}
+                    />
+                </PWTouchableOpacity>
+                {badgeIcon ? (
+                    <PWView
+                        style={styles.badge}
+                        pointerEvents='none'
+                    >
+                        <PWIcon
+                            name={badgeIcon}
+                            size='xs'
+                        />
+                    </PWView>
+                ) : null}
+            </PWView>
             {!!title && (
                 <PWText
                     variant='footnoteMedium'
                     truncate
-                    style={styles.titleStyle}
+                    style={[styles.titleStyle, dimmed]}
                 >
                     {title}
                 </PWText>

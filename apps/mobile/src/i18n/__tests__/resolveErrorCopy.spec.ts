@@ -62,9 +62,6 @@ describe('resolveErrorCopy', () => {
         // copy (e.g. the overspend explanation).
         const algodError = new AlgodError('overspend', {
             address: 'ADDR',
-            balance: 100n,
-            spent: 5000n,
-            missing: 4900n,
         })
         const result = resolveErrorCopy(
             new SubmissionError(['TXID'], 'rejected-by-node', algodError),

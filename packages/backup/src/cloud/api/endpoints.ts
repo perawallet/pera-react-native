@@ -29,14 +29,24 @@ import type {
     BatchUpsertRequest,
     BatchUpsertResponse,
     DeleteItemResponse,
-    DeltaResponse,
-    ManifestResponse,
-    ReadItemsResponse,
+    DestroyBackupResponse,
     RegisterBackupRequest,
     RegisterBackupResponse,
     UpsertItemRequest,
     UpsertItemResponse,
 } from './types'
+import {
+    batchUpsertResponseSchema,
+    deleteItemResponseSchema,
+    deltaResponseSchema,
+    destroyBackupResponseSchema,
+    encryptedPayloadResponseSchema,
+    manifestResponseSchema,
+    readItemsResponseSchema,
+    registerBackupResponseSchema,
+    upsertItemResponseSchema,
+} from './types'
+import { parseBackupResponse } from './responseParsers'
 import { signedBackupRequest } from './signedRequest'
 import { API_PREFIX } from './constants'
 
@@ -44,17 +54,18 @@ export const registerBackup = async (
     network: Network,
     request: RegisterBackupRequest,
 ): Promise<RegisterBackupResponse> => {
-    const response = await queryClient<
-        RegisterBackupResponse,
-        RegisterBackupRequest
-    >({
+    const response = await queryClient<unknown, RegisterBackupRequest>({
         backend: 'backup',
         network,
         method: 'POST',
         url: `${API_PREFIX}/backup/register`,
         data: request,
     })
-    return response.data
+    return parseBackupResponse(
+        registerBackupResponseSchema,
+        response.data,
+        'register',
+    )
 }
 
 export const fetchManifest = async (
@@ -62,14 +73,16 @@ export const fetchManifest = async (
     backupId: BackupId,
     deviceId: DeviceId,
 ): Promise<Manifest> => {
-    const data = await signedBackupRequest<ManifestResponse>({
+    const data = await signedBackupRequest<unknown>({
         network,
         method: 'GET',
         backupId,
         pathSuffix: '/manifest',
         deviceId,
     })
-    return transformManifest(data)
+    return transformManifest(
+        parseBackupResponse(manifestResponseSchema, data, 'manifest'),
+    )
 }
 
 export const fetchDelta = async (
@@ -78,7 +91,7 @@ export const fetchDelta = async (
     deviceId: DeviceId,
     fromSeq: number,
 ): Promise<DeltaEntry[]> => {
-    const data = await signedBackupRequest<DeltaResponse>({
+    const data = await signedBackupRequest<unknown>({
         network,
         method: 'GET',
         backupId,
@@ -86,7 +99,9 @@ export const fetchDelta = async (
         deviceId,
         params: { from_seq: fromSeq },
     })
-    return transformDeltaEntries(data.entries ?? [])
+    return transformDeltaEntries(
+        parseBackupResponse(deltaResponseSchema, data, 'delta').entries,
+    )
 }
 
 export const fetchItem = async (
@@ -94,8 +109,8 @@ export const fetchItem = async (
     backupId: BackupId,
     deviceId: DeviceId,
     key: BackupItemKey,
-): Promise<EncryptedPayload> =>
-    signedBackupRequest<EncryptedPayload>({
+): Promise<EncryptedPayload> => {
+    const data = await signedBackupRequest<unknown>({
         network,
         method: 'GET',
         backupId,
@@ -103,6 +118,8 @@ export const fetchItem = async (
         deviceId,
         responseType: 'text',
     })
+    return parseBackupResponse(encryptedPayloadResponseSchema, data, 'item')
+}
 
 export const readItems = async (
     network: Network,
@@ -110,10 +127,7 @@ export const readItems = async (
     deviceId: DeviceId,
     keys: BackupItemKey[],
 ): Promise<FetchedItem[]> => {
-    const data = await signedBackupRequest<
-        ReadItemsResponse,
-        { keys: string[] }
-    >({
+    const data = await signedBackupRequest<unknown, { keys: string[] }>({
         network,
         method: 'POST',
         backupId,
@@ -121,7 +135,9 @@ export const readItems = async (
         deviceId,
         data: { keys },
     })
-    return transformReadItems(data.items ?? [])
+    return transformReadItems(
+        parseBackupResponse(readItemsResponseSchema, data, 'read items').items,
+    )
 }
 
 export const upsertItem = async (
@@ -130,8 +146,8 @@ export const upsertItem = async (
     deviceId: DeviceId,
     key: BackupItemKey,
     request: UpsertItemRequest,
-): Promise<UpsertItemResponse> =>
-    signedBackupRequest<UpsertItemResponse, UpsertItemRequest>({
+): Promise<UpsertItemResponse> => {
+    const data = await signedBackupRequest<unknown, UpsertItemRequest>({
         network,
         method: 'PUT',
         backupId,
@@ -139,14 +155,16 @@ export const upsertItem = async (
         deviceId,
         data: request,
     })
+    return parseBackupResponse(upsertItemResponseSchema, data, 'upsert item')
+}
 
 export const batchUpsertItems = async (
     network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
     request: BatchUpsertRequest,
-): Promise<BatchUpsertResponse> =>
-    signedBackupRequest<BatchUpsertResponse, BatchUpsertRequest>({
+): Promise<BatchUpsertResponse> => {
+    const data = await signedBackupRequest<unknown, BatchUpsertRequest>({
         network,
         method: 'POST',
         backupId,
@@ -154,17 +172,43 @@ export const batchUpsertItems = async (
         deviceId,
         data: request,
     })
+    return parseBackupResponse(batchUpsertResponseSchema, data, 'batch upsert')
+}
 
 export const deleteItem = async (
     network: Network,
     backupId: BackupId,
     deviceId: DeviceId,
     key: BackupItemKey,
-): Promise<DeleteItemResponse> =>
-    signedBackupRequest<DeleteItemResponse>({
+): Promise<DeleteItemResponse> => {
+    const data = await signedBackupRequest<unknown>({
         network,
         method: 'DELETE',
         backupId,
         pathSuffix: `/${key}`,
         deviceId,
     })
+    return parseBackupResponse(deleteItemResponseSchema, data, 'delete item')
+}
+
+/** Destroys the ENTIRE remote backup: a single signed `DELETE /backup/<id>`
+ *  (empty path suffix, no body). The server wipes all items + the registration
+ *  and pushes BACKUP_DELETED to other devices — do NOT enumerate-and-delete. */
+export const destroyBackup = async (
+    network: Network,
+    backupId: BackupId,
+    deviceId: DeviceId,
+): Promise<DestroyBackupResponse> => {
+    const data = await signedBackupRequest<unknown>({
+        network,
+        method: 'DELETE',
+        backupId,
+        pathSuffix: '',
+        deviceId,
+    })
+    return parseBackupResponse(
+        destroyBackupResponseSchema,
+        data,
+        'destroy backup',
+    )
+}

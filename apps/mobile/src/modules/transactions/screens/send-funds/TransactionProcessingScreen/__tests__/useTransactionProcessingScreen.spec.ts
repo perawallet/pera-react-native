@@ -73,6 +73,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         })),
         useAllAccounts: vi.fn(() => []),
         useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
+        useAccountAssetBalanceQuery: vi.fn(() => ({ data: null })),
     }
 })
 

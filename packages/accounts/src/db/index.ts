@@ -14,6 +14,7 @@ export { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
 export {
     refreshAccountHoldings,
     getAccountHoldings,
+    isAssetFrozen,
     getAccountPortfolioTotals,
     getAccountHoldingsPage,
     getAccountHoldingsLite,

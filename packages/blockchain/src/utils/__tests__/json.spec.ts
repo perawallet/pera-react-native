@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
+import { Decimal } from 'decimal.js'
 import {
     algorandSafeJsonStringify,
     algorandSafeQuerySerialize,
@@ -231,5 +232,109 @@ describe('algorandSafeQuerySerialize / algorandSafeQueryParse', () => {
         expect(account?.balance).toBe(5_000_000n)
         expect(account?.assets).toBeInstanceOf(Map)
         expect(account?.assets.get('123')).toEqual({ amount: 1000n })
+    })
+
+    it('round-trips a Uint8Array field to a real Uint8Array with identical bytes', () => {
+        const bytes = [104, 105]
+        const input = { note: new Uint8Array(bytes) }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.note).toBeInstanceOf(Uint8Array)
+        expect(Array.from(parsed.note)).toEqual(bytes)
+    })
+
+    it('round-trips a realistic transaction-detail payload with bytes and bigint together', () => {
+        const input = {
+            id: 'ABC',
+            fee: 1000n,
+            note: new Uint8Array([104, 105, 33]),
+        }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.id).toBe('ABC')
+        expect(parsed.fee).toBe(1000n)
+        expect(parsed.note).toBeInstanceOf(Uint8Array)
+        expect(Array.from(parsed.note)).toEqual([104, 105, 33])
+    })
+
+    it('round-trips an empty Uint8Array to an empty Uint8Array', () => {
+        const input = { note: new Uint8Array([]) }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.note).toBeInstanceOf(Uint8Array)
+        expect(parsed.note.length).toBe(0)
+    })
+
+    it('round-trips Uint8Array bytes nested inside an object and inside an array', () => {
+        const input = {
+            wrapper: { note: new Uint8Array([1, 2, 3]) },
+            list: [new Uint8Array([4, 5])],
+        }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.wrapper.note).toBeInstanceOf(Uint8Array)
+        expect(Array.from(parsed.wrapper.note)).toEqual([1, 2, 3])
+        expect(parsed.list[0]).toBeInstanceOf(Uint8Array)
+        expect(Array.from(parsed.list[0])).toEqual([4, 5])
+    })
+
+    it('does not resurrect a plain object with numeric-string keys as a Uint8Array', () => {
+        const input = { data: { 0: 104, 1: 105 } }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.data).not.toBeInstanceOf(Uint8Array)
+        expect(parsed.data).toEqual({ 0: 104, 1: 105 })
+    })
+
+    it('does not re-type a non-byte typed array as bytes', () => {
+        const parsed = algorandSafeQueryParse<{ counts: unknown }>(
+            algorandSafeQuerySerialize({ counts: new Int32Array([1, 2]) }),
+        )
+
+        expect(parsed.counts).not.toBeInstanceOf(Uint8Array)
+        expect(parsed.counts).toEqual({ 0: 1, 1: 2 })
+    })
+
+    it('round-trips a Buffer field to a real Uint8Array with identical bytes', () => {
+        const bytes = [104, 105]
+        const input = { note: Buffer.from(bytes) }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.note).toBeInstanceOf(Uint8Array)
+        expect(Array.from(parsed.note)).toEqual(bytes)
+    })
+
+    it('round-trips a Buffer nested alongside a bigint', () => {
+        const input = {
+            fee: 1000n,
+            note: Buffer.from([104, 105, 33]),
+        }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.fee).toBe(1000n)
+        expect(parsed.note).toBeInstanceOf(Uint8Array)
+        expect(Array.from(parsed.note)).toEqual([104, 105, 33])
+    })
+
+    it('still serializes a non-byte-like value through its own toJSON', () => {
+        const input = { price: new Decimal('1.5') }
+        const serialized = algorandSafeQuerySerialize(input)
+        const parsed = JSON.parse(serialized) as { price: string }
+
+        expect(parsed.price).toBe(input.price.toJSON())
     })
 })

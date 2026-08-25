@@ -17,6 +17,7 @@ import { describe, it, expect, vi } from 'vitest'
 // real predicates, not the hook stubs.
 vi.unmock('@perawallet/wallet-core-accounts')
 vi.unmock('@perawallet/wallet-core-assets')
+vi.unmock('@perawallet/wallet-core-blockchain')
 
 import { type Query, type QueryKey } from '@tanstack/react-query'
 import { shouldDehydrateQuery } from '../query-persistence'
@@ -47,6 +48,22 @@ const assetPricesKey: QueryKey = [
     'prices',
     'usd',
     { assetIDs: ['123'], network: 'mainnet' },
+]
+
+const transactionDetailKey: QueryKey = [
+    'blockchain',
+    'transaction-detail',
+    { transactionId: 'TXID123', network: 'mainnet' },
+]
+const groupTransactionsKey: QueryKey = [
+    'blockchain',
+    'group-transactions',
+    { groupId: 'GROUP123', network: 'mainnet' },
+]
+const suggestedParametersKey: QueryKey = [
+    'blockchain',
+    'suggested-parameters',
+    { network: 'mainnet' },
 ]
 
 describe('shouldDehydrateQuery', () => {
@@ -95,6 +112,18 @@ describe('shouldDehydrateQuery', () => {
         expect(shouldDehydrateQuery(asQuery(['card', 'kyc'], 'success'))).toBe(
             false,
         )
+    })
+
+    it('never persists blockchain-prefixed queries, even successful ones', () => {
+        expect(
+            shouldDehydrateQuery(asQuery(transactionDetailKey, 'success')),
+        ).toBe(false)
+        expect(
+            shouldDehydrateQuery(asQuery(groupTransactionsKey, 'success')),
+        ).toBe(false)
+        expect(
+            shouldDehydrateQuery(asQuery(suggestedParametersKey, 'success')),
+        ).toBe(false)
     })
 
     it('persists other successful queries and skips non-success ones', () => {

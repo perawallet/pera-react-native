@@ -235,6 +235,12 @@
             "total_supply": "Fornecimento total",
             "no_freeze": "Sem congelamento",
             "no_clawback": "Sem clawback",
+            "freeze": "Congelamento",
+            "clawback": "Clawback",
+            "freeze_info_body": "Um endereço de congelamento é uma conta que pode impedir temporariamente que determinadas contas transfiram o ativo até que o congelamento seja removido. Isso é útil para verificações de conformidade, restrições de negociação ou resposta a incidentes de segurança.",
+            "clawback_info_body": "Um endereço de clawback é uma conta que pode revogar o ativo de qualquer detentor e redirecioná-lo para outro endereço. Isso é útil para atender a requisitos regulatórios, aplicar restrições de negociação ou recuperar ativos de uma conta comprometida.",
+            "freeze_address": "Endereço de congelamento",
+            "clawback_address": "Endereço de clawback",
             "description": "Descrição",
             "social_media": "Redes sociais",
             "chart_empty_body": "Um gráfico aparecerá aqui quando você tiver histórico de saldo",
@@ -674,7 +680,7 @@
         "algod": {
             "overspend": {
                 "title": "ALGO insuficiente",
-                "body": "Esta conta não tem ALGO suficiente para cobrir a transação e manter o saldo mínimo. Adicione pelo menos {{missing}} microALGO e tente novamente."
+                "body": "Esta conta não tem ALGO suficiente para cobrir a transação e manter o saldo mínimo. Adicione mais ALGO e tente novamente."
             },
             "below_min_balance": {
                 "title": "Abaixo do saldo mínimo",
@@ -686,7 +692,7 @@
             },
             "asset_frozen": {
                 "title": "Ativo congelado",
-                "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. Contate o criador do ativo para descongelá-lo."
+                "body": "O ativo {{assetId}} está congelado, então esta transferência não pode ser concluída. O gestor de congelamento do ativo precisa descongelá-lo primeiro."
             },
             "duplicate_txn": {
                 "title": "Já enviada",
@@ -714,7 +720,7 @@
             },
             "group_fee_too_small": {
                 "title": "Taxa de rede muito baixa",
-                "body": "Este grupo de transações pagou {{paid}} microALGO de taxas, mas a rede exige {{required}} microALGO. Tente novamente."
+                "body": "As taxas deste grupo de transações estão abaixo do que a rede exige. Tente novamente."
             },
             "unknown_node_error": {
                 "title": "A transação falhou",

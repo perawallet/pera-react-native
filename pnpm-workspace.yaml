@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
   - extensions/*
+  - conformance
 
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.0

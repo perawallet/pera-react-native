@@ -50,6 +50,7 @@ jobs:
             apps/*/node_modules
             packages/*/node_modules
             extensions/*/node_modules
+            conformance/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
   audit:
@@ -126,6 +127,7 @@ jobs:
             apps/*/node_modules
             packages/*/node_modules
             extensions/*/node_modules
+            conformance/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies on cache miss
@@ -184,6 +186,7 @@ jobs:
             apps/*/node_modules
             packages/*/node_modules
             extensions/*/node_modules
+            conformance/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies on cache miss
@@ -247,6 +250,7 @@ jobs:
             apps/*/node_modules
             packages/*/node_modules
             extensions/*/node_modules
+            conformance/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies on cache miss
@@ -349,6 +353,7 @@ jobs:
             apps/*/node_modules
             packages/*/node_modules
             extensions/*/node_modules
+            conformance/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies on cache miss
@@ -482,6 +487,7 @@ jobs:
             apps/*/node_modules
             packages/*/node_modules
             extensions/*/node_modules
+            conformance/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install dependencies on cache miss

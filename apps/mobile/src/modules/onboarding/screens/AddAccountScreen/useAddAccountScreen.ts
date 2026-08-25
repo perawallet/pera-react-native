@@ -32,6 +32,7 @@ import { useCardSession } from '@perawallet/wallet-core-card'
 import { type IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
 import { type AccountOption } from '@modules/onboarding/types'
+import { trackEvent, OnboardingEvent } from '@analytics'
 
 // Default loading-overlay title shown while an account is being created.
 // Individual create flows (e.g. Quantum keygen) can override it per call.
@@ -177,6 +178,7 @@ export const useAddAccountScreen = () => {
     }, [buildAlgo25WalletAccount, runCreateAccount])
 
     const handleCreateQuantum = useCallback(() => {
+        trackEvent(OnboardingEvent.CreateAccountQuantum)
         // Quantum keygen is heavier than Ed25519, so surface a Quantum-specific
         // progress title while it runs. Mirrors handleCreateAlgo25 otherwise:
         // build in memory, then NameAccount persists after the user names it.

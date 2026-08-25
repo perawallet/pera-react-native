@@ -14,6 +14,7 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAddAccountScreen } from '../useAddAccountScreen'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { OnboardingEvent } from '@analytics'
 
 const mockGoBack = vi.fn()
 const mockPush = vi.fn()
@@ -153,6 +154,12 @@ vi.mock('@hooks/useIsPeraCardEnabled', () => ({
 const mockQuantumFlag = vi.hoisted(() => ({ enabled: true }))
 vi.mock('@hooks/useIsQuantumAccountsEnabled', () => ({
     useIsQuantumAccountsEnabled: () => mockQuantumFlag.enabled,
+}))
+
+const mockTrackEvent = vi.hoisted(() => vi.fn())
+vi.mock('@analytics', async () => ({
+    ...(await vi.importActual<object>('@analytics')),
+    trackEvent: mockTrackEvent,
 }))
 
 const HD_ACCOUNT = {
@@ -683,6 +690,24 @@ describe('useAddAccountScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,
         })
+    })
+
+    it('quantum option tracks the quantum-account press event', async () => {
+        mockBuildQuantumWalletAccount.mockResolvedValue(null)
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const quantumOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_quantum_button',
+        )!
+
+        await act(async () => {
+            quantumOption.onPress()
+        })
+
+        expect(mockTrackEvent).toHaveBeenCalledWith(
+            OnboardingEvent.CreateAccountQuantum,
+        )
     })
 
     it('quantum option shows error toast on failure', async () => {

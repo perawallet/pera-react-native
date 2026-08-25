@@ -22,7 +22,12 @@ import {
     getStaleOrMissingAssetIds,
 } from '../db'
 
-import { ASSET_BULK_CHUNK_SIZE, ASSET_CACHE_TTL_MS } from '../constants'
+import {
+    ASSET_BULK_CHUNK_SIZE,
+    ASSET_CACHE_TTL_MS,
+    ASSET_NEWLY_SEEN_WINDOW_MS,
+    ASSET_RECLASSIFY_TTL_MS,
+} from '../constants'
 import {
     isAlgoAssetId,
     partition,
@@ -104,6 +109,10 @@ export async function fetchAndPersistAssets(
         assetIds: nonAlgoIds,
         network,
         ttlMs: ASSET_CACHE_TTL_MS,
+        recheckUnclassified: {
+            ttlMs: ASSET_RECLASSIFY_TTL_MS,
+            windowMs: ASSET_NEWLY_SEEN_WINDOW_MS,
+        },
     })
     if (toFetch.length === 0) return
 

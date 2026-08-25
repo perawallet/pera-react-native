@@ -1,0 +1,105 @@
+name: LocalNet Conformance
+
+# Runs conformance/ (30 files, 117 tests) against a real LocalNet node instead
+# of mocks — see docs/LOCALNET_CONFORMANCE.md. Nightly because it needs Docker
+# + a booted chain (too slow/flaky for every push); also gated on PR to the
+# packages this suite actually exercises, so a regression is caught before
+# merge rather than the following night.
+#
+# Keep the `paths` filter below in step with what the suite imports. A package
+# the suite exercises but does not list here is the bad case: it regresses on a
+# PR that never runs this workflow, and only the next nightly catches it.
+
+on:
+    schedule:
+        # ~03:00 UTC daily — after Nightly Tag (01:00), ahead of most timezones' morning.
+        - cron: '0 3 * * *'
+    # Allow running on demand from the Actions tab.
+    workflow_dispatch: {}
+    pull_request:
+        paths:
+            - 'conformance/**'
+            - 'packages/blockchain/**'
+            - 'packages/signing/**'
+            - 'packages/kms/**'
+            # `api/history/indexer/*` — the transformers and balance-impact
+            # arithmetic pinned by suites/history against real indexer output.
+            - 'packages/transactions/**'
+            # `hooks/endpoints`, `hooks/mappers`, `bip44`, `models/accounts` —
+            # every balance and auth-addr assertion in the suite reads the chain
+            # through this package's transformer.
+            - 'packages/accounts/**'
+            # Aspirational: ARC-59 is out of scope today, so the suite doesn't
+            # import this one yet. Left in so the filter is ready once that
+            # coverage lands, rather than a mistake to prune.
+            - 'packages/asa-inbox/**'
+
+# Least-privilege default, matching pre-merge.yml.
+permissions:
+    contents: read
+
+jobs:
+    conformance:
+        name: Conformance
+        runs-on: ubuntu-24.04
+        # Image pulls for a fresh LocalNet plus a full workspace install can run
+        # long; the suite itself is ~1 minute once everything is up.
+        timeout-minutes: 30
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+
+            - name: Setup Node
+              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+              with:
+                  node-version-file: '.tool-versions'
+                  cache: 'pnpm'
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            # ubuntu-24.04 runners ship pipx and a running Docker daemon; algokit
+            # itself is not preinstalled.
+            - name: Install AlgoKit
+              run: pipx install algokit
+
+            - name: Start LocalNet
+              run: pnpm localnet
+
+            # THE CI-BREAKING PREREQUISITE (see docs/LOCALNET_CONFORMANCE.md and
+            # conformance/README.md): the suite's import graph — and, separately,
+            # `conformance/tsconfig.json`'s `paths` for the typecheck step below —
+            # reach several packages' built dist/, not their src, one or two levels
+            # below the six packages aliased to source directly. The real closure
+            # is wide (hardware-wallet, platform, database, remote-config, plus
+            # their own deps like shared/config/devtools, PLUS multisig/assets for
+            # the typecheck step) and turbo already knows it via `dependsOn:
+            # ["^build"]` — mirrors pre-merge.yml's own `build` job (`pnpm run
+            # build`, no filter) rather than hand-enumerating packages, which
+            # missed two of them the first time this workflow was written.
+            - name: Build
+              run: pnpm run build
+
+            - name: Typecheck
+              run: pnpm --filter @perawallet/conformance typecheck
+
+            - name: Run conformance suite
+              run: |
+                  set -euo pipefail
+                  mkdir -p conformance/reports
+                  pnpm test:conformance 2>&1 | tee conformance/reports/output.log
+
+            - name: Upload failure diff
+              if: failure()
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: conformance-diff
+                  path: conformance/reports/
+                  retention-days: 7

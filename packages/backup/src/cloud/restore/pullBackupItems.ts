@@ -16,6 +16,7 @@ import { fetchDelta, fetchManifest, readItems } from '../api'
 import { parseAddressPayload, parseSecretsPayload } from '../api/payloadParsers'
 import { decryptItemPayload } from '../crypto/itemPayload'
 import {
+    BackupAccountType,
     BackupItemStatus,
     DeltaOperation,
     type AddressBackupPayload,
@@ -163,15 +164,34 @@ const collectItemPayloads = (
     return { addressPayloads, secretsPayloads, skipped }
 }
 
-const buildAccounts = (
+/** Joins address + secrets payloads by address into PulledAccounts. A hdSeed
+ *  secret with no matching address payload (its first account was removed) is
+ *  surfaced as a standalone hdSeed entry so the seed still restores. */
+export const buildPulledAccounts = (
     addressPayloads: Map<string, AddressBackupPayload>,
     secretsPayloads: Map<string, SecretsBackupPayload>,
-): PulledAccount[] =>
-    [...addressPayloads.entries()].map(([address, addressPayload]) => ({
-        address,
-        addressPayload,
-        secretsPayload: secretsPayloads.get(address) ?? null,
-    }))
+): PulledAccount[] => {
+    const accounts: PulledAccount[] = [...addressPayloads.entries()].map(
+        ([address, addressPayload]) => ({
+            address,
+            addressPayload,
+            secretsPayload: secretsPayloads.get(address) ?? null,
+        }),
+    )
+    for (const [address, secretsPayload] of secretsPayloads.entries()) {
+        if (
+            secretsPayload.type === BackupAccountType.hdSeed &&
+            !addressPayloads.has(address)
+        ) {
+            accounts.push({
+                address,
+                addressPayload: { type: BackupAccountType.hdSeed, address },
+                secretsPayload,
+            })
+        }
+    }
+    return accounts
+}
 
 export const pullBackupItems = async ({
     network,
@@ -198,7 +218,7 @@ export const pullBackupItems = async ({
     return {
         backupGlobalHash: manifest.backupGlobalHash,
         lastSeq: manifest.lastSeq,
-        accounts: buildAccounts(addressPayloads, secretsPayloads),
+        accounts: buildPulledAccounts(addressPayloads, secretsPayloads),
         skipped,
     }
 }

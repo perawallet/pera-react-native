@@ -74,7 +74,9 @@ describe('persistHoldingsToDb', () => {
     })
 
     it('forwards holdings to the repository', async () => {
-        const holdings = [{ assetId: '1', amount: new Decimal(5) }]
+        const holdings = [
+            { assetId: '1', amount: new Decimal(5), isFrozen: true },
+        ]
         mockRefreshAccountHoldings.mockResolvedValue(undefined)
 
         await persistHoldingsToDb('ADDR1', holdings, 'mainnet')
@@ -124,8 +126,33 @@ describe('useHoldingsDbSync', () => {
         expect(call.accountAddress).toBe('ADDR1')
         expect(call.network).toBe('mainnet')
         expect(call.holdings).toEqual([
-            { assetId: '1', amount: new Decimal(500) },
-            { assetId: '2', amount: new Decimal(100) },
+            { assetId: '1', amount: new Decimal(500), isFrozen: false },
+            { assetId: '2', amount: new Decimal(100), isFrozen: false },
+        ])
+    })
+
+    it('forwards the freeze flag instead of clearing it', async () => {
+        renderHook(() =>
+            useHoldingsDbSync(
+                'ADDR1',
+                [
+                    { assetId: 1, amount: 500n, isFrozen: true },
+                    { assetId: 2, amount: 100n },
+                ],
+                true,
+                'mainnet',
+            ),
+        )
+
+        await waitFor(() =>
+            expect(mockRefreshAccountHoldings).toHaveBeenCalledTimes(1),
+        )
+
+        // refreshAccountHoldings rewrites is_frozen for every row it touches,
+        // so a hardcoded false here would silently unfreeze asset 1.
+        expect(mockRefreshAccountHoldings.mock.calls[0][0].holdings).toEqual([
+            { assetId: '1', amount: new Decimal(500), isFrozen: true },
+            { assetId: '2', amount: new Decimal(100), isFrozen: false },
         ])
     })
 

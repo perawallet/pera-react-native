@@ -19,7 +19,7 @@ const HEADER = `/*
 
 const EXTENSIONS = new Set(['.ts', '.tsx'])
 
-const DIRS = ['apps/*/src', 'packages/*/src']
+const DIRS = ['apps/*/src', 'packages/*/src', 'conformance/src']
 
 function resolveGlob(pattern) {
   const parts = pattern.split('/')

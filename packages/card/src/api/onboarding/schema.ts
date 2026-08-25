@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import { httpsUrlSchema } from '@perawallet/wallet-core-shared'
 
 // GET /v1/auth/settings. We model the country/state lists the signup UI needs
 // plus the per-jurisdiction T&C links used on the address step; the rest of the
@@ -66,9 +67,10 @@ export const verifyEmailResponseSchema = z.object({
 })
 
 // POST /v1/auth/register/verification — pre-auth (client key only); returns the
-// Veriff session URL for the onboarding KYC step.
+// Veriff session URL for the onboarding KYC step. The caller hands it to
+// Linking.openURL, so the scheme is gated here.
 export const registerVerificationResponseSchema = z.object({
-    sessionUrl: z.string(),
+    sessionUrl: httpsUrlSchema,
 })
 export type RegisterVerificationApiResponse = z.infer<
     typeof registerVerificationResponseSchema

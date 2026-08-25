@@ -34,9 +34,14 @@ beforeAll(async () => {
     >('@perawallet/wallet-core-shared')
 
     format = (amount, variant, decimals) => {
-        const { precision, minPrecision } = resolvePrecision(variant, decimals)
+        const value = new Decimal(amount)
+        const { precision, minPrecision } = resolvePrecision(
+            variant,
+            decimals,
+            value,
+        )
         const { sign, integer, fraction } = formatNumber(
-            new Decimal(amount),
+            value,
             precision,
             'en-US',
             minPrecision,
@@ -53,6 +58,19 @@ describe('resolvePrecision + real formatNumber', () => {
     it('compact pads whole and half values to 2 dp', () => {
         expect(format('5', 'compact')).toBe('5.00')
         expect(format('1.5', 'compact')).toBe('1.50')
+    })
+
+    // PERA-4973: a 0.004 ALGO fee rendered as "0.00" in the History list.
+    it('compact reveals a nonzero amount that 2 dp would round to zero', () => {
+        expect(format('0.004', 'compact')).toBe('0.004')
+        expect(format('0.0001', 'compact')).toBe('0.0001')
+        expect(format('-0.004', 'compact')).toBe('-0.004')
+    })
+
+    it('compact keeps 2 dp for a true zero and for values that round to 0.01', () => {
+        expect(format('0', 'compact')).toBe('0.00')
+        expect(format('0.005', 'compact')).toBe('0.01')
+        expect(format('0.009', 'compact')).toBe('0.01')
     })
 
     it('assetFull keeps the asset decimals but pads down to 2', () => {

@@ -264,8 +264,41 @@ describe('useInputScreen', () => {
         expect(result.current.cryptoValue).toBeNull()
     })
 
-    it('validates input on next (error if 0/empty)', async () => {
+    it('validates input on next (error if empty)', async () => {
         const { result } = renderHook(() => useInputScreen())
+        await act(async () => {
+            await result.current.handleNext()
+        })
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error' }),
+            expect.anything(),
+        )
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    // Zero-amount ALGO payments are valid on-chain and used for notes and
+    // sync pings (PERA-4968).
+    it('proceeds with a zero amount for ALGO', async () => {
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('0')
+        })
+        await act(async () => {
+            await result.current.handleNext()
+        })
+        expect(mockShowToast).not.toHaveBeenCalled()
+        expect(mockSetAmount).toHaveBeenCalled()
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('0')
+        expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
+    })
+
+    it('blocks a zero amount for ASA sends', async () => {
+        mockSendFundsState.selectedAssetId = '1'
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('0')
+        })
         await act(async () => {
             await result.current.handleNext()
         })
