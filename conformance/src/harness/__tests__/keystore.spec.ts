@@ -21,7 +21,7 @@ import {
     createQuantumAccount,
     fundAccount,
 } from '../accounts'
-import { accountInformationOf, getConformanceClient } from '../client'
+import { accountInformationOf } from '../client'
 import { createConformanceKeyStore } from '../keystore'
 
 /**
@@ -135,11 +135,5 @@ describe('conformance keystore harness', () => {
         expect(multisig.walletAccount.multisigDetails.addresses).toEqual(
             members.map(member => member.address),
         )
-    })
-
-    it('builds its algod client from the app factory, pointed at LocalNet', async () => {
-        const status = await getConformanceClient().client.algod.status().do()
-
-        expect(status.lastRound).toBeGreaterThanOrEqual(0n)
     })
 })

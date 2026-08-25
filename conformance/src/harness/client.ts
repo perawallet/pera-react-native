@@ -84,21 +84,21 @@ export const authAddrOf = async (
  * The indexer trails algod by a round or two, so this polls until `txId` is
  * present rather than assuming it already is.
  */
+export type IndexerTransactionsPage = { transactions: { id?: string }[] }
+
 export const fetchIndexerTransactionsFor = async (
     address: string,
     txId: string,
     attempts = 30,
-): Promise<{ transactions: unknown[]; [key: string]: unknown }> => {
+): Promise<IndexerTransactionsPage> => {
     for (let attempt = 0; attempt < attempts; attempt++) {
         const response = await fetch(
             `${LOCALNET_INDEXER_URL}/v2/accounts/${encodeURIComponent(address)}/transactions?limit=50`,
         )
         if (response.ok) {
-            const page = (await response.json()) as {
-                transactions: { id?: string }[]
-            }
+            const page = (await response.json()) as IndexerTransactionsPage
             if (page.transactions?.some(txn => txn.id === txId)) {
-                return page as never
+                return page
             }
         }
         await new Promise(resolve => setTimeout(resolve, 500))

@@ -11,8 +11,9 @@ Only key custody is substituted: `harness/keystore.ts` swaps the React Native
 Keychain driver for an in-memory one, and everything above it —
 `signTransactionsWithLocalKey`, `resolvePQSigningInfo`,
 `createLocalKeyStrategy`, `assignMinimumFeesToGroup` — is the app's own code.
-`harness/__tests__/` holds the two files that test the harness itself rather
-than the app, and each says so in its header.
+`harness/__tests__/algokey.spec.ts` and `harness/__tests__/keystore.spec.ts`
+test the harness itself rather than the app, and each says so in its header;
+the other files in that directory are ordinary conformance tests.
 
 ## Running
 

@@ -127,10 +127,20 @@ describe('quantum derivation conformance', () => {
         // could never tell a pre-fix account from a new one.
         expect(legacy?.address).not.toBe(canonical?.address)
 
-        await fundAccount(canonical!.address, 1_000_000n)
-        const info = await getConformanceClient()
-            .client.algod.accountInformation(account.address)
-            .do()
-        expect(BigInt(info.amount)).toBe(1_000_000n)
+        // Funding the LEGACY candidate is the falsifier: the account the app
+        // actually mints must be a different one the chain does not credit.
+        // Funding the canonical one would only prove `fundAccount` works,
+        // since the assertion above already made the two addresses equal.
+        await fundAccount(legacy!.address, 1_000_000n)
+        const [legacyInfo, canonicalInfo] = await Promise.all([
+            getConformanceClient()
+                .client.algod.accountInformation(legacy!.address)
+                .do(),
+            getConformanceClient()
+                .client.algod.accountInformation(account.address)
+                .do(),
+        ])
+        expect(BigInt(legacyInfo.amount)).toBe(1_000_000n)
+        expect(BigInt(canonicalInfo.amount)).toBe(0n)
     })
 })

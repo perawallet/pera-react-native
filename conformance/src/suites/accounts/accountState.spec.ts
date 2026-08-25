@@ -77,6 +77,11 @@ describe('account state conformance', () => {
 
         expect(info.amount).toBe(3_000_000n)
         expect(typeof info.amount).toBe('bigint')
+        // Display units, against the figure this test funded — not against a
+        // second computation of the same conversion.
+        expect(microAlgosToAlgos(new Decimal(info.amount.toString()))).toEqual(
+            new Decimal('3'),
+        )
         // A brand-new account holding nothing owes exactly the base MBR — the
         // constant the app falls back to when remote config is unavailable.
         expect(info.minBalance).toBe(FALLBACK_BASE_ACCOUNT_MBR)
@@ -137,9 +142,6 @@ describe('account state conformance', () => {
         expect(
             baseUnitsToDisplayUnits(new Decimal(holding!.amount.toString()), 3),
         ).toEqual(new Decimal('12.345'))
-        expect(microAlgosToAlgos(new Decimal(info.amount.toString()))).toEqual(
-            new Decimal(info.amount.toString()).div(1_000_000),
-        )
     })
 
     it('reports the opt-in round the indexer recorded', async () => {

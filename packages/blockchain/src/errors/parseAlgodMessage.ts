@@ -199,8 +199,10 @@ const matchLogicEval: Matcher = message => {
 // count without reimplementing go-algorand's formatter — the same trap that
 // made the old `OVERSPEND_RE` figures wrong. Neither is captured, for the same
 // reason: an absent figure beats one that is wrong.
+// `[^\n]*` rather than `.*`: a multi-error response would otherwise let a
+// greedy match bridge two unrelated lines. Both renderings are single-line.
 const GROUP_FEE_RE =
-    /txgroup (?:had .* in fees, which is less than the minimum|with .* fees is less than)/s
+    /txgroup (?:had [^\n]* in fees, which is less than the minimum|with [^\n]* fees is less than)/
 
 const matchGroupFeeTooSmall: Matcher = message => {
     if (!GROUP_FEE_RE.test(message)) return null

@@ -251,6 +251,10 @@ export const useKMS = () => {
         // expiry sweep in `getKey`, and `KeyNotFoundError` for an id that
         // isn't in the reactive snapshot at all.
         resolveSeedKey(keyPairId)
+        // One snapshot for both halves of the decision. The pre-extraction
+        // code read the seed off the reactive list and the child off the live
+        // store, so a key removed between the two reads could resolve against
+        // a seed that no longer existed.
         return resolvePQSigningInfo(getKeystoreStore().state.keys, keyPairId)
     }
 

@@ -16,6 +16,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createLocalKeyStrategy } from '@perawallet/wallet-core-signing/pipeline/signing/createLocalKeyStrategy'
 import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-signing/pipeline/signing/signTransactionsWithLocalKey'
+import type { AnalyzedSignableGroup } from '@perawallet/wallet-core-signing/pipeline/types'
 
 import { createAlgo25Account, fundAccount } from '../../harness/accounts'
 import { algokeySign } from '../../harness/algokey'
@@ -131,21 +132,27 @@ describe('ed25519 signing conformance', () => {
 
         expect(strategy.canSign(sender.walletAccount)).toBe(true)
 
-        const result = await strategy.sign(
-            {
-                signerAddress: sender.address,
-                source: { type: 'walletConnect' },
-                data: {
-                    type: 'transactions',
-                    transactions: [txn],
-                    indicesToSign: [0],
-                },
-                originalIndices: [0],
-                analysis: {},
-            } as never,
-            sender.walletAccount,
-            { onProgress },
-        )
+        const group: AnalyzedSignableGroup = {
+            signerAddress: sender.address,
+            source: { type: 'walletconnect' },
+            data: {
+                type: 'transactions',
+                transactions: [txn],
+                indicesToSign: [0],
+            },
+            originalIndices: [0],
+            analysis: {
+                totalFees: txn.fee,
+                transactionSummaries: [],
+                warnings: [],
+                signableAddresses: [sender.address],
+                riskLevel: 'low',
+            },
+        }
+
+        const result = await strategy.sign(group, sender.walletAccount, {
+            onProgress,
+        })
 
         expect(onProgress).toHaveBeenLastCalledWith(1, 1)
 

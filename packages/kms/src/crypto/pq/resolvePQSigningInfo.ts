@@ -36,6 +36,11 @@ const parentIdOf = (key: Key | undefined): string | undefined => {
  * A seed id passed directly is accepted as a convenience for callers that
  * haven't migrated to child ids — the same allowance `useKMS.resolveSeedKey`
  * makes, and the reason the mismatch guard below has to exist.
+ *
+ * Key EXPIRY is deliberately not checked here: sweeping an expired seed means
+ * deleting it, which is the store binding's job (`useKMS.getKey`), not a pure
+ * function's. A caller reaching this directly with its own snapshot — as the
+ * conformance harness does — gets no expiry enforcement.
  */
 export const resolveSeedKeyFrom = (
     keys: readonly Key[],

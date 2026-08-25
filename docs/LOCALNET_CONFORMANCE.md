@@ -108,11 +108,14 @@ comparison — an independent oracle — never on both.
 | Submission                                                            | `submitAndAutoRefreshCore`                                                                                                                    |
 | Error classification                                                  | `toAlgodError` / `parseAlgodMessage`                                                                                                          |
 
-Two files are deliberate exceptions, and say so in their own headers:
-`harness/__tests__/algokey.spec.ts` self-tests the oracle (so a broken oracle
-cannot make every parity assertion vacuous), and
-`harness/__tests__/keystore.spec.ts` self-tests the in-memory driver standing
-in for the React Native Keychain. Neither asserts anything about Pera's code.
+Two files under `harness/__tests__/` are deliberate exceptions, and say so in
+their own headers: `algokey.spec.ts` self-tests the oracle (so a broken oracle
+cannot make every parity assertion vacuous), and `keystore.spec.ts` self-tests
+the in-memory driver standing in for the React Native Keychain. Neither
+asserts anything about Pera's code. The other two files in that directory —
+`build.spec.ts` and `localnet.spec.ts` — are ordinary conformance tests that
+happen to live beside them; `build.spec.ts` in particular exercises the app's
+signing path through the harness's `signWithKeystore`.
 
 ## The three-proof model
 

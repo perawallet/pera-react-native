@@ -16,6 +16,10 @@ import { beforeAll, describe, expect, it } from 'vitest'
 
 import { buildGroupSignerTypeMap } from '@perawallet/wallet-core-signing/machine/actions'
 import { resolveSigningAccount } from '@perawallet/wallet-core-signing/machine/utils/resolveSigningAccount'
+import type {
+    SignableGroup,
+    SourceMetadata,
+} from '@perawallet/wallet-core-signing/pipeline/types'
 
 import {
     createAlgo25Account,
@@ -183,6 +187,8 @@ describe('rekeyed signing conformance', () => {
  * account they are made about is genuinely rekeyed — which the `beforeAll`
  * above establishes on chain.
  */
+const WALLETCONNECT_SOURCE: SourceMetadata = { type: 'walletconnect' }
+
 describe('rekeyed signer resolution conformance', () => {
     let keyStore: ConformanceKeyStore
     let rekeyed: ConformanceAccount
@@ -221,7 +227,7 @@ describe('rekeyed signer resolution conformance', () => {
 
         const resolved = resolveSigningAccount(
             account,
-            { type: 'walletConnect' } as never,
+            WALLETCONNECT_SOURCE,
             'transactions',
             allAccounts,
         )
@@ -243,7 +249,7 @@ describe('rekeyed signer resolution conformance', () => {
         expect(
             resolveSigningAccount(
                 account,
-                { type: 'walletConnect' } as never,
+                WALLETCONNECT_SOURCE,
                 'arbitrary-data',
                 allAccounts,
             ).address,
@@ -257,16 +263,17 @@ describe('rekeyed signer resolution conformance', () => {
         }
         const allAccounts = [account, auth.walletAccount]
 
-        const map = buildGroupSignerTypeMap(
-            [
-                {
-                    signerAddress: rekeyed.address,
-                    source: { type: 'walletConnect' },
-                    data: { type: 'transactions' },
-                } as never,
-            ],
-            allAccounts,
-        )
+        const group: SignableGroup = {
+            signerAddress: rekeyed.address,
+            source: WALLETCONNECT_SOURCE,
+            data: {
+                type: 'transactions',
+                transactions: [],
+                indicesToSign: [],
+            },
+        }
+
+        const map = buildGroupSignerTypeMap([group], allAccounts)
 
         expect(map.get(rekeyed.address)).toBe('localKey')
     })

@@ -24,17 +24,30 @@ const store = new Map<string, string>()
 // The app's own signer (`signTransactionsWithLocalKey`) imports the accounts
 // barrel for its three account-type guards, and the barrel drags every
 // accounts hook (multisig, staking, currencies) along with them — none of
-// which is reachable from a Node suite. Re-export the real guards and models
-// from their own modules and stub only the store the submission chokepoint
-// reads.
+// which is reachable from a Node suite.
+//
+// This re-exports the barrel's hook-free modules for real and stubs only the
+// store the submission chokepoint reads. It is deliberately NOT the whole
+// barrel: `./hooks`, `./db`, `./sync`, `./store`, `./account-discovery`,
+// `./cleanup`, `./import-session` and `./device-accounts` are absent, so a
+// suite that starts importing one of those from the barrel gets `undefined`
+// at use rather than an import error. Add the module here when that happens
+// — do not reach for `importActual` of the barrel itself, which is the graph
+// this mock exists to avoid.
 vi.mock('@perawallet/wallet-core-accounts', async () => {
-    const [models, utils] = await Promise.all([
+    const [models, utils, constants, errors, bip44] = await Promise.all([
         vi.importActual<object>('@perawallet/wallet-core-accounts/models'),
         vi.importActual<object>('@perawallet/wallet-core-accounts/utils'),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/constants'),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/errors'),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/bip44'),
     ])
     return {
         ...models,
         ...utils,
+        ...constants,
+        ...errors,
+        ...bip44,
         useAccountsStore: { getState: () => ({ accounts: [] }) },
     }
 })

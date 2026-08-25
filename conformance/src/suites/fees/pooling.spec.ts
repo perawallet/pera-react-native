@@ -21,6 +21,7 @@ import {
     AlgodErrorCode,
     toAlgodError,
 } from '@perawallet/wallet-core-blockchain/errors'
+import { calculateMinTxnFee } from '@perawallet/wallet-core-blockchain/fees/feeCalculator'
 import {
     assignMinimumFeesToGroup,
     groupHasQuantumSigner,
@@ -226,7 +227,13 @@ describe('app fee assignment conformance', () => {
         // is the one algod verifies — but its fee is untouched.
         expect(adjustments.map(adjustment => adjustment.index)).toEqual([0])
         expect(assigned[1].fee).toBe(baseMinFee)
-        expect(assigned[0].fee).toBeGreaterThan(baseMinFee)
+        expect(assigned[0].fee).toBe(
+            calculateMinTxnFee({
+                baseMinFee,
+                isPQSigner: true,
+                pqMultiplier: FALLBACK_PQ_MULTIPLIER,
+            }),
+        )
         // Re-grouped, not merely re-priced: a group id left over from the
         // pre-adjustment payload would not cover the new fees.
         expect(assigned[0].group).toEqual(assigned[1].group)
@@ -239,8 +246,8 @@ describe('app fee assignment conformance', () => {
 
         // The proof the app's own unit tests cannot give: a real node accepts
         // the re-grouped, re-priced payload.
-        const { txIds } = await submitAndConfirm(signed)
-        expect(txIds).toHaveLength(2)
+        const { confirmed } = await submitAndConfirm(signed)
+        expect(confirmed.confirmedRound).toBeGreaterThan(0n)
     })
 
     it('rejects the same group one microAlgo below what the app assigned', async () => {
@@ -273,6 +280,15 @@ describe('app fee assignment conformance', () => {
             pqMultiplier: FALLBACK_PQ_MULTIPLIER,
         })
         const assignedTotal = assigned[0].fee + assigned[1].fee
+
+        // Submit the assigned group first, so this test brackets the floor for
+        // one composition rather than only showing that something below it is
+        // rejected — an assignment that overpaid would clear this half too, and
+        // only the shaved group below can tell the difference.
+        await submitAndConfirm([
+            await signWithKeystore(keyStore, quantumSender, assigned[0]),
+            await signWithKeystore(keyStore, quantumSender, assigned[1]),
+        ])
 
         // Rebuild the same group with one microAlgo shaved off the pooled
         // total. Fees pool, so where the microAlgo is taken from does not
