@@ -61,6 +61,12 @@ export const useStyles = makeStyles(theme => ({
         borderBottomColor: theme.colors.textMain,
         flexShrink: 1,
     },
+    invalidInputContainer: {
+        backgroundColor: theme.colors.background,
+        borderBottomWidth: theme.borders.sm,
+        borderBottomColor: theme.colors.negative,
+        flexShrink: 1,
+    },
     input: {
         flexShrink: 1,
         backgroundColor: 'transparent',

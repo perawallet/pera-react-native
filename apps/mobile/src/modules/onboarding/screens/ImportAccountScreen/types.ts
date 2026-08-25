@@ -18,6 +18,7 @@ export type UseImportAccountScreenResult = {
     focused: number
     setFocused: (index: number) => void
     canImport: boolean
+    invalidWordIndices: Set<number>
     processing: boolean
     updateWord: (word: string, index: number) => void
     handleWordChange: (word: string, index: number) => void

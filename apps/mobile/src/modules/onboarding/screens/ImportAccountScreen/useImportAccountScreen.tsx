@@ -88,6 +88,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         handleSelectSuggestion,
         refCallbacks,
         handleSubmitEditing,
+        invalidWordIndices,
+        areAllWordsValid,
     } = useMnemonicWordEntry({
         wordCount: mnemonicLength,
         onTooManyWords,
@@ -101,7 +103,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         close: handleCloseQRScanner,
     } = useModalState()
 
-    const canImport = useMemo(() => words.every(w => w.length > 0), [words])
+    const canImport = useMemo(() => areAllWordsValid, [areAllWordsValid])
 
     // Pre-populate the passphrase from a scanned QR / recover-address deeplink
     // so the user reviews and confirms the words before importing. The mnemonic
@@ -249,6 +251,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         focused,
         setFocused,
         canImport,
+        invalidWordIndices,
         processing,
         updateWord,
         handleWordChange: (word: string, index: number) =>

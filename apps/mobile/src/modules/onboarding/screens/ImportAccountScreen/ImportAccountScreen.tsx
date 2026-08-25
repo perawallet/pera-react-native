@@ -43,6 +43,7 @@ export const ImportAccountScreen = () => {
         focused,
         setFocused,
         canImport,
+        invalidWordIndices,
         processing,
         handleWordChange,
         handleImportAccount,
@@ -157,7 +158,11 @@ export const ImportAccountScreen = () => {
                                                             inputContainerStyle={
                                                                 isFocused
                                                                     ? styles.focusedInputContainer
-                                                                    : styles.inputContainer
+                                                                    : invalidWordIndices.has(
+                                                                            offsetIndex,
+                                                                        )
+                                                                      ? styles.invalidInputContainer
+                                                                      : styles.inputContainer
                                                             }
                                                             inputStyle={
                                                                 styles.input
