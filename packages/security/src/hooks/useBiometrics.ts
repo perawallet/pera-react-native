@@ -228,10 +228,13 @@ export const useBiometrics = (): UseBiometricsResult => {
                             // is unreachable and this is the only user-driven
                             // moment where dropping it is unambiguously safe.
                             //
-                            // No reason recorded: the caller is already showing
-                            // the weak-biometric copy, so queuing a sheet that
-                            // says the same thing later would just nag.
-                            await dropOptIn(null)
+                            // The reason is recorded, not cleared: this is the
+                            // app disabling biometrics for a class-2 enrollment,
+                            // exactly as the reconcile's own `weak` branch does.
+                            // Clearing it here would dismiss the prompt that
+                            // asked for this enable, leaving the user with an
+                            // error toast and nothing to retry.
+                            await dropOptIn('weak-biometric')
                             return { ok: false, reason: 'weak-biometric' }
                         }
 

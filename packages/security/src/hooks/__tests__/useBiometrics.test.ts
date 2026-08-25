@@ -882,6 +882,28 @@ describe('useBiometrics', () => {
             },
         )
 
+        // Android-only in practice: an enrollment that satisfies
+        // `canAuthenticate(WEAK)` but not STRONG reaches the level check inside
+        // the enable flow. Clearing the reason there dismissed the prompt that
+        // triggered the enable, so the user got an error toast and nothing left
+        // to retry against.
+        test('keeps the offer open when an enable is refused for a weak enrollment', async () => {
+            kmsMocks.pinBytes = new TextEncoder().encode('123456')
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckBiometricsAvailable.mockResolvedValue(true)
+            mockGetSecurityLevel.mockResolvedValue('weak')
+
+            const { result } = await renderAndSettle()
+
+            let enableResult: EnableBiometricsResult | undefined
+            await act(async () => {
+                enableResult = await result.current.enableBiometrics()
+            })
+
+            expect(enableResult).toEqual({ ok: false, reason: 'weak-biometric' })
+            expect(result.current.disabledReason).toBe('weak-biometric')
+        })
+
         test('records no reason when the user disables biometrics themselves', async () => {
             kmsMocks.biometricBytes = new TextEncoder().encode('123456')
 
