@@ -236,12 +236,40 @@ class Logger {
         this.log(LogLevel.CRITICAL, error, context)
     }
 
-    private formatContextValue(value: unknown): unknown {
+    // Wrapped re-throws are normal in this codebase (useAlgo25.ts, useHDWallet.ts,
+    // useCreateAccount.ts), so the cause chain can be several Errors deep; the
+    // cap bounds that recursion, and self-reference is checked separately since
+    // a cycle would otherwise loop past the cap forever on the same node.
+    private static readonly MAX_CAUSE_DEPTH = 3
+
+    private formatContextValue(value: unknown, depth = 0): unknown {
         if (value instanceof Error) {
+            // React-native-keychain rejections put the only discriminating
+            // value on `code` (E_CRYPTO_FAILED vs E_KEYSTORE_ACCESS_ERROR),
+            // and the keystore package wraps engine failures in `cause` —
+            // without both, every Android keystore failure looks identical.
+            const code = (value as { code?: unknown }).code
+            const nativeStack = (value as { nativeStackAndroid?: unknown })
+                .nativeStackAndroid
+
             return {
                 name: value.name,
                 message: value.message,
                 ...(value.stack ? { stack: value.stack } : {}),
+                ...(typeof code === 'string' || typeof code === 'number'
+                    ? { code }
+                    : {}),
+                ...(nativeStack ? { nativeStackAndroid: nativeStack } : {}),
+                ...(value.cause !== undefined &&
+                value.cause !== value &&
+                depth < Logger.MAX_CAUSE_DEPTH
+                    ? {
+                          cause: this.formatContextValue(
+                              value.cause,
+                              depth + 1,
+                          ),
+                      }
+                    : {}),
             }
         }
         return value

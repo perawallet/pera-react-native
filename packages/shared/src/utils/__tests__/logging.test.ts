@@ -16,6 +16,7 @@ import {
     LogLevel,
     redactSensitiveContext,
     redactSensitiveUrl,
+    type LogContext,
 } from '../logging'
 
 describe('logging', () => {
@@ -383,6 +384,61 @@ describe('logging', () => {
             expect(reported.error.message).not.toContain('word1 word2')
             expect(reported.error.message).toContain('[REDACTED]')
             expect(reported.error.message).toContain('public-id')
+        })
+
+        describe('error serialization', () => {
+            const capturedContext = (): LogContext => {
+                const call = (
+                    console.error as ReturnType<typeof vi.fn>
+                ).mock.calls.at(-1) as [string, LogContext]
+                return call[1]
+            }
+
+            test('preserves a native module error code', () => {
+                const error = Object.assign(new Error('keychain failed'), {
+                    code: 'E_CRYPTO_FAILED',
+                })
+
+                logger.error('boom', { error })
+
+                expect(capturedContext().error).toMatchObject({
+                    name: 'Error',
+                    message: 'keychain failed',
+                    code: 'E_CRYPTO_FAILED',
+                })
+            })
+
+            test('preserves a nested cause', () => {
+                const cause = new Error('master key missing')
+                const error = Object.assign(new Error('import failed'), {
+                    cause,
+                })
+
+                logger.error('boom', { error })
+
+                expect(capturedContext().error).toMatchObject({
+                    message: 'import failed',
+                    cause: { name: 'Error', message: 'master key missing' },
+                })
+            })
+
+            test('stops recursing at the cause depth cap instead of overflowing', () => {
+                let error = new Error('root')
+                for (let i = 0; i < 10; i += 1) {
+                    error = Object.assign(new Error(`wrap-${i}`), {
+                        cause: error,
+                    })
+                }
+
+                expect(() => logger.error('boom', { error })).not.toThrow()
+            })
+
+            test('survives a self-referential cause chain', () => {
+                const error = new Error('loop')
+                Object.defineProperty(error, 'cause', { value: error })
+
+                expect(() => logger.error('boom', { error })).not.toThrow()
+            })
         })
     })
 
