@@ -12,10 +12,7 @@
 
 import { PWView } from '@components/core'
 import { useStyles } from './styles'
-import {
-    ALGO_ASSET_ID,
-    type HistoryPeriod,
-} from '@perawallet/wallet-core-shared'
+import { type HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { percentChange } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
@@ -55,34 +52,25 @@ export const WealthTrend = ({
     const { data, isPending, isUnavailableOnNetwork } =
         useAccountBalancesHistoryQuery(addresses, period, enabled)
 
-    const dataPoints = useMemo(
-        () =>
-            data?.map(p => ({
-                value: p.preferredValue,
-                algoValue: p.algoValue,
-                datetime: p.datetime,
-            })) ?? [],
-        [data],
-    )
-
+    // Trend follows the fiat value, like the chart — the ALGO-denominated
+    // value is flat for an all-ALGO account no matter what the price does.
     const [absolute, percentage, isPositive] = useMemo(() => {
-        const firstDp = dataPoints.at(0)?.algoValue ?? new Decimal(0)
-        const lastDp = dataPoints.at(-1)?.algoValue ?? new Decimal(0)
+        const firstDp = data?.at(0)?.preferredValue ?? new Decimal(0)
+        const lastDp = data?.at(-1)?.preferredValue ?? new Decimal(0)
 
         return [
             lastDp.minus(firstDp),
             percentChange(firstDp, lastDp),
             lastDp.greaterThanOrEqualTo(firstDp),
         ]
-    }, [dataPoints])
+    }, [data])
 
     return isPending || privacyMode || isUnavailableOnNetwork ? (
         <></>
     ) : (
         <PWView style={styles.container}>
             <PreferredAmount
-                sourceAmount={absolute}
-                sourceAssetId={ALGO_ASSET_ID}
+                value={absolute}
                 density='compact'
                 showSymbol
                 style={isPositive ? styles.itemUp : styles.itemDown}

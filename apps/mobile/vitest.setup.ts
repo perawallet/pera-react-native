@@ -2649,6 +2649,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             betanet: 'betanet',
             custom: 'custom',
         },
+        // Must mirror packages/shared/src/models/base-types.ts — period pills
+        // render from this list, so a missing member silently drops a pill.
+        HISTORY_PERIODS: ['one-day', 'one-week', 'one-month', 'one-year'],
         formatDatetime: vi.fn(d => String(d)),
         formatRelativeTime: vi.fn(d => String(d)),
         formatTimeRemaining: vi.fn(() => '52m'),

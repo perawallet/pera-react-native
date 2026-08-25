@@ -530,6 +530,9 @@
         "error_failed": "Pera bu bağlantıyı açamadı. Kontrol et ve tekrar dene."
     },
     "chart": {
+        "one_day": {
+            "label": "1G"
+        },
         "one_week": {
             "label": "1H"
         },

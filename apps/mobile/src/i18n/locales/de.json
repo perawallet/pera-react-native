@@ -522,6 +522,9 @@
         "paste_submit": "Absenden"
     },
     "chart": {
+        "one_day": {
+            "label": "1T"
+        },
         "one_week": {
             "label": "1W"
         },
