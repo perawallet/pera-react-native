@@ -10,5 +10,13 @@
  limitations under the License
  */
 
-export { normalizeMnemonicWord } from './normalizeMnemonicWord'
-export { splitMnemonic } from './splitMnemonic'
+/**
+ * Strips only what an IME actually adds — case, whitespace, punctuation,
+ * symbols, and invisible format characters (zero-width space/joiner, bidi
+ * marks) some IMEs inject silently. Anything else (digits, other letters) is
+ * left in place so a genuinely wrong token still fails wordlist validation
+ * and gets flagged, instead of being silently rewritten into a different
+ * real word.
+ */
+export const normalizeMnemonicWord = (value: string): string =>
+    value.toLowerCase().replace(/[\s\p{P}\p{S}\p{Cf}]/gu, '')

@@ -28,7 +28,11 @@ import {
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 import { type OnboardingStackParamList } from '../../routes/types'
-import { useExitAccountFlow } from '../../hooks'
+import {
+    useExitAccountFlow,
+    useRekeyScanNotice,
+    REKEY_SCAN_UNAVAILABLE,
+} from '../../hooks'
 
 export type UseSearchAccountsScreenResult = {
     t: (key: string) => string
@@ -48,9 +52,10 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const navigation = useAppNavigation()
-    const { discoverAccounts, discoverRekeyedAccounts } = useAccountDiscovery()
+    const { discoverAccounts } = useAccountDiscovery()
     const { discoverImportAccounts, cancelImport } = useHDImportSession()
     const { exitAccountFlow } = useExitAccountFlow()
+    const { scanRekeyed } = useRekeyScanNotice()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { buildHdWalletAccount } = useCreateAccount()
     const allAccounts = useAllAccounts()
@@ -173,16 +178,24 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     } else {
                         setSelectedAccountAddress(account.address)
 
-                        const rekeyedAccounts = await discoverRekeyedAccounts({
-                            accountAddresses: [account.address],
-                        })
+                        const rekeyedAccounts = await scanRekeyed([
+                            account.address,
+                        ])
 
-                        if (rekeyedAccounts && rekeyedAccounts.length > 0) {
+                        if (
+                            rekeyedAccounts !== REKEY_SCAN_UNAVAILABLE &&
+                            rekeyedAccounts.length > 0
+                        ) {
                             navigation.replace('ImportRekeyedAddresses', {
                                 accounts: rekeyedAccounts,
                             })
                         } else {
-                            if (notifyOnEmpty) {
+                            // Don't claim "no new addresses" when the scan
+                            // itself failed — scanRekeyed already said so.
+                            if (
+                                notifyOnEmpty &&
+                                rekeyedAccounts !== REKEY_SCAN_UNAVAILABLE
+                            ) {
                                 showToast({
                                     type: 'info',
                                     title: t(
@@ -209,13 +222,16 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 // discovery is an address-only rekey scan (no derivation), and
                 // an empty result must still move the flow on to NameAccount —
                 // otherwise the "Searching your accounts" step hangs forever.
-                const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
-                    { accountAddresses: [account.address] },
-                )
+                const discoveredRekeyedAccounts = await scanRekeyed([
+                    account.address,
+                ])
 
-                if (!discoveredRekeyedAccounts) return
-
-                if (discoveredRekeyedAccounts.length === 0) {
+                // A scan we couldn't run is not a failed import — the account
+                // is already committed. Name it and let the user rescan later.
+                if (
+                    discoveredRekeyedAccounts === REKEY_SCAN_UNAVAILABLE ||
+                    discoveredRekeyedAccounts.length === 0
+                ) {
                     // Let the user name the imported account before finishing;
                     // NameAccount selects it, plays the confetti and exits the
                     // flow on confirm.
@@ -247,7 +263,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         discoverAccounts,
         discoverImportAccounts,
         cancelImport,
-        discoverRekeyedAccounts,
+        scanRekeyed,
         navigation,
         t,
         showToast,

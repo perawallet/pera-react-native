@@ -120,6 +120,41 @@ export const redactSensitiveUrl = (input: string): string => {
     return out
 }
 
+// `message` and `stack` are typed as strings but a native module can set either
+// to anything; redactSensitiveUrl would throw on a non-string and cost the whole
+// report.
+const redactMaybeString = <T>(value: T): T =>
+    typeof value === 'string' ? (redactSensitiveUrl(value) as T) : value
+
+// ...and it can make either a throwing accessor, which `log()` already guards
+// context against. A field the logger cannot read is one the reporter cannot
+// read either, so drop the field rather than the report. `ok` keeps a failed
+// read distinguishable from a genuine `undefined` — conflating them would let a
+// hostile accessor reach the reporter untouched.
+type SafeRead = { ok: boolean; value: unknown }
+
+const readSafely = (read: () => unknown): SafeRead => {
+    try {
+        return { ok: true, value: read() }
+    } catch {
+        return { ok: false, value: undefined }
+    }
+}
+
+// A native stack is bulk: uncapped, it pushes the `code`/`cause` keys that
+// diagnose a keystore failure out of Crashlytics' truncation window. The top of
+// the stack is the diagnostic part, in either shape RN might hand us.
+const MAX_NATIVE_STACK_FRAMES = 10
+const MAX_NATIVE_STACK_CHARS = 2000
+
+const capNativeStack = (nativeStack: unknown): unknown => {
+    if (Array.isArray(nativeStack))
+        return nativeStack.slice(0, MAX_NATIVE_STACK_FRAMES)
+    if (typeof nativeStack === 'string')
+        return nativeStack.slice(0, MAX_NATIVE_STACK_CHARS)
+    return nativeStack
+}
+
 // Defense against pathological inputs (circular references, deeply-nested
 // objects). Logger contexts are normally small; anything beyond this depth is
 // almost certainly a mistake (e.g. a React fiber leaked into context).
@@ -128,9 +163,14 @@ const TRUNCATED = '[…]'
 
 /**
  * Every string value also goes through `redactSensitiveUrl`, so a stray URL
- * under a non-sensitive key still gets its query params scrubbed. `Error`s pass
- * through verbatim for `formatContextValue` downstream, and cycles or depth past
- * MAX_REDACT_DEPTH short-circuit.
+ * under a non-sensitive key still gets its query params scrubbed. A top-level
+ * `Error` (the `context.error` convention) passes through verbatim — see
+ * `redactSensitiveContext`, which special-cases it before ever calling this —
+ * because `formatContextValue` picks its name/message/stack/code/cause right
+ * after. An `Error` found *while walking* a nested object or array gets no
+ * such follow-up, so it is walked here like any other object. Typed arrays
+ * become a `[Ctor(length)]` placeholder rather than being enumerated byte by
+ * byte, and cycles or depth past MAX_REDACT_DEPTH short-circuit.
  *
  * Applied automatically to every logger context, so callers needn't pre-sanitize
  * — though a hot path with very large objects may still want to.
@@ -143,12 +183,48 @@ const redactSensitiveValue = (
     if (value === null || value === undefined) return value
     if (typeof value === 'string') return redactSensitiveUrl(value)
     if (typeof value !== 'object') return value
-    if (value instanceof Error) return value
+    // A typed array (Uint8Array, Buffer, ...) has one own enumerable key per
+    // byte, so the generic object walk below would happily redact-and-emit
+    // every byte of a key. Byte length is diagnostic; the bytes are secret.
+    // `ArrayBuffer.isView`, not `instanceof Uint8Array`: a typed array from
+    // another realm (e.g. jsdom in tests) fails `instanceof` the local
+    // constructor and would silently fall through to the byte-enumerating path.
+    if (ArrayBuffer.isView(value)) {
+        const ctorName = value.constructor?.name ?? 'TypedArray'
+        const size =
+            'length' in value
+                ? (value as unknown as { length: number }).length
+                : (value as DataView).byteLength
+        return `[${ctorName}(${size})]`
+    }
     if (depth >= MAX_REDACT_DEPTH) return TRUNCATED
     if (seen.has(value)) return TRUNCATED
     seen.add(value)
     if (Array.isArray(value)) {
         return value.map(item => redactSensitiveValue(item, depth + 1, seen))
+    }
+    if (value instanceof Error) {
+        // message/stack are non-enumerable, so Object.entries below never
+        // touches them — only extra own properties (anything a caller attached
+        // via Object.assign, e.g. a leaked secret) need the same redaction as
+        // any other object's keys.
+        const out: Record<string, unknown> = {
+            name: value.name,
+            message: redactMaybeString(value.message),
+        }
+        for (const [k, v] of Object.entries(value)) {
+            out[k] = isSensitiveKey(k)
+                ? REDACTED
+                : redactSensitiveValue(
+                      // Capped but not depth-gated like formatContextValue's
+                      // copy: this branch is only reachable at depth >= 1, so a
+                      // gate here would drop every native stack it ever sees.
+                      k === 'nativeStackAndroid' ? capNativeStack(v) : v,
+                      depth + 1,
+                      seen,
+                  )
+        }
+        return out
     }
     // ARC-0001 `algo_signData` / ARC-60 payloads carry the signed message in a
     // `data` field next to `authenticatorData`. `data` is far too common a key
@@ -172,9 +248,83 @@ export const redactSensitiveContext = (context: LogContext): LogContext => {
     const seen = new WeakSet<object>()
     const out: LogContext = {}
     for (const [k, v] of Object.entries(context)) {
-        out[k] = isSensitiveKey(k) ? REDACTED : redactSensitiveValue(v, 0, seen)
+        // A top-level Error is exempted here, not inside redactSensitiveValue:
+        // formatContextValue is about to pick its name/message/stack/code/cause
+        // explicitly, so it must stay `instanceof Error` and untouched. An Error
+        // found while walking a nested value has no such follow-up and is
+        // redacted for real inside redactSensitiveValue.
+        out[k] = isSensitiveKey(k)
+            ? REDACTED
+            : v instanceof Error
+              ? v
+              : redactSensitiveValue(v, 0, seen)
     }
     return out
+}
+
+// Crashlytics sends `message` and `stack` to native verbatim, so an Error
+// reported as-is is a second, unredacted copy of anything the serialized
+// context already scrubbed. Returning the original when nothing matched is only
+// an optimisation: the clone keeps the prototype and non-sensitive own
+// properties, so a
+// reporter that branches on `instanceof` or reads `.code` cannot tell a redacted
+// error from an untouched one.
+const redactErrorForReport = (error: Error): Error => {
+    const rawMessage = readSafely(() => error.message)
+    const rawStack = readSafely(() => error.stack)
+    const message = redactMaybeString(rawMessage.value)
+    const stack = redactMaybeString(rawStack.value)
+    // A read that threw must not take the fast path: returning the original
+    // would hand the reporter a live hostile accessor, and a reporter that
+    // reads `.stack` then throws and loses the report. The clone below
+    // materialises plain values, so it neutralises the accessor.
+    if (
+        rawMessage.ok &&
+        rawStack.ok &&
+        message === rawMessage.value &&
+        stack === rawStack.value
+    )
+        return error
+
+    const name = readSafely(() => error.name).value
+
+    try {
+        const redacted = Object.create(Object.getPrototypeOf(error)) as Error
+        const target = redacted as unknown as Record<string, unknown>
+        const source = error as unknown as Record<string, unknown>
+        // One key at a time, not Object.assign: a single throwing native
+        // accessor would abort the whole copy and cost the entire report.
+        // Sensitive keys are skipped outright — a redactor must never hand a
+        // raw mnemonic to the reporting boundary.
+        for (const key of Object.keys(error)) {
+            if (isSensitiveKey(key)) continue
+            try {
+                target[key] = source[key]
+            } catch {
+                // drop the unreadable property, not the report
+            }
+        }
+        // Non-enumerable, like a real Error's own fields: an enumerable copy
+        // would put message/stack into JSON.stringify of the reported error.
+        for (const [key, value] of [
+            ['name', name],
+            ['message', message],
+            ['stack', stack],
+        ] as const) {
+            Object.defineProperty(redacted, key, {
+                value,
+                enumerable: false,
+                writable: true,
+                configurable: true,
+            })
+        }
+        return redacted
+    } catch {
+        const fallback = new Error(String(message))
+        fallback.name = String(name)
+        fallback.stack = stack as typeof fallback.stack
+        return fallback
+    }
 }
 
 export type LogErrorSeverity = 'error' | 'critical'
@@ -236,12 +386,75 @@ class Logger {
         this.log(LogLevel.CRITICAL, error, context)
     }
 
-    private formatContextValue(value: unknown): unknown {
+    // Wrapped re-throws are normal in this codebase (useAlgo25.ts, useHDWallet.ts,
+    // useCreateAccount.ts), so the cause chain can be several Errors deep. The cap
+    // bounds recursion regardless of shape, including a mutual cycle (x.cause = y,
+    // y.cause = x) that a same-node self-reference check wouldn't catch; the
+    // separate `cause !== value` check only stops a self-referential Error from
+    // emitting a redundant copy of itself as its own cause.
+    private static readonly MAX_CAUSE_DEPTH = 3
+
+    private formatContextValue(value: unknown, depth = 0): unknown {
         if (value instanceof Error) {
+            // React-native-keychain rejections put the only discriminating
+            // value on `code` (E_CRYPTO_FAILED vs E_KEYSTORE_ACCESS_ERROR),
+            // and the keystore package wraps engine failures in `cause` —
+            // without both, every Android keystore failure looks identical.
+            const code = (value as { code?: unknown }).code
+            const nativeStack = (value as { nativeStackAndroid?: unknown })
+                .nativeStackAndroid
+
+            // Key order is load-bearing: JSON.stringify emits insertion
+            // order and Crashlytics truncates the report, so the diagnostic
+            // keys precede the two bulky stacks.
             return {
                 name: value.name,
-                message: value.message,
-                ...(value.stack ? { stack: value.stack } : {}),
+                message: redactMaybeString(value.message),
+                ...(typeof code === 'string' || typeof code === 'number'
+                    ? { code }
+                    : {}),
+                ...(value.cause !== undefined &&
+                value.cause !== value &&
+                depth < Logger.MAX_CAUSE_DEPTH
+                    ? {
+                          // A non-Error cause (plain object, array, Uint8Array...)
+                          // never reaches the `instanceof Error` branch above, so it
+                          // must be routed back through the same redactor every other
+                          // context value goes through — otherwise a sensitive key
+                          // nested under `cause` ships unredacted while the identical
+                          // key at the top level of context gets scrubbed.
+                          cause:
+                              value.cause instanceof Error
+                                  ? this.formatContextValue(
+                                        value.cause,
+                                        depth + 1,
+                                    )
+                                  : redactSensitiveValue(
+                                        value.cause,
+                                        0,
+                                        new WeakSet(),
+                                    ),
+                      }
+                    : {}),
+                // A stack's first line is the message, so it needs the same
+                // scrubbing. Both stacks are gated to depth 0: a nested one
+                // crowds out the sibling code/cause keys that diagnose this
+                // class of bug, for no diagnostic gain of its own.
+                ...(typeof value.stack === 'string' && depth === 0
+                    ? { stack: redactSensitiveUrl(value.stack) }
+                    : {}),
+                // RN's PromiseImpl/JavaTurboModule copies this onto the JS Error
+                // as an array of frame maps (class/file/line/method), never a
+                // string.
+                ...(nativeStack !== undefined && depth === 0
+                    ? {
+                          nativeStackAndroid: redactSensitiveValue(
+                              capNativeStack(nativeStack),
+                              0,
+                              new WeakSet(),
+                          ),
+                      }
+                    : {}),
             }
         }
         return value
@@ -281,15 +494,22 @@ class Logger {
             if (messageOrError instanceof Error && !context) {
                 this.errorReporter({
                     severity,
-                    error: messageOrError,
+                    error: redactErrorForReport(messageOrError),
                 })
                 return
             }
 
+            // String(): `message` is typed as a string but a native module can
+            // set it to anything, and the report's message must stay one —
+            // `new Error(<non-string>)` stringified it the same way.
             const message =
                 messageOrError instanceof Error
-                    ? messageOrError.message
-                    : messageOrError
+                    ? String(
+                          redactMaybeString(
+                              readSafely(() => messageOrError.message).value,
+                          ),
+                      )
+                    : redactSensitiveUrl(messageOrError)
             const contextText = this.stringifyContext(context)
             const combinedMessage = contextText
                 ? `${message} | context: ${contextText}`
@@ -299,7 +519,9 @@ class Logger {
 
             if (messageOrError instanceof Error) {
                 reportableError.name = messageOrError.name
-                reportableError.stack = messageOrError.stack
+                reportableError.stack = redactMaybeString(
+                    readSafely(() => messageOrError.stack).value,
+                ) as typeof reportableError.stack
 
                 // No groupingKey: this error's own stack points at where it was
                 // thrown, which separates sites far better than a shared name
@@ -320,8 +542,13 @@ class Logger {
             // 2. Adopting the stack of an `Error` passed in context, so the
             //    frames below point at the real origin instead of at `log()`.
             const contextError = this.findContextError(context)
-            if (contextError?.stack) {
-                reportableError.stack = contextError.stack
+            // Read through readSafely: a throwing `stack` accessor here would
+            // land in the outer catch and drop the whole report.
+            const adoptedStack = readSafely(() => contextError?.stack).value
+            if (adoptedStack) {
+                reportableError.stack = redactMaybeString(
+                    adoptedStack,
+                ) as typeof reportableError.stack
             }
 
             this.errorReporter({
@@ -383,7 +610,17 @@ class Logger {
                 ? messageOrError.message
                 : messageOrError
 
-        const args = context ? [this.formatContext(context)] : []
+        // A throwing getter (e.g. a native module's `code` accessor) must not
+        // escape into the caller's error handler — this file's whole premise is
+        // that logging never crashes the app.
+        let args: LogContext[] = []
+        if (context) {
+            try {
+                args = [this.formatContext(context)]
+            } catch {
+                args = [{ context: '[unformattable context]' }]
+            }
+        }
 
         switch (level) {
             case LogLevel.DEBUG:
