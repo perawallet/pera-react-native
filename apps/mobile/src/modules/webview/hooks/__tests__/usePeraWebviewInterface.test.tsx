@@ -110,6 +110,21 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     isValidAlgorandAddress: vi.fn(() => false),
 }))
 
+type MockAccount = {
+    address: string
+    type: string
+    rekeyAddress?: string
+    keyPairId?: string
+}
+
+type MockArc60WireParams = {
+    data: string
+    signer: string
+    domain: string
+    requestId?: string
+    metadata: { scope: number; encoding: string }
+}
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     AccountTypes: {
         algo25: 'algo25',
@@ -123,6 +138,30 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     isRekeyedAccount: vi.fn(() => false),
     canSignWith: vi.fn(() => true),
     canSignArbitraryData: vi.fn(() => true),
+    // Mirrors the real predicate, including the same `canSignDirectly` key
+    // check: a signer that can sign for itself needs no hop, and a keyless
+    // rekeyed signer falls back to an auth account that must be present,
+    // non-multisig, non-quantum, and itself directly signable.
+    canSignArc60: vi.fn(
+        (
+            account: MockAccount,
+            allAccounts: readonly MockAccount[] = [],
+        ): boolean => {
+            const canSignDirectly = (a: MockAccount | undefined) =>
+                !!a && (!!a.keyPairId || a.type === 'hardware')
+            if (canSignDirectly(account)) return true
+            if (!account?.rekeyAddress) return false
+            const auth = allAccounts.find(
+                a => a.address === account.rekeyAddress,
+            )
+            return (
+                !!auth &&
+                auth.type !== 'multisig' &&
+                auth.type !== 'quantum' &&
+                canSignDirectly(auth)
+            )
+        },
+    ),
     useSigningAccounts: vi.fn(() => [
         {
             address: 'addr1',
@@ -237,11 +276,19 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
             candidate.metadata?.scope != null
         )
     },
-    parseArc60WireRequest: vi.fn(() => {
-        throw new Error(
-            'parseArc60WireRequest not mocked — no test in this file exercises the ARC-60 branch',
-        )
-    }),
+    // Shape-parsing has canonical tests in the signing package; the ARC-60
+    // cases here only exercise the webview branch's signer gate, so pass the
+    // wire params straight through.
+    parseArc60WireRequest: vi.fn((params: MockArc60WireParams) => ({
+        stdSigData: {
+            data: params.data,
+            signer: params.signer,
+            domain: params.domain,
+            authenticatorData: new Uint8Array([1, 2, 3]),
+            requestId: params.requestId,
+        },
+        metadata: params.metadata,
+    })),
 }))
 
 const mockConnect = vi.fn(() => Promise.resolve('pairing-client'))
@@ -1421,6 +1468,93 @@ describe('usePeraWebviewInterface', () => {
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('Signer cannot sign arbitrary data'),
+        )
+    })
+
+    it('queues an ARC-60 request whose signer is a keyless rekeyed account', async () => {
+        // In-app-browser counterpart of the WC gate: the dApp names the
+        // connected account, which is rekeyed and holds no key of its own —
+        // the auth account signs, so the request must reach the review sheet
+        // instead of being refused up front (PERA-4977).
+        const accounts = await import('@perawallet/wallet-core-accounts')
+        vi.mocked(accounts.useAllAccounts).mockReturnValueOnce([
+            {
+                address: 'rekeyed-addr',
+                name: 'Rekeyed',
+                type: 'watch',
+                rekeyAddress: 'auth-addr',
+            },
+            {
+                address: 'auth-addr',
+                name: 'Auth',
+                type: 'hdWallet',
+                keyPairId: 'auth-key',
+            },
+        ] as never)
+
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: '14-arc60-rekeyed',
+                jsonrpc: '2.0',
+                method: 'requestDataSigning',
+                params: {
+                    data: 'AQID',
+                    signer: 'rekeyed-addr',
+                    domain: 'example.com',
+                    authenticatorData: 'YXV0aA==',
+                    metadata: { scope: 1, encoding: 'base64' },
+                },
+            })
+        })
+
+        expect(mockAddSignRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'arc60',
+                stdSigData: expect.objectContaining({
+                    signer: 'rekeyed-addr',
+                }),
+            }),
+        )
+    })
+
+    it('rejects an ARC-60 request whose rekeyed signer has no signable auth account', async () => {
+        const accounts = await import('@perawallet/wallet-core-accounts')
+        vi.mocked(accounts.useAllAccounts).mockReturnValueOnce([
+            {
+                address: 'rekeyed-addr',
+                name: 'Rekeyed',
+                type: 'watch',
+                rekeyAddress: 'auth-addr',
+            },
+            { address: 'auth-addr', name: 'Auth', type: 'watch' },
+        ] as never)
+
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, null),
+        )
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: '14-arc60-stranded',
+                jsonrpc: '2.0',
+                method: 'requestDataSigning',
+                params: {
+                    data: 'AQID',
+                    signer: 'rekeyed-addr',
+                    domain: 'example.com',
+                    authenticatorData: 'YXV0aA==',
+                    metadata: { scope: 1, encoding: 'base64' },
+                },
+            })
+        })
+
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"14-arc60-stranded"'),
         )
     })
 

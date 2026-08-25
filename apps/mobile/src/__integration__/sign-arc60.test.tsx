@@ -22,8 +22,13 @@ import {
     describe,
     expect,
     it,
+    vi,
 } from 'vitest'
 
+import { act, renderHook } from '@testing-library/react'
+import { QueryClientProvider } from '@tanstack/react-query'
+
+import { createTestQueryClient } from '@test-utils/render'
 import { server } from '@test-utils/msw-server'
 import { resetTestKeystore } from '@test-utils/algorand-keystore-test'
 import {
@@ -39,12 +44,55 @@ import {
     screen,
     waitFor,
     REVIEW_SIGNER_ADDRESS,
+    REVIEW_RECEIVER_ADDRESS,
     seedAlgo25Signer,
     seedQuantumSigner,
 } from '@test-utils/signing-review'
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    AccountTypes,
+    useAccountsStore,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
+    buildArc60AuthSigningPayload,
+    decodeArc60Data,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const SLOW_TEST_TIMEOUT_MS = 30_000
+
+// The rekeyed signer holds no key of its own (empty keyPairId), so the only
+// way to prove the AUTH account's key produced the signature is to spy on
+// the keystore primitive and inspect which childKeyId it was called with —
+// the test keystore's ed25519 `sign()` returns a fixed-length stub regardless
+// of key, so signature bytes alone can't distinguish the two (PERA-4977).
+const REKEYED_SIGNER_ADDRESS = REVIEW_RECEIVER_ADDRESS
+const AUTH_ADDRESS = REVIEW_SIGNER_ADDRESS
+
+/**
+ * `renderSignReview` enqueues into a persisted store that nothing drains when
+ * a test ends, so the review a later test renders is the FIRST request still
+ * pending — an earlier test's. Every assertion here would then be made
+ * against the wrong signer, which is exactly how a rekey case below could
+ * pass while the bug it covers is present.
+ */
+const drainPendingSignRequests = (): void => {
+    const client = createTestQueryClient()
+    const { result, unmount } = renderHook(() => useSigningRequest(), {
+        wrapper: ({ children }) => (
+            <QueryClientProvider client={client}>
+                {children}
+            </QueryClientProvider>
+        ),
+    })
+    act(() => {
+        for (const request of [...result.current.pendingSignRequests]) {
+            result.current.removeSignRequest(request)
+        }
+    })
+    unmount()
+}
 
 describe('Flow: ARC-60 (SIWA) signing review', () => {
     beforeAll(async () => {
@@ -60,6 +108,7 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
     })
 
     beforeEach(async () => {
+        drainPendingSignRequests()
         await resetTestDatabase()
         await seedAlgoAsset('mainnet')
         resetTestKeystore()
@@ -170,6 +219,74 @@ describe('Flow: ARC-60 (SIWA) signing review', () => {
                 { timeout: 10_000 },
             )
             expect(approve).not.toHaveBeenCalled()
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given a SIWA request whose signer is rekeyed to a held local key, when the user confirms, then the auth account signs — not the rekeyed account',
+        async () => {
+            const authSigner = await seedAlgo25Signer()
+            const rekeyedSigner: WalletAccount = {
+                id: 'rekeyed-arc60-signer',
+                type: AccountTypes.watch,
+                address: REKEYED_SIGNER_ADDRESS,
+                rekeyAddress: AUTH_ADDRESS,
+                name: 'Rekeyed SIWA signer',
+            }
+            useAccountsStore.getState().setAccounts([rekeyedSigner, authSigner])
+
+            const { request, approve, reject } = buildArc60SignRequest({
+                domain: 'arc60.io',
+                signer: REKEYED_SIGNER_ADDRESS,
+            })
+
+            const signSpy = vi.spyOn(getProvider().key.store, 'sign')
+
+            const { confirm } = renderSignReview(request)
+
+            await waitFor(
+                () => {
+                    expect(
+                        screen.getByTestId('arc60-confirm-slide'),
+                    ).toBeTruthy()
+                },
+                { timeout: 10_000 },
+            )
+
+            confirm('arc60-confirm-slide')
+
+            await waitFor(
+                () => {
+                    expect(approve).toHaveBeenCalled()
+                },
+                { timeout: 10_000 },
+            )
+            expect(reject).not.toHaveBeenCalled()
+
+            const delivered = approve.mock.calls[0][0]
+            expect(delivered[0].signature).toBeInstanceOf(Uint8Array)
+
+            // The rekeyed account carries no keyPairId at all, so a sign
+            // routed through it would be structurally impossible to observe
+            // here — the childKeyId the keystore actually signed with is the
+            // only place the auth-hop is provable.
+            expect(signSpy).toHaveBeenCalledTimes(1)
+            expect(signSpy.mock.calls[0][0]).toBe(authSigner.keyPairId)
+
+            // The signed bytes per PERA-4977: two concatenated SHA-256
+            // digests of the decoded SIWA payload and the authenticatorData.
+            const decodedData = decodeArc60Data(
+                request.stdSigData.data,
+                request.metadata.encoding,
+            )
+            const expectedPayload = buildArc60AuthSigningPayload(
+                decodedData,
+                request.stdSigData.authenticatorData,
+            )
+            expect(signSpy.mock.calls[0][1]).toEqual(expectedPayload)
+
+            signSpy.mockRestore()
         },
         SLOW_TEST_TIMEOUT_MS,
     )

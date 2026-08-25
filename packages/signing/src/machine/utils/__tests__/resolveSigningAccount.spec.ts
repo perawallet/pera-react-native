@@ -33,6 +33,13 @@ const authAccount: WalletAccount = {
     keyPairId: 'key-auth',
 } as unknown as WalletAccount
 
+/** The PERA-4977 shape: rekeyed on chain, no local key of its own. */
+const keylessRekeyedSigner: WalletAccount = {
+    type: 'watch',
+    address: PARTICIPANT,
+    rekeyAddress: AUTH,
+} as unknown as WalletAccount
+
 const plainSigner: WalletAccount = {
     type: 'algo25',
     address: PARTICIPANT,
@@ -97,12 +104,46 @@ describe('resolveSigningAccount', () => {
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('returns the signer itself for arc60 even when rekeyed', () => {
+    it('falls back to the auth account for arc60 when the signer holds no key', () => {
+        // Unlike ARC-1, the SIWA payload names the authenticated account
+        // (`account_address`) separately from the signing key, so the auth
+        // account is the correct producer for a keyless rekeyed signer.
+        const result = resolveSigningAccount(
+            keylessRekeyedSigner,
+            localSource,
+            'arc60',
+            [keylessRekeyedSigner, authAccount],
+        )
+        expect(result.address).toBe(AUTH)
+    })
+
+    it('does not hop for arc60 when the rekeyed signer holds its own key', () => {
+        // A dApp that resolved the auth address itself names THAT account as
+        // the signer; hopping again off its own chained rekey would sign with
+        // a key the authenticated account's auth-addr never designated.
         const result = resolveSigningAccount(
             rekeyedSigner,
             localSource,
             'arc60',
             [rekeyedSigner, authAccount],
+        )
+        expect(result.address).toBe(PARTICIPANT)
+    })
+
+    it('throws RekeyTargetNotFoundError on arc60 when a keyless signer has no rekey target', () => {
+        expect(() =>
+            resolveSigningAccount(keylessRekeyedSigner, localSource, 'arc60', [
+                keylessRekeyedSigner,
+            ]),
+        ).toThrow(RekeyTargetNotFoundError)
+    })
+
+    it('returns the signer itself for arc60 when not rekeyed', () => {
+        const result = resolveSigningAccount(
+            plainSigner,
+            localSource,
+            'arc60',
+            [plainSigner],
         )
         expect(result.address).toBe(PARTICIPANT)
     })

@@ -57,9 +57,10 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
             stdSigData: Arc60StdSigData,
             metadata: Arc60Metadata,
         ): Promise<Uint8Array> => {
-            // ARC-60 verifies signatures against the requested signer's
-            // own pubkey. Rekey is NOT followed — sign with this account's
-            // own keypair or reject.
+            // `account` is already the resolved signing account — the auth
+            // account when the request's signer is rekeyed (see
+            // resolveSigningAccount). Leaf check only: it must hold a local
+            // key by the time it reaches KMS.
             if (!canSignArbitraryData(account)) {
                 throw new Arc60InvalidSignerError(
                     account.address,
@@ -79,11 +80,18 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
                 stdSigData.authenticatorData,
             )
 
+            // `hdPath` describes the account the dApp NAMED. When the rekey
+            // fallback picked a different account to sign, that path says
+            // nothing about this key, so checking it would reject a valid
+            // request with a misleading HD-path error.
+            const isResolvedSigner = account.address === stdSigData.signer
+            const hdPath = isResolvedSigner ? stdSigData.hdPath : undefined
+
             if (isHDWalletAccount(account)) {
-                if (stdSigData.hdPath) {
+                if (hdPath) {
                     try {
                         assertAlgorandBip44PathMatches(
-                            stdSigData.hdPath,
+                            hdPath,
                             account.hdWalletDetails,
                         )
                     } catch (caught) {
@@ -103,9 +111,9 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
                 // Neither Algo25 nor quantum accounts are BIP-44 derived, so
                 // an hdPath is meaningless for them and is rejected rather
                 // than ignored.
-                if (stdSigData.hdPath) {
+                if (hdPath) {
                     throw new Arc60FailedHdPathError(
-                        stdSigData.hdPath,
+                        hdPath,
                         `${account.type} accounts have no BIP44 derivation path`,
                     )
                 }
