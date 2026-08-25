@@ -37,6 +37,7 @@ import {
     type PWTextProps,
     PWTouchableOpacity,
 } from '@components/core'
+import { CopyableText } from '@components/CopyableText'
 
 export type AccountSelectionProps = {
     onSelected?: (account: WalletAccount) => void
@@ -168,25 +169,42 @@ export const AccountSelection = ({
         navigation,
     ])
 
+    const triggerProps = {
+        ...props,
+        style: [styles.trigger, props.style],
+        activeOpacity: 0.8,
+        onPress: () => {
+            void openAccountMenu()
+        },
+        testID: 'account_selection_button',
+    }
+
+    const display = (
+        <AccountDisplay
+            account={account ?? undefined}
+            card={card}
+            style={[styles.container, triggerStyle]}
+            iconProps={triggerIconProps}
+            chevronProps={triggerChevronProps}
+            textProps={triggerTextProps}
+            noBorder
+        />
+    )
+
+    // The Pera Card identity has no address behind it, so only the account
+    // presentation gets the long-press-to-copy affordance.
+    if (card || !account) {
+        return (
+            <PWTouchableOpacity {...triggerProps}>{display}</PWTouchableOpacity>
+        )
+    }
+
     return (
-        <PWTouchableOpacity
-            {...props}
-            style={[styles.trigger, props.style]}
-            activeOpacity={0.8}
-            onPress={() => {
-                void openAccountMenu()
-            }}
-            testID='account_selection_button'
+        <CopyableText
+            {...triggerProps}
+            copyValue={account.address}
         >
-            <AccountDisplay
-                account={account ?? undefined}
-                card={card}
-                style={[styles.container, triggerStyle]}
-                iconProps={triggerIconProps}
-                chevronProps={triggerChevronProps}
-                textProps={triggerTextProps}
-                noBorder
-            />
-        </PWTouchableOpacity>
+            {display}
+        </CopyableText>
     )
 }

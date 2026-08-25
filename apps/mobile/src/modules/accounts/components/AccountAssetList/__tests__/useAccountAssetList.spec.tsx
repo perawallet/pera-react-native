@@ -50,6 +50,7 @@ const makeHolding = (assetId: string) => ({
     peraMetadataJson: null,
     isFavorited: false,
     usdPrice: null,
+    isFrozen: false,
 })
 
 const { mockAssetsQuery, mockPreferences } = vi.hoisted(() => ({
@@ -175,6 +176,7 @@ describe('useAccountAssetList', () => {
                 peraMetadataJson: null,
                 isFavorited: false,
                 usdPrice: null,
+                isFrozen: false,
             })
         })
 
@@ -204,6 +206,7 @@ describe('useAccountAssetList', () => {
                 peraMetadataJson: null,
                 isFavorited: false,
                 usdPrice: null,
+                isFrozen: false,
             })
         })
 
@@ -287,6 +290,35 @@ describe('useAccountAssetList', () => {
 
             mockAssetsQuery.isPlaceholderData = false
             mockAssetsQuery.holdings = [makeHolding('456')]
+            rerender({})
+            await flushFrame()
+
+            expect(scrollToOffset).toHaveBeenCalledTimes(1)
+        })
+
+        // A placeholder gap re-runs the effect, and its cleanup cancels the
+        // frame the previous run scheduled. Recording the request as applied
+        // before that frame ran made the cancellation permanent (PERA-4932).
+        it('still resets once the rows land if a placeholder gap cancelled the scheduled frame', async () => {
+            const { result, rerender } = renderHook(() =>
+                useAccountAssetList({ account: mockAccount, t: mockT }),
+            )
+            const scrollToOffset = attachListRef(result)
+
+            // The new order's rows land and schedule a reset for the next frame.
+            mockPreferences.assetSortMode = 'nameAsc'
+            mockAssetsQuery.isPlaceholderData = false
+            mockAssetsQuery.holdings = [makeHolding('456')]
+            rerender({})
+
+            // A refetch re-enters the placeholder gap before that frame runs.
+            mockAssetsQuery.isPlaceholderData = true
+            rerender({})
+            await flushFrame()
+
+            expect(scrollToOffset).not.toHaveBeenCalled()
+
+            mockAssetsQuery.isPlaceholderData = false
             rerender({})
             await flushFrame()
 

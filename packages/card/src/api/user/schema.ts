@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod'
+import { httpsUrlSchema } from '@perawallet/wallet-core-shared'
 
 // GET /v1/user. Only the fields the card feature needs are modelled; unknown
 // fields are stripped by Zod.
@@ -25,9 +26,10 @@ export const userResponseSchema = z.object({
 })
 export type UserApiResponse = z.infer<typeof userResponseSchema>
 
-// GET /v1/user/verification — starts/returns the Veriff KYC session URL.
+// GET /v1/user/verification — starts/returns the Veriff KYC session URL. The
+// caller hands it to Linking.openURL, so the scheme is gated here.
 export const verificationSessionResponseSchema = z.object({
-    sessionUrl: z.string(),
+    sessionUrl: httpsUrlSchema,
 })
 export type VerificationSessionApiResponse = z.infer<
     typeof verificationSessionResponseSchema

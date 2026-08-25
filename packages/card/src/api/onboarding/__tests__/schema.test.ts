@@ -71,6 +71,15 @@ describe('registerVerificationResponseSchema', () => {
         ).toBe('https://veriff/session')
         expect(() => registerVerificationResponseSchema.parse({})).toThrow()
     })
+
+    it.each(['http://veriff/session', 'javascript:alert(1)'])(
+        'rejects a %s session url before it reaches Linking.openURL',
+        sessionUrl => {
+            expect(() =>
+                registerVerificationResponseSchema.parse({ sessionUrl }),
+            ).toThrow()
+        },
+    )
 })
 
 describe('onboardingDetailsResponseSchema', () => {

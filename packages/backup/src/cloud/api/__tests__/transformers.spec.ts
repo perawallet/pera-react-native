@@ -16,11 +16,7 @@ import {
     transformDeltaEntries,
     transformReadItems,
 } from '../transformers'
-import type {
-    ManifestResponse,
-    DeltaEntryResponse,
-    ReadItemResponseEntry,
-} from '../types'
+import type { ManifestResponse, DeltaEntryResponse } from '../types'
 
 describe('transformManifest', () => {
     test('maps snake_case wire shape to camelCase domain model', () => {
@@ -105,7 +101,7 @@ describe('transformDeltaEntries', () => {
 
 describe('transformReadItems', () => {
     test('keeps FOUND entries and drops NOT_FOUND / DELETED', () => {
-        const entries: ReadItemResponseEntry[] = [
+        const entries: unknown[] = [
             {
                 key: 'accounts/acc-1',
                 status: 'FOUND',
@@ -127,9 +123,46 @@ describe('transformReadItems', () => {
         ])
     })
 
-    test('drops FOUND entries missing a payload (defensive)', () => {
-        const entries: ReadItemResponseEntry[] = [
+    test('drops a FOUND entry missing its payload', () => {
+        const entries: unknown[] = [
             { key: 'accounts/acc-1', status: 'FOUND', hash: 'h', ver: 1 },
+        ]
+
+        expect(transformReadItems(entries)).toEqual([])
+    })
+
+    test('drops one malformed entry without losing the rest of the batch', () => {
+        const entries: unknown[] = [
+            { key: 'accounts/acc-1', status: 'FOUND', payload: 1, ver: 1 },
+            'not-an-object',
+            {
+                key: 'accounts/acc-2',
+                status: 'FOUND',
+                payload: 'BASE64',
+                hash: 'sha256:acc',
+                ver: 2,
+            },
+        ]
+
+        expect(transformReadItems(entries)).toEqual([
+            {
+                key: 'accounts/acc-2',
+                payload: 'BASE64',
+                hash: 'sha256:acc',
+                ver: 2,
+            },
+        ])
+    })
+
+    test('drops an entry whose version is not a non-negative integer', () => {
+        const entries: unknown[] = [
+            {
+                key: 'accounts/acc-1',
+                status: 'FOUND',
+                payload: 'BASE64',
+                hash: 'h',
+                ver: -1,
+            },
         ]
 
         expect(transformReadItems(entries)).toEqual([])

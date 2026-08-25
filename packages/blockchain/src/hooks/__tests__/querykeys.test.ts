@@ -14,6 +14,8 @@ import { describe, test, expect } from 'vitest'
 import {
     getSuggestedParametersQueryKey,
     getTransactionDetailQueryKey,
+    getGroupTransactionsQueryKey,
+    isBlockchainQuery,
 } from '../querykeys'
 
 describe('querykeys', () => {
@@ -45,6 +47,29 @@ describe('querykeys', () => {
             const key2 = getTransactionDetailQueryKey('TXID123', 'testnet')
 
             expect(key1).not.toEqual(key2)
+        })
+    })
+
+    describe('isBlockchainQuery', () => {
+        test('returns true for keys built by the blockchain key factories', () => {
+            expect(
+                isBlockchainQuery(getSuggestedParametersQueryKey('mainnet')),
+            ).toBe(true)
+            expect(
+                isBlockchainQuery(
+                    getTransactionDetailQueryKey('TXID123', 'mainnet'),
+                ),
+            ).toBe(true)
+            expect(
+                isBlockchainQuery(
+                    getGroupTransactionsQueryKey('GROUP123', 'mainnet'),
+                ),
+            ).toBe(true)
+        })
+
+        test('returns false for other module prefixes and an empty key', () => {
+            expect(isBlockchainQuery(['accounts', 'balance'])).toBe(false)
+            expect(isBlockchainQuery([])).toBe(false)
         })
     })
 })

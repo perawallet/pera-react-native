@@ -11,8 +11,12 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
+import type { QueryKey } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'blockchain'
+
+export const isBlockchainQuery = (queryKey: QueryKey): boolean =>
+    queryKey[0] === MODULE_PREFIX
 
 export const getSuggestedParametersQueryKey = (network: Network) => [
     MODULE_PREFIX,

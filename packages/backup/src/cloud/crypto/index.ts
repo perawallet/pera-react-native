@@ -30,6 +30,11 @@ export {
 } from './buildBackupRequestProof'
 export type { BackupRequestProof } from './buildBackupRequestProof'
 export {
+    WS_MESSAGE_PREFIX,
+    buildBackupWebSocketMessage,
+    buildBackupWebSocketToken,
+} from './buildBackupWebSocketToken'
+export {
     encryptItemPayload,
     decryptItemPayload,
     DecryptItemPayloadError,

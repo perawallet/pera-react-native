@@ -17,6 +17,7 @@ import {
     useTransactionSendFlow,
     InvalidSendParamsError,
 } from '../useTransactionSendFlow'
+import { AssetFrozenError } from '../../errors'
 
 // BigInt.prototype.microAlgo() (added by algokit-utils) returns an
 // AlgoAmount wrapper, not a raw bigint. Patch it to return the bigint itself
@@ -39,6 +40,7 @@ const mockAddPayment = vi.fn()
 const mockAddAssetTransfer = vi.fn()
 const mockAddAssetOptIn = vi.fn()
 const mockAddToAssetHolding = vi.fn()
+const mockIsAssetFrozen = vi.fn()
 const mockFetchAndPersistAssets = vi.fn()
 const mockInvalidateBalances = vi.fn()
 const mockUseAllAccounts = vi.fn()
@@ -60,6 +62,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 // correctly and applies the override guard on its output.
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     addToAssetHolding: (...args: unknown[]) => mockAddToAssetHolding(...args),
+    isAssetFrozen: (...args: unknown[]) => mockIsAssetFrozen(...args),
     useAccountBalancesInvalidator: () => ({
         invalidate: mockInvalidateBalances,
     }),
@@ -110,9 +113,18 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 const TXN = { sender: 'SENDER' } as unknown
 
+// Answers per asset, like the real `isAssetFrozen`, so a test asserting a
+// frozen asset fails if the guard asked about a different one.
+const freezeHoldings = (...frozenIds: string[]) =>
+    mockIsAssetFrozen.mockImplementation(({ assetId }: { assetId: string }) =>
+        Promise.resolve(frozenIds.includes(assetId)),
+    )
+
 describe('useTransactionSendFlow', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        // Default: nothing frozen. The guard reads holdings on every send.
+        freezeHoldings()
         mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
         mockBuild.mockResolvedValue({ transactions: [{ txn: TXN }] })
         mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
@@ -624,6 +636,65 @@ describe('useTransactionSendFlow', () => {
         )
         // Rejecting returns the asset to the sender — never credit holdings.
         expect(mockAddToAssetHolding).not.toHaveBeenCalled()
+    })
+
+    describe('frozen holding guard', () => {
+        const baseParams = {
+            sendMode: 'normal' as const,
+            sender: { address: 'A' } as any,
+            receiver: 'B',
+            asset: { assetId: '99', decimals: 0 } as any,
+            amount: new Decimal(1),
+        }
+
+        it('refuses to build a send for a frozen holding', async () => {
+            freezeHoldings('99')
+
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await expect(
+                    result.current.execute({ params: baseParams }),
+                ).rejects.toBeInstanceOf(AssetFrozenError)
+            })
+            expect(mockSubmit).not.toHaveBeenCalled()
+        })
+
+        it('builds normally when the holding is not frozen', async () => {
+            freezeHoldings()
+
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await result.current.execute({ params: baseParams })
+            })
+            expect(mockSubmit).toHaveBeenCalled()
+        })
+
+        it('reads the sender and network itself rather than trusting the caller', async () => {
+            freezeHoldings('99')
+
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await expect(
+                    result.current.execute({ params: baseParams }),
+                ).rejects.toBeInstanceOf(AssetFrozenError)
+            })
+            // Only the asset being sent is queried — not the whole portfolio.
+            expect(mockIsAssetFrozen).toHaveBeenCalledWith({
+                accountAddress: 'A',
+                assetId: '99',
+                network: expect.any(String),
+            })
+        })
+
+        it('builds when the holding has not synced yet — algod is the backstop', async () => {
+            freezeHoldings()
+
+            const { result } = renderHook(() => useTransactionSendFlow())
+            await act(async () => {
+                await result.current.execute({ params: baseParams })
+            })
+            expect(mockSubmit).toHaveBeenCalled()
+        })
     })
 
     it('throws InvalidSendParamsError for an empty assetId string', async () => {

@@ -235,6 +235,12 @@
             "total_supply": "Offre totale",
             "no_freeze": "Sans gel",
             "no_clawback": "Sans clawback",
+            "freeze": "Gel",
+            "clawback": "Clawback",
+            "freeze_info_body": "Une adresse de gel est un compte qui peut empêcher temporairement certains comptes de transférer l’actif, jusqu’à la levée du gel. C’est utile pour les vérifications de conformité, les restrictions de trading ou en cas d’incident de sécurité.",
+            "clawback_info_body": "Une adresse de clawback est un compte qui peut révoquer l’actif auprès de n’importe quel détenteur et le rediriger vers une autre adresse. C’est utile pour respecter les exigences réglementaires, appliquer des restrictions de trading ou récupérer des actifs sur un compte compromis.",
+            "freeze_address": "Adresse de gel",
+            "clawback_address": "Adresse de clawback",
             "description": "Description",
             "social_media": "Réseaux sociaux",
             "chart_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
@@ -674,7 +680,7 @@
         "algod": {
             "overspend": {
                 "title": "ALGO insuffisant",
-                "body": "Ce compte ne dispose pas d’assez d’ALGO pour couvrir la transaction et conserver son solde minimum. Ajoutez au moins {{missing}} microALGO, puis réessayez."
+                "body": "Ce compte ne dispose pas d’assez d’ALGO pour couvrir la transaction et conserver son solde minimum. Ajoutez plus d’ALGO, puis réessayez."
             },
             "below_min_balance": {
                 "title": "Solde minimum non atteint",
@@ -686,7 +692,7 @@
             },
             "asset_frozen": {
                 "title": "Actif gelé",
-                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Contactez le créateur de l’actif pour le dégeler."
+                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
             },
             "duplicate_txn": {
                 "title": "Déjà soumise",
@@ -714,7 +720,7 @@
             },
             "group_fee_too_small": {
                 "title": "Frais de réseau trop bas",
-                "body": "Ce groupe de transactions a payé {{paid}} microALGO de frais, alors que le réseau en exige {{required}} microALGO. Veuillez réessayer."
+                "body": "Les frais de ce groupe de transactions sont inférieurs à ceux exigés par le réseau. Veuillez réessayer."
             },
             "unknown_node_error": {
                 "title": "Échec de la transaction",

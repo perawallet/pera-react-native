@@ -235,6 +235,12 @@
             "total_supply": "Suministro total",
             "no_freeze": "Sin congelación",
             "no_clawback": "Sin clawback",
+            "freeze": "Congelación",
+            "clawback": "Clawback",
+            "freeze_info_body": "Una dirección de congelación es una cuenta que puede impedir temporalmente que determinadas cuentas transfieran el activo hasta que se levante la congelación. Esto es útil para verificaciones de cumplimiento, restricciones de negociación o para responder a incidentes de seguridad.",
+            "clawback_info_body": "Una dirección de clawback es una cuenta que puede revocar el activo de cualquier titular y enviarlo a otra dirección. Esto es útil para cumplir requisitos regulatorios, aplicar restricciones de negociación o recuperar activos de una cuenta comprometida.",
+            "freeze_address": "Dirección de congelación",
+            "clawback_address": "Dirección de clawback",
             "description": "Descripción",
             "social_media": "Redes sociales",
             "chart_empty_body": "Verás un gráfico aquí cuando tengas algo de historial de saldo",
@@ -674,7 +680,7 @@
         "algod": {
             "overspend": {
                 "title": "ALGO insuficiente",
-                "body": "Esta cuenta no tiene suficiente ALGO para cubrir la transacción y mantener su saldo mínimo. Añade al menos {{missing}} microALGO y vuelve a intentarlo."
+                "body": "Esta cuenta no tiene suficiente ALGO para cubrir la transacción y mantener su saldo mínimo. Añade más ALGO y vuelve a intentarlo."
             },
             "below_min_balance": {
                 "title": "Por debajo del saldo mínimo",
@@ -686,7 +692,7 @@
             },
             "asset_frozen": {
                 "title": "Activo congelado",
-                "body": "El activo {{assetId}} está congelado, por lo que esta transferencia no se puede completar. Contacta al creador del activo para descongelarlo."
+                "body": "El activo {{assetId}} está congelado, por lo que esta transferencia no se puede completar. El gestor de congelación del activo debe descongelarlo primero."
             },
             "duplicate_txn": {
                 "title": "Ya enviada",
@@ -714,7 +720,7 @@
             },
             "group_fee_too_small": {
                 "title": "Comisión de red demasiado baja",
-                "body": "Este grupo de transacciones pagó {{paid}} microALGO de comisión, pero la red requiere {{required}} microALGO. Inténtalo de nuevo."
+                "body": "Las comisiones de este grupo de transacciones son inferiores a las que requiere la red. Inténtalo de nuevo."
             },
             "unknown_node_error": {
                 "title": "Transacción fallida",
