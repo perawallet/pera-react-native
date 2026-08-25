@@ -580,6 +580,144 @@ describe('logging', () => {
                     'failed on perawallet://x?mnemonic=[REDACTED]',
                 )
             })
+
+            // A stack's first line is the message, so redacting only `message`
+            // leaves the same secret in the sibling `stack`.
+            test('redacts a URI-embedded secret in the top-level error stack', () => {
+                const error = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                )
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as { stack?: string }
+                expect(captured.stack).toContain('mnemonic=[REDACTED]')
+                expect(captured.stack).not.toContain('abandon')
+            })
+
+            test('keeps the rest of the payload when message is not a string', () => {
+                const error = Object.assign(new Error('placeholder'), {
+                    code: 'E_CRYPTO_FAILED',
+                })
+                Object.defineProperty(error, 'message', { value: 12_345 })
+
+                logger.error('boom', { error })
+
+                expect(capturedContext().error).toMatchObject({
+                    name: 'Error',
+                    message: 12_345,
+                    code: 'E_CRYPTO_FAILED',
+                })
+            })
+
+            test('caps nativeStackAndroid at ten frames', () => {
+                const error = Object.assign(new Error('keychain failed'), {
+                    nativeStackAndroid: Array.from(
+                        { length: 20 },
+                        (_, index) => ({
+                            className: 'com.oblador.keychain.KeychainModule',
+                            file: 'KeychainModule.java',
+                            lineNumber: index,
+                            methodName: 'decrypt',
+                        }),
+                    ),
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    nativeStackAndroid?: unknown[]
+                }
+                expect(captured.nativeStackAndroid).toHaveLength(10)
+            })
+
+            test('omits nativeStackAndroid on a nested cause Error', () => {
+                const cause = Object.assign(new Error('keystore rejected'), {
+                    nativeStackAndroid: [
+                        {
+                            className: 'com.oblador.keychain.KeychainModule',
+                            file: 'KeychainModule.java',
+                            lineNumber: 812,
+                            methodName: 'decrypt',
+                        },
+                    ],
+                })
+                const error = Object.assign(new Error('import failed'), {
+                    cause,
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: Record<string, unknown>
+                }
+                expect(captured.cause).not.toHaveProperty('nativeStackAndroid')
+            })
+
+            // An Error reached through a non-Error cause is walked by
+            // redactSensitiveValue, which enumerates own keys and so needs the
+            // same frame cap.
+            test('caps nativeStackAndroid on an Error nested inside an object cause', () => {
+                const inner = Object.assign(new Error('keystore rejected'), {
+                    nativeStackAndroid: Array.from(
+                        { length: 20 },
+                        (_, index) => ({
+                            className: 'com.oblador.keychain.KeychainModule',
+                            file: 'KeychainModule.java',
+                            lineNumber: index,
+                            methodName: 'decrypt',
+                        }),
+                    ),
+                })
+                const error = Object.assign(new Error('import failed'), {
+                    cause: { inner },
+                })
+
+                logger.error('boom', { error })
+
+                const captured = capturedContext().error as {
+                    cause?: { inner?: { nativeStackAndroid?: unknown[] } }
+                }
+                expect(captured.cause?.inner?.nativeStackAndroid).toHaveLength(
+                    10,
+                )
+            })
+
+            test('redacts a URI-embedded secret in the reported combined message', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                )
+                logger.error(error, { source: 'test' })
+
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                }
+                expect(reported.error.message).toContain('mnemonic=[REDACTED]')
+                expect(reported.error.message).not.toContain('abandon')
+                expect(reported.error.stack).not.toContain('abandon')
+            })
+
+            test('redacts a URI-embedded secret when the Error is reported without context', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                logger.error(
+                    new Error(
+                        'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                    ),
+                )
+
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                }
+                expect(reported.error.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+                expect(reported.error.stack).not.toContain('abandon')
+            })
         })
     })
 

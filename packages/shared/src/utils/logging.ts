@@ -120,6 +120,20 @@ export const redactSensitiveUrl = (input: string): string => {
     return out
 }
 
+// A native stack is bulk: uncapped, it pushes the `code`/`cause` keys that
+// diagnose a keystore failure out of Crashlytics' truncation window. The top of
+// the stack is the diagnostic part, in either shape RN might hand us.
+const MAX_NATIVE_STACK_FRAMES = 10
+const MAX_NATIVE_STACK_CHARS = 2_000
+
+const capNativeStack = (nativeStack: unknown): unknown => {
+    if (Array.isArray(nativeStack))
+        return nativeStack.slice(0, MAX_NATIVE_STACK_FRAMES)
+    if (typeof nativeStack === 'string')
+        return nativeStack.slice(0, MAX_NATIVE_STACK_CHARS)
+    return nativeStack
+}
+
 // Defense against pathological inputs (circular references, deeply-nested
 // objects). Logger contexts are normally small; anything beyond this depth is
 // almost certainly a mistake (e.g. a React fiber leaked into context).
@@ -172,17 +186,26 @@ const redactSensitiveValue = (
         // message/stack are non-enumerable, so Object.entries below never
         // touches them — only extra own properties (anything a caller attached
         // via Object.assign, e.g. a leaked secret) need the same redaction as
-        // any other object's keys. message still goes through redactSensitiveUrl
-        // like any other string reaching this function — a nested Error's
-        // message is free-form and can carry a URI-embedded secret.
+        // any other object's keys. A string message goes through
+        // redactSensitiveUrl like any other string reaching this function — a
+        // nested Error's message is free-form and can carry a URI-embedded
+        // secret — while a non-string one is passed through, since
+        // redactSensitiveUrl would throw on it and lose the whole context.
         const out: Record<string, unknown> = {
             name: value.name,
-            message: redactSensitiveUrl(value.message),
+            message:
+                typeof value.message === 'string'
+                    ? redactSensitiveUrl(value.message)
+                    : value.message,
         }
         for (const [k, v] of Object.entries(value)) {
             out[k] = isSensitiveKey(k)
                 ? REDACTED
-                : redactSensitiveValue(v, depth + 1, seen)
+                : redactSensitiveValue(
+                      k === 'nativeStackAndroid' ? capNativeStack(v) : v,
+                      depth + 1,
+                      seen,
+                  )
         }
         return out
     }
@@ -220,6 +243,21 @@ export const redactSensitiveContext = (context: LogContext): LogContext => {
               : redactSensitiveValue(v, 0, seen)
     }
     return out
+}
+
+// Crashlytics sends `message` and `stack` to native verbatim, so an Error
+// reported as-is is a second, unredacted copy of anything the serialized
+// context already scrubbed. The original instance is returned untouched when
+// nothing matched, so its own properties survive the common case.
+const redactErrorForReport = (error: Error): Error => {
+    const message = redactSensitiveUrl(error.message)
+    const stack = error.stack ? redactSensitiveUrl(error.stack) : error.stack
+    if (message === error.message && stack === error.stack) return error
+
+    const redacted = new Error(message)
+    redacted.name = error.name
+    redacted.stack = stack
+    return redacted
 }
 
 export type LogErrorSeverity = 'error' | 'critical'
@@ -299,36 +337,17 @@ class Logger {
             const nativeStack = (value as { nativeStackAndroid?: unknown })
                 .nativeStackAndroid
 
+            // Key order is load-bearing: JSON.stringify emits insertion
+            // order and Crashlytics truncates the report, so the diagnostic
+            // keys precede the two bulky stacks.
             return {
                 name: value.name,
-                message: redactSensitiveUrl(value.message),
-                // Crashlytics truncates the report; a nested stack (JS or native)
-                // crowds out the sibling keys (code, cause) that actually diagnose
-                // this class of bug, and is more device data leaving for no
-                // diagnostic gain — both stacks are gated to depth 0 for the same
-                // reason.
-                ...(value.stack && depth === 0 ? { stack: value.stack } : {}),
+                message:
+                    typeof value.message === 'string'
+                        ? redactSensitiveUrl(value.message)
+                        : value.message,
                 ...(typeof code === 'string' || typeof code === 'number'
                     ? { code }
-                    : {}),
-                // RN's own PromiseImpl/JavaTurboModule copy this onto the JS Error
-                // as an array of frame maps (class/file/line/method), never a
-                // string. Redacted like `cause`, depth-gated like `stack` above,
-                // and frame-capped: a keystore rejection needs only the top of the
-                // native stack, and frame maps are verbose enough (four repeated
-                // key names each) that an uncapped array pushes `cause` — the
-                // primary thing this ticket exists to obtain — out of
-                // Crashlytics' truncation window.
-                ...(nativeStack !== undefined && depth === 0
-                    ? {
-                          nativeStackAndroid: redactSensitiveValue(
-                              Array.isArray(nativeStack)
-                                  ? nativeStack.slice(0, 10)
-                                  : nativeStack,
-                              0,
-                              new WeakSet(),
-                          ),
-                      }
                     : {}),
                 ...(value.cause !== undefined &&
                 value.cause !== value &&
@@ -351,6 +370,25 @@ class Logger {
                                         0,
                                         new WeakSet(),
                                     ),
+                      }
+                    : {}),
+                // A stack's first line is the message, so it needs the same
+                // scrubbing. Both stacks are gated to depth 0: a nested one
+                // crowds out the sibling code/cause keys that diagnose this
+                // class of bug, for no diagnostic gain of its own.
+                ...(typeof value.stack === 'string' && depth === 0
+                    ? { stack: redactSensitiveUrl(value.stack) }
+                    : {}),
+                // RN's PromiseImpl/JavaTurboModule copies this onto the JS Error
+                // as an array of frame maps (class/file/line/method), never a
+                // string.
+                ...(nativeStack !== undefined && depth === 0
+                    ? {
+                          nativeStackAndroid: redactSensitiveValue(
+                              capNativeStack(nativeStack),
+                              0,
+                              new WeakSet(),
+                          ),
                       }
                     : {}),
             }
@@ -392,15 +430,16 @@ class Logger {
             if (messageOrError instanceof Error && !context) {
                 this.errorReporter({
                     severity,
-                    error: messageOrError,
+                    error: redactErrorForReport(messageOrError),
                 })
                 return
             }
 
-            const message =
+            const message = redactSensitiveUrl(
                 messageOrError instanceof Error
                     ? messageOrError.message
-                    : messageOrError
+                    : messageOrError,
+            )
             const contextText = this.stringifyContext(context)
             const combinedMessage = contextText
                 ? `${message} | context: ${contextText}`
@@ -411,6 +450,8 @@ class Logger {
             if (messageOrError instanceof Error) {
                 reportableError.name = messageOrError.name
                 reportableError.stack = messageOrError.stack
+                    ? redactSensitiveUrl(messageOrError.stack)
+                    : messageOrError.stack
 
                 // No groupingKey: this error's own stack points at where it was
                 // thrown, which separates sites far better than a shared name
@@ -432,7 +473,7 @@ class Logger {
             //    frames below point at the real origin instead of at `log()`.
             const contextError = this.findContextError(context)
             if (contextError?.stack) {
-                reportableError.stack = contextError.stack
+                reportableError.stack = redactSensitiveUrl(contextError.stack)
             }
 
             this.errorReporter({
