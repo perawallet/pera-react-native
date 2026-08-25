@@ -748,8 +748,14 @@ describe('logging', () => {
                 expect(errorReporter).toHaveBeenCalledTimes(2)
             })
 
+            // The reporter reads `.stack` the way a real one does
+            // (`StackTrace.fromError`), so this fails if the reported error
+            // still carries the live throwing accessor.
             test('still reports an Error whose stack accessor throws', () => {
-                const errorReporter = vi.fn()
+                const readStacks: unknown[] = []
+                const errorReporter = vi.fn(({ error }: { error: unknown }) => {
+                    readStacks.push((error as Error).stack)
+                })
                 logger.setErrorReporter(errorReporter)
 
                 const error = new Error('keychain failed')
@@ -762,6 +768,7 @@ describe('logging', () => {
                 logger.error(error)
 
                 expect(errorReporter).toHaveBeenCalledTimes(1)
+                expect(readStacks).toHaveLength(1)
             })
 
             // A redacted report must stay indistinguishable from an untouched
@@ -769,6 +776,7 @@ describe('logging', () => {
             test('keeps the prototype and own properties when redacting a reported Error subclass', () => {
                 class KeystoreError extends Error {
                     public readonly code: string
+                    public readonly metadata = { attempt: 2 }
 
                     constructor(message: string, code: string) {
                         super(message)
@@ -791,11 +799,88 @@ describe('logging', () => {
                     error: KeystoreError
                 }
                 expect(reported.error).toBeInstanceOf(KeystoreError)
+                expect(reported.error.constructor).toBe(KeystoreError)
                 expect(reported.error.name).toBe('KeystoreError')
                 expect(reported.error.code).toBe('E_CRYPTO_FAILED')
+                expect(reported.error.metadata).toEqual({ attempt: 2 })
                 expect(reported.error.message).toBe(
                     'failed on perawallet://x?mnemonic=[REDACTED]',
                 )
+            })
+
+            // A native module can back any own property with an accessor that
+            // throws; copying them in one Object.assign pass would abort on the
+            // first one and lose the report entirely.
+            test('still reports an Error with a throwing own enumerable getter', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                )
+                Object.defineProperty(error, 'code', {
+                    enumerable: true,
+                    get() {
+                        throw new Error('native accessor blew up')
+                    },
+                })
+
+                logger.error(error)
+
+                expect(errorReporter).toHaveBeenCalledTimes(1)
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                }
+                expect(reported.error.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+            })
+
+            // Assigning over an inherited getter-only `message` is a strict-mode
+            // TypeError; the redacted copy has to be defined, not assigned.
+            test('still reports an Error whose inherited message is getter-only', () => {
+                class NativeError extends Error {
+                    public override get message(): string {
+                        return 'failed on perawallet://x?mnemonic=abandon+abandon+art'
+                    }
+                }
+
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                logger.error(new NativeError())
+
+                expect(errorReporter).toHaveBeenCalledTimes(1)
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                }
+                expect(reported.error.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+            })
+
+            test('drops sensitive own properties from the reported Error', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error(
+                    'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                ) as Error & { mnemonic?: string; privateKey?: string }
+                error.mnemonic = 'abandon abandon art'
+                error.privateKey = 'deadbeefdeadbeef'
+
+                logger.error(error)
+
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error & { mnemonic?: string; privateKey?: string }
+                }
+                expect(reported.error.mnemonic).toBeUndefined()
+                expect(reported.error.privateKey).toBeUndefined()
+
+                const serialized = JSON.stringify(reported.error)
+                expect(serialized).not.toContain('abandon')
+                expect(serialized).not.toContain('deadbeef')
+                expect(serialized).toBe('{}')
             })
         })
     })

@@ -261,7 +261,8 @@ export const redactSensitiveContext = (context: LogContext): LogContext => {
 // Crashlytics sends `message` and `stack` to native verbatim, so an Error
 // reported as-is is a second, unredacted copy of anything the serialized
 // context already scrubbed. Returning the original when nothing matched is only
-// an optimisation: the clone keeps the prototype and own properties, so a
+// an optimisation: the clone keeps the prototype and non-sensitive own
+// properties, so a
 // reporter that branches on `instanceof` or reads `.code` cannot tell a redacted
 // error from an untouched one.
 const redactErrorForReport = (error: Error): Error => {
@@ -271,9 +272,45 @@ const redactErrorForReport = (error: Error): Error => {
     const stack = redactMaybeString(rawStack)
     if (message === rawMessage && stack === rawStack) return error
 
-    const redacted = Object.create(Object.getPrototypeOf(error)) as Error
-    Object.assign(redacted, error, { name: error.name, message, stack })
-    return redacted
+    const name = readSafely(() => error.name)
+
+    try {
+        const redacted = Object.create(Object.getPrototypeOf(error)) as Error
+        const target = redacted as unknown as Record<string, unknown>
+        const source = error as unknown as Record<string, unknown>
+        // One key at a time, not Object.assign: a single throwing native
+        // accessor would abort the whole copy and cost the entire report.
+        // Sensitive keys are skipped outright — a redactor must never hand a
+        // raw mnemonic to the reporting boundary.
+        for (const key of Object.keys(error)) {
+            if (isSensitiveKey(key)) continue
+            try {
+                target[key] = source[key]
+            } catch {
+                // drop the unreadable property, not the report
+            }
+        }
+        // Non-enumerable, like a real Error's own fields: an enumerable copy
+        // would put message/stack into JSON.stringify of the reported error.
+        for (const [key, value] of [
+            ['name', name],
+            ['message', message],
+            ['stack', stack],
+        ] as const) {
+            Object.defineProperty(redacted, key, {
+                value,
+                enumerable: false,
+                writable: true,
+                configurable: true,
+            })
+        }
+        return redacted
+    } catch {
+        const fallback = new Error(String(message))
+        fallback.name = String(name)
+        fallback.stack = stack as typeof fallback.stack
+        return fallback
+    }
 }
 
 export type LogErrorSeverity = 'error' | 'critical'
