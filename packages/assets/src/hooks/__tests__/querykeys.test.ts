@@ -41,6 +41,7 @@ import {
     getRemoteAssetDetailsQueryKey,
     getPublicAssetDetailsQueryKey,
     getIndexerAssetDetailsQueryKey,
+    getAssetAuthoritiesQueryKey,
     isAssetPriceHistoryQuery,
     getAssetsQueryKey,
     hashAssetIds,
@@ -127,6 +128,26 @@ describe('isAssetQuery', () => {
         expect(isAssetQuery(['accounts', '123'])).toBe(false)
         expect(isAssetQuery([])).toBe(false)
     })
+
+    // A key that skips the prefix is unreachable by invalidateAssetQueries — and
+    // the authorities query has staleTime: Infinity, so nothing else would ever
+    // refresh a cleared freeze address.
+    test('every key factory in this module is reachable by the invalidator', () => {
+        const keys = [
+            getAssetPricesQueryKey(['123'], 'mainnet'),
+            getAssetPriceHistoryQueryKey('123', '7d', 'mainnet'),
+            getAssetDetailsQueryKey('123', 'mainnet'),
+            getRemoteAssetDetailsQueryKey('123', 'mainnet'),
+            getPublicAssetDetailsQueryKey('123'),
+            getIndexerAssetDetailsQueryKey('123'),
+            getAssetAuthoritiesQueryKey('123', 'mainnet'),
+            getAssetsQueryKey(['123'], 'mainnet'),
+        ]
+
+        for (const key of keys) {
+            expect(isAssetQuery(key), JSON.stringify(key)).toBe(true)
+        }
+    })
 })
 
 describe('invalidateAssetQueries', () => {
@@ -181,6 +202,14 @@ describe('detail query keys', () => {
             MODULE_PREFIX,
             'indexer',
             { assetId: '123' },
+        ])
+    })
+
+    test('getAssetAuthoritiesQueryKey includes the authorities namespace', () => {
+        expect(getAssetAuthoritiesQueryKey('123', 'mainnet')).toEqual([
+            MODULE_PREFIX,
+            'authorities',
+            { assetId: '123', network: 'mainnet' },
         ])
     })
 

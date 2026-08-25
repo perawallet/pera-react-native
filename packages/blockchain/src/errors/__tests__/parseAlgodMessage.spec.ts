@@ -107,6 +107,11 @@ describe('parseAlgodMessage', () => {
                 },
             })
         })
+
+        test('returns null for a too-short address', () => {
+            const message = 'asset 123 frozen in SHORTADDR'
+            expect(parseAlgodMessage(message)).toBeNull()
+        })
     })
 
     describe('duplicate_txn', () => {

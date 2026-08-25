@@ -235,6 +235,12 @@
             "total_supply": "Gesamtangebot",
             "no_freeze": "Kein Freeze",
             "no_clawback": "Kein Clawback",
+            "freeze": "Freeze",
+            "clawback": "Clawback",
+            "freeze_info_body": "Eine Freeze-Adresse ist ein Konto, das bestimmte Konten vorübergehend daran hindern kann, das Asset zu übertragen, bis die Sperre aufgehoben wird. Das ist nützlich für Compliance-Prüfungen, Handelsbeschränkungen oder als Reaktion auf Sicherheitsvorfälle.",
+            "clawback_info_body": "Eine Clawback-Adresse ist ein Konto, das das Asset von jedem Inhaber zurückholen und an eine andere Adresse weiterleiten kann. Das ist nützlich, um regulatorische Vorgaben zu erfüllen, Handelsbeschränkungen durchzusetzen oder Assets aus einem kompromittierten Konto zurückzuerlangen.",
+            "freeze_address": "Freeze-Adresse",
+            "clawback_address": "Clawback-Adresse",
             "description": "Beschreibung",
             "social_media": "Soziale Medien",
             "chart_empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
@@ -678,7 +684,7 @@
             },
             "asset_frozen": {
                 "title": "Asset eingefroren",
-                "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Wende dich an den Ersteller des Assets, um es freigeben zu lassen."
+                "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
             },
             "duplicate_txn": {
                 "title": "Bereits übermittelt",

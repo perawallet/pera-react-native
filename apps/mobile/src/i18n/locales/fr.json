@@ -235,6 +235,12 @@
             "total_supply": "Offre totale",
             "no_freeze": "Sans gel",
             "no_clawback": "Sans clawback",
+            "freeze": "Gel",
+            "clawback": "Clawback",
+            "freeze_info_body": "Une adresse de gel est un compte qui peut empêcher temporairement certains comptes de transférer l’actif, jusqu’à la levée du gel. C’est utile pour les vérifications de conformité, les restrictions de trading ou en cas d’incident de sécurité.",
+            "clawback_info_body": "Une adresse de clawback est un compte qui peut révoquer l’actif auprès de n’importe quel détenteur et le rediriger vers une autre adresse. C’est utile pour respecter les exigences réglementaires, appliquer des restrictions de trading ou récupérer des actifs sur un compte compromis.",
+            "freeze_address": "Adresse de gel",
+            "clawback_address": "Adresse de clawback",
             "description": "Description",
             "social_media": "Réseaux sociaux",
             "chart_empty_body": "Un graphique apparaîtra ici dès que vous aurez un historique de solde",
@@ -686,7 +692,7 @@
             },
             "asset_frozen": {
                 "title": "Actif gelé",
-                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Contactez le créateur de l’actif pour le dégeler."
+                "body": "L’actif {{assetId}} est gelé, ce transfert ne peut donc pas aboutir. Le gestionnaire de gel de l’actif doit d’abord le dégeler."
             },
             "duplicate_txn": {
                 "title": "Déjà soumise",

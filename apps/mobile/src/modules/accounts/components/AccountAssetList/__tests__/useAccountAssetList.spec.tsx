@@ -50,6 +50,7 @@ const makeHolding = (assetId: string) => ({
     peraMetadataJson: null,
     isFavorited: false,
     usdPrice: null,
+    isFrozen: false,
 })
 
 const { mockAssetsQuery, mockPreferences } = vi.hoisted(() => ({
@@ -175,6 +176,7 @@ describe('useAccountAssetList', () => {
                 peraMetadataJson: null,
                 isFavorited: false,
                 usdPrice: null,
+                isFrozen: false,
             })
         })
 
@@ -204,6 +206,7 @@ describe('useAccountAssetList', () => {
                 peraMetadataJson: null,
                 isFavorited: false,
                 usdPrice: null,
+                isFrozen: false,
             })
         })
 

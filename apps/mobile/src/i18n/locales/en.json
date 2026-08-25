@@ -235,6 +235,12 @@
             "total_supply": "Total Supply",
             "no_freeze": "No Freeze",
             "no_clawback": "No Clawback",
+            "freeze": "Freeze",
+            "clawback": "Clawback",
+            "freeze_info_body": "A freeze address is an account that can temporarily block specific accounts from transferring the asset until the freeze is lifted. This is useful for compliance checks, trading restrictions, or responding to security incidents.",
+            "clawback_info_body": "A clawback address is an account that can revoke the asset from any holder and redirect it to another address. This is useful for meeting regulatory requirements, enforcing trading restrictions, or recovering assets from a compromised account.",
+            "freeze_address": "Freeze address",
+            "clawback_address": "Clawback address",
             "description": "Description",
             "social_media": "Social Media",
             "chart_empty_body": "You will see a chart here once you have some balance history",
@@ -686,7 +692,7 @@
             },
             "asset_frozen": {
                 "title": "Asset frozen",
-                "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. Contact the asset's creator to unfreeze it."
+                "body": "Asset {{assetId}} is frozen, so this transfer can't be completed. The asset's freeze manager must unfreeze it first."
             },
             "duplicate_txn": {
                 "title": "Already submitted",

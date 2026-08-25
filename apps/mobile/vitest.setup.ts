@@ -2373,6 +2373,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         severity: string
         category: string
         messageKey?: string
+        titleKey?: string
         params?: Record<string, unknown>
         recoverable: boolean
         retryable: boolean
@@ -2717,6 +2718,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         isPeraServiceUnavailableError,
         isConnectivityError,
         getNetworkErrorMessageKeys,
+        messageKeysFor: keysFor,
         ErrorSeverity: {
             LOW: 'low',
             MEDIUM: 'medium',

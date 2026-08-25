@@ -58,6 +58,7 @@ export {
     InsufficientBalanceForOptInError,
     NonZeroBalanceError,
     CreatorCannotOptOutError,
+    AssetFrozenError,
     RekeyError,
     type RekeyErrorReason,
 } from './errors'

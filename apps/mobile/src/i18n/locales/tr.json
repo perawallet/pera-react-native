@@ -235,6 +235,12 @@
             "total_supply": "Toplam arz",
             "no_freeze": "Dondurma yok",
             "no_clawback": "Clawback yok",
+            "freeze": "Dondurma",
+            "clawback": "Clawback",
+            "freeze_info_body": "Freeze adresi, belirli hesapların varlığı transfer etmesini dondurma kaldırılana kadar geçici olarak engelleyebilen bir hesaptır. Bu, uyumluluk kontrolleri, işlem kısıtlamaları veya güvenlik olaylarına müdahale için kullanışlıdır.",
+            "clawback_info_body": "Clawback adresi, varlığı herhangi bir sahibinden geri alıp başka bir adrese aktarabilen bir hesaptır. Bu; yasal gerekliliklerin karşılanması, işlem kısıtlamalarının uygulanması veya ele geçirilmiş bir hesaptaki varlıkların kurtarılması için kullanışlıdır.",
+            "freeze_address": "Dondurma adresi",
+            "clawback_address": "Clawback adresi",
             "description": "Açıklama",
             "social_media": "Sosyal medya",
             "chart_empty_body": "Bir bakiye geçmişin oluştuğunda burada bir grafik göreceksin",
@@ -686,7 +692,7 @@
             },
             "asset_frozen": {
                 "title": "Varlık donduruldu",
-                "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Varlığı çözdürmek için varlığı oluşturanla iletişime geç."
+                "body": "{{assetId}} ID’li varlık dondurulmuş, bu yüzden bu transfer tamamlanamıyor. Önce varlığın dondurma yöneticisinin dondurmayı kaldırması gerekir."
             },
             "duplicate_txn": {
                 "title": "Zaten gönderildi",

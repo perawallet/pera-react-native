@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
+import { AssetFrozenError } from '@perawallet/wallet-core-transactions'
 import { useErrorToast } from '../useErrorToast'
 
 const { mockShowToast, mockGetMessage } = vi.hoisted(() => ({
@@ -310,6 +311,23 @@ describe('useErrorToast', () => {
             {
                 title: 'Custom fallback title',
                 body: 'errors.general.body',
+                type: 'error',
+            },
+            undefined,
+        )
+    })
+
+    it('renders the typed copy for an error declaring its own title key', () => {
+        const { result } = renderHook(() => useErrorToast())
+
+        act(() => {
+            result.current.showError(new AssetFrozenError('123'))
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'errors.algod.asset_frozen.title',
+                body: 'errors.algod.asset_frozen.body',
                 type: 'error',
             },
             undefined,
