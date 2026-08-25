@@ -194,4 +194,14 @@ describe('PWInput', () => {
             ).toBe('Required')
         })
     })
+
+    it('forwards spellCheck to the underlying input', () => {
+        render(<PWInput placeholder='spell-check' spellCheck={false} />)
+
+        expect(
+            screen
+                .getByPlaceholderText('spell-check')
+                .getAttribute('spellcheck'),
+        ).toBe('false')
+    })
 })
