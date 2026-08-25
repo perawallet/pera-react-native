@@ -769,6 +769,10 @@ describe('logging', () => {
 
                 expect(errorReporter).toHaveBeenCalledTimes(1)
                 expect(readStacks).toHaveLength(1)
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: Error
+                }
+                expect(reported.error.message).toBe('keychain failed')
             })
 
             // A redacted report must stay indistinguishable from an untouched

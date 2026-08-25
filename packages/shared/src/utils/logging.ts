@@ -128,12 +128,16 @@ const redactMaybeString = <T>(value: T): T =>
 
 // ...and it can make either a throwing accessor, which `log()` already guards
 // context against. A field the logger cannot read is one the reporter cannot
-// read either, so drop the field rather than the report.
-const readSafely = (read: () => unknown): unknown => {
+// read either, so drop the field rather than the report. `ok` keeps a failed
+// read distinguishable from a genuine `undefined` — conflating them would let a
+// hostile accessor reach the reporter untouched.
+type SafeRead = { ok: boolean; value: unknown }
+
+const readSafely = (read: () => unknown): SafeRead => {
     try {
-        return read()
+        return { ok: true, value: read() }
     } catch {
-        return undefined
+        return { ok: false, value: undefined }
     }
 }
 
@@ -268,11 +272,21 @@ export const redactSensitiveContext = (context: LogContext): LogContext => {
 const redactErrorForReport = (error: Error): Error => {
     const rawMessage = readSafely(() => error.message)
     const rawStack = readSafely(() => error.stack)
-    const message = redactMaybeString(rawMessage)
-    const stack = redactMaybeString(rawStack)
-    if (message === rawMessage && stack === rawStack) return error
+    const message = redactMaybeString(rawMessage.value)
+    const stack = redactMaybeString(rawStack.value)
+    // A read that threw must not take the fast path: returning the original
+    // would hand the reporter a live hostile accessor, and a reporter that
+    // reads `.stack` then throws and loses the report. The clone below
+    // materialises plain values, so it neutralises the accessor.
+    if (
+        rawMessage.ok &&
+        rawStack.ok &&
+        message === rawMessage.value &&
+        stack === rawStack.value
+    )
+        return error
 
-    const name = readSafely(() => error.name)
+    const name = readSafely(() => error.name).value
 
     try {
         const redacted = Object.create(Object.getPrototypeOf(error)) as Error
@@ -492,7 +506,7 @@ class Logger {
                 messageOrError instanceof Error
                     ? String(
                           redactMaybeString(
-                              readSafely(() => messageOrError.message),
+                              readSafely(() => messageOrError.message).value,
                           ),
                       )
                     : redactSensitiveUrl(messageOrError)
@@ -506,7 +520,7 @@ class Logger {
             if (messageOrError instanceof Error) {
                 reportableError.name = messageOrError.name
                 reportableError.stack = redactMaybeString(
-                    readSafely(() => messageOrError.stack),
+                    readSafely(() => messageOrError.stack).value,
                 ) as typeof reportableError.stack
 
                 // No groupingKey: this error's own stack points at where it was
