@@ -2591,6 +2591,7 @@
             "asset_freeze": "Congelamento de ativo",
             "app_call": "Chamada de app",
             "key_registration": "Registro de chave",
+            "heartbeat": "Heartbeat",
             "default": "Transação",
             "more_impacts": "Mostrar mais {{count}}"
         },
@@ -2683,6 +2684,13 @@
             "status": "Status do registro",
             "online": "Online",
             "offline": "Offline"
+        },
+        "heartbeat": {
+            "description": "Um heartbeat comprova que uma conta continua online e participando do consenso da Algorand. Não movimenta fundos.",
+            "account": "Conta comprovada online",
+            "submitted_by": "Enviado por",
+            "key_dilution": "Diluição de chave",
+            "vote_id": "ID de voto"
         },
         "app_call": {
             "app_id": "ID do aplicativo",

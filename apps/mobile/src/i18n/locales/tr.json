@@ -2574,6 +2574,7 @@
             "asset_freeze": "Varlık dondurma",
             "app_call": "Uygulama çağrısı",
             "key_registration": "Anahtar kaydı",
+            "heartbeat": "Heartbeat",
             "default": "İşlem",
             "more_impacts": "{{count}} tane daha göster"
         },
@@ -2664,6 +2665,13 @@
             "status": "Kayıt durumu",
             "online": "Çevrimiçi",
             "offline": "Çevrimdışı"
+        },
+        "heartbeat": {
+            "description": "Heartbeat, bir hesabın hâlâ çevrimiçi olduğunu ve Algorand konsensüsüne katıldığını kanıtlar. Hiçbir fon transfer edilmez.",
+            "account": "Çevrimiçi olduğu kanıtlanan hesap",
+            "submitted_by": "Gönderen",
+            "key_dilution": "Key dilution",
+            "vote_id": "Vote ID"
         },
         "app_call": {
             "app_id": "Uygulama ID",

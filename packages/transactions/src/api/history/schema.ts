@@ -11,8 +11,8 @@
  */
 
 import { z } from 'zod'
-import { uint64IdSchema } from '@perawallet/wallet-core-shared'
-import { TransactionTypes } from '../../models/types'
+import { logger, uint64IdSchema } from '@perawallet/wallet-core-shared'
+import type { TransactionType } from '../../models/types'
 
 /**
  * Helper to coerce string to number (API sometimes returns numeric fields as
@@ -72,11 +72,21 @@ export const transactionInterpretedMeaningSchema = z.object({
 })
 
 /**
+ * Deliberately a bare string, NOT `z.nativeEnum(TransactionTypes)` — the same
+ * call the indexer path makes (see `indexer/schema.ts`). A type the app does
+ * not model yet (`stpf`, and whatever the next consensus upgrade adds) must
+ * still reach the renderers, which all have a `default:` branch for exactly
+ * that. Validating against the enum here drops the row instead. Do not
+ * tighten this.
+ */
+const txTypeSchema = z.string().transform(value => value as TransactionType)
+
+/**
  * Schema for a single transaction item from API response
  */
 export const transactionHistoryItemResponseSchema = z.object({
     id: z.string(),
-    tx_type: z.nativeEnum(TransactionTypes),
+    tx_type: txTypeSchema,
     sender: z.string(),
     receiver: z.string().nullable().optional(),
     confirmed_round: coerceNumber,
@@ -115,3 +125,56 @@ export type TransactionHistoryApiResponse = z.infer<
 export type TransactionHistoryItemApiResponse = z.infer<
     typeof transactionHistoryItemResponseSchema
 >
+
+/**
+ * The pagination envelope only — rows stay `unknown` so
+ * {@link parseTransactionHistoryResponse} can validate them one at a time.
+ */
+const transactionHistoryEnvelopeSchema = z.object({
+    current_round: coerceNumber.optional().default(0),
+    next: z.string().nullable().optional(),
+    previous: z.string().nullable().optional(),
+    results: z.array(z.unknown()),
+})
+
+/** Best-effort `id` extraction from an as-yet-unvalidated row, for logging. */
+const extractRowId = (row: unknown): string | undefined => {
+    if (typeof row !== 'object' || row === null || !('id' in row)) {
+        return undefined
+    }
+    const { id } = row as { id: unknown }
+    return typeof id === 'string' ? id : undefined
+}
+
+/**
+ * Validates a history page, dropping only the rows that fail rather than the
+ * whole page — one malformed transaction must never blank an account's
+ * history. Mirrors `transformIndexerTransactions` on the indexer path.
+ *
+ * {@link transactionHistoryResponseSchema} stays strict and is what
+ * `mockTransactionHistory` validates fixtures against: a test fixture has no
+ * excuse to be malformed, live backend data does.
+ */
+export const parseTransactionHistoryResponse = (
+    response: unknown,
+): TransactionHistoryApiResponse => {
+    const envelope = transactionHistoryEnvelopeSchema.parse(response)
+
+    const results: TransactionHistoryItemApiResponse[] = []
+    for (const row of envelope.results) {
+        const parsed = transactionHistoryItemResponseSchema.safeParse(row)
+        if (!parsed.success) {
+            logger.warn('Dropping unparseable transaction history row', {
+                id: extractRowId(row),
+                issues: parsed.error.issues.map(
+                    issue =>
+                        `${issue.path.join('.') || '(root)'}: ${issue.message}`,
+                ),
+            })
+            continue
+        }
+        results.push(parsed.data)
+    }
+
+    return { ...envelope, results }
+}

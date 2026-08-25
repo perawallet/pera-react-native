@@ -26,7 +26,9 @@ export const TransactionTypes = {
     APPL: 'appl',
     /** Consensus participation */
     KEYREG: 'keyreg',
+    /** Proof that a participating account is still online */
     HB: 'hb',
+    STPF: 'stpf',
 } as const
 
 export type TransactionType =

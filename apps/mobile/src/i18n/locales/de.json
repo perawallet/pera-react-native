@@ -2566,6 +2566,7 @@
             "asset_freeze": "Asset-Freeze",
             "app_call": "App-Aufruf",
             "key_registration": "Schlüsselregistrierung",
+            "heartbeat": "Heartbeat",
             "default": "Transaktion",
             "more_impacts": "{{count}} weitere anzeigen"
         },
@@ -2656,6 +2657,13 @@
             "status": "Registrierungsstatus",
             "online": "Online",
             "offline": "Offline"
+        },
+        "heartbeat": {
+            "description": "Ein Heartbeat beweist, dass ein Konto weiterhin online ist und am Algorand-Konsens teilnimmt. Dabei werden keine Guthaben bewegt.",
+            "account": "Konto mit Online-Nachweis",
+            "submitted_by": "Eingereicht von",
+            "key_dilution": "Schlüsselverdünnung",
+            "vote_id": "Vote-ID"
         },
         "app_call": {
             "app_id": "Anwendungs-ID",
