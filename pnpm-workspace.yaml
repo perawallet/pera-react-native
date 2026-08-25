@@ -7,7 +7,7 @@ packages:
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.0
   "@algorandfoundation/dp256": 1.1.0
-  "@algorandfoundation/keystore": 1.0.0-canary.17
+  "@algorandfoundation/keystore": 1.0.0-canary.23
   "@algorandfoundation/keystore-core": 1.0.0-canary.3
   "@algorandfoundation/keystore-web": 1.0.0-canary.3
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
@@ -194,7 +194,7 @@ overrides:
   # and depends on no keystore-core, so it raises no two-copies hazard against
   # the keystore-core override below. Migrating keystore-chrome onto the new
   # engine-style API is a separate epic with its own e2e surface.
-  '@algorandfoundation/keystore': 1.0.0-canary.17
+  '@algorandfoundation/keystore': 1.0.0-canary.23
   '@algorandfoundation/keystore-core': 1.0.0-canary.3
   '@algorandfoundation/keystore-web': 1.0.0-canary.3
   '@algorandfoundation/react-native-keystore': 1.0.0-canary.19
