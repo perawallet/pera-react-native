@@ -110,7 +110,12 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     isValidAlgorandAddress: vi.fn(() => false),
 }))
 
-type MockAccount = { address: string; type: string; rekeyAddress?: string }
+type MockAccount = {
+    address: string
+    type: string
+    rekeyAddress?: string
+    keyPairId?: string
+}
 
 type MockArc60WireParams = {
     data: string
@@ -133,22 +138,27 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     isRekeyedAccount: vi.fn(() => false),
     canSignWith: vi.fn(() => true),
     canSignArbitraryData: vi.fn(() => true),
-    // Mirrors the real predicate's rekey hop: a rekeyed signer's capability is
-    // decided by its auth account, which must be present, non-multisig, and
-    // either hold a local key or be a hardware wallet (ARC-60 has an
-    // on-device path). Modelled here by account type.
+    // Mirrors the real predicate, including the same `canSignDirectly` key
+    // check: a signer that can sign for itself needs no hop, and a keyless
+    // rekeyed signer falls back to an auth account that must be present,
+    // non-multisig, non-quantum, and itself directly signable.
     canSignArc60: vi.fn(
         (
             account: MockAccount,
             allAccounts: readonly MockAccount[] = [],
         ): boolean => {
-            const signer = account?.rekeyAddress
-                ? allAccounts.find(a => a.address === account.rekeyAddress)
-                : account
+            const canSignDirectly = (a: MockAccount | undefined) =>
+                !!a && (!!a.keyPairId || a.type === 'hardware')
+            if (canSignDirectly(account)) return true
+            if (!account?.rekeyAddress) return false
+            const auth = allAccounts.find(
+                a => a.address === account.rekeyAddress,
+            )
             return (
-                !!signer &&
-                signer.type !== 'multisig' &&
-                signer.type !== 'watch'
+                !!auth &&
+                auth.type !== 'multisig' &&
+                auth.type !== 'quantum' &&
+                canSignDirectly(auth)
             )
         },
     ),
@@ -1474,7 +1484,12 @@ describe('usePeraWebviewInterface', () => {
                 type: 'watch',
                 rekeyAddress: 'auth-addr',
             },
-            { address: 'auth-addr', name: 'Auth', type: 'hdWallet' },
+            {
+                address: 'auth-addr',
+                name: 'Auth',
+                type: 'hdWallet',
+                keyPairId: 'auth-key',
+            },
         ] as never)
 
         const { result } = renderHook(() =>

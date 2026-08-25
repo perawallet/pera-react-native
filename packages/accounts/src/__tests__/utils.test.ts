@@ -556,12 +556,26 @@ describe('services/accounts/utils - canSignArbitraryData vs canSignArc60', () =>
             expect(canSignArc60(rekeyed, [rekeyed, multisig])).toBe(false)
         })
 
-        // The account's own key no longer authorizes it on chain, so an
-        // AUTH-scope signature from that key would be a false proof of
-        // control. Capability follows the hop, matching resolveSigningAccount.
-        test('rejects a rekeyed account with its own keys when the auth cannot sign', () => {
-            const rekeyed = { ...localKey, rekeyAddress: watch.address } as any
-            expect(canSignArc60(rekeyed, [rekeyed, watch])).toBe(false)
+        // ARC-60 verifies Ed25519 only, so a Falcon signature from a quantum
+        // auth would be a guaranteed dApp-side failure — the same reason
+        // canSignViaParticipants excludes quantum from multisig slots.
+        test('rejects when the auth account is quantum', () => {
+            const quantumAuth = {
+                type: 'quantum',
+                address: 'Q',
+                keyPairId: 'pkq',
+            } as any
+            const rekeyed = rekeyedTo(quantumAuth)
+            expect(canSignArc60(rekeyed, [rekeyed, quantumAuth])).toBe(false)
+        })
+
+        // The hop is a fallback, not an override. A dApp that resolved the
+        // auth address itself names THAT account as the signer, so hopping
+        // again off its own chained rekey would sign with a key the
+        // authenticated account's auth-addr never designated.
+        test('does not hop when the rekeyed signer holds its own key', () => {
+            const chained = { ...localKey, rekeyAddress: watch.address } as any
+            expect(canSignArc60(chained, [chained, watch])).toBe(true)
         })
     })
 
