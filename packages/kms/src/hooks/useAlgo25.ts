@@ -44,6 +44,9 @@ export const useAlgo25 = () => {
         let seed: Optional<Uint8Array>
         let address: string
         let committedSeed = false
+        // Which step we're in, so a field report can tell a bad mnemonic from
+        // an Android keystore failure — the catch below covers all three.
+        let stage: 'seed' | 'seedImport' | 'signChild' = 'seed'
 
         try {
             seed = params?.mnemonic
@@ -67,6 +70,7 @@ export const useAlgo25 = () => {
                 privateKey: seed,
                 metadata,
             }
+            stage = 'seedImport'
             await keyStore.import(seedData, 'raw')
             committedSeed = true
 
@@ -80,6 +84,7 @@ export const useAlgo25 = () => {
             // rather than at submit time.
             const signKeyId = algo25SignKeyId(seedKeyId)
             const { publicKey } = nacl.sign.keyPair.fromSeed(seed)
+            stage = 'signChild'
             await keyStore.import(
                 {
                     id: signKeyId,
@@ -114,7 +119,7 @@ export const useAlgo25 = () => {
                     /* swallow */
                 }
             }
-            logger.error('createAlgo25Key failed', { error: e })
+            logger.error('createAlgo25Key failed', { error: e, stage })
             throw e
         } finally {
             zeroBytes(seed)
