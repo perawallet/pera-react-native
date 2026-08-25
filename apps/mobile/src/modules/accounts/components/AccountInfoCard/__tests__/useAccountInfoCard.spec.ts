@@ -247,7 +247,7 @@ describe('useAccountInfoCard', () => {
         )
     })
 
-    test('RekeyedSignable account with a transition shows the "Rekeyed (from to to)" label', () => {
+    test('RekeyedSignable account with a transition shows the "Rekeyed (Signed by …)" label', () => {
         mockUseCanSignWith.mockReturnValue(true)
         mockUseRekeyTransition.mockReturnValue({
             from: 'algo25',
@@ -258,7 +258,7 @@ describe('useAccountInfoCard', () => {
             useAccountInfoCard({ account: rekeyed, onClose: vi.fn() }),
         )
         expect(result.current.accountType.label).toBe(
-            'account_info.type_rekeyed_transition',
+            'account_info.type_rekeyed_signer',
         )
     })
 

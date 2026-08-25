@@ -23,71 +23,65 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 import { getRekeyLabelI18n, splitAccountTypeLabel } from '../rekeyLabels'
 
 describe('getRekeyLabelI18n', () => {
-    it('maps a standard-to-ledger rekey to standard/ledger parts and ledger description', () => {
+    it('names the ledger signer for a rekey to a Ledger auth account', () => {
         expect(getRekeyLabelI18n({ from: 'algo25', to: 'hardware' })).toEqual({
-            labelKey: 'account_info.type_rekeyed_transition',
-            fromKey: 'account_info.rekey_part_standard',
-            toKey: 'account_info.rekey_part_ledger',
+            labelKey: 'account_info.type_rekeyed_signer',
+            signerKey: 'account_info.rekey_signer_ledger',
             descriptionKey: 'account_type_info.rekeyed_ledger_description',
         })
     })
 
-    it('maps a ledger-to-ledger rekey to the ledger-to-ledger description', () => {
+    it('keeps the ledger signer but swaps the description for ledger-to-ledger', () => {
         expect(getRekeyLabelI18n({ from: 'hardware', to: 'hardware' })).toEqual(
             {
-                labelKey: 'account_info.type_rekeyed_transition',
-                fromKey: 'account_info.rekey_part_ledger',
-                toKey: 'account_info.rekey_part_ledger',
+                labelKey: 'account_info.type_rekeyed_signer',
+                signerKey: 'account_info.rekey_signer_ledger',
                 descriptionKey:
                     'account_type_info.rekeyed_ledger_to_ledger_description',
             },
         )
     })
 
-    it('maps a rekey to a standard auth account to the standard description', () => {
-        expect(getRekeyLabelI18n({ from: 'hardware', to: 'algo25' })).toEqual({
-            labelKey: 'account_info.type_rekeyed_transition',
-            fromKey: 'account_info.rekey_part_ledger',
-            toKey: 'account_info.rekey_part_standard',
+    it('names the standard signer for a rekey to an HD auth account', () => {
+        expect(getRekeyLabelI18n({ from: 'watch', to: 'hdWallet' })).toEqual({
+            labelKey: 'account_info.type_rekeyed_signer',
+            signerKey: 'account_info.rekey_signer_standard',
             descriptionKey: 'account_type_info.rekeyed_standard_description',
         })
     })
 
-    it('maps multisig and watch base types to their parts', () => {
-        expect(getRekeyLabelI18n({ from: 'multisig', to: 'watch' })).toEqual({
-            labelKey: 'account_info.type_rekeyed_transition',
-            fromKey: 'account_info.rekey_part_shared',
-            toKey: 'account_info.rekey_part_watch',
-            descriptionKey: 'account_type_info.rekeyed_standard_description',
-        })
-    })
-
-    it('maps a rekey to a shared auth account to the shared description', () => {
+    it('names the shared signer for a rekey to a shared auth account', () => {
         expect(getRekeyLabelI18n({ from: 'multisig', to: 'multisig' })).toEqual(
             {
-                labelKey: 'account_info.type_rekeyed_transition',
-                fromKey: 'account_info.rekey_part_shared',
-                toKey: 'account_info.rekey_part_shared',
+                labelKey: 'account_info.type_rekeyed_signer',
+                signerKey: 'account_info.rekey_signer_shared',
                 descriptionKey: 'account_type_info.rekeyed_shared_description',
             },
         )
     })
 
-    it('maps a quantum base type to the quantum part', () => {
-        expect(getRekeyLabelI18n({ from: 'quantum', to: 'hardware' })).toEqual({
-            labelKey: 'account_info.type_rekeyed_transition',
-            fromKey: 'account_info.rekey_part_quantum',
-            toKey: 'account_info.rekey_part_ledger',
-            descriptionKey: 'account_type_info.rekeyed_ledger_description',
+    it('names the quantum signer for a rekey to a Quantum auth account', () => {
+        expect(getRekeyLabelI18n({ from: 'watch', to: 'quantum' })).toEqual({
+            labelKey: 'account_info.type_rekeyed_signer',
+            signerKey: 'account_info.rekey_signer_quantum',
+            descriptionKey: 'account_type_info.rekeyed_quantum_description',
         })
+    })
+
+    it('ignores the rekeyed account own type — only the signer drives the label', () => {
+        expect(getRekeyLabelI18n({ from: 'watch', to: 'hardware' })).toEqual(
+            getRekeyLabelI18n({ from: 'quantum', to: 'hardware' }),
+        )
     })
 })
 
 describe('splitAccountTypeLabel', () => {
     it('splits a label with a parenthetical qualifier', () => {
-        expect(splitAccountTypeLabel('Rekeyed (Standard to Ledger)')).toEqual({
+        expect(
+            splitAccountTypeLabel('Rekeyed (Signed by a Ledger account)'),
+        ).toEqual({
             main: 'Rekeyed',
-            qualifier: '(Standard to Ledger)',
+            qualifier: '(Signed by a Ledger account)',
         })
     })
 
