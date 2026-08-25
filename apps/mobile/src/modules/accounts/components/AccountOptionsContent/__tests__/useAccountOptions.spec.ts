@@ -227,8 +227,7 @@ describe('useAccountOptions', () => {
                 'copy-address',
                 'show-address',
                 'view-passphrase',
-                'rekey-to-ledger',
-                'rekey-to-standard',
+                'rekey-account',
                 'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
@@ -290,8 +289,7 @@ describe('useAccountOptions', () => {
             expect(optionIds).toEqual([
                 'copy-address',
                 'show-address',
-                'rekey-to-ledger',
-                'rekey-to-standard',
+                'rekey-account',
                 'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
@@ -312,8 +310,7 @@ describe('useAccountOptions', () => {
             expect(optionIds).toEqual([
                 'copy-address',
                 'show-address',
-                'rekey-to-ledger',
-                'rekey-to-standard',
+                'rekey-account',
                 'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
@@ -321,7 +318,7 @@ describe('useAccountOptions', () => {
             ])
         })
 
-        it('shows rekey-to-shared and export options for a shared account', () => {
+        it('shows the rekey and export options for a shared account', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: multisigAccount,
@@ -335,15 +332,13 @@ describe('useAccountOptions', () => {
                 'shared-account-detail',
                 'copy-address',
                 'show-address',
-                'rekey-to-shared',
+                'rekey-account',
                 'export-share-account',
                 'scan-rekeyed',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',
             ])
-            expect(optionIds).not.toContain('rekey-to-ledger')
-            expect(optionIds).not.toContain('rekey-to-standard')
         })
     })
 
@@ -746,22 +741,29 @@ describe('useAccountOptions', () => {
             )
         })
 
-        it('navigates to RekeyToLedger intro for rekey-to-ledger', () => {
-            const { result } = renderHook(() =>
+        const pressRekey = async (
+            account: WalletAccount,
+        ): Promise<ReturnType<typeof renderHook>> => {
+            const rendered = renderHook(() =>
                 useAccountOptions({
-                    account: algo25Account,
+                    account,
                     onClose: mockOnClose,
                     onShowAddress: mockOnShowAddress,
                 }),
             )
-
-            const rekeyOption = result.current.options.find(
-                o => o.id === 'rekey-to-ledger',
+            const rekeyOption = rendered.result.current.options.find(
+                o => o.id === 'rekey-account',
             )
-
-            act(() => {
+            await act(async () => {
                 rekeyOption?.onPress()
             })
+            return rendered
+        }
+
+        it('navigates to RekeyToLedger intro when the sheet resolves to ledger', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('ledger')
+
+            await pressRekey(algo25Account)
 
             expect(mockOnClose).toHaveBeenCalled()
             expect(mockNavigate).toHaveBeenCalledWith('RekeyToLedger', {
@@ -770,48 +772,29 @@ describe('useAccountOptions', () => {
             })
         })
 
-        it('navigates to RekeyToStandard intro for rekey-to-standard', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions({
-                    account: algo25Account,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
+        it('navigates to RekeyToStandard intro when the sheet resolves to standard', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce('standard')
 
-            const rekeyOption = result.current.options.find(
-                o => o.id === 'rekey-to-standard',
-            )
+            await pressRekey(algo25Account)
 
-            act(() => {
-                rekeyOption?.onPress()
-            })
-
-            expect(mockOnClose).toHaveBeenCalled()
             expect(mockNavigate).toHaveBeenCalledWith('RekeyToStandard', {
                 screen: 'RekeyToStandardIntro',
                 params: { sourceAddress: algo25Account.address },
             })
         })
 
-        it('navigates to RekeyToShared intro for rekey-to-shared', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions({
-                    account: multisigAccount,
-                    onClose: mockOnClose,
-                    onShowAddress: mockOnShowAddress,
-                }),
-            )
+        it('does not navigate when the type sheet is dismissed', async () => {
+            mockRequestBottomSheet.mockResolvedValueOnce(undefined)
 
-            const rekeyOption = result.current.options.find(
-                o => o.id === 'rekey-to-shared',
-            )
+            await pressRekey(algo25Account)
 
-            act(() => {
-                rekeyOption?.onPress()
-            })
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
 
-            expect(mockOnClose).toHaveBeenCalled()
+        it('skips the type sheet for a shared account, which has one destination', async () => {
+            await pressRekey(multisigAccount)
+
+            expect(mockRequestBottomSheet).not.toHaveBeenCalled()
             expect(mockNavigate).toHaveBeenCalledWith('RekeyToShared', {
                 screen: 'RekeyToSharedIntro',
                 params: { sourceAddress: multisigAccount.address },

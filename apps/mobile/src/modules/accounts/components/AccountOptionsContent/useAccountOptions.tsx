@@ -48,6 +48,10 @@ import {
     AccountOptionsEvent,
 } from '@analytics'
 import { RenameAccountContent } from './RenameAccountContent'
+import {
+    RekeyOptionsContent,
+    type RekeyTargetType,
+} from './RekeyOptionsContent'
 
 export type AccountOption = {
     id: string
@@ -145,32 +149,56 @@ export const useAccountOptions = ({
         })
     }, [onClose, navigation, account.address])
 
-    const handleRekeyToLedger = useCallback(() => {
-        trackEvent(AccountOptionsEvent.RekeyToLedger)
-        onClose()
-        navigation.navigate('RekeyToLedger', {
-            screen: 'RekeyToLedgerIntro',
-            params: { sourceAddress: account.address },
-        })
-    }, [onClose, navigation, account.address])
+    const navigateToRekeyFlow = useCallback(
+        (target: RekeyTargetType | 'shared') => {
+            switch (target) {
+                case 'ledger': {
+                    trackEvent(AccountOptionsEvent.RekeyToLedger)
+                    navigation.navigate('RekeyToLedger', {
+                        screen: 'RekeyToLedgerIntro',
+                        params: { sourceAddress: account.address },
+                    })
+                    return
+                }
+                case 'standard': {
+                    trackEvent(AccountOptionsEvent.RekeyToStandard)
+                    navigation.navigate('RekeyToStandard', {
+                        screen: 'RekeyToStandardIntro',
+                        params: { sourceAddress: account.address },
+                    })
+                    return
+                }
+                case 'shared': {
+                    trackEvent(AccountDetailsEvent.JointAccountRekey)
+                    navigation.navigate('RekeyToShared', {
+                        screen: 'RekeyToSharedIntro',
+                        params: { sourceAddress: account.address },
+                    })
+                }
+            }
+        },
+        [navigation, account.address],
+    )
 
-    const handleRekeyToStandard = useCallback(() => {
-        trackEvent(AccountOptionsEvent.RekeyToStandard)
+    const handleRekeyAccount = useCallback(async () => {
         onClose()
-        navigation.navigate('RekeyToStandard', {
-            screen: 'RekeyToStandardIntro',
-            params: { sourceAddress: account.address },
+        // A shared account can only be rekeyed to another shared account, so
+        // the type sheet would hold a single row — go straight to its intro.
+        if (isSharedAccount) {
+            navigateToRekeyFlow('shared')
+            return
+        }
+        const target = await requestBottomSheet<RekeyTargetType>({
+            contents: <RekeyOptionsContent />,
+            options: {
+                size: 'auto',
+                enablePanDownToClose: true,
+                autoCreateContainer: false,
+            },
         })
-    }, [onClose, navigation, account.address])
-
-    const handleRekeyToShared = useCallback(() => {
-        trackEvent(AccountDetailsEvent.JointAccountRekey)
-        onClose()
-        navigation.navigate('RekeyToShared', {
-            screen: 'RekeyToSharedIntro',
-            params: { sourceAddress: account.address },
-        })
-    }, [onClose, navigation, account.address])
+        if (!target) return
+        navigateToRekeyFlow(target)
+    }, [onClose, isSharedAccount, requestBottomSheet, navigateToRekeyFlow])
 
     const handleScanRekeyed = useCallback(() => {
         trackEvent(AccountOptionsEvent.ScanRekeyed)
@@ -383,37 +411,22 @@ export const useAccountOptions = ({
         }
 
         // Gated on the capability, not just on the account: every rekey target
-        // below is a root stack that a platform may not register, and an
+        // is a root stack that a platform may not register, and an
         // unregistered route makes the row a silent no-op rather than an error.
-        if (routeCapabilities.rekeyFlows && canSign && !isSharedAccount) {
+        // Rekeying also needs a signature from the source account, so only
+        // offer it when this wallet can actually sign.
+        if (routeCapabilities.rekeyFlows && canSign) {
             items.push({
-                id: 'rekey-to-ledger',
+                id: 'rekey-account',
                 icon: 'rekey',
-                title: t('account_options.rekey_to_ledger'),
-                onPress: handleRekeyToLedger,
-            })
-
-            items.push({
-                id: 'rekey-to-standard',
-                icon: 'rekey',
-                title: t('account_options.rekey_to_standard'),
-                onPress: handleRekeyToStandard,
+                title: t('account_options.rekey_account'),
+                onPress: () => void handleRekeyAccount(),
             })
         }
 
         if (isSharedAccount) {
-            // Rekeying needs a signature from the source account, so only
-            // offer it when this wallet can actually sign for the multisig.
-            // Export stays available regardless — it only reads metadata.
-            if (routeCapabilities.rekeyFlows && canSign) {
-                items.push({
-                    id: 'rekey-to-shared',
-                    icon: 'rekey',
-                    title: t('account_options.rekey_to_shared'),
-                    onPress: handleRekeyToShared,
-                })
-            }
-
+            // Export stays available regardless of `canSign` — it only reads
+            // metadata.
             items.push({
                 id: 'export-share-account',
                 icon: 'share',
@@ -474,9 +487,7 @@ export const useAccountOptions = ({
         handleViewPassphrase,
         isHdWallet,
         isQuantum,
-        handleRekeyToLedger,
-        handleRekeyToStandard,
-        handleRekeyToShared,
+        handleRekeyAccount,
         handleScanRekeyed,
         handleExportShareAccount,
         handleOpenSharedAccountDetail,

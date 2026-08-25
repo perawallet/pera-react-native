@@ -301,7 +301,7 @@ export type RekeyTransition = {
     to: WalletAccount['type']
 }
 
-/** Backs the UI's "Rekeyed (<from> to <to>)" label. */
+/** Backs the UI's "Rekeyed (Signed by <to>)" label and its info-sheet copy. */
 export const rekeyTransitionFor = (
     account: WalletAccount,
     accounts: WalletAccount[],
