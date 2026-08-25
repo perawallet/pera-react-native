@@ -120,11 +120,28 @@ export const redactSensitiveUrl = (input: string): string => {
     return out
 }
 
+// `message` and `stack` are typed as strings but a native module can set either
+// to anything; redactSensitiveUrl would throw on a non-string and cost the whole
+// report.
+const redactMaybeString = <T>(value: T): T =>
+    typeof value === 'string' ? (redactSensitiveUrl(value) as T) : value
+
+// ...and it can make either a throwing accessor, which `log()` already guards
+// context against. A field the logger cannot read is one the reporter cannot
+// read either, so drop the field rather than the report.
+const readSafely = (read: () => unknown): unknown => {
+    try {
+        return read()
+    } catch {
+        return undefined
+    }
+}
+
 // A native stack is bulk: uncapped, it pushes the `code`/`cause` keys that
 // diagnose a keystore failure out of Crashlytics' truncation window. The top of
 // the stack is the diagnostic part, in either shape RN might hand us.
 const MAX_NATIVE_STACK_FRAMES = 10
-const MAX_NATIVE_STACK_CHARS = 2_000
+const MAX_NATIVE_STACK_CHARS = 2000
 
 const capNativeStack = (nativeStack: unknown): unknown => {
     if (Array.isArray(nativeStack))
@@ -186,22 +203,18 @@ const redactSensitiveValue = (
         // message/stack are non-enumerable, so Object.entries below never
         // touches them — only extra own properties (anything a caller attached
         // via Object.assign, e.g. a leaked secret) need the same redaction as
-        // any other object's keys. A string message goes through
-        // redactSensitiveUrl like any other string reaching this function — a
-        // nested Error's message is free-form and can carry a URI-embedded
-        // secret — while a non-string one is passed through, since
-        // redactSensitiveUrl would throw on it and lose the whole context.
+        // any other object's keys.
         const out: Record<string, unknown> = {
             name: value.name,
-            message:
-                typeof value.message === 'string'
-                    ? redactSensitiveUrl(value.message)
-                    : value.message,
+            message: redactMaybeString(value.message),
         }
         for (const [k, v] of Object.entries(value)) {
             out[k] = isSensitiveKey(k)
                 ? REDACTED
                 : redactSensitiveValue(
+                      // Capped but not depth-gated like formatContextValue's
+                      // copy: this branch is only reachable at depth >= 1, so a
+                      // gate here would drop every native stack it ever sees.
                       k === 'nativeStackAndroid' ? capNativeStack(v) : v,
                       depth + 1,
                       seen,
@@ -247,16 +260,19 @@ export const redactSensitiveContext = (context: LogContext): LogContext => {
 
 // Crashlytics sends `message` and `stack` to native verbatim, so an Error
 // reported as-is is a second, unredacted copy of anything the serialized
-// context already scrubbed. The original instance is returned untouched when
-// nothing matched, so its own properties survive the common case.
+// context already scrubbed. Returning the original when nothing matched is only
+// an optimisation: the clone keeps the prototype and own properties, so a
+// reporter that branches on `instanceof` or reads `.code` cannot tell a redacted
+// error from an untouched one.
 const redactErrorForReport = (error: Error): Error => {
-    const message = redactSensitiveUrl(error.message)
-    const stack = error.stack ? redactSensitiveUrl(error.stack) : error.stack
-    if (message === error.message && stack === error.stack) return error
+    const rawMessage = readSafely(() => error.message)
+    const rawStack = readSafely(() => error.stack)
+    const message = redactMaybeString(rawMessage)
+    const stack = redactMaybeString(rawStack)
+    if (message === rawMessage && stack === rawStack) return error
 
-    const redacted = new Error(message)
-    redacted.name = error.name
-    redacted.stack = stack
+    const redacted = Object.create(Object.getPrototypeOf(error)) as Error
+    Object.assign(redacted, error, { name: error.name, message, stack })
     return redacted
 }
 
@@ -342,10 +358,7 @@ class Logger {
             // keys precede the two bulky stacks.
             return {
                 name: value.name,
-                message:
-                    typeof value.message === 'string'
-                        ? redactSensitiveUrl(value.message)
-                        : value.message,
+                message: redactMaybeString(value.message),
                 ...(typeof code === 'string' || typeof code === 'number'
                     ? { code }
                     : {}),
@@ -435,11 +448,17 @@ class Logger {
                 return
             }
 
-            const message = redactSensitiveUrl(
+            // String(): `message` is typed as a string but a native module can
+            // set it to anything, and the report's message must stay one —
+            // `new Error(<non-string>)` stringified it the same way.
+            const message =
                 messageOrError instanceof Error
-                    ? messageOrError.message
-                    : messageOrError,
-            )
+                    ? String(
+                          redactMaybeString(
+                              readSafely(() => messageOrError.message),
+                          ),
+                      )
+                    : redactSensitiveUrl(messageOrError)
             const contextText = this.stringifyContext(context)
             const combinedMessage = contextText
                 ? `${message} | context: ${contextText}`
@@ -449,9 +468,9 @@ class Logger {
 
             if (messageOrError instanceof Error) {
                 reportableError.name = messageOrError.name
-                reportableError.stack = messageOrError.stack
-                    ? redactSensitiveUrl(messageOrError.stack)
-                    : messageOrError.stack
+                reportableError.stack = redactMaybeString(
+                    readSafely(() => messageOrError.stack),
+                ) as typeof reportableError.stack
 
                 // No groupingKey: this error's own stack points at where it was
                 // thrown, which separates sites far better than a shared name
@@ -473,7 +492,7 @@ class Logger {
             //    frames below point at the real origin instead of at `log()`.
             const contextError = this.findContextError(context)
             if (contextError?.stack) {
-                reportableError.stack = redactSensitiveUrl(contextError.stack)
+                reportableError.stack = redactMaybeString(contextError.stack)
             }
 
             this.errorReporter({

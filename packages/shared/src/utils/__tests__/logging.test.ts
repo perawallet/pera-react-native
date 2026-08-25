@@ -718,6 +718,85 @@ describe('logging', () => {
                 )
                 expect(reported.error.stack).not.toContain('abandon')
             })
+
+            // redactSensitiveUrl throws on a non-string, and reportError's
+            // catch-all would swallow the whole report — losing exactly the
+            // native-module errors this ticket exists to diagnose.
+            test('still reports an Error whose message is not a string', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error('placeholder')
+                Object.defineProperty(error, 'message', { value: 12_345 })
+
+                logger.error(error)
+                logger.error(error, { source: 'test' })
+
+                expect(errorReporter).toHaveBeenCalledTimes(2)
+            })
+
+            test('still reports an Error whose stack is not a string', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error('keychain failed')
+                Object.defineProperty(error, 'stack', { value: 999 })
+
+                logger.error(error)
+                logger.error(error, { source: 'test' })
+
+                expect(errorReporter).toHaveBeenCalledTimes(2)
+            })
+
+            test('still reports an Error whose stack accessor throws', () => {
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                const error = new Error('keychain failed')
+                Object.defineProperty(error, 'stack', {
+                    get() {
+                        throw new Error('native accessor blew up')
+                    },
+                })
+
+                logger.error(error)
+
+                expect(errorReporter).toHaveBeenCalledTimes(1)
+            })
+
+            // A redacted report must stay indistinguishable from an untouched
+            // one to a reporter that branches on `instanceof` or reads `.code`.
+            test('keeps the prototype and own properties when redacting a reported Error subclass', () => {
+                class KeystoreError extends Error {
+                    public readonly code: string
+
+                    constructor(message: string, code: string) {
+                        super(message)
+                        this.name = 'KeystoreError'
+                        this.code = code
+                    }
+                }
+
+                const errorReporter = vi.fn()
+                logger.setErrorReporter(errorReporter)
+
+                logger.error(
+                    new KeystoreError(
+                        'failed on perawallet://x?mnemonic=abandon+abandon+art',
+                        'E_CRYPTO_FAILED',
+                    ),
+                )
+
+                const reported = errorReporter.mock.calls[0]?.[0] as {
+                    error: KeystoreError
+                }
+                expect(reported.error).toBeInstanceOf(KeystoreError)
+                expect(reported.error.name).toBe('KeystoreError')
+                expect(reported.error.code).toBe('E_CRYPTO_FAILED')
+                expect(reported.error.message).toBe(
+                    'failed on perawallet://x?mnemonic=[REDACTED]',
+                )
+            })
         })
     })
 
