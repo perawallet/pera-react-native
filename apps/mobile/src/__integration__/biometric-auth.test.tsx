@@ -41,16 +41,20 @@ const SLOW_TEST_TIMEOUT_MS = 30_000
 // the no-op vi.fn() implementations. This test rewires those vi.fn()
 // bodies per-scenario instead of swapping the whole module so the
 // existing provider singleton stays intact.
-const wireBiometricsService = (config: {
-    available: boolean
-    authenticate: boolean
-}) => {
-    const biometrics = getProvider().biometrics as unknown as {
+const mockedBiometrics = () =>
+    getProvider().biometrics as unknown as {
         checkBiometricsAvailable: ReturnType<typeof vi.fn>
         authenticate: ReturnType<typeof vi.fn>
         getSecurityLevel: ReturnType<typeof vi.fn>
         getSupportedBiometricType: ReturnType<typeof vi.fn>
+        checkEnrollmentBinding: ReturnType<typeof vi.fn>
     }
+
+const wireBiometricsService = (config: {
+    available: boolean
+    authenticate: boolean
+}) => {
+    const biometrics = mockedBiometrics()
     biometrics.checkBiometricsAvailable.mockResolvedValue(config.available)
     biometrics.authenticate.mockResolvedValue(
         config.authenticate
@@ -60,6 +64,13 @@ const wireBiometricsService = (config: {
     // enableBiometrics only binds to a strong (class-3) authenticator; the
     // default scenario presents one so the enable path reaches the prompt.
     biometrics.getSecurityLevel.mockResolvedValue('strong')
+    biometrics.checkEnrollmentBinding.mockResolvedValue('valid')
+}
+
+const wireEnrollmentBinding = (
+    status: 'valid' | 'changed' | 'absent' | 'unavailable',
+) => {
+    mockedBiometrics().checkEnrollmentBinding.mockResolvedValue(status)
 }
 
 describe('Flow: Biometric authentication lifecycle', () => {
@@ -137,6 +148,49 @@ describe('Flow: Biometric authentication lifecycle', () => {
                 authResult = await result.current.authenticateWithBiometrics()
             })
             expect(authResult).toEqual({ success: true })
+        },
+        SLOW_TEST_TIMEOUT_MS,
+    )
+
+    it(
+        'Given biometrics is enabled, when the enrolled biometric set changes, then the opt-in is dropped and cannot come back on its own',
+        async () => {
+            const pin = renderHook(() => usePinCode())
+            await act(async () => {
+                await pin.result.current.savePin('222222')
+            })
+            const { result } = renderHook(() => useBiometrics())
+            await waitFor(() => {
+                expect(result.current.isAvailable).toBe(true)
+            })
+            await act(async () => {
+                await result.current.enableBiometrics()
+            })
+            expect(result.current.isEnabled).toBe(true)
+
+            // The user deleted the enrolled fingerprint and added a different
+            // one in device settings. Still enrolled, still strong: the binding
+            // is the only signal that notices.
+            wireEnrollmentBinding('changed')
+
+            let authResult: Optional<BiometricsAuthenticateResult>
+            await act(async () => {
+                authResult = await result.current.authenticateWithBiometrics()
+            })
+            expect(authResult).toEqual({
+                success: false,
+                reason: 'unavailable',
+            })
+            expect(result.current.isEnabled).toBe(false)
+
+            // The new binding now reads clean — the blob is gone, so unlock
+            // stays off until the user opts in again.
+            wireEnrollmentBinding('valid')
+            await act(async () => {
+                expect(await result.current.checkBiometricsEnabled()).toBe(
+                    false,
+                )
+            })
         },
         SLOW_TEST_TIMEOUT_MS,
     )

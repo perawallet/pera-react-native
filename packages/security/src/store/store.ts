@@ -12,7 +12,7 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { SecurityState } from '../models'
+import type { BiometricsDisabledReason, SecurityState } from '../models'
 import {
     registerStore,
     type WithPersist,
@@ -29,6 +29,7 @@ const initialState = {
     lockRequestVersion: 0,
     isAppLockActive: false,
     isBiometricsEnabled: false,
+    biometricsDisabledReason: null,
 }
 
 // `autoLockStartedAt` is persisted to unencrypted storage; a tampered/corrupt
@@ -48,6 +49,13 @@ const sanitizeAutoLockStartedAt = (value: unknown): Nullable<number> => {
     }
     return value
 }
+
+// Drives copy in a sheet, so an unrecognized persisted value has no safe
+// rendering — drop it and simply don't offer the prompt.
+const sanitizeDisabledReason = (
+    value: unknown,
+): Nullable<BiometricsDisabledReason> =>
+    value === 'enrollment-changed' || value === 'weak-biometric' ? value : null
 
 export const useSecurityStore: UseBoundStore<
     WithPersist<StoreApi<SecurityState>, unknown>
@@ -74,6 +82,9 @@ export const useSecurityStore: UseBoundStore<
                 set({ isAppLockActive: active }),
             setBiometricsEnabled: (enabled: boolean) =>
                 set({ isBiometricsEnabled: enabled }),
+            setBiometricsDisabledReason: (
+                reason: Nullable<BiometricsDisabledReason>,
+            ) => set({ biometricsDisabledReason: reason }),
             resetState: () => set(initialState),
         }),
         {
@@ -82,12 +93,17 @@ export const useSecurityStore: UseBoundStore<
             version: 1,
             partialize: state => ({
                 autoLockStartedAt: state.autoLockStartedAt,
+                biometricsDisabledReason: state.biometricsDisabledReason,
             }),
             merge: (persisted, current) => ({
                 ...current,
                 autoLockStartedAt: sanitizeAutoLockStartedAt(
                     (persisted as Partial<SecurityState> | undefined)
                         ?.autoLockStartedAt,
+                ),
+                biometricsDisabledReason: sanitizeDisabledReason(
+                    (persisted as Partial<SecurityState> | undefined)
+                        ?.biometricsDisabledReason,
                 ),
             }),
         },

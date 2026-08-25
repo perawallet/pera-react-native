@@ -2113,6 +2113,15 @@
             "enable_prompt_title": "Ativar login com biometria",
             "unlock_prompt_title": "Desbloquear a Pera Wallet",
             "cancel_label": "Cancelar"
+        },
+        "biometrics_disabled": {
+            "title": "O desbloqueio biométrico está desativado",
+            "body_enrollment-changed": "As configurações biométricas do seu dispositivo mudaram, então a Pera desativou o desbloqueio biométrico. Ative novamente para continuar desbloqueando com biometria.",
+            "body_weak-biometric": "A Pera precisa de uma impressão digital ou outra biometria forte para desbloquear sua carteira, então o desbloqueio biométrico foi desativado. Adicione uma nas configurações do dispositivo e ative novamente.",
+            "confirm": "Ativar novamente",
+            "cancel": "Agora não",
+            "unavailable_title": "Biometria indisponível",
+            "unavailable_body": "Ative o Face ID ou Touch ID para a Pera nas configurações do dispositivo e habilite o desbloqueio biométrico novamente."
         }
     },
     "send_funds": {

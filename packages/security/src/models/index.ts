@@ -15,6 +15,13 @@ import {
     type Nullable,
 } from '@perawallet/wallet-core-shared'
 
+/**
+ * The two affirmative reports that turn biometric unlock off on the user's
+ * behalf. Both are recoverable by re-enabling in the app — `enrollment-changed`
+ * immediately, `weak-biometric` only once a class-3 biometric is enrolled.
+ */
+export type BiometricsDisabledReason = 'enrollment-changed' | 'weak-biometric'
+
 export type SecurityState = BaseStoreState & {
     failedAttempts: number
     lockoutEndTime: Nullable<number>
@@ -49,6 +56,17 @@ export type SecurityState = BaseStoreState & {
      * tampered value claim biometrics are enabled.
      */
     isBiometricsEnabled: boolean
+    /**
+     * Why the reconcile turned biometric unlock off, so the app can offer it
+     * back instead of leaving the user to discover the PIN pad and guess. Null
+     * whenever the user is the one who turned it off — nobody should be
+     * prompted to re-enable what they just disabled.
+     *
+     * Persisted, unlike the flag above: the drop happens while the app is
+     * locked and the user may kill it before ever unlocking, and an offer to
+     * re-enable is not a claim that anything is enabled.
+     */
+    biometricsDisabledReason: Nullable<BiometricsDisabledReason>
 
     incrementFailedAttempts: () => void
     setFailedAttempts: (count: number) => void
@@ -58,6 +76,9 @@ export type SecurityState = BaseStoreState & {
     requestLock: () => void
     setAppLockActive: (active: boolean) => void
     setBiometricsEnabled: (enabled: boolean) => void
+    setBiometricsDisabledReason: (
+        reason: Nullable<BiometricsDisabledReason>,
+    ) => void
 }
 
 export type PinEntryMode =
