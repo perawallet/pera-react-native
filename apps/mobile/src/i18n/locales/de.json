@@ -2077,6 +2077,15 @@
             "enable_prompt_title": "Biometrische Anmeldung aktivieren",
             "unlock_prompt_title": "Pera Wallet entsperren",
             "cancel_label": "Abbrechen"
+        },
+        "biometrics_disabled": {
+            "title": "Biometrische Entsperrung ist aus",
+            "body_enrollment-changed": "Die biometrischen Einstellungen deines Geräts haben sich geändert, daher hat Pera die biometrische Entsperrung deaktiviert. Aktiviere sie wieder, um weiterhin biometrisch zu entsperren.",
+            "body_weak-biometric": "Pera benötigt einen Fingerabdruck oder eine andere starke Biometrie, um deine Wallet zu entsperren. Deshalb wurde die biometrische Entsperrung deaktiviert. Richte sie in den Geräteeinstellungen ein und aktiviere sie danach wieder.",
+            "confirm": "Wieder aktivieren",
+            "cancel": "Jetzt nicht",
+            "unavailable_title": "Biometrie nicht verfügbar",
+            "unavailable_body": "Aktiviere Face ID oder Touch ID für Pera in den Geräteeinstellungen und schalte die biometrische Entsperrung danach wieder ein."
         }
     },
     "send_funds": {

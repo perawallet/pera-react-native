@@ -2085,6 +2085,15 @@
             "enable_prompt_title": "Biyometrik girişi etkinleştir",
             "unlock_prompt_title": "Pera Wallet’ın kilidini aç",
             "cancel_label": "İptal"
+        },
+        "biometrics_disabled": {
+            "title": "Biyometrik kilit açma kapalı",
+            "body_enrollment-changed": "Cihazınızın biyometrik ayarları değiştiği için Pera biyometrik kilit açmayı kapattı. Biyometriyle kilit açmaya devam etmek için yeniden açın.",
+            "body_weak-biometric": "Pera, cüzdanınızın kilidini açmak için parmak izi veya başka bir güçlü biyometri gerektirir; bu nedenle biyometrik kilit açma kapatıldı. Cihaz ayarlarınızdan bir tane ekleyin, ardından yeniden açın.",
+            "confirm": "Yeniden aç",
+            "cancel": "Şimdi değil",
+            "unavailable_title": "Biyometri kullanılamıyor",
+            "unavailable_body": "Cihaz ayarlarınızdan Pera için Face ID veya Touch ID’yi açın, ardından biyometrik kilit açmayı yeniden etkinleştirin."
         }
     },
     "send_funds": {

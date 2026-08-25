@@ -858,4 +858,78 @@ describe('useBiometrics', () => {
             expect(mockClearEnrollmentBinding).toHaveBeenCalled()
         })
     })
+
+    // Turning biometrics off silently is what makes it feel broken rather than
+    // protective, so every app-initiated drop records why.
+    describe('disabled reason', () => {
+        test.each([
+            ['changed enrollment', 'changed', 'strong', 'enrollment-changed'],
+            ['class-2 downgrade', 'valid', 'weak', 'weak-biometric'],
+        ] as const)(
+            'records %s as the reason it disabled biometrics',
+            async (_label, binding, level, expected) => {
+                kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+                mockCheckEnrollmentBinding.mockResolvedValue(binding)
+                mockGetSecurityLevel.mockResolvedValue(level)
+
+                const { result } = await renderAndSettle()
+
+                await act(async () => {
+                    await result.current.checkBiometricsEnabled()
+                })
+
+                expect(result.current.disabledReason).toBe(expected)
+            },
+        )
+
+        test('records no reason when the user disables biometrics themselves', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+
+            const { result } = await renderAndSettle()
+
+            await act(async () => {
+                await result.current.disableBiometrics()
+            })
+
+            expect(result.current.disabledReason).toBeNull()
+        })
+
+        test('clears the reason once biometrics are enabled again', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            kmsMocks.pinBytes = new TextEncoder().encode('123456')
+            mockCheckEnrollmentBinding.mockResolvedValue('changed')
+            mockAuthenticate.mockResolvedValue({ success: true })
+
+            const { result } = await renderAndSettle()
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+            expect(result.current.disabledReason).toBe('enrollment-changed')
+
+            mockCheckEnrollmentBinding.mockResolvedValue('valid')
+            await act(async () => {
+                await result.current.enableBiometrics()
+            })
+
+            expect(result.current.disabledReason).toBeNull()
+        })
+
+        // A decline has to stick, or the sheet returns on every unlock.
+        test('acknowledgeBiometricsDisabled clears the reason without re-enabling', async () => {
+            kmsMocks.biometricBytes = new TextEncoder().encode('123456')
+            mockCheckEnrollmentBinding.mockResolvedValue('changed')
+
+            const { result } = await renderAndSettle()
+            await act(async () => {
+                await result.current.checkBiometricsEnabled()
+            })
+
+            act(() => {
+                result.current.acknowledgeBiometricsDisabled()
+            })
+
+            expect(result.current.disabledReason).toBeNull()
+            expect(result.current.isEnabled).toBe(false)
+        })
+    })
 })

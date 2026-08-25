@@ -93,6 +93,13 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(() => ({
         checkPinEnabled: vi.fn().mockResolvedValue(false),
     })),
+    // Read by the biometrics-disabled prompt candidate; nothing disabled
+    // biometrics in these scenarios, so it never becomes due.
+    useBiometrics: vi.fn(() => ({
+        disabledReason: null,
+        acknowledgeBiometricsDisabled: vi.fn(),
+        enableBiometrics: vi.fn(),
+    })),
 }))
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [{ address: 'ACCOUNT_1' }]),

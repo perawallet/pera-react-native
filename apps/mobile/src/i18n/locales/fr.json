@@ -2085,6 +2085,15 @@
             "enable_prompt_title": "Activer la connexion biométrique",
             "unlock_prompt_title": "Déverrouiller Pera Wallet",
             "cancel_label": "Annuler"
+        },
+        "biometrics_disabled": {
+            "title": "Le déverrouillage biométrique est désactivé",
+            "body_enrollment-changed": "Les réglages biométriques de votre appareil ont changé, Pera a donc désactivé le déverrouillage biométrique. Réactivez-le pour continuer à déverrouiller par biométrie.",
+            "body_weak-biometric": "Pera exige une empreinte ou une autre biométrie forte pour déverrouiller votre portefeuille : le déverrouillage biométrique a donc été désactivé. Ajoutez-en une dans les réglages de votre appareil, puis réactivez-le.",
+            "confirm": "Réactiver",
+            "cancel": "Pas maintenant",
+            "unavailable_title": "Biométrie indisponible",
+            "unavailable_body": "Activez Face ID ou Touch ID pour Pera dans les réglages de votre appareil, puis réactivez le déverrouillage biométrique."
         }
     },
     "send_funds": {

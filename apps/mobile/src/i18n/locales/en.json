@@ -2085,6 +2085,15 @@
             "enable_prompt_title": "Enable biometric login",
             "unlock_prompt_title": "Unlock Pera Wallet",
             "cancel_label": "Cancel"
+        },
+        "biometrics_disabled": {
+            "title": "Biometric unlock is off",
+            "body_enrollment-changed": "Your device's biometric settings changed, so Pera turned off biometric unlock. Turn it back on to keep unlocking with biometrics.",
+            "body_weak-biometric": "Pera needs a fingerprint or other strong biometric to unlock your wallet, so biometric unlock was turned off. Add one in your device settings, then turn it back on.",
+            "confirm": "Turn back on",
+            "cancel": "Not now",
+            "unavailable_title": "Biometrics unavailable",
+            "unavailable_body": "Turn on Face ID or Touch ID for Pera in your device settings, then enable biometric unlock again."
         }
     },
     "send_funds": {
