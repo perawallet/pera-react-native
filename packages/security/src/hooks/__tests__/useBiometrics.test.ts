@@ -900,7 +900,10 @@ describe('useBiometrics', () => {
                 enableResult = await result.current.enableBiometrics()
             })
 
-            expect(enableResult).toEqual({ ok: false, reason: 'weak-biometric' })
+            expect(enableResult).toEqual({
+                ok: false,
+                reason: 'weak-biometric',
+            })
             expect(result.current.disabledReason).toBe('weak-biometric')
         })
 
