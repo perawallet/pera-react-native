@@ -10,19 +10,9 @@
  limitations under the License
  */
 
-import {
-    BIP32DerivationType,
-    fromSeed,
-    KeyContext,
-    XHDWalletAPI,
-} from '@algorandfoundation/xhd-wallet-api'
-import { mnemonicToSeed } from '@scure/bip39'
 import algosdk from 'algosdk'
-import { generateKey } from 'falcon-1024'
 import nacl from 'tweetnacl'
 import { describe, expect, it } from 'vitest'
-
-import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain/pq/derivation'
 
 import {
     createAlgo25Account,
@@ -31,55 +21,27 @@ import {
     createQuantumAccount,
     fundAccount,
 } from '../accounts'
-import { getConformanceClient } from '../client'
+import { accountInformationOf, getConformanceClient } from '../client'
 import { createConformanceKeyStore } from '../keystore'
 
-describe('conformance keystore', () => {
-    it('derives an algo25 address matching algosdk and signs like nacl', async () => {
-        const ks = await createConformanceKeyStore()
-        const account = await createAlgo25Account(ks)
-
-        const expected = algosdk.mnemonicToSecretKey(account.mnemonic)
-        expect(account.address).toBe(expected.addr.toString())
-
-        const payload = new Uint8Array([1, 2, 3, 4])
-        const signature = await ks.sign(account.keyId, payload)
-        expect(signature).toEqual(nacl.sign.detached(payload, expected.sk))
-    })
-
-    it('derives a quantum key matching falcon-1024 directly', async () => {
-        const ks = await createConformanceKeyStore()
-        const account = await createQuantumAccount(ks)
-
-        const seed = algosdk.seedFromMnemonic(account.mnemonic)
-        const expected: { publicKey: Uint8Array } = generateKey(
-            derivePQKeygenSeed(seed, 'falcon1024'),
-        )
-
-        const exported = await ks.export(account.keyId)
-        expect(exported.publicKey).toEqual(expected.publicKey)
-        expect(exported.publicKey?.[0]).toBe(10)
-    })
-
-    it('derives an HD address matching the XHD library at the same coordinates', async () => {
-        const ks = await createConformanceKeyStore()
-        const account = await createHdAccount(ks, undefined, 3)
-
-        const rootKey = fromSeed(
-            Buffer.from(await mnemonicToSeed(account.mnemonic)),
-        )
-        const expected = await new XHDWalletAPI().keyGen(
-            rootKey,
-            KeyContext.Address,
-            0,
-            3,
-            BIP32DerivationType.Peikert,
-        )
-
-        expect(account.address).toBe(algosdk.encodeAddress(expected))
-    })
-
-    it('exposes the Falcon, XHD and Algo25 shims', async () => {
+/**
+ * Tests of the HARNESS, not of the app — every other file in this suite rests
+ * on these holding.
+ *
+ * The distinction matters for what belongs here. Whether the app derives the
+ * right address, signs the right preimage, or builds the right envelope is
+ * proven in `src/suites/**`, against an independent oracle and a real node.
+ * What this file checks is narrower and unglamorous: that the in-memory
+ * driver standing in for the React Native Keychain behaves like it, that the
+ * optional shims actually loaded, and that the accounts the harness hands out
+ * are the accounts the chain knows about. A failure in any of those would
+ * make the suites above green for the wrong reason rather than red.
+ */
+describe('conformance keystore harness', () => {
+    // Loading is optional and silent: a shim that failed to load is simply
+    // absent from `algorithms`, and every quantum or HD suite downstream would
+    // then fail to mint a key rather than reporting a derivation problem.
+    it('loaded the Falcon, XHD and Algo25 shims', async () => {
         const ks = await createConformanceKeyStore()
 
         const algorithms = ks.store.state.algorithms?.map(
@@ -97,7 +59,8 @@ describe('conformance keystore', () => {
 
     // The Falcon and XHD shims wipe the material buffer they are handed, so a
     // driver that hands out one cached plaintext twice signs correctly once and
-    // then emits garbage from an all-zero key.
+    // then emits garbage from an all-zero key. That would surface downstream as
+    // an intermittent bad signature attributed to the app.
     it('re-decrypts material on every use, so repeated signing stays correct', async () => {
         const ks = await createConformanceKeyStore()
         const quantum = await createQuantumAccount(ks)
@@ -121,19 +84,44 @@ describe('conformance keystore', () => {
         expect(await ks.verify(hd.keyId, payload, hdSignatures[1])).toBe(true)
     })
 
-    it('funds an account on LocalNet through the app-built client', async () => {
+    // The sealed material must correspond to the address the harness reports,
+    // or a suite could "prove" a signature for an account the chain never
+    // credits. Verified with tweetnacl rather than the keystore's own verifier
+    // so the check does not rest on the component under test.
+    it('seals a key that signs for the address it hands back', async () => {
+        const ks = await createConformanceKeyStore()
+        const account = await createAlgo25Account(ks)
+
+        const payload = new Uint8Array([1, 2, 3, 4])
+        const signature = await ks.sign(account.keyId, payload)
+
+        expect(
+            nacl.sign.detached.verify(
+                payload,
+                signature,
+                algosdk.Address.fromString(account.address).publicKey,
+            ),
+        ).toBe(true)
+    })
+
+    it('hands out accounts the chain credits, read back through the app model', async () => {
         const ks = await createConformanceKeyStore()
         const account = await createAlgo25Account(ks)
 
         await fundAccount(account.address, 5_000_000n)
 
-        const info = await getConformanceClient().account.getInformation(
-            account.address,
-        )
-        expect(info.balance.microAlgo).toBe(5_000_000n)
+        const info = await accountInformationOf(account.address)
+        expect(info.amount).toBe(5_000_000n)
+        expect(info.address.toString()).toBe(account.address)
+        // Never rekeyed, so the app model must report no auth address rather
+        // than echoing the account's own.
+        expect(info.authAddress).toBeUndefined()
     })
 
-    it('builds a multisig address from its members in order', async () => {
+    // Member order is part of the multisig preimage, so a harness that
+    // silently normalised it would build a different account than the one the
+    // suites think they are testing.
+    it('keeps multisig member order significant', async () => {
         const ks = await createConformanceKeyStore()
         const members = [
             await createAlgo25Account(ks),
@@ -143,15 +131,15 @@ describe('conformance keystore', () => {
         const multisig = createMultisigAccount(members, 2)
         const reversed = createMultisigAccount([...members].reverse(), 2)
 
-        expect(multisig.address).toBe(
-            algosdk
-                .multisigAddress({
-                    version: 1,
-                    threshold: 2,
-                    addrs: members.map(member => member.address),
-                })
-                .toString(),
-        )
         expect(reversed.address).not.toBe(multisig.address)
+        expect(multisig.walletAccount.multisigDetails.addresses).toEqual(
+            members.map(member => member.address),
+        )
+    })
+
+    it('builds its algod client from the app factory, pointed at LocalNet', async () => {
+        const status = await getConformanceClient().client.algod.status().do()
+
+        expect(status.lastRound).toBeGreaterThanOrEqual(0n)
     })
 })

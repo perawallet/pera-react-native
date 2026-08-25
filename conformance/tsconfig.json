@@ -36,7 +36,13 @@
             "@perawallet/wallet-core-signing": ["../packages/signing/src"],
             "@perawallet/wallet-core-signing/*": ["../packages/signing/src/*"],
             "@perawallet/wallet-core-shared": ["../packages/shared/src"],
-            "@perawallet/wallet-core-shared/*": ["../packages/shared/src/*"]
+            "@perawallet/wallet-core-shared/*": ["../packages/shared/src/*"],
+            "@perawallet/wallet-core-transactions": [
+                "../packages/transactions/src"
+            ],
+            "@perawallet/wallet-core-transactions/*": [
+                "../packages/transactions/src/*"
+            ]
         }
     },
     "include": ["src"]

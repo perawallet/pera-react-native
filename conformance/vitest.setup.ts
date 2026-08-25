@@ -21,6 +21,24 @@ import { vi } from 'vitest'
 // This mocks platform storage only; algod itself is never mocked.
 const store = new Map<string, string>()
 
+// The app's own signer (`signTransactionsWithLocalKey`) imports the accounts
+// barrel for its three account-type guards, and the barrel drags every
+// accounts hook (multisig, staking, currencies) along with them — none of
+// which is reachable from a Node suite. Re-export the real guards and models
+// from their own modules and stub only the store the submission chokepoint
+// reads.
+vi.mock('@perawallet/wallet-core-accounts', async () => {
+    const [models, utils] = await Promise.all([
+        vi.importActual<object>('@perawallet/wallet-core-accounts/models'),
+        vi.importActual<object>('@perawallet/wallet-core-accounts/utils'),
+    ])
+    return {
+        ...models,
+        ...utils,
+        useAccountsStore: { getState: () => ({ accounts: [] }) },
+    }
+})
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
         keyValueStorage: {

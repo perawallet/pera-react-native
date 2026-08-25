@@ -12,7 +12,10 @@
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 
+import type { AccountInformation } from '@perawallet/wallet-core-blockchain/models'
 import { createTimeoutBoundedAlgorandClient } from '@perawallet/wallet-core-blockchain/utils/createAlgorandClient'
+import { fetchOnChainAccountInformation } from '@perawallet/wallet-core-accounts/hooks/endpoints'
+import { mapOnChainAccountInformation } from '@perawallet/wallet-core-accounts/hooks/mappers'
 
 import {
     LOCALNET_ALGOD_URL,
@@ -47,17 +50,58 @@ export const getConformanceClient = (): AlgorandClient => {
     return client
 }
 
+/**
+ * The account as the app models it, read fresh from the node through the
+ * app's own fetch + transform pair. Every balance and auth-addr assertion in
+ * the suite reads through this, so a transformer that drops or mistypes a
+ * field fails the suite rather than being quietly bypassed.
+ */
+export const accountInformationOf = async (
+    address: string,
+): Promise<AccountInformation> =>
+    mapOnChainAccountInformation(
+        await fetchOnChainAccountInformation(getConformanceClient(), address),
+    )
+
 /** The sender's ALGO balance, read fresh from the node. */
 export const balanceOf = async (address: string): Promise<bigint> =>
-    (await getConformanceClient().account.getInformation(address)).balance
-        .microAlgo
+    (await accountInformationOf(address)).amount
 
 /** The account's `auth-addr`, or `undefined` if it is not rekeyed. */
 export const authAddrOf = async (
     address: string,
 ): Promise<string | undefined> =>
-    (
-        await getConformanceClient()
-            .client.algod.accountInformation(address)
-            .do()
-    ).authAddr?.toString()
+    (await accountInformationOf(address)).authAddress
+
+/**
+ * The raw indexer JSON for an account's transactions — hyphenated keys, no
+ * algosdk model mapping — which is exactly the shape the app's own
+ * `transformIndexerTransactions` parses. Going over plain `fetch` rather than
+ * the app's `queryClient` keeps the transport out of the picture: this suite
+ * is pinning the transformers against real indexer output, not the HTTP layer
+ * (`chokepoint.spec.ts` covers that).
+ *
+ * The indexer trails algod by a round or two, so this polls until `txId` is
+ * present rather than assuming it already is.
+ */
+export const fetchIndexerTransactionsFor = async (
+    address: string,
+    txId: string,
+    attempts = 30,
+): Promise<{ transactions: unknown[]; [key: string]: unknown }> => {
+    for (let attempt = 0; attempt < attempts; attempt++) {
+        const response = await fetch(
+            `${LOCALNET_INDEXER_URL}/v2/accounts/${encodeURIComponent(address)}/transactions?limit=50`,
+        )
+        if (response.ok) {
+            const page = (await response.json()) as {
+                transactions: { id?: string }[]
+            }
+            if (page.transactions?.some(txn => txn.id === txId)) {
+                return page as never
+            }
+        }
+        await new Promise(resolve => setTimeout(resolve, 500))
+    }
+    throw new Error(`indexer never reported ${txId} for ${address}`)
+}

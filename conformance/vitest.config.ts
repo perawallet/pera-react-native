@@ -27,6 +27,7 @@ export default defineConfig({
             pkg('wallet-core-kms', 'kms'),
             pkg('wallet-core-signing', 'signing'),
             pkg('wallet-core-shared', 'shared'),
+            pkg('wallet-core-transactions', 'transactions'),
             // Same alias blockchain's/signing's own vitest.config.ts carry: without
             // it, `environment: 'node'` externalizes this bare specifier to the
             // real built provider (pulled in transitively via wallet-core-remote-config),

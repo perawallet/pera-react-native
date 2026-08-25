@@ -13,6 +13,10 @@
 import algosdk from 'algosdk'
 import { describe, expect, it } from 'vitest'
 
+import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain/pq/derivation'
+import { getPQProvider } from '@perawallet/wallet-core-kms/crypto/pq'
+import { quantumAddressCandidates } from '@perawallet/wallet-core-kms/crypto/quantumAddressCandidates'
+
 import {
     createAlgo25Account,
     createQuantumAccount,
@@ -84,5 +88,49 @@ describe('quantum derivation conformance', () => {
         const account = await createQuantumAccount(ks, mnemonic)
 
         expect(account.address).toBe(GO_ALGORAND_PQ_VECTOR.address)
+    })
+
+    // The app derives quantum keys in two places that must never disagree:
+    // the keystore mints the signing child, and `getPQProvider()` derives an
+    // in-memory keypair for the import probe and the legacy-account notice.
+    // Nothing else compares them — a probe pointed at the wrong address shows
+    // an existing account as new, which is how PERA-4972 presented.
+    it("matches the keystore's minted key with the provider the import probe uses", async () => {
+        const ks = await createConformanceKeyStore()
+        const account = await createQuantumAccount(ks)
+        const entropy = algosdk.seedFromMnemonic(account.mnemonic)
+
+        const { publicKey } = getPQProvider().generateKeypairFromSeed(
+            derivePQKeygenSeed(entropy),
+        )
+        const { publicKey: minted } = await ks.export(account.keyId)
+
+        expect(minted).toEqual(publicKey)
+    })
+
+    it('offers the canonical candidate as the address the chain actually credits', async () => {
+        const ks = await createConformanceKeyStore()
+        const account = await createQuantumAccount(ks)
+        const entropy = algosdk.seedFromMnemonic(account.mnemonic)
+
+        const candidates = quantumAddressCandidates(entropy)
+        const canonical = candidates.find(
+            candidate => candidate.derivation === 'pqk1',
+        )
+        const legacy = candidates.find(
+            candidate => candidate.derivation !== 'pqk1',
+        )
+
+        expect(canonical?.address).toBe(account.address)
+        // The two derivations must not collapse onto one address, or the
+        // legacy-account probe would be checking the same account twice and
+        // could never tell a pre-fix account from a new one.
+        expect(legacy?.address).not.toBe(canonical?.address)
+
+        await fundAccount(canonical!.address, 1_000_000n)
+        const info = await getConformanceClient()
+            .client.algod.accountInformation(account.address)
+            .do()
+        expect(BigInt(info.amount)).toBe(1_000_000n)
     })
 })

@@ -14,16 +14,32 @@ import { AlgorandClient, microAlgo } from '@algorandfoundation/algokit-utils'
 import type { KeyId, KeyStore } from '@algorandfoundation/keystore-core'
 import {
     BIP32DerivationType,
-    fromSeed,
     KeyContext,
 } from '@algorandfoundation/xhd-wallet-api'
-import { generateMnemonic, mnemonicToSeed } from '@scure/bip39'
-import { wordlist } from '@scure/bip39/wordlists/english.js'
 import algosdk from 'algosdk'
-import nacl from 'tweetnacl'
 
+// Deep imports rather than the package barrel on purpose: the barrel pulls
+// in every accounts hook (multisig, staking, currencies), none of which is
+// reachable from a Node suite. `models/accounts` and `bip44` have no
+// dependencies beyond types and one error class.
+import {
+    AccountTypes,
+    DerivationTypes,
+    type Algo25Account,
+    type HDWalletAccount,
+    type HDWalletDetails,
+    type MultiSigAccount,
+    type QuantumAccount,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts/models/accounts'
+import { assertAlgorandBip44PathMatches } from '@perawallet/wallet-core-accounts/bip44'
 import { derivePQKeygenSeed } from '@perawallet/wallet-core-blockchain/pq/derivation'
 import { deriveQuantumAddress } from '@perawallet/wallet-core-blockchain/pq/quantumAdapter'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain/utils/addresses'
+import { generateMultisigAddress } from '@perawallet/wallet-core-blockchain/utils/multisig'
+import { entropyToMnemonic } from '@perawallet/wallet-core-kms/crypto/hdwallet-utils'
+import { prepareHDMasterKey } from '@perawallet/wallet-core-kms/crypto/prepare-hd-master-key'
+import { algo25SeedToAddress } from '@perawallet/wallet-core-kms/utils'
 
 export type ConformanceAccountKind = 'algo25' | 'hd' | 'quantum'
 
@@ -34,6 +50,13 @@ export type ConformanceAccount = {
     /** The keystore id that signs for {@link address}. */
     keyId: KeyId
     kind: ConformanceAccountKind
+    /**
+     * The app's own account model for this key. Suites hand this to real app
+     * code (`signTransactionsWithLocalKey`, `resolveSigningAccount`,
+     * `buildGroupSignerTypeMap`) rather than to a harness stand-in, so the
+     * type-dispatch those functions perform is the dispatch under test.
+     */
+    walletAccount: WalletAccount
 }
 
 export type ConformanceMultisigAccount = {
@@ -41,16 +64,16 @@ export type ConformanceMultisigAccount = {
     members: ConformanceAccount[]
     threshold: number
     version: number
+    walletAccount: MultiSigAccount
 }
-
-/** BIP39 entropy strength the app mints HD wallets with (a 24-word phrase). */
-const HD_MNEMONIC_STRENGTH = 256
 
 /** Every conformance HD account lives under BIP44 account 0, as the app's do. */
 const HD_ACCOUNT = 0
 
 // BIP44 Algorand address path (coin type 283), byte-for-byte the app's
-// `buildAddressPath` in packages/kms/src/hooks/useHDWallet.ts.
+// `buildAddressPath` in packages/kms/src/hooks/useHDWallet.ts. That one is
+// module-private, so the path is rebuilt here and then checked against the
+// app's own parser below rather than trusted.
 export const buildHdAddressPath = (account: number, keyIndex: number): string =>
     `m/44'/283'/${account}'/0/${keyIndex}`
 
@@ -60,12 +83,15 @@ const randomAlgo25Mnemonic = (): string =>
 /**
  * Imports an algo25 mnemonic's 32 bytes of entropy as an extractable `seed`
  * record. Both the ed25519 signing key and the Falcon key hang off this record
- * as their `parentKeyId`, mirroring how the app roots an algo25 account.
+ * as their `parentKeyId`, mirroring how the app roots an algo25 account —
+ * the `scheme` metadata is what `resolvePQSigningInfo` reads to decide which
+ * signature scheme a child signs under, so it is load-bearing, not decoration.
  */
-const importAlgo25Seed = async (
+const importSeed = async (
     keyStore: KeyStore<void>,
     id: KeyId,
     seed: Uint8Array,
+    scheme: 'algo25' | 'quantum',
 ): Promise<KeyId> =>
     keyStore.import(
         {
@@ -75,7 +101,7 @@ const importAlgo25Seed = async (
             extractable: true,
             keyUsages: ['deriveKey', 'deriveBits'],
             privateKey: Uint8Array.from(seed),
-            metadata: { scheme: 'algo25' },
+            metadata: { scheme },
         },
         'raw',
     )
@@ -86,9 +112,11 @@ export const createAlgo25Account = async (
 ): Promise<ConformanceAccount> => {
     const id = crypto.randomUUID()
     const seed = algosdk.seedFromMnemonic(mnemonic)
-    await importAlgo25Seed(keyStore, `${id}-seed`, seed)
+    await importSeed(keyStore, `${id}-seed`, seed, 'algo25')
 
-    const { publicKey } = nacl.sign.keyPair.fromSeed(Uint8Array.from(seed))
+    // The app's own seed→address derivation, so a change to it fails here
+    // rather than agreeing with a harness copy of the old behaviour.
+    const address = algo25SeedToAddress(seed)
     const keyId = await keyStore.import(
         {
             id: `${id}-sign`,
@@ -98,7 +126,7 @@ export const createAlgo25Account = async (
             keyUsages: ['sign', 'verify'],
             // The 32-byte Ed25519 seed, not the 64-byte expanded secret key.
             privateKey: Uint8Array.from(seed),
-            publicKey: Uint8Array.from(publicKey),
+            publicKey: algosdk.Address.fromString(address).publicKey,
             metadata: { parentKeyId: `${id}-seed` },
         },
         'raw',
@@ -106,10 +134,16 @@ export const createAlgo25Account = async (
     seed.fill(0)
 
     return {
-        address: algosdk.encodeAddress(publicKey),
+        address,
         mnemonic,
         keyId,
         kind: 'algo25',
+        walletAccount: {
+            id,
+            type: AccountTypes.algo25,
+            address,
+            keyPairId: keyId,
+        } satisfies Algo25Account,
     }
 }
 
@@ -119,7 +153,7 @@ export const createQuantumAccount = async (
 ): Promise<ConformanceAccount> => {
     const id = crypto.randomUUID()
     const seed = algosdk.seedFromMnemonic(mnemonic)
-    await importAlgo25Seed(keyStore, `${id}-seed`, seed)
+    await importSeed(keyStore, `${id}-seed`, seed, 'quantum')
 
     const keygenSeed = derivePQKeygenSeed(seed, 'falcon1024')
     seed.fill(0)
@@ -140,17 +174,25 @@ export const createQuantumAccount = async (
     const { publicKey } = await keyStore.export(keyId)
     if (!publicKey) throw new Error(`quantum key ${keyId} has no public key`)
 
+    const address = deriveQuantumAddress(publicKey)
+
     return {
-        address: deriveQuantumAddress(publicKey),
+        address,
         mnemonic,
         keyId,
         kind: 'quantum',
+        walletAccount: {
+            id,
+            type: AccountTypes.quantum,
+            address,
+            keyPairId: keyId,
+        } satisfies QuantumAccount,
     }
 }
 
 export const createHdAccount = async (
     keyStore: KeyStore<void>,
-    mnemonic: string = generateMnemonic(wordlist, HD_MNEMONIC_STRENGTH),
+    mnemonic?: string,
     index = 0,
 ): Promise<ConformanceAccount> => {
     if (!keyStore.deriveFromSeed) {
@@ -158,28 +200,42 @@ export const createHdAccount = async (
     }
 
     const id = crypto.randomUUID()
-    const bip39Seed = await mnemonicToSeed(mnemonic)
-    // The 96-byte XHD extended root (kL || kR || chainCode), not the BIP39
-    // seed: `deriveFromSeed` injects these bytes straight into the
-    // BIP32-Ed25519 shim and rejects any parent not typed `hd-root-key`.
-    const rootKey = fromSeed(Buffer.from(bip39Seed))
-    bip39Seed.fill(0)
+    // The app's own BIP39→XHD-root preparation. It deliberately does not hand
+    // back the phrase (heap hygiene), so the phrase is recovered from the
+    // entropy it does return — again through the app's own helper.
+    const prepared = await prepareHDMasterKey({ id: `${id}-root`, mnemonic })
+    const resolvedMnemonic = mnemonic ?? entropyToMnemonic(prepared.entropy)
+    prepared.entropy.fill(0)
 
     const rootKeyId = await keyStore.import(
         {
-            id: `${id}-root`,
+            id: prepared.keyId,
             type: 'hd-root-key',
             algorithm: 'raw',
             extractable: false,
             keyUsages: ['deriveKey', 'deriveBits'],
-            privateKey: rootKey,
+            // The 96-byte XHD extended root (kL || kR || chainCode), not the
+            // BIP39 seed: `deriveFromSeed` injects these bytes straight into
+            // the BIP32-Ed25519 shim and rejects any parent not typed
+            // `hd-root-key`.
+            privateKey: prepared.rootKey,
             metadata: { scheme: 'bip39' },
         },
         'raw',
     )
-    rootKey.fill(0)
+    prepared.rootKey.fill(0)
 
+    const hdWalletDetails: HDWalletDetails = {
+        account: HD_ACCOUNT,
+        change: 0,
+        keyIndex: index,
+        derivationType: DerivationTypes.Peikert,
+    }
     const path = buildHdAddressPath(HD_ACCOUNT, index)
+    // The app's own BIP44 parser is the judge of whether the path this harness
+    // built is the path the app would have derived at these coordinates.
+    assertAlgorandBip44PathMatches(path, hdWalletDetails)
+
     const keyId = await keyStore.deriveFromSeed(rootKeyId, path, {
         id: `${id}-idx${index}`,
         algorithm: 'EdDSA',
@@ -198,34 +254,48 @@ export const createHdAccount = async (
     const { publicKey } = await keyStore.export(keyId)
     if (!publicKey) throw new Error(`derived key ${keyId} has no public key`)
 
+    const address = encodeAlgorandAddress(publicKey)
+
     return {
-        address: algosdk.encodeAddress(publicKey),
-        mnemonic,
+        address,
+        mnemonic: resolvedMnemonic,
         keyId,
         kind: 'hd',
+        walletAccount: {
+            id,
+            type: AccountTypes.hdWallet,
+            address,
+            keyPairId: keyId,
+            hdWalletDetails,
+        } satisfies HDWalletAccount,
     }
 }
 
 /**
  * The multisig address for `members` in the order given — order is part of the
- * preimage, so it is part of the address.
+ * preimage, so it is part of the address. Computed with the app's own
+ * `generateMultisigAddress`, which is the only multisig-address computation
+ * site in the codebase outside algosdk itself.
  */
 export const createMultisigAccount = (
     members: ConformanceAccount[],
     threshold: number,
 ): ConformanceMultisigAccount => {
     const version = 1
+    const addresses = members.map(member => member.address)
+    const address = generateMultisigAddress(version, threshold, addresses)
+
     return {
-        address: algosdk
-            .multisigAddress({
-                version,
-                threshold,
-                addrs: members.map(member => member.address),
-            })
-            .toString(),
+        address,
         members,
         threshold,
         version,
+        walletAccount: {
+            id: address,
+            type: AccountTypes.multisig,
+            address,
+            multisigDetails: { threshold, addresses, version },
+        } satisfies MultiSigAccount,
     }
 }
 

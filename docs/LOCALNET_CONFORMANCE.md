@@ -1,8 +1,8 @@
 # LocalNet Conformance Suite
 
-`conformance/` is a Vitest suite — 28 files, 102 tests — that runs the app's
-own builders, keystore, signing, and error-classification code against a
-**real** Algorand node (LocalNet) instead of a mock. See
+`conformance/` is a Vitest suite — 30 files, 118 tests — that runs the app's
+own builders, keystore, signing, transformers, and error-classification code
+against a **real** Algorand node (LocalNet) instead of a mock. See
 `conformance/README.md` for the package layout and the `dist/` build
 prerequisite (repeated below because it is also this doc's CI-relevant
 section).
@@ -86,6 +86,34 @@ clock, not the uncached build; if that stops being true, adding the same
 `actions/cache` pattern `pre-merge.yml` uses is the first lever to pull,
 not a rewrite.
 
+## What runs is app code
+
+The point of this suite is to put Pera's own functions in front of a real
+node. Where a third-party library appears, it is on the _other_ side of the
+comparison — an independent oracle — never on both.
+
+| Area                                                                  | The app code under test                                                                                                                       |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Envelope construction (`sig`, `sgnr`, `pqsig`, batching)              | `signTransactionsWithLocalKey` — the pure pipeline function `useLocalKeyTransactionSigner` delegates to                                       |
+| Signature-scheme decision                                             | `resolvePQSigningInfo` — the PERA-4653 guard, reading a live keystore snapshot                                                                |
+| Strategy layer (capability gate, progress, backend signature payload) | `createLocalKeyStrategy`                                                                                                                      |
+| Signer dispatch and rekey resolution                                  | `buildGroupSignerTypeMap`, `resolveSigningAccount`                                                                                            |
+| Group fee assignment and re-grouping                                  | `assignMinimumFeesToGroup`, `groupHasQuantumSigner`                                                                                           |
+| Fee arithmetic                                                        | `calculateMinTxnFee`, `calculatePQFeeSurcharge`                                                                                               |
+| Address derivation                                                    | `algo25SeedToAddress`, `deriveQuantumAddress`, `derivePQKeygenSeed`, `generateMultisigAddress`, `encodeAlgorandAddress`, `prepareHDMasterKey` |
+| In-memory PQ keygen (import probe, legacy-account notice)             | `getPQProvider().generateKeypairFromSeed`, `quantumAddressCandidates`                                                                         |
+| Account state                                                         | `fetchOnChainAccountInformation` + `mapOnChainAccountInformation`, `fetchAccountAssetOptInRounds`                                             |
+| Transaction history                                                   | `transformIndexerTransactions`, `collectAssetIds`, `computeBalanceImpacts`                                                                    |
+| Multisig assembly                                                     | `assembleSignedMultisigTransactions`                                                                                                          |
+| Submission                                                            | `submitAndAutoRefreshCore`                                                                                                                    |
+| Error classification                                                  | `toAlgodError` / `parseAlgodMessage`                                                                                                          |
+
+Two files are deliberate exceptions, and say so in their own headers:
+`harness/__tests__/algokey.spec.ts` self-tests the oracle (so a broken oracle
+cannot make every parity assertion vacuous), and
+`harness/__tests__/keystore.spec.ts` self-tests the in-memory driver standing
+in for the React Native Keychain. Neither asserts anything about Pera's code.
+
 ## The three-proof model
 
 Most suites assert three independent things about a signed transaction, and
@@ -161,13 +189,17 @@ boundary or an open follow-up, not an oversight this doc is hiding.
    is an assumption this suite rests on, not something it proves — it
    remains a manual on-device check (see
    `docs/QUANTUM_PQ_INTEGRATION.md` for that verification).
-4. **`sgnr`/envelope construction for ed25519 and rekeyed signing runs
-   through the harness's `build.ts`, not the app's own signer.** The app's
-   real entry point is `useLocalKeyTransactionSigner`
-   (`packages/signing/src/hooks/useLocalKeyTransactionSigner.ts:147`), a
-   React hook with no pure function to call from a Node test. Quantum and
-   multisig signing, by contrast, DO run the app's real signing code —
-   only ed25519/rekeyed construction takes the harness shortcut.
+4. **Key custody is the one thing the suite substitutes.** Every signing
+   decision — which payload to sign, which envelope field to fill, when to
+   set `sgnr` — is the app's own
+   (`signTransactionsWithLocalKey` + `resolvePQSigningInfo`). What differs is
+   where the sealed bytes live: the app's `useKMS` reaches
+   `getProvider().key.store`, a React Native Keychain/MMKV driver that cannot
+   load under Node, so the harness supplies the same `keyStore.sign` call
+   backed by an in-memory driver (`harness/keystore.ts`). The React bindings
+   themselves (`useKMS`, `useLocalKeyTransactionSigner`) are not exercised;
+   they hold no logic beyond wiring, which is why the logic was moved out of
+   them.
 5. **A corrupted group id has no typed `AlgodErrorCode`.** It falls through
    `parseAlgodMessage.ts` to `unknown_node_error`, which is one of
    `classifySubmitFailure.ts`'s `NO_NODE_VERDICT_CODES` — so a definitive
@@ -186,19 +218,22 @@ boundary or an open follow-up, not an oversight this doc is hiding.
    `suites/fees/perByte.spec.ts` asserts the composer's computed fee against
    the node for both sizes and documents the rest rather than asserting
    something LocalNet cannot demonstrate.
-7. **MBR conformance pins the constants against chain truth, not the app's
-   MBR arithmetic.** The values `useTransactionSendFlow.ts:148` and
-   `useEnsureDestinationOptIn.ts:104` compute against are hook-bound (no
-   pure entry point), so `suites/mbr/optIn.spec.ts` proves the constants
-   themselves are right, not that every call site applies them correctly.
+7. **MBR conformance pins the constants and the delta, not every call
+   site.** `suites/mbr/optIn.spec.ts` and
+   `suites/accounts/accountState.spec.ts` prove the constants are right and
+   that an opt-in moves the node-reported `minBalance` by exactly
+   `FALLBACK_ASSET_MBR` — the arithmetic `useTransactionSendFlow.ts:148`
+   performs. The call sites themselves are still hook-bound, so _that they
+   apply it_ remains unproven here.
 8. **Ledger hardware signing is not covered.** It needs a physical
    transport; there is no way to simulate a hardware device from CI.
 
 ## Bugs this suite found
 
 The strongest argument for this suite existing: it is not hypothetical
-insurance, it already caught two live regressions that every existing unit
-test missed, both in `packages/blockchain/src/errors/parseAlgodMessage.ts`.
+insurance, it already caught three live regressions that every existing unit
+test missed, all three in
+`packages/blockchain/src/errors/parseAlgodMessage.ts`.
 
 Algod 5.0.0-stable changed how it renders certain rejection messages.
 `parseAlgodMessage.ts`'s regexes were written against an older format and
@@ -221,6 +256,21 @@ catch-all `unknown_node_error` code instead of their intended typed code:
   between the two round numbers (`"outside of A-B"`); algod 5.0.0-stable
   uses a double dash (`"outside of A--B"`). Fixed in this PR: the regex now
   accepts both renderings.
+- **Pooled group fee too small** (`GROUP_FEE_RE`) — expected
+  `"txgroup had 1999 in fees, which is less than the minimum 2000"`; algod
+  5.0.0-stable renders it as
+  `"txgroup with 5.999mA fees is less than 6mA (usage=6.000000 * base=1mA)"`.
+  Found by `suites/fees/pooling.spec.ts` while checking that the group the
+  app's own `assignMinimumFeesToGroup` produces is priced at the floor rather
+  than above it — the one-microAlgo-under case has to be rejected, and the
+  rejection turned out to be misclassified. Fixed the same way as overspend:
+  the regex now matches on message shape and accepts both renderings, and
+  `AlgodErrorParamsByCode.group_fee_too_small` no longer carries
+  `paid`/`required`, because the new rendering scales both figures into a
+  variable-suffix unit that cannot be parsed back into a microAlgo count.
+  `errors.algod.group_fee_too_small.body` was rewritten in all six locale
+  bundles for the same reason the overspend copy was; the key is unchanged,
+  so bidirectional i18n parity holds.
 
 Both misses had the same downstream cost, not just a wrong error code:
 `unknown_node_error` is one of `classifySubmitFailure.ts`'s
@@ -234,15 +284,35 @@ strings the test author wrote, and the test author made the same wrong
 assumption about algod's format that the regex encoded. Only a real
 algod 5.0.0-stable response could disagree.
 
-See `conformance/src/suites/submission/rejections.spec.ts` for the pinned
-assertions (both fixed cases, plus the corrupted-group-id case that remains
-open — gap 5 above).
+See `conformance/src/suites/submission/rejections.spec.ts` for the overspend
+and expired assertions (plus the corrupted-group-id case that remains open —
+gap 5 above), and `conformance/src/suites/fees/pooling.spec.ts` for the
+group-fee one.
+
+All three are the same failure, three times over: a regex written against a
+rendering the author had seen, never re-checked against the node, and
+silently falling through to `unknown_node_error`. That code is one of
+`classifySubmitFailure.ts`'s `NO_NODE_VERDICT_CODES`, so each one turned a
+flat "no" from algod into an indeterminate outcome, a
+`verifyLandedWithRetries` cycle, and finally an "outcome unknown" error for a
+transaction the node had definitively rejected on the first response.
 
 ## Troubleshooting
 
 - **`LocalNet is not reachable at http://localhost:4001`** — Docker isn't
   running, or the containers aren't up. `pnpm localnet:status`, then
   `pnpm localnet`.
+- **The indexer sits at round 0 and `suites/history`/`suites/accounts`
+  time out waiting for a transaction to appear** — a stale
+  `algorandfoundation/conduit-localnet` image. Conduit logs
+  (`docker logs algokit_sandbox_conduit`) show
+  `unknown protocol ... this usually means you need to upgrade` and
+  `error decoding block for round 1`: the pinned image predates the running
+  algod's block format, so nothing is ever ingested and algod-only suites
+  stay green while indexer-backed ones cannot pass.
+  `docker pull algorandfoundation/conduit-localnet:latest` then
+  `pnpm localnet:reset`. CI pulls fresh images, so this is a local-only
+  trap.
 - **Stale containers / weird chain state** — `pnpm localnet:reset` wipes and
   restarts LocalNet with a clean genesis. Note this **changes the genesis
   hash**; if you have the app pointed at a custom LocalNet network config

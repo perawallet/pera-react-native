@@ -11,8 +11,11 @@
  */
 
 import { microAlgo } from '@algorandfoundation/algokit-utils'
-import algosdk from 'algosdk'
-import { describe, expect, it } from 'vitest'
+import algosdk, { encodeMsgpack } from 'algosdk'
+import { describe, expect, it, vi } from 'vitest'
+
+import { createLocalKeyStrategy } from '@perawallet/wallet-core-signing/pipeline/signing/createLocalKeyStrategy'
+import { signTransactionsWithLocalKey } from '@perawallet/wallet-core-signing/pipeline/signing/signTransactionsWithLocalKey'
 
 import { createAlgo25Account, fundAccount } from '../../harness/accounts'
 import { algokeySign } from '../../harness/algokey'
@@ -20,6 +23,7 @@ import type { TxnIntent } from '../../harness/assert/intent'
 import { expectConformant } from '../../harness/assert/roundTrip'
 import {
     buildTxn,
+    localKeySigningDeps,
     signWithKeystore,
     submitAndConfirm,
 } from '../../harness/build'
@@ -79,6 +83,101 @@ describe('ed25519 signing conformance', () => {
         await expectConformant({
             intent,
             signedBytes: keystoreSignedBytes,
+            txId,
+            senderBalanceBefore,
+        })
+    })
+
+    /**
+     * One layer up from the signer: `createLocalKeyStrategy` is what the
+     * signing machine actually invokes, and it owns the account-capability
+     * gate, the progress callbacks, and the `signers[].signatures` payload the
+     * multisig propose/cosign backend consumes. Its own tests inject a fake
+     * signer, so the base64 signatures it reports have never been checked
+     * against bytes a node accepted.
+     */
+    it('signs through the app strategy, and the node accepts what the strategy produced', async () => {
+        const keyStore = await createConformanceKeyStore()
+        const sender = await createAlgo25Account(keyStore)
+        const receiver = await createAlgo25Account(keyStore)
+        await fundAccount(sender.address, 2_000_000n)
+        await fundAccount(receiver.address, 500_000n)
+
+        const amount = 175_000n
+        const txn = await buildTxn(composer => {
+            composer.addPayment({
+                sender: sender.address,
+                receiver: receiver.address,
+                amount: microAlgo(amount),
+            })
+        })
+
+        const onProgress = vi.fn()
+        const strategy = createLocalKeyStrategy({
+            signTransactions: (txnGroup, indexesToSign, account) =>
+                signTransactionsWithLocalKey(
+                    localKeySigningDeps(keyStore),
+                    txnGroup,
+                    indexesToSign,
+                    account,
+                ),
+            signArbitraryData: () => {
+                throw new Error('not exercised by this test')
+            },
+            signArc60: () => {
+                throw new Error('not exercised by this test')
+            },
+        })
+
+        expect(strategy.canSign(sender.walletAccount)).toBe(true)
+
+        const result = await strategy.sign(
+            {
+                signerAddress: sender.address,
+                source: { type: 'walletConnect' },
+                data: {
+                    type: 'transactions',
+                    transactions: [txn],
+                    indicesToSign: [0],
+                },
+                originalIndices: [0],
+                analysis: {},
+            } as never,
+            sender.walletAccount,
+            { onProgress },
+        )
+
+        expect(onProgress).toHaveBeenLastCalledWith(1, 1)
+
+        const signedData = result.signedData as {
+            type: 'transactions'
+            signed: algosdk.SignedTransaction[]
+        }
+        const [signedTxn] = signedData.signed
+        const signedBytes = encodeMsgpack(signedTxn)
+        if (!signedTxn.sig) {
+            throw new Error('the strategy returned an unsigned transaction')
+        }
+
+        // The base64 the strategy hands the backend must be the signature in
+        // the bytes it produced, not a re-derivation of it.
+        const [signerInfo] = result.signers
+        expect(signerInfo.signatures).toEqual([
+            Buffer.from(signedTxn.sig).toString('base64'),
+        ])
+
+        const senderBalanceBefore = await balanceOf(sender.address)
+        const { txId } = await submitAndConfirm(signedBytes)
+
+        await expectConformant({
+            intent: {
+                type: 'pay',
+                sender: sender.address,
+                receiver: receiver.address,
+                amount,
+                fee: txn.fee,
+            },
+            signedBytes,
             txId,
             senderBalanceBefore,
         })

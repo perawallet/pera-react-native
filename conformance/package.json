@@ -19,9 +19,11 @@
         "@perawallet/wallet-core-config": "workspace:*",
         "@perawallet/wallet-core-kms": "workspace:*",
         "@perawallet/wallet-core-signing": "workspace:*",
+        "@perawallet/wallet-core-transactions": "workspace:*",
         "@scure/bip39": "catalog:",
         "@tanstack/store": "catalog:",
         "algosdk": "catalog:",
+        "decimal.js": "catalog:",
         "falcon-1024": "catalog:",
         "tweetnacl": "catalog:"
     },

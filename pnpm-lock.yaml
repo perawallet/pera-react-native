@@ -1032,6 +1032,9 @@ importers:
       '@perawallet/wallet-core-signing':
         specifier: workspace:*
         version: link:../packages/signing
+      '@perawallet/wallet-core-transactions':
+        specifier: workspace:*
+        version: link:../packages/transactions
       '@scure/bip39':
         specifier: 'catalog:'
         version: 2.2.0
@@ -1041,6 +1044,9 @@ importers:
       algosdk:
         specifier: 'catalog:'
         version: 3.7.0
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
       falcon-1024:
         specifier: 'catalog:'
         version: 0.2.0

@@ -23,12 +23,27 @@ import {
 } from '../algokey'
 import { LOCALNET_ALGOD_URL, LOCALNET_TOKEN } from '../localnet'
 
-describe('algokey oracle', () => {
+/**
+ * Self-tests of the ORACLE, not of the app.
+ *
+ * These are the only assertions in the suite that compare two third-party
+ * implementations to each other, and they are here for a specific reason:
+ * `algokey` is what `src/suites/signing/**` and `src/suites/derivation/**`
+ * diff the app's own output against, so an oracle that silently stopped
+ * working — a missing binary, a changed subcommand, a flag that now means
+ * something else — would turn every parity assertion downstream into
+ * `expect(x).toEqual(x)` and pass forever.
+ *
+ * Nothing here asserts anything about Pera's code. The app's derivation and
+ * signing are proven in `src/suites/**`, where the oracle is one side of the
+ * comparison and app code is the other.
+ */
+describe('algokey oracle self-test', () => {
     it('is available in the running LocalNet container', async () => {
         expect(await isAlgokeyAvailable()).toBe(true)
     })
 
-    it('derives the same ed25519 address as algosdk', async () => {
+    it('derives an ed25519 address, agreeing with algosdk on a known key', async () => {
         const account = algosdk.generateAccount()
         const mnemonic = algosdk.secretKeyToMnemonic(account.sk)
 
@@ -49,7 +64,7 @@ describe('algokey oracle', () => {
     })
 })
 
-describe('algokey oracle — signing helpers', () => {
+describe('algokey oracle self-test — signing helpers', () => {
     let suggestedParams: Parameters<
         typeof algosdk.makePaymentTxnWithSuggestedParamsFromObject
     >[0]['suggestedParams']
@@ -63,7 +78,7 @@ describe('algokey oracle — signing helpers', () => {
         suggestedParams = await algod.getTransactionParams().do()
     })
 
-    it('signs a payment with an ed25519 key, byte-identical to algosdk', async () => {
+    it('signs an ed25519 payment, byte-identical to algosdk', async () => {
         const account = algosdk.generateAccount()
         const mnemonic = algosdk.secretKeyToMnemonic(account.sk)
         const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
@@ -105,7 +120,7 @@ describe('algokey oracle — signing helpers', () => {
         expect(decoded.pqsig?.sig.length).toBeGreaterThan(0)
     })
 
-    it('signs a payment with a multisig key, byte-identical to algosdk', async () => {
+    it('signs a multisig payment, byte-identical to algosdk', async () => {
         const signer = algosdk.generateAccount()
         const cosigner = algosdk.generateAccount()
         const metadata: algosdk.MultisigMetadata = {

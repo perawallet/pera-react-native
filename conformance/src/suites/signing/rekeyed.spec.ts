@@ -14,6 +14,9 @@ import { microAlgo } from '@algorandfoundation/algokit-utils'
 import algosdk from 'algosdk'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { buildGroupSignerTypeMap } from '@perawallet/wallet-core-signing/machine/actions'
+import { resolveSigningAccount } from '@perawallet/wallet-core-signing/machine/utils/resolveSigningAccount'
+
 import {
     createAlgo25Account,
     fundAccount,
@@ -42,16 +45,13 @@ import {
  * a real signer, and does a real node accept the `sgnr`-carrying envelope and
  * reject the pre-rekey key?
  *
- * Limitation: the `sgnr` field itself is written by
- * `harness/build.ts`'s `signTransaction`, a harness reimplementation of the
- * rule — not by the app's own signer
- * (`packages/signing/src/hooks/useLocalKeyTransactionSigner.ts`). That
- * duplication exists because the app's signers are React hooks with no pure
- * entry point a headless suite can call. A regression in the app's own
- * `sgnr` logic would leave this suite green. Quantum and multisig don't have
- * this gap: they exercise real app code end to end
- * (`pqSigningDigest`, `assemblePQSignedTransaction`,
- * `assembleSignedMultisigTransactions`).
+ * The `sgnr` field is written by the app's own signer — the harness signs
+ * through `signTransactionsWithLocalKey`, the same pure pipeline function
+ * `useLocalKeyTransactionSigner` delegates to — so a regression in the app's
+ * rekey-envelope rule fails here rather than passing against a harness copy
+ * of it. The account-side half of the rule (which key to reach for) is
+ * asserted separately below against `resolveSigningAccount` and
+ * `buildGroupSignerTypeMap`, the app's own dispatch.
  */
 describe('rekeyed signing conformance', () => {
     let keyStore: ConformanceKeyStore
@@ -172,5 +172,102 @@ describe('rekeyed signing conformance', () => {
                 `should have been authorized by ${newAuth.address} but was actually authorized by ${source.address}`,
             ),
         )
+    })
+})
+
+/**
+ * The envelope half of rekeyed signing is proven above. This is the account
+ * half: given a rekeyed account, does the app reach for the auth account's
+ * key, and does it route that group to the local-key signer? Both decisions
+ * are made offline by pure app code, but only a real node can confirm the
+ * account they are made about is genuinely rekeyed — which the `beforeAll`
+ * above establishes on chain.
+ */
+describe('rekeyed signer resolution conformance', () => {
+    let keyStore: ConformanceKeyStore
+    let rekeyed: ConformanceAccount
+    let auth: ConformanceAccount
+
+    beforeAll(async () => {
+        keyStore = await createConformanceKeyStore()
+        rekeyed = await createAlgo25Account(keyStore)
+        auth = await createAlgo25Account(keyStore)
+        await fundAccount(rekeyed.address, 2_000_000n)
+
+        const rekeyTxn = await buildTxn(composer => {
+            composer.addPayment({
+                sender: rekeyed.address,
+                receiver: rekeyed.address,
+                amount: microAlgo(0n),
+                rekeyTo: auth.address,
+            })
+        })
+        await submitAndConfirm(
+            await signWithKeystore(keyStore, rekeyed, rekeyTxn),
+        )
+    })
+
+    it("resolves a transaction's signer to the auth account the chain reports", async () => {
+        // The chain is the source of truth for the rekey; the account model
+        // is populated from it rather than from the test's own assumption.
+        const onChainAuth = await authAddrOf(rekeyed.address)
+        expect(onChainAuth).toBe(auth.address)
+
+        const account = {
+            ...rekeyed.walletAccount,
+            rekeyAddress: onChainAuth,
+        }
+        const allAccounts = [account, auth.walletAccount]
+
+        const resolved = resolveSigningAccount(
+            account,
+            { type: 'walletConnect' } as never,
+            'transactions',
+            allAccounts,
+        )
+
+        expect(resolved.address).toBe(auth.address)
+        expect(resolved.keyPairId).toBe(auth.walletAccount.keyPairId)
+    })
+
+    it('does NOT follow the rekey hop for off-chain data, which has no auth-addr lookup', async () => {
+        const account = {
+            ...rekeyed.walletAccount,
+            rekeyAddress: await authAddrOf(rekeyed.address),
+        }
+        const allAccounts = [account, auth.walletAccount]
+
+        // A dApp verifies an off-chain signature against the requested
+        // account's own pubkey, so following the hop here would produce a
+        // signature the dApp rejects — with no node to catch it.
+        expect(
+            resolveSigningAccount(
+                account,
+                { type: 'walletConnect' } as never,
+                'arbitrary-data',
+                allAccounts,
+            ).address,
+        ).toBe(rekeyed.address)
+    })
+
+    it('routes a rekeyed account to the local-key signer, since its auth account holds local keys', async () => {
+        const account = {
+            ...rekeyed.walletAccount,
+            rekeyAddress: await authAddrOf(rekeyed.address),
+        }
+        const allAccounts = [account, auth.walletAccount]
+
+        const map = buildGroupSignerTypeMap(
+            [
+                {
+                    signerAddress: rekeyed.address,
+                    source: { type: 'walletConnect' },
+                    data: { type: 'transactions' },
+                } as never,
+            ],
+            allAccounts,
+        )
+
+        expect(map.get(rekeyed.address)).toBe('localKey')
     })
 })

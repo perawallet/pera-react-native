@@ -1,9 +1,18 @@
 # Conformance suite
 
-Vitest suites that run the app's own builders/keystore/signing/error-handling
-code against a **real** Algorand node (LocalNet) rather than a mock. See
+Vitest suites that run the app's own builders, signing pipeline, transformers
+and error handling against a **real** Algorand node (LocalNet) rather than a
+mock. `docs/LOCALNET_CONFORMANCE.md` lists exactly which app functions are
+under test; see
 `docs/superpowers/specs/2026-08-24-localnet-conformance-suite-design.md` for
 the design.
+
+Only key custody is substituted: `harness/keystore.ts` swaps the React Native
+Keychain driver for an in-memory one, and everything above it —
+`signTransactionsWithLocalKey`, `resolvePQSigningInfo`,
+`createLocalKeyStrategy`, `assignMinimumFeesToGroup` — is the app's own code.
+`harness/__tests__/` holds the two files that test the harness itself rather
+than the app, and each says so in its header.
 
 ## Running
 

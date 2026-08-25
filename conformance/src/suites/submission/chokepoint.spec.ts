@@ -44,19 +44,6 @@ import {
     type ConformanceKeyStore,
 } from '../../harness/keystore'
 
-// submitAndAutoRefresh.ts imports the full `@perawallet/wallet-core-accounts`
-// barrel at module scope only for its public wrapper's `useAccountsStore`
-// read — a path this suite never exercises, since submitAndAutoRefreshCore
-// (the seam under test) takes `walletAddresses` as an explicit parameter
-// instead. The real barrel transitively pulls in every accounts hook
-// (multisig, staking, currencies, ...), none of which is reachable from here,
-// so it is stubbed rather than dragging that whole graph into a Node suite.
-// `@perawallet/wallet-core-blockchain` is deliberately NOT mocked: its
-// `toAlgodError` is real classification logic this suite exercises.
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountsStore: { getState: () => ({ accounts: [] }) },
-}))
-
 const CONFIRMATION_ROUNDS = 10
 
 /**

@@ -11,24 +11,22 @@
  */
 
 import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import type { KeyStore } from '@algorandfoundation/keystore-core'
 import algosdk, {
-    Address,
     encodeMsgpack,
-    SignedTransaction,
     type modelsv2,
     type Transaction,
 } from 'algosdk'
 
-import {
-    assemblePQSignedTransaction,
-    pqSigningDigest,
-} from '@perawallet/wallet-core-blockchain/pq/quantumAdapter'
-import { DEFAULT_PQ_SCHEME_ID } from '@perawallet/wallet-core-blockchain/pq/schemes'
 import { encodeTransaction } from '@perawallet/wallet-core-blockchain/utils/transact'
+import { resolvePQSigningInfo } from '@perawallet/wallet-core-kms/crypto/pq/resolvePQSigningInfo'
+import {
+    signTransactionsWithLocalKey,
+    type LocalKeySigningDeps,
+} from '@perawallet/wallet-core-signing/pipeline/signing/signTransactionsWithLocalKey'
 
 import type { ConformanceAccount } from './accounts'
 import { getConformanceClient } from './client'
+import type { ConformanceKeyStore } from './keystore'
 
 export type ConformanceComposer = ReturnType<AlgorandClient['newGroup']>
 
@@ -89,64 +87,63 @@ export const buildTxn = async (
     return transactions[0]
 }
 
-const signTransaction = async (
-    keyStore: KeyStore<void>,
-    account: ConformanceAccount,
-    txn: Transaction,
-): Promise<SignedTransaction> => {
-    if (account.kind === 'quantum') {
-        const { publicKey } = await keyStore.export(account.keyId)
-        if (!publicKey) {
-            throw new Error(`quantum key ${account.keyId} has no public key`)
-        }
-        return assemblePQSignedTransaction({
-            txn,
-            signature: {
-                schemeId: DEFAULT_PQ_SCHEME_ID,
-                publicKey,
-                signature: await keyStore.sign(
-                    account.keyId,
-                    pqSigningDigest(txn),
-                ),
-            },
-        })
-    }
-
-    const signature = await keyStore.sign(account.keyId, encodeTransaction(txn))
-    return new SignedTransaction({
-        txn,
-        sig: signature,
-        // A signer that is not the sender is the rekey case, and the envelope
-        // has to name it or the node cannot find the authorizing key.
-        sgnr:
-            account.address === txn.sender.toString()
-                ? undefined
-                : Address.fromString(account.address),
-    })
-}
+/**
+ * The dependency set the app's own local-key signer runs on, backed by the
+ * conformance keystore.
+ *
+ * Only key custody is substituted. `signPayloads` is the same
+ * `keyStore.sign` the app's `useKMS.signTransactionsWithKey` bottoms out in,
+ * and `getPQSigningInfo` is the app's own `resolvePQSigningInfo` reading the
+ * live keystore snapshot — so the scheme decision, the payload choice, the
+ * `sgnr` rule and the `pqsig` envelope are all app code, not harness code.
+ */
+export const localKeySigningDeps = (
+    keyStore: ConformanceKeyStore,
+): LocalKeySigningDeps => ({
+    signPayloads: (keyPairId, payloads) =>
+        Promise.all(payloads.map(payload => keyStore.sign(keyPairId, payload))),
+    getPQSigningInfo: keyPairId =>
+        resolvePQSigningInfo(keyStore.store.state.keys, keyPairId),
+    encodeTransaction,
+})
 
 /**
  * Signs `txn` with `account`'s key and returns the msgpack envelope bytes — the
  * exact bytes to hand algod, and the exact bytes `expectConformant` decodes.
+ *
+ * Routed through the app's own `signTransactionsWithLocalKey`, so what a node
+ * accepts here is what the app would have produced, envelope included.
  */
 export const signWithKeystore = async (
-    keyStore: KeyStore<void>,
+    keyStore: ConformanceKeyStore,
     account: ConformanceAccount,
     txn: Transaction,
-): Promise<Uint8Array> =>
-    encodeMsgpack(await signTransaction(keyStore, account, txn))
+): Promise<Uint8Array> => {
+    const [signed] = await signTransactionsWithLocalKey(
+        localKeySigningDeps(keyStore),
+        [txn],
+        [0],
+        account.walletAccount,
+    )
+    return encodeMsgpack(signed)
+}
 
-/** Signs every transaction of a group with the same account, in order. */
+/**
+ * Signs every transaction of a group with the same account, in order — as one
+ * `signTransactionsWithLocalKey` call, which is how the app signs a group.
+ */
 export const signGroupWithKeystore = async (
-    keyStore: KeyStore<void>,
+    keyStore: ConformanceKeyStore,
     account: ConformanceAccount,
     txns: Transaction[],
 ): Promise<Uint8Array[]> => {
-    const signed: Uint8Array[] = []
-    for (const txn of txns) {
-        signed.push(await signWithKeystore(keyStore, account, txn))
-    }
-    return signed
+    const signed = await signTransactionsWithLocalKey(
+        localKeySigningDeps(keyStore),
+        txns,
+        txns.map((_, index) => index),
+        account.walletAccount,
+    )
+    return signed.map(encodeMsgpack)
 }
 
 export type SubmissionResult = {
@@ -207,7 +204,7 @@ export type TestAssetParams = {
  * the keystore that minted it.
  */
 export const createTestAsset = async (
-    keyStore: KeyStore<void>,
+    keyStore: ConformanceKeyStore,
     creator: ConformanceAccount,
     params: TestAssetParams = {},
 ): Promise<bigint> => {
