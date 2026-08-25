@@ -13,6 +13,7 @@
 export const UserPreferences = {
     transactionInfoAgreed: 'transaction-info-agreed',
     chartVisible: 'chart-visible',
+    chartPeriod: 'chart-period',
     developerMenuEnabled: 'developer-menu-enabled',
     rekeySupportEnabled: 'rekey-support-enabled',
     assetFreezeSupportEnabled: 'asset-freeze-support-enabled',

@@ -533,6 +533,9 @@
         "error_failed": "Pera no ha podido abrir ese enlace. Revísalo y vuelve a intentarlo."
     },
     "chart": {
+        "one_day": {
+            "label": "1D"
+        },
         "one_week": {
             "label": "1S"
         },

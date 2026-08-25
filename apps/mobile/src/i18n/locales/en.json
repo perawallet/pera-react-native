@@ -533,6 +533,9 @@
         "error_failed": "Pera couldn't open that link. Check it and try again."
     },
     "chart": {
+        "one_day": {
+            "label": "1D"
+        },
         "one_week": {
             "label": "1W"
         },

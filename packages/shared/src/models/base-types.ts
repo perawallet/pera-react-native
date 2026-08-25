@@ -15,4 +15,12 @@ import { type Network, Networks } from '@perawallet/wallet-core-config'
 export { Networks }
 export type { Network }
 
-export type HistoryPeriod = 'one-year' | 'one-month' | 'one-week' | 'one-day'
+// Also the display order of chart period selectors.
+export const HISTORY_PERIODS = [
+    'one-day',
+    'one-week',
+    'one-month',
+    'one-year',
+] as const
+
+export type HistoryPeriod = (typeof HISTORY_PERIODS)[number]
