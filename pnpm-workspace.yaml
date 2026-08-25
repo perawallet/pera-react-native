@@ -13,7 +13,7 @@ catalog:
   "@algorandfoundation/provider-migrations": 1.0.0-canary.1
   "@algorandfoundation/react-native-keystore": 1.0.0-canary.19
   "@algorandfoundation/react-native-passkey-autofill": 1.0.0-canary.24
-  "@algorandfoundation/wallet-provider": 1.0.0-canary.5
+  "@algorandfoundation/wallet-provider": 1.0.0-canary.6
   "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
   "@lottiefiles/dotlottie-react": 0.19.13
   "@babel/runtime": ^7.29.2

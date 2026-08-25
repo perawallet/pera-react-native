@@ -22,8 +22,8 @@ catalogs:
       specifier: 1.0.0-canary.24
       version: 1.0.0-canary.24
     '@algorandfoundation/wallet-provider':
-      specifier: 1.0.0-canary.5
-      version: 1.0.0-canary.5
+      specifier: 1.0.0-canary.6
+      version: 1.0.0-canary.6
     '@algorandfoundation/xhd-wallet-api':
       specifier: ^2.0.0-canary.1
       version: 2.0.0-canary.1
@@ -50,7 +50,7 @@ catalogs:
       version: 6.39.5
     '@lottiefiles/dotlottie-react':
       specifier: 0.19.13
-      version: 0.19.12
+      version: 0.19.13
     '@noble/ciphers':
       specifier: ^2.2.0
       version: 2.2.0
@@ -101,7 +101,7 @@ catalogs:
       version: 5.101.2
     '@tanstack/store':
       specifier: 0.11.1
-      version: 0.11.0
+      version: 0.11.1
     '@testing-library/react':
       specifier: 16.3.2
       version: 16.3.2
@@ -501,7 +501,7 @@ importers:
         version: 6.39.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       '@lottiefiles/dotlottie-react':
         specifier: 'catalog:'
-        version: 0.19.12(react@19.2.3)
+        version: 0.19.13(react@19.2.3)
       '@noble/hashes':
         specifier: 'catalog:'
         version: 1.8.0
@@ -801,7 +801,7 @@ importers:
         version: 2.0.1
       lottie-react-native:
         specifier: ^7.4.0
-        version: 7.4.0(@lottiefiles/dotlottie-react@0.19.12(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+        version: 7.4.0(@lottiefiles/dotlottie-react@0.19.13(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -1012,7 +1012,7 @@ importers:
         version: 1.1.0
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -1073,7 +1073,7 @@ importers:
         version: 1.1.0
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
-        version: 1.0.0-canary.5
+        version: 1.0.0-canary.6
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -1088,13 +1088,13 @@ importers:
         version: link:../../packages/passkeys
       '@scure/base':
         specifier: 'catalog:'
-        version: 2.2.0
+        version: 2.3.0
       '@scure/bip39':
         specifier: 'catalog:'
         version: 2.2.0
       '@tanstack/store':
         specifier: 'catalog:'
-        version: 0.11.0
+        version: 0.11.1
       before-after-hook:
         specifier: 'catalog:'
         version: 4.0.0
@@ -1358,13 +1358,13 @@ importers:
     dependencies:
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/react-native-passkey-autofill':
         specifier: 'catalog:'
-        version: 1.0.0-canary.24(patch_hash=7741b668c323b07b88dce93bd875de3913f5ba5116b1c435a72c1b7f3dcc369c)(@algorandfoundation/provider-migrations@1.0.0-canary.1(before-after-hook@4.0.0))(@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(expo@57.0.11)(falcon-1024@0.2.0)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+        version: 1.0.0-canary.24(patch_hash=7741b668c323b07b88dce93bd875de3913f5ba5116b1c435a72c1b7f3dcc369c)(cfcb23025b355015b5c2db5e25529f2a)
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
-        version: 1.0.0-canary.5
+        version: 1.0.0-canary.6
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -1395,7 +1395,7 @@ importers:
     dependencies:
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
-        version: 1.0.0-canary.5
+        version: 1.0.0-canary.6
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -1515,7 +1515,7 @@ importers:
     dependencies:
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
-        version: 1.0.0-canary.5
+        version: 1.0.0-canary.6
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -1621,19 +1621,19 @@ importers:
     dependencies:
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/keystore-web':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@tanstack/store@0.11.0)(before-after-hook@4.0.0)
+        version: 1.0.0-canary.3(@tanstack/store@0.11.1)(before-after-hook@4.0.0)
       '@algorandfoundation/provider-migrations':
         specifier: 'catalog:'
         version: 1.0.0-canary.1(before-after-hook@4.0.0)
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(a907a9782fb161b500c2ae0363640700)
+        version: 1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
-        version: 1.0.0-canary.5
+        version: 1.0.0-canary.6
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -1666,7 +1666,7 @@ importers:
         version: 2.3.0
       '@tanstack/store':
         specifier: 'catalog:'
-        version: 0.11.0
+        version: 0.11.1
       before-after-hook:
         specifier: 'catalog:'
         version: 4.0.0
@@ -2917,7 +2917,7 @@ importers:
         version: 9.2.0(algosdk@3.7.0)
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
         version: 1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)
@@ -3419,10 +3419,10 @@ importers:
         version: 1.1.0
       '@algorandfoundation/keystore-core':
         specifier: 1.0.0-canary.3
-        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+        version: 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/react-native-keystore':
         specifier: 1.0.0-canary.19
-        version: 1.0.0-canary.19(a907a9782fb161b500c2ae0363640700)
+        version: 1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.7
@@ -3443,7 +3443,7 @@ importers:
         version: 5.101.2(react@19.2.3)
       '@tanstack/store':
         specifier: 'catalog:'
-        version: 0.11.0
+        version: 0.11.1
       react:
         specifier: 19.2.3
         version: 19.2.3
@@ -4351,6 +4351,9 @@ packages:
 
   '@algorandfoundation/wallet-provider@1.0.0-canary.5':
     resolution: {integrity: sha512-yXak4ze3uOdkSSyCkv4Qz4mm4FiqCKh3pDErZNBaIhkGCgWcboelgkEMQneBd0I/o9DwU2EfkHfRSZYxaJ11Rg==}
+
+  '@algorandfoundation/wallet-provider@1.0.0-canary.6':
+    resolution: {integrity: sha512-4rAE0nkhEf0HuWS3RFfKs2EPISymXNHwXyr9vLkQaMJc+Kf1R078LABgUf8r9pu9ogkxzZDZOvkEJI6VSYuuAg==}
 
   '@algorandfoundation/xhd-wallet-api@2.0.0-canary.1':
     resolution: {integrity: sha512-U6rSWMO6FKDLvMxWtfKyW5ctqSy2NrONWTU/jOA+BX0SGru0GPXsxwzFdcPa5w+X055V/xVVsr8eA3xA+m/5jA==}
@@ -6417,14 +6420,14 @@ packages:
   '@ledgerhq/react-native-hw-transport-ble@6.41.0':
     resolution: {integrity: sha512-MM3WsIXgCWXC85qfLIqUUPz6hvhl/VxSS1TZxZ7xALrtXhgnDpS2h/MuN/mYbbTwPg7/CHnLIeQhb+UI/Bc30w==}
 
-  '@lottiefiles/dotlottie-react@0.19.12':
-    resolution: {integrity: sha512-Onm0XUcfU8Io4E6zbNF23hW0AwHpwAWUhazII6z/mGAcGh8RFAqqrkFJW1sZ3Z6C9JXOiiud+MmrejNKikBShw==}
+  '@lottiefiles/dotlottie-react@0.19.13':
+    resolution: {integrity: sha512-HqazA/AtVF5gWfsDhaHJKhJIyqXQLGvkfDQ00Pib1uepwCXCUwa+I6PJ3M/eNBcFMZGLmqF4oyo9On9JBsmjpg==}
     engines: {node: '>=18.17.0', npm: '>=9.5.0'}
     peerDependencies:
       react: 19.2.3
 
-  '@lottiefiles/dotlottie-web@0.78.2':
-    resolution: {integrity: sha512-ERBw7qATlekpFnR1xwNoTeXsXqw0FzCiEgei0IwPiquT277m36/o0aSWZDK7CgkhVd1NYre3M9fH+6n4waUfHA==}
+  '@lottiefiles/dotlottie-web@0.79.0':
+    resolution: {integrity: sha512-i2OCChZvfsoKCnilkI1t72sR/jDLoLpX2q0nm2KpOXYQZvONMooCXcGy+H9J8ioh66d61/tfHUzP78YxZ73ypg==}
     engines: {node: '>=18.17.0', npm: '>=9.5.0'}
 
   '@mswjs/interceptors@0.41.9':
@@ -7326,9 +7329,6 @@ packages:
     resolution: {integrity: sha512-seDkr6kzGzX1okaaTtZPtgA688CDPlXUz1C6xSg0ESqn04Vuc8tlrYms1s3de+znBqhPVxFRfpAfUf+6XvfPWg==}
     peerDependencies:
       react: 19.2.3
-
-  '@tanstack/store@0.11.0':
-    resolution: {integrity: sha512-WlzzCt3xi0G6pCAJu1U+2jiECwabETDpQDi3hfkFZvJii9AuZqEKbOiVarX1/bWhTNjU486yQtJCCasi/0q+Cw==}
 
   '@tanstack/store@0.11.1':
     resolution: {integrity: sha512-mzTOBhypOuDJAy/D8n2MfUZ1HFkXnmSETviRyhqEC8LUE7/IZQExOTxMANj3KjTofYTkFNpBY67qaVrT41YccA==}
@@ -11332,18 +11332,6 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip39': 1.6.0
 
-  '@algorandfoundation/keystore-core@1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)':
-    dependencies:
-      '@algorandfoundation/wallet-provider': 1.0.0-canary.5
-      '@noble/hashes': 2.0.1
-      '@scure/bip39': 1.6.0
-      '@tanstack/store': 0.11.0
-      before-after-hook: 4.0.0
-    optionalDependencies:
-      '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
-      falcon-1024: 0.2.0
-
   '@algorandfoundation/keystore-core@1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)':
     dependencies:
       '@algorandfoundation/wallet-provider': 1.0.0-canary.5
@@ -11356,14 +11344,26 @@ snapshots:
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       falcon-1024: 0.2.0
 
-  '@algorandfoundation/keystore-web@1.0.0-canary.3(@tanstack/store@0.11.0)(before-after-hook@4.0.0)':
+  '@algorandfoundation/keystore-core@1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.6)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)':
+    dependencies:
+      '@algorandfoundation/wallet-provider': 1.0.0-canary.6
+      '@noble/hashes': 2.0.1
+      '@scure/bip39': 1.6.0
+      '@tanstack/store': 0.11.1
+      before-after-hook: 4.0.0
+    optionalDependencies:
+      '@algorandfoundation/dp256': 1.1.0
+      '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
+      falcon-1024: 0.2.0
+
+  '@algorandfoundation/keystore-web@1.0.0-canary.3(@tanstack/store@0.11.1)(before-after-hook@4.0.0)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
+      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
       '@algorandfoundation/wallet-provider': 1.0.0-canary.5
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       '@scure/bip39': 1.6.0
-      '@tanstack/store': 0.11.0
+      '@tanstack/store': 0.11.1
       before-after-hook: 4.0.0
       falcon-1024: 0.2.0
 
@@ -11376,56 +11376,6 @@ snapshots:
     dependencies:
       '@algorandfoundation/wallet-provider': 1.0.0-canary.5
       before-after-hook: 4.0.0
-
-  '@algorandfoundation/react-native-keystore@1.0.0-canary.19(@algorandfoundation/provider-migrations@1.0.0-canary.1(before-after-hook@4.0.0))(@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(expo@57.0.11)(falcon-1024@0.2.0)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
-      '@algorandfoundation/wallet-provider': 1.0.0-canary.5
-      '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
-      '@scure/base': 2.0.0
-      '@scure/bip39': 1.6.0
-      '@tanstack/store': 0.11.1
-      before-after-hook: 4.0.0
-      react-native-keychain: 10.0.0
-      react-native-mmkv: 4.1.2(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-      react-native-quick-crypto: 1.1.6(expo-build-properties@57.0.9(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-    optionalDependencies:
-      '@algorandfoundation/provider-migrations': 1.0.0-canary.1(before-after-hook@4.0.0)
-      '@joe-p/react-native-falcon': 0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-    transitivePeerDependencies:
-      - expo
-      - expo-build-properties
-      - falcon-1024
-      - react
-      - react-native
-      - react-native-nitro-modules
-      - react-native-quick-base64
-
-  '@algorandfoundation/react-native-keystore@1.0.0-canary.19(a907a9782fb161b500c2ae0363640700)':
-    dependencies:
-      '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore-core': 1.0.0-canary.3(@algorandfoundation/dp256@1.1.0)(@algorandfoundation/wallet-provider@1.0.0-canary.5)(@algorandfoundation/xhd-wallet-api@2.0.0-canary.1)(@tanstack/store@0.11.0)(before-after-hook@4.0.0)(falcon-1024@0.2.0)
-      '@algorandfoundation/wallet-provider': 1.0.0-canary.5
-      '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
-      '@scure/base': 2.0.0
-      '@scure/bip39': 1.6.0
-      '@tanstack/store': 0.11.0
-      before-after-hook: 4.0.0
-      react-native-keychain: 10.0.0
-      react-native-mmkv: 4.1.2(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-      react-native-quick-crypto: 1.1.6(expo-build-properties@57.0.9(expo@57.0.11))(expo@57.0.11)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-quick-base64@3.0.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-    optionalDependencies:
-      '@algorandfoundation/provider-migrations': 1.0.0-canary.1(before-after-hook@4.0.0)
-      '@joe-p/react-native-falcon': 0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-    transitivePeerDependencies:
-      - expo
-      - expo-build-properties
-      - falcon-1024
-      - react
-      - react-native
-      - react-native-nitro-modules
-      - react-native-quick-base64
 
   '@algorandfoundation/react-native-keystore@1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)':
     dependencies:
@@ -11452,23 +11402,6 @@ snapshots:
       - react-native-nitro-modules
       - react-native-quick-base64
 
-  '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.24(patch_hash=7741b668c323b07b88dce93bd875de3913f5ba5116b1c435a72c1b7f3dcc369c)(@algorandfoundation/provider-migrations@1.0.0-canary.1(before-after-hook@4.0.0))(@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(expo@57.0.11)(falcon-1024@0.2.0)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@algorandfoundation/react-native-keystore': 1.0.0-canary.19(@algorandfoundation/provider-migrations@1.0.0-canary.1(before-after-hook@4.0.0))(@joe-p/react-native-falcon@0.1.0(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(@tanstack/store@0.11.1)(before-after-hook@4.0.0)(expo@57.0.11)(falcon-1024@0.2.0)(react-native-nitro-modules@0.36.5(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
-      expo: 57.0.11(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-webview@13.16.1(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.3(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
-      react: 19.2.3
-      react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
-    transitivePeerDependencies:
-      - '@algorandfoundation/log-store'
-      - '@algorandfoundation/provider-migrations'
-      - '@joe-p/react-native-falcon'
-      - '@tanstack/store'
-      - before-after-hook
-      - expo-build-properties
-      - falcon-1024
-      - react-native-nitro-modules
-      - react-native-quick-base64
-
   '@algorandfoundation/react-native-passkey-autofill@1.0.0-canary.24(patch_hash=7741b668c323b07b88dce93bd875de3913f5ba5116b1c435a72c1b7f3dcc369c)(cfcb23025b355015b5c2db5e25529f2a)':
     dependencies:
       '@algorandfoundation/react-native-keystore': 1.0.0-canary.19(cfcb23025b355015b5c2db5e25529f2a)
@@ -11487,6 +11420,8 @@ snapshots:
       - react-native-quick-base64
 
   '@algorandfoundation/wallet-provider@1.0.0-canary.5': {}
+
+  '@algorandfoundation/wallet-provider@1.0.0-canary.6': {}
 
   '@algorandfoundation/xhd-wallet-api@2.0.0-canary.1':
     dependencies:
@@ -13950,12 +13885,12 @@ snapshots:
       - react
       - react-native
 
-  '@lottiefiles/dotlottie-react@0.19.12(react@19.2.3)':
+  '@lottiefiles/dotlottie-react@0.19.13(react@19.2.3)':
     dependencies:
-      '@lottiefiles/dotlottie-web': 0.78.2
+      '@lottiefiles/dotlottie-web': 0.79.0
       react: 19.2.3
 
-  '@lottiefiles/dotlottie-web@0.78.2': {}
+  '@lottiefiles/dotlottie-web@0.79.0': {}
 
   '@mswjs/interceptors@0.41.9':
     dependencies:
@@ -14786,8 +14721,6 @@ snapshots:
     dependencies:
       '@tanstack/query-core': 5.101.2
       react: 19.2.3
-
-  '@tanstack/store@0.11.0': {}
 
   '@tanstack/store@0.11.1': {}
 
@@ -17001,12 +16934,12 @@ snapshots:
     dependencies:
       js-tokens: 4.0.0
 
-  lottie-react-native@7.4.0(@lottiefiles/dotlottie-react@0.19.12(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
+  lottie-react-native@7.4.0(@lottiefiles/dotlottie-react@0.19.13(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
     dependencies:
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.85.3(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
     optionalDependencies:
-      '@lottiefiles/dotlottie-react': 0.19.12(react@19.2.3)
+      '@lottiefiles/dotlottie-react': 0.19.13(react@19.2.3)
 
   lower-case@2.0.2:
     dependencies:
