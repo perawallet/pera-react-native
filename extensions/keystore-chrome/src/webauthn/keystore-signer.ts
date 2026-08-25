@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    InvalidKeyDataError,
-    type Key,
-    type KeyStoreState,
-} from '@algorandfoundation/keystore'
+import { InvalidKeyDataError, type Key, type KeyStoreState } from '../keystore'
 import type { Store } from '@tanstack/store'
 import {
     bytesToB64url,

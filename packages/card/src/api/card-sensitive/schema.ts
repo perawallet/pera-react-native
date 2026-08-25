@@ -11,23 +11,25 @@
  */
 
 import { z } from 'zod'
+import { httpsUrlSchema } from '@perawallet/wallet-core-shared'
 
 // POST /v1/card/details/token and POST /v1/card/pin/token each return a
 // single-use token + an image URL that renders the sensitive value (PAN/CVV
 // or PIN). Raw values are never returned by the API.
 export const cardSecureViewResponseSchema = z.object({
     token: z.string(),
-    imageUrl: z.string(),
+    imageUrl: httpsUrlSchema,
 })
 export type CardSecureViewApiResponse = z.infer<
     typeof cardSecureViewResponseSchema
 >
 
 // POST /v1/card/set-pin/token returns a token + a hosted page URL the user
-// opens to set their PIN.
+// opens to set their PIN. The URL reaches Linking.openURL when the in-app
+// WebView is unavailable, so the scheme is gated here rather than at the sink.
 export const cardSetPinSessionResponseSchema = z.object({
     token: z.string(),
-    hostedPageUrl: z.string(),
+    hostedPageUrl: httpsUrlSchema,
 })
 export type CardSetPinSessionApiResponse = z.infer<
     typeof cardSetPinSessionResponseSchema

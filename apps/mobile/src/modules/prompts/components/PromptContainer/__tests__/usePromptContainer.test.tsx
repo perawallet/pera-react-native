@@ -31,6 +31,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),
+    // Feeds the biometrics-disabled candidate. Null keeps it off the queue, so
+    // the ordering cases below stay about the prompts they name.
+    useBiometrics: vi.fn(() => ({
+        disabledReason: null,
+        acknowledgeBiometricsDisabled: vi.fn(),
+        enableBiometrics: vi.fn(),
+    })),
 }))
 
 const { mockIsLockOverlayVisible } = vi.hoisted(() => ({

@@ -13,7 +13,7 @@
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import { isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
-    transactionHistoryResponseSchema,
+    parseTransactionHistoryResponse,
     type TransactionHistoryApiResponse,
 } from './schema'
 import { transformTransactionHistoryResponse } from './transformers'
@@ -121,7 +121,7 @@ const fetchPeraTransactionHistory = async (
         signal,
     })
 
-    const validated = transactionHistoryResponseSchema.parse(response.data)
+    const validated = parseTransactionHistoryResponse(response.data)
     return transformTransactionHistoryResponse(validated, accountAddress)
 }
 
@@ -143,7 +143,7 @@ const fetchMorePeraTransactions = async (
         signal,
     })
 
-    const validated = transactionHistoryResponseSchema.parse(response.data)
+    const validated = parseTransactionHistoryResponse(response.data)
     // The page URL is `/v1/accounts/{address}/transactions/…` — recover the
     // address for close-amount derivation when the caller didn't pass one.
     const addressFromUrl = decodeURIComponent(

@@ -20,7 +20,7 @@ import {
     type KeyId,
     type KeyStoreState,
     setStatus,
-} from '@algorandfoundation/keystore'
+} from '../keystore'
 import { clearBuffer } from '@algorandfoundation/wallet-provider'
 import { base64url } from '@scure/base'
 import type { Store } from '@tanstack/store'

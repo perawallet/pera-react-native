@@ -161,6 +161,29 @@ describe('useTransactionProcessingScreen', () => {
         })
     })
 
+    // The mount-only submit effect is the whole reason this hook uses an empty
+    // dependency array — a re-run is a duplicate send.
+    it('submits exactly once across re-renders (regression)', async () => {
+        ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
+        ;(useSendFunds as Mock).mockReturnValue({
+            ...mockSendFundsState,
+            selectedAssetId: '123',
+            amount: new Decimal(5),
+            destination: 'DEST_ADDRESS',
+        })
+
+        const { rerender } = renderHook(() => useTransactionProcessingScreen())
+
+        await act(async () => {})
+        expect(mockExecute).toHaveBeenCalledTimes(1)
+
+        await act(async () => {
+            rerender()
+        })
+
+        expect(mockExecute).toHaveBeenCalledTimes(1)
+    })
+
     it('should call execute even when data is missing (delegates validation)', async () => {
         ;(useSelectedAccount as Mock).mockReturnValue(null)
         ;(useSendFunds as Mock).mockReturnValue({

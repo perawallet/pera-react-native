@@ -48,7 +48,9 @@ const iconNameMap: Record<TransactionIconType, IconName> = {
     receive: 'transactions/receive',
     'asset-clawback': 'transactions/generic',
     'state-proof': 'transactions/generic',
-    heartbeat: 'transactions/generic',
+    // Shares the key-registration glyph: a heartbeat is the other half of
+    // consensus participation, and the icon set has no heartbeat of its own.
+    heartbeat: 'transactions/key-registration',
     unknown: 'transactions/generic',
 }
 

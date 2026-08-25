@@ -98,6 +98,9 @@ const getTitle = (
         case 'keyreg': {
             return t('transactions.list_item.key_registration')
         }
+        case 'hb': {
+            return t('transactions.list_item.heartbeat')
+        }
         default: {
             return t('transactions.list_item.default')
         }

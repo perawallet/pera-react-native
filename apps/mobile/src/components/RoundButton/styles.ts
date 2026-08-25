@@ -19,8 +19,24 @@ export const useStyles = makeStyles(theme => {
             minWidth: 0,
             flexShrink: 0,
         },
-        buttonWrapper: {
+        buttonSlot: {
             marginBottom: theme.spacing.sm,
+        },
+        badge: {
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: theme.spacing.xxs,
+            backgroundColor: theme.colors.buttonSquareBg,
+            borderWidth: theme.borders.lg,
+            borderColor: theme.colors.background,
+            borderRadius: theme.borderRadius.full,
+        },
+        // The badge stays crisp while the action it annotates dims.
+        dimmed: {
+            opacity: 0.5,
         },
         titleStyle: {
             textAlign: 'center',

@@ -33,6 +33,7 @@ import { AssetAbout } from '../AssetAbout/AssetAbout'
 import { AssetVerificationCard } from '../AssetVerificationCard/AssetVerificationCard'
 import { useLanguage } from '@hooks/useLanguage'
 import { AssetDescription } from '../AssetDescription/AssetDescription'
+import { AssetSecurityTags } from '../AssetSecurityTags'
 import { AssetSocialMedia } from '../AssetSocialMedia/AssetSocialMedia'
 import { PriceTrend } from '../PriceTrend/PriceTrend'
 import { type ParamListBase, useNavigation } from '@react-navigation/native'
@@ -223,27 +224,9 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 description={assetDetails.peraMetadata?.description}
             />
 
-            <AssetSocialMedia assetDetails={assetDetails} />
+            <AssetSecurityTags assetId={assetDetails.assetId} />
 
-            {/* TODO: Add this in when we have the metadata on the asset */}
-            {/* <PWView style={styles.tagsContainer}>
-                {!assetDetails.is_frozen && <PWView style={styles.tag}>
-                    <PWIcon
-                        name='snowflake'
-                        size="sm"
-                        variant='secondary'
-                    />
-                    <Text style={styles.tagText}>{t('asset_details.markets.no_freeze')}</Text>
-                </PWView>}
-                {!assetDetails.is_clawback && <PWView style={styles.tag}>
-                    <PWIcon
-                        name='undo'
-                        size="sm"
-                        variant='secondary'
-                    />
-                    <Text style={styles.tagText}>{t('asset_details.markets.no_clawback')}</Text>
-                </PWView>}
-            </PWView> */}
+            <AssetSocialMedia assetDetails={assetDetails} />
         </PWScrollView>
     )
 }

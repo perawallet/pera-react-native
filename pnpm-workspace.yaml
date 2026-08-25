@@ -2,11 +2,11 @@ packages:
   - apps/*
   - packages/*
   - extensions/*
+  - conformance
 
 catalog:
   "@algorandfoundation/algokit-utils": 9.2.0
   "@algorandfoundation/dp256": 1.1.0
-  "@algorandfoundation/keystore": 1.0.0-canary.17
   "@algorandfoundation/keystore-core": 1.0.0-canary.3
   "@algorandfoundation/keystore-web": 1.0.0-canary.3
   "@algorandfoundation/ledger-algorand-js": ^1.4.3
@@ -112,11 +112,17 @@ auditConfig:
     - GHSA-w3rx-r6r6-pgpr # image-size: ICNS parser infinite loop
 
 minimumReleaseAgeExclude:
-  - '@algorandfoundation/keystore'
-  # keystore-core and keystore-web are direct dependencies that share the
-  # keystore canary publish date. keystore-node is deliberately absent: the
-  # meta package is pinned at canary.17 (see the overrides note), which pulls
-  # no platform siblings. Add it back if that pin ever moves to canary.18+.
+  # @algorandfoundation/keystore is deliberately NOT listed: nothing in the
+  # workspace depends on it (extensions/keystore-chrome vendors the flat
+  # canary.17 API locally), so it needs no freshness exemption of its own.
+  # keystore-core and keystore-web ARE direct dependencies that share the
+  # keystore canary publish date, so they keep their exemption independent of
+  # the removed keystore pin: keystore-core is consumed by
+  # extensions/provider, extensions/passkey-autofill, packages/kms and
+  # packages/passkeys; keystore-web only by extensions/provider.
+  # keystore-node is not listed: it arrives transitively, and its own
+  # canary.3 publish (2026-08-13) already clears the 7-day minimumReleaseAge
+  # window unaided, so no exclude entry is needed for it either.
   - '@algorandfoundation/keystore-core'
   - '@algorandfoundation/keystore-web'
   - '@algorandfoundation/provider-migrations'
@@ -186,14 +192,12 @@ overrides:
   # msgpack schema identity — so tools/check-single-algosdk.mjs keeps asserting
   # it on every pre-push.
 
-  # Pinned below the catalog's other keystore-family bumps: canary.18+ turned
-  # this meta package into a thin `export * from keystore-node` re-export and
-  # dropped the flat function API (clearKeyData/encrypt/decrypt/sign/verify/...)
-  # that extensions/keystore-chrome is built on. canary.17 predates the split
-  # and depends on no keystore-core, so it raises no two-copies hazard against
-  # the keystore-core override below. Migrating keystore-chrome onto the new
-  # engine-style API is a separate epic with its own e2e surface.
-  '@algorandfoundation/keystore': 1.0.0-canary.17
+  # No @algorandfoundation/keystore override, and no catalog entry either:
+  # keystore-chrome vendors the flat canary.17 API locally (src/keystore/), so
+  # nothing in the workspace depends on this package. The catalog pin was
+  # dropped because it resolved to nothing in the lockfile — no importer, no
+  # resolution — leaving Dependabot to bump a spec no consumer used and no test
+  # could validate.
   '@algorandfoundation/keystore-core': 1.0.0-canary.3
   '@algorandfoundation/keystore-web': 1.0.0-canary.3
   '@algorandfoundation/react-native-keystore': 1.0.0-canary.19

@@ -62,14 +62,12 @@ export type AlgodErrorCode =
  * boundary.
  */
 export interface AlgodErrorParamsByCode {
+    // No balance/spent/missing fields: the node's overspend message renders a
+    // fee-adjusted figure that cannot be parsed back into a real balance. See
+    // docs/LOCALNET_CONFORMANCE.md and `parseAlgodMessage.ts`'s `OVERSPEND_RE`
+    // comment for the full reasoning.
     overspend: {
         address: string
-        /** microAlgo balance reported by the node at the time of rejection. */
-        balance: bigint
-        /** microAlgos the rejected transaction tried to debit from the account. */
-        spent: bigint
-        /** `spent - balance` — convenience for UI messaging. */
-        missing: bigint
     }
     below_min_balance: {
         address: string
@@ -114,10 +112,10 @@ export interface AlgodErrorParamsByCode {
         resourceType: 'Account' | 'Asset' | 'App' | 'Box'
         resource: string
     }
-    group_fee_too_small: {
-        paid: bigint
-        required: bigint
-    }
+    // No paid/required fields: algod 5.0.0-stable renders both in a scaled,
+    // variable-suffix unit that cannot be parsed back into a microAlgo count.
+    // Same reasoning as `overspend` above.
+    group_fee_too_small: Record<string, never>
     network_unavailable: {
         status?: number
         url?: string

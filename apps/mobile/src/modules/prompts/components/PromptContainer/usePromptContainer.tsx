@@ -41,6 +41,11 @@ import {
 } from '@modules/prompts/components/BannerPrompt'
 import { useLegacyQuantumPrompt } from '@modules/prompts/hooks/useLegacyQuantumPrompt'
 import { LegacyQuantumPrompt } from '@modules/prompts/components/LegacyQuantumPrompt'
+import { useBiometricsDisabledPrompt } from '@modules/prompts/hooks/useBiometricsDisabledPrompt'
+import {
+    BiometricsDisabledPrompt,
+    BIOMETRICS_DISABLED_PROMPT_ID,
+} from '@modules/prompts/components/BiometricsDisabledPrompt'
 
 export type Prompt = {
     id: string
@@ -91,6 +96,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
     )
     const bannerPrompt = useBannerPrompt()
     const legacyQuantumPrompt = useLegacyQuantumPrompt()
+    const biometricsDisabledPrompt = useBiometricsDisabledPrompt()
     const [nextPrompt, setNextPrompt] = useState<Optional<Prompt>>(undefined)
     const dismissedIds = usePromptStore(state => state.dismissedIds)
     const dismiss = usePromptStore(state => state.dismiss)
@@ -141,6 +147,16 @@ export const usePromptContainer = (): UsePromptContainerResult => {
                         UserPreferences._legacyQuantumNoticePrompt,
                     ) && legacyQuantumPrompt.isDue,
             },
+            {
+                // No `getPreference` guard, unlike the one-time nudges above:
+                // this is due again every time the app disables biometrics, and
+                // the recorded reason is what says whether it is.
+                id: BIOMETRICS_DISABLED_PROMPT_ID,
+                priority: PromptPriority.biometricsDisabled,
+                isGate: false,
+                component: BiometricsDisabledPrompt,
+                isDue: biometricsDisabledPrompt.isDue,
+            },
         ],
         [
             needsTermsAcceptance,
@@ -148,6 +164,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
             bannerPrompt.isDue,
             bannerPrompt.isForced,
             legacyQuantumPrompt.isDue,
+            biometricsDisabledPrompt.isDue,
         ],
     )
 

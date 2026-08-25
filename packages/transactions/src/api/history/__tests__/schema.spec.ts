@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import { logger } from '@perawallet/wallet-core-shared'
 import {
+    parseTransactionHistoryResponse,
     transactionHistoryItemResponseSchema,
     transactionHistoryResponseSchema,
     transactionSwapGroupDetailSchema,
@@ -165,7 +167,16 @@ describe('transactionHistoryItemResponseSchema', () => {
     })
 
     it('accepts all valid transaction types', () => {
-        const txTypes = ['pay', 'axfer', 'acfg', 'afrz', 'appl', 'keyreg', 'hb']
+        const txTypes = [
+            'pay',
+            'axfer',
+            'acfg',
+            'afrz',
+            'appl',
+            'keyreg',
+            'hb',
+            'stpf',
+        ]
 
         for (const txType of txTypes) {
             const result = transactionHistoryItemResponseSchema.parse(
@@ -175,10 +186,21 @@ describe('transactionHistoryItemResponseSchema', () => {
         }
     })
 
-    it('rejects invalid transaction types', () => {
+    // Not laxness for its own sake: the renderers all have a `default:` branch,
+    // so an unmodeled type shows as a generic transaction. Rejecting it here
+    // would hide the row entirely.
+    it('accepts a transaction type the app does not model yet', () => {
+        const result = transactionHistoryItemResponseSchema.parse(
+            makeValidItem({ tx_type: 'somefuturetype' }),
+        )
+
+        expect(result.tx_type).toBe('somefuturetype')
+    })
+
+    it('rejects a non-string transaction type', () => {
         expect(() =>
             transactionHistoryItemResponseSchema.parse(
-                makeValidItem({ tx_type: 'invalid' }),
+                makeValidItem({ tx_type: 7 }),
             ),
         ).toThrow()
     })
@@ -307,6 +329,47 @@ describe('transactionHistoryResponseSchema', () => {
             transactionHistoryResponseSchema.parse({
                 results: [{ invalid: true }],
             }),
+        ).toThrow()
+    })
+})
+
+describe('parseTransactionHistoryResponse', () => {
+    it('keeps the good rows when one row is unparseable', () => {
+        const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+        const result = parseTransactionHistoryResponse({
+            current_round: '40000000',
+            next: 'https://api.example.com/next',
+            results: [
+                makeValidItem({ id: 'TX1' }),
+                { id: 'TX2', tx_type: 'pay' },
+                makeValidItem({ id: 'TX3' }),
+            ],
+        })
+
+        expect(result.results.map(item => item.id)).toEqual(['TX1', 'TX3'])
+        expect(result.current_round).toBe(40000000)
+        expect(result.next).toBe('https://api.example.com/next')
+        expect(warn).toHaveBeenCalledWith(
+            'Dropping unparseable transaction history row',
+            expect.objectContaining({ id: 'TX2' }),
+        )
+
+        warn.mockRestore()
+    })
+
+    it('keeps a row whose type the app does not model', () => {
+        const result = parseTransactionHistoryResponse({
+            results: [makeValidItem({ id: 'TX_STPF', tx_type: 'stpf' })],
+        })
+
+        expect(result.results).toHaveLength(1)
+        expect(result.results[0].tx_type).toBe('stpf')
+    })
+
+    it('throws on a malformed envelope', () => {
+        expect(() =>
+            parseTransactionHistoryResponse({ current_round: 1 }),
         ).toThrow()
     })
 })

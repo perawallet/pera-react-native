@@ -2362,6 +2362,13 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         typeof import('../../packages/shared/src/errors/base')
     >('../../packages/shared/src/errors/base')
 
+    // Same reasoning as ErrorCategory: bytes.ts has no runtime imports, so it is
+    // side-effect free to pull in by path. These decode persisted byte fields —
+    // a stub returning undefined would hide every note and group id under test.
+    const { toBytes, decodeBytesToText } = await vi.importActual<
+        typeof import('../../packages/shared/src/utils/bytes')
+    >('../../packages/shared/src/utils/bytes')
+
     // Mirrors packages/shared/src/errors/base.ts: the metadata defaulting, the
     // third `originalError` argument, and the instance members consumers reach
     // for (`timestamp`, `toJSON`, `isMinor`, `shouldReport`). `name` comes from
@@ -2372,6 +2379,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         severity: string
         category: string
         messageKey?: string
+        titleKey?: string
         params?: Record<string, unknown>
         recoverable: boolean
         retryable: boolean
@@ -2585,6 +2593,14 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             .number()
             .int()
             .nonnegative(),
+        // Same reason — the card response schemas evaluate httpsUrlSchema at
+        // import time. Taken from the module itself rather than hand-copied:
+        // it imports only zod, so pulling it in by path is side-effect free.
+        httpsUrlSchema: (
+            await vi.importActual<
+                typeof import('../../packages/shared/src/api/schemas')
+            >('../../packages/shared/src/api/schemas')
+        ).httpsUrlSchema,
         uint64IdToNumber: (id: string | number) => {
             if (typeof id === 'string' && id.trim() === '') {
                 throw new RangeError(
@@ -2625,6 +2641,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             Array.from(bytes)
                 .map(b => b.toString(16).padStart(2, '0'))
                 .join(''),
+        toBytes,
+        decodeBytesToText,
         // Must mirror the real constant (packages/shared/src/models/constants.ts).
         // The precision policy reads this, so a wrong value silently invalidates
         // every precision/formatting assertion.
@@ -2637,6 +2655,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             betanet: 'betanet',
             custom: 'custom',
         },
+        // Must mirror packages/shared/src/models/base-types.ts — period pills
+        // render from this list, so a missing member silently drops a pill.
+        HISTORY_PERIODS: ['one-day', 'one-week', 'one-month', 'one-year'],
         formatDatetime: vi.fn(d => String(d)),
         formatRelativeTime: vi.fn(d => String(d)),
         formatTimeRemaining: vi.fn(() => '52m'),
@@ -2706,6 +2727,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         isPeraServiceUnavailableError,
         isConnectivityError,
         getNetworkErrorMessageKeys,
+        messageKeysFor: keysFor,
         ErrorSeverity: {
             LOW: 'low',
             MEDIUM: 'medium',

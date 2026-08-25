@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import { type Decimal } from 'decimal.js'
+import { DEFAULT_PRECISION, type Maybe } from '@perawallet/wallet-core-shared'
 
 /**
  * Detailed max decimals for a preferred-currency value (fiat OR ALGO). 6 is
@@ -24,7 +25,8 @@ export const PREFERRED_MAX_PRECISION = 6
  * of value it is rendering, never raw digit counts:
  * - `noDecimal` — whole units / counts (e.g. NFT quantity): 0 dp.
  * - `compact` — a dense list/row or a summary total, asset OR preferred: a fixed
- *   {@link DEFAULT_PRECISION} dp.
+ *   {@link DEFAULT_PRECISION} dp, extended only for amounts that would
+ *   otherwise round to zero (see {@link resolveCompactPrecision}).
  * - `assetFull` — an asset amount on a detail surface: trims
  *   {@link DEFAULT_PRECISION} → the asset's own `decimals`. Collectibles /
  *   0-decimal assets resolve to 0 dp. Pair with `assetDecimals`.
@@ -45,10 +47,29 @@ export type ResolvedPrecision = {
 }
 
 /**
+ * Normally {@link DEFAULT_PRECISION}, but a nonzero amount that rounds to 0.00
+ * there reads as nothing at all — a 0.004 ALGO fee showed as "0.00" in History
+ * (PERA-4973). Those extend to their first significant digit: `Decimal.e` is
+ * that digit's base-10 exponent (0.004 → -3), so negating it gives its place.
+ */
+const resolveCompactPrecision = (value: Maybe<Decimal>): number => {
+    if (
+        value == null ||
+        value.isZero() ||
+        !value.toDecimalPlaces(DEFAULT_PRECISION).isZero()
+    ) {
+        return DEFAULT_PRECISION
+    }
+    return -value.e
+}
+
+/**
  * Single source of truth mapping a {@link PrecisionVariant} to the
  * `{ precision, minPrecision }` pair the formatter consumes. `assetDecimals` is
  * consulted only for `assetFull`; when absent it falls back to
  * {@link DEFAULT_PRECISION}, matching the legacy `asset?.decimals ?? DEFAULT_PRECISION`.
+ * `value` is consulted only for `compact`, whose fixed 2 dp is the one policy
+ * that can hide an amount entirely.
  *
  * This is the only place precision policy lives. `CurrencyAmount` delegates to
  * it and never branches on asset-vs-preferred itself.
@@ -56,6 +77,7 @@ export type ResolvedPrecision = {
 export const resolvePrecision = (
     variant: PrecisionVariant,
     assetDecimals?: number,
+    value?: Maybe<Decimal>,
 ): ResolvedPrecision => {
     switch (variant) {
         case 'noDecimal': {
@@ -63,7 +85,7 @@ export const resolvePrecision = (
         }
         case 'compact': {
             return {
-                precision: DEFAULT_PRECISION,
+                precision: resolveCompactPrecision(value),
                 minPrecision: DEFAULT_PRECISION,
             }
         }

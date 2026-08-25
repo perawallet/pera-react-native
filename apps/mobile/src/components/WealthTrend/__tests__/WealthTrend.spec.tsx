@@ -124,6 +124,31 @@ describe('WealthTrend', () => {
         expect(container.textContent).toContain('%')
     })
 
+    it('computes the trend from fiat value, not ALGO-denominated value', () => {
+        // All-ALGO account during a price rally: the ALGO-denominated value
+        // stays flat while the fiat value climbs 8% — the badge must follow fiat.
+        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+            data: [
+                {
+                    preferredValue: new Decimal(50),
+                    algoValue: new Decimal(100),
+                },
+                {
+                    preferredValue: new Decimal(54),
+                    algoValue: new Decimal(100),
+                },
+            ],
+            isPending: false,
+        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+
+        const { container, getByTestId } = render(
+            <WealthTrend period='one-day' />,
+        )
+
+        expect(container.textContent).toContain('8.00%')
+        expect(getByTestId('trend-indicator-up')).toBeTruthy()
+    })
+
     it('uses single account when account prop is provided', () => {
         const mockAccount = { address: 'test-address' }
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({

@@ -177,3 +177,104 @@ describe('buildRestoreHandlers', () => {
         expect(body.items[0].ver).toBe(3)
     })
 })
+
+import { buildSyncHandlers } from '../msw-handlers'
+
+describe('buildSyncHandlers', () => {
+    const SYNC_BACKUP_ID = 'did:pera:sync-test'
+    const SYNC_BASE = 'http://backup.test'
+
+    const handle = buildSyncHandlers({ backupId: SYNC_BACKUP_ID })
+    const syncServer = setupServer(...handle.handlers)
+
+    beforeAll(() => syncServer.listen({ onUnhandledRequest: 'error' }))
+    afterAll(() => syncServer.close())
+
+    const upsert = (key: string) =>
+        fetch(
+            `${SYNC_BASE}/api/v3/backup/${encodeURIComponent(SYNC_BACKUP_ID)}/items/upsert`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    device_id: 'dev',
+                    items: [
+                        {
+                            key,
+                            type: 'ACCOUNT',
+                            expected_ver: 0,
+                            status: 'ACTIVE',
+                            payload: 'enc-payload',
+                        },
+                    ],
+                }),
+            },
+        ).then(r => r.json())
+
+    it('records an upsert and reflects it in the manifest', async () => {
+        const res = await upsert('accounts/AAAA')
+        expect(res.results[0]).toMatchObject({
+            key: 'accounts/AAAA',
+            result: 'OK',
+            new_ver: 1,
+            seq: 1,
+        })
+
+        const manifest = await fetch(
+            `${SYNC_BASE}/api/v3/backup/${encodeURIComponent(SYNC_BACKUP_ID)}/manifest`,
+        ).then(r => r.json())
+        expect(manifest.items['accounts/AAAA']).toMatchObject({
+            ver: 1,
+            status: 'ACTIVE',
+        })
+    })
+
+    it('GET delta with from_seq=0 returns the upserted entry; from_seq=1 returns nothing', async () => {
+        const deltaAll = await fetch(
+            `${SYNC_BASE}/api/v3/backup/${encodeURIComponent(SYNC_BACKUP_ID)}/delta?from_seq=0`,
+        ).then(r => r.json())
+        expect(deltaAll.entries.length).toBeGreaterThanOrEqual(1)
+        const entry = deltaAll.entries.find(
+            (e: { key: string }) => e.key === 'accounts/AAAA',
+        )
+        expect(entry).toBeDefined()
+        expect(entry.op).toBe('UPSERT')
+
+        // seq of the upserted item was 1; from_seq=1 returns nothing for seq <= 1
+        const deltaAfter = await fetch(
+            `${SYNC_BASE}/api/v3/backup/${encodeURIComponent(SYNC_BACKUP_ID)}/delta?from_seq=1`,
+        ).then(r => r.json())
+        const afterEntry = deltaAfter.entries.find(
+            (e: { key: string }) => e.key === 'accounts/AAAA',
+        )
+        expect(afterEntry).toBeUndefined()
+    })
+
+    it('DELETE /:prefix/:addr removes the item from the manifest', async () => {
+        // First ensure accounts/CCCC exists
+        await upsert('accounts/CCCC')
+
+        const delRes = await fetch(
+            `${SYNC_BASE}/api/v3/backup/${encodeURIComponent(SYNC_BACKUP_ID)}/accounts/CCCC`,
+            { method: 'DELETE' },
+        ).then(r => r.json())
+        expect(typeof delRes.seq).toBe('number')
+
+        const manifest = await fetch(
+            `${SYNC_BASE}/api/v3/backup/${encodeURIComponent(SYNC_BACKUP_ID)}/manifest`,
+        ).then(r => r.json())
+        expect(manifest.items['accounts/CCCC']).toBeUndefined()
+    })
+
+    it('forceConflict causes the next upsert for that key to return VERSION_CONFLICT', async () => {
+        handle.forceConflict('accounts/BBBB')
+
+        const res = await upsert('accounts/BBBB')
+        expect(res.results[0]).toMatchObject({
+            key: 'accounts/BBBB',
+            result: 'VERSION_CONFLICT',
+        })
+        expect(typeof res.results[0].current_ver).toBe('number')
+        expect(typeof res.results[0].current_hash).toBe('string')
+    })
+})

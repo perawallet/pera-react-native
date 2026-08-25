@@ -11,7 +11,7 @@
  */
 // Ported from @algorandfoundation/react-native-keystore@1.0.0-canary.12 src/types.ts
 
-import type { KeyStoreOptions } from '@algorandfoundation/keystore'
+import type { KeyStoreOptions } from './keystore'
 
 export interface ReactKeystoreOptions extends KeyStoreOptions {
     keystore: KeyStoreOptions['keystore'] & {

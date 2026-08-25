@@ -11,9 +11,56 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
+import { vi, type Mock } from 'vitest'
 import { useChartInteraction } from '../useChartInteraction'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
+
+vi.mock('@perawallet/wallet-core-settings', () => ({
+    usePreferences: vi.fn(),
+}))
+
+const getPreference = vi.fn()
+const setPreference = vi.fn()
+
+beforeEach(() => {
+    getPreference.mockReturnValue(null)
+    setPreference.mockClear()
+    ;(usePreferences as Mock).mockReturnValue({ getPreference, setPreference })
+})
 
 describe('useChartInteraction', () => {
+    it('restores the persisted period', () => {
+        getPreference.mockReturnValue('one-day')
+
+        const { result } = renderHook(() => useChartInteraction())
+
+        expect(getPreference).toHaveBeenCalledWith(UserPreferences.chartPeriod)
+        expect(result.current.period).toBe('one-day')
+    })
+
+    it('persists period changes', () => {
+        const { result } = renderHook(() => useChartInteraction())
+
+        act(() => {
+            result.current.setPeriod('one-month')
+        })
+
+        expect(result.current.period).toBe('one-month')
+        expect(setPreference).toHaveBeenCalledWith(
+            UserPreferences.chartPeriod,
+            'one-month',
+        )
+    })
+
+    it('falls back to the default when the stored period is invalid', () => {
+        getPreference.mockReturnValue('bogus')
+
+        const { result } = renderHook(() => useChartInteraction())
+
+        expect(result.current.period).toBe('one-week')
+    })
+
     it('should initialize with default period', () => {
         const { result } = renderHook(() => useChartInteraction())
         expect(result.current.period).toBe('one-week')

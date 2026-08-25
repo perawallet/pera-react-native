@@ -34,11 +34,12 @@ import {
 } from '@perawallet/wallet-core-signing'
 import {
     addToAssetHolding,
+    isAssetFrozen,
     useAccountBalancesInvalidator,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { InvalidSendParamsError } from '../errors'
+import { AssetFrozenError, InvalidSendParamsError } from '../errors'
 import { isAlgoAssetId, logger } from '@perawallet/wallet-core-shared'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -279,6 +280,19 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                 throw new InvalidSendParamsError()
             }
 
+            // Read at submit time rather than taking the caller's word: a
+            // deeplink, a stale screen or a freeze that landed mid-flow would
+            // all miss a flag passed in from the UI.
+            const frozen = await isAssetFrozen({
+                accountAddress: params.sender.address,
+                assetId: params.asset.assetId,
+                network,
+            })
+
+            if (frozen) {
+                throw new AssetFrozenError(params.asset.assetId)
+            }
+
             const assetDecimals = params.asset?.decimals ?? 0
             const amountInBaseUnits = BigInt(
                 displayUnitsToBaseUnits(
@@ -351,6 +365,7 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
             fetchSuggestedMinFee,
             minTxnFee,
             pqMultiplier,
+            network,
         ],
     )
 

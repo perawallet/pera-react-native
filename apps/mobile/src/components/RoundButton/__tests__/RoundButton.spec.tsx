@@ -39,4 +39,38 @@ describe('RoundButton', () => {
         fireEvent.click(screen.getByTestId('icon-plus'))
         expect(onPress).toHaveBeenCalledTimes(1)
     })
+
+    it('does not call onPress when disabled', () => {
+        const onPress = vi.fn()
+        render(
+            <RoundButton
+                icon='plus'
+                onPress={onPress}
+                disabled
+                testID='round-button'
+            />,
+        )
+
+        fireEvent.click(screen.getByTestId('round-button'))
+        expect(onPress).not.toHaveBeenCalled()
+    })
+
+    it('renders the corner badge only when badgeIcon is set', () => {
+        const { rerender } = render(
+            <RoundButton
+                icon='plus'
+                title='Send'
+            />,
+        )
+        expect(screen.queryByTestId('icon-snowflake')).toBeNull()
+
+        rerender(
+            <RoundButton
+                icon='plus'
+                title='Send'
+                badgeIcon='snowflake'
+            />,
+        )
+        expect(screen.getByTestId('icon-snowflake')).toBeTruthy()
+    })
 })

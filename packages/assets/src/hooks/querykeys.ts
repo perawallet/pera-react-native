@@ -130,6 +130,12 @@ export const getIndexerAssetDetailsQueryKey = (assetId: string) => [
     { assetId },
 ]
 
+/** Freeze/clawback authorities, read from the indexer's asset params. */
+export const getAssetAuthoritiesQueryKey = (
+    assetId: string,
+    network: Network,
+) => [MODULE_PREFIX, 'authorities', { assetId, network }]
+
 export function invalidateAssetQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({
         predicate: query => query.queryKey[0] === MODULE_PREFIX,

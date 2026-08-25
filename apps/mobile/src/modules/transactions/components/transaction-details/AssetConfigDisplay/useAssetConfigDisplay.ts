@@ -16,7 +16,11 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
+import {
+    decodeBytesToText,
+    formatNumber,
+    formatWithUnits,
+} from '@perawallet/wallet-core-shared'
 
 export const useAssetConfigDisplay = (
     transaction: PeraDisplayableTransaction,
@@ -40,12 +44,10 @@ export const useAssetConfigDisplay = (
         return `${integer}${fraction}${unit}`
     }, [assetConfig?.params?.total])
 
-    const metadataHash = useMemo(() => {
-        if (!assetConfig?.params?.metadataHash) {
-            return undefined
-        }
-        return Buffer.from(assetConfig?.params?.metadataHash).toString('utf-8')
-    }, [assetConfig?.params?.metadataHash])
+    const metadataHash = useMemo(
+        () => decodeBytesToText(assetConfig?.params?.metadataHash),
+        [assetConfig?.params?.metadataHash],
+    )
 
     return {
         assetConfig,

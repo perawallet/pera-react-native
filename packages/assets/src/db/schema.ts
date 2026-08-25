@@ -53,6 +53,11 @@ export const AssetsPeraSchema = sqliteTable(
         assetType: text('asset_type'),
         peraMetadataJson: text('pera_metadata_json'),
         updatedAt: integer('updated_at').notNull(),
+        // First time this asset was ever cached, never bumped by a refetch.
+        // The window in which an unclassified asset is still worth re-asking
+        // the backend about is measured from here — see
+        // getStaleOrMissingAssetIds. NULL on rows cached before the column.
+        firstSeenAt: integer('first_seen_at'),
     },
     table => [primaryKey({ columns: [table.assetId, table.network] })],
 )

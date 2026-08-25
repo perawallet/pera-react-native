@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { PWFlatList, PWTouchableOpacity, PWView } from '@components/core'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { type Nullable } from '@perawallet/wallet-core-shared'
+import { PWFlatList, PWView } from '@components/core'
+import { CopyableText } from '@components/CopyableText'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
 import { PeraCardAccountItem } from '../PeraCardAccountItem'
@@ -68,15 +69,17 @@ export const AccountMenu = (props: AccountMenuProps) => {
 
             const acct = item.account
             return (
-                <PWTouchableOpacity
+                <CopyableText
+                    copyValue={acct.address}
                     onPress={() => handleTap(acct)}
+                    activeOpacity={0.8}
                     testID={`account_switcher_row_${acct.address}`}
                 >
                     <AccountWithBalance
                         account={acct}
                         isHighlighted={acct.address === selectedAccountAddress}
                     />
-                </PWTouchableOpacity>
+                </CopyableText>
             )
         },
         [handleTap, selectedAccountAddress, onPeraCardActivate, onPeraCardOpen],

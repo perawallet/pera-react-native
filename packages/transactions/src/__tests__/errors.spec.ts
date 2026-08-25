@@ -16,7 +16,12 @@ import {
     ErrorCategory,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
-import { TransactionError, InvalidSendParamsError, RekeyError } from '../errors'
+import {
+    TransactionError,
+    InvalidSendParamsError,
+    AssetFrozenError,
+    RekeyError,
+} from '../errors'
 
 describe('TransactionError', () => {
     it('is an instance of AppError and Error', () => {
@@ -141,6 +146,17 @@ describe('InvalidSendParamsError', () => {
         expect(error.metadata.severity).toBe(ErrorSeverity.HIGH)
         expect(error.metadata.category).toBe(ErrorCategory.TRANSACTIONS)
         expect(error.metadata.retryable).toBe(false)
+    })
+})
+
+describe('AssetFrozenError', () => {
+    it('reuses the algod frozen copy and interpolates the asset', () => {
+        const { titleKey, messageKey, params } = new AssetFrozenError('123')
+            .metadata
+
+        expect(titleKey).toBe('errors.algod.asset_frozen.title')
+        expect(messageKey).toBe('errors.algod.asset_frozen.body')
+        expect(params).toEqual({ assetId: '123' })
     })
 })
 

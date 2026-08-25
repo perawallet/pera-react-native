@@ -41,7 +41,7 @@ import { useKeystoreKeys } from './useKeystoreState'
 import { entropyToIndices } from '../crypto/hdwallet-utils'
 import { algo25SeedToIndices } from '../crypto/algo25-utils'
 import { withSecret } from '../storage/secrets'
-import { getPQProvider } from '../crypto/pq'
+import { resolvePQSigningInfo } from '../crypto/pq/resolvePQSigningInfo'
 
 export type ExecuteWithMnemonicHandler<T> = (
     indices: Uint16Array,
@@ -240,59 +240,22 @@ export const useKMS = () => {
     }
 
     /**
-     * Describes how to build a signed transaction for `keyPairId`.
-     *
-     * Returns the PQ scheme id and public key for a post-quantum child, or
-     * `null` for an Ed25519 child. Callers use the `null` case to pick the
-     * plain `sig` path — this is the single place the scheme is decided, so
-     * signing callers need no account-type branching.
-     *
-     * Standardised on the SAME oracle {@link signTransactionsWithKey} uses
-     * to pick its signer — the seed's committed `scheme`, via
-     * `resolveSeedKey` + `seedSchemeOf` — rather than the child's own
-     * `type`. Payload selection (here) and signer selection
-     * (`signTransactionsWithKey`) must never be able to disagree: if they
-     * did, this would return `null`, the caller would sign the un-digested
-     * `encodeTransaction(txn)` bytes, and `signTransactionsWithKey` would
-     * still route to the real Falcon signer — silently re-creating the
-     * exact un-digested-signing bug PERA-4653 closed.
-     *
-     * The child's `type` is still cross-checked as a consistency guard
-     * (e.g. `account.keyPairId` resolving to the quantum *seed* id itself,
-     * which `resolveSeedKey` accepts as a legacy-caller convenience,
-     * disagrees with the seed's own scheme here). A mismatch THROWS rather
-     * than falling back to the ed25519 path — silent fallthrough is exactly
-     * the failure mode this function exists to prevent.
+     * The reactive-store binding for {@link resolvePQSigningInfo}, which
+     * holds the scheme-decision rules and the reasoning behind them.
      */
     const getPQSigningInfo = (
         keyPairId: string,
     ): { schemeId: PQSchemeId; publicKey: Uint8Array } | null => {
-        const seedKey = resolveSeedKey(keyPairId)
-        const isQuantumSeed = seedSchemeOf(seedKey) === SeedScheme.Quantum
-
-        const child = getKeystoreStore().state.keys.find(
-            k => k.id === keyPairId,
-        )
-        const isFalconChild = child?.type === FALCON_CHILD_KEY_TYPE
-
-        if (isQuantumSeed !== isFalconChild) {
-            throw new KeyManagementError(
-                `PQ scheme mismatch for keyPairId ${keyPairId}: seed scheme reports quantum=${isQuantumSeed}, child type reports ${FALCON_CHILD_KEY_TYPE}=${isFalconChild}`,
-            )
-        }
-
-        if (!isQuantumSeed) {
-            return null
-        }
-
-        // Report the PROVIDER's own scheme rather than a literal of our own:
-        // `getPQProvider()` is the build-time-selected implementation and is
-        // the authority on which scheme it produces signatures for, so a
-        // second PQ provider needs no edit here.
-        return {
-            schemeId: getPQProvider().scheme,
-            publicKey: getQuantumPublicKey(keyPairId),
-        }
+        // Resolved through the hook's own `resolveSeedKey` first, purely for
+        // the side effects the pure resolver has no business owning: the
+        // expiry sweep in `getKey`, and `KeyNotFoundError` for an id that
+        // isn't in the reactive snapshot at all.
+        resolveSeedKey(keyPairId)
+        // One snapshot for both halves of the decision. The pre-extraction
+        // code read the seed off the reactive list and the child off the live
+        // store, so a key removed between the two reads could resolve against
+        // a seed that no longer existed.
+        return resolvePQSigningInfo(getKeystoreStore().state.keys, keyPairId)
     }
 
     const hasSeedWithEntropy = useCallback((seedKeyId: string): boolean => {

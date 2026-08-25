@@ -235,6 +235,12 @@
             "total_supply": "Gesamtangebot",
             "no_freeze": "Kein Freeze",
             "no_clawback": "Kein Clawback",
+            "freeze": "Freeze",
+            "clawback": "Clawback",
+            "freeze_info_body": "Eine Freeze-Adresse ist ein Konto, das bestimmte Konten vorübergehend daran hindern kann, das Asset zu übertragen, bis die Sperre aufgehoben wird. Das ist nützlich für Compliance-Prüfungen, Handelsbeschränkungen oder als Reaktion auf Sicherheitsvorfälle.",
+            "clawback_info_body": "Eine Clawback-Adresse ist ein Konto, das das Asset von jedem Inhaber zurückholen und an eine andere Adresse weiterleiten kann. Das ist nützlich, um regulatorische Vorgaben zu erfüllen, Handelsbeschränkungen durchzusetzen oder Assets aus einem kompromittierten Konto zurückzuerlangen.",
+            "freeze_address": "Freeze-Adresse",
+            "clawback_address": "Clawback-Adresse",
             "description": "Beschreibung",
             "social_media": "Soziale Medien",
             "chart_empty_body": "Sobald ein Guthabenverlauf vorliegt, wird hier ein Diagramm angezeigt",
@@ -358,9 +364,11 @@
         "view_passphrase_quantum": "Passphrase des Quantum-Kontos anzeigen",
         "undo_rekey": "Rekey rückgängig machen",
         "rekeyed_to": "Rekeyed zu",
-        "rekey_to_ledger": "Zu Ledger-Konto rekeyen",
-        "rekey_to_standard": "Zu Standardkonto rekeyen",
-        "rekey_to_shared": "Zu Gemeinschaftskonto rekeyen",
+        "rekey_account": "Konto rekeyen",
+        "rekey_option_ledger_title": "Zu einem Ledger-Konto",
+        "rekey_option_ledger_description": "Transaktionen werden auf deinem Ledger-Gerät autorisiert.",
+        "rekey_option_standard_title": "Zu einem Standard-Konto",
+        "rekey_option_standard_description": "Transaktionen werden von einem anderen Konto in deinem Wallet autorisiert.",
         "export_share_account": "Konto exportieren/teilen",
         "scan_rekeyed": "Nach rekeyed Konten suchen",
         "rename_account": "Konto umbenennen",
@@ -401,12 +409,12 @@
         "type_multisig": "Gemeinschaftskonto",
         "type_quantum": "Quantum-Konto",
         "type_rekeyed": "Rekeyed Konto",
-        "type_rekeyed_transition": "Rekeyed ({{from}} zu {{to}})",
-        "rekey_part_standard": "Standard",
-        "rekey_part_ledger": "Ledger",
-        "rekey_part_watch": "Beobachtung",
-        "rekey_part_shared": "Gemeinschaftskonto",
-        "rekey_part_quantum": "Quantum",
+        "type_rekeyed_signer": "Rekeyed (Signiert von {{to}})",
+        "rekey_signer_standard": "einem Standard-Konto",
+        "rekey_signer_ledger": "einem Ledger-Konto",
+        "rekey_signer_watch": "einem Beobachtungskonto",
+        "rekey_signer_shared": "einem Gemeinschaftskonto",
+        "rekey_signer_quantum": "einem Quantum-Konto",
         "type_no_auth": "Keine Auth",
         "type_unknown": "Unbekanntes Konto"
     },
@@ -420,10 +428,11 @@
         "no_auth_title": "Keine Auth",
         "no_auth_description": "Dein Konto ist zu einem Algorand-Konto rekeyed, das sich nicht in deinem Wallet befindet. Du kannst keine Assets senden oder Transaktionen signieren.",
         "rekeyed_standard_title": "Rekeyed Konto",
-        "rekeyed_standard_description": "Dein Konto ist zu einem anderen Standard-Algorand-Konto rekeyed. Transaktionen für dieses Konto werden vom anderen Konto autorisiert.",
+        "rekeyed_standard_description": "Dein Konto ist zu einem Standard-Algorand-Konto in deinem Wallet rekeyed. Transaktionen für dieses Konto werden von diesem Konto autorisiert.",
         "rekeyed_shared_description": "Dein Konto ist zu einem Gemeinschaftskonto rekeyed. Transaktionen für dieses Konto werden vom Gemeinschaftskonto autorisiert.",
         "rekeyed_ledger_description": "Dein Konto ist zu einem Konto auf einem Ledger-Hardware-Gerät rekeyed. Transaktionen für dieses Konto müssen auf dem Ledger-Gerät autorisiert werden.",
         "rekeyed_ledger_to_ledger_description": "Dein Ledger-Konto ist zu einem Konto auf einem anderen Ledger-Hardware-Gerät rekeyed. Transaktionen für dieses Konto werden vom anderen Ledger-Gerät autorisiert.",
+        "rekeyed_quantum_description": "Dein Konto ist zu einem Quantum-Konto in deinem Wallet rekeyed. Transaktionen für dieses Konto werden von diesem Konto mit Post-Quanten-Kryptografie autorisiert.",
         "hd_wallet_title": "Universal Wallet",
         "hd_wallet_description": "Ein Wallet, mit dem du neue Konten ableiten kannst, die alle denselben Schlüssel verwenden.",
         "multisig_title": "Gemeinschaftskonto",
@@ -516,6 +525,9 @@
         "paste_submit": "Absenden"
     },
     "chart": {
+        "one_day": {
+            "label": "1T"
+        },
         "one_week": {
             "label": "1W"
         },
@@ -666,7 +678,7 @@
         "algod": {
             "overspend": {
                 "title": "Unzureichendes ALGO",
-                "body": "Dieses Konto verfügt nicht über genügend ALGO, um die Transaktion zu decken und sein Mindestguthaben zu halten. Füge mindestens {{missing}} microALGO hinzu und versuche es erneut."
+                "body": "Dieses Konto verfügt nicht über genügend ALGO, um die Transaktion zu decken und sein Mindestguthaben zu halten. Füge mehr ALGO hinzu und versuche es erneut."
             },
             "below_min_balance": {
                 "title": "Unter dem Mindestguthaben",
@@ -678,7 +690,7 @@
             },
             "asset_frozen": {
                 "title": "Asset eingefroren",
-                "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Wende dich an den Ersteller des Assets, um es freigeben zu lassen."
+                "body": "Das Asset {{assetId}} ist eingefroren, daher kann diese Übertragung nicht abgeschlossen werden. Der Freeze-Manager des Assets muss es zuerst freigeben."
             },
             "duplicate_txn": {
                 "title": "Bereits übermittelt",
@@ -706,7 +718,7 @@
             },
             "group_fee_too_small": {
                 "title": "Netzwerkgebühr zu niedrig",
-                "body": "Diese Transaktionsgruppe hat {{paid}} microALGO an Gebühren gezahlt, das Netzwerk verlangt jedoch {{required}} microALGO. Bitte versuche es erneut."
+                "body": "Die Gebühren dieser Transaktionsgruppe liegen unter dem, was das Netzwerk verlangt. Bitte versuche es erneut."
             },
             "unknown_node_error": {
                 "title": "Transaktion fehlgeschlagen",
@@ -2077,6 +2089,15 @@
             "enable_prompt_title": "Biometrische Anmeldung aktivieren",
             "unlock_prompt_title": "Pera Wallet entsperren",
             "cancel_label": "Abbrechen"
+        },
+        "biometrics_disabled": {
+            "title": "Biometrische Entsperrung ist aus",
+            "body_enrollment-changed": "Die biometrischen Einstellungen deines Geräts haben sich geändert, daher hat Pera die biometrische Entsperrung deaktiviert. Aktiviere sie wieder, um weiterhin biometrisch zu entsperren.",
+            "body_weak-biometric": "Pera benötigt einen Fingerabdruck oder eine andere starke Biometrie, um deine Wallet zu entsperren. Deshalb wurde die biometrische Entsperrung deaktiviert. Richte sie in den Geräteeinstellungen ein und aktiviere sie danach wieder.",
+            "confirm": "Wieder aktivieren",
+            "cancel": "Jetzt nicht",
+            "unavailable_title": "Biometrie nicht verfügbar",
+            "unavailable_body": "Aktiviere Face ID oder Touch ID für Pera in den Geräteeinstellungen und schalte die biometrische Entsperrung danach wieder ein."
         }
     },
     "send_funds": {
@@ -2560,6 +2581,7 @@
             "asset_freeze": "Asset-Freeze",
             "app_call": "App-Aufruf",
             "key_registration": "Schlüsselregistrierung",
+            "heartbeat": "Heartbeat",
             "default": "Transaktion",
             "more_impacts": "{{count}} weitere anzeigen"
         },
@@ -2650,6 +2672,13 @@
             "status": "Registrierungsstatus",
             "online": "Online",
             "offline": "Offline"
+        },
+        "heartbeat": {
+            "description": "Ein Heartbeat beweist, dass ein Konto weiterhin online ist und am Algorand-Konsens teilnimmt. Dabei werden keine Guthaben bewegt.",
+            "account": "Konto mit Online-Nachweis",
+            "submitted_by": "Eingereicht von",
+            "key_dilution": "Schlüsselverdünnung",
+            "vote_id": "Vote-ID"
         },
         "app_call": {
             "app_id": "Anwendungs-ID",

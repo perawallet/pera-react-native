@@ -17,6 +17,7 @@ import m0001 from './0001_add_balance_impacts.sql?raw'
 import m0002 from './0002_add_close_amount.sql?raw'
 import m0003 from './0003_add_is_frozen.sql?raw'
 import m0004 from './0004_add_asset_price_misses.sql?raw'
+import m0005 from './0005_add_assets_pera_first_seen_at.sql?raw'
 
 // Rows cached before the close_amount column heal in place via the chain
 // backfill (packages/transactions sync/close-amount-backfill.ts) — no
@@ -30,6 +31,9 @@ const migrations: MigrationConfig = {
     // Durable "no price returned" markers so the price syncer can defer
     // retries across any portfolio size (replaces a capped in-memory map).
     '0004_add_asset_price_misses': m0004,
+    // Nullable on purpose: rows cached before this column stay NULL, which
+    // reads as "not newly seen" and keeps them on the long asset TTL.
+    '0005_add_assets_pera_first_seen_at': m0005,
 }
 
 export default migrations
