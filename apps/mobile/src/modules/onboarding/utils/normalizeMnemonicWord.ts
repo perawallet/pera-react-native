@@ -11,13 +11,10 @@
  */
 
 /**
- * Folds a typed mnemonic token to the exact form the wordlists use.
- *
- * `seedFromMnemonic` matches the wordlist byte-exactly, and Android IMEs
- * (Samsung Keyboard, Gboard) can capitalize or append punctuation even with
- * `autoCapitalize='none'` — so a passphrase that is genuinely correct arrives
- * unusable. Both wordlists are pure lowercase a-z, which makes dropping every
- * other character safe rather than lossy.
+ * Strips only what an IME actually adds — case, whitespace, punctuation,
+ * symbols. Anything else (digits, other letters) is left in place so a
+ * genuinely wrong token still fails wordlist validation and gets flagged,
+ * instead of being silently rewritten into a different real word.
  */
 export const normalizeMnemonicWord = (value: string): string =>
-    value.toLowerCase().replace(/[^a-z]/g, '')
+    value.toLowerCase().replace(/[\s\p{P}\p{S}]/gu, '')

@@ -35,17 +35,23 @@ describe('normalizeMnemonicWord', () => {
         expect(normalizeMnemonicWord("abandon'")).toBe('abandon')
     })
 
-    it('strips digits and non-latin characters', () => {
-        expect(normalizeMnemonicWord('abandon1')).toBe('abandon')
+    it('strips punctuation but keeps digits so the token still fails validation', () => {
         expect(normalizeMnemonicWord('aban—don')).toBe('abandon')
+        expect(normalizeMnemonicWord('abandon1')).toBe('abandon1')
+        expect(normalizeMnemonicWord('123')).toBe('123')
     })
 
     it('leaves an already-clean word untouched', () => {
         expect(normalizeMnemonicWord('abandon')).toBe('abandon')
     })
 
-    it('returns an empty string for input with no latin letters', () => {
+    it('returns an empty string for whitespace-only input', () => {
         expect(normalizeMnemonicWord('   ')).toBe('')
-        expect(normalizeMnemonicWord('123')).toBe('')
+    })
+
+    it('does not silently correct a mistyped word into a different real word', () => {
+        // A digit is not an IME artifact — it's a genuine typo, so it must
+        // survive normalization and fail wordlist validation downstream.
+        expect(normalizeMnemonicWord('abandon5')).toBe('abandon5')
     })
 })
