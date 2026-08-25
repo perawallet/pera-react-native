@@ -314,27 +314,42 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => {
-    // Hardware accounts can't sign arbitrary data (no raw-byte opcode).
-    // Tests flip this on by setting account.type = 'hardware'.
+    // Stands in for the real `hasSigningKeys` (a keyPairId check) by account
+    // type, so fixtures don't have to carry key ids: hardware, watch and
+    // multisig accounts hold no local key. Tests flip this on by setting
+    // account.type.
     const canSignArbitraryData = vi.fn(
-        (account: any) => account?.type !== 'hardware',
+        (account: any) =>
+            account?.type !== 'hardware' &&
+            account?.type !== 'watch' &&
+            account?.type !== 'multisig',
     )
     const isHardwareWalletAccount = vi.fn(
         (account: any) => account?.type === 'hardware',
     )
+    const isMultisigAccount = vi.fn((a: any) => a?.type === 'multisig')
     return {
         useAllAccounts: vi.fn(() => signingAccountsState.current),
         useSigningAccounts: vi.fn(() => signingAccountsState.current),
         canSignWith: vi.fn(() => true),
         canSignArbitraryData,
-        // Mirror the real composition so tests that toggle the two predicates
-        // exercise canSignArc60 without setting it directly.
-        canSignArc60: vi.fn(
-            (a: any) => canSignArbitraryData(a) || isHardwareWalletAccount(a),
-        ),
+        // Mirror the real composition so tests that toggle the predicates
+        // exercise canSignArc60 without setting it directly — including the
+        // rekey hop, which decides capability for a rekeyed signer.
+        canSignArc60: vi.fn((account: any, accounts: any[] = []) => {
+            const signer = account?.rekeyAddress
+                ? accounts.find((a: any) => a.address === account.rekeyAddress)
+                : account
+            return (
+                !!signer &&
+                !isMultisigAccount(signer) &&
+                (canSignArbitraryData(signer) ||
+                    isHardwareWalletAccount(signer))
+            )
+        }),
         getAccountDisplayName: vi.fn((a: any) => a.name || a.address),
         isHardwareWalletAccount,
-        isMultisigAccount: vi.fn((a: any) => a?.type === 'multisig'),
+        isMultisigAccount,
     }
 })
 
@@ -740,6 +755,19 @@ describe('useWalletConnectHandlers', () => {
     })
 
     describe('handleSignData (ARC-60)', () => {
+        // Cases here override `canSignArbitraryData` with a flat
+        // `mockReturnValue`, and nothing in the config resets mocks between
+        // tests — restore the account-type rule so a later case can still
+        // model a keyless account.
+        beforeEach(() => {
+            ;(canSignArbitraryData as any).mockImplementation(
+                (account: any) =>
+                    account?.type !== 'hardware' &&
+                    account?.type !== 'watch' &&
+                    account?.type !== 'multisig',
+            )
+        })
+
         const arc60Payload = (overrides: Record<string, unknown> = {}) => ({
             id: 42,
             params: {
@@ -870,6 +898,88 @@ describe('useWalletConnectHandlers', () => {
                     }),
                 }),
             )
+        })
+
+        it('accepts a keyless rekeyed signer whose auth account holds keys', () => {
+            // The dApp names the connected account itself (pera-demo-dapp
+            // scenario #84), not its auth address. Capability follows the
+            // rekey hop, so the auth account's key signs (PERA-4977).
+            ;(useAllAccounts as any).mockReturnValue([
+                {
+                    address: 'addr1',
+                    name: 'Rekeyed',
+                    type: 'watch',
+                    rekeyAddress: 'auth-addr',
+                },
+                { address: 'auth-addr', name: 'Auth', type: 'standard' },
+            ])
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            result.current.handleSignData(
+                connector,
+                Networks.mainnet,
+                null,
+                arc60Payload({ signer: 'addr1' }),
+            )
+
+            expect(mockAddSignRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'arc60',
+                    stdSigData: expect.objectContaining({ signer: 'addr1' }),
+                }),
+            )
+        })
+
+        it('rejects a keyless rekeyed signer whose auth account is also keyless', () => {
+            ;(useAllAccounts as any).mockReturnValue([
+                {
+                    address: 'addr1',
+                    name: 'Rekeyed',
+                    type: 'watch',
+                    rekeyAddress: 'auth-addr',
+                },
+                { address: 'auth-addr', name: 'Auth', type: 'watch' },
+            ])
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            expect(() =>
+                result.current.handleSignData(
+                    connector,
+                    Networks.mainnet,
+                    null,
+                    arc60Payload({ signer: 'addr1' }),
+                ),
+            ).toThrow('Signer cannot sign ARC-60 payloads')
+        })
+
+        it('rejects a rekeyed signer whose auth account is a multisig', () => {
+            // ARC-60 responses carry a single signature, so a threshold
+            // account can never be represented.
+            ;(useAllAccounts as any).mockReturnValue([
+                {
+                    address: 'addr1',
+                    name: 'Rekeyed',
+                    type: 'watch',
+                    rekeyAddress: 'auth-addr',
+                },
+                { address: 'auth-addr', name: 'Auth', type: 'multisig' },
+            ])
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            expect(() =>
+                result.current.handleSignData(
+                    connector,
+                    Networks.mainnet,
+                    null,
+                    arc60Payload({ signer: 'addr1' }),
+                ),
+            ).toThrow('Signer cannot sign ARC-60 payloads')
         })
 
         it('rejects a signer that is only the rekeyAddress of a non-session account', () => {

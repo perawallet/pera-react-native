@@ -237,11 +237,30 @@ export const canSignArbitraryData = (account: WalletAccount): boolean =>
     hasSigningKeys(account)
 
 /**
- * Broader than {@link canSignArbitraryData} because ARC-60 — unlike the legacy
- * `algo_signData` path — also has an on-device Ledger signing path.
+ * Diverges from {@link canSignArbitraryData} on two counts: ARC-60 also has an
+ * on-device Ledger signing path, and it follows the single rekey hop.
+ *
+ * The hop is followed because SIWA names the authenticated account
+ * (`account_address`) separately from the key that signs, so a verifier
+ * resolves the auth-addr on chain — which makes the auth account the only
+ * correct producer. Consequently a rekeyed account's own key never counts,
+ * even when the wallet still holds it: that key no longer authorizes the
+ * account, so an AUTH-scope signature from it would be a false proof of
+ * control. Multisig auth accounts are refused because an ARC-60 response
+ * carries one signature and cannot represent a threshold.
+ *
+ * Must stay in lockstep with `resolveSigningAccount` in the signing package,
+ * which performs the same hop when picking the account that signs.
  */
-export const canSignArc60 = (account: WalletAccount): boolean =>
-    canSignArbitraryData(account) || isHardwareWalletAccount(account)
+export const canSignArc60 = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    const signer = account.rekeyAddress
+        ? accounts.find(a => a.address === account.rekeyAddress)
+        : account
+    return !!signer && !isMultisigAccount(signer) && canSignDirectly(signer)
+}
 
 /**
  * Whether `account` can produce a *usable* delegated LogicSig (LSig / dLSig).

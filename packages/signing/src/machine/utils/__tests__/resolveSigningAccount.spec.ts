@@ -97,12 +97,33 @@ describe('resolveSigningAccount', () => {
         expect(result.address).toBe(PARTICIPANT)
     })
 
-    it('returns the signer itself for arc60 even when rekeyed', () => {
+    it('follows rekey to the auth account for arc60', () => {
+        // Unlike ARC-1, the SIWA payload names the authenticated account
+        // (`account_address`) separately from the signing key, so the auth
+        // account is the correct producer for a rekeyed signer.
         const result = resolveSigningAccount(
             rekeyedSigner,
             localSource,
             'arc60',
             [rekeyedSigner, authAccount],
+        )
+        expect(result.address).toBe(AUTH)
+    })
+
+    it('throws RekeyTargetNotFoundError on arc60 when the rekey target is missing', () => {
+        expect(() =>
+            resolveSigningAccount(rekeyedSigner, localSource, 'arc60', [
+                rekeyedSigner,
+            ]),
+        ).toThrow(RekeyTargetNotFoundError)
+    })
+
+    it('returns the signer itself for arc60 when not rekeyed', () => {
+        const result = resolveSigningAccount(
+            plainSigner,
+            localSource,
+            'arc60',
+            [plainSigner],
         )
         expect(result.address).toBe(PARTICIPANT)
     })

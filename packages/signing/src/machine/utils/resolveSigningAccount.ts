@@ -22,9 +22,14 @@ import type { SignableData, SourceMetadata } from '../../pipeline/types'
  * - `multisig-cosign` source: the participant slot is bound to its ORIGINAL
  *   pubkey at multisig creation. Rekey indirection MUST NOT be followed —
  *   the participant signs with its own key.
- * - `arbitrary-data` / `arc60` data: the dApp verifies the signature off-chain
- *   against the requested account's own pubkey. There is no auth-addr lookup
- *   for off-chain data, so the rekey hop MUST NOT be followed.
+ * - `arbitrary-data` data: the dApp verifies the signature off-chain against
+ *   the requested account's own pubkey, and the ARC-1 response carries only
+ *   raw signatures — there is no field to report that a different key signed.
+ *   The rekey hop MUST NOT be followed.
+ * - `arc60` data: the hop IS followed. SIWA names the authenticated account
+ *   (`account_address`) separately from the signing key, so a verifier
+ *   resolves the auth-addr on chain and the auth account is the correct
+ *   producer (PERA-4977).
  * - Transactions (any other shape): standard rekey rule — resolve the single
  *   rekey hop to the auth account, which holds the signing key. Rekey
  *   indirection is not transitive, so this is one hop, not a chain.
@@ -41,8 +46,6 @@ export const resolveSigningAccount = (
     allAccounts: WalletAccount[],
 ): WalletAccount => {
     if (source.type === 'multisig-cosign') return signerAccount
-    if (dataType === 'arbitrary-data' || dataType === 'arc60') {
-        return signerAccount
-    }
+    if (dataType === 'arbitrary-data') return signerAccount
     return resolveAuthAccount(signerAccount, allAccounts)
 }

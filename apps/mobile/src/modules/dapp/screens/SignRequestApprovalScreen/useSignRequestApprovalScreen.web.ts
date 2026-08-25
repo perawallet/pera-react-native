@@ -279,7 +279,7 @@ export const useSignRequestApprovalScreen =
                     if (
                         !session.accounts.includes(stdSigData.signer) ||
                         !signerAccount ||
-                        !canSignArc60(signerAccount)
+                        !canSignArc60(signerAccount, accounts)
                     ) {
                         setError(t('dapp.sign.unauthorized_signer'))
                         void rejectApproval(requestId)
@@ -395,7 +395,7 @@ export const useSignRequestApprovalScreen =
                 if (
                     !approval.approvedAddresses.includes(stdSigData.signer) ||
                     !signerAccount ||
-                    !canSignArc60(signerAccount)
+                    !canSignArc60(signerAccount, accounts)
                 ) {
                     setError(t('dapp.sign.unauthorized_signer'))
                     void rejectApproval(requestId)

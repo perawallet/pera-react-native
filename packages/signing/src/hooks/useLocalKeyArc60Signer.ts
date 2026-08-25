@@ -57,9 +57,10 @@ export const useLocalKeyArc60Signer = (): UseLocalKeyArc60SignerResult => {
             stdSigData: Arc60StdSigData,
             metadata: Arc60Metadata,
         ): Promise<Uint8Array> => {
-            // ARC-60 verifies signatures against the requested signer's
-            // own pubkey. Rekey is NOT followed — sign with this account's
-            // own keypair or reject.
+            // `account` is already the resolved signing account — the auth
+            // account when the request's signer is rekeyed (see
+            // resolveSigningAccount). Leaf check only: it must hold a local
+            // key by the time it reaches KMS.
             if (!canSignArbitraryData(account)) {
                 throw new Arc60InvalidSignerError(
                     account.address,
