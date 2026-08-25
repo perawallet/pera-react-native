@@ -54,4 +54,19 @@ describe('normalizeMnemonicWord', () => {
         // survive normalization and fail wordlist validation downstream.
         expect(normalizeMnemonicWord('abandon5')).toBe('abandon5')
     })
+
+    it('strips invisible format characters an IME can inject silently', () => {
+        // Written as escapes, not literal invisible characters, so the
+        // characters under test survive review instead of being
+        // "helpfully" deleted by an editor.
+        const zeroWidthSpace = '\u200B'
+        const zeroWidthJoiner = '\u200D'
+        expect(normalizeMnemonicWord(`aban${zeroWidthSpace}don`)).toBe(
+            'abandon',
+        )
+        expect(normalizeMnemonicWord(`aban${zeroWidthJoiner}don`)).toBe(
+            'abandon',
+        )
+        expect(normalizeMnemonicWord('abandon1')).toBe('abandon1')
+    })
 })
