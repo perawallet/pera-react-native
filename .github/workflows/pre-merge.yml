@@ -586,6 +586,16 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5.0.0
+
+      # No `cache: pnpm` here — same reasoning as the audit job above: this
+      # job never runs `pnpm install`, so there is no store to cache.
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: ".tool-versions"
+
       - name: Install actionlint
         env:
           ACTIONLINT_VERSION: 1.7.12
@@ -620,3 +630,8 @@ jobs:
             echo "── ${suite}"
             bash "${suite}"
           done
+
+      # The shell harness above only exercises synthetic fixtures; this checks
+      # the real pnpm-workspace.yaml for patch/catalog drift.
+      - name: Check patch pins
+        run: pnpm run check:patch-pins

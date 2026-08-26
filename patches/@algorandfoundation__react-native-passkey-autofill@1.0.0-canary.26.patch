@@ -269,23 +269,6 @@ index d64561f675a22330593acb51a21392cb8652dd32..0cd9d828947bec38b7eba3bd01b619c2
          return
        }
  
-@@ -191,9 +191,15 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
-         attestationObject: WebAuthn.attestationObject(authenticatorData: authData)
-       )
- 
-+      // PERA LOCAL PATCH: upstream canary.24 defect, not a Pera preference —
-+      // `derivedParentSecret` is undeclared here and the extension does not
-+      // compile. `parent.bytes` is the same value line 163 derives the
-+      // credential from, and the same secret `attachPrfAssertionOutput`
-+      // re-derives PRF from on every later assertion. Drop this hunk when
-+      // upstream fixes it; keep it on every version bump until then.
-       attachPrfRegistrationOutput(
-         to: registrationCredential,
--        derivedParentSecret: derivedParentSecret,
-+        derivedParentSecret: parent.bytes,
-         relyingPartyIdentifier: identity.relyingPartyIdentifier,
-         userHandle: userHandle
-       )
 @@ -309,7 +315,7 @@ final class CredentialProviderViewController: ASCredentialProviderViewController
      }
  
