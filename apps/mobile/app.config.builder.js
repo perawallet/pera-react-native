@@ -354,6 +354,12 @@ function buildAppConfig(env) {
             targetSdkVersion: 36,
             compileSdkVersion: 36,
             buildToolsVersion: '36.0.0',
+            // Extract the .so files to the app's lib/ dir at install time.
+            // Left false, SoLoader maps them straight out of the APK and a tail
+            // of installs finds nothing on any SoSource — throwing in
+            // MainApplication.onCreate before JS runs, so the app never starts
+            // again until reinstall (Crashlytics 8725c779).
+            useLegacyPackaging: true,
             // R8 minification + resource shrinking for release builds.
             // Obfuscates native (Java/Kotlin) symbols and strips unused code/resources,
             // reducing APK/AAB size and hardening the native layer. `enableProguardInReleaseBuilds`

@@ -455,6 +455,12 @@ describe('buildAppConfig — Android manifest parity (WB-7)', () => {
         expect(android.buildToolsVersion).toBe('36.0.0')
     })
 
+    it('extracts native libs at install so SoLoader can always find them', () => {
+        const android = buildPropsAndroid(build({ APP_ENV: 'production' }))
+
+        expect(android.useLegacyPackaging).toBe(true)
+    })
+
     it('requests POST_NOTIFICATIONS and never FOREGROUND_SERVICE', () => {
         const { permissions } = build({ APP_ENV: 'production' }).android
 
