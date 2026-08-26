@@ -22,7 +22,9 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import type { PeraAsset, PeraAssetType } from '../../models'
 import {
     upsertAssets,
+    upsertNodeAssets,
     getAssetsByIds,
+    getCollectibleIdsMissingUrl,
     upsertAssetPrices,
     getAssetPricesByIds,
     updateAssetPeraMetadata,
@@ -796,6 +798,231 @@ describe('asset repository', () => {
             })
 
             expect(result).toEqual([])
+        })
+    })
+
+    describe('getStaleOrMissingAssetIds — ARC19 recheck', () => {
+        // ARC19 media is mutable: the manager's acfg re-points the reserve
+        // address at a new CID and the backend re-crawls, but only a re-fetch
+        // of the assets_pera row picks the new media URL up (PERA-4956).
+        const ARC19_URL =
+            'template-ipfs://{ipfscid:1:raw:reserve:sha2-256}#arc3'
+
+        const seedNft = async (
+            assetId: string,
+            url?: string,
+            type: PeraAssetType = 'collectible',
+        ): Promise<void> => {
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        assetId,
+                        url,
+                        decimals: 0,
+                        totalSupply: new Decimal(1),
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'unverified',
+                            type,
+                        },
+                    }),
+                ],
+                network: 'mainnet',
+            })
+        }
+
+        const agePeraRow = () =>
+            db.run(sql`update assets_pera set updated_at = 0`)
+
+        it('rechecks a stale ARC19 collectible even while its node half is fresh', async () => {
+            // The collectible detail screen persists through upsertNodeAssets,
+            // bumping assets_node.updated_at without refreshing the pera-half
+            // media — the main gate reads that timestamp, so a viewed NFT can
+            // dodge it forever. The carve-out must key on the pera half.
+            await seedNft('1', ARC19_URL)
+            await agePeraRow()
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+                recheckArc19: { ttlMs: 60_000 },
+            })
+
+            expect(result).toEqual(['1'])
+        })
+
+        it('waits out the ARC19 recheck TTL between rechecks', async () => {
+            await seedNft('1', ARC19_URL)
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+                recheckArc19: { ttlMs: 60_000 },
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('leaves collectibles with immutable urls alone', async () => {
+            await seedNft('1', 'ipfs://QmSomeFixedCid')
+            await seedNft('2', 'https://example.com/nft.json')
+            await agePeraRow()
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1', '2'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+                recheckArc19: { ttlMs: 60_000 },
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('leaves template-ipfs assets the backend has not typed as collectibles to the unclassified recheck', async () => {
+            await seedNft('1', ARC19_URL, 'standard_asset')
+            await agePeraRow()
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+                recheckArc19: { ttlMs: 60_000 },
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('does not recheck when the caller omits the param', async () => {
+            await seedNft('1', ARC19_URL)
+            await agePeraRow()
+
+            const result = await getStaleOrMissingAssetIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+                ttlMs: 60_000,
+            })
+
+            expect(result).toEqual([])
+        })
+
+        it('preserves a learned url when a bulk write omits it', async () => {
+            // The bulk /v2/assets/ serializer carries no url at all, so every
+            // bulk refetch would null out the url the backfill learned from
+            // the indexer — and with it the ARC19 recheck.
+            await seedNft('1', ARC19_URL)
+            await seedNft('1', undefined)
+
+            const rows = await getAssetsByIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+            })
+
+            expect(rows[0].url).toBe(ARC19_URL)
+        })
+
+        it('preserves a learned url across a node-half write that omits it', async () => {
+            await seedNft('1', ARC19_URL)
+            await upsertNodeAssets({
+                db,
+                items: [
+                    makeAsset({
+                        assetId: '1',
+                        url: undefined,
+                        decimals: 0,
+                        totalSupply: new Decimal(1),
+                    }),
+                ],
+                network: 'mainnet',
+            })
+
+            const rows = await getAssetsByIds({
+                db,
+                assetIds: ['1'],
+                network: 'mainnet',
+            })
+
+            expect(rows[0].url).toBe(ARC19_URL)
+        })
+    })
+
+    describe('getCollectibleIdsMissingUrl', () => {
+        // The bulk asset endpoint has no url field, so collectibles synced
+        // through it need a one-time indexer lookup before the ARC19 recheck
+        // can recognize them. NULL means "never asked"; '' means "asked, the
+        // chain has no url" and must not be re-asked.
+        const seedTyped = async (
+            assetId: string,
+            url: string | null,
+            type: PeraAssetType,
+        ): Promise<void> => {
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        assetId,
+                        url: url ?? undefined,
+                        decimals: 0,
+                        totalSupply: new Decimal(1),
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'unverified',
+                            type,
+                        },
+                    }),
+                ],
+                network: 'mainnet',
+            })
+        }
+
+        it('returns collectibles whose url was never resolved', async () => {
+            await seedTyped('1', null, 'collectible')
+            await seedTyped('2', 'template-ipfs://x', 'collectible')
+            await seedTyped('3', '', 'collectible')
+            await seedTyped('4', null, 'standard_asset')
+
+            const result = await getCollectibleIdsMissingUrl({
+                db,
+                assetIds: ['1', '2', '3', '4'],
+                network: 'mainnet',
+            })
+
+            expect(result).toEqual(['1'])
+        })
+
+        it('only considers the candidate ids', async () => {
+            await seedTyped('1', null, 'collectible')
+            await seedTyped('2', null, 'collectible')
+
+            const result = await getCollectibleIdsMissingUrl({
+                db,
+                assetIds: ['2'],
+                network: 'mainnet',
+            })
+
+            expect(result).toEqual(['2'])
+        })
+
+        it('caps the batch via limit', async () => {
+            await seedTyped('1', null, 'collectible')
+            await seedTyped('2', null, 'collectible')
+
+            const result = await getCollectibleIdsMissingUrl({
+                db,
+                assetIds: ['1', '2'],
+                network: 'mainnet',
+                limit: 1,
+            })
+
+            expect(result).toHaveLength(1)
         })
     })
 
