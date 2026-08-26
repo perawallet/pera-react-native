@@ -862,6 +862,7 @@ describe('useTransactionHistoryQuery', () => {
             expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
                 network: 'mainnet',
                 sender: mockAddress,
+                limit: expect.any(Number),
             })
         })
 

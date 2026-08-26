@@ -36,6 +36,13 @@ import { persistTransactionsToDb } from './useTransactionHistoryDb'
  */
 const HISTORY_PAGE_SIZE = 100
 
+/**
+ * Ceiling on synthesized pending rows per first-page fetch. Concurrent
+ * in-flight groups for one account are a handful at most, so this only caps
+ * the pathological case rather than shaping normal output.
+ */
+const MAX_PENDING_HISTORY_ROWS = 50
+
 /** Sentinel `nextUrl`s: the next page comes from SQLite / from the API. */
 const DB_CURSOR = '__load_more_from_db__'
 const API_CURSOR = '__load_more_from_api__'
@@ -192,6 +199,7 @@ const buildPendingHistoryItems = async ({
     const attempts = await getOpenSubmissionAttempts({
         network,
         sender: accountAddress,
+        limit: MAX_PENDING_HISTORY_ROWS,
     })
     return attempts.map(attempt =>
         toPendingHistoryItem(attempt, accountAddress),

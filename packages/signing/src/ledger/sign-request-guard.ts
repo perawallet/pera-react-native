@@ -86,6 +86,12 @@ export const isRequestGroupAlreadySubmitted = async (
     if (txIds.length === 0) return false
 
     try {
+        // No age bound here, unlike the rebuild guards. Those match a *new*
+        // group against an old intent, so a row nothing can settle has to
+        // stop blocking eventually. This matches exact txids: if one matches,
+        // it is literally this group, and that stays true however old the row
+        // is. Re-presenting an approval sheet for bytes already broadcast is
+        // never right.
         const matches = await getSubmissionAttemptsByTxIds({
             db,
             txIds,

@@ -286,8 +286,13 @@ export type PruneResolvedSubmissionAttemptsParams = {
     olderThanMs?: number
 }
 
-/** The table grows with every submission, so terminal rows need a floor. */
-const DEFAULT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
+/**
+ * Terminal rows are kept only long enough to outlast the validity window they
+ * describe (1000 rounds, ~47 min on mainnet) plus slack for a slow-block
+ * network. Past that the row answers a question nobody can still ask, and the
+ * table grows with every submission.
+ */
+const DEFAULT_RETENTION_MS = 2 * 60 * 60 * 1000
 
 /**
  * Drops terminally-resolved rows past the retention window. Open rows are
