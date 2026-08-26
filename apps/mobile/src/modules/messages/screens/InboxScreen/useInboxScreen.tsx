@@ -23,6 +23,7 @@ export type UseInboxScreenResult = {
     isPending: boolean
     isRefetching: boolean
     isAwaitingRegistration: boolean
+    isUnavailableOnNetwork: boolean
     refetch: () => void
     keyExtractor: (item: InboxItem, index: number) => string
     handleInboxItemPress: (item: InboxItem) => void
@@ -48,17 +49,24 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         isPending,
         isRefetching,
         refetch,
+        isUnavailableOnNetwork,
     } = useInboxQuery()
     useCleanupDuplicateMultisigInvitations()
     const handleInboxItemPress = useHandleInboxItemPress()
+    const isRegistrationPending = useIsDeviceRegistrationPending()
+    // Registration can never complete on a network with no Pera backend, so
+    // don't let that state masquerade as "still awaiting registration".
     const isAwaitingRegistration =
-        useIsDeviceRegistrationPending() && (inboxItems?.length ?? 0) === 0
+        !isUnavailableOnNetwork &&
+        isRegistrationPending &&
+        (inboxItems?.length ?? 0) === 0
 
     return {
         inboxItems: inboxItems ?? [],
         isPending,
         isRefetching,
         isAwaitingRegistration,
+        isUnavailableOnNetwork,
         refetch: () => void refetch(),
         keyExtractor: getItemKey,
         handleInboxItemPress,

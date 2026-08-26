@@ -31,7 +31,7 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
+    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

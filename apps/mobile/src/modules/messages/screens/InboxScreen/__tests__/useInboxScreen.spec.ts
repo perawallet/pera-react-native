@@ -140,4 +140,33 @@ describe('useInboxScreen', () => {
 
         expect(result.current.isAwaitingRegistration).toBe(false)
     })
+
+    it('forwards isUnavailableOnNetwork from the inbox query', () => {
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+            isRefetching: false,
+            refetch: vi.fn(),
+            isUnavailableOnNetwork: true,
+        } as unknown as ReturnType<typeof useInboxQuery>)
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.isUnavailableOnNetwork).toBe(true)
+    })
+
+    it('is not awaiting registration when the network is unavailable, even if registration is pending', () => {
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [],
+            isPending: false,
+            isRefetching: false,
+            refetch: vi.fn(),
+            isUnavailableOnNetwork: true,
+        } as unknown as ReturnType<typeof useInboxQuery>)
+        vi.mocked(useIsDeviceRegistrationPending).mockReturnValue(true)
+
+        const { result } = renderHook(() => useInboxScreen())
+
+        expect(result.current.isAwaitingRegistration).toBe(false)
+    })
 })

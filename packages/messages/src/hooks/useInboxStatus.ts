@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { config } from '@perawallet/wallet-core-config'
+import { config, isPeraBackedNetwork } from '@perawallet/wallet-core-config'
 import {
     fetchMessageStatus,
     fetchNotificationStatus,
@@ -31,6 +31,8 @@ type UseInboxStatusResult = {
     hasUnreadInboxItems: boolean
     hasUnreadNotifications: boolean
     unreadInboxCount: number
+    /** True when the active network has no Pera backend — this can never succeed here. */
+    isUnavailableOnNetwork: boolean
 }
 
 // While v3 is failing the v1 fallback owns freshness; v3 keeps probing for
@@ -41,13 +43,14 @@ const ERROR_PROBE_INTERVAL_MULTIPLIER = 10
 export const useInboxStatus = (): UseInboxStatusResult => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
+    const isUnavailableOnNetwork = !isPeraBackedNetwork(network)
 
     // Primary source of truth: the unified v3 message-status endpoint returns
     // both the unread flags and the inbox count in a single call.
     const messageStatus = useQuery({
         queryKey: getMessageStatusQueryKey(network, deviceID ?? ''),
         queryFn: () => fetchMessageStatus(network, deviceID ?? ''),
-        enabled: !!deviceID,
+        enabled: !!deviceID && !isUnavailableOnNetwork,
         // Overrides the globally-pinned false: the badge should catch up as
         // soon as the app foregrounds — pushes that arrived while
         // backgrounded (intervals are paused then) and restart-hydrated
@@ -76,7 +79,7 @@ export const useInboxStatus = (): UseInboxStatusResult => {
     const { data: notificationStatusData } = useQuery({
         queryKey: getNotificationStatusQueryKey(network, deviceID ?? ''),
         queryFn: () => fetchNotificationStatus(network, deviceID ?? ''),
-        enabled: !!deviceID && shouldUseFallback,
+        enabled: !!deviceID && shouldUseFallback && !isUnavailableOnNetwork,
         refetchInterval: config.pollingEnabled
             ? config.notificationRefreshTime
             : false,
@@ -88,12 +91,27 @@ export const useInboxStatus = (): UseInboxStatusResult => {
 
     const { data: inboxData } = useInboxQuery()
 
+    if (isUnavailableOnNetwork) {
+        // The zeros here are meaningless — there is no backend to have
+        // fetched them from. The UI must suppress the badge on the flag,
+        // not on the count: a fabricated 0 is indistinguishable from a real
+        // "nothing unread".
+        return {
+            hasUnreadItems: false,
+            hasUnreadInboxItems: false,
+            hasUnreadNotifications: false,
+            unreadInboxCount: 0,
+            isUnavailableOnNetwork: true,
+        }
+    }
+
     if (hasMessageStatus) {
         return {
             hasUnreadItems: messageStatus.data.hasUnreadItems,
             hasUnreadInboxItems: messageStatus.data.hasUnreadInboxItems,
             hasUnreadNotifications: messageStatus.data.hasUnreadNotifications,
             unreadInboxCount: messageStatus.data.unreadInboxCount,
+            isUnavailableOnNetwork,
         }
     }
 
@@ -106,5 +124,6 @@ export const useInboxStatus = (): UseInboxStatusResult => {
         hasUnreadInboxItems,
         hasUnreadNotifications,
         unreadInboxCount,
+        isUnavailableOnNetwork,
     }
 }

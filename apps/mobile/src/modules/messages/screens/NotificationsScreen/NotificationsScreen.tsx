@@ -16,6 +16,7 @@ import { type PeraNotification } from '@perawallet/wallet-core-messages'
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
 import { LoadingView } from '@components/LoadingView'
+import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { PWFlatList, PWRefreshControl, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { NotificationItem } from '@modules/messages/components/NotificationItem/NotificationItem'
@@ -36,6 +37,7 @@ export const NotificationsScreen = () => {
         keyExtractor,
         handleNotificationPress,
         listRef,
+        isUnavailableOnNetwork,
     } = useNotificationsScreen()
 
     const renderItem = useCallback(
@@ -67,13 +69,18 @@ export const NotificationsScreen = () => {
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ListItemDivider}
                 ListEmptyComponent={
-                    <EmptyView
-                        isLoading={isPending}
-                        style={styles.emptyView}
-                        icon='bell'
-                        title={t('notifications.empty_title')}
-                        body={t('notifications.empty_body')}
-                    />
+                    <OfflineTolerantView
+                        isOffline={false}
+                        isUnavailable={isUnavailableOnNetwork}
+                    >
+                        <EmptyView
+                            isLoading={isPending}
+                            style={styles.emptyView}
+                            icon='bell'
+                            title={t('notifications.empty_title')}
+                            body={t('notifications.empty_body')}
+                        />
+                    </OfflineTolerantView>
                 }
                 ListFooterComponent={
                     isFetchingNextPage ? <LoadingView variant='circle' /> : null

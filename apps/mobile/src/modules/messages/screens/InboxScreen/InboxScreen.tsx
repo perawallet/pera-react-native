@@ -15,6 +15,7 @@ import { type InboxItem as InboxItemModel } from '@perawallet/wallet-core-messag
 
 import { EmptyView } from '@components/EmptyView'
 import { ListItemDivider } from '@components/ListItemDivider'
+import { OfflineTolerantView } from '@components/OfflineTolerantView'
 import { PWFlatList, PWRefreshControl, PWScreen } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { InboxItem } from '@modules/messages/components/InboxItem/InboxItem'
@@ -30,6 +31,7 @@ export const InboxScreen = () => {
         isPending,
         isRefetching,
         isAwaitingRegistration,
+        isUnavailableOnNetwork,
         refetch,
         keyExtractor,
         handleInboxItemPress,
@@ -56,14 +58,19 @@ export const InboxScreen = () => {
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ListItemDivider}
                 ListEmptyComponent={
-                    <EmptyView
-                        isLoading={isPending || isAwaitingRegistration}
-                        style={styles.emptyView}
-                        icon='inbox'
-                        title={t('messages.inbox.empty_title')}
-                        body={t('messages.inbox.empty_body')}
-                        testID='inbox_empty_state'
-                    />
+                    <OfflineTolerantView
+                        isOffline={false}
+                        isUnavailable={isUnavailableOnNetwork}
+                    >
+                        <EmptyView
+                            isLoading={isPending || isAwaitingRegistration}
+                            style={styles.emptyView}
+                            icon='inbox'
+                            title={t('messages.inbox.empty_title')}
+                            body={t('messages.inbox.empty_body')}
+                            testID='inbox_empty_state'
+                        />
+                    </OfflineTolerantView>
                 }
                 refreshControl={
                     <PWRefreshControl

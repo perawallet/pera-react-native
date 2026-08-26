@@ -22,7 +22,11 @@ export const useMessagesScreen = () => {
     const route = useRoute<RouteProp<MessagesStackParamList, 'MessagesHome'>>()
 
     const initialTab = route.params?.initialTab
-    const { hasUnreadInboxItems, hasUnreadNotifications } = useInboxStatus()
+    const {
+        hasUnreadInboxItems,
+        hasUnreadNotifications,
+        isUnavailableOnNetwork,
+    } = useInboxStatus()
     const { data: inboxItems } = useInboxQuery()
 
     // Decided once at mount: the navigator only reads initialRouteName on its
@@ -53,12 +57,18 @@ export const useMessagesScreen = () => {
     }, [requestBottomSheet])
 
     const showInboxBadge = useMemo(
-        () => hasUnreadInboxItems && activeTab !== 'Inbox',
-        [hasUnreadInboxItems, activeTab],
+        () =>
+            !isUnavailableOnNetwork &&
+            hasUnreadInboxItems &&
+            activeTab !== 'Inbox',
+        [isUnavailableOnNetwork, hasUnreadInboxItems, activeTab],
     )
     const showNotificationsBadge = useMemo(
-        () => hasUnreadNotifications && activeTab !== 'Notifications',
-        [hasUnreadNotifications, activeTab],
+        () =>
+            !isUnavailableOnNetwork &&
+            hasUnreadNotifications &&
+            activeTab !== 'Notifications',
+        [isUnavailableOnNetwork, hasUnreadNotifications, activeTab],
     )
 
     return {

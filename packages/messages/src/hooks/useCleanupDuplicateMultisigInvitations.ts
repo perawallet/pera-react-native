@@ -25,7 +25,7 @@ export const useCleanupDuplicateMultisigInvitations = (): void => {
     // Shares the inbox query with useInboxQuery: spreading the owner's
     // options keeps the two observers' query-level config (queryFn, retry)
     // identical — only the per-observer select differs.
-    const inboxQueryOptions = useInboxQueryOptions()
+    const { queryOptions: inboxQueryOptions } = useInboxQueryOptions()
     const allAccounts = useAllAccounts()
 
     const localAddresses = useMemo(

@@ -13,6 +13,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { Networks } from '@perawallet/wallet-core-config'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useInboxQuery } from '../useInboxQuery'
 import { fetchInbox } from '../../api/inbox'
@@ -32,7 +34,7 @@ vi.mock('@perawallet/wallet-core-device', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
+    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -51,6 +53,9 @@ beforeEach(() => {
         { address: 'ADDR1', type: 'algo25' },
         { address: 'ADDR2', type: 'algo25' },
     ] as ReturnType<typeof useAllAccounts>)
+    vi.mocked(useNetwork).mockReturnValue({
+        network: 'mainnet',
+    } as ReturnType<typeof useNetwork>)
 })
 
 describe('useInboxQuery', () => {
@@ -103,11 +108,10 @@ describe('useInboxQuery', () => {
             expect(result.current.isPending).toBe(false)
         })
 
-        expect(fetchInbox).toHaveBeenCalledWith(
-            'test-network',
-            'test-device-id',
-            ['ADDR1', 'ADDR2'],
-        )
+        expect(fetchInbox).toHaveBeenCalledWith('mainnet', 'test-device-id', [
+            'ADDR1',
+            'ADDR2',
+        ])
 
         const { data: inboxItems } = result.current
         expect(inboxItems).toHaveLength(3)
@@ -390,5 +394,60 @@ describe('useInboxQuery', () => {
             await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3)
             expect(fetchInbox).toHaveBeenCalledTimes(1)
         })
+    })
+
+    describe('non-Pera-backed networks', () => {
+        beforeEach(() => {
+            vi.mocked(fetchInbox).mockClear()
+        })
+
+        it.each([Networks.betanet, Networks.custom])(
+            'disables the query and flags isUnavailableOnNetwork on %s',
+            network => {
+                vi.mocked(useNetwork).mockReturnValue({
+                    network,
+                } as ReturnType<typeof useNetwork>)
+
+                const { result } = renderHook(() => useInboxQuery(), {
+                    wrapper: createWrapper(),
+                })
+
+                expect(result.current.isUnavailableOnNetwork).toBe(true)
+                expect(fetchInbox).not.toHaveBeenCalled()
+            },
+        )
+
+        it.each([Networks.betanet, Networks.custom])(
+            'reports isPending false while unavailable on %s',
+            network => {
+                vi.mocked(useNetwork).mockReturnValue({
+                    network,
+                } as ReturnType<typeof useNetwork>)
+
+                const { result } = renderHook(() => useInboxQuery(), {
+                    wrapper: createWrapper(),
+                })
+
+                expect(result.current.isPending).toBe(false)
+                expect(result.current.data).toEqual([])
+            },
+        )
+
+        it.each([Networks.betanet, Networks.custom])(
+            'does not invoke fetchInbox when refetch is called on %s',
+            async network => {
+                vi.mocked(useNetwork).mockReturnValue({
+                    network,
+                } as ReturnType<typeof useNetwork>)
+
+                const { result } = renderHook(() => useInboxQuery(), {
+                    wrapper: createWrapper(),
+                })
+
+                await expect(result.current.refetch()).resolves.toEqual([])
+
+                expect(fetchInbox).not.toHaveBeenCalled()
+            },
+        )
     })
 })
