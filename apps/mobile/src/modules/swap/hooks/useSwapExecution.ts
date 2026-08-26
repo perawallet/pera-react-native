@@ -253,16 +253,10 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             // goes stale within SWAP_QUOTE_TTL_MS, the form re-quotes, and
             // the backend hands back a NEW swap_id — so the intent lookup
             // would miss the very row it was meant to catch. The sender-wide
-            // swap-flow check is what actually closes that path; the intent
-            // lookup stays because it also matches rows this device never
-            // recorded a flow tag for.
+            // check over both swap flows is what closes that path.
             const swapSender =
                 account?.address ?? quote.swapperAddress ?? undefined
             if (swapSender) {
-                // Only rows with no decodable validity window are dropped —
-                // never merely old ones. Rounds are not wall-clock, so ageing
-                // out a row that may still be live would reopen the very
-                // window this guard closes.
                 const unevaluatableBefore = Date.now() - STALE_OPEN_ATTEMPT_MS
                 let blocked: boolean
                 try {

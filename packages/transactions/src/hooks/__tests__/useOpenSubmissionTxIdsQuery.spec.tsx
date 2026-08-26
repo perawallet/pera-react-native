@@ -52,8 +52,13 @@ describe('useOpenSubmissionTxIdsQuery', () => {
             { wrapper: wrapper(queryClient) },
         )
 
-        await waitFor(() => expect(result.current.isPending).toBe(false))
-        expect([...result.current.openTxIds]).toEqual(['TX-A', 'TX-B', 'TX-C'])
+        await waitFor(() =>
+            expect([...result.current.openTxIds]).toEqual([
+                'TX-A',
+                'TX-B',
+                'TX-C',
+            ]),
+        )
         expect(mockGetOpenSubmissionAttempts).toHaveBeenCalledWith({
             network: 'mainnet',
         })
@@ -68,7 +73,9 @@ describe('useOpenSubmissionTxIdsQuery', () => {
         )
 
         expect([...result.current.openTxIds]).toEqual([])
-        await waitFor(() => expect(result.current.isPending).toBe(false))
+        await waitFor(() =>
+            expect(mockGetOpenSubmissionAttempts).toHaveBeenCalled(),
+        )
         expect([...result.current.openTxIds]).toEqual([])
     })
 

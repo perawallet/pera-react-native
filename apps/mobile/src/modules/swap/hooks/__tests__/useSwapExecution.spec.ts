@@ -715,6 +715,27 @@ describe('useSwapExecution', () => {
         expect(mockSendRawTransaction).not.toHaveBeenCalled()
     })
 
+    it('fails closed when the guard lookup itself errors', async () => {
+        // If this ever flipped to fail-open, a transient SQLite error would
+        // let a rebuild broadcast unguarded — the double spend the ledger
+        // exists to prevent.
+        mockPrepareTransactions.mockResolvedValue(
+            makePrepareResult({ swapIdStr: 'SWAP1' }),
+        )
+        mockGetOpenSubmissionAttempts.mockRejectedValue(new Error('db closed'))
+
+        const { result } = renderHook(() => useSwapExecution())
+
+        let outcome: Optional<SwapExecutionOutcome>
+        await act(async () => {
+            outcome = await result.current.execute(makeQuote('quote-db-error'))
+        })
+
+        expect(outcome).toEqual({ kind: 'verifying-previous' })
+        expect(mockAddSignRequest).not.toHaveBeenCalled()
+        expect(mockSendRawTransaction).not.toHaveBeenCalled()
+    })
+
     it('skips the retry guard when prepareResult carries no swapId', async () => {
         mockPrepareTransactions.mockResolvedValue(
             makePrepareResult({ swapIdStr: '' }),

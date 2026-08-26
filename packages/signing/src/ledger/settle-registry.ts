@@ -26,7 +26,6 @@ export type SubmissionSettledHandler = (
 
 const handlers = new Map<SubmissionFlow, SubmissionSettledHandler>()
 
-/** Register (or clear, with `null`) the settle handler for a flow. */
 export const setSubmissionSettledHandler = (
     flow: SubmissionFlow,
     handler: SubmissionSettledHandler | null,

@@ -101,7 +101,6 @@ export type ResolveSubmissionAttemptParams = {
     status: 'confirmed' | 'failed'
 }
 
-/** Terminal resolution: sets the status and stamps `resolvedAt`. */
 export const resolveSubmissionAttempt = async ({
     db = getDatabase(),
     id,

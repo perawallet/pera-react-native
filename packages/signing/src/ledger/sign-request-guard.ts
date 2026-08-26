@@ -12,20 +12,12 @@
 
 import { computeGroupID, Transaction } from 'algosdk'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import { logger } from '@perawallet/wallet-core-shared'
+import { bytesToHex, logger } from '@perawallet/wallet-core-shared'
 import type { Database } from '@perawallet/wallet-core-database'
 import { getSubmissionAttemptsByTxIds } from '../db/repository'
 import { LANDABLE_SUBMISSION_STATUSES } from './types'
 import { isTransactionRequest } from '../models/guards'
 import type { SignRequest } from '../models'
-
-const bytesKey = (bytes: Uint8Array): string => {
-    let key = ''
-    for (const byte of bytes) {
-        key += byte.toString(16).padStart(2, '0')
-    }
-    return key
-}
 
 /**
  * Reproduces the txids a persisted sign-request's group would have at submit
@@ -45,7 +37,9 @@ export const deriveRequestGroupTxIds = (
     if (txs.length === 0) return []
 
     try {
-        const groupKeys = txs.map(txn => (txn.group ? bytesKey(txn.group) : ''))
+        const groupKeys = txs.map(txn =>
+            txn.group ? bytesToHex(txn.group) : '',
+        )
         const consistent = groupKeys.every(key => key === groupKeys[0])
 
         if (consistent && groupKeys[0] !== '') {

@@ -20,12 +20,6 @@ export type DerivedSubmissionAttempt = {
 }
 
 /**
- * Derives a submission-attempt's ledger identity from its raw signed bytes —
- * the pre-POST equivalent of {@link recordSubmissionAttempt}'s inputs, for
- * flows that submit raw bytes (cosign). Bytes that fail to decode are
- * skipped rather than aborting the group.
- */
-/**
  * A validity round, or undefined when absent or non-numeric. Bare
  * `Number(undefined)` yields NaN, which slips past every downstream null
  * check and leaves the row with a window the reconciler can never evaluate —
@@ -37,6 +31,12 @@ export const toRound = (value: unknown): number | undefined => {
     return Number.isFinite(round) ? round : undefined
 }
 
+/**
+ * Derives a submission-attempt's ledger identity from its raw signed bytes —
+ * the pre-POST equivalent of {@link recordSubmissionAttempt}'s inputs, for
+ * flows that submit raw bytes (cosign). Bytes that fail to decode are
+ * skipped rather than aborting the group.
+ */
 export const deriveSubmissionAttemptFromBytes = (
     bytesList: readonly Uint8Array[],
 ): DerivedSubmissionAttempt => {

@@ -30,7 +30,7 @@ export const SubmissionAttemptsSchema = sqliteTable(
          * swapId}`). Null for generic sends, which match by txid only.
          */
         intentKeyJson: text('intent_key_json'),
-        /** Which flow submitted: pipeline, rekey, swap, cosign, … */
+        /** Serialized {@link SubmissionFlow}. */
         flow: text('flow').notNull(),
         /** Wallet-held sender address, when known — part of the intent match. */
         sender: text('sender'),

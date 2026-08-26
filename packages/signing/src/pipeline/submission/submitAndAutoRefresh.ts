@@ -278,7 +278,6 @@ const backgroundConfirmAndRefresh = async (
         return
     }
 
-    // Definitive confirmation: resolve the attempt row (PERA-4588).
     if (attemptId !== null) {
         await runLedgerBestEffort(() =>
             resolveSubmissionAttempt({

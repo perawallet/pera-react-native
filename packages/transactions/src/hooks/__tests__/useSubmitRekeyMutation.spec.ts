@@ -79,6 +79,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         mockResolveMinFeeForSender(...args),
     getOpenSubmissionAttemptsForIntent: (...args: unknown[]) =>
         mockGetOpenSubmissionAttemptsForIntent(...args),
+    STALE_OPEN_ATTEMPT_MS: 60 * 60 * 1000,
 }))
 
 import { useSubmitRekeyMutation } from '../useSubmitRekeyMutation'
@@ -193,6 +194,9 @@ describe('useSubmitRekeyMutation', () => {
             network: 'testnet',
             sender: 'SRC',
             intentKey: { kind: 'rekey', address: 'SRC' },
+            // Bounded like the swap guard: a row with no decodable validity
+            // window must not block this address's rekey forever.
+            unevaluatableBefore: expect.any(Number),
         })
         expect(mockPayment).not.toHaveBeenCalled()
         expect(mockAddSignRequest).not.toHaveBeenCalled()

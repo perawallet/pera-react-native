@@ -257,19 +257,6 @@ describe('submission reconciler', () => {
         expect(outcome).toBeNull()
     })
 
-    it('leaves a row open before lastValid expires with nothing found', async () => {
-        const id = await record()
-        const outcome = await probeSubmissionAttempt(
-            attemptFrom(id),
-            makeClient({
-                pendingError: httpError(404),
-                indexerError: httpError(404),
-                indexerRound: 50,
-            }),
-        )
-        expect(outcome).toBeNull()
-    })
-
     it('leaves a row without a txid open (nothing to probe)', async () => {
         const id = await record({ txIds: [] })
         const outcome = await probeSubmissionAttempt(

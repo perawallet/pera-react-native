@@ -22,6 +22,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import {
     getOpenSubmissionAttemptsForIntent,
+    STALE_OPEN_ATTEMPT_MS,
     resolveMinFeeForSender,
     submitAndAutoRefresh,
     useSigningRequest,
@@ -109,6 +110,7 @@ export const useSubmitRekeyMutation = ({
                 network,
                 sender: sourceAddress,
                 intentKey: { kind: 'rekey', address: sourceAddress },
+                unevaluatableBefore: Date.now() - STALE_OPEN_ATTEMPT_MS,
             })
             if (openAttempts.length > 0) {
                 throw new RekeyError(

@@ -21,7 +21,6 @@ const EMPTY_TX_IDS: ReadonlySet<string> = new Set()
 export type UseOpenSubmissionTxIdsQueryResult = {
     /** Txids with an open ledger row, empty until the query settles. */
     openTxIds: ReadonlySet<string>
-    isPending: boolean
 }
 
 /**
@@ -47,8 +46,5 @@ export const useOpenSubmissionTxIdsQuery = ({
         networkMode: 'always',
     })
 
-    return {
-        openTxIds: query.data ?? EMPTY_TX_IDS,
-        isPending: query.isPending,
-    }
+    return { openTxIds: query.data ?? EMPTY_TX_IDS }
 }
